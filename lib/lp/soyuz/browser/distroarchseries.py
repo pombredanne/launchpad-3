@@ -13,6 +13,7 @@ __all__ = [
     'DistroArchSeriesView',
     ]
 
+from lazr.restful.utils import smartquote
 from zope.interface import (
     implements,
     Interface,
@@ -30,7 +31,6 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

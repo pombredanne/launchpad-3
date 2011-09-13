@@ -135,3 +135,9 @@ FIXRELEASED and bug notification are generated:
      -- Daniel Silverstone <daniel.silverstone@canonical.com>   Thu, 30 Mar 2006 01:36:14 +0100
     <BLANKLINE>
 
+And clean up.
+
+    >>> import os
+    >>> from lp.archiveuploader.tests import datadir
+    >>> upload_data = datadir('suite/bar_1.0-2')
+    >>> os.remove(os.path.join(upload_data, 'bar_1.0.orig.tar.gz'))

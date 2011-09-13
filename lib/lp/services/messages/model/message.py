@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -27,6 +27,7 @@ from email.Utils import (
     parseaddr,
     parsedate_tz,
     )
+import logging
 from operator import attrgetter
 import os.path
 
@@ -62,9 +63,16 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasSet,
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    validate_public_person,
     )
+from lp.services.encoding import guess as ensure_unicode
+from lp.services.job.model.job import Job
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     IMessage,
@@ -75,17 +83,6 @@ from lp.services.messages.interfaces.message import (
     IUserToUserEmail,
     UnknownSender,
     )
-from canonical.launchpad.mail import (
-    signed_message_from_string,
-    )
-from lp.app.errors import NotFoundError
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonCreationRationale,
-    validate_public_person,
-    )
-from lp.services.encoding import guess as ensure_unicode
-from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 
 # this is a hard limit on the size of email we will be willing to store in
@@ -211,6 +208,10 @@ def get_parent_msgids(parsed_message):
 class MessageSet:
     implements(IMessageSet)
 
+    extra_encoding_aliases = {
+        'macintosh': 'mac_roman',
+    }
+
     def get(self, rfc822msgid):
         messages = list(Message.selectBy(rfc822msgid=rfc822msgid))
         if len(messages) == 0:
@@ -234,6 +235,19 @@ class MessageSet:
         # are created.
         Store.of(message).flush()
         return message
+
+    @classmethod
+    def decode(self, encoded, encoding):
+        encoding = self.extra_encoding_aliases.get(encoding, encoding)
+        try:
+            return encoded.decode(encoding, 'replace')
+        except LookupError:
+            try:
+                return encoded.decode('us-ascii')
+            except UnicodeDecodeError:
+                logging.getLogger().warning(
+                    'Treating unknown encoding "%s" as latin-1.' % encoding)
+                return encoded.decode('latin-1')
 
     def _decode_header(self, header):
         r"""Decode an RFC 2047 encoded header.
@@ -268,7 +282,7 @@ class MessageSet:
             # cause problems in unusual encodings that we are hopefully
             # unlikely to encounter in this part of the code.
             re_encoded_bits.append(
-                (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
+                (self.decode(bytes, charset).encode('utf-8'), 'utf-8'))
 
         return unicode(email.Header.make_header(re_encoded_bits))
 
@@ -308,7 +322,7 @@ class MessageSet:
         file_alias_set = getUtility(ILibraryFileAliasSet)  # Reused later
         if filealias is None:
             # Avoid circular import.
-            from canonical.launchpad.mail.helpers import (
+            from lp.services.mail.helpers import (
                 save_mail_to_librarian,
                 )
             raw_email_message = save_mail_to_librarian(email_message)
@@ -445,8 +459,7 @@ class MessageSet:
                 charset = part.get_content_charset()
                 if charset is None or str(charset).lower() == 'x-unknown':
                     charset = 'latin-1'
-
-                content = content.decode(charset, 'replace')
+                content = self.decode(content, charset)
 
                 if content.strip():
                     MessageChunk(

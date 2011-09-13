@@ -5,9 +5,7 @@
 
 __metaclass__ = type
 
-
 from textwrap import dedent
-import unittest
 
 from canonical.config import config
 from canonical.launchpad.ftests import login_person
@@ -50,13 +48,3 @@ class PersonView_openid_identity_url_TestCase(TestCaseWithFactory):
             '''))
         self.assertEquals(
             'http://prod.launchpad.dev/~eris', self.view.openid_identity_url)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.main()

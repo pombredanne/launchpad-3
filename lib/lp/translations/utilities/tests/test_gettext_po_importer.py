@@ -93,10 +93,3 @@ class GettextPOImporterTestCase(unittest.TestCase):
         self.failUnless(
             format == TranslationFileFormat.PO,
             'GettextPOImporter format expected PO but got %s' % format.name)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPOImporterTestCase))
-    return suite
-

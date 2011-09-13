@@ -62,7 +62,7 @@ sudo grep -q Launchpad /etc/postgresql/$pgversion/main/pg_hba.conf || \
 sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
 --- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
 +++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
-@@ -58,7 +58,9 @@
+@@ -58,7 +58,10 @@
  # on a non-local interface via the listen_addresses configuration parameter,
  # or via the -i or -h command line switches.
  #
@@ -70,6 +70,7 @@ sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
 +# Launchpad users
 +local   all         all                           trust
 +host    all         all         127.0.0.1/32      trust
++host    all         all         ::1/128           trust
 
 
 

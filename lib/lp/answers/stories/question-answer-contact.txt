@@ -13,9 +13,8 @@ distribution.
     >>> browser.addHeader('Accept-Language', 'en, es')
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'portlet-answer-contacts'))
+    ...     find_tag_by_id(browser.contents, 'portlet-answer-contacts-ubuntu'))
     Answer contacts for Ubuntu
-    There are no answer contacts.
 
 Anybody can become an answer contact. To register as an answer contact,
 the user clicks on the 'Set answer Contact' link:
@@ -45,25 +44,6 @@ Developers team.
     ...     "I want to be an answer contact for Ubuntu").selected = True
     >>> browser.getControl("Landscape Developers").selected = True
     >>> browser.getControl('Continue').click()
-
-Confirmation of the answer contact registrations are displayed and the
-new answer contacts appear in the 'Answer Contacts' portlet. In this
-example Sample Person sees two additional notifications about preferred
-languages (more on this below).
-
-    >>> for message in find_tags_by_class(browser.contents, 'message'):
-    ...     print extract_text(message)
-    Your preferred languages were updated to include your browser languages:
-    English (en), Spanish (es).
-    You have been added as an answer contact for Ubuntu.
-    English was added to Landscape Developers's preferred languages.
-    Landscape Developers has been added as an answer contact for Ubuntu.
-
-    >>> print extract_text(
-    ...       find_tag_by_id(browser.contents, 'portlet-answer-contacts'))
-    Answer contacts for Ubuntu
-    Landscape Developers
-    Sample Person
 
 Answer contacts must tell Launchpad which languages they provide help
 in. As a convenience, the Answer Tracker will set the Person's preferred

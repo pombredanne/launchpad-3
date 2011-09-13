@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
@@ -24,7 +22,3 @@ class TestCanonicalUrl(TestCaseWithFactory):
             '%s/+gpg-keys/%s' % (
                 canonical_url(person, rootsite='api'), gpgkey.keyid),
             canonical_url(gpgkey))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -4,14 +4,14 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-from email.Message import Message
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
-from email.Utils import (
+from email.header import Header
+from email.message import Message
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import (
     formatdate,
     make_msgid,
     )
-import unittest
 
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -29,17 +29,22 @@ from lp.services.messages.model.message import (
     )
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import MailController
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 
 
-class TestMessageSet(unittest.TestCase):
+class TestMessageSet(TestCase):
     """Test the methods of `MessageSet`."""
 
     layer = LaunchpadFunctionalLayer
 
+    high_characters = ''.join(chr(c) for c in range(128, 256))
+
     def setUp(self):
-        unittest.TestCase.setUp(self)
+        super(TestMessageSet, self).setUp()
         # Testing behavior, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
@@ -148,6 +153,53 @@ class TestMessageSet(unittest.TestCase):
         transaction.commit()
         dupe_message = MessageSet().fromEmail(email.as_string())
         self.assertNotEqual(orig_message.id, dupe_message.id)
+
+    def makeEncodedEmail(self, encoding_name, actual_encoding):
+        email = self.factory.makeEmailMessage(body=self.high_characters)
+        email.set_type('text/plain')
+        email.set_charset(encoding_name)
+        macroman = Header(self.high_characters, actual_encoding).encode()
+        new_subject = macroman.replace(actual_encoding, encoding_name)
+        email.replace_header('Subject', new_subject)
+        return email
+
+    def test_fromEmail_decodes_macintosh_encoding(self):
+        """"macintosh encoding is equivalent to MacRoman."""
+        high_decoded = self.high_characters.decode('macroman')
+        email = self.makeEncodedEmail('macintosh', 'macroman')
+        message = MessageSet().fromEmail(email.as_string())
+        self.assertEqual(high_decoded, message.subject)
+        self.assertEqual(high_decoded, message.text_contents)
+
+    def test_fromEmail_decodes_booga_encoding(self):
+        """"'booga' encoding is decoded as latin-1."""
+        high_decoded = self.high_characters.decode('latin-1')
+        email = self.makeEncodedEmail('booga', 'latin-1')
+        message = MessageSet().fromEmail(email.as_string())
+        self.assertEqual(high_decoded, message.subject)
+        self.assertEqual(high_decoded, message.text_contents)
+
+    def test_decode_utf8(self):
+        """Test decode with a known encoding."""
+        result = MessageSet.decode(u'\u1234'.encode('utf-8'), 'utf-8')
+        self.assertEqual(u'\u1234', result)
+
+    def test_decode_macintosh(self):
+        """Test decode with macintosh encoding."""
+        result = MessageSet.decode(self.high_characters, 'macintosh')
+        self.assertEqual(self.high_characters.decode('macroman'), result)
+
+    def test_decode_unknown_ascii(self):
+        """Test decode with ascii characters in an unknown encoding."""
+        result = MessageSet.decode('abcde', 'booga')
+        self.assertEqual(u'abcde', result)
+
+    def test_decode_unknown_high_characters(self):
+        """Test decode with non-ascii characters in an unknown encoding."""
+        with self.expectedLog(
+            'Treating unknown encoding "booga" as latin-1.'):
+            result = MessageSet.decode(self.high_characters, 'booga')
+        self.assertEqual(self.high_characters.decode('latin-1'), result)
 
 
 class TestMessageJob(TestCaseWithFactory):

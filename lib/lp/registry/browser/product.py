@@ -90,10 +90,6 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -198,6 +194,10 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry

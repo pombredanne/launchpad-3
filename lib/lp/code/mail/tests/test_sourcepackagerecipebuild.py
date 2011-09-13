@@ -6,7 +6,6 @@ __metaclass__ = type
 
 
 from datetime import timedelta
-from unittest import TestLoader
 
 from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy
@@ -126,7 +125,3 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         upload_log_fragment = 'Upload Log: %s' % build.upload_log_url
         ctrl = self.makeStatusEmail(build)
         self.assertTrue(upload_log_fragment in ctrl.body)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

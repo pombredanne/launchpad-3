@@ -5,9 +5,11 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
+import lp.codehosting # For plugins
 
-from bzrlib.branch import BranchFormat as BzrBranchFormat
+from bzrlib.branch import (
+    format_registry as branch_format_registry,
+    )
 from bzrlib.bzrdir import BzrProber
 from bzrlib.repository import format_registry as repo_format_registry
 
@@ -28,10 +30,10 @@ class TestFormatSupport(TestCase):
     """
 
     def test_control_format_complement(self):
-        self.bzrlib_is_subset(BzrProber._formats.keys(), ControlFormat)
+        self.bzrlib_is_subset(BzrProber.formats.keys(), ControlFormat)
 
     def test_branch_format_complement(self):
-        self.bzrlib_is_subset(BzrBranchFormat._formats.keys(), BranchFormat)
+        self.bzrlib_is_subset(branch_format_registry.keys(), BranchFormat)
 
     def test_repository_format_complement(self):
         self.bzrlib_is_subset(repo_format_registry.keys(), RepositoryFormat)
@@ -60,7 +62,3 @@ class TestFormatSupport(TestCase):
                 description = description[:-1]
             self.assertTrue(len(description.split('\n')) == 1,
                             item.description)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

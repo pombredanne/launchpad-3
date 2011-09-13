@@ -4,9 +4,6 @@
 """Test for links between branches and bugs or specs."""
 
 __metaclass__ = type
-__all__ = []
-
-import unittest
 
 import transaction
 import windmill
@@ -123,7 +120,3 @@ class TestBranchLinks(WindmillTestCase):
         for (href, title) in invalid_links.items():
             self.assertEqual(title, result_invalid_links[href])
         self.assertEqual(set(valid_links), set(result_valid_links))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

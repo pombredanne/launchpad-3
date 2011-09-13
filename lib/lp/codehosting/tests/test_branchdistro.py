@@ -15,7 +15,6 @@ from subprocess import (
     STDOUT,
     )
 import textwrap
-import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
@@ -643,7 +642,3 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertEqual(
             textwrap.dedent(expected), output)
         self.assertEqual(1, returncode)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

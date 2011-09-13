@@ -362,9 +362,3 @@ class UpdateTranslationStatsTest(unittest.TestCase):
         self.failUnlessEqual(
             None, english_dsl, 'The English DistroSeriesLangauge must '
             'not exist.')
-
-
-def test_suite():
-    """Return this module's test suite."""
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

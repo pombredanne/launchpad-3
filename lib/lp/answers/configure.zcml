@@ -101,7 +101,7 @@
                     subscriptions isSubscribed getRecipients
                     direct_recipients indirect_recipients
                     getDirectSubscribers getIndirectSubscribers
-                    getDirectSubscribersWithDetails removeAnswerContact"
+                    getDirectSubscribersWithDetails"
       />
     <require
       permission="launchpad.Owner"

@@ -3,8 +3,6 @@
 
 """Tests for branch traversal."""
 
-import unittest
-
 from lazr.restful.testing.webservice import FakeRequest
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
@@ -159,7 +157,3 @@ class TestPersonProductBranchTraversal(TestCaseWithFactory):
         # NotFound is raised if the branch name doesn't exist.
         branch_name = self.factory.getUniqueString()
         self.assertRaises(NotFound, self.traverse, [branch_name])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

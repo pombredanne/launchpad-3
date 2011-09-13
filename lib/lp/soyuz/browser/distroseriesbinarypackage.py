@@ -10,6 +10,8 @@ __all__ = [
     'DistroSeriesBinaryPackageView',
     ]
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     LaunchpadView,
@@ -17,7 +19,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.lazr.utils import smartquote
 from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
     )

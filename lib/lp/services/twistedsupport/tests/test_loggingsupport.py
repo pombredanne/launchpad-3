@@ -51,7 +51,6 @@ class LoggingSupportTests(TestCase):
             [error_reports]
             oops_prefix: O
             error_dir: %s
-            copy_to_zlog: False
             """ % self.temp_dir))
         globalErrorUtility.configure()
         self.log_stream = StringIO.StringIO()
@@ -79,8 +78,8 @@ class LoggingSupportTests(TestCase):
         fail = makeFailure(RuntimeError)
         log.err(fail, error_time=error_time)
         flush_logged_errors(RuntimeError)
-        oops = globalErrorUtility.getOopsReport(error_time)
-        self.assertEqual(oops.type, 'RuntimeError')
+        oops = self.oopses[-1]
+        self.assertEqual(oops['type'], 'RuntimeError')
         self.assertLogMatches('^Logged OOPS id.*')
 
 

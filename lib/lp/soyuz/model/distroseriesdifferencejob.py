@@ -112,6 +112,10 @@ def create_multiple_jobs(derived_series, parent_series):
         SourcePackagePublishingHistory.distroseries == derived_series.id,
         SourcePackagePublishingHistory.status.is_in(active_publishing_status))
     nb_jobs = source_package_releases.count()
+
+    if nb_jobs == 0:
+        return []
+
     sourcepackagenames = source_package_releases.values(
         SourcePackageRelease.sourcepackagenameID)
     job_ids = Job.createMultiple(store, nb_jobs)
@@ -195,13 +199,16 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
+
         # -backports and -proposed are not really part of a standard
         # distribution's packages so we're ignoring them here.  They can
         # always be manually synced by the users if necessary, in the
         # rare occasions that they require them.
-        if pocket in (
+        ignored_pockets = [
             PackagePublishingPocket.BACKPORTS,
-            PackagePublishingPocket.PROPOSED):
+            PackagePublishingPocket.PROPOSED,
+            ]
+        if pocket in ignored_pockets:
             return
 
         # Create jobs for DSDs between the derived_series' parents and
@@ -219,6 +226,18 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
                 if may_require_job(child, sourcepackagename, derived_series)]
 
         return parent_series_jobs + derived_series_jobs
+
+    @classmethod
+    def createForSPPHs(cls, spphs):
+        """See `IDistroSeriesDifferenceJobSource`."""
+        # XXX JeroenVermeulen 2011-08-25, bug=834499: This won't do for
+        # some of the mass deletions we're planning to support.
+        # Optimize.
+        for spph in spphs:
+            if spph.archive.is_main:
+                cls.createForPackagePublication(
+                    spph.distroseries,
+                    spph.sourcepackagerelease.sourcepackagename, spph.pocket)
 
     @classmethod
     def massCreateForSeries(cls, derived_series):

@@ -439,7 +439,3 @@ class TestPackageRemover(unittest.TestCase):
         remover = self.getRemover()
         remover.args = []
         self.assertRaises(SoyuzScriptError, remover.mainTask)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

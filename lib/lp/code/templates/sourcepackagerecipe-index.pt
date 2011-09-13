@@ -20,7 +20,8 @@
     div#edit-description.yui3-editable_text-content {
       margin-top: -15px;
     }
-    .build-informational {
+    .build-informational,
+    .build-error {
         background: #d4e8ff url('/+icing/blue-fade-to-grey');
         border: solid #666;
         border-width: 1px 2px 2px 1px;
@@ -31,6 +32,10 @@
     .build-informational::before {
         padding-right: 5px;
         content: url('/@@/info');
+    }
+    .build-error::before {
+        padding-right: 5px;
+        content: url('/@@/error');
     }
     .popup-build-informational {
         color: black;

@@ -8,12 +8,13 @@ __all__ = [
     'DistroArchSeriesBinaryPackageView',
     ]
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     GetitemNavigation,
     LaunchpadView,
     )
-from canonical.lazr.utils import smartquote
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
     IDistroArchSeriesBinaryPackage,
     )

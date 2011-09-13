@@ -5,11 +5,10 @@
 
 import logging
 import StringIO
-import unittest
 import urlparse
 
+from lazr.restful.utils import safe_hasattr
 
-from canonical.lazr.utils import safe_hasattr
 from canonical.testing import reset_logging
 from lp.registry.scripts.productreleasefinder.walker import WalkerBase
 from lp.testing import TestCase
@@ -506,7 +505,3 @@ class Walker_CombineUrl(TestCase):
                           "file:///subdir/file")
         self.assertEquals(combine_url("file:///base", "/subdir", "file"),
                           "file:///subdir/file")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

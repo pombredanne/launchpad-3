@@ -30,16 +30,16 @@ class BinaryPackageReleaseContents(Storm):
     """See `IBinaryPackageReleaseContents`."""
     implements(IBinaryPackageReleaseContents)
     __storm_table__ = 'BinaryPackageReleaseContents'
-    __storm_primary__ = ("binarypackagerelease_id", "binaypackagepath_id")
+    __storm_primary__ = ("binarypackagerelease_id", "binarypackagepath_id")
 
     binarypackagerelease_id = Int(
         name='binarypackagerelease', allow_none=False)
     binarypackagerelease = Reference(
         binarypackagerelease_id, 'BinaryPackageRelease.id')
 
-    binaypackagepath_id = Int(name='binarypackagepath', allow_none=False)
+    binarypackagepath_id = Int(name='binarypackagepath', allow_none=False)
     binarypackagepath = Reference(
-        binaypackagepath_id, 'BinaryPackagePath.id')
+        binarypackagepath_id, 'BinaryPackagePath.id')
 
     def add(self, bpr):
         """See `IBinaryPackageReleaseContentsSet`."""

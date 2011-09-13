@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from psycopg2 import IntegrityError
 from storm.locals import (
     Int,
@@ -125,7 +123,3 @@ class TestSugar(TestCase):
         obj2 = ReferencingObjectWithName(foo=obj1)
         self.assertEqual(obj1, obj2.foo)
         self.assertEqual(obj1.id, obj2._foo_id)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

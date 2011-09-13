@@ -775,10 +775,11 @@
         permission="zope.Public"
         template="../templates/announcements-all.pt"/>
     <browser:page
-        for="*"
+        for="lp.registry.interfaces.announcement.IAnnouncement"
         name="+announcement-macros"
         permission="zope.Public"
-        template="../templates/announcement-macros.pt" />
+        template="../templates/announcement-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.announcement.IAnnouncement"
@@ -942,7 +943,8 @@
             for="*"
             name="+person-macros"
             permission="zope.Public"
-            template="../templates/person-macros.pt"/>
+            template="../templates/person-macros.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
@@ -1334,7 +1336,8 @@
         for="*"
         name="+milestone-macros"
         permission="zope.Public"
-        template="../templates/milestone-macros.pt"/>
+        template="../templates/milestone-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:pages
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneView"
@@ -2239,7 +2242,8 @@
         for="*"
         name="+distributionmirror-macros"
         permission="zope.Public"
-        template="../templates/distributionmirror-macros.pt" />
+        template="../templates/distributionmirror-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
         permission="zope.Public"
@@ -2307,6 +2311,7 @@
         name="+timeline-macros"
         template="../templates/timeline-macros.pt"
         permission="zope.Public"
+        class="lp.app.browser.launchpad.Macro"
         />
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

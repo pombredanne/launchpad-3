@@ -192,9 +192,9 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual(JobStatus.FAILED, job_1.job.status)
         self.assertEqual(JobStatus.COMPLETED, job_2.job.status)
         oops = self.oopses[-1]
-        self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
-        self.assertEqual(1, len(oops.req_vars))
-        self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
+        self.assertIn('Fake exception.  Foobar, I say!', oops['tb_text'])
+        self.assertEqual(1, len(oops['req_vars']))
+        self.assertEqual("{'foo': 'bar'}", oops['req_vars'][0][1])
 
     def test_oops_messages_used_when_handling(self):
         """Oops messages should appear even when exceptions are handled."""
@@ -205,13 +205,13 @@ class TestJobRunner(TestCaseWithFactory):
             try:
                 raise ValueError('Fake exception.  Foobar, I say!')
             except ValueError:
-                reporter.handling(sys.exc_info())
+                reporter.raising(sys.exc_info())
         job_1.run = handleError
         runner = JobRunner([job_1, job_2])
         runner.runAll()
         oops = self.oopses[-1]
-        self.assertEqual(1, len(oops.req_vars))
-        self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
+        self.assertEqual(1, len(oops['req_vars']))
+        self.assertEqual("{'foo': 'bar'}", oops['req_vars'][0][1])
 
     def test_runAll_aborts_transaction_on_error(self):
         """runAll should abort the transaction on oops."""
@@ -249,7 +249,7 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertIn(
             'Launchpad encountered an internal error during the following'
             ' operation: appending a string to a list.  It was logged with id'
-            ' %s.  Sorry for the inconvenience.' % oops.id,
+            ' %s.  Sorry for the inconvenience.' % oops['id'],
             notification.get_payload(decode=True))
         self.assertNotIn('Fake exception.  Foobar, I say!',
                          notification.get_payload(decode=True))
@@ -538,6 +538,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertThat(logger.getLogBuffer(), MatchesRegex(
             dedent("""\
             INFO Running through Twisted.
+            INFO Running StuckJob \(ID .*\).
+            INFO Running StuckJob \(ID .*\).
             INFO Job resulted in OOPS: .*
             """)))
 
@@ -558,13 +560,16 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         oops = self.getOopsReport(runner, 0)
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
-        self.assertEqual(
-            (dedent("""\
-             INFO Running through Twisted.
-             INFO Job resulted in OOPS: %s
-             """) % oops.id,
-             'TimeoutError', 'Job ran too long.'),
-            (logger.getLogBuffer(), oops.type, oops.value))
+        self.assertThat(
+            logger.getLogBuffer(), MatchesRegex(
+                dedent("""\
+                INFO Running through Twisted.
+                INFO Running ShorterStuckJob \(ID .*\).
+                INFO Running ShorterStuckJob \(ID .*\).
+                INFO Job resulted in OOPS: %s
+                """) % oops.id))
+        self.assertEqual(('TimeoutError', 'Job ran too long.'),
+                         (oops.type, oops.value))
 
     def test_previous_failure_gives_new_process(self):
         """Failed jobs cause their worker to be terminated.
@@ -641,3 +646,23 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             cronscript.main()
         finally:
             errorlog.globalErrorUtility = old_errorlog
+
+    def test_log_twisted_option_for_twisted_runner(self):
+        """TwistedJobRunner creates --log-twisted flag."""
+        jcs = JobCronScript(TwistedJobRunner, test_args=[])
+        self.assertIsNot(None, getattr(jcs.options, 'log_twisted', None))
+
+    def test_no_log_twisted_option_for_plain_runner(self):
+        """JobRunner has no --log-twisted flag."""
+        jcs = JobCronScript(JobRunner, test_args=[])
+        self.assertIs(None, getattr(jcs.options, 'log_twisted', None))
+
+    def test_log_twisted_flag(self):
+        """--log-twisted sets JobCronScript.log_twisted True."""
+        jcs = JobCronScript(TwistedJobRunner, test_args=['--log-twisted'])
+        self.assertTrue(jcs.log_twisted)
+
+    def test_no_log_twisted_flag(self):
+        """No --log-twisted sets JobCronScript.log_twisted False."""
+        jcs = JobCronScript(TwistedJobRunner, test_args=[])
+        self.assertFalse(jcs.log_twisted)

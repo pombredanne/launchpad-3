@@ -1,9 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Server classes that know how to create various kinds of foreign archive."""
 
 __all__ = [
+    'BzrServer',
     'CVSServer',
     'GitServer',
     'MercurialServer',
@@ -13,14 +14,23 @@ __all__ = [
 __metaclass__ = type
 
 from cStringIO import StringIO
+import errno
 import os
 import shutil
 import signal
 import stat
 import subprocess
 import tempfile
+import threading
 import time
 
+from bzrlib.branch import Branch
+from bzrlib.branchbuilder import BranchBuilder
+from bzrlib.bzrdir import BzrDir
+from bzrlib.tests.test_server import (
+    ReadonlySmartTCPServer_for_testing,
+    TestServer,
+    )
 from bzrlib.tests.treeshape import build_tree_contents
 from bzrlib.transport import Server
 from bzrlib.urlutils import (
@@ -31,8 +41,18 @@ import CVS
 import dulwich.index
 from dulwich.objects import Blob
 from dulwich.repo import Repo as GitRepo
+from dulwich.server import (
+    DictBackend,
+    TCPGitServer,
+    )
+from mercurial.hgweb import (
+    hgweb,
+    server as hgweb_server,
+    )
+from mercurial.localrepo import localrepository
+from mercurial.ui import ui as hg_ui
 import subvertpy.ra
-import svn_oo
+import subvertpy.repos
 
 from lp.services.log.logger import BufferLogger
 
@@ -83,7 +103,7 @@ class SubversionServer(Server):
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        svn_oo.Repository.Create(path, BufferLogger())
+        subvertpy.repos.create(path)
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
@@ -98,31 +118,35 @@ class SubversionServer(Server):
         if self._use_svn_serve:
             conf_path = os.path.join(
                 self.repository_path, 'conf/svnserve.conf')
-            with open(conf_path , 'w') as conf_file:
+            with open(conf_path, 'w') as conf_file:
                 conf_file.write('[general]\nanon-access = write\n')
             self._svnserve = subprocess.Popen(
-                ['svnserve', '--daemon', '--foreground', '--root',
-                 self.repository_path])
+                ['svnserve', '--daemon', '--foreground', '--threads',
+                 '--root', self.repository_path])
             delay = 0.1
             for i in range(10):
                 try:
-                    ra = self._get_ra(self.get_url())
-                except subvertpy.SubversionException, e:
-                    if 'Connection refused' in str(e):
+                    self._get_ra(self.get_url())
+                except OSError, e:
+                    if e.errno == errno.ECONNREFUSED:
                         time.sleep(delay)
                         delay *= 1.5
                         continue
                 else:
                     break
             else:
+                self._kill_svnserve()
                 raise AssertionError(
                     "svnserve didn't start accepting connections")
+
+    def _kill_svnserve(self):
+        os.kill(self._svnserve.pid, signal.SIGINT)
+        self._svnserve.communicate()
 
     def stop_server(self):
         super(SubversionServer, self).stop_server()
         if self._use_svn_serve:
-            os.kill(self._svnserve.pid, signal.SIGINT)
-            self._svnserve.communicate()
+            self._kill_svnserve()
 
     def makeBranch(self, branch_name, tree_contents):
         """Create a branch on the Subversion server called `branch_name`.
@@ -204,45 +228,183 @@ class CVSServer(Server):
         self._repository = self.createRepository(self._repository_path)
 
 
+class TCPGitServerThread(threading.Thread):
+    """Thread that runs a TCP Git server."""
+
+    def __init__(self, backend, address, port=None):
+        super(TCPGitServerThread, self).__init__()
+        self.setName("TCP Git server on %s:%s" % (address, port))
+        self.server = TCPGitServer(backend, address, port)
+
+    def run(self):
+        self.server.serve_forever()
+
+    def get_address(self):
+        return self.server.server_address
+
+    def stop(self):
+        self.server.shutdown()
+
+
 class GitServer(Server):
 
-    def __init__(self, repo_url):
+    def __init__(self, repository_path, use_server=False):
         super(GitServer, self).__init__()
-        self.repo_url = repo_url
+        self.repository_path = repository_path
+        self._use_server = use_server
+
+    def get_url(self):
+        """Return a URL to the Git repository."""
+        if self._use_server:
+            return 'git://%s:%d/' % self._server.get_address()
+        else:
+            return local_path_to_url(self.repository_path)
+
+    def createRepository(self, path):
+        GitRepo.init(path)
+
+    def start_server(self):
+        super(GitServer, self).start_server()
+        self.createRepository(self.repository_path)
+        if self._use_server:
+            repo = GitRepo(self.repository_path)
+            self._server = TCPGitServerThread(
+                DictBackend({"/": repo}), "localhost", 0)
+            self._server.start()
+
+    def stop_server(self):
+        super(GitServer, self).stop_server()
+        if self._use_server:
+            self._server.stop()
 
     def makeRepo(self, tree_contents):
-        wd = os.getcwd()
-        try:
-            os.chdir(self.repo_url)
-            repo = GitRepo.init(".")
-            blobs = [
-                (Blob.from_string(contents), filename) for (filename, contents)
-                in tree_contents]
-            repo.object_store.add_objects(blobs)
-            root_id = dulwich.index.commit_tree(repo.object_store, [
-                (filename, b.id, stat.S_IFREG | 0644)
-                for (b, filename) in blobs])
-            repo.do_commit(committer='Joe Foo <joe@foo.com>',
-                message=u'<The commit message>', tree=root_id)
-        finally:
-            os.chdir(wd)
+        repo = GitRepo(self.repository_path)
+        blobs = [
+            (Blob.from_string(contents), filename) for (filename, contents)
+            in tree_contents]
+        repo.object_store.add_objects(blobs)
+        root_id = dulwich.index.commit_tree(repo.object_store, [
+            (filename, b.id, stat.S_IFREG | 0644)
+            for (b, filename) in blobs])
+        repo.do_commit(committer='Joe Foo <joe@foo.com>',
+            message=u'<The commit message>', tree=root_id)
+
+
+class MercurialServerThread(threading.Thread):
+    """A thread which runs a Mercurial http server."""
+
+    def __init__(self, path, address, port=0):
+        super(MercurialServerThread, self).__init__()
+        self.ui = hg_ui()
+        self.ui.setconfig("web", "address", address)
+        self.ui.setconfig("web", "port", port)
+        self.app = hgweb(path, baseui=self.ui)
+        self.httpd = hgweb_server.create_server(self.ui, self.app)
+        # By default the Mercurial server output goes to stdout,
+        # redirect it to prevent a lot of spurious output.
+        self.httpd.errorlog = StringIO()
+        self.httpd.accesslog = StringIO()
+
+    def get_address(self):
+        return (self.httpd.addr, self.httpd.port)
+
+    def run(self):
+        self.httpd.serve_forever()
+
+    def stop(self):
+        self.httpd.shutdown()
 
 
 class MercurialServer(Server):
 
-    def __init__(self, repo_url):
+    def __init__(self, repository_path, use_server=False):
         super(MercurialServer, self).__init__()
-        self.repo_url = repo_url
+        self.repository_path = repository_path
+        self._use_server = use_server
+
+    def get_url(self):
+        if self._use_server:
+            return "http://%s:%d/" % self._hgserver.get_address()
+        else:
+            return local_path_to_url(self.repository_path)
+
+    def start_server(self):
+        super(MercurialServer, self).start_server()
+        self.createRepository(self.repository_path)
+        if self._use_server:
+            self._hgserver = MercurialServerThread(self.repository_path,
+                "localhost")
+            self._hgserver.start()
+
+    def stop_server(self):
+        super(MercurialServer, self).stop_server()
+        if self._use_server:
+            self._hgserver.stop()
+
+    def createRepository(self, path):
+        localrepository(hg_ui(), self.repository_path, create=1)
 
     def makeRepo(self, tree_contents):
-        from mercurial.ui import ui
-        from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), self.repo_url, create=1)
+        repo = localrepository(hg_ui(), self.repository_path)
         for filename, contents in tree_contents:
-            f = open(os.path.join(self.repo_url, filename), 'w')
+            f = open(os.path.join(self.repository_path, filename), 'w')
             try:
                 f.write(contents)
             finally:
                 f.close()
             repo[None].add([filename])
-        repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')
+        repo.commit(
+            text='<The commit message>', user='jane Foo <joe@foo.com>')
+
+
+class BzrServer(Server):
+
+    def __init__(self, repository_path, use_server=False):
+        super(BzrServer, self).__init__()
+        self.repository_path = repository_path
+        self._use_server = use_server
+
+    def createRepository(self, path):
+        BzrDir.create_branch_convenience(path)
+
+    def makeRepo(self, tree_contents):
+        branch = Branch.open(self.repository_path)
+        branch.get_config().set_user_option("create_signatures", "never")
+        builder = BranchBuilder(branch=branch)
+        actions = [('add', ('', 'tree-root', 'directory', None))]
+        actions += [
+            ('add', (path, path + '-id', 'file', content))
+            for (path, content) in tree_contents]
+        builder.build_snapshot(
+            None, None, actions, committer='Joe Foo <joe@foo.com>',
+                message=u'<The commit message>')
+
+    def get_url(self):
+        if self._use_server:
+            return self._bzrserver.get_url()
+        else:
+            return local_path_to_url(self.repository_path)
+
+    def start_server(self):
+        super(BzrServer, self).start_server()
+        self.createRepository(self.repository_path)
+
+        class LocalURLServer(TestServer):
+            def __init__(self, repository_path):
+                self.repository_path = repository_path
+
+            def start_server(self):
+                pass
+
+            def get_url(self):
+                return local_path_to_url(self.repository_path)
+
+        if self._use_server:
+            self._bzrserver = ReadonlySmartTCPServer_for_testing()
+            self._bzrserver.start_server(
+                LocalURLServer(self.repository_path))
+
+    def stop_server(self):
+        super(BzrServer, self).stop_server()
+        if self._use_server:
+            self._bzrserver.stop_server()

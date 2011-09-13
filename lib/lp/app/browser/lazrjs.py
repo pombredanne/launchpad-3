@@ -18,6 +18,12 @@ __all__ = [
 
 import simplejson
 
+from lazr.enum import IEnumeratedType
+from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+from lazr.restful.utils import (
+    get_current_browser_request,
+    safe_hasattr,
+    )
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.checker import canAccess, canWrite
@@ -26,11 +32,6 @@ from zope.schema.interfaces import (
     IVocabulary,
     )
 from zope.schema.vocabulary import getVocabularyRegistry
-
-from lazr.enum import IEnumeratedType
-from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
-from canonical.lazr.utils import get_current_browser_request
-from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -306,7 +307,8 @@ class InlineEditPickerWidget(WidgetBase):
             selected_value=self.selected_value,
             selected_value_metadata=self.selected_value_metadata,
             null_display_value=self.null_display_value,
-            show_search_box=self.show_search_box)
+            show_search_box=self.show_search_box,
+            vocabulary_filters=self.vocabulary_filters)
 
     @property
     def json_config(self):
@@ -317,6 +319,27 @@ class InlineEditPickerWidget(WidgetBase):
         registry = getVocabularyRegistry()
         return registry.get(
             IVocabulary, self.exported_field.vocabularyName)
+
+    @cachedproperty
+    def vocabulary_filters(self):
+        # Only IHugeVocabulary's have filters.
+        if not IHugeVocabulary.providedBy(self.vocabulary):
+            return []
+        supported_filters = self.vocabulary.supportedFilters()
+        # If we have no filters or just the ALL filter, then no filtering
+        # support is required.
+        filters = []
+        if (len(supported_filters) == 0 or
+           (len(supported_filters) == 1
+            and supported_filters[0].name == 'ALL')):
+            return filters
+        for filter in supported_filters:
+            filters.append({
+                'name': filter.name,
+                'title': filter.title,
+                'description': filter.description,
+                })
+        return filters
 
     @property
     def show_search_box(self):

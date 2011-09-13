@@ -3,7 +3,7 @@ Sending Mail
 
 simple_mail can be used to send mail easily:
 
-    >>> from canonical.launchpad.mail import simple_sendmail
+    >>> from lp.services.mail.sendmail import simple_sendmail
     >>> msgid = simple_sendmail(
     ...     from_addr='foo.bar@canonical.com',
     ...     to_addrs='test@canonical.com',
@@ -39,7 +39,7 @@ simple_sendmail, except that it expects a person instead of an address.
 simple_sendmail_from_person has the advantage that it makes sure that
 the person's name is encoded properly.
 
-    >>> from canonical.launchpad.mail import simple_sendmail_from_person
+    >>> from lp.services.mail.sendmail import simple_sendmail_from_person
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> msgid = simple_sendmail_from_person(
@@ -65,7 +65,8 @@ the person's name is encoded properly.
 simple_sendmail_from_person uses the Person's preferred email address:
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> testing  = getUtility(IEmailAddressSet).getByEmail(
@@ -256,7 +257,7 @@ simple_sendmail creates a Message instance, and sends it via another
 function, sendmail. sendmail() can also be used directly if you want to
 send more complicated emails, like emails with attachments.
 
-    >>> from canonical.launchpad.mail import sendmail
+    >>> from lp.services.mail.sendmail import sendmail
 
 Let's send a mail using that function. We only create a simple message
 to test with, though.
@@ -340,4 +341,3 @@ contain any line breaks.
     >>> sorted(to_addrs)
     ['CC Address <cc.address@example.com>',
      'To Address <to.address@example.com>']
-     

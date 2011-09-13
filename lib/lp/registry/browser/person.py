@@ -99,6 +99,7 @@ from lazr.config import as_timedelta
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 from storm.expr import Join
@@ -193,7 +194,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -309,7 +309,6 @@ from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
     )
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
-from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -2199,6 +2198,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
     page_title = 'Assigned bugs'
+    view_name = '+assignedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
@@ -2220,7 +2220,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the assignee widget be shown on the advanced search page?"""
         return False
 
-    def shouldShowAssignedToTeamPortlet(self):
+    def shouldShowTeamPortlet(self):
         """Should the team assigned bugs portlet be shown?"""
         return True
 
@@ -2345,6 +2345,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
     page_title = 'Subscribed bugs'
+    view_name = '+subscribedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
@@ -2361,6 +2362,10 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         sup = super(PersonSubscribedBugTaskSearchListingView, self)
         return sup.searchUnbatched(
             searchtext, context, extra_params, prejoins)
+
+    def shouldShowTeamPortlet(self):
+        """Should the team subscribed bugs portlet be shown?"""
+        return True
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -3202,6 +3207,12 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
 
         return False
 
+    @property
+    def time_zone_offset(self):
+        """Return a string with offset from UTC"""
+        return datetime.now(
+            pytz.timezone(self.context.time_zone)).strftime("%z")
+
 
 class PersonParticipationView(LaunchpadView):
     """View for the ~person/+participation page."""
@@ -3990,9 +4001,7 @@ class PersonEditView(BasePersonEditView):
         new_name = data.get('name')
         bypass_check = self.request.form_ng.getOne(
             'i_know_this_is_an_openid_security_issue', 0)
-        if (new_name and new_name != self.context.name and
-            len(self.unknown_trust_roots_user_logged_in) > 0
-            and not bypass_check):
+        if (new_name and new_name != self.context.name and not bypass_check):
             # Warn the user that they might shoot themselves in the foot.
             self.setFieldError('name', structured(dedent('''
             <div class="inline-warning">
@@ -4005,34 +4014,15 @@ class PersonEditView(BasePersonEditView):
                     >https://help.launchpad.net/OpenID#rename-account</a>
                   for more information.
               </p>
-              <p> You may have used your identifier on the following
-                  sites:<br> %s.
-              </p>
               <p>If you click 'Save' again, we will rename your account
                  anyway.
               </p>
-            </div>'''),
-             ", ".join(self.unknown_trust_roots_user_logged_in)))
+            </div>'''),))
             self.i_know_this_is_an_openid_security_issue_input = dedent("""\
                 <input type="hidden"
                        id="i_know_this_is_an_openid_security_issue"
                        name="i_know_this_is_an_openid_security_issue"
                        value="1">""")
-
-    @cachedproperty
-    def unknown_trust_roots_user_logged_in(self):
-        """The unknown trust roots the user has logged in using OpenID.
-
-        We assume that they logged in using their delegated profile OpenID,
-        since that's the one we advertise.
-        """
-        identifier = IOpenIDPersistentIdentity(self.context)
-        unknown_trust_root_login_records = list(
-            getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                identifier.openid_identity_url, True))
-        return sorted([
-            record.trust_root
-            for record in unknown_trust_root_login_records])
 
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):

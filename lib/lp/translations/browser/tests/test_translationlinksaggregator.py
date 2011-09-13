@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
@@ -264,7 +262,3 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
 
         expected = [(package, canonical_url(package), pofiles)]
         self.assertEqual(expected, descriptions)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

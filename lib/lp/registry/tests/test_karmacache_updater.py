@@ -103,8 +103,3 @@ class TestKarmaCacheUpdater(unittest.TestCase):
 
         # And finally, ensure that No Priv got some new KarmaCache entries.
         self.failUnless(self._getCacheEntriesByPerson(nopriv).count() > 0)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

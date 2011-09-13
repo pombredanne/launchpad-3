@@ -14,7 +14,6 @@ from datetime import datetime
 import logging
 import os
 from textwrap import dedent
-from unittest import TestLoader
 
 import pytz
 
@@ -926,7 +925,7 @@ invalid line
         All "method substitutes" return a valid result.
         """
 
-        def __init__(self, logger=None):
+        def __init__(self, logger=None, record_warnings=True):
             super(self.__class__, self).__init__(logger)
             self.hal_result = 'parsed HAL data'
             self.processors_result = 'parsed processor data'
@@ -983,6 +982,33 @@ invalid line
             'udev': 'parsed udev data',
             'dmi': 'parsed DMI data',
             'sysfs-attributes': 'parsed sysfs data',
+            },
+            result,
+            'Invalid parsing result for <hardware>')
+
+    def testHardware_no_sysfs_node(self):
+        """If teh <sysfs-attributes> node is missing, parseHardware()
+        returns a dicitionary where the entry for this node is None.
+        """
+        parser = self.MockSubmissionParserParseHardwareTest(self.log)
+
+        node = etree.fromstring("""
+            <hardware>
+                <hal/>
+                <processors/>
+                <aliases/>
+                <udev/>
+                <dmi/>
+            </hardware>
+            """)
+        result = parser._parseHardware(node)
+        self.assertEqual({
+            'hal': 'parsed HAL data',
+            'processors': 'parsed processor data',
+            'aliases': 'parsed alias data',
+            'udev': 'parsed udev data',
+            'dmi': 'parsed DMI data',
+            'sysfs-attributes': None,
             },
             result,
             'Invalid parsing result for <hardware>')
@@ -1320,7 +1346,7 @@ invalid line
         All "method substitutes" return a valid result.
         """
 
-        def __init__(self, logger=None):
+        def __init__(self, logger=None, record_warnings=True):
             SubmissionParser.__init__(self, logger)
             self.summary_result = 'parsed summary'
             self.hardware_result = 'parsed hardware'
@@ -2163,6 +2189,17 @@ invalid line
             parser.checkUdevScsiProperties(
                 [self.udev_root_device, self.udev_scsi_device], sysfs_data))
 
+    def testCheckUdevScsiProperties_data_is_none(self):
+        """Test of SubmissionParser.checkUdevScsiProperties().
+
+        checkUdevScsiProperties() even if no sysfs properties are
+        available.
+        """
+        parser = SubmissionParser()
+        self.assertTrue(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], None))
+
     def testCheckUdevScsiProperties_missing_devtype(self):
         """Test of SubmissionParser.checkUdevScsiProperties().
 
@@ -2576,7 +2613,3 @@ invalid line
             'Consistency check detects circular parent-child relationships',
             "Found HAL devices with circular parent/child "
                 "relationship: ['/foo', '/bar']")
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
