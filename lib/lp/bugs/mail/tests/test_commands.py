@@ -15,6 +15,7 @@ from lp.bugs.mail.commands import (
     BugEmailCommand,
     PrivateEmailCommand,
     SecurityEmailCommand,
+    SubscribeEmailCommand,
     )
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
@@ -218,11 +219,11 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(title='bug title', owner=user)
         command = PrivateEmailCommand('private', ['yes'])
-        fake_event = object()
-        params, event = command.execute(bug_params, fake_event())
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event())
         self.assertEqual(bug_params, params)
         self.assertEqual(True, bug_params.private)
-        self.assertEqual(fake_event, event)
+        self.assertEqual(dummy_event, event)
 
 
 class SecurityEmailCommandTestCase(TestCaseWithFactory):
@@ -243,8 +244,64 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(title='bug title', owner=user)
         command = SecurityEmailCommand('security', ['yes'])
-        fake_event = object()
-        params, event = command.execute(bug_params, fake_event)
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(True, bug_params.security_related)
-        self.assertEqual(fake_event, event)
+        self.assertEqual(dummy_event, event)
+
+
+class SubscribeEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug_with_user_name(self):
+        bug = self.factory.makeBug()
+        login_person(bug.bugtasks[0].target.owner)
+        subscriber = self.factory.makePerson()
+        command = SubscribeEmailCommand('subscribe', [subscriber.name])
+        dummy_event = object()
+        exec_bug, event = command.execute(bug, dummy_event)
+        self.assertEqual(bug, exec_bug)
+        self.assertContentEqual(
+            [bug.owner, subscriber], bug.getDirectSubscribers())
+        self.assertEqual(dummy_event, event)
+
+    def test_execute_bug_without_user_name(self):
+        bug = self.factory.makeBug()
+        target_owner = bug.bugtasks[0].target.owner
+        login_person(target_owner)
+        command = SubscribeEmailCommand('subscribe', [])
+        dummy_event = object()
+        exec_bug, event = command.execute(bug, dummy_event)
+        self.assertEqual(bug, exec_bug)
+        self.assertContentEqual(
+            [bug.owner, target_owner], bug.getDirectSubscribers())
+        self.assertEqual(dummy_event, event)
+
+    def test_execute_bug_params_one_subscriber(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        subscriber = self.factory.makePerson()
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = SubscribeEmailCommand('subscribe', [subscriber.name])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
+        self.assertContentEqual([subscriber], bug_params.subscribers)
+        self.assertEqual(dummy_event, event)
+
+    def test_execute_bug_params_many_subscriber(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        subscriber_1 = self.factory.makePerson()
+        subscriber_2 = self.factory.makePerson()
+        bug_params = CreateBugParams(
+            title='bug title', owner=user, subscribers=[subscriber_1])
+        command = SubscribeEmailCommand('subscribe', [subscriber_2.name])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
+        self.assertContentEqual(
+            [subscriber_1, subscriber_2], bug_params.subscribers)
+        self.assertEqual(dummy_event, event)

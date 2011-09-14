@@ -295,7 +295,13 @@ class SubscribeEmailCommand(EmailCommand):
                     'subscribe-too-many-arguments.txt',
                     error_templates=error_templates))
 
-        # XXX sinzui 2011-09-13: work with params.
+        if isinstance(bug, CreateBugParams):
+            if len(bug.subscribers) == 0:
+                bug.subscribers = [person]
+            else:
+                bug.subscribers.append(person)
+            return bug, current_event
+
         if bug.isSubscribed(person):
             # but we still need to find the subscription
             for bugsubscription in bug.subscriptions:
