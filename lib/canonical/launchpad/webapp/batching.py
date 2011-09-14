@@ -12,6 +12,7 @@ from iso8601 import (
 import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
 from operator import isSequenceType
+import re
 import simplejson
 from storm import Undef
 from storm.expr import (
@@ -23,7 +24,10 @@ from storm.expr import (
     )
 from storm.properties import PropertyColumn
 from storm.zope.interfaces import IResultSet
-from zope.component import adapts
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
 from zope.interface.common.sequence import IFiniteSequence
 from zope.security.proxy import (
@@ -33,15 +37,23 @@ from zope.security.proxy import (
     )
 
 from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import (
+    convert_storm_clause_to_string,
+    sqlvalues,
+    )
+
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.webapp.interfaces import (
-    ITableBatchNavigator,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
     StormRangeFactoryError,
+    ITableBatchNavigator,
     )
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.propertycache import cachedproperty
 
 
 class FiniteSequenceAdapter:
@@ -559,3 +571,25 @@ class StormRangeFactory:
         """See `IRangeFactory."""
         sliced = self.resultset[start:end]
         return ShadowedList(list(sliced), list(sliced.get_plain_result_set()))
+
+    @cachedproperty
+    def rough_length(self):
+        """See `IRangeFactory."""
+        # get_select_expr() requires at least one column as a parameter.
+        # getorderBy() already knows about columns that can appear
+        # in the result set, let's take just the first one.
+        column = self.getOrderBy()[0]
+        if zope_isinstance(column, Desc):
+            column = column.expr
+        select = removeSecurityProxy(self.plain_resultset).get_select_expr(
+            column)
+        explain = 'EXPLAIN ' + convert_storm_clause_to_string(select)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        result = store.execute(explain)
+        _rows_re = re.compile("rows=(\d+)\swidth=")
+        first_line = result.get_one()[0]
+        match = _rows_re.search(first_line)
+        if match is None:
+            raise RuntimeError(
+                "Unexpected EXPLAIN output %s" % repr(first_line))
+        return int(match.group(1))
