@@ -323,6 +323,11 @@ class UnsubscribeEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
+        if isinstance(bug, CreateBugParams):
+            # Return the input because there is not yet a bug to
+            # unsubscribe too.
+            return bug, current_event
+
         string_args = list(self.string_args)
         if len(string_args) == 1:
             person = get_person_or_team(string_args.pop())
@@ -334,7 +339,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                 get_error_message(
                     'unsubscribe-too-many-arguments.txt',
                     error_templates=error_templates))
-        # XXX sinzui 2011-09-13: work with params.
+
         if bug.isSubscribed(person):
             try:
                 bug.unsubscribe(person, getUtility(ILaunchBag).user)

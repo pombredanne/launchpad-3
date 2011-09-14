@@ -16,6 +16,7 @@ from lp.bugs.mail.commands import (
     PrivateEmailCommand,
     SecurityEmailCommand,
     SubscribeEmailCommand,
+    UnsubscribeEmailCommand,
     )
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
@@ -304,4 +305,47 @@ class SubscribeEmailCommandTestCase(TestCaseWithFactory):
         self.assertEqual(bug_params, params)
         self.assertContentEqual(
             [subscriber_1, subscriber_2], bug_params.subscribers)
+        self.assertEqual(dummy_event, event)
+
+
+class UnsubscribeEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug_with_user_name(self):
+        bug = self.factory.makeBug()
+        target_owner = bug.bugtasks[0].target.owner
+        login_person(target_owner)
+        bug.subscribe(target_owner, target_owner)
+        command = UnsubscribeEmailCommand('unsubscribe', [target_owner.name])
+        dummy_event = object()
+        exec_bug, event = command.execute(bug, dummy_event)
+        self.assertEqual(bug, exec_bug)
+        self.assertContentEqual(
+            [bug.owner], bug.getDirectSubscribers())
+        self.assertEqual(dummy_event, event)
+
+    def test_execute_bug_without_user_name(self):
+        bug = self.factory.makeBug()
+        target_owner = bug.bugtasks[0].target.owner
+        login_person(target_owner)
+        bug.subscribe(target_owner, target_owner)
+        command = UnsubscribeEmailCommand('unsubscribe', [])
+        dummy_event = object()
+        exec_bug, event = command.execute(bug, dummy_event)
+        self.assertEqual(bug, exec_bug)
+        self.assertContentEqual(
+            [bug.owner], bug.getDirectSubscribers())
+        self.assertEqual(dummy_event, event)
+
+    def test_execute_bug_params(self):
+        # Unsubscribe does nothing because the is not yet a bug.
+        # Any value can be used for the user name.
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = UnsubscribeEmailCommand('unsubscribe', ['non-existant'])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
         self.assertEqual(dummy_event, event)
