@@ -62,6 +62,8 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.interfaces import IReference
+from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -94,8 +96,6 @@ from zope.security.proxy import (
     isinstance as zisinstance,
     removeSecurityProxy,
     )
-
-from lazr.restful.interfaces import IReference
 
 from canonical.database.sqlbase import (
     quote,
@@ -131,7 +131,6 @@ from canonical.launchpad.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     VocabularyFilter,
     )
-from canonical.lazr.utils import safe_hasattr
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification

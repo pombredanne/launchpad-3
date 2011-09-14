@@ -150,6 +150,7 @@ def run_gina(options, ztm, target_section):
     # XXX JeroenVermeulen 2011-09-07 bug=843728: Dominate binaries as well.
     dominate_imported_source_packages(
         log, distro, distroseries, pocket, packages_map)
+    ztm.commit()
 
     if source_only:
         log.info('Source only mode... done')
@@ -309,20 +310,44 @@ class Gina(LaunchpadCronScript):
     def __init__(self):
         super(Gina, self).__init__(name='gina', dbuser=config.gina.dbuser)
 
+    @property
+    def usage(self):
+        return "%s [options] (targets|--all)" % sys.argv[0]
+
     def add_my_options(self):
-        self.parser.add_option("-n", "--dry-run", action="store_true",
-            help="Don't commit changes to the database",
-            dest="dry_run", default=False)
         self.parser.add_option("-a", "--all", action="store_true",
             help="Run all sections defined in launchpad.conf (in order)",
             dest="all", default=False)
+        self.parser.add_option("-l", "--list-targets", action="store_true",
+            help="List configured import targets", dest="list_targets",
+            default=False)
+        self.parser.add_option("-n", "--dry-run", action="store_true",
+            help="Don't commit changes to the database",
+            dest="dry_run", default=False)
 
-    def main(self):
-        possible_targets = [target.category_and_section_names[1]
-            for target in config.getByCategory('gina_target')]
+    def getConfiguredTargets(self):
+        """Get the configured import targets.
+
+        Gina's targets are configured as "[gina_target.*]" sections in the
+        LAZR config.
+        """
+        sections = config.getByCategory('gina_target', [])
+        targets = [
+            target.category_and_section_names[1] for target in sections]
+        if len(targets) == 0:
+            self.logger.warn("No gina_target entries configured.")
+        return targets
+
+    def listTargets(self, targets):
+        """Print out the given targets list."""
+        for target in targets:
+            self.logger.info("Target: %s", target)
+
+    def getTargets(self, possible_targets):
+        """Get targets to process."""
         targets = self.args
         if self.options.all:
-            targets = possible_targets[:]
+            return list(possible_targets)
         else:
             if not targets:
                 self.parser.error(
@@ -331,8 +356,16 @@ class Gina(LaunchpadCronScript):
                 if target not in possible_targets:
                     self.parser.error(
                         "No Gina target %s in config file" % target)
+            return targets
 
-        for target in targets:
+    def main(self):
+        possible_targets = self.getConfiguredTargets()
+
+        if self.options.list_targets:
+            self.listTargets(possible_targets)
+            return
+
+        for target in self.getTargets(possible_targets):
             target_section = config['gina_target.%s' % target]
             run_gina(self.options, self.txn, target_section)
 

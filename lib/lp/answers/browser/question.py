@@ -33,6 +33,7 @@ from xml.sax.saxutils import escape
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
+from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import (
     TextAreaWidget,
@@ -77,7 +78,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import (
     QuestionAction,

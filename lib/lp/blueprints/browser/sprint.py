@@ -26,6 +26,7 @@ from collections import defaultdict
 import csv
 from StringIO import StringIO
 
+from lazr.restful.utils import smartquote
 import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -45,7 +46,6 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
