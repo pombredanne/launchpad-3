@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'transitive_branch_visibility_query',
     ]
 
 from datetime import datetime
@@ -25,22 +24,15 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm import Undef
 from storm.expr import (
-    Alias,
     And,
-    Cast,
     Count,
     Desc,
     NamedFunc,
     Not,
     Or,
     Select,
-    SQL,
-    Union,
-    With,
     )
-from storm.info import ClassAlias
 from storm.locals import (
     AutoReload,
     Int,
@@ -184,24 +176,13 @@ class Branch(SQLBase, BzrIdentityMixin):
     explicitly_private = BoolCol(
         default=False, notNull=True, dbName='private')
     # A branch is transitively private if it is private or it is stacked on a
-    # transitively private branch.
+    # transitively private branch. The value of this attribute is maintained
+    # by a database trigger.
     transitively_private = BoolCol(dbName='transitively_private')
 
     @property
     def private(self):
-        return self.explicitly_private or self._isStackedOnPrivate()
-
-    def _isStackedOnPrivate(self, checked_branches=None):
-        # Return True if any of this branch's stacked_on branches is private.
-        is_stacked_on_private = False
-        if self.stacked_on is not None:
-            checked_branches = checked_branches or []
-            checked_branches.append(self)
-            if self.stacked_on not in checked_branches:
-                is_stacked_on_private = (
-                    self.stacked_on.explicitly_private or
-                    self.stacked_on._isStackedOnPrivate(checked_branches))
-        return is_stacked_on_private
+        return self.transitively_private
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
@@ -1430,6 +1411,7 @@ def update_trigger_modified_fields(branch):
     naked_branch.unique_name = AutoReload
     naked_branch.owner_name = AutoReload
     naked_branch.target_suffix = AutoReload
+    naked_branch.transitively_private = AutoReload
 
 
 def branch_modified_subscriber(branch, event):
@@ -1440,58 +1422,3 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
-
-
-def transitive_branch_visibility_query(is_private, branch_filter=None,
-                                       extra_tables=None):
-    """Construct a query returning the ids of public or private branches.
-
-    A branch is private even if it is itself public if it is stacked on a
-    private branch - this rule is transitive so we need to use SQL
-    recursion to perform the id lookup.
-    """
-
-    # If we want public branches, we can immediately filter out those that are
-    # private from the initial query. This makes the subsequent iteration more
-    # efficient.
-    privacy_short_circuit = None
-    if not is_private:
-        privacy_short_circuit = Branch.explicitly_private == False
-    if branch_filter:
-        if isinstance(branch_filter, list):
-            if privacy_short_circuit:
-                branch_filter.append(privacy_short_circuit)
-            branch_filter = And(*branch_filter)
-    else:
-        branch_filter = privacy_short_circuit or Undef
-
-    branch_tables = [Branch]
-    if extra_tables:
-        branch_tables.extend(extra_tables)
-    StackedBranches = ClassAlias(Branch, "stacked_branches")
-    with_sql = Union(
-        Select(
-            [Branch.id,
-             Branch.stacked_onID,
-             Alias(Cast(Branch.explicitly_private, "INT"), "private")],
-            branch_filter,
-            branch_tables
-        ),
-        Select(
-            [StackedBranches.id,
-             Branch.stacked_onID,
-             Alias(
-                 Cast(Branch.explicitly_private, "INT"), "private")],
-            StackedBranches.stacked_onID == Branch.id,
-            tables=[Branch, "stacked_branches"]
-        ), all=False
-    )
-    privacy_term = SQL("Sum(private) %s 0" % ('>' if is_private else '='))
-    StackedBranches = ClassAlias(Branch, "stacked_branches")
-    return Select(
-        StackedBranches.id,
-        tables=["stacked_branches"],
-        group_by=StackedBranches.id,
-        having=privacy_term,
-        with_=With('stacked_branches', with_sql, recursive=True)
-    )

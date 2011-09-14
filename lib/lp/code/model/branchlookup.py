@@ -48,7 +48,7 @@ from lp.code.interfaces.branchlookup import (
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
-from lp.code.model.branch import Branch, transitive_branch_visibility_query
+from lp.code.model.branch import Branch
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -299,10 +299,7 @@ class BranchLookup:
         result = store.find(
             (Branch.id),
             Branch.id == branch_id,
-            Branch.id.is_in(
-                transitive_branch_visibility_query(
-                    is_private=False, branch_filter=(Branch.id == branch_id)))
-        ).one()
+            Branch.transitively_private == False).one()
         if result is None:
             return None, None
         else:
@@ -319,11 +316,7 @@ class BranchLookup:
         result = store.find(
             (Branch.id, Branch.unique_name),
             Branch.unique_name.is_in(prefixes),
-            Branch.id.is_in(
-                transitive_branch_visibility_query(
-                    is_private=False,
-                    branch_filter=Branch.unique_name.is_in(prefixes)))
-        ).one()
+            Branch.transitively_private == False).one()
         if result is None:
             return None, None
         else:
