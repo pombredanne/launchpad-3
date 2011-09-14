@@ -956,13 +956,16 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
+# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
 class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
+    """Populate the new sourcepackagename column of SPPH."""
+
     offset = 0
     maximum_chunk_size = 5000
 
     def findSPPHs(self, offset):
-        store = IMasterStore(SourcePackagePublishingHistory)
-        return store.find(SourcePackagePublishingHistory,
+        return IMasterStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
             SourcePackagePublishingHistory.sourcepackagename == None,
             SourcePackagePublishingHistory.id >= self.offset
             ).order_by(SourcePackagePublishingHistory.id)
@@ -981,14 +984,16 @@ class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
         transaction.commit()
 
 
+# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
 class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
-    done = False
+    """Populate the new binarypackagename column of BPPH."""
+
     offset = 0
     maximum_chunk_size = 5000
 
     def findBPPHs(self, offset):
-        store = IMasterStore(BinaryPackagePublishingHistory)
-        return store.find(BinaryPackagePublishingHistory,
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
             BinaryPackagePublishingHistory.binarypackagename == None,
             BinaryPackagePublishingHistory.id >= self.offset
             ).order_by(BinaryPackagePublishingHistory.id)
