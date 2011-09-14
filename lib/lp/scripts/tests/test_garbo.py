@@ -1022,3 +1022,27 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, unreferenced_msgsets.count())
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
+
+    def test_SourcePackagePublishingHistorySPNPopulator(self):
+        # If SPPHs do not have sourcepackagename set, the populator will set
+        # it.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        spn = spph.sourcepackagename
+        spph.sourcepackagenameID = None
+        transaction.commit()
+        self.assertIs(None, spph.sourcepackagename)
+        self.runHourly()
+        self.assertEqual(spn, spph.sourcepackagename)
+
+    def test_BinaryPackagePublishingHistoryBPNPopulator(self):
+        # If BPPHs do not have binarypackagename set, the populator will set
+        # it.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        bpn = bpph.binarypackagename
+        bpph.binarypackagenameID = None
+        transaction.commit()
+        self.assertIs(None, bpph.binarypackagename)
+        self.runHourly()
+        self.assertEqual(bpn, bpph.binarypackagename)
