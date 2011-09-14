@@ -182,8 +182,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitializationError,
-            "Can not copy distroarchseries from parent, there are already "
-            "distroarchseries(s) initialized for this series.", ids.check)
+            ("Cannot copy distroarchseries from parent; there are already "
+             "one or more distroarchseries initialised for this series."),
+            ids.check)
 
     def test_failure_when_previous_series_none(self):
         # Initialising a distroseries with no previous_series if the
@@ -199,10 +200,10 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitializationError,
-            ("DistroSeries series has no previous series and "
-             "the distribution already has initialized series"
+            ("Series series has no previous series and the "
+             "distribution already has initialised series"
              ".").format(child=child),
-             ids.check)
+            ids.check)
 
     def test_failure_with_pending_builds(self):
         # If the parent series has pending builds, and the child is a series
@@ -223,8 +224,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             ids = InitializeDistroSeries(child, [self.parent.id])
             self.assertRaisesWithContent(
                 InitializationError,
-                ("Parent series has pending builds for selected sources, "
-                 "see help text for more information."),
+                ("The parent series has pending builds for "
+                 "selected sources."),
                 ids.check)
 
     def test_success_with_builds_in_backports_or_proposed(self):
@@ -260,8 +261,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
         self.assertRaisesWithContent(
             InitializationError,
-            ("Parent series has pending builds for selected sources, "
-             "see help text for more information."),
+            ("The parent series has pending builds for "
+             "selected sources."),
             ids.check)
 
     def test_check_success_with_build_in_other_series(self):
@@ -315,8 +316,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
         self.assertRaisesWithContent(
             InitializationError,
-            ("Parent series has pending builds for selected sources, "
-             "see help text for more information."),
+            ("The parent series has pending builds for "
+             "selected sources."),
             ids.check)
 
     def test_check_success_if_build_present_in_non_selected_packagesets(self):
@@ -422,9 +423,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
             self.assertRaisesWithContent(
                 InitializationError,
-                ("Parent series has sources waiting in its upload queues "
-                 "that match your selection, see help text for more "
-                 "information."),
+                ("The parent series has sources waiting in its upload "
+                 "queues that match your selection."),
                 ids.check)
 
     def test_failure_with_binary_queue_items_status(self):
@@ -448,9 +448,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
             self.assertRaisesWithContent(
                 InitializationError,
-                ("Parent series has sources waiting in its upload queues "
-                 "that match your selection, see help text for more "
-                 "information."),
+                ("The parent series has sources waiting in its upload "
+                 "queues that match your selection."),
                 ids.check)
 
     def test_check_success_with_binary_queue_items_status(self):
@@ -538,9 +537,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
         self.assertRaisesWithContent(
             InitializationError,
-            ("Parent series has sources waiting in its upload queues "
-             "that match your selection, see help text for more "
-             "information."),
+            ("The parent series has sources waiting in its upload "
+             "queues that match your selection."),
             ids.check)
 
     def assertDistroSeriesInitializedCorrectly(self, child, parent,
@@ -1147,11 +1145,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(child, [])
         self.assertRaisesWithContent(
             InitializationError,
-            ("Distroseries {child.name} cannot be initialized: "
-             "No other series in the distribution is initialized "
-             "and no parent was passed to the initilization method"
-             ".").format(child=child),
-             ids.check)
+            ("No other series in the distribution is initialised "
+             "and a parent was not explicitly specified."),
+            ids.check)
 
     def createDistroSeriesWithPublication(self, distribution=None):
         # Create a distroseries with a publication in the DEBUG archive.

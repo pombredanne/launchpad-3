@@ -9,11 +9,9 @@ __all__ = [
     'make_fake_request',
     ]
 
-
+from lazr.restful.utils import safe_hasattr
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.management import endInteraction, newInteraction
-
-from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.webapp.interfaces import ILink

@@ -72,6 +72,7 @@ from lazr.restful.interfaces import (
     IReference,
     IWebServiceClientRequest,
     )
+from lazr.restful.utils import smartquote
 from lazr.uri import URI
 from pytz import utc
 from simplejson import dumps
@@ -154,7 +155,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.lazr.utils import smartquote
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpadform import (
     action,

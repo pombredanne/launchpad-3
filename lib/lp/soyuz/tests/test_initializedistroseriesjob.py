@@ -146,7 +146,7 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
 
         job = self.job_source.create(distroseries, [parent.id])
         expected_message = (
-            "DistroSeries {child.name} has already been initialized"
+            "Series {child.name} has already been initialised"
             ".").format(child=distroseries)
         self.assertRaisesWithContent(
             InitializationError, expected_message, job.run)
