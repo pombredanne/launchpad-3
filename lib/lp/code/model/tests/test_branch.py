@@ -2240,7 +2240,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
         stacked_on = self.factory.makeBranch(private=True)
         branch = self.factory.makeBranch(stacked_on=stacked_on, private=False)
         self.assertTrue(branch.private)
-        self.assertTrue(branch.transitively_private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertFalse(branch.explicitly_private)
 
     def test_private_stacked_on_public_is_private(self):
@@ -2248,7 +2248,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
         stacked_on = self.factory.makeBranch(private=False)
         branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
         self.assertTrue(branch.private)
-        self.assertTrue(branch.transitively_private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
 
 
@@ -2267,7 +2267,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertFalse(branch.private)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
-        self.assertFalse(branch.transitively_private)
+        self.assertFalse(removeSecurityProxy(branch).transitively_private)
         self.assertFalse(branch.explicitly_private)
 
     def test_public_to_private_allowed(self):
@@ -2278,7 +2278,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             branch.owner, BranchVisibilityRule.PRIVATE)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
-        self.assertTrue(branch.transitively_private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
 
     def test_public_to_private_not_allowed(self):
@@ -2298,7 +2298,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         admins = getUtility(ILaunchpadCelebrities).admin
         branch.setPrivate(True, admins.teamowner)
         self.assertTrue(branch.private)
-        self.assertTrue(branch.transitively_private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
 
     def test_private_to_private(self):
@@ -2307,7 +2307,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertTrue(branch.private)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
-        self.assertTrue(branch.transitively_private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
 
     def test_private_to_public_allowed(self):
@@ -2316,7 +2316,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(private=True)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
-        self.assertFalse(branch.transitively_private)
+        self.assertFalse(removeSecurityProxy(branch).transitively_private)
         self.assertFalse(branch.explicitly_private)
 
     def test_private_to_public_not_allowed(self):

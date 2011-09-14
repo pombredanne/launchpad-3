@@ -197,6 +197,12 @@ class Branch(SQLBase, BzrIdentityMixin):
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
         self.explicitly_private = private
+        # If this branch is private, then it is also transitively_private
+        # otherwise we need to reload the value.
+        if private:
+            self.transitively_private = True
+        else:
+            self.transitively_private = AutoReload
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
