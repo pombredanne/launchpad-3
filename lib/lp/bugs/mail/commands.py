@@ -581,7 +581,13 @@ class AffectsEmailCommand(EmailCommand):
         except BugTargetNotFound, error:
             raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
-        # XXX sinzui 2011-09-13: work with params.
+
+        if isinstance(bug, CreateBugParams):
+            # Enough information has be gathered to create a new bug.
+            bug.setBugTarget(product=bug_target)
+            bug = getUtility(IBugSet).createBug(bug)
+            return bug.bugtasks[0], None
+
         bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
             IDistributionSourcePackage.providedBy(bug_target)):
