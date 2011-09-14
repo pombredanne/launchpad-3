@@ -13,6 +13,7 @@ __all__ = [
 from datetime import timedelta
 import time
 
+from lazr.restful.utils import safe_hasattr
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -24,7 +25,6 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.lazr.utils import safe_hasattr
 
 
 class LoopTuner:

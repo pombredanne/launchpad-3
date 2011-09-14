@@ -101,11 +101,11 @@ def get_branch_stacked_on_url(a_bzrdir):
     # BzrDir.find_branch_format()), then the branch is not stackable. Bazaar
     # post-1.6 has added 'get_branch_format' to the pre-split-out formats,
     # which we could use instead.
-    find_branch_format = getattr(a_bzrdir, 'find_branch_format', None)
-    if find_branch_format is None:
+    try:
+        format = a_bzrdir.find_branch_format(None)
+    except NotImplementedError:
         raise UnstackableBranchFormat(
             a_bzrdir._format, a_bzrdir.root_transport.base)
-    format = find_branch_format()
     if not format.supports_stacking():
         raise UnstackableBranchFormat(format, a_bzrdir.root_transport.base)
     branch_transport = a_bzrdir.get_branch_transport(None)

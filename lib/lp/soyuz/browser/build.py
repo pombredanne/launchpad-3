@@ -17,6 +17,7 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
+from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -39,7 +40,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.lazr.utils import safe_hasattr
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

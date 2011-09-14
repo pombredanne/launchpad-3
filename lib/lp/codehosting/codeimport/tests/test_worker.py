@@ -12,7 +12,10 @@ import subprocess
 import tempfile
 import time
 
-from bzrlib import trace
+from bzrlib import (
+    trace,
+    urlutils,
+    )
 from bzrlib.branch import (
     Branch,
     BranchReferenceFormat,
@@ -25,7 +28,10 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.errors import NoSuchFile
 from bzrlib.tests import TestCaseWithTransport
-from bzrlib.transport import get_transport
+from bzrlib.transport import (
+    get_transport,
+    get_transport_from_url,
+    )
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
@@ -1112,11 +1118,13 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
             self.bazaar_store, logging.getLogger(),
             opener_policy=opener_policy)
 
-    def makeForeignCommit(self, source_details):
+    def makeForeignCommit(self, source_details, message=None, ref="HEAD"):
         """Change the foreign tree, generating exactly one commit."""
         repo = GitRepo(local_path_from_url(source_details.url))
-        repo.do_commit(message=self.factory.getUniqueString(),
-            committer="Joe Random Hacker <joe@example.com>")
+        if message is None:
+            message = self.factory.getUniqueString()
+        repo.do_commit(message=message,
+            committer="Joe Random Hacker <joe@example.com>", ref=ref)
         self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
@@ -1132,6 +1140,29 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='git', url=git_server.get_url())
+
+    def test_non_master(self):
+        # non-master branches can be specified in the import URL.
+        source_details = self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')])
+        self.makeForeignCommit(source_details, ref="refs/heads/other",
+            message="Message for other")
+        self.makeForeignCommit(source_details, ref="refs/heads/master",
+            message="Message for master")
+        source_details.url = urlutils.join_segment_parameters(
+                source_details.url, { "branch": "other" })
+        source_transport = get_transport_from_url(source_details.url)
+        self.assertEquals(
+            { "branch": "other" },
+            source_transport.get_segment_parameters())
+        worker = self.makeImportWorker(source_details,
+            opener_policy=AcceptAnythingPolicy())
+        self.assertTrue(self.foreign_commit_count > 1)
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+        branch = worker.getBazaarBranch()
+        lastrev = branch.repository.get_revision(branch.last_revision())
+        self.assertEquals(lastrev.message, "Message for other")
 
 
 class TestMercurialImport(WorkerTest, TestActualImportMixin,
@@ -1163,12 +1194,18 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
             self.bazaar_store, logging.getLogger(),
             opener_policy=opener_policy)
 
-    def makeForeignCommit(self, source_details):
+    def makeForeignCommit(self, source_details, message=None, branch=None):
         """Change the foreign tree, generating exactly one commit."""
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
         repo = localrepository(ui(), local_path_from_url(source_details.url))
-        repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
+        extra = {}
+        if branch is not None:
+            extra = { "branch": branch }
+        if message is None:
+            message = self.factory.getUniqueString()
+        repo.commit(text=message, user="Jane Random Hacker", force=1,
+            extra=extra)
         self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
@@ -1184,6 +1221,29 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='hg', url=hg_server.get_url())
+
+    def test_non_default(self):
+        # non-default branches can be specified in the import URL.
+        source_details = self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')])
+        self.makeForeignCommit(source_details, branch="other",
+            message="Message for other")
+        self.makeForeignCommit(source_details, branch="default",
+            message="Message for default")
+        source_details.url = urlutils.join_segment_parameters(
+                source_details.url, { "branch": "other" })
+        source_transport = get_transport_from_url(source_details.url)
+        self.assertEquals(
+            { "branch": "other" },
+            source_transport.get_segment_parameters())
+        worker = self.makeImportWorker(source_details,
+            opener_policy=AcceptAnythingPolicy())
+        self.assertTrue(self.foreign_commit_count > 1)
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+        branch = worker.getBazaarBranch()
+        lastrev = branch.repository.get_revision(branch.last_revision())
+        self.assertEquals(lastrev.message, "Message for other")
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,

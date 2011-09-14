@@ -17,7 +17,6 @@ import sys
 from optparse import OptionParser
 
 from canonical.config import config
-from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger, logger_options
 import replication.helpers
@@ -73,7 +72,8 @@ def main():
     if explicit is not None:
         nodes = [explicit]
     else:
-        nodes = replication.helpers.get_all_cluster_nodes(connect('slony'))
+        nodes = replication.helpers.get_all_cluster_nodes(
+            connect(user='slony'))
 
     if command == 'start':
         return start(log, nodes, options.lag)
