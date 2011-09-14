@@ -19,6 +19,7 @@ from lp.bugs.mail.commands import (
     SecurityEmailCommand,
     SubscribeEmailCommand,
     SummaryEmailCommand,
+    TagEmailCommand,
     UnsubscribeEmailCommand,
     )
 from lp.services.mail.interfaces import (
@@ -431,4 +432,31 @@ class CVEEmailCommandTestCase(TestCaseWithFactory):
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(cve, params.cve)
+        self.assertEqual(dummy_event, event)
+
+
+class TagEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug(self):
+        bug = self.factory.makeBug()
+        login_person(bug.bugtasks[0].target.owner)
+        bug.tags = ['form']
+        command = TagEmailCommand('tag', ['ui', 'trivial'])
+        dummy_event = object()
+        exec_bug, event = command.execute(bug, dummy_event)
+        self.assertEqual(bug, exec_bug)
+        self.assertContentEqual(['form', 'ui', 'trivial'], bug.tags)
+        self.assertEqual(dummy_event, event)
+
+    def test_execute_bug_params(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = TagEmailCommand('tag', ['ui', 'trivial'])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
+        self.assertContentEqual(['ui', 'trivial'], bug_params.tags)
         self.assertEqual(dummy_event, event)

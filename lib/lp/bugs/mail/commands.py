@@ -827,17 +827,10 @@ class TagEmailCommand(EmailCommand):
         """See `IEmailCommand`."""
         # Tags are always lowercase.
         string_args = [arg.lower() for arg in self.string_args]
-        # Bug.tags returns a Zope List, which does not support Python list
-        # operations so we need to convert it.
-        # XXX sinzui 2011-09-13: work with params.
-        tags = list(bug.tags)
-
-        # XXX: DaveMurphy 2007-07-11: in the following loop we process each
-        # tag in turn. Each tag that is either invalid or unassigned will
-        # result in a mail to the submitter. This may result in several mails
-        # for a single command. This will need to be addressed if that becomes
-        # a problem.
-
+        if bug.tags is None:
+            tags = []
+        else:
+            tags = list(bug.tags)
         for arg in string_args:
             # Are we adding or removing a tag?
             if arg.startswith('-'):
@@ -864,13 +857,6 @@ class TagEmailCommand(EmailCommand):
                             tag=tag))
             else:
                 tags.append(arg)
-
-        # Duplicates are dealt with when the tags are stored in the DB (which
-        # incidentally uses a set to achieve this). Since the code already
-        # exists we don't duplicate it here.
-
-        # Bug.tags expects to be given a Python list, so there is no need to
-        # convert it back.
         bug.tags = tags
 
         return bug, current_event
