@@ -57,6 +57,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.mail.commands import (
     EditEmailCommand,
     EmailCommand,
@@ -558,12 +559,6 @@ class AffectsEmailCommand(EmailCommand):
         assert rest, "This is the fallback for unexpected path components."
         raise BugTargetNotFound("Unexpected path components: %s" % rest)
 
-    @staticmethod
-    def as_sourcepackagename(target):
-        if IDistributionSourcePackage.providedBy(target):
-            return target.sourcepackagename
-        return None
-
     def execute(self, bug):
         """See IEmailCommand."""
         if bug is None:
@@ -593,7 +588,7 @@ class AffectsEmailCommand(EmailCommand):
             kwargs = {
                 'product': IProduct(bug_target, None),
                 'distribution': IDistribution(bug_target, None),
-                'sourcepackagename': self.as_sourcepackagename(bug_target),
+                'sourcepackagename': ISourcePackageName(bug_target, None),
                 }
             bug.setBugTarget(**kwargs)
             bug = getUtility(IBugSet).createBug(bug)
