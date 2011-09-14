@@ -265,7 +265,7 @@ subscribed when moving it to the new project.
     >>> subscriber_names(bug)
     [u'name12', u'name16']
 
-    >>> bug.setSecurityRelated(False)
+    >>> bug.setSecurityRelated(False, getUtility(ILaunchBag).user)
     True
 
     >>> bug.security_related
@@ -296,7 +296,7 @@ affects are subscribed to it.
     >>> bug.addTask(owner=reporter, target=distribution)
     <BugTask ...>
     >>> old_state = Snapshot(bug, providing=IBug)
-    >>> bug.setSecurityRelated(True)
+    >>> bug.setSecurityRelated(True, getUtility(ILaunchBag).user)
     True
     >>> notify(ObjectModifiedEvent(bug, old_state, ['security_related']))
     >>> for subscriber_name in sorted(

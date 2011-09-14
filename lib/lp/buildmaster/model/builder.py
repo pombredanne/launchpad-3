@@ -21,6 +21,7 @@ import tempfile
 import transaction
 import xmlrpclib
 
+from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -33,14 +34,12 @@ from storm.expr import (
     Count,
     Sum,
     )
-
 from twisted.internet import (
     defer,
     reactor as default_reactor,
     )
 from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
-
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -59,7 +58,6 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
-from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (

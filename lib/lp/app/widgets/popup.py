@@ -9,6 +9,8 @@ __metaclass__ = type
 
 import cgi
 import simplejson
+
+from lazr.restful.utils import safe_hasattr
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
     ItemsWidgetBase,
@@ -18,7 +20,6 @@ from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
-from canonical.lazr.utils import safe_hasattr
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.features import getFeatureFlag

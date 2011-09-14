@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from lazr.restful.utils import smartquote
 
-from canonical.lazr.utils import smartquote
 from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase

@@ -23,6 +23,7 @@ __all__ = [
 
 from itertools import chain
 
+from lazr.restful.utils import smartquote
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -56,7 +57,6 @@ from canonical.launchpad.webapp.batching import (
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
