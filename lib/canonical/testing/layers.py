@@ -1502,6 +1502,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
 class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbuser = 'launchpad'
+    host = 'localhost'
 
 
 class LaunchpadZopelessLayer(LaunchpadScriptLayer):
