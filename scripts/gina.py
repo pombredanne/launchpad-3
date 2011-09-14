@@ -87,8 +87,6 @@ def run_gina(options, ztm, target_section):
     source_only = target_section.source_only
     spnames_only = target_section.sourcepackagenames_only
 
-    dry_run = options.dry_run
-
     KTDB = target_section.katie_dbname
 
     LIBRHOST = config.librarian.upload_host
@@ -107,7 +105,6 @@ def run_gina(options, ztm, target_section):
     log.info("SourcePackage Only: %s", source_only)
     log.info("SourcePackageName Only: %s", spnames_only)
     log.debug("Librarian: %s:%s", LIBRHOST, LIBRPORT)
-    log.info("Dry run: %s", dry_run)
     log.info("")
 
     if not hasattr(PackagePublishingPocket, pocket.upper()):
@@ -126,7 +123,7 @@ def run_gina(options, ztm, target_section):
     kdb = None
     keyrings = None
     if KTDB:
-        kdb = Katie(KTDB, distroseries, dry_run)
+        kdb = Katie(KTDB, distroseries)
         keyrings = _get_keyring(keyrings_root)
 
     try:
@@ -140,8 +137,8 @@ def run_gina(options, ztm, target_section):
 
     packages_map = PackagesMap(arch_component_items)
     importer_handler = ImporterHandler(
-        ztm, distro, distroseries, dry_run, kdb, package_root, keyrings,
-        pocket, component_override)
+        ztm, distro, distroseries, kdb, package_root, keyrings, pocket,
+        component_override)
 
     import_sourcepackages(
         packages_map, kdb, package_root, keyrings, importer_handler)
@@ -321,9 +318,6 @@ class Gina(LaunchpadCronScript):
         self.parser.add_option("-l", "--list-targets", action="store_true",
             help="List configured import targets", dest="list_targets",
             default=False)
-        self.parser.add_option("-n", "--dry-run", action="store_true",
-            help="Don't commit changes to the database",
-            dest="dry_run", default=False)
 
     def getConfiguredTargets(self):
         """Get the configured import targets.
