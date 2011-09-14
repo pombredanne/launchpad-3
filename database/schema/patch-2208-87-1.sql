@@ -9,16 +9,19 @@ $$
 DECLARE
     branch_id integer;
 BEGIN
-    IF TG_OP = 'INSERT' OR NEW.stacked_on != OLD.stacked_on OR
-        NEW.stacked_on IS null AND OLD.stacked_on IS NOT null OR
-        NEW.stacked_on IS NOT null AND OLD.stacked_on IS null OR
-        NEW.private != OLD.private THEN
-            branch_id = NEW.id;
+    IF TG_OP = 'INSERT' THEN
+        branch_id := NEW.id;
+    ELSIF TG_OP = 'UPDATE' AND (
+            COALESCE(NEW.stacked_on, 0) != COALESCE(OLD.stacked_on, 0) OR
+            NEW.private != OLD.private) THEN
+        branch_id := NEW.id;
     ELSIF TG_OP = 'DELETE' THEN
-        branch_id = OLD.id;
+        branch_id := OLD.id;
     ELSE
         return NULL;
     END IF;
+
+    RAISE NOTICE 'BRANCH ID IS %', branch_id;
 
     UPDATE branch SET transitively_private = (
         WITH
