@@ -963,7 +963,7 @@ class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
     done = False
     maximum_chunk_size = 5000
 
-    def findSPPHs(self, offset):
+    def findSPPHs(self):
         return IMasterStore(SourcePackagePublishingHistory).find(
             SourcePackagePublishingHistory,
             SourcePackagePublishingHistory.sourcepackagename == None
@@ -975,12 +975,12 @@ class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
-        spphs = self.findSPPHs(self.offset)[:chunk_size]
+        spphs = self.findSPPHs()[:chunk_size]
         for spph in spphs:
             spph.sourcepackagename = (
                 spph.sourcepackagerelease.sourcepackagename)
         transaction.commit()
-        self.done = self.findSPPHs(0).is_empty()
+        self.done = self.findSPPHs().is_empty()
 
 
 # XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
@@ -990,7 +990,7 @@ class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
     done = False
     maximum_chunk_size = 5000
 
-    def findBPPHs(self, offset):
+    def findBPPHs(self):
         return IMasterStore(BinaryPackagePublishingHistory).find(
             BinaryPackagePublishingHistory,
             BinaryPackagePublishingHistory.binarypackagename == None
@@ -1002,12 +1002,12 @@ class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
-        bpphs = self.findBPPHs(self.offset)[:chunk_size]
+        bpphs = self.findBPPHs()[:chunk_size]
         for bpph in bpphs:
             bpph.binarypackagename = (
                 bpph.binarypackagerelease.binarypackagename)
         transaction.commit()
-        self.done = self.findBPPHs(0).is_empty()
+        self.done = self.findBPPHs().is_empty()
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
