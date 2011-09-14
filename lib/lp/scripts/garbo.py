@@ -960,19 +960,18 @@ class UnusedPOTMsgSetPruner(TunableLoop):
 class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
     """Populate the new sourcepackagename column of SPPH."""
 
-    offset = 0
+    done = False
     maximum_chunk_size = 5000
 
     def findSPPHs(self, offset):
         return IMasterStore(SourcePackagePublishingHistory).find(
             SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.sourcepackagename == None,
-            SourcePackagePublishingHistory.id >= self.offset
+            SourcePackagePublishingHistory.sourcepackagename == None
             ).order_by(SourcePackagePublishingHistory.id)
 
     def isDone(self):
         """See `TunableLoop`."""
-        return self.findSPPHs(0).is_empty()
+        return self.done
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
@@ -980,27 +979,26 @@ class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
         for spph in spphs:
             spph.sourcepackagename = (
                 spph.sourcepackagerelease.sourcepackagename)
-        self.offset += chunk_size
         transaction.commit()
+        self.done = self.findSPPHs(0).is_empty()
 
 
 # XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
 class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
     """Populate the new binarypackagename column of BPPH."""
 
-    offset = 0
+    done = False
     maximum_chunk_size = 5000
 
     def findBPPHs(self, offset):
         return IMasterStore(BinaryPackagePublishingHistory).find(
             BinaryPackagePublishingHistory,
-            BinaryPackagePublishingHistory.binarypackagename == None,
-            BinaryPackagePublishingHistory.id >= self.offset
+            BinaryPackagePublishingHistory.binarypackagename == None
             ).order_by(BinaryPackagePublishingHistory.id)
 
     def isDone(self):
         """See `TunableLoop`."""
-        return self.findBPPHs(0).is_empty()
+        return self.done
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
@@ -1008,8 +1006,8 @@ class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
         for bpph in bpphs:
             bpph.binarypackagename = (
                 bpph.binarypackagerelease.binarypackagename)
-        self.offset += chunk_size
         transaction.commit()
+        self.done = self.findBPPHs(0).is_empty()
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
