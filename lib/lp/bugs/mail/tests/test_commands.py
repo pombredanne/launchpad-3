@@ -191,6 +191,39 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         self.assertEqual(user, bugtask.bug.owner)
         self.assertEqual(None, event)
 
+    def test_execute_bug_params_distribution(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        distribution = self.factory.makeDistribution(name='fnord')
+        message = self.factory.makeMessage(
+            subject='bug title', content='borked\n affects fnord')
+        command = AffectsEmailCommand('affects', ['fnord'])
+        bug_params = CreateBugParams(
+            title='bug title', msg=message, owner=user)
+        bugtask, event = command.execute(bug_params)
+        self.assertEqual(distribution, bugtask.target)
+        self.assertEqual('bug title', bugtask.bug.title)
+        self.assertEqual(None, event)
+
+    def test_execute_bug_params_dsp(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        distribution = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distribution)
+        package = self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        dsp = distribution.getSourcePackage(package.name)
+        message = self.factory.makeMessage(
+            subject='bug title', content='borked\n affects fnord/snarf')
+        command = AffectsEmailCommand('affects', ['fnord/snarf'])
+        bug_params = CreateBugParams(
+            title='bug title', msg=message, owner=user)
+        bugtask, event = command.execute(bug_params)
+        self.assertEqual(dsp, bugtask.target)
+        self.assertEqual('bug title', bugtask.bug.title)
+        self.assertEqual(None, event)
+
 
 class BugEmailCommandTestCase(TestCaseWithFactory):
 

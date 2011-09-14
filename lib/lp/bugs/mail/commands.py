@@ -558,6 +558,12 @@ class AffectsEmailCommand(EmailCommand):
         assert rest, "This is the fallback for unexpected path components."
         raise BugTargetNotFound("Unexpected path components: %s" % rest)
 
+    @staticmethod
+    def as_sourcepackagename(target):
+        if IDistributionSourcePackage.providedBy(target):
+            return target.sourcepackagename
+        return None
+
     def execute(self, bug):
         """See IEmailCommand."""
         if bug is None:
@@ -584,7 +590,12 @@ class AffectsEmailCommand(EmailCommand):
 
         if isinstance(bug, CreateBugParams):
             # Enough information has be gathered to create a new bug.
-            bug.setBugTarget(product=bug_target)
+            kwargs = {
+                'product': IProduct(bug_target, None),
+                'distribution': IDistribution(bug_target, None),
+                'sourcepackagename': self.as_sourcepackagename(bug_target),
+                }
+            bug.setBugTarget(**kwargs)
             bug = getUtility(IBugSet).createBug(bug)
             return bug.bugtasks[0], None
 
