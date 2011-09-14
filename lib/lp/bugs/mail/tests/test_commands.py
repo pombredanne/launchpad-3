@@ -16,6 +16,7 @@ from lp.bugs.mail.commands import (
     PrivateEmailCommand,
     SecurityEmailCommand,
     SubscribeEmailCommand,
+    SummaryEmailCommand,
     UnsubscribeEmailCommand,
     )
 from lp.services.mail.interfaces import (
@@ -348,4 +349,29 @@ class UnsubscribeEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
+        self.assertEqual(dummy_event, event)
+
+
+class SummaryEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug(self):
+        bug = self.factory.makeBug()
+        login_person(bug.bugtasks[0].target.owner)
+        command = SummaryEmailCommand('summary', ['new title'])
+        exec_bug, event = command.execute(bug, None)
+        self.assertEqual(bug, exec_bug)
+        self.assertEqual('new title', bug.title)
+        self.assertTrue(IObjectModifiedEvent.providedBy(event))
+
+    def test_execute_bug_params(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = SummaryEmailCommand('summary', ['new title'])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
+        self.assertEqual('new title', bug_params.title)
         self.assertEqual(dummy_event, event)

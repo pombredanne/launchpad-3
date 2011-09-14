@@ -378,7 +378,11 @@ class SummaryEmailCommand(EditEmailCommand):
                 get_error_message(
                     'summary-too-many-arguments.txt',
                     error_templates=error_templates))
-        # XXX sinzui 2011-09-13: work with params.
+
+        if isinstance(bug, CreateBugParams):
+            bug.title = self.string_args[0]
+            return bug, current_event
+
         return EditEmailCommand.execute(self, bug, current_event)
 
     def convertArguments(self, context):
