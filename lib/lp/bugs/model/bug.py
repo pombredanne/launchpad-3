@@ -228,7 +228,7 @@ def snapshot_bug_params(bug_params):
             "distribution", "sourcepackagename",
             "product", "status", "subscribers", "tags",
             "subscribe_owner", "filed_by", "importance",
-            "milestone", "assignee"])
+            "milestone", "assignee", "cve"])
 
 
 class BugTag(SQLBase):
@@ -2633,6 +2633,9 @@ class BugSet:
 
         # Mark the bug reporter as affected by that bug.
         bug.markUserAffected(bug.owner)
+
+        if params.cve is not None:
+            bug.linkCVE(params.cve, params.owner)
 
         # Populate the creation event.
         if params.filed_by is None:
