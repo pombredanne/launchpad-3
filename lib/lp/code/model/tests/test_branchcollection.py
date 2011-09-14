@@ -529,8 +529,14 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         remove_all_sample_data_branches()
         self.public_branch = self.factory.makeAnyBranch(name='public')
+        # We make private branch by stacking a public branch on top of a
+        # private one.
+        self.private_stacked_on_branch = self.factory.makeAnyBranch(
+            private=True)
+        self.public_stacked_on_branch = self.factory.makeAnyBranch(
+            stacked_on=self.private_stacked_on_branch)
         self.private_branch1 = self.factory.makeAnyBranch(
-            private=True, name='private1')
+            stacked_on=self.public_stacked_on_branch, name='private1')
         self.private_branch2 = self.factory.makeAnyBranch(
             private=True, name='private2')
         self.all_branches = getUtility(IAllBranches)
@@ -540,7 +546,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # collection.
         self.assertEqual(
             sorted([self.public_branch, self.private_branch1,
-                 self.private_branch2]),
+                 self.private_branch2, self.public_stacked_on_branch,
+                 self.private_stacked_on_branch]),
             sorted(self.all_branches.getBranches()))
 
     def test_anonymous_sees_only_public(self):
