@@ -20,25 +20,9 @@ def dominate_imported_source_packages(logger, distro_name, series_name,
     series = getUtility(IDistributionSet)[distro_name].getSeries(series_name)
     dominator = Dominator(logger, series.main_archive)
 
-    # XXX JeroenVermeulen 2011-09-08, bug=844550: This is a transitional
-    # hack.  Gina used to create SPPHs in Pending state.  We cleaned up
-    # the bulk of them, and changed the code to create Published ones, but
-    # some new ones will have been created since.
-    # Update those to match what the new Gina does.
-    from canonical.launchpad.interfaces.lpstorm import IStore
-    from lp.soyuz.enums import PackagePublishingStatus
-    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-    SPPH = SourcePackagePublishingHistory
-    store = IStore(SPPH)
-    spphs = store.find(
-        SPPH,
-        SPPH.archive == series.main_archive,
-        SPPH.distroseries == series,
-        SPPH.pocket == pocket,
-        SPPH.status == PackagePublishingStatus.PENDING)
-    spphs.set(status=PackagePublishingStatus.PUBLISHED)
-
-    # Dominate packages found in the Sources list we're importing.
+    # Dominate all packages published in the series.  This includes all
+    # packages listed in the Sources file we imported, but also packages
+    # that have been recently deleted.
     package_names = dominator.findPublishedSourcePackageNames(series, pocket)
     for package_name in package_names:
         entries = packages_map.src_map.get(package_name, [])
