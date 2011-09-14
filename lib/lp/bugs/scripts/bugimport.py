@@ -328,9 +328,9 @@ class BugImporter:
             self.createAttachments(bug, msg, commentnode)
 
         # set up bug
-        bug.setPrivate(get_value(bugnode, 'private') == 'True', owner)
-        bug.setSecurityRelated(
-            get_value(bugnode, 'security_related') == 'True')
+        private = get_value(bugnode, 'private') == 'True'
+        security_related = get_value(bugnode, 'security_related') == 'True'
+        bug.setPrivacyAndSecurityRelated(private, security_related, owner)
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:
