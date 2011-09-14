@@ -420,3 +420,15 @@ class CVEEmailCommandTestCase(TestCaseWithFactory):
         self.assertEqual(bug, exec_bug)
         self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
         self.assertEqual(dummy_event, event)
+
+    def test_execute_bug_params(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        cve = self.factory.makeCVE('1999-1717')
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = CVEEmailCommand('cve', ['1999-1717'])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
+        self.assertEqual(cve, params.cve)
+        self.assertEqual(dummy_event, event)

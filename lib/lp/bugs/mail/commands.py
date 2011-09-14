@@ -447,7 +447,10 @@ class CVEEmailCommand(EmailCommand):
         if cve is None:
             raise EmailProcessingError(
                 'Launchpad can\'t find the CVE "%s".' % cve_sequence)
-        # XXX sinzui 2011-09-13: work with params?
+        if isinstance(bug, CreateBugParams):
+            bug.cve = cve
+            return bug, current_event
+
         bug.linkCVE(cve, getUtility(ILaunchBag).user)
         return bug, current_event
 
