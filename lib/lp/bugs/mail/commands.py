@@ -399,6 +399,8 @@ class DuplicateEmailCommand(EmailCommand):
 
     def execute(self, context, current_event):
         """See IEmailCommand."""
+        if isinstance(context, CreateBugParams):
+            return context, current_event
         self._ensureNumberOfArguments()
         [bug_id] = self.string_args
 

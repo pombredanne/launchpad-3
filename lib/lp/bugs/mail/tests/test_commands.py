@@ -13,6 +13,7 @@ from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import (
     AffectsEmailCommand,
     BugEmailCommand,
+    DuplicateEmailCommand,
     PrivateEmailCommand,
     SecurityEmailCommand,
     SubscribeEmailCommand,
@@ -345,7 +346,7 @@ class UnsubscribeEmailCommandTestCase(TestCaseWithFactory):
         user = self.factory.makePerson()
         login_person(user)
         bug_params = CreateBugParams(title='bug title', owner=user)
-        command = UnsubscribeEmailCommand('unsubscribe', ['non-existant'])
+        command = UnsubscribeEmailCommand('unsubscribe', ['non-existent'])
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
@@ -374,4 +375,31 @@ class SummaryEmailCommandTestCase(TestCaseWithFactory):
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual('new title', bug_params.title)
+        self.assertEqual(dummy_event, event)
+
+
+class DuplicateEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug(self):
+        master_bug = self.factory.makeBug()
+        bug = self.factory.makeBug()
+        login_person(bug.bugtasks[0].target.owner)
+        command = DuplicateEmailCommand('duplicate', [str(master_bug.id)])
+        exec_bug, event = command.execute(bug, None)
+        self.assertEqual(master_bug, exec_bug)
+        self.assertEqual(master_bug, bug.duplicateof)
+        self.assertTrue(IObjectModifiedEvent.providedBy(event))
+
+    def test_execute_bug_params(self):
+        # duplicate does nothing because the is not yet a bug.
+        # Any value can be used for the bug is.
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = DuplicateEmailCommand('duplicate', ['non-existent'])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
         self.assertEqual(dummy_event, event)
