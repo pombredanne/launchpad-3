@@ -13,6 +13,7 @@ from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import (
     AffectsEmailCommand,
     BugEmailCommand,
+    CVEEmailCommand,
     DuplicateEmailCommand,
     PrivateEmailCommand,
     SecurityEmailCommand,
@@ -402,4 +403,20 @@ class DuplicateEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
+        self.assertEqual(dummy_event, event)
+
+
+class CVEEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug(self):
+        bug = self.factory.makeBug()
+        login_person(bug.bugtasks[0].target.owner)
+        cve = self.factory.makeCVE('1999-1717')
+        command = CVEEmailCommand('cve', ['1999-1717'])
+        dummy_event = object()
+        exec_bug, event = command.execute(bug, dummy_event)
+        self.assertEqual(bug, exec_bug)
+        self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
         self.assertEqual(dummy_event, event)
