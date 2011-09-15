@@ -162,7 +162,7 @@
       class="ppa_row">
   <tal:block define="spr spph/sourcepackagerelease;
                      distroseries spph/distroseries;
-                     ppa spr/upload_archive">
+                     ppa spph/archive">
     <td tal:content="spr/sourcepackagename/name">
       iceweasel
     </td>

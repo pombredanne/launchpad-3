@@ -5257,7 +5257,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return header_message
 
     def filterPPAPackageList(self, spphs):
-        """Remove packages that the user is not allowed to see.
+        """Remove publishings that the user is not allowed to see.
 
         Given a list of PPA packages, some might be in a PPA that the
         user is not allowed to see, so they are filtered out of the list.
@@ -5280,7 +5280,6 @@ class PersonRelatedSoftwareView(LaunchpadView):
                 if check_permission('launchpad.View', archive):
                     results.append(spph)
                     break
-
         return results
 
     def _getDecoratedPackagesSummary(self, packages):
@@ -5368,9 +5367,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     def _addStatsToPackages(self, spphs):
         """Add stats to the given package releases, and return them."""
+        filtered_spphs = [
+           spph for spph in spphs if
+           check_permission('launchpad.View', spph)]
         distro_packages = [
             spph.meta_sourcepackage.distribution_sourcepackage
-            for spph in spphs]
+            for spph in filtered_spphs]
         package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
             self.user, distro_packages)
         open_bugs = {}
@@ -5383,7 +5385,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
             distro_packages)
 
         builds_by_package, needs_build_by_package = self._calculateBuildStats(
-            spphs)
+            filtered_spphs)
 
         return [
             SourcePackagePublishingHistoryWithStats(
@@ -5393,7 +5395,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
                     spph.meta_sourcepackage.distribution_sourcepackage],
                 builds_by_package[spph.sourcepackagerelease],
                 needs_build_by_package[spph.sourcepackagerelease])
-            for spph in spphs]
+            for spph in filtered_spphs]
 
     def setUpBatch(self, packages):
         """Set up the batch navigation for the page being viewed.

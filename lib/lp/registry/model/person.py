@@ -2616,7 +2616,7 @@ class Person(
         'uploader_only' because there shouldn't be any sense of maintainership
         for packages uploaded to PPAs by someone else than the user himself.
         """
-        clauses = ['sourcepackagerelease.upload_archive = archive.id']
+        clauses = []
 
         if uploader_only:
             clauses.append(
@@ -2640,9 +2640,9 @@ class Person(
                 'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
         query = """
-                SELECT DISTINCT ON (upload_distroseries,
+                SELECT DISTINCT ON (distroseries,
                                     sourcepackagerelease.sourcepackagename,
-                                    upload_archive)
+                                    archive)
                     spph.id
                 FROM sourcepackagerelease, archive,
                     sourcepackagepublishinghistory as spph
@@ -2650,10 +2650,10 @@ class Person(
                     spph.sourcepackagerelease = sourcepackagerelease.id AND
                     spph.archive = archive.id AND
                     %(more_query_clauses)s
-                ORDER BY upload_distroseries,
+                ORDER BY distroseries,
                     sourcepackagerelease.sourcepackagename,
-                    upload_archive,
-                    dateuploaded DESC, spph.datecreated DESC
+                    archive,
+                    spph.datecreated DESC
               """ % dict(more_query_clauses=" AND ".join(clauses))
 
         cur = cursor()
@@ -2695,6 +2695,7 @@ class Person(
             SourcePackagePublishingHistory.id.is_in(spph_ids),
             orderBy=[
                 '-datecreated',
+                '-id',
                 ],
             prejoins=[
                 'sourcepackagerelease.sourcepackagename',
