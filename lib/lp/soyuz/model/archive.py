@@ -495,7 +495,7 @@ class Archive(SQLBase):
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
-                            eager_load=False):
+                            eager_load=False, component_name=None):
         """See `IArchive`."""
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
@@ -534,6 +534,12 @@ class Archive(SQLBase):
             storm_clauses.append(SourcePackageRelease.version == version)
         else:
             orderBy.insert(1, Desc(SourcePackageRelease.version))
+
+        if component_name is not None:
+            storm_clauses.extend(
+                [SourcePackagePublishingHistory.componentID == Component.id,
+                 Component.name == component_name,
+                 ])
 
         if status is not None:
             try:

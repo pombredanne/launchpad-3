@@ -676,6 +676,32 @@ request.
     >>> print response.getheader('status')
     400 Bad Request
 
+We don't have to specify any filters when getting published sources:
+
+    >>> response = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
+    >>> print response['total_size']
+    3
+
+We can filter getPublishedSources() by component. All of the publishing
+histories we got previously were in 'main':
+
+    >>> for entry in response['entries']:
+    ...     print entry['component_name']
+    main
+    main
+    main
+
+When we filter by component name for 'universe', none of them show up:
+
+    >>> response = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     component_name='universe').jsonBody()
+    >>> pprint_entry(response)
+    entries: []
+    start: 0
+    total_size: 0
+
 
 Package copying/synchronisation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

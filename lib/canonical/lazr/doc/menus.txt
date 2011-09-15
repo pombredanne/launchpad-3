@@ -281,7 +281,7 @@ can access `self.context`.
     >>> defineChecker(MenuLink, InterfaceChecker(ILink))
     >>> defineChecker(URI, NamesChecker(dir(URI)))
 
-    >>> from canonical.lazr.utils import safe_hasattr
+    >>> from lazr.restful.utils import safe_hasattr
     >>> def summarise_links(menu, url=None, facet=None):
     ...     """List the links and their attributes."""
     ...     if url is not None:

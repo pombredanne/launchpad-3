@@ -847,8 +847,9 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         data = dict(data)
 
         # We handle privacy changes by hand instead of leaving it to
-        # the usual machinery because we must use bug.setPrivate() to
-        # ensure auditing information is recorded.
+        # the usual machinery because we must use
+        # bug.setPrivacyAndSecurityRelated() to ensure auditing information is
+        # recorded.
         bug = self.context.bug
         bug_before_modification = Snapshot(
             bug, providing=providedBy(bug))
@@ -856,9 +857,9 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         user_will_be_subscribed = (
             private and bug.getSubscribersForPerson(self.user).is_empty())
         security_related = data.pop('security_related')
-        private_changed = bug.setPrivate(
-            private, getUtility(ILaunchBag).user)
-        security_related_changed = bug.setSecurityRelated(security_related)
+        user = getUtility(ILaunchBag).user
+        (private_changed, security_related_changed) = (
+            bug.setPrivacyAndSecurityRelated(private, security_related, user))
         if private_changed or security_related_changed:
             changed_fields = []
             if private_changed:

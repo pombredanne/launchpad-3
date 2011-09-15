@@ -15,6 +15,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import (
     login_celebrity,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
@@ -302,6 +303,17 @@ class TestDistroEditView(TestCaseWithFactory):
         self.assertEqual(
            error_msg,
            view.widget_errors.get('require_virtualized'))
+
+    def test_package_derivatives_email(self):
+        # Test that the edit form allows changing package_derivatives_email
+        edit_form = self.getDefaultEditDict()
+        email = '{package_name}_thing@foo.com'
+        edit_form['field.package_derivatives_email'] = email
+
+        create_initialized_view(
+            self.distribution, '+edit', principal=self.distribution.owner,
+            method="POST", form=edit_form)
+        self.assertEqual(self.distribution.package_derivatives_email, email)
 
 
 class TestDistroReassignView(TestCaseWithFactory):
