@@ -183,6 +183,9 @@ class PrivateEmailCommand(EmailCommand):
                 stop_processing=True)
 
         if isinstance(context, CreateBugParams):
+            if context.security_related:
+                # BugSet.createBug() requires new security bugs to be private.
+                private = True
             context.private = private
             return context, current_event
 
@@ -237,6 +240,9 @@ class SecurityEmailCommand(EmailCommand):
 
         if isinstance(context, CreateBugParams):
             context.security_related = security_related
+            if security_related:
+                # BugSet.createBug() requires new security bugs to be private.
+                context.private = True
             return context, current_event
 
         # Take a snapshot.

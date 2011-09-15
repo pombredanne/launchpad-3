@@ -285,7 +285,20 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         bug_params = CreateBugParams(title='bug title', owner=user)
         command = PrivateEmailCommand('private', ['yes'])
         dummy_event = object()
-        params, event = command.execute(bug_params, dummy_event())
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
+        self.assertEqual(True, bug_params.private)
+        self.assertEqual(dummy_event, event)
+
+    def test_execute_bug_params_with_security(self):
+        # BugSet.createBug() requires new security bugs to be private.
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(
+            title='bug title', owner=user, security_related='yes')
+        command = PrivateEmailCommand('private', ['no'])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(True, bug_params.private)
         self.assertEqual(dummy_event, event)
@@ -313,6 +326,7 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(True, bug_params.security_related)
+        self.assertEqual(True, bug_params.private)
         self.assertEqual(dummy_event, event)
 
 
