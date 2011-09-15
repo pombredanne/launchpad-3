@@ -23,9 +23,9 @@ from lp.services.mail.helpers import (
 from lp.services.mail.signedmessage import signed_message_from_string    
 
 class ProcessMail(LaunchpadScript):
-    usage = """%prog [options]
+    usage = """%prog [options] [MAIL_FILE]
 
-    Process one incoming email, read from stdin.
+    Process one incoming email, read from the specified file or from stdin.
 
     """ + __doc__
 
@@ -33,8 +33,12 @@ class ProcessMail(LaunchpadScript):
         self.txn.begin()
         # NB: This somewhat duplicates handleMail, but there it's mixed in
         # with handling a mailbox, which we're avoiding here.
-        self.logger.debug("reading message from stdin")
-        raw_mail = sys.stdin.read()
+        if len(self.args) >= 1:
+            from_file = file(self.args[0], 'rb')
+        else:
+            from_file = sys.stdin
+        self.logger.debug("reading message from %r" % (from_file,))
+        raw_mail = from_file.read()
         self.logger.debug("got %d bytes" % len(raw_mail))
         file_alias = save_mail_to_librarian(raw_mail)
         self.logger.debug("saved to librarian as %r" % (file_alias,))
