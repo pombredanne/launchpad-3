@@ -1387,16 +1387,17 @@ class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
         self.bazaar_store = BazaarBranchStore(
             self.get_transport('bazaar_store'))
 
-    def makeImportWorker(self, opener_policy):
+    def makeImportWorker(self, url, opener_policy):
         """Make a new `ImportWorker`."""
         source_details = self.factory.makeCodeImportSourceDetails(
-            rcstype='bzr', url=self.get_old_url())
+            rcstype='bzr', url=url)
         return BzrImportWorker(
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger(), opener_policy)
 
     def test_follow_redirect(self):
-        worker = self.makeImportWorker(AcceptAnythingPolicy())
+        worker = self.makeImportWorker(
+            self.get_old_url(), AcceptAnythingPolicy())
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
         branch_url = self.bazaar_store._getMirrorURL(
@@ -1421,6 +1422,22 @@ class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
                 return urlutils.join(branch.base, url), False
 
         policy = NewUrlBlacklistPolicy(self.get_new_url())
-        worker = self.makeImportWorker(policy)
+        worker = self.makeImportWorker(self.get_old_url(), policy)
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
+
+    def test_too_many_redirects(self):
+        # Make the server redirect to itself
+        self.old_server = http_utils.HTTPServerRedirecting(
+            protocol_version=self._protocol_version)
+        self.old_server.redirect_to(self.old_server.host,
+            self.old_server.port)
+        self.old_server._url_protocol = self._url_protocol
+        self.old_server.start_server()
+        try:
+            worker = self.makeImportWorker(
+                self.old_server.get_url(), AcceptAnythingPolicy())
+        finally:
+            self.old_server.stop_server()
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
