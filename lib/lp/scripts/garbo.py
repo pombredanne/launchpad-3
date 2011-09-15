@@ -69,6 +69,7 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branch import Branch
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -747,6 +748,58 @@ class BranchJobPruner(BulkPruner):
         """
 
 
+class PopulateBranchTransitivelyPrivate(TunableLoop):
+    """Populated the branch column transitively_private values.
+
+    Only needed until they are all set, after that triggers will maintain it.
+    """
+
+    # We only want a db lock open for about 10 seconds. So we set max chunk
+    # size to 3000 because a test run for the entire branch table took 1hr.
+    minimum_chunk_size = 1000
+    maximum_chunk_size = 3000
+
+    def __init__(self, log, abort_time=None):
+        super_instance = super(PopulateBranchTransitivelyPrivate, self)
+        super_instance.__init__(log, abort_time)
+        self.store = IMasterStore(Branch)
+        self.isDone = IMasterStore(Branch).find(
+            Branch, Branch.transitively_private == None).is_empty
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
+        transaction.begin()
+        updated = self.store.execute("""
+            UPDATE branch SET transitively_private = (
+                    WITH
+                    recursive stacked_branches AS
+                    (
+                        SELECT branch.id,
+                            branch.stacked_on,
+                            cast(private as int) AS private
+                        FROM branch as selected_branch
+                        WHERE selected_branch.id = branch.id
+                        UNION all
+                        SELECT stacked_branches.id,
+                            branch.stacked_on,
+                            cast(branch.private as int) AS private
+                        FROM stacked_branches, branch
+                        WHERE stacked_branches.stacked_on = branch.id)
+                    SELECT
+                        CASE WHEN sum(private)>0 THEN True
+                        ELSE False
+                        END
+                    FROM stacked_branches
+                    GROUP BY id
+                ) WHERE id IN (
+                    SELECT id FROM branch WHERE transitively_private is NULL
+                    limit %s);
+            """ % int(chunk_size)
+            ).rowcount
+        self.log.debug("Updated %s branches." % updated)
+        transaction.commit()
+
+
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
@@ -1259,6 +1312,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugHeatUpdater,
         SourcePackagePublishingHistorySPNPopulator,
         BinaryPackagePublishingHistoryBPNPopulator,
+        PopulateBranchTransitivelyPrivate,
         ]
     experimental_tunable_loops = []
 

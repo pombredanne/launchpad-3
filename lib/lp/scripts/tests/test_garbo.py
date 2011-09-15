@@ -16,6 +16,7 @@ import time
 
 from pytz import UTC
 from storm.expr import (
+    And,
     In,
     Min,
     Not,
@@ -74,6 +75,7 @@ from lp.code.bzr import (
     )
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
+from lp.code.model.branch import Branch
 from lp.code.model.branchjob import (
     BranchJob,
     BranchUpgradeJob,
@@ -855,6 +857,30 @@ class TestGarbo(TestCaseWithFactory):
         self._test_AnswerContactPruner(
             AccountStatus.SUSPENDED, ONE_DAY_AGO, expected_count=1)
 
+    def test_populate_transitively_private(self):
+        # Test garbo job to populate the branch transitively_private column.
+
+        # First delete any existing column data and add a stacked branch.
+        con = DatabaseLayer._db_fixture.superuser_connection()
+        try:
+            cur = con.cursor()
+            cur.execute("UPDATE branch set stacked_on=29 where id = 1")
+            cur.execute("UPDATE branch set transitively_private=NULL")
+            con.commit()
+        finally:
+            con.close()
+        store = IMasterStore(Branch)
+        unmigrated = store.find(
+            Branch, Branch.transitively_private == None).count
+        self.assertNotEqual(0, unmigrated())
+        self.runHourly()
+        self.assertEqual(0, unmigrated())
+        self.assertEqual(3, store.find(
+            Branch,
+            And(Branch.transitively_private == True,
+                Branch.id.is_in([1, 29, 30]))
+        ).count())
+
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -1024,7 +1050,7 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(0, unreferenced_msgsets.count())
 
     def test_SPPH_and_BPPH_populator(self):
-        # If SPPHs (or BPPHs) do not have sourcepackagename (or 
+        # If SPPHs (or BPPHs) do not have sourcepackagename (or
         # binarypackagename) set, the populator will set it.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         spph = self.factory.makeSourcePackagePublishingHistory()
