@@ -565,7 +565,7 @@ class AffectsEmailCommand(EmailCommand):
         assert rest, "This is the fallback for unexpected path components."
         raise BugTargetNotFound("Unexpected path components: %s" % rest)
 
-    def execute(self, bug):
+    def execute(self, bug, bug_event):
         """See IEmailCommand."""
         if bug is None:
             raise EmailProcessingError(
@@ -597,9 +597,10 @@ class AffectsEmailCommand(EmailCommand):
                 'sourcepackagename': ISourcePackageName(bug_target, None),
                 }
             bug.setBugTarget(**kwargs)
-            bug = getUtility(IBugSet).createBug(bug)
+            bug, bug_event = getUtility(IBugSet).createBug(
+                bug, notify_event=False)
             bugtask = bug.bugtasks[0]
-            return bugtask, ObjectCreatedEvent(bugtask)
+            return bugtask, ObjectCreatedEvent(bugtask), bug_event
 
         bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
@@ -618,7 +619,7 @@ class AffectsEmailCommand(EmailCommand):
             bugtask = self._create_bug_task(bug, bug_target)
             event = ObjectCreatedEvent(bugtask)
 
-        return bugtask, event
+        return bugtask, event, bug_event
 
     def _targetBug(self, user, bug, series, sourcepackagename=None):
         """Try to target the bug the given distroseries.

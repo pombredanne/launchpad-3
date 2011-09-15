@@ -2504,7 +2504,7 @@ class BugSet:
                 orderBy=['datecreated'])
         return bug
 
-    def createBug(self, bug_params):
+    def createBug(self, bug_params, notify_event=True):
         """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
@@ -2566,11 +2566,14 @@ class BugSet:
             bug_task.transitionToMilestone(params.milestone, params.owner)
 
         # Tell everyone.
-        notify(event)
+        if notify_event:
+            notify(event)
 
         # Calculate the bug's initial heat.
         bug.updateHeat()
 
+        if not notify_event:
+            return bug, event
         return bug
 
     def createBugWithoutTarget(self, bug_params):

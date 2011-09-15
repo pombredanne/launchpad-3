@@ -170,10 +170,11 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         product = self.factory.makeProduct(name='fnord')
         login_person(bug.bugtasks[0].target.owner)
         command = AffectsEmailCommand('affects', ['fnord'])
-        bugtask, event = command.execute(bug)
+        bugtask, bugtask_event, bug_event = command.execute(bug, None)
         self.assertEqual(bug, bugtask.bug)
         self.assertEqual(product, bugtask.target)
-        self.assertTrue(IObjectCreatedEvent.providedBy(event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
+        self.assertEqual(None, bug_event)
 
     def test_execute_bug_params_product(self):
         user = self.factory.makePerson()
@@ -184,12 +185,13 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         command = AffectsEmailCommand('affects', ['fnord'])
         bug_params = CreateBugParams(
             title='bug title', msg=message, owner=user)
-        bugtask, event = command.execute(bug_params)
+        bugtask, bugtask_event, bug_event = command.execute(bug_params, None)
         self.assertEqual(product, bugtask.target)
         self.assertEqual('bug title', bugtask.bug.title)
         self.assertEqual('borked\n affects fnord', bugtask.bug.description)
         self.assertEqual(user, bugtask.bug.owner)
-        self.assertTrue(IObjectCreatedEvent.providedBy(event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
 
     def test_execute_bug_params_distribution(self):
         user = self.factory.makePerson()
@@ -200,10 +202,11 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         command = AffectsEmailCommand('affects', ['fnord'])
         bug_params = CreateBugParams(
             title='bug title', msg=message, owner=user)
-        bugtask, event = command.execute(bug_params)
+        bugtask, bugtask_event, bug_event = command.execute(bug_params, None)
         self.assertEqual(distribution, bugtask.target)
         self.assertEqual('bug title', bugtask.bug.title)
-        self.assertTrue(IObjectCreatedEvent.providedBy(event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
 
     def test_execute_bug_params_dsp(self):
         user = self.factory.makePerson()
@@ -219,10 +222,11 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         command = AffectsEmailCommand('affects', ['fnord/snarf'])
         bug_params = CreateBugParams(
             title='bug title', msg=message, owner=user)
-        bugtask, event = command.execute(bug_params)
+        bugtask, bugtask_event, bug_event = command.execute(bug_params, None)
         self.assertEqual(dsp, bugtask.target)
         self.assertEqual('bug title', bugtask.bug.title)
-        self.assertTrue(IObjectCreatedEvent.providedBy(event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
 
 
 class BugEmailCommandTestCase(TestCaseWithFactory):
