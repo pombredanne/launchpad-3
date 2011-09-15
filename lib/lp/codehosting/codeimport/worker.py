@@ -680,7 +680,7 @@ class PullingImportWorker(ImportWorker):
         :return: ControlDir instance
         """
         def redirected(transport, e, redirection_notice):
-            self.opener_policy.checkOneURL(e.target)
+            self._opener_policy.checkOneURL(e.target)
             redirected_transport = transport._redirected_to(e.source, e.target)
             if redirected_transport is None:
                 raise NotBranchError(e.source)
@@ -692,13 +692,11 @@ class PullingImportWorker(ImportWorker):
             for prober_kls in self.probers:
                 prober = prober_kls()
                 try:
-                    format = prober.probe_transport(transport)
+                    return transport, prober.probe_transport(transport)
                 except NotBranchError, e:
-                    pass
-                else:
-                    break
+                    last_error = e
             else:
-                raise e
+                raise last_error
         transport = get_transport(url)
         transport, format = do_catching_redirections(find_format, transport,
             redirected)

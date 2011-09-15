@@ -27,7 +27,10 @@ from bzrlib.bzrdir import (
     format_registry,
     )
 from bzrlib.errors import NoSuchFile
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import (
+    TestCaseWithTransport,
+    http_utils,
+    )
 from bzrlib.transport import (
     get_transport,
     get_transport_from_url,
@@ -77,6 +80,7 @@ from lp.codehosting.safe_open import (
     AcceptAnythingPolicy,
     BadUrl,
     BlacklistPolicy,
+    BranchOpenPolicy,
     SafeBranchOpener,
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
@@ -1368,3 +1372,55 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.assertBadUrl("svn+ssh://svn.example.com/bla")
         self.assertGoodUrl("git://git.example.com/repo")
         self.assertGoodUrl("https://hg.example.com/hg/repo/branch")
+
+
+class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
+
+    layer = ForeignBranchPluginLayer
+
+    def setUp(self):
+        http_utils.TestCaseWithRedirectedWebserver.setUp(self)
+        self.disable_directory_isolation()
+        SafeBranchOpener.install_hook()
+        tree = self.make_branch_and_tree('.')
+        self.revid = tree.commit("A commit")
+        self.bazaar_store = BazaarBranchStore(
+            self.get_transport('bazaar_store'))
+
+    def makeImportWorker(self, opener_policy):
+        """Make a new `ImportWorker`."""
+        source_details = self.factory.makeCodeImportSourceDetails(
+            rcstype='bzr', url=self.get_old_url())
+        return BzrImportWorker(
+            source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger(), opener_policy)
+
+    def test_follow_redirect(self):
+        worker = self.makeImportWorker(AcceptAnythingPolicy())
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+        branch_url = self.bazaar_store._getMirrorURL(
+            worker.source_details.branch_id)
+        branch = Branch.open(branch_url)
+        self.assertEquals(self.revid, branch.last_revision())
+
+    def test_redirect_to_forbidden_url(self):
+        class NewUrlBlacklistPolicy(BranchOpenPolicy):
+
+            def __init__(self, new_url):
+                self.new_url = new_url
+
+            def shouldFollowReferences(self):
+                return True
+
+            def checkOneURL(self, url):
+                if url.startswith(self.new_url):
+                    raise BadUrl(url)
+
+            def transformFallbackLocation(self, branch, url):
+                return urlutils.join(branch.base, url), False
+
+        policy = NewUrlBlacklistPolicy(self.get_new_url())
+        worker = self.makeImportWorker(policy)
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
