@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 import fixtures
+from lazr.config import as_host_port
 from rabbitfixture.server import RabbitServerResources
 from zope.app.server.main import main
 
@@ -231,9 +232,9 @@ class RabbitService(Service):
         return config.rabbitmq.launch
 
     def launch(self):
-        hostname, port = config.rabbitmq.host.split(":")
+        hostname, port = as_host_port(config.rabbitmq.host, None, None)
         self.server = RabbitServer(
-            RabbitServerResources(hostname=hostname, port=int(port)))
+            RabbitServerResources(hostname=hostname, port=port))
         self.useFixture(self.server)
 
 

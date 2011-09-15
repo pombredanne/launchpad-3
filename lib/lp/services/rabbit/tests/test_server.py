@@ -5,7 +5,8 @@
 
 __metaclass__ = type
 
-from textwrap import dedent
+from ConfigParser import SafeConfigParser
+from StringIO import StringIO
 
 from fixtures import EnvironmentVariableFixture
 
@@ -26,11 +27,14 @@ class TestRabbitServer(TestCase):
 
         # RabbitServer pokes some .ini configuration into its config.
         fixture = self.useFixture(RabbitServer())
-        expected = dedent("""\
-            [rabbitmq]
-            host: localhost:%d
-            userid: guest
-            password: guest
-            virtual_host: /
-            """ % fixture.config.port)
-        self.assertEqual(expected, fixture.config.service_config)
+        service_config = SafeConfigParser()
+        service_config.readfp(StringIO(fixture.config.service_config))
+        self.assertEqual(["rabbitmq"], service_config.sections())
+        expected = {
+            "host": "localhost:%d" % fixture.config.port,
+            "userid": "guest",
+            "password": "guest",
+            "virtual_host": "/",
+            }
+        observed = dict(service_config.items("rabbitmq"))
+        self.assertEqual(expected, observed)
