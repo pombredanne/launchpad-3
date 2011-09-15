@@ -15,6 +15,7 @@ __all__ = [
 
 from lazr.delegates import delegates
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
+from lazr.restful.utils import get_current_browser_request
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
@@ -28,7 +29,6 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     )
 from canonical.launchpad.webapp.url import urlappend
-from canonical.lazr.utils import get_current_browser_request
 from canonical.librarian.client import url_path_quote
 from lp.app.errors import GoneError
 

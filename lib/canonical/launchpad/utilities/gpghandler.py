@@ -24,6 +24,7 @@ import urllib
 import urllib2
 
 import gpgme
+from lazr.restful.utils import get_current_browser_request
 from zope.interface import implements
 
 from canonical.config import config
@@ -47,7 +48,6 @@ from canonical.lazr.timeout import (
     TimeoutError,
     urlfetch,
     )
-from canonical.lazr.utils import get_current_browser_request
 from lp.app.validators.email import valid_email
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,

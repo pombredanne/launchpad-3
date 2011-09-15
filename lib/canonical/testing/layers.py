@@ -1502,6 +1502,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
 class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbuser = 'launchpad'
+    host = 'localhost'
 
 
 class LaunchpadZopelessLayer(LaunchpadScriptLayer):
@@ -1555,11 +1556,11 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def switchDbUser(cls, dbuser):
-        LaunchpadZopelessLayer.alterConnection(dbuser=dbuser)
+        LaunchpadZopelessLayer._alterConnection(dbuser=dbuser)
 
     @classmethod
     @profiled
-    def alterConnection(cls, **kw):
+    def _alterConnection(cls, **kw):
         """Reset the connection, and reopen the connection by calling
         initZopeless with the given keyword arguments.
         """

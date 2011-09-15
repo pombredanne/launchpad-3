@@ -99,6 +99,7 @@ from lazr.config import as_timedelta
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 from storm.expr import Join
@@ -193,7 +194,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questioncollection import IQuestionSet

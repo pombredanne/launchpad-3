@@ -51,8 +51,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="break">
   <div id="comments-container"></div>
-  <div class="boardComment" style="border-bottom: 0"
-    id="comments-hidden-message">
+  <div class="boardComment comments-hidden-message" style="border-bottom: 0">
     <div class="boardCommentDetails">
       <table>
         <tbody>
@@ -82,4 +81,49 @@
   </div>
 </div>
 
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="comment-form">
+  <div tal:define="comment_form nocall:context/@@+addcomment-form;
+       dummy comment_form/initialize" id="add-comment-form">
+    <div tal:condition="context/bug/duplicateof"
+        class="warning message"
+        id="warning-comment-on-duplicate">
+      Remember, this bug report is a duplicate of
+      <a  tal:define="duplicateof context/bug/duplicateof"
+          tal:condition="duplicateof/required:launchpad.View"
+          tal:attributes="href duplicateof/fmt:url; title
+             duplicateof/title; style string:margin-right: 4px;
+             id string:duplicate-of-warning-link;"
+          tal:content="string:bug #${duplicateof/id}."
+      >bug #42</a>
+      <span
+          tal:define="duplicateof context/bug/duplicateof"
+          tal:condition="not:duplicateof/required:launchpad.View"
+          tal:replace="string: a private bug." />
+      Comment here only if you think the duplicate status is wrong.
+    </div>
+    <h2>Add comment</h2>
+    <form action="+addcomment"
+          method="post"
+          enctype="multipart/form-data"
+          accept-charset="UTF-8">
+      <tal:comment-input
+          replace="structure comment_form/widgets/comment" />
+      <div class="actions"
+          tal:content="structure
+          comment_form/actions/field.actions.save/render" />
+    </form>
+    <script type="text/javascript">
+      LPS.use('lp.app.comment', function(Y) {
+          var comment = new Y.lp.app.comment.Comment();
+          comment.render();
+      });
+    </script>
+  </div>
+  <tal:attachment-link
+      define="add_attachment_link context_menu/addcomment"
+      replace="structure add_attachment_link/render" />
+  </div>
 </tal:root>

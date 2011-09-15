@@ -15,6 +15,10 @@ __all__ = [
 
 from operator import itemgetter
 
+from lazr.restful.utils import (
+    safe_hasattr,
+    smartquote,
+    )
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
     getMultiAdapter,
@@ -34,10 +38,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     enabled_with_permission,
     Link,
-    )
-from canonical.lazr.utils import (
-    safe_hasattr,
-    smartquote,
     )
 from lp.app.enums import service_uses_launchpad
 from lp.app.interfaces.launchpad import IServiceUsage

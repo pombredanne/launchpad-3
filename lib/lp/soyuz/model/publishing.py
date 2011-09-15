@@ -114,10 +114,6 @@ from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 
-PENDING = PackagePublishingStatus.PENDING
-PUBLISHED = PackagePublishingStatus.PUBLISHED
-
-
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
 
 def makePoolPath(source_name, component_name):
@@ -327,8 +323,8 @@ class ArchivePublisherBase:
         fields = self.buildIndexStanzaFields()
         return fields.makeOutput()
 
-    def supersede(self):
-        """See `IPublishing`."""
+    def setSuperseded(self):
+        """Set to SUPERSEDED status."""
         self.status = PackagePublishingStatus.SUPERSEDED
         self.datesuperseded = UTC_NOW
 
@@ -425,6 +421,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
     implements(ISourcePackagePublishingHistory)
 
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='sourcepackagename')
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
     distroseries = ForeignKey(foreignKey='DistroSeries',
@@ -690,6 +688,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.distroseries.distribution.getSourcePackageRelease(
             self.supersededby)
 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # self.sourcepackagename is populated.
     @property
     def source_package_name(self):
         """See `ISourcePackagePublishingHistory`"""
@@ -745,7 +745,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             "Should not dominate unpublished source %s" %
             self.sourcepackagerelease.title)
 
-        super(SourcePackagePublishingHistory, self).supersede()
+        self.setSuperseded()
 
         if dominant is not None:
             if logger is not None:
@@ -912,6 +912,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     implements(IBinaryPackagePublishingHistory)
 
+    binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
+        dbName='binarypackagename')
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
     distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
@@ -959,6 +961,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IBinaryPackagePublishingHistory`"""
         return self.distroarchseries.distroseries
 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # self.binarypackagename is populated.
     @property
     def binary_package_name(self):
         """See `IBinaryPackagePublishingHistory`"""
@@ -1085,7 +1089,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return IMasterStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.status.is_in(
-                    [PUBLISHED, PENDING]),
+                    active_publishing_status),
                 BinaryPackagePublishingHistory.distroarchseriesID.is_in(
                     available_architectures),
                 binarypackagerelease=self.binarypackagerelease,
@@ -1105,7 +1109,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return IMasterStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.status.is_in(
-                    [PUBLISHED, PENDING]),
+                    active_publishing_status),
                 BinaryPackagePublishingHistory.distroarchseries ==
                     self.distroarchseries,
                 binarypackagerelease=self.binarypackagerelease.debug_package,
@@ -1130,7 +1134,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 self.distroarchseries.architecturetag))
             return
 
-        super(BinaryPackagePublishingHistory, self).supersede()
+        self.setSuperseded()
 
         if dominant is not None:
             # DDEBs cannot themselves be dominant; they are always dominated
@@ -1206,6 +1210,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Append the modified package publishing entry
         return BinaryPackagePublishingHistory(
+            binarypackagename=self.binarypackagerelease.binarypackagename,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
@@ -1437,12 +1442,14 @@ class PublishingSet:
         insert_head = """
             INSERT INTO BinaryPackagePublishingHistory
             (archive, distroarchseries, pocket, binarypackagerelease,
-             component, section, priority, status, datecreated)
+             binarypackagename, component, section, priority, status,
+             datecreated)
             VALUES
             """
         insert_pubs = ", ".join(
             "(%s)" % ", ".join(sqlvalues(
                 get_archive(archive, bpr).id, das.id, pocket, bpr.id,
+                bpr.binarypackagename,
                 get_component(archive, das.distroseries, component).id,
                 section.id, priority, PackagePublishingStatus.PENDING,
                 UTC_NOW))
@@ -1471,6 +1478,7 @@ class PublishingSet:
             "Will not create new publications in a disabled architecture.")
         return BinaryPackagePublishingHistory(
             archive=archive,
+            binarypackagename=binarypackagerelease.binarypackagename,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
             component=get_component(
@@ -1497,6 +1505,7 @@ class PublishingSet:
             distroseries=distroseries,
             pocket=pocket,
             archive=archive,
+            sourcepackagename=sourcepackagerelease.sourcepackagename,
             sourcepackagerelease=sourcepackagerelease,
             component=get_component(archive, distroseries, component),
             section=section,
@@ -1979,12 +1988,17 @@ class PublishingSet:
             ]
         assert publication_class in permitted_classes, "Deleting wrong type."
 
+        if removed_by is None:
+            removed_by_id = None
+        else:
+            removed_by_id = removed_by.id
+
         affected_pubs = IMasterStore(publication_class).find(
             publication_class, publication_class.id.is_in(ids))
         affected_pubs.set(
             status=PackagePublishingStatus.DELETED,
             datesuperseded=UTC_NOW,
-            removed_byID=removed_by.id,
+            removed_byID=removed_by_id,
             removal_comment=removal_comment)
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):

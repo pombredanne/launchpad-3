@@ -40,7 +40,7 @@ logger_options(parser)
 db_options(parser)
 options, args = parser.parse_args()
 
-con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
 #  People have so far updated translation credits, often mis-crediting people,
 #  or removing credits to upstream translators: we want to disable all of these

@@ -16,6 +16,7 @@ from datetime import (
 
 from pytz import UTC
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.testing import verifyObject
@@ -1115,8 +1116,9 @@ class TestAutoBlocking(TestCaseWithFactory):
 
         target = self._copyTargetFromEntry(same_target_as)
 
-        return self.factory.makeTranslationImportQueueEntry(
-            path=path, status=status, **target)
+        return removeSecurityProxy(
+            self.factory.makeTranslationImportQueueEntry(
+                path=path, status=status, **target))
 
     def _makeTranslationEntry(self, path, status=None, same_target_as=None):
         """Create an import queue entry for a translation file.
@@ -1126,8 +1128,9 @@ class TestAutoBlocking(TestCaseWithFactory):
         entry that may have to be blocked depending on same_target_as.
         """
         target = self._copyTargetFromEntry(same_target_as)
-        return self.factory.makeTranslationImportQueueEntry(
-            path=path, status=status, **target)
+        return removeSecurityProxy(
+            self.factory.makeTranslationImportQueueEntry(
+                path=path, status=status, **target))
 
     def test_getBlockableDirectories_checks_templates(self):
         old_blocklist = self.queue._getBlockableDirectories()
@@ -1180,7 +1183,6 @@ class TestAutoBlocking(TestCaseWithFactory):
 
         translations = self._makeTranslationEntry(
             'de.po', same_target_as=blocked_template)
-
         self.assertTrue(self.queue._isBlockable(translations, blocklist))
 
     def test_isBlockable_multiple_blocked(self):
