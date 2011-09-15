@@ -193,6 +193,22 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
         self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
 
+    def test_execute_bug_params_productseries(self):
+        product = self.factory.makeProduct(name='fnord')
+        login_person(product.owner)
+        series = self.factory.makeProductSeries(name='pting', product=product)
+        message = self.factory.makeMessage(
+            subject='bug title', content='borked\n affects fnord/pting')
+        command = AffectsEmailCommand('affects', ['fnord/pting'])
+        bug_params = CreateBugParams(
+            title='bug title', msg=message, owner=product.owner)
+        bugtask, bugtask_event, bug_event = command.execute(bug_params, None)
+        self.assertEqual(series, bugtask.target)
+        self.assertEqual('bug title', bugtask.bug.title)
+        self.assertEqual(2, len(bugtask.bug.bugtasks))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
+
     def test_execute_bug_params_distribution(self):
         user = self.factory.makePerson()
         login_person(user)
@@ -225,6 +241,42 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         bugtask, bugtask_event, bug_event = command.execute(bug_params, None)
         self.assertEqual(dsp, bugtask.target)
         self.assertEqual('bug title', bugtask.bug.title)
+        self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
+
+    def test_execute_bug_params_distroseries(self):
+        distribution = self.factory.makeDistribution(name='fnord')
+        login_person(distribution.owner)
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distribution)
+        message = self.factory.makeMessage(
+            subject='bug title', content='borked\n affects fnord/pting')
+        command = AffectsEmailCommand('affects', ['fnord/pting'])
+        bug_params = CreateBugParams(
+            title='bug title', msg=message, owner=distribution.owner)
+        bugtask, bugtask_event, bug_event = command.execute(bug_params, None)
+        self.assertEqual(series, bugtask.target)
+        self.assertEqual('bug title', bugtask.bug.title)
+        self.assertEqual(2, len(bugtask.bug.bugtasks))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
+        self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
+
+    def test_execute_bug_params_distroseries_sourcepackage(self):
+        distribution = self.factory.makeDistribution(name='fnord')
+        login_person(distribution.owner)
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distribution)
+        package = self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        message = self.factory.makeMessage(
+            subject='bug title', content='borked\n affects fnord/pting/snarf')
+        command = AffectsEmailCommand('affects', ['fnord/pting/snarf'])
+        bug_params = CreateBugParams(
+            title='bug title', msg=message, owner=distribution.owner)
+        bugtask, bugtask_event, bug_event = command.execute(bug_params, None)
+        self.assertEqual(package, bugtask.target)
+        self.assertEqual('bug title', bugtask.bug.title)
+        self.assertEqual(2, len(bugtask.bug.bugtasks))
         self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
         self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
 

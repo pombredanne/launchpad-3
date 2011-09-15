@@ -72,3 +72,4 @@ class TestAdapters(TestCaseWithFactory):
         product = productseries_to_product(product_series)
         self.assertTrue(IProduct.providedBy(product))
         self.assertEqual(product_series.product, product)
+        self.assertEqual(product, IProduct(product_series))

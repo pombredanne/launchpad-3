@@ -599,8 +599,8 @@ class AffectsEmailCommand(EmailCommand):
             bug.setBugTarget(**kwargs)
             bug, bug_event = getUtility(IBugSet).createBug(
                 bug, notify_event=False)
-            bugtask = bug.bugtasks[0]
-            return bugtask, ObjectCreatedEvent(bugtask), bug_event
+            event = ObjectCreatedEvent(bug.bugtasks[0])
+            # Continue because the bug_target may be a subordinate task.
 
         bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
