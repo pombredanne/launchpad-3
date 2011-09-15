@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
-from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 
 __metaclass__ = type
 
@@ -90,6 +89,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.project import ProjectScopeWidget
+from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
@@ -104,8 +104,9 @@ from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
+    IBugTask,
     IFrontPageBugTaskSearch,
-    IBugTask)
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
