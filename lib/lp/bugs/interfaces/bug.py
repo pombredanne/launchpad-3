@@ -1125,10 +1125,13 @@ class IBugSet(Interface):
         the given bug tracker and remote bug id.
         """
 
-    def createBug(bug_params):
+    def createBug(bug_params, notify_event=True):
         """Create a bug and return it.
 
-        :bug_params: A CreateBugParams object.
+        :param bug_params: A CreateBugParams object.
+        :param notify_event: notify subscribers of the bug creation event.
+        :return: the new bug, or a tuple of bug, event when notify_event
+            is false.
 
         Things to note when using this factory:
 

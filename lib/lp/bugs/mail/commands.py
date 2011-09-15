@@ -407,6 +407,8 @@ class DuplicateEmailCommand(EmailCommand):
     def execute(self, context, current_event):
         """See IEmailCommand."""
         if isinstance(context, CreateBugParams):
+            # No one intentially reports a duplicate bug. Bug email commands
+            # support CreateBugParams, so in this case, just return.
             return context, current_event
         self._ensureNumberOfArguments()
         [bug_id] = self.string_args
@@ -590,7 +592,7 @@ class AffectsEmailCommand(EmailCommand):
         event = None
 
         if isinstance(bug, CreateBugParams):
-            # Enough information has be gathered to create a new bug.
+            # Enough information has been gathered to create a new bug.
             kwargs = {
                 'product': IProduct(bug_target, None),
                 'distribution': IDistribution(bug_target, None),
@@ -600,7 +602,7 @@ class AffectsEmailCommand(EmailCommand):
             bug, bug_event = getUtility(IBugSet).createBug(
                 bug, notify_event=False)
             event = ObjectCreatedEvent(bug.bugtasks[0])
-            # Continue because the bug_target may be a subordinate task.
+            # Continue because the bug_target may be a subordinate bugtask.
 
         bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
