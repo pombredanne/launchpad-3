@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import simplejson
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from BeautifulSoup import BeautifulSoup
 
@@ -273,7 +274,8 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # When the bug secrecy view is called from an ajax request, it should
         # provide a json encoded dict when rendered. The dict contains bug
         # subscription information resulting from the update to the bug
-        # privacy.
+        # privacy as well as information used to populate the updated
+        # subscribers list.
         person = self.factory.makePerson()
         bug = self.factory.makeBug(owner=person)
         with person_logged_in(person):
@@ -287,7 +289,9 @@ class TestBugSecrecyViews(TestCaseWithFactory):
                 'field.security_related': 'off'},
             **extra)
         view = self.createInitializedSecrecyView(person, bug, request)
-        cache_data = simplejson.loads(view.render())
+        result_data = simplejson.loads(view.render())
+
+        cache_data = result_data['cache_data']
         self.assertFalse(cache_data['other_subscription_notifications'])
         subscription_data = cache_data['subscription']
         self.assertEqual(
@@ -298,6 +302,12 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             subscription_data['person_link'])
         self.assertEqual(
             'Discussion', subscription_data['bug_notification_level'])
+
+        [subscriber_data] = result_data['subscription_data']
+        subscriber = removeSecurityProxy(bug.default_bugtask).pillar.owner
+        self.assertEqual(
+            subscriber.name, subscriber_data['subscriber']['name'])
+        self.assertEqual('Discussion', subscriber_data['subscription_level'])
 
     def test_set_security_related(self):
         # Test that the bug attribute 'security_related' can be updated

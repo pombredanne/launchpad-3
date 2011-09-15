@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
+from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 
 __metaclass__ = type
 
@@ -104,7 +105,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     IFrontPageBugTaskSearch,
-    )
+    IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
@@ -870,17 +871,33 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             notify(ObjectModifiedEvent(
                     bug, bug_before_modification, changed_fields))
         if self.request.is_ajax:
-            if private_changed:
+            if private_changed or security_related_changed:
                 return self._getSubscriptionDetails()
             else:
                 return ''
 
     def _getSubscriptionDetails(self):
         cache = dict()
+        # The subscription details for the current user.
         self.extractBugSubscriptionDetails(self.user, self.context.bug, cache)
-        return dumps(
+
+        # The subscription details for other users to populate the subscribers
+        # list in the portlet.
+        if IBugTask.providedBy(self.context):
+            bug = self.context.bug
+        else:
+            bug = self.context
+        subscribers_portlet = BugPortletSubscribersWithDetails(
+            bug, self.request)
+        subscription_data = subscribers_portlet()
+        cache_data = dumps(
             cache, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
+
+        return ("""{
+                "cache_data": %s,
+                "subscription_data": %s}
+            """) % (cache_data, subscription_data)
 
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.
