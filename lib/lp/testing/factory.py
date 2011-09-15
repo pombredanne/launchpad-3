@@ -112,6 +112,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -1703,7 +1704,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True,
+                    date_created=None):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -1713,6 +1715,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             one will be created.
         :param target: The `IBugTarget`, to which the bug will be
             targeted to.
+        :param owner: The `IPerson` who will own the new BugTask.
+        :param publish: If `target` is an `ISourcePackage`
+            or `IDistributionSourcePackage`, should a
+            SourcePackagePublishingHistory entry be made for the
+            package?
+        :param date_created: The date on which the BugTask was created.
         """
         if bug is None:
             bug = self.makeBug()
@@ -1749,7 +1757,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if prerequisite is None:
                 self.makeBugTask(bug, prerequisite_target, publish=publish)
 
-        return removeSecurityProxy(bug).addTask(owner, target)
+        task = removeSecurityProxy(bug).addTask(owner, target)
+        if date_created is not None:
+            task.datecreated = date_created
+        return task
 
     def makeBugNomination(self, bug=None, target=None):
         """Create and return a BugNomination.
@@ -4260,6 +4271,32 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
+
+    def makeNoisyBug(
+        self, bug_age=365, number_of_tasks=100, number_of_comments=100):
+        """Create a new `Bug` with lots of tasks and comments."""
+        days = bug_age
+        bug = self.makeBug(
+            date_created=datetime.now(UTC) - timedelta(days=days))
+        for i in range(number_of_tasks):
+            days = days - i
+            current_date = datetime.now(UTC) - timedelta(days=days)
+            task = self.makeBugTask(bug=bug, date_created=current_date)
+            change = BugTaskStatusChange(
+                bug_task=task, when=current_date,
+                person=bug.owner, what_changed='status',
+                old_value=BugTaskStatus.NEW, new_value=BugTaskStatus.TRIAGED)
+            bug.addChange(change)
+            msg = self.makeMessage(
+                content="Comment on day %i" % days, datecreated=current_date)
+            bug.linkMessage(msg)
+        for i in range(number_of_comments):
+            days = days - i
+            current_date = datetime.now(UTC) - timedelta(days=days)
+            msg = self.makeMessage(
+                content="Comment on day %i" % days, datecreated=current_date)
+            bug.linkMessage(msg)
+        return bug
 
 
 # Some factory methods return simple Python types. We don't add
