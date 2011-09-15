@@ -90,6 +90,7 @@ class LinkCheckerAPI(LaunchpadView):
         invalid_links = {}
         valid_links = {}
         user = self.user
+        # List of all the bugs we are checking.
         bugs = [int(link[len('/bugs/'):]) for link in links]
         if bugs:
             params = BugTaskSearchParams(
@@ -98,7 +99,9 @@ class LinkCheckerAPI(LaunchpadView):
             bugtasks = getUtility(IBugTaskSet).search(params)
             for task in bugtasks:
                 valid_links['/bugs/' + str(task.bug.id)] = task.bug.title
+                # Remove valid bugs from the list of all the bugs.
                 bugs.remove(task.bug.id)
+            # We should now have only invalid bugs in bugs list
             for bug in bugs:
                 invalid_links['/bugs/' + str(bug)] = (
                     "Bug %s cannot be found" % bug)
