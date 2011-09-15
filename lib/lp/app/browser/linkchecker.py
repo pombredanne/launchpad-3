@@ -65,8 +65,8 @@ class LinkCheckerAPI(LaunchpadView):
 
         for link_type in links_to_check:
             links = links_to_check[link_type]
-            invalid_links = self.link_checkers[link_type](links)
-            result[link_type] = invalid_links
+            link_info = self.link_checkers[link_type](links)
+            result[link_type] = link_info
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(result)
@@ -91,19 +91,19 @@ class LinkCheckerAPI(LaunchpadView):
         valid_links = {}
         user = self.user
         # List of all the bugs we are checking.
-        bugs = [int(link[len('/bugs/'):]) for link in links]
-        if bugs:
+        bugs_ids = set([int(link[len('/bugs/'):]) for link in links])
+        if bugs_ids:
             params = BugTaskSearchParams(
                 user=user, status=None,
-                bug=any(*bugs))
+                bug=any(*bugs_ids))
             bugtasks = getUtility(IBugTaskSet).search(params)
             for task in bugtasks:
                 valid_links['/bugs/' + str(task.bug.id)] = task.bug.title
                 # Remove valid bugs from the list of all the bugs.
-                bugs.remove(task.bug.id)
+                bugs_ids.remove(task.bug.id)
             # We should now have only invalid bugs in bugs list
-            for bug in bugs:
-                invalid_links['/bugs/' + str(bug)] = (
+            for bug in bugs_ids:
+                invalid_links['/bugs/%d' % bug] = (
                     "Bug %s cannot be found" % bug)
         return {'valid': valid_links, 'invalid': invalid_links}
 
