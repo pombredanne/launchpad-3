@@ -21,8 +21,6 @@ BEGIN
         return NULL;
     END IF;
 
-    RAISE NOTICE 'BRANCH ID IS %', branch_id;
-
     UPDATE branch SET transitively_private = (
         WITH
         recursive stacked_branches AS
