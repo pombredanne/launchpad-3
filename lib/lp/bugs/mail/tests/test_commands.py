@@ -189,7 +189,7 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         self.assertEqual('bug title', bugtask.bug.title)
         self.assertEqual('borked\n affects fnord', bugtask.bug.description)
         self.assertEqual(user, bugtask.bug.owner)
-        self.assertEqual(None, event)
+        self.assertTrue(IObjectCreatedEvent.providedBy(event))
 
     def test_execute_bug_params_distribution(self):
         user = self.factory.makePerson()
@@ -203,7 +203,7 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         bugtask, event = command.execute(bug_params)
         self.assertEqual(distribution, bugtask.target)
         self.assertEqual('bug title', bugtask.bug.title)
-        self.assertEqual(None, event)
+        self.assertTrue(IObjectCreatedEvent.providedBy(event))
 
     def test_execute_bug_params_dsp(self):
         user = self.factory.makePerson()
@@ -222,7 +222,7 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         bugtask, event = command.execute(bug_params)
         self.assertEqual(dsp, bugtask.target)
         self.assertEqual('bug title', bugtask.bug.title)
-        self.assertEqual(None, event)
+        self.assertTrue(IObjectCreatedEvent.providedBy(event))
 
 
 class BugEmailCommandTestCase(TestCaseWithFactory):
