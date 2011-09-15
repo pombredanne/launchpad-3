@@ -71,6 +71,7 @@ Default
     Packages::Compress ". gzip bzip2";
     Sources::Compress ". gzip bzip2";
     Contents::Compress "gzip";
+    Translation::Compress ". gzip bzip2";
     DeLinkLimit 0;
     MaxContentsChange 12000;
     FileMode 0644;
