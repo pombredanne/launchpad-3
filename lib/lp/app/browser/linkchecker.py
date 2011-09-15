@@ -102,7 +102,7 @@ class LinkCheckerAPI(LaunchpadView):
             for bug in bugs:
                 invalid_links['/bugs/' + str(bug)] = (
                     "Bug %s cannot be found" % bug)
-        return {'valid': valid_links, 'invalid' : invalid_links}
+        return {'valid': valid_links, 'invalid': invalid_links}
 
     def _error_message(self, ex):
         if hasattr(ex, 'display_message'):
