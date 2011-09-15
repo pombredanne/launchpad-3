@@ -268,7 +268,7 @@ def _gpgAuthenticateEmail(mail, principal, person, signature_timestamp_checker):
         log.debug("got signature %r" % sig)
     except GPGVerificationError, e:
         # verifySignature failed to verify the signature.
-        message = "signature couldn't be verified: %s" % e
+        message = "Signature couldn't be verified: %s" % e
         log.debug(message)
         raise InvalidSignature(message)
 
