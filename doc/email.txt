@@ -1,8 +1,21 @@
 Launchpad and Email
 ===================
 
+Quicker interactive testing
+---------------------------
+
+There is a script ``process-one-mail.py`` which reads a single mail
+message from a file (or stdin), processes it as if it had been received by
+Lanuchpad, and then prints out any mail generated in response.  For
+quasi-interactive testing of email processing this may be your best bet.
+
 Quickstart
 ----------
+
+Otherwise, you can configure Launchpad with an incoming mailbox and an
+outgoing mailer, in a way somewhat similar to what is used in production.
+This lets you catch mail sent other than in response to an incoming
+message.
 
 Create the file override-includes/+mail-configure.zcml with contents
 similar to the following::
