@@ -15,6 +15,7 @@ __all__ = [
 import itertools
 import operator
 
+from lazr.restful.utils import smartquote
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
@@ -35,7 +36,6 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.lazr.utils import smartquote
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES

@@ -6,7 +6,7 @@
 LAZR provides a way of converting TextThatIsWordSeparatedWithInterCaps
 to text_that_is_word_separated_with_underscores.
 
-    >>> from canonical.lazr.utils import camelcase_to_underscore_separated
+    >>> from lazr.restful.utils import camelcase_to_underscore_separated
     >>> camelcase_to_underscore_separated('lowercase')
     'lowercase'
     >>> camelcase_to_underscore_separated('TwoWords')
@@ -27,7 +27,7 @@ LAZR provides a safe_hasattr() that doesn't hide exception from the
 caller. This behaviour of the builtin hasattr() is annoying because it
 makes problems harder to diagnose.
 
-    >>> from canonical.lazr.utils import safe_hasattr
+    >>> from lazr.restful.utils import safe_hasattr
 
     >>> class Oracle(object):
     ...     @property
@@ -58,7 +58,7 @@ makes problems harder to diagnose.
 smartquote() converts pairs of inch marks (") in a string to typographical
 quotation marks.
 
-    >>> from canonical.lazr.utils import smartquote
+    >>> from lazr.restful.utils import smartquote
     >>> smartquote('')
     u''
     >>> smartquote('foo "bar" baz')
@@ -82,7 +82,7 @@ quotation marks.
 This will escape the given text so that it can be used in Javascript
 code.
 
-    >>> from canonical.lazr.utils import safe_js_escape
+    >>> from lazr.restful.utils import safe_js_escape
     >>> print safe_js_escape('John "nasty" O\'Brien')
     "John &quot;nasty&quot; O'Brien"
     >>> print safe_js_escape("John O\'Brien")

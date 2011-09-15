@@ -8,7 +8,6 @@ __metaclass__ = type
 import logging
 from unittest import TestCase
 
-from canonical import lp
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.scripts.scriptmonitor import check_script
@@ -27,7 +26,7 @@ class CheckScriptTestCase(TestCase):
             log_file = '/dev/null'
             loglevel = 1000
             verbose = False
-        self.con = connect(lp.dbuser)
+        self.con = connect()
         self.log = logger(FakeOptions())
 
     def tearDown(self):

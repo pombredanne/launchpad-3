@@ -17,7 +17,6 @@ import sys
 from optparse import OptionParser
 
 from canonical.config import config
-from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger, logger_options
 import replication.helpers
@@ -73,7 +72,8 @@ def main():
     if explicit is not None:
         nodes = [explicit]
     else:
-        nodes = replication.helpers.get_all_cluster_nodes(connect('slony'))
+        nodes = replication.helpers.get_all_cluster_nodes(
+            connect(user='slony'))
 
     if command == 'start':
         return start(log, nodes, options.lag)
@@ -104,7 +104,7 @@ def start(log, nodes, lag=None):
         log.debug("Logging to %s" % logfile)
         log.debug("PID file %s" % pidfile)
         # Hard code suitable command line arguments for development.
-        slon_args = "-d 2 -s 2000 -t 10000"
+        slon_args = "-d 2 -s 500 -t 2500"
         if lag is not None:
             slon_args = "%s -l '%s'" % (slon_args, lag)
         cmd = [

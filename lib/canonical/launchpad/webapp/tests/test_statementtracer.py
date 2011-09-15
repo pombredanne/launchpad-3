@@ -9,16 +9,17 @@ from contextlib import contextmanager
 import StringIO
 import sys
 
+from lazr.restful.utils import get_current_browser_request
+
+from canonical.launchpad.webapp import adapter as da
+from canonical.testing import DatabaseFunctionalLayer
+from lp.services.osutils import override_environ
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.services.osutils import override_environ
-from lp.services.timeline.requesttimeline import get_request_timeline
-from canonical.launchpad.webapp import adapter as da
-from canonical.lazr.utils import get_current_browser_request
-from canonical.testing import DatabaseFunctionalLayer
 
 
 @contextmanager

@@ -121,7 +121,6 @@ def close_account(con, log, username):
         ('BranchSubscription', 'person'),
         ('BugSubscription', 'person'),
         ('QuestionSubscription', 'person'),
-        ('POSubscription', 'person'),
         ('SpecificationSubscription', 'person'),
 
         # Personal stuff, freeing up the namespace for others who want to play
@@ -143,15 +142,10 @@ def close_account(con, log, username):
         ('TeamParticipation', 'person'),
 
         # Contacts
-        ('PackageBugSupervisor', 'bug_supervisor'),
         ('AnswerContact', 'person'),
 
         # Pending items in queues
         ('POExportRequest', 'person'),
-
-        # Access lists
-        ('PushMirrorAccess', 'person'),
-        ('DistroComponentUploader', 'uploader'),
         ]
     for table, person_id_column in removals:
         table_notification(table)
@@ -188,7 +182,7 @@ def main():
     con = None
     try:
         log.debug("Connecting to database")
-        con = connect(options.dbuser)
+        con = connect()
         for username in args:
             if not close_account(con, log, username):
                 log.debug("Rolling back")

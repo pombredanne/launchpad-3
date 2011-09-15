@@ -19,7 +19,10 @@ import types
 import urllib
 import urlparse
 
-from lazr.restful.utils import get_current_browser_request
+from lazr.restful.utils import (
+    get_current_browser_request,
+    safe_hasattr,
+    )
 import oops.createhooks
 from oops_datedir_repo import DateDirRepo
 import oops_datedir_repo.serializer_rfc822
@@ -47,7 +50,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.pgsession import PGSessionBase
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr.utils import safe_hasattr
 from lp.app import versioninfo
 from lp.services.timeline.requesttimeline import get_request_timeline
 

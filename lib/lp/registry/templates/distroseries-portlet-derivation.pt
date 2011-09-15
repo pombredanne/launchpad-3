@@ -26,8 +26,7 @@
               123 packages
             </tal:differences_count>
             <a tal:attributes="href view/link_to_all_version_diffs">
-              with differences
-            </a>
+              with differences</a>
             <tal:needing_attention
                 condition="view/num_version_differences_needing_attention">
               (<tal:differences_count
@@ -75,6 +74,7 @@
       define="job context/getInitializationJob"
       condition="job/status/enumvalue:FAILED|nothing">
     <h2>Series initialization has failed</h2>
+    <p tal:content="job/error_description" />
     <tal:retry
         define="can_retry context/@@+initseries/required:launchpad.Edit ">
       <tal:can_retry condition="can_retry">
