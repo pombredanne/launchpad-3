@@ -305,8 +305,8 @@ def process_config_arguments(args):
     """
     if '-i' in args:
         index = args.index('-i')
-        config.setInstance(args[index+1])
-        del args[index:index+2]
+        config.setInstance(args[index + 1])
+        del args[index:index + 2]
 
     if '-C' not in args:
         zope_config_file = config.zope_config_file
@@ -337,10 +337,10 @@ def start_launchpad(argv=list(sys.argv)):
         if config.launchpad.launch:
             main(argv)
         else:
-            # We just need the foreground process to sit around forever waiting
-            # for the signal to shut everything down.  Normally, Zope itself would
-            # be this master process, but we're not starting that up, so we need
-            # to do something else.
+            # We just need the foreground process to sit around forever
+            # waiting for the signal to shut everything down.  Normally, Zope
+            # itself would be this master process, but we're not starting that
+            # up, so we need to do something else.
             try:
                 signal.pause()
             except KeyboardInterrupt:
