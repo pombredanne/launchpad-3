@@ -92,11 +92,6 @@ class InactiveAccount(Exception):
     """The account for the person sending this email is inactive."""
 
 
-def extract_address_domain(address):
-    realname, email_address = email.utils.parseaddr(address)
-    return email_address.split('@')[1]
-
-
 _trusted_dkim_domains = [
     'gmail.com', 'google.com', 'mail.google.com', 'canonical.com']
 
