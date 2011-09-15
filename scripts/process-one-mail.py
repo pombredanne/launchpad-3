@@ -27,6 +27,8 @@ class ProcessMail(LaunchpadScript):
 
     Process one incoming email, read from the specified file or from stdin.
 
+    Any mail generated in response is printed to stdout.
+
     """ + __doc__
 
     def main(self):
@@ -43,6 +45,8 @@ class ProcessMail(LaunchpadScript):
         file_alias = save_mail_to_librarian(raw_mail)
         self.logger.debug("saved to librarian as %r" % (file_alias,))
         parsed_mail = signed_message_from_string(raw_mail)
+        # Kinda kludgey way to cause sendmail to just print it.
+        config.sendmail_to_stdout = True
         handle_one_mail(
             self.logger, parsed_mail,
             file_alias, file_alias.http_url,

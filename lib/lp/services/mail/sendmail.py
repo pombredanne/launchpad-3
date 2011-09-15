@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The One True Way to send mail from the Launchpad application.
@@ -42,6 +42,7 @@ from email.Utils import (
     )
 import hashlib
 from smtplib import SMTP
+import sys
 
 from lazr.restful.utils import get_current_browser_request
 from zope.app import zapi
@@ -427,6 +428,9 @@ def sendmail(message, to_addrs=None, bulk=True):
             # when running in the testing environment, store emails
             TestMailer().send(
                 config.canonical.bounce_address, to_addrs, raw_message)
+        elif getattr(config, 'sendmail_to_stdout', None):
+            # For debugging, from process-one-mail, just print it.
+            sys.stdout.write(raw_message)
         else:
             if config.zopeless.send_email:
                 # Note that we simply throw away dud recipients. This is fine,
