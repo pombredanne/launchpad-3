@@ -62,7 +62,6 @@ from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
-from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
@@ -87,6 +86,10 @@ from lp.services.scripts.base import (
     SilentLaunchpadScriptFailure,
     )
 from lp.services.session.model import SessionData
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.potmsgset import POTMsgSet
@@ -200,9 +203,7 @@ class POTranslationPruner(BulkPruner):
     ids_to_prune_query = """
         SELECT POTranslation.id AS id FROM POTranslation
         EXCEPT (
-            SELECT potranslation FROM POComment
-
-            UNION ALL SELECT msgstr0 FROM TranslationMessage
+            SELECT msgstr0 FROM TranslationMessage
                 WHERE msgstr0 IS NOT NULL
 
             UNION ALL SELECT msgstr1 FROM TranslationMessage
@@ -300,6 +301,28 @@ class OAuthNoncePruner(BulkPruner):
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
         """
+
+
+class BugSummaryJournalRollup(TunableLoop):
+    """Rollup BugSummaryJournal rows into BugSummary."""
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(BugSummaryJournalRollup, self).__init__(log, abort_time)
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+    def isDone(self):
+        has_more = self.store.execute(
+            "SELECT EXISTS (SELECT TRUE FROM BugSummaryJournal LIMIT 1)"
+            ).get_one()[0]
+        return not has_more
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size + 0.5)
+        self.store.execute(
+            "SELECT bugsummary_rollup_journal(%s)", (chunk_size,),
+            noresult=True)
+        self.store.commit()
 
 
 class OpenIDConsumerNoncePruner(TunableLoop):
@@ -931,6 +954,60 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
+# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
+class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
+    """Populate the new sourcepackagename column of SPPH."""
+
+    done = False
+    maximum_chunk_size = 5000
+
+    def findSPPHs(self):
+        return IMasterStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.sourcepackagename == None
+            ).order_by(SourcePackagePublishingHistory.id)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.done
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        spphs = self.findSPPHs()[:chunk_size]
+        for spph in spphs:
+            spph.sourcepackagename = (
+                spph.sourcepackagerelease.sourcepackagename)
+        transaction.commit()
+        self.done = self.findSPPHs().is_empty()
+
+
+# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
+class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
+    """Populate the new binarypackagename column of BPPH."""
+
+    done = False
+    maximum_chunk_size = 5000
+
+    def findBPPHs(self):
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.binarypackagename == None
+            ).order_by(BinaryPackagePublishingHistory.id)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.done
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        bpphs = self.findBPPHs()[:chunk_size]
+        for bpph in bpphs:
+            bpph.binarypackagename = (
+                bpph.binarypackagerelease.binarypackagename)
+        transaction.commit()
+        self.done = self.findBPPHs().is_empty()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1145,18 +1222,43 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                 transaction.abort()
 
 
-class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
-    script_name = 'garbo-hourly'
+class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    """Run every 5 minutes.
+
+    This may become even more frequent in the future.
+
+    Jobs with low overhead can go here to distribute work more evenly.
+    """
+    script_name = 'garbo-frequently'
     tunable_loops = [
+        BugSummaryJournalRollup,
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
+        AntiqueSessionPruner,
+        ]
+    experimental_tunable_loops = []
+
+    # 5 minmutes minus 20 seconds for cleanup. This helps ensure the
+    # script is fully terminated before the next scheduled hourly run
+    # kicks in.
+    default_abort_script_time = 60 * 5 - 20
+
+
+class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    """Run every hour.
+
+    Jobs we want to run fairly often but have noticable overhead go here.
+    """
+    script_name = 'garbo-hourly'
+    tunable_loops = [
         RevisionCachePruner,
         BugWatchScheduler,
-        AntiqueSessionPruner,
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        SourcePackagePublishingHistorySPNPopulator,
+        BinaryPackagePublishingHistoryBPNPopulator,
         ]
     experimental_tunable_loops = []
 
@@ -1166,6 +1268,13 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    """Run every day.
+
+    Jobs that don't need to be run frequently.
+
+    If there is low overhead, consider putting these tasks in more
+    frequently invoked lists to distribute the work more evenly.
+    """
     script_name = 'garbo-daily'
     tunable_loops = [
         AnswerContactPruner,

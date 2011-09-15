@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.utils import smartquote
 from zope.component import (
     adapts,
     getMultiAdapter,
@@ -28,7 +29,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,

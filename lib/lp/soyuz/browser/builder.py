@@ -20,6 +20,7 @@ __all__ = [
 
 import operator
 
+from lazr.restful.utils import smartquote
 from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
@@ -41,7 +42,6 @@ from canonical.launchpad.webapp import (
     stepthrough,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

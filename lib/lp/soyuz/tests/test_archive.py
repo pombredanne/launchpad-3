@@ -2006,6 +2006,18 @@ class TestGetPublishedSources(TestCaseWithFactory):
              PackagePublishingPocket.UPDATES],
             [source.pocket for source in filtered])
 
+    def test_filter_by_component_name(self):
+        # getPublishedSources() can be filtered by component name.
+        distroseries = self.factory.makeDistroSeries()
+        for component in getUtility(IComponentSet):
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=distroseries,
+                component=component,
+                )
+        [filtered] = distroseries.main_archive.getPublishedSources(
+            component_name='universe')
+        self.assertEqual('universe', filtered.component.name)
+
 
 class TestSyncSourceFeatureFlag(TestCaseWithFactory):
 

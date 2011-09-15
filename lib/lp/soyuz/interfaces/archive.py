@@ -949,7 +949,10 @@ class IArchiveView(IHasBuildRecords):
             title=_("Created Since Date"),
             description=_("Return entries whose `date_created` is greater "
                           "than or equal to this date."),
-            required=False))
+            required=False),
+        component_name=TextLine(title=_("Component name"), required=False),
+        )
+
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
     @call_with(eager_load=True)
@@ -958,7 +961,7 @@ class IArchiveView(IHasBuildRecords):
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
-                            eager_load=False):
+                            eager_load=False, component_name=None):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param name: source name filter (exact match or SQL LIKE controlled
@@ -973,6 +976,8 @@ class IArchiveView(IHasBuildRecords):
                              matching.
         :param created_since_date: Only return results whose `date_created`
             is greater than or equal to this date.
+        :param component_name: component filter. Only return source packages
+            that are in this component.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`,
             ordered by name. If there are multiple results for the same
