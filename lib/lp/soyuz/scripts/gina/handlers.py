@@ -165,9 +165,8 @@ class ImporterHandler:
     This class is used to handle the import process.
     """
 
-    def __init__(self, ztm, distro_name, distroseries_name, dry_run,
-                 ktdb, archive_root, keyrings, pocket, component_override):
-        self.dry_run = dry_run
+    def __init__(self, ztm, distro_name, distroseries_name, ktdb,
+                 archive_root, keyrings, pocket, component_override):
         self.pocket = pocket
         self.component_override = component_override
         self.ztm = ztm
@@ -191,13 +190,11 @@ class ImporterHandler:
 
     def commit(self):
         """Commit to the database."""
-        if not self.dry_run:
-            self.ztm.commit()
+        self.ztm.commit()
 
     def abort(self):
         """Rollback changes to the database."""
-        if not self.dry_run:
-            self.ztm.abort()
+        self.ztm.abort()
 
     def ensure_archinfo(self, archtag):
         """Append retrived distroarchseries info to a dict."""

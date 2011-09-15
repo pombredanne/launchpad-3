@@ -648,7 +648,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_mark_as_security_vulnerability(self):
         # Marking a bug as a security vulnerability adds to the bug's
         # activity log and sends a notification.
-        self.bug.setSecurityRelated(False)
+        self.bug.setSecurityRelated(False, self.user)
         self.changeAttribute(self.bug, 'security_related', True)
 
         security_change_activity = {
@@ -672,7 +672,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_unmark_as_security_vulnerability(self):
         # Unmarking a bug as a security vulnerability adds to the
         # bug's activity log and sends a notification.
-        self.bug.setSecurityRelated(True)
+        self.bug.setSecurityRelated(True, self.user)
         self.changeAttribute(self.bug, 'security_related', False)
 
         security_change_activity = {
