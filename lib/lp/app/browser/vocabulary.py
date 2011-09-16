@@ -244,6 +244,10 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                 .getPickerEntries(term_values, context_object, **kwarg))
         for target, picker_entry in izip(term_values, entries):
             picker_entry.description = self.getDescription(target)
+            enhanced = bool(getFeatureFlag(
+                'disclosure.target_picker_enhancements.enabled'))
+            if enhanced:
+                picker_entry.alt_title = target.name
         return entries
 
 
