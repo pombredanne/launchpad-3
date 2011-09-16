@@ -613,7 +613,7 @@ class IPOTemplateSubset(Interface):
 
         The search is restricted to this concrete `IPOTemplateSubset`.
 
-        :return: An ORM result set comtaining the templates in the given
+        :return: An ORM result set containing the templates in the given
             `IPOTemplateSubset` with the given translation_domain.
         """
 
