@@ -860,11 +860,13 @@ class TestGarbo(TestCaseWithFactory):
     def test_populate_transitively_private(self):
         # Test garbo job to populate the branch transitively_private column.
 
-        # First delete any existing column data and add a stacked branch.
+        # First delete any existing column data and add stacked branches.
+        # Branches 29 and 30 are explicitly private to start with.
         con = DatabaseLayer._db_fixture.superuser_connection()
         try:
             cur = con.cursor()
-            cur.execute("UPDATE branch set stacked_on=29 where id = 1")
+            cur.execute("UPDATE branch set stacked_on=29 where id = 5")
+            cur.execute("UPDATE branch set stacked_on=5 where id = 1")
             cur.execute("UPDATE branch set transitively_private=NULL")
             con.commit()
         finally:
@@ -875,10 +877,17 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, unmigrated())
         self.runHourly()
         self.assertEqual(0, unmigrated())
-        self.assertEqual(3, store.find(
+        # Check the branches that now should be transitively private.
+        self.assertEqual(4, store.find(
             Branch,
             And(Branch.transitively_private == True,
-                Branch.id.is_in([1, 29, 30]))
+                Branch.id.is_in([1, 5, 29, 30]))
+        ).count())
+        # Check the branches that now should not be transitively private.
+        self.assertEqual(26, store.find(
+            Branch,
+            And(Branch.transitively_private == False,
+                Branch.id < 30)
         ).count())
 
     def test_BranchJobPruner(self):

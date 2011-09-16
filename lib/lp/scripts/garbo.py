@@ -754,7 +754,7 @@ class PopulateBranchTransitivelyPrivate(TunableLoop):
     Only needed until they are all set, after that triggers will maintain it.
     """
 
-    maximum_chunk_size = 5000
+    maximum_chunk_size = 10000
 
     def __init__(self, log, abort_time=None):
         super_instance = super(PopulateBranchTransitivelyPrivate, self)
@@ -767,30 +767,42 @@ class PopulateBranchTransitivelyPrivate(TunableLoop):
         """See `ITunableLoop`."""
         transaction.begin()
         updated = self.store.execute("""
-            UPDATE branch SET transitively_private = (
-                    WITH
-                    recursive stacked_branches AS
-                    (
-                        SELECT branch.id,
-                            branch.stacked_on,
-                            cast(private as int) AS private
-                        FROM branch as selected_branch
-                        WHERE selected_branch.id = branch.id
-                        UNION all
-                        SELECT stacked_branches.id,
-                            branch.stacked_on,
-                            cast(branch.private as int) AS private
-                        FROM stacked_branches, branch
-                        WHERE stacked_branches.stacked_on = branch.id)
-                    SELECT
-                        CASE WHEN sum(private)>0 THEN True
-                        ELSE False
-                        END
-                    FROM stacked_branches
-                    GROUP BY id
-                ) WHERE id IN (
-                    SELECT id FROM branch WHERE transitively_private is NULL
-                    limit %s);
+            UPDATE branch SET transitively_private = stacked_branches.private
+            FROM
+            (
+               WITH recursive stacked_branches AS
+               (
+                  SELECT selected_branch.id,
+                    CASE WHEN transitively_private IS NOT NULL THEN NULL
+                    ELSE selected_branch.stacked_on
+                    END as stacked_on,
+                    COALESCE(transitively_private, private) AS private
+                  FROM branch AS selected_branch
+                  WHERE selected_branch.id IN
+                  (
+                     SELECT id
+                     FROM branch
+                     WHERE transitively_private is NULL
+                     ORDER BY id limit %s
+                  )
+                  UNION all
+                  SELECT
+                    stacked_branches.id,
+                    CASE WHEN branch.transitively_private IS NOT NULL
+                    THEN NULL
+                    ELSE branch.stacked_on
+                    END as stacked_on,
+                    COALESCE(
+                        branch.transitively_private,
+                        branch.private) AS private
+                  FROM stacked_branches JOIN branch
+                  ON stacked_branches.stacked_on = branch.id
+               )
+               SELECT
+               id, bool_or(stacked_branches.private) as private
+               FROM stacked_branches
+               GROUP BY id
+            ) AS stacked_branches WHERE branch.id = stacked_branches.id
             """ % int(chunk_size)
             ).rowcount
         self.log.debug("Updated %s branches." % updated)
