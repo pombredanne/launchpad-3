@@ -154,9 +154,36 @@ class TestProductCodeIndexView(ProductTestBase):
         getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
 
         view = create_initialized_view(product, '+code-index',
-                                       rootsite='code')
+                                       rootsite='code', principal=fsm)
         self.assertEqual(view.committer_count, 1)
 
+        commit_section = find_tag_by_id(view.render(), 'commits')
+        self.assertIsNot(None, commit_section)
+
+
+    def test_committers_count_private_branch_non_subscriber(self):
+        # Test that calling committer_count will return the proper value
+        # for a private branch.
+        fsm = self.factory.makePerson(email='flyingpasta@example.com')
+        product, branch = self.makeProductAndDevelopmentFocusBranch(
+            private=True, owner=fsm)
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=30),
+            timedelta(days=1))
+        login_person(fsm)
+        self.factory.makeRevisionsForBranch(
+            branch, author='flyingpasta@example.com',
+            date_generator=date_generator)
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
+
+        observer = self.factory.makePerson()
+        login_person(observer)
+        view = create_initialized_view(product, '+code-index',
+                                       rootsite='code', principal=observer)
+        self.assertEqual(view.branch_count, 0)
+        self.assertEqual(view.committer_count, 1)
+        commit_section = find_tag_by_id(view.render(), 'commits')
+        self.assertIs(None, commit_section)
 
 class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
