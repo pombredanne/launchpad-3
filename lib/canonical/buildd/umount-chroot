@@ -26,5 +26,16 @@ echo "Unmounting chroot for build $BUILDID..."
 #$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/home/buildd/.ccache"
 #$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/var/cache/apt/archives"
 #$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/dev/shm"
-$GREP "$HOME/build-$BUILDID/chroot-autobuild" /proc/mounts | \
-      $CUT -d\  -f2 | $XARGS -r -n 1 $SUDO umount
+COUNT=0
+while $GREP "$HOME/build-$BUILDID/chroot-autobuild" /proc/mounts; do 
+    COUNT=$(($COUNT+1))
+    if [ $COUNT -ge 20 ]; then
+    	echo "failed to umount $HOME/build-$BUILDID/chroot-autobuild"
+	if [ -x /usr/bin/lsof ]; then
+	    /usr/bin/lsof "$HOME/build-$BUILDID/chroot-autobuild"
+	fi
+	exit 1
+    fi
+    $GREP "$HOME/build-$BUILDID/chroot-autobuild" /proc/mounts | \
+	  $CUT -d\  -f2 | $XARGS -r -n 1 $SUDO umount || sleep 1
+done
