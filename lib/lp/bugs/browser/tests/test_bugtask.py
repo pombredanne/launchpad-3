@@ -1068,12 +1068,12 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
     def test_offset(self):
         # BugTaskBatchedCommentsAndActivityView.offset returns the
         # current offset being used to select a batch of bug comments
-        # and activity. If one is not specified, the view's
-        # visible_initial_comments count will be returned (so that
-        # comments already shown on the page won't appear twice).
+        # and activity. If one is not specified, the offset will be the
+        # view's visible_initial_comments count + 1 (so that comments
+        # already shown on the page won't appear twice).
         bug_task = self.factory.makeBugTask()
         view = create_initialized_view(bug_task, '+batched-comments')
-        self.assertEqual(view.visible_initial_comments, view.offset)
+        self.assertEqual(view.visible_initial_comments+1, view.offset)
         view = create_initialized_view(
             bug_task, '+batched-comments', form={'offset': 100})
         self.assertEqual(100, view.offset)
@@ -1098,7 +1098,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         bug = self._makeNoisyBug()
         view = create_initialized_view(
             bug.default_bugtask, '+batched-comments',
-            form={'batch_size': 10})
+            form={'batch_size': 10, 'offset': 1})
         self.assertEqual(10, len([group for group in view._event_groups]))
 
     def test_activity_and_comments_matches_unbatched_version(self):
