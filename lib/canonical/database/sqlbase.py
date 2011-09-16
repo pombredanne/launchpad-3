@@ -291,39 +291,11 @@ class ZopelessTransactionManager(object):
                              "directly instantiated.")
 
     @classmethod
-    def _get_zopeless_connection_config(self, dbname, dbhost):
-        # This method exists for testability.
-
-        # This is only used by scripts, so we must connect to the read-write
-        # DB here -- that's why we use rw_main_master directly.
-        from canonical.database.postgresql import ConnectionString
-        main_connection_string = ConnectionString(dbconfig.rw_main_master)
-
-        # Override dbname and dbhost in the connection string if they
-        # have been passed in.
-        if dbname is None:
-            dbname = main_connection_string.dbname
-        else:
-            main_connection_string.dbname = dbname
-
-        if dbhost is None:
-            dbhost = main_connection_string.host
-        else:
-            main_connection_string.host = dbhost
-
-        return str(main_connection_string), dbname, dbhost
-
-    @classmethod
-    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
-
-        main_connection_string, dbname, dbhost = (
-            cls._get_zopeless_connection_config(dbname, dbhost))
-
-        assert dbuser is not None, '''
-            dbuser is now required. All scripts must connect as unique
-            database users.
-            '''
+    def initZopeless(cls, dbuser=None, isolation=ISOLATION_LEVEL_DEFAULT):
+        if dbuser is None:
+            raise AssertionError(
+                "dbuser is now required. All scripts must connect as unique "
+                "database users.")
 
         isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
@@ -333,18 +305,13 @@ class ZopelessTransactionManager(object):
         # Construct a config fragment:
         overlay = dedent("""\
             [database]
-            rw_main_master: %(main_connection_string)s
             isolation_level: %(isolation_level)s
-            """ % {
-                'isolation_level': isolation_level,
-                'main_connection_string': main_connection_string,
-                })
 
-        if dbuser:
-            overlay += dedent("""\
-                [launchpad]
-                dbuser: %(dbuser)s
-                """ % {'dbuser': dbuser})
+            [launchpad]
+            dbuser: %(dbuser)s
+            """ % dict(
+                isolation_level=isolation_level,
+                dbuser=dbuser))
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
@@ -357,8 +324,6 @@ class ZopelessTransactionManager(object):
         else:
             config.push(cls._CONFIG_OVERLAY_NAME, overlay)
             cls._config_overlay = overlay
-            cls._dbname = dbname
-            cls._dbhost = dbhost
             cls._dbuser = dbuser
             cls._isolation = isolation
             cls._reset_stores()
@@ -419,7 +384,7 @@ class ZopelessTransactionManager(object):
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
         cls.uninstall()
-        cls.initZopeless(cls._dbname, cls._dbhost, cls._dbuser, isolation)
+        cls.initZopeless(cls._dbuser, isolation)
 
     @staticmethod
     def conn():
@@ -781,41 +746,31 @@ def commit():
     transaction.commit()
 
 
-def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
+def connect(user=None, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     """Return a fresh DB-API connection to the MAIN MASTER database.
 
-    DEPRECATED - if needed, this should become a method on the Store.
-
-    Use None for the user to connect as the default PostgreSQL user.
-    This is not the default because the option should be rarely used.
+    Can be used without first setting up the Component Architecture,
+    unlike the usual stores.
 
     Default database name is the one specified in the main configuration file.
     """
-    con = psycopg2.connect(connect_string(user, dbname))
+    con = psycopg2.connect(connect_string(user=user, dbname=dbname))
     con.set_isolation_level(isolation)
     return con
 
 
-def connect_string(user, dbname=None):
+def connect_string(user=None, dbname=None):
     """Return a PostgreSQL connection string.
 
     Allows you to pass the generated connection details to external
     programs like pg_dump or embed in slonik scripts.
     """
-    from canonical import lp
-
     # We must connect to the read-write DB here, so we use rw_main_master
     # directly.
     from canonical.database.postgresql import ConnectionString
     con_str = ConnectionString(dbconfig.rw_main_master)
     if user is not None:
         con_str.user = user
-    if lp.dbhost is not None:
-        con_str.host = lp.dbhost
-    if lp.dbport is not None:
-        con_str.port = lp.dbport
-    if dbname is None:
-        dbname = lp.get_dbname()  # Note that lp.dbname may be None
     if dbname is not None:
         con_str.dbname = dbname
     return str(con_str)

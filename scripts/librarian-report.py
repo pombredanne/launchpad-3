@@ -48,7 +48,7 @@ def main():
     else:
         until_date = ''
 
-    con = connect(options.dbuser)
+    con = connect()
     cur = con.cursor()
 
     # Collect direct references to the LibraryFileAlias table.

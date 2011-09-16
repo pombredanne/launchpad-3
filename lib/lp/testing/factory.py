@@ -306,6 +306,9 @@ from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
@@ -314,9 +317,6 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
 from lp.translations.interfaces.translator import ITranslatorSet
-from lp.translations.model.translationimportqueue import (
-    TranslationImportQueueEntry,
-    )
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
@@ -1627,8 +1627,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, date_closed=None, title=None,
-                date_created=None, description=None, comment=None,
+                private=False, security_related=False, date_closed=None,
+                title=None, date_created=None, description=None, comment=None,
                 status=None, distribution=None, milestone=None, series=None,
                 tags=None, sourcepackagename=None):
         """Create and return a new, arbitrary Bug.
@@ -1679,6 +1679,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, private=private,
+            security_related=security_related,
             datecreated=date_created, description=description,
             status=status, tags=tags)
         create_bug_params.setBugTarget(
@@ -3241,9 +3242,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if content is None:
             content = self.getUniqueString()
-        content_reference = getUtility(ILibraryFileAliasSet).create(
-            name=os.path.basename(path), size=len(content),
-            file=StringIO(content), contentType='text/plain')
 
         if format is None:
             format = TranslationFileFormat.PO
@@ -3251,11 +3249,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status is None:
             status = RosettaImportStatus.NEEDS_REVIEW
 
-        return TranslationImportQueueEntry(
-            path=path, productseries=productseries, distroseries=distroseries,
-            sourcepackagename=sourcepackagename, importer=uploader,
-            content=content_reference, status=status, format=format,
-            by_maintainer=by_maintainer)
+        if type(content) == unicode:
+            content = content.encode('utf-8')
+
+        entry = getUtility(ITranslationImportQueue).addOrUpdateEntry(
+            path=path, content=content, by_maintainer=by_maintainer,
+            importer=uploader, productseries=productseries,
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
+            potemplate=potemplate, pofile=pofile, format=format)
+        entry.setStatus(
+            status, getUtility(ILaunchpadCelebrities).rosetta_experts)
+        return entry
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""

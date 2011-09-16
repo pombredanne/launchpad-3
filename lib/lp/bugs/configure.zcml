@@ -145,15 +145,6 @@
         <allow
             interface="lp.bugs.interfaces.bugtrackerperson.IBugTrackerPerson"/>
     </class>
-    <class
-        class="lp.bugs.model.packagebugsupervisor.PackageBugSupervisor">
-        <allow
-            attributes="
-                id
-                distribution
-                sourcepackagename
-                bug_supervisor"/>
-    </class>
 
     <!-- CveReference -->
 
@@ -853,6 +844,7 @@
                     removeWatch
                     setPrivate
                     setSecurityRelated
+                    setPrivacyAndSecurityRelated
                     setStatus
                     subscribe
                     unlinkBranch

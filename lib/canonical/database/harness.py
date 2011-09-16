@@ -5,7 +5,7 @@
 
 The scripts provide an interactive prompt with the Launchpad Storm classes,
 all interface classes and the zope3 CA-fu at your fingertips, connected to
-launchpad_dev or your LP_DBNAME environment variable (if you have one set).
+launchpad_dev or the database specified on the command line.
 One uses Python, the other iPython.
 """
 

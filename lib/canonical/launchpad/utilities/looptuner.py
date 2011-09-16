@@ -13,6 +13,7 @@ __all__ = [
 from datetime import timedelta
 import time
 
+from lazr.restful.utils import safe_hasattr
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -24,7 +25,6 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.lazr.utils import safe_hasattr
 
 
 class LoopTuner:
@@ -311,7 +311,7 @@ class TunableLoop:
     """A base implementation of `ITunableLoop`."""
     implements(ITunableLoop)
 
-    goal_seconds = 4
+    goal_seconds = 2
     minimum_chunk_size = 1
     maximum_chunk_size = None # Override
     cooldown_time = 0
