@@ -243,6 +243,14 @@ class ShadowedList:
         self.shadow_values.reverse()
 
 
+def plain_expression(expression):
+    """Strip an optional DESC() from an expression."""
+    if isinstance(expression, Desc):
+        return expression.expr
+    else:
+        return expression
+
+
 class StormRangeFactory:
     """A range factory for Storm result sets.
 
@@ -304,8 +312,7 @@ class StormRangeFactory:
             row = (row, )
         sort_expressions = self.getOrderBy()
         for expression in sort_expressions:
-            if zope_isinstance(expression, Desc):
-                expression = expression.expr
+            expression = plain_expression(expression)
             if not zope_isinstance(expression, PropertyColumn):
                 raise StormRangeFactoryError(
                     'StormRangeFactory only supports sorting by '
@@ -372,8 +379,7 @@ class StormRangeFactory:
 
         converted_memo = []
         for expression, value in zip(sort_expressions, parsed_memo):
-            if isinstance(expression, Desc):
-                expression = expression.expr
+            expression = plain_expression(expression)
             try:
                 expression.variable_factory(value=value)
             except TypeError, error:
@@ -452,11 +458,6 @@ class StormRangeFactory:
 
     def equalsExpressionsFromLimits(self, limits):
         """Return a list [expression == memo, ...] for the given limits."""
-        def plain_expression(expression):
-            if isinstance(expression, Desc):
-                return expression.expr
-            else:
-                return expression
 
         result = []
         for expressions, memos in limits:
@@ -570,19 +571,23 @@ class StormRangeFactory:
     def getSliceByIndex(self, start, end):
         """See `IRangeFactory."""
         sliced = self.resultset[start:end]
-        return ShadowedList(list(sliced), list(sliced.get_plain_result_set()))
+        if zope_isinstance(sliced, DecoratedResultSet):
+            return ShadowedList(
+                list(sliced), list(sliced.get_plain_result_set()))
+        sliced = list(sliced)
+        return ShadowedList(sliced, sliced)
 
     @cachedproperty
     def rough_length(self):
         """See `IRangeFactory."""
         # get_select_expr() requires at least one column as a parameter.
         # getorderBy() already knows about columns that can appear
-        # in the result set, let's take just the first one.
-        column = self.getOrderBy()[0]
-        if zope_isinstance(column, Desc):
-            column = column.expr
+        # in the result set, so let's use them. Moreover, for SELECT
+        # DISTINCT queries, each column used for sorting must appear
+        # in the result.
+        columns = [plain_expression(column) for column in self.getOrderBy()]
         select = removeSecurityProxy(self.plain_resultset).get_select_expr(
-            column)
+            *columns)
         explain = 'EXPLAIN ' + convert_storm_clause_to_string(select)
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         result = store.execute(explain)

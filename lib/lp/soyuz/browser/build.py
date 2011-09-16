@@ -37,7 +37,10 @@ from canonical.launchpad.webapp import (
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lp.app.browser.launchpadform import (
@@ -486,7 +489,8 @@ class BuildRecordsView(LaunchpadView):
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
             user=self.user, binary_only=binary_only)
-        self.batchnav = BatchNavigator(builds, self.request)
+        self.batchnav = BatchNavigator(
+            builds, self.request, range_factory=StormRangeFactory(builds))
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)
         # A more elegant approach should be extending Batching class and

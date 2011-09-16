@@ -747,3 +747,41 @@ class TestStormRangeFactory(TestCaseWithFactory):
         estimated_length = range_factory.rough_length
         self.assertThat(estimated_length, LessThan(10))
         self.assertThat(estimated_length, Not(LessThan(1)))
+
+    def test_rough_length_distinct_query(self):
+        # StormRangeFactory.rough_length with SELECT DISTINCT queries.
+        resultset = self.makeStormResultSet()
+        resultset.config(distinct=True)
+        resultset.order_by(Person.name, Person.id)
+        range_factory = StormRangeFactory(resultset)
+        estimated_length = range_factory.rough_length
+        self.assertThat(estimated_length, LessThan(10))
+        self.assertThat(estimated_length, Not(LessThan(1)))
+
+    def test_getSliceByIndex__storm_result_set(self):
+        # StormRangeFactory.getSliceByIndex() returns a slice of the
+        # resultset, wrapped into a ShadowedList. For plain Storm
+        # result sets, the main values and the shadow values are both
+        # the corresponding elements of the result set.
+        resultset = self.makeStormResultSet()
+        all_results = list(resultset)
+        range_factory = StormRangeFactory(resultset)
+        sliced = range_factory.getSliceByIndex(2, 4)
+        self.assertIsInstance(sliced, ShadowedList)
+        self.assertEqual(all_results[2:4], list(sliced))
+        self.assertEqual(all_results[2:4], sliced.shadow_values)
+
+    def test_getSliceByIndex__decorated_result_set(self):
+        # StormRangeFactory.getSliceByIndex() returns a slice of the
+        # resultset, wrapped into a ShadowedList. For decorated Storm
+        # result sets, the main values are the corresponding values of
+        # the decorated result set and the shadow values are the
+        # corresponding elements of the plain result set.
+        resultset = self.makeDecoratedStormResultSet()
+        all_results = list(resultset)
+        all_undecorated_results = list(resultset.get_plain_result_set())
+        range_factory = StormRangeFactory(resultset)
+        sliced = range_factory.getSliceByIndex(2, 4)
+        self.assertIsInstance(sliced, ShadowedList)
+        self.assertEqual(all_results[2:4], list(sliced))
+        self.assertEqual(all_undecorated_results[2:4], sliced.shadow_values)
