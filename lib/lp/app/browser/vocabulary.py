@@ -233,6 +233,8 @@ class BranchPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
 class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
     """Adapt targets (Product, Package, Distribution) to PickerEntrySource."""
 
+    target_type = ""
+
     def getDescription(self, target):
         """Gets the description data for target picker entries."""
         raise NotImplemented
@@ -248,6 +250,7 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                 'disclosure.target_picker_enhancements.enabled'))
             if enhanced:
                 picker_entry.alt_title = target.name
+                picker_entry.target_type = self.target_type
         return entries
 
 
@@ -273,6 +276,8 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
     TargetPickerEntrySourceAdapter):
     """Adapts IDistributionSourcePackage to IPickerEntrySource."""
 
+    target_type = "package"
+
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
         binaries = target.publishing_history[0].getBuiltBinaries()
@@ -288,6 +293,8 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
 class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
     """Adapts IProduct to IPickerEntrySource."""
 
+    target_type = "product"
+
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
         return target.summary
@@ -295,6 +302,8 @@ class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
 
 @adapter(IDistribution)
 class DistributionPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
+
+    target_type = "distribution"
 
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
