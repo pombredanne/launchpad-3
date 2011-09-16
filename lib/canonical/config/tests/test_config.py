@@ -82,9 +82,10 @@ class TestCanonicalConfig(unittest.TestCase):
         self.assertTrue(names.issuperset(section_names))
 
     def test_iter(self):
-        # iter(config) returns an iterator of config sections.
+        # iter(config) returns an iterator of sections.
         config = canonical.config.config
-        self.assertEqual(set(config._config), set(config))
+        sections = set(config._config)
+        self.assertEqual(sections, set(config))
 
 
 def test_suite():
