@@ -159,6 +159,12 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestDistributionSourcePackagePickerEntrySourceAdapter,
+              self).setUp()
+        flag = {'disclosure.target_picker_enhancements.enabled':'on'}
+        self.useFixture(FeatureFixture(flag))
+
     def test_dsp_to_picker_entry(self):
         dsp = self.factory.makeDistributionSourcePackage()
         adapter = IPickerEntrySource(dsp)
@@ -216,6 +222,11 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestProductPickerEntrySourceAdapter, self).setUp()
+        flag = {'disclosure.target_picker_enhancements.enabled':'on'}
+        self.useFixture(FeatureFixture(flag))
+
     def test_product_to_picker_entry(self):
         product = self.factory.makeProduct()
         adapter = IPickerEntrySource(product)
@@ -233,7 +244,8 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
         product = self.factory.makeProduct()
         [entry] = IPickerEntrySource(product).getPickerEntries(
                 [product], object())
-        self.assertEqual('product', entry.target_type)
+        # We check for project, not product, because users don't see products.
+        self.assertEqual('project', entry.target_type)
 
     def test_product_provides_details(self):
         product = self.factory.makeProduct()
@@ -249,9 +261,56 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
         self.assertEqual(entry.description, product.summary)
 
 
+class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupPickerEntrySourceAdapter, self).setUp()
+        flag = {'disclosure.target_picker_enhancements.enabled':'on'}
+        self.useFixture(FeatureFixture(flag))
+
+    def test_projectgroup_to_picker_entry(self):
+        projectgroup = self.factory.makeProject()
+        adapter = IPickerEntrySource(projectgroup)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_projectgroup_provides_alt_title(self):
+        with FeatureFixture({
+            'disclosure.target_picker_enhancements.enabled':'on'}):
+            projectgroup = self.factory.makeProject()
+            [entry] = IPickerEntrySource(projectgroup).getPickerEntries(
+                    [projectgroup], object())
+            self.assertEqual(entry.alt_title, projectgroup.name)
+
+    def test_projectgroup_target_type(self):
+        projectgroup = self.factory.makeProject()
+        [entry] = IPickerEntrySource(projectgroup).getPickerEntries(
+                [projectgroup], object())
+        self.assertEqual('project group', entry.target_type)
+
+    def test_projectgroup_provides_details(self):
+        projectgroup = self.factory.makeProject()
+        [entry] = IPickerEntrySource(projectgroup).getPickerEntries(
+                [projectgroup], object())
+        expected = "Maintainer: %s" % projectgroup.owner.displayname
+        self.assertEqual([expected], entry.details)
+
+    def test_projectgroup_provides_summary(self):
+        projectgroup = self.factory.makeProject()
+        [entry] = IPickerEntrySource(projectgroup).getPickerEntries(
+                [projectgroup], object())
+        self.assertEqual(entry.description, projectgroup.summary)
+
+
 class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionPickerEntrySourceAdapter, self).setUp()
+        flag = {'disclosure.target_picker_enhancements.enabled':'on'}
+        self.useFixture(FeatureFixture(flag))
 
     def test_distribution_to_picker_entry(self):
         distribution = self.factory.makeDistribution()

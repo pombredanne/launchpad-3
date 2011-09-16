@@ -428,6 +428,10 @@
     />
 
   <adapter
+    factory="lp.app.browser.vocabulary.ProjectGroupPickerEntrySourceAdapter"
+    />
+
+  <adapter
     factory="lp.app.browser.vocabulary.DistributionPickerEntrySourceAdapter"
     />
 

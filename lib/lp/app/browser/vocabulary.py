@@ -46,6 +46,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
@@ -304,11 +305,26 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
         return description
 
 
+@adapter(IProjectGroup)
+class ProjectGroupPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
+    """Adapts IProduct to IPickerEntrySource."""
+
+    target_type = "project group"
+
+    def getMaintainer(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.owner.displayname
+
+    def getDescription(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.summary
+
+
 @adapter(IProduct)
 class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
     """Adapts IProduct to IPickerEntrySource."""
 
-    target_type = "product"
+    target_type = "project"
 
     def getMaintainer(self, target):
         """See `TargetPickerEntrySource`"""
