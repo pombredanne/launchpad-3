@@ -12,7 +12,7 @@ from collections import namedtuple
 from contextlib import contextmanager
 from functools import partial
 
-from lp.app.longpoll.adapters import event
+from lp.services.longpoll.adapters import event
 
 
 LongPollEventRecord = namedtuple(
