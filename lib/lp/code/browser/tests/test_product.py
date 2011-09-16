@@ -160,7 +160,6 @@ class TestProductCodeIndexView(ProductTestBase):
         commit_section = find_tag_by_id(view.render(), 'commits')
         self.assertIsNot(None, commit_section)
 
-
     def test_committers_count_private_branch_non_subscriber(self):
         # Test that calling committer_count will return the proper value
         # for a private branch.
@@ -184,6 +183,7 @@ class TestProductCodeIndexView(ProductTestBase):
         self.assertEqual(view.committer_count, 1)
         commit_section = find_tag_by_id(view.render(), 'commits')
         self.assertIs(None, commit_section)
+
 
 class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
