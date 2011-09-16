@@ -73,6 +73,7 @@ class IPickerEntry(Interface):
     link_css = Attribute('CSS Class for links')
     badges = Attribute('List of badge img attributes')
     metadata = Attribute('Metadata about the entry')
+    target_type = Attribute('Target data for target picker entries.')
 
 
 class PickerEntry:
@@ -81,7 +82,8 @@ class PickerEntry:
 
     def __init__(self, description=None, image=None, css=None, alt_title=None,
                  title_link=None, details=None, alt_title_link=None,
-                 link_css='sprite new-window', badges=None, metadata=None):
+                 link_css='sprite new-window', badges=None, metadata=None,
+                 target_type=None):
         self.description = description
         self.image = image
         self.css = css
@@ -92,6 +94,7 @@ class PickerEntry:
         self.link_css = link_css
         self.badges = badges
         self.metadata = metadata
+        self.target_type = target_type
 
 
 class IPickerEntrySource(Interface):
@@ -447,6 +450,8 @@ class HugeVocabularyJSONView:
                 entry['badges'] = picker_entry.badges
             if picker_entry.metadata is not None:
                 entry['metadata'] = picker_entry.metadata
+            if picker_entry.target_type is not None:
+                entry['target_type'] = picker_entry.target_type
             result.append(entry)
 
         self.request.response.setHeader('Content-type', 'application/json')
