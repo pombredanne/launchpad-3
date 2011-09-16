@@ -14,7 +14,10 @@ from zope.interface import implements
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
-from lp.services.features.scopes import DefaultScope
+from lp.services.features.scopes import (
+    DefaultScope,
+    MultiScopeHandler,
+    )
 
 
 class IFeatureFlagApplication(ILaunchpadApplication):
@@ -29,5 +32,6 @@ class FeatureFlagApplication:
 
     def getFeatureFlag(self, flag_name):
         controller = FeatureController(
-            DefaultScope().lookup, StormFeatureRuleSource())
+            MultiScopeHandler([DefaultScope()]).lookup,
+            StormFeatureRuleSource())
         return controller.getFlag(flag_name)
