@@ -18,7 +18,7 @@ from lp.app.longpoll import (
     emit,
     subscribe,
     )
-from lp.app.longpoll.interfaces import (
+from lp.services.longpoll.interfaces import (
     ILongPollEvent,
     ILongPollSubscriber,
     )
