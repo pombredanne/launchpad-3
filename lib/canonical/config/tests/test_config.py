@@ -63,6 +63,23 @@ def make_config_test(config_file, description):
     return LAZRConfigTestCase
 
 
+class TestCanonicalConfig(unittest.TestCase):
+
+    def test_dir(self):
+        # dir(config) returns methods, variables and section names.
+        config = canonical.config.config
+        names = set(dir(config))
+        self.assertTrue(names.issuperset(dir(config.__class__)))
+        self.assertTrue(names.issuperset(config.__dict__))
+        section_names = set(section.name for section in config._config)
+        self.assertTrue(names.issuperset(section_names))
+
+    def test_iter(self):
+        # iter(config) returns an iterator of config sections.
+        config = canonical.config.config
+        self.assertEqual(set(config._config), set(config))
+
+
 def test_suite():
     """Return a suite of canonical.conf and all conf files."""
     # We know we are not using dirnames.
@@ -97,4 +114,8 @@ def test_suite():
                 else:
                     # This file is not a config that can be validated.
                     pass
+    # Other tests.
+    suite.addTest(
+        unittest.defaultTestLoader.loadTestsFromTestCase(
+            TestCanonicalConfig))
     return suite

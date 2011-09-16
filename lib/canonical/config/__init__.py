@@ -278,6 +278,19 @@ class CanonicalConfig:
         self._getConfig()
         return self._config[key]
 
+    def __dir__(self):
+        """List section names in addition to methods and variables."""
+        self._getConfig()
+        names = dir(self.__class__)
+        names.extend(self.__dict__)
+        names.extend(section.name for section in self._config)
+        return names
+
+    def __iter__(self):
+        """Iterate through configuration sections."""
+        self._getConfig()
+        return iter(self._config)
+
 
 config = CanonicalConfig()
 
