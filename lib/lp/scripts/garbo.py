@@ -754,10 +754,7 @@ class PopulateBranchTransitivelyPrivate(TunableLoop):
     Only needed until they are all set, after that triggers will maintain it.
     """
 
-    # We only want a db lock open for about 10 seconds. So we set max chunk
-    # size to 3000 because a test run for the entire branch table took 1hr.
-    minimum_chunk_size = 1000
-    maximum_chunk_size = 3000
+    maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None):
         super_instance = super(PopulateBranchTransitivelyPrivate, self)
