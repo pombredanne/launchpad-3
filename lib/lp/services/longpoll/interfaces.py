@@ -7,11 +7,13 @@ __metaclass__ = type
 __all__ = [
     "ILongPollEvent",
     "ILongPollSubscriber",
+    "long_poll_event",
     ]
 
-
+from zope.component import adapter
 from zope.interface import (
     Attribute,
+    classImplements,
     Interface,
     )
 
@@ -49,3 +51,21 @@ class ILongPollSubscriber(Interface):
 
         :type event: ILongPollEvent
         """
+
+
+def long_poll_event(source_spec, event_spec=basestring):
+    """Class decorator to declare an `ILongPollEvent`.
+
+    :param source_spec: An interface or other specification understood by
+        `zope.component`.
+    :param source_event: An interface or other specification understood by
+        `zope.component`.
+    """
+    declare_adapter = adapter(source_spec, event_spec)
+
+    def declare_event(cls):
+        classImplements(cls, ILongPollEvent)
+        declare_adapter(cls)
+        return cls
+
+    return declare_event
