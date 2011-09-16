@@ -13,19 +13,20 @@ XXX: Robert Collins 2010-10-20 bug=663454 this is in the wrong namespace.
 __metaclass__ = type
 
 
-import os
 import logging
+import os
 import sys
-from urlparse import urlparse, urlunparse
-
-import pkg_resources
-import ZConfig
+from urlparse import (
+    urlparse,
+    urlunparse,
+    )
 
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
+import pkg_resources
+import ZConfig
 
 from canonical.launchpad.readonly import is_read_only
-
 from lp.services.osutils import open_for_writing
 
 
@@ -259,7 +260,7 @@ class CanonicalConfig:
         if not ensureSlash:
             return root_url.rstrip('/')
         if not root_url.endswith('/'):
-            return root_url+'/'
+            return root_url + '/'
         return root_url
 
     def __getattr__(self, name):
@@ -355,11 +356,11 @@ def urlbase(value):
     value = url(value)
     scheme, location, path, parameters, query, fragment = urlparse(value)
     if parameters:
-        raise ValueError, 'URL parameters not allowed'
+        raise ValueError('URL parameters not allowed')
     if query:
-        raise ValueError, 'URL query not allowed'
+        raise ValueError('URL query not allowed')
     if fragment:
-        raise ValueError, 'URL fragments not allowed'
+        raise ValueError('URL fragments not allowed')
     if not value.endswith('/'):
         value = value + '/'
     return value

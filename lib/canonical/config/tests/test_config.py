@@ -9,13 +9,17 @@
 
 __metaclass__ = type
 
-from doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
+from doctest import (
+    DocTestSuite,
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    )
 import os
-import pkg_resources
 import unittest
 
 from lazr.config import ConfigSchema
 from lazr.config.interfaces import ConfigErrors
+import pkg_resources
 import ZConfig
 
 import canonical.config
