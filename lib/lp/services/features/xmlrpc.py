@@ -12,7 +12,10 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-from lp.services.features import getFeatureFlag
+from lp.services.features.flags import FeatureController
+from lp.services.features.rulesource import StormFeatureRuleSource
+from lp.services.features.scopes import DefaultScope
+
 
 class IFeatureFlagApplication(ILaunchpadApplication):
     """Mailing lists application root."""
@@ -25,4 +28,6 @@ class FeatureFlagApplication:
     implements(IFeatureFlagApplication)
 
     def getFeatureFlag(self, flag_name):
-        return getFeatureFlag(flag_name)
+        controller = FeatureController(
+            DefaultScope().lookup, StormFeatureRuleSource())
+        return controller.getFlag(flag_name)
