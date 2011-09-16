@@ -12,6 +12,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.services.features import getFeatureFlag
 
 class IFeatureFlagApplication(ILaunchpadApplication):
     """Mailing lists application root."""
@@ -24,4 +25,4 @@ class FeatureFlagApplication:
     implements(IFeatureFlagApplication)
 
     def getFeatureFlag(self, flag_name):
-        return False
+        return getFeatureFlag(flag_name)

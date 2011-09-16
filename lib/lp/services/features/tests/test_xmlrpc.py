@@ -21,8 +21,8 @@ class TestGetFeatureFlag(TestCase):
         TestCase.setUp(self)
         self.endpoint = FeatureFlagApplication()
 
-    def test_getFeatureFlag_returns_false_by_default(self):
-        self.assertFalse(self.endpoint.getFeatureFlag(u'unknown'))
+    def test_getFeatureFlag_returns_None_by_default(self):
+        self.assertIs(None, self.endpoint.getFeatureFlag(u'unknown'))
 
     def test_getFeatureFlag_returns_true_for_set_flag(self):
         flag_name = u'flag'
