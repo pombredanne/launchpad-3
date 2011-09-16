@@ -356,6 +356,10 @@ def sendmail(message, to_addrs=None, bulk=True):
     Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
 
+    This function looks at the `config` singleton for configuration as to
+    where to send the mail; in particular for whether this code is running in
+    zopeless mode, and for a `sendmail_to_stdout` attribute for testing.
+
     :param bulk: By default, a Precedence: bulk header is added to the
         message. Pass False to disable this.
 
@@ -428,7 +432,7 @@ def sendmail(message, to_addrs=None, bulk=True):
             # when running in the testing environment, store emails
             TestMailer().send(
                 config.canonical.bounce_address, to_addrs, raw_message)
-        elif getattr(config, 'sendmail_to_stdout', None):
+        elif getattr(config, 'sendmail_to_stdout', False):
             # For debugging, from process-one-mail, just print it.
             sys.stdout.write(raw_message)
         else:

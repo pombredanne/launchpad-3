@@ -6,7 +6,7 @@ Quicker interactive testing
 
 There is a script ``process-one-mail.py`` which reads a single mail
 message from a file (or stdin), processes it as if it had been received by
-Lanuchpad, and then prints out any mail generated in response.  For
+Launchpad, and then prints out any mail generated in response.  For
 quasi-interactive testing of email processing this may be your best bet.
 
 Quickstart
