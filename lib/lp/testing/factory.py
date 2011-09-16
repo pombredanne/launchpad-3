@@ -2996,8 +2996,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             path = 'messages.pot'
 
         pot = subset.new(name, translation_domain, path, owner, copy_pofiles)
-        if not iscurrent:
-            removeSecurityProxy(pot).iscurrent = iscurrent
+        removeSecurityProxy(pot).iscurrent = iscurrent
         return pot
 
     def makePOTemplateAndPOFiles(self, language_codes, **kwargs):
