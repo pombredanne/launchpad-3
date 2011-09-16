@@ -16,7 +16,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 
 execute_zcml_for_scripts()
-initZopeless(dbuser=config.builddmaster.dbuser)
+initZopeless(dbuser='buildd_manager')
 
 options = ServerOptions()
 options.parseOptions()
