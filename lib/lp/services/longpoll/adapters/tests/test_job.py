@@ -6,7 +6,7 @@ __metaclass__ = type
 from zope.component import getMultiAdapter
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.longpoll.interfaces import ILongPollEvent
+from lp.services.longpoll.interfaces import ILongPollEvent
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.testing import TestCase

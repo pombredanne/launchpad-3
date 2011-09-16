@@ -16,7 +16,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.app.longpoll.testing import capture_longpoll_emissions
+from lp.services.longpoll.testing import capture_longpoll_emissions
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,

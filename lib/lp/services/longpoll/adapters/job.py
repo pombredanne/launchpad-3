@@ -13,11 +13,11 @@ from zope.interface import (
     Interface,
     )
 
-from lp.app.longpoll.adapters.event import (
+from lp.services.longpoll.adapters.event import (
     generate_event_key,
     LongPollEvent,
     )
-from lp.app.longpoll.interfaces import ILongPollEvent
+from lp.services.longpoll.interfaces import ILongPollEvent
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
