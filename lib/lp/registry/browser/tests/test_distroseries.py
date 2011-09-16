@@ -28,10 +28,17 @@ from testtools.matchers import (
     LessThan,
     Not,
     )
+import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
-from canonical.config import config
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.testing.pages import (
@@ -41,13 +48,19 @@ from canonical.launchpad.testing.pages import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
+from canonical.launchpad.webapp.interfaces import (
+    BrowserNotificationLevel,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    reconnect_stores,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
@@ -87,7 +100,9 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model import distroseriesdifferencejob
 from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
+from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.testing import (
     ANONYMOUS,
     anonymous_logged_in,
@@ -583,6 +598,51 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
                 "Series initialization has failed\n"
                 "You cannot attempt initialization again, but a "
                 "member of Team Teamy Team Team may be able to help."))
+
+    def load_afresh(self, thing):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        naked_thing = removeSecurityProxy(thing)
+        naked_thing = store.get(naked_thing.__class__, naked_thing.id)
+        return ProxyFactory(naked_thing)
+
+    def fail_job_with_error(self, job, error):
+        # We need to switch to the initializedistroseries user to set the
+        # error_description on the given job. Which is a PITA.
+        distroseries = job.distroseries
+        transaction.commit()
+        starting_database_config_section = dbconfig.getSectionName()
+        reconnect_stores("initializedistroseries")
+        job = self.job_source.get(distroseries)
+        job.start()
+        job.fail()
+        job.notifyUserError(error)
+        transaction.commit()
+        reconnect_stores(starting_database_config_section)
+
+    def test_initialization_failure_explanation_shown(self):
+        # When initialization has failed an explanation of the failure can be
+        # displayed. It depends on the nature of the failure; only some error
+        # types are displayed.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        parent = self.factory.makeDistroSeries()
+        job = self.job_source.create(series, [parent.id])
+        self.fail_job_with_error(
+            job, InitializationError(
+                "You cannot be serious. That's really going "
+                "to hurt. Put it away."))
+        # Load series again because the connection was closed in
+        # fail_job_with_error().
+        series = self.load_afresh(series)
+        with person_logged_in(series.owner):
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You cannot be serious. That's really going "
+                "to hurt. Put it away.\n"
+                "You can attempt initialization again."))
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
@@ -1919,7 +1979,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertFalse(view.isNewerThanParent(dsd))
 
     def test_isNewerThanParent_is_False_for_equivalent_updates(self):
-        # Some non-identical version numbers compare as "equal."  If the
+        # Some non-identical version numbers compare as "equal".  If the
         # child and parent versions compare as equal, the child version
         # is not considered newer.
         dsd = self.factory.makeDistroSeriesDifference(
@@ -1961,6 +2021,14 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=True)
         self.assertTrue(view.canRequestSync(dsd))
+
+    def test_canRequestSync_returns_False_if_DSD_is_resolved(self):
+        dsd = self.factory.makeDistroSeriesDifference(
+            versions=dict(base='1.0', parent='1.1', derived='1.1'),
+            status=DistroSeriesDifferenceStatus.RESOLVED)
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertFalse(view.canRequestSync(dsd))
 
     def test_describeJobs_returns_None_if_no_jobs(self):
         dsd = self.factory.makeDistroSeriesDifference()

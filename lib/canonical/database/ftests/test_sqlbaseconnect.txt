@@ -6,7 +6,7 @@ Ensure that canonical.database.sqlbase connects as we expect.
     ...     ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_SERIALIZABLE)
 
     >>> def do_connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
-    ...     con = connect(user, dbname, isolation)
+    ...     con = connect(user=user, dbname=dbname, isolation=isolation)
     ...     cur = con.cursor()
     ...     cur.execute('SHOW session_authorization')
     ...     who = cur.fetchone()[0]

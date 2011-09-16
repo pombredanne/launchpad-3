@@ -14,21 +14,24 @@ Options:
         which will be processed.
 
 This script iterates over the HWDB submissions with the status
-SUBMITTED, beginning with the oldest submissions, populate the
-HWDB tables with the data from these submissions.
+INVALID. It processes only submissions with an ID greater or equal
+than the number specified by the file given a option -s.
+
+When the script terminates, it writes the ID of the last processed
+submission into this file.
 
 Properly processed submissions are set to the status PROCESSED;
-submissions that cannot be processed are set to the status INVALID.
+submissions that cannot be processed retain the status INVALID.
 """
 
 import _pythonpath
 
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.hardwaredb.scripts.hwdbsubmissions import (
     reprocess_invalid_submissions)
 
 
-class HWDBSubmissionProcessor(LaunchpadScript):
+class HWDBSubmissionProcessor(LaunchpadCronScript):
 
     def add_my_options(self):
         """See `LaunchpadScript`."""
@@ -39,9 +42,10 @@ class HWDBSubmissionProcessor(LaunchpadScript):
             '-w', '--warnings', action="store_true", default=False,
             help='Include warnings.')
         self.parser.add_option(
-            '-s', '--start',
-            help=('Process HWSubmission records having an id greater or '
-                  'equal than this value.'))
+            '-s', '--start-file', default=None,
+            help=('The name of a file storing the smallest ID of a\n'
+                  'hardware database submission that should be processed.\n'
+                  'This script must have read and write access to the file.'))
 
     def main(self):
         max_submissions = self.options.max_submissions
@@ -57,21 +61,37 @@ class HWDBSubmissionProcessor(LaunchpadScript):
                 self.logger.error(
                     '--max_submissions must be a positive integer.')
                 return
-        if self.options.start is None:
-            self.logger.error('Option --start not specified.')
+
+        if self.options.start_file is None:
+            self.logger.error('Option --start-file not specified.')
             return
         try:
-            start = int(self.options.start)
-        except ValueError:
-            self.logger.error('Option --start must have an integer value.')
+            start_file = open(self.options.start_file, 'r+')
+            start_id = start_file.read().strip()
+        except IOError, error:
+            self.logger.error(
+                'Cannot access file %s: %s' % (
+                    self.options.start_file, error))
             return
-        if start < 0:
-            self.logger.error('--start must be a positive integer.')
+        try:
+            start_id = int(start_id)
+        except ValueError:
+            self.logger.error(
+                '%s must contain only an integer' % self.options.start_file)
+            return
+        if start_id < 0:
+            self.logger.error(
+                '%s must contain a positive integer'
+                % self.options.start_file)
             return
 
-        reprocess_invalid_submissions(
-            start, self.txn, self.logger,
+        next_start = reprocess_invalid_submissions(
+            start_id, self.txn, self.logger,
             max_submissions, self.options.warnings)
+
+        start_file.seek(0)
+        start_file.write('%i' % next_start)
+        start_file.close()
 
 if __name__ == '__main__':
     script = HWDBSubmissionProcessor(

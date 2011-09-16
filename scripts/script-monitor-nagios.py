@@ -77,7 +77,7 @@ def main():
 
     try:
         log.debug("Connecting to database")
-        con = connect(options.dbuser)
+        con = connect()
         error_found = False
         msg = []
         for hostname, scriptname in hosts_scripts:
