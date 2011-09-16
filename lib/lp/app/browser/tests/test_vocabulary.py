@@ -195,6 +195,14 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
         adapter = IPickerEntrySource(product)
         self.assertTrue(IPickerEntrySource.providedBy(adapter))
 
+    def test_product_provides_alt_title(self):
+        with FeatureFixture({
+            'disclosure.target_picker_enhancements.enabled':'on'}):
+            product = self.factory.makeProduct()
+            [entry] = IPickerEntrySource(product).getPickerEntries(
+                    [product], object())
+            self.assertEqual(entry.alt_title, product.name)
+
     def test_product_provides_summary(self):
         product = self.factory.makeProduct()
         [entry] = IPickerEntrySource(product).getPickerEntries(
@@ -210,6 +218,14 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         adapter = IPickerEntrySource(distribution)
         self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_distribution_provides_alt_title(self):
+        with FeatureFixture({
+            'disclosure.target_picker_enhancements.enabled':'on'}):
+            distribution = self.factory.makeDistribution()
+            [entry] = IPickerEntrySource(distribution).getPickerEntries(
+                    [distribution], object())
+            self.assertEqual(entry.alt_title, distribution.name)
 
     def test_distribution_provides_summary(self):
         distribution = self.factory.makeDistribution()
