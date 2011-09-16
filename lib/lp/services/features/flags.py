@@ -129,6 +129,10 @@ flag_info = sorted([
      'boolean',
      ('Enables ranking by pillar affiliation in the person picker.'),
      ''),
+    ('disclosure.target_picker_enhancements.enabled',
+     'boolean',
+     ('Enables the display and use of the enhanced target pickers.'),
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
