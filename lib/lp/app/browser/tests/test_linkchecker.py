@@ -54,8 +54,13 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
             ]
 
     def make_valid_bug_links(self):
-        bug = self.factory.makeBug()
-        return ['/bugs/%d' % (bug.id)]
+        bug1 = self.factory.makeBug()
+        bug2 = self.factory.makeBug()
+        self.factory.makeBugTask(bug=bug2)
+        return [
+            '/bugs/%d' % (bug1.id),
+            '/bugs/%d' % (bug2.id)
+            ]
 
     def make_invalid_bug_links(self):
         """
