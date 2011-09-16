@@ -242,6 +242,10 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
         """Gets the description data for target picker entries."""
         raise NotImplemented
 
+    def getMaintainer(self, target):
+        """Gets the maintainer information for the target picker entry."""
+        raise NotImplemented
+
     def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
         entries = (
@@ -254,6 +258,10 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
             if enhanced:
                 picker_entry.alt_title = target.name
                 picker_entry.target_type = self.target_type
+                maintainer = self.getMaintainer(target)
+                if maintainer is not None:
+                    picker_entry.details = [
+                        'Maintainer: %s' % self.getMaintainer(target)]
         return entries
 
 
@@ -281,6 +289,10 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
 
     target_type = "package"
 
+    def getMaintainer(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.currentrelease.maintainer.displayname
+
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
         binaries = target.publishing_history[0].getBuiltBinaries()
@@ -298,6 +310,10 @@ class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
 
     target_type = "product"
 
+    def getMaintainer(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.owner.displayname
+
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
         return target.summary
@@ -307,6 +323,13 @@ class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
 class DistributionPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
 
     target_type = "distribution"
+
+    def getMaintainer(self, target):
+        """See `TargetPickerEntrySource`"""
+        try:
+            return target.currentseries.owner.displayname
+        except AttributeError:
+            return None
 
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
