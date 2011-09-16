@@ -89,6 +89,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.project import ProjectScopeWidget
+from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
@@ -103,6 +104,7 @@ from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
+    IBugTask,
     IFrontPageBugTaskSearch,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -870,17 +872,33 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             notify(ObjectModifiedEvent(
                     bug, bug_before_modification, changed_fields))
         if self.request.is_ajax:
-            if private_changed:
+            if private_changed or security_related_changed:
                 return self._getSubscriptionDetails()
             else:
                 return ''
 
     def _getSubscriptionDetails(self):
         cache = dict()
+        # The subscription details for the current user.
         self.extractBugSubscriptionDetails(self.user, self.context.bug, cache)
-        return dumps(
+
+        # The subscription details for other users to populate the subscribers
+        # list in the portlet.
+        if IBugTask.providedBy(self.context):
+            bug = self.context.bug
+        else:
+            bug = self.context
+        subscribers_portlet = BugPortletSubscribersWithDetails(
+            bug, self.request)
+        subscription_data = subscribers_portlet()
+        cache_data = dumps(
             cache, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
+
+        return """{
+            "cache_data": %s,
+            "subscription_data": %s}
+            """ % (cache_data, subscription_data)
 
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.
