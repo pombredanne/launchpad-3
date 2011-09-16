@@ -4,7 +4,10 @@
 """XXX: Module docstring goes here."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'IFeatureFlagApplication',
+    'FeatureFlagApplication',
+    ]
 
 from zope.interface import implements
 
