@@ -705,3 +705,154 @@ class TestPOTemplateUpstreamSharing(TestCaseWithFactory,
     def makeOtherSidePOTemplate(self):
         return self.factory.makePOTemplate(
             sourcepackage=self.sourcepackage, name=self.shared_template_name)
+
+
+class TestPOTemplateSubset(TestCaseWithFactory):
+    """Test POTemplate functions not covered by doctests."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_getPOTemplatesByTranslationDomain_filters_by_domain(self):
+        domain = self.factory.getUniqueString()
+        series = self.factory.makeProductSeries()
+
+        # The template we'll be looking for:
+        template = self.factory.makePOTemplate(
+            translation_domain=domain, productseries=series)
+
+        # Another template in the same context with a different domain:
+        self.factory.makePOTemplate(productseries=series)
+
+        subset = getUtility(IPOTemplateSet).getSubset(productseries=series)
+        self.assertContentEqual(
+            [template], subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_finds_by_productseries(self):
+        domain = self.factory.getUniqueString()
+        productseries = self.factory.makeProductSeries()
+
+        # The template we'll be looking for:
+        template = self.factory.makePOTemplate(
+            translation_domain=domain, productseries=productseries)
+
+        # Similar templates that should not come up in the same search:
+        # * Different series (even for the same product).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            productseries=self.factory.makeProductSeries(
+                product=template.productseries.product))
+        # * Distro and series (even with the same name as the domain
+        # we're looking for).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            distroseries=self.factory.makeDistroSeries(
+                name=domain, distribution=self.factory.makeDistribution(
+                    name=domain)))
+        # * Source package (even with the same name as the domain we're
+        # looking for).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            distroseries=self.factory.makeDistroSeries(),
+            sourcepackagename=self.factory.makeSourcePackageName(name=domain))
+
+        subset = getUtility(IPOTemplateSet).getSubset(
+            productseries=productseries)
+        self.assertContentEqual(
+            [template], subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_finds_by_sourcepackage(self):
+        domain = self.factory.getUniqueString()
+        package = self.factory.makeSourcePackage()
+
+        # The template we'll be looking for:
+        template = self.factory.makePOTemplate(
+            translation_domain=domain, distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+
+        # Similar templates that should not come up in the same search:
+        # * Productseries (even with the same names the domain we're
+        # looking for).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            productseries=self.factory.makeProductSeries(
+                name=domain, product=self.factory.makeProduct(name=domain)))
+
+        # * Different series (even for the same source package name and
+        # distribution).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            sourcepackagename=package.sourcepackagename,
+            distroseries=self.factory.makeDistroSeries(
+                distribution=package.distroseries.distribution))
+
+        subset = getUtility(IPOTemplateSet).getSubset(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        self.assertContentEqual(
+            [template], subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_finds_by_distroseries(self):
+        domain = self.factory.getUniqueString()
+        distroseries = self.factory.makeDistroSeries()
+
+        # The template we'll be looking for:
+        template = self.factory.makePOTemplate(
+            translation_domain=domain, distroseries=distroseries)
+
+        # Similar templates that should not come up in the same search:
+        # * Productseries (even with the same names the domain we're
+        # looking for).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            productseries=self.factory.makeProductSeries(
+                name=domain, product=self.factory.makeProduct(name=domain)))
+
+        # * Different series (even for the same distribution).
+        self.factory.makePOTemplate(
+            translation_domain=domain,
+            distroseries=self.factory.makeDistroSeries(
+                distribution=distroseries.distribution))
+
+        subset = getUtility(IPOTemplateSet).getSubset(
+            distroseries=distroseries)
+        self.assertContentEqual(
+            [template], subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_can_ignore_iscurrent(self):
+        domain = self.factory.getUniqueString()
+        series = self.factory.makeProductSeries()
+        templates = [
+            self.factory.makePOTemplate(
+                translation_domain=domain, productseries=series,
+                iscurrent=iscurrent)
+            for iscurrent in [False, True]]
+
+        subset = getUtility(IPOTemplateSet).getSubset(productseries=series)
+        self.assertContentEqual(
+            templates, subset.getPOTemplatesByTranslationDomain(domain))
+
+    def test_getPOTemplatesByTranslationDomain_can_filter_by_iscurrent(self):
+        domain = self.factory.getUniqueString()
+        series = self.factory.makeProductSeries()
+
+        templates = dict(
+            (iscurrent, [self.factory.makePOTemplate(
+                translation_domain=domain, productseries=series,
+                iscurrent=iscurrent)])
+            for iscurrent in [False, True])
+
+        potset = getUtility(IPOTemplateSet)
+        found_templates = dict((
+            iscurrent,
+            list(potset.getSubset(productseries=series, iscurrent=iscurrent
+                ).getPOTemplatesByTranslationDomain(domain),)
+            )
+            for iscurrent in [False, True])
+
+        self.assertEqual(templates, found_templates)
+
+    def test_getPOTemplatesByTranslationDomain_returns_result_set(self):
+        subset = getUtility(IPOTemplateSet).getSubset(
+            productseries=self.factory.makeProductSeries())
+        self.assertEqual(
+            0, subset.getPOTemplatesByTranslationDomain("foo").count())
