@@ -279,7 +279,7 @@ page that any user can navigate.
 
     >>> anon_browser.getLink("Read all announcements").click()
     >>> print anon_browser.title
-    Derby news and announcements...
+    News and announcements...
 
 
 Listings
@@ -377,7 +377,7 @@ We can publish this announcement immediately.
 Doing so takes us back to the list of announcements.
 
     >>> print priv_browser.title
-    Kubuntu news and announcements...
+    News and announcements...
 
 And since the announcement has been made, the everybody can now see
 it too:
@@ -507,7 +507,7 @@ available on the individual announcement pages.
     ...     'http://apache.org/modified/url/')
     >>> priv_browser.getControl('Modify').click()
     >>> print priv_browser.title
-    Apache news and announcements...
+    News and announcements...
     >>> priv_browser.open('http://launchpad.dev/tomcat/+announcements')
     >>> 'Modified headline' in announcements(priv_browser.contents)
     True
@@ -538,7 +538,7 @@ is shown as having been retracted if you are a privileged user.
 
     >>> priv_browser.getControl('Retract').click()
     >>> print priv_browser.title
-    Kubuntu news and announcements...
+    News and announcements...
     >>> 'Kubuntu announcement ' in announcements(priv_browser.contents)
     True
     >>> 'Retracted' in announcements(priv_browser.contents)
@@ -570,7 +570,7 @@ Once something has been retracted, it can be published again.
     ...     name="field.publication_date.announcement_date").value = ''
     >>> priv_browser.getControl('Publish').click()
     >>> print priv_browser.title
-    Kubuntu news and announcements...
+    News and announcements...
 
 And once again it is visible to unprivileged users:
 
@@ -596,7 +596,7 @@ it.
     >>> priv_browser.getControl('For').value = 'guadalinex'
     >>> priv_browser.getControl('Retarget').click()
     >>> print priv_browser.title
-    GuadaLinex news and announcements...
+    News and announcements...
     >>> 'Kubuntu announcement' in announcements(priv_browser.contents)
     True
 
@@ -777,6 +777,6 @@ An owner can permanently delete an announcement.
     Delete announcement : Kubuntu announcement headline : GuadaLinex
     >>> kamion_browser.getControl('Delete').click()
     >>> print priv_browser.title
-    GuadaLinex news and announcements...
+    News and announcements...
     >>> no_announcements(kamion_browser.contents)
     True
