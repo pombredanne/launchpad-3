@@ -1078,6 +1078,7 @@ class DistributionMirrorsView(LaunchpadView):
     show_freshness = True
     show_mirror_type = False
     description = None
+    page_title = 'Mirrors'
 
     @cachedproperty
     def mirror_count(self):
