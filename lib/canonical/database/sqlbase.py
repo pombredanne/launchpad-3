@@ -371,15 +371,6 @@ class ZopelessTransactionManager(object):
         cls._installed = None
 
     @staticmethod
-    def conn():
-        store = _get_sqlobject_store()
-        # Use of the raw connection will not be coherent with Storm's
-        # cache.
-        connection = store._connection
-        connection._ensure_connected()
-        return connection._raw_connection
-
-    @staticmethod
     def begin():
         """Begin a transaction."""
         transaction.begin()
