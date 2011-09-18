@@ -224,9 +224,6 @@ distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
 distroseries_cvereport = ContextDisplayName('CVE report for %s')
 
-def distroseries_language_packs(context, view):
-    return view.page_title
-
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
 distroseries_queue = ContextTitle('Queue for %s')
@@ -238,10 +235,6 @@ hasannouncements_index = ContextDisplayName('%s news and announcements')
 hassprints_sprints = ContextTitle("Events related to %s")
 
 launchpad_forbidden = 'Forbidden'
-
-def launchpad_search(context, view):
-    """Return the page title corresponding to the user's search."""
-    return view.page_title
 
 object_templates = ContextDisplayName('Translation templates for %s')
 
