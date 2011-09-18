@@ -313,5 +313,3 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
 token_authorized = 'Almost finished ...'
-
-unauthorized = 'Error: Not authorized'
