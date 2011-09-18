@@ -422,6 +422,7 @@ class PollEditView(LaunchpadEditFormView):
     implements(IPollEditMenu)
     schema = IPoll
     label = "Edit poll details"
+    page_title = 'Edit'
     field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
                    "datecloses"]
 
@@ -441,6 +442,7 @@ class PollOptionEditView(LaunchpadEditFormView):
 
     schema = IPollOption
     label = "Edit option details"
+    page_title = 'Edit option'
     field_names = ["name", "title"]
     custom_widget("title", TextWidget, width=30)
 
@@ -460,6 +462,7 @@ class PollOptionAddView(LaunchpadFormView):
 
     schema = IPollOption
     label = "Create new poll option"
+    page_title = "New option"
     field_names = ["name", "title"]
     custom_widget("title", TextWidget, width=30)
 

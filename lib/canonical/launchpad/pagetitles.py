@@ -275,16 +275,6 @@ person_specworkload = ContextDisplayName('Blueprint workload for %s')
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
-poll_edit = ContextTitle(smartquote('Edit poll "%s"'))
-
-poll_index = ContextTitle(smartquote('Poll: "%s"'))
-
-poll_newoption = ContextTitle(smartquote('New option for poll "%s"'))
-
-def polloption_edit(context, view):
-    """Return the page title to edit a poll's option."""
-    return 'Edit option: %s' % context.title
-
 product_cvereport = ContextTitle('CVE reports for %s')
 
 product_index = ContextTitle('%s in Launchpad')
