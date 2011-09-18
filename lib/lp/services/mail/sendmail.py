@@ -491,12 +491,3 @@ def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
         return mailer.send(from_addr, to_addrs, raw_message)
     finally:
         action.finish()
-
-
-if __name__ == '__main__':
-    from canonical.lp import initZopeless
-    tm = initZopeless()
-    simple_sendmail(
-            'stuart.bishop@canonical.com', ['stuart@stuartbishop.net'],
-            'Testing Zopeless', 'This is the body')
-    tm.uninstall()
