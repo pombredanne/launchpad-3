@@ -369,21 +369,6 @@ class ZopelessTransactionManager(object):
         cls._reset_stores()
         cls._installed = None
 
-    @staticmethod
-    def begin():
-        """Begin a transaction."""
-        transaction.begin()
-
-    @staticmethod
-    def commit():
-        """Commit the current transaction."""
-        transaction.commit()
-
-    @staticmethod
-    def abort():
-        """Abort the current transaction."""
-        transaction.abort()
-
 
 def clear_current_connection_cache():
     """Clear SQLObject's object cache. SQLObject compatibility - DEPRECATED.
