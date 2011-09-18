@@ -249,8 +249,6 @@ launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
-oauth_authorize = 'Authorize application to access Launchpad on your behalf'
-
 object_templates = ContextDisplayName('Translation templates for %s')
 
 people_mergerequest_sent = 'Merge request sent'
