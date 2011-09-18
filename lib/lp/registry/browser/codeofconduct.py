@@ -165,6 +165,8 @@ class CodeOfConductDownloadView:
 class CodeOfConductSetView(LaunchpadView):
     """Simple view class for CoCSet page."""
 
+    page_title = 'Ubuntu Codes of Conduct'
+
 
 class SignedCodeOfConductAddView(LaunchpadFormView):
     """Add a new SignedCodeOfConduct Entry."""
@@ -222,6 +224,8 @@ class SignedCodeOfConductView(CodeOfConductView):
 
 class SignedCodeOfConductAdminView(LaunchpadView):
     """Admin Console for SignedCodeOfConduct Entries."""
+
+    page_title = 'Administer Codes of Conduct'
 
     def __init__(self, context, request):
         self.context = context

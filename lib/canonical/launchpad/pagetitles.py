@@ -185,10 +185,6 @@ def codeimport_machine_index(context, view):
 
 codeimport_new = ViewLabel()
 
-codeofconduct_admin = 'Administer Codes of Conduct'
-
-codeofconduct_list = 'Ubuntu Codes of Conduct'
-
 def contact_user(context, view):
     return view.specific_contact_title_text
 
