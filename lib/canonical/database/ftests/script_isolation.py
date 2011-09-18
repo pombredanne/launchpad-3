@@ -16,6 +16,8 @@ warnings.filterwarnings(
     'ignore', '.*(md5|sha|sets)', DeprecationWarning,
     )
 
+import transaction
+
 from canonical.database.sqlbase import (
     cursor,
     ISOLATION_LEVEL_SERIALIZABLE,
@@ -31,8 +33,8 @@ def check():
     cur.execute("SHOW transaction_isolation")
     print cur.fetchone()[0]
 
-    txn.abort()
-    txn.begin()
+    transaction.abort()
+    transaction.begin()
 
     cur = cursor()
     cur.execute("UPDATE Person SET homepage_content='bar' WHERE name='mark'")
@@ -40,14 +42,14 @@ def check():
     print cur.fetchone()[0]
 
 # First confirm the default isolation level
-txn = ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
+ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
 check()
-txn.uninstall()
+ZopelessTransactionManager.uninstall()
 
 # We run the checks twice to ensure that both methods of setting the
 # isolation level stick across transaction boundaries.
-txn = ZopelessTransactionManager.initZopeless(
+ZopelessTransactionManager.initZopeless(
     dbuser='launchpad_main',
     isolation=ISOLATION_LEVEL_SERIALIZABLE)
 check()
-txn.uninstall()
+ZopelessTransactionManager.uninstall()
