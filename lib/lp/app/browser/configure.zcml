@@ -329,7 +329,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- OffsiteFormPostError -->
@@ -338,7 +338,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- NoReferrerError -->
@@ -365,7 +365,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- InvalidBatchSizeError -->

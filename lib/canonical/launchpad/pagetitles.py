@@ -237,17 +237,11 @@ hasannouncements_index = ContextDisplayName('%s news and announcements')
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
-launchpad_feedback = 'Help improve Launchpad'
-
 launchpad_forbidden = 'Forbidden'
 
 def launchpad_search(context, view):
     """Return the page title corresponding to the user's search."""
     return view.page_title
-
-launchpad_unexpectedformdata = 'Error: Unexpected form data'
-
-launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 object_templates = ContextDisplayName('Translation templates for %s')
 
