@@ -285,8 +285,6 @@ project_translations = ContextTitle('Translatable projects for %s')
 
 remotebug_index = ContextTitle('%s')
 
-root_index = 'Launchpad'
-
 rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
