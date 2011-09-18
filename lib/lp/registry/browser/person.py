@@ -5924,7 +5924,7 @@ class EmailToPersonView(LaunchpadFormView):
         return throttle_date + interval
 
     @property
-    def specific_contact_title_text(self):
+    def page_title(self):
         """Return the appropriate pagetitle."""
         if self.context.is_team:
             if self.user.inTeam(self.context):

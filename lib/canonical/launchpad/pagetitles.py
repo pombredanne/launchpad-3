@@ -185,9 +185,6 @@ def codeimport_machine_index(context, view):
 
 codeimport_new = ViewLabel()
 
-def contact_user(context, view):
-    return view.specific_contact_title_text
-
 cveset_all = 'All CVE entries registered in Launchpad'
 
 cveset_index = 'Launchpad CVE tracker'
