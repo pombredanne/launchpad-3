@@ -572,7 +572,7 @@ class TestErrorReportingUtility(testtools.TestCase):
             info = sys.exc_info()
             oops = utility._oops_config.create(
                     dict(exc_info=info, timeline=timeline))
-        self.assertEqual("SELECT '%s'", oops['db_statements'][0][3])
+        self.assertEqual("SELECT '%s'", oops['timeline'][0][3])
 
 
 
@@ -632,7 +632,7 @@ class TestOopsLoggingHandler(testtools.TestCase):
         self.assertEqual(None, report.get('username'))
         self.assertEqual(None, report.get('url'))
         self.assertEqual([], report['req_vars'])
-        self.assertEqual([], report['db_statements'])
+        self.assertEqual([], report['timeline'])
 
     def setUp(self):
         super(TestOopsLoggingHandler, self).setUp()

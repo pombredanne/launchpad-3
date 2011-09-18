@@ -58,6 +58,7 @@ setup(
         'oauth',
         'oops',
         'oops_datedir_repo',
+        'oops_timeline',
         'oops_wsgi',
         'paramiko',
         'pgbouncer',
