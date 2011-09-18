@@ -370,31 +370,6 @@ class ZopelessTransactionManager(object):
         cls._reset_stores()
         cls._installed = None
 
-    @classmethod
-    def set_isolation_level(cls, isolation):
-        """Set the transaction isolation level.
-
-        Level can be one of ISOLATION_LEVEL_AUTOCOMMIT,
-        ISOLATION_LEVEL_READ_COMMITTED or
-        ISOLATION_LEVEL_SERIALIZABLE. As changing the isolation level
-        must be done before any other queries are issued in the
-        current transaction, this method automatically issues a
-        rollback to ensure this is the case.
-        """
-        assert cls._installed is not None, (
-            "ZopelessTransactionManager not installed")
-        cls.uninstall()
-        cls.initZopeless(cls._dbuser, isolation)
-
-    @staticmethod
-    def conn():
-        store = _get_sqlobject_store()
-        # Use of the raw connection will not be coherent with Storm's
-        # cache.
-        connection = store._connection
-        connection._ensure_connected()
-        return connection._raw_connection
-
     @staticmethod
     def begin():
         """Begin a transaction."""
@@ -409,16 +384,6 @@ class ZopelessTransactionManager(object):
     def abort():
         """Abort the current transaction."""
         transaction.abort()
-
-    @staticmethod
-    def registerSynch(synch):
-        """Register an ISynchronizer."""
-        transaction.manager.registerSynch(synch)
-
-    @staticmethod
-    def unregisterSynch(synch):
-        """Unregister an ISynchronizer."""
-        transaction.manager.unregisterSynch(synch)
 
 
 def clear_current_connection_cache():
