@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'alreadyInstalledMsg',
-    'begin',
     'block_implicit_flushes',
     'clear_current_connection_cache',
     'commit',
@@ -12,7 +11,6 @@ __all__ = [
     'connect',
     'convert_storm_clause_to_string',
     'cursor',
-    'expire_from_cache',
     'flush_database_caches',
     'flush_database_updates',
     'get_transaction_timestamp',
@@ -25,7 +23,6 @@ __all__ = [
     'quoteIdentifier',
     'quote_identifier',
     'reset_store',
-    'rollback',
     'session_store',
     'SQLBase',
     'sqlvalues',
@@ -376,12 +373,6 @@ def clear_current_connection_cache():
     _get_sqlobject_store().invalidate()
 
 
-def expire_from_cache(obj):
-    """Expires a single object from the SQLObject cache.
-    SQLObject compatibility - DEPRECATED."""
-    _get_sqlobject_store().invalidate(obj)
-
-
 def get_transaction_timestamp():
     """Get the timestamp for the current transaction on the MAIN DEFAULT
     store. DEPRECATED - if needed it should become a method on the store.
@@ -679,9 +670,7 @@ def reset_store(func):
     return mergeFunctionMetadata(func, reset_store_decorator)
 
 
-# Some helpers intended for use with initZopeless.  These allow you to avoid
-# passing the transaction manager all through your code.
-
+# DEPRECATED -- use transaction.commit() directly.
 def commit():
     transaction.commit()
 
