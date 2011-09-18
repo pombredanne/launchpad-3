@@ -101,12 +101,22 @@ class ViewLabel:
         return view.label
 
 
+def bugtarget_filebug_advanced(context, view):
+    """Return the page title for reporting a bug."""
+    if IMaloneApplication.providedBy(context):
+        # We're generating a title for a top-level, contextless bug
+        # filing page.
+        return 'Report a bug'
+    else:
+        # We're generating a title for a contextual bug filing page.
+        return 'Report a bug about %s' % context.title
+
+
 bazaar_index = 'Launchpad Branches'
 
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
-branch_index = ContextDisplayName(smartquote(
-    '"%s" branch in Launchpad'))
+branch_index = ContextDisplayName(smartquote('"%s" branch in Launchpad'))
 
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
@@ -145,16 +155,6 @@ def bugnomination_edit(context, view):
 
 bugtarget_bugs = ContextTitle('Bugs in %s')
 
-def bugtarget_filebug_advanced(context, view):
-    """Return the page title for reporting a bug."""
-    if IMaloneApplication.providedBy(context):
-        # We're generating a title for a top-level, contextless bug
-        # filing page.
-        return 'Report a bug'
-    else:
-        # We're generating a title for a contextual bug filing page.
-        return 'Report a bug about %s' % context.title
-
 bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
@@ -164,8 +164,6 @@ bugtask_affects_new_product = LaunchbagBugID(
 
 bugtask_choose_affected_product = bugtask_affects_new_product
 
-# This page is used for both projects/distros so we have to say 'software'
-# rather than distro or project here.
 bugtask_confirm_bugtracker_creation = LaunchbagBugID(
     'Bug #%d - Record as affecting another software')
 
@@ -221,11 +219,9 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 object_templates = ContextDisplayName('Translation templates for %s')
 
-person_packagebugs = ContextDisplayName("%s's package bug reports")
+person_packagebugs_overview = ContextDisplayName("%s's package bug reports")
 
-person_packagebugs_overview = person_packagebugs
-
-person_packagebugs_search = person_packagebugs
+person_packagebugs_search = ContextDisplayName("%s's package bug reports")
 
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
