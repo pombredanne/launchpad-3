@@ -214,8 +214,6 @@ distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
-distribution_index = ContextTitle('%s in Launchpad')
-
 distributionsourcepackage_index = ContextTitle('%s')
 
 distroarchseries_index = ContextTitle('%s in Launchpad')
@@ -277,8 +275,6 @@ person_translations_to_review = ContextDisplayName(
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
-product_index = ContextTitle('%s in Launchpad')
-
 product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 
@@ -287,8 +283,6 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
-
-project_index = ContextTitle('%s in Launchpad')
 
 project_translations = ContextTitle('Translatable projects for %s')
 
