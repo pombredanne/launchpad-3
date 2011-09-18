@@ -90,29 +90,3 @@ remaining settings as is:
     >>> print c.fetchone()[0]
     read committed
     >>> ztm.uninstall()
-
-We can also register synchronizers with the transaction manager.
-
-    >>> class TestSynchonizer:
-    ...     def newTransaction(self, txn):
-    ...         print "New transaction started."
-    ...
-    ...     def beforeCompletion(self, txn):
-    ...         print "Transaction will be completed."
-    ...
-    ...     def afterCompletion(self, txn):
-    ...         print "Transaction completed."
-    >>>
-    >>> synchronizer = TestSynchonizer()
-    >>> ztm.registerSynch(synchronizer)
-    >>> ztm.begin()
-    New transaction started.
-    >>> ztm.commit()
-    Transaction will be completed.
-    Transaction completed.
-
-The synchonizer can be unregistered again.
-
-    >>> ztm.unregisterSynch(synchronizer)
-    >>> ztm.begin()
-    >>> ztm.commit()
