@@ -275,9 +275,6 @@ person_translations_to_review = ContextDisplayName(
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
-product_purchase_subscription = ContextDisplayName(
-    'Purchase Subscription for %s')
-
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
 productseries_translations = ContextTitle('Translations overview for %s')

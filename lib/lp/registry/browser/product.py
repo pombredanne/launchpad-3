@@ -1188,6 +1188,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             header='Does the license qualifiy the project for free hosting?')
 
 
+class ProductPurchaseSubscriptionView(ProductView):
+    """View the instructions to purchase a commercial subscription."""
+    page_title = 'Purchase subscription'
+
+
 class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
 
