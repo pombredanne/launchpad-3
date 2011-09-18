@@ -32,7 +32,8 @@ from contrib.glock import (
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
+from canonical.config import config, dbconfig
+from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import (
     ISOLATION_LEVEL_DEFAULT,
     ZopelessTransactionManager,
@@ -354,8 +355,12 @@ class LaunchpadScript:
 
         Can be overriden for testing purpose.
         """
+        dbuser = self.dbuser
+        if dbuser is None:
+            connstr = ConnectionString(dbconfig.main_master)
+            dbuser = connstr.user or dbconfig.dbuser
         self.txn = ZopelessTransactionManager.initZopeless(
-            dbuser=self.dbuser, isolation=isolation)
+            dbuser=dbuser, isolation=isolation)
 
     def record_activity(self, date_started, date_completed):
         """Hook to record script activity."""
