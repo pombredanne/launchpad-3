@@ -326,8 +326,6 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
-team_newpoll = ContextTitle('New poll for team %s')
-
 token_authorized = 'Almost finished ...'
 
 unauthorized = 'Error: Not authorized'

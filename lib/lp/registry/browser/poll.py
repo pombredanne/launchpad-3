@@ -395,6 +395,8 @@ class PollAddView(LaunchpadFormView):
     field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
                    "datecloses"]
 
+    page_title = 'New poll'
+
     @property
     def cancel_url(self):
         """See `LaunchpadFormView`."""
@@ -473,6 +475,4 @@ class PollOptionAddView(LaunchpadFormView):
 
 class TeamPollsView(PersonView):
 
-    @property
-    def page_title(self):
-        return 'Polls for team %s' % self.context.displayname
+    page_title = 'Polls'
