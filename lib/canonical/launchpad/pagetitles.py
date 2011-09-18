@@ -285,10 +285,6 @@ def polloption_edit(context, view):
     """Return the page title to edit a poll's option."""
     return 'Edit option: %s' % context.title
 
-poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
-
-poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
-
 product_cvereport = ContextTitle('CVE reports for %s')
 
 product_index = ContextTitle('%s in Launchpad')

@@ -263,6 +263,8 @@ class PollVoteView(BasePollView):
     condorcet_template = ViewPageTemplateFile(
         '../templates/poll-vote-condorcet.pt')
 
+    page_title = 'Vote'
+
     @property
     def template(self):
         if self.isCondorcet():
