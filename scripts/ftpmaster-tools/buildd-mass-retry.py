@@ -20,7 +20,7 @@ from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 
 
 class BuilddMassRetryScript(LaunchpadScript):
@@ -58,46 +58,42 @@ class BuilddMassRetryScript(LaunchpadScript):
             default=False, help="Reset builds in CHROOTWAIT state.")
 
     def main(self):
-        options = self.options
-        log = self.logger
-
         try:
-            distribution = getUtility(IDistributionSet)[options.distribution]
+            distribution = getUtility(IDistributionSet)[
+                self.options.distribution]
         except NotFoundError, info:
-            log.error("Distribution not found: %s" % info)
-            return 1
+            raise LaunchpadScriptFailure("Distribution not found: %s" % info)
 
         try:
-            if options.suite is not None:
+            if self.options.suite is not None:
                 series, pocket = distribution.getDistroSeriesAndPocket(
-                    options.suite)
+                    self.options.suite)
             else:
                 series = distribution.currentseries
                 pocket = PackagePublishingPocket.RELEASE
         except NotFoundError, info:
-            log.error("Suite not found: %s" % info)
-            return 1
+            raise LaunchpadScriptFailure("Suite not found: %s" % info)
 
         # store distroseries as the current IHasBuildRecord provider
         build_provider = series
 
-        if options.architecture:
+        if self.options.architecture:
             try:
-                dar = series[options.architecture]
+                dar = series[self.options.architecture]
             except NotFoundError, info:
-                log.error(info)
-                return 1
+                raise LaunchpadScriptFailure(info)
 
             # store distroarchseries as the current IHasBuildRecord provider
             build_provider = dar
 
-        log.info("Initializing Build Mass-Retry for '%s/%s'"
-                % (build_provider.title, pocket.name))
+        self.logger.info(
+            "Initializing Build Mass-Retry for '%s/%s'"
+            % (build_provider.title, pocket.name))
 
         requested_states_map = {
-            BuildStatus.FAILEDTOBUILD : options.failed,
-            BuildStatus.MANUALDEPWAIT : options.depwait,
-            BuildStatus.CHROOTWAIT : options.chrootwait,
+            BuildStatus.FAILEDTOBUILD: self.options.failed,
+            BuildStatus.MANUALDEPWAIT: self.options.depwait,
+            BuildStatus.CHROOTWAIT: self.options.chrootwait,
             }
 
         # XXX cprov 2006-08-31: one query per requested state
@@ -108,7 +104,7 @@ class BuilddMassRetryScript(LaunchpadScript):
             if not requested:
                 continue
 
-            log.info("Processing builds in '%s'" % target_state.title)
+            self.logger.info("Processing builds in '%s'" % target_state.title)
             target_builds = build_provider.getBuildRecords(
                 build_state=target_state, pocket=pocket)
 
@@ -116,27 +112,27 @@ class BuilddMassRetryScript(LaunchpadScript):
                 # Skip builds for superseded sources; they won't ever
                 # actually build.
                 if not build.current_source_publication:
-                    log.debug(
-                        'Skipping superseded %s (%s)' % (build.title, build.id))
+                    self.logger.debug(
+                        'Skipping superseded %s (%s)'
+                        % (build.title, build.id))
                     continue
 
                 if not build.can_be_retried:
-                    log.warn('Can not retry %s (%s)' % (build.title, build.id))
+                    self.logger.warn(
+                        'Can not retry %s (%s)' % (build.title, build.id))
                     continue
 
-                log.info('Retrying %s (%s)' % (build.title, build.id))
+                self.logger.info('Retrying %s (%s)' % (build.title, build.id))
                 build.retry()
 
-        log.info("Success.")
+        self.logger.info("Success.")
 
-        if options.dryrun:
+        if self.options.dryrun:
             transaction.abort()
-            log.info('Dry-run.')
+            self.logger.info('Dry-run.')
         else:
             transaction.commit()
-            log.info("Committed")
-
-        return 0
+            self.logger.info("Committed")
 
 
 if __name__ == '__main__':
