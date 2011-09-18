@@ -33,7 +33,10 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
+from canonical.database.sqlbase import (
+    ISOLATION_LEVEL_DEFAULT,
+    ZopelessTransactionManager,
+    )
 from canonical.launchpad import scripts
 from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
@@ -41,7 +44,6 @@ from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,
     setupInteractionByEmail,
     )
-from canonical.lp import initZopeless
 from lp.services.features import (
     get_relevant_feature_controller,
     install_feature_controller,
@@ -352,7 +354,8 @@ class LaunchpadScript:
 
         Can be overriden for testing purpose.
         """
-        self.txn = initZopeless(dbuser=self.dbuser, isolation=isolation)
+        self.txn = ZopelessTransactionManager.initZopeless(
+            dbuser=self.dbuser, isolation=isolation)
 
     def record_activity(self, date_started, date_completed):
         """Hook to record script activity."""

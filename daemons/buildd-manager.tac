@@ -11,12 +11,12 @@ from twisted.web import server
 from lp.buildmaster.manager import BuilddManager
 from lp.services.twistedsupport.loggingsupport import RotatableFileLogObserver
 from canonical.config import config
+from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.lp import initZopeless
 
 execute_zcml_for_scripts()
-initZopeless(dbuser=config.builddmaster.dbuser)
+ZopelessTransactionManager.initZopeless(dbuser=config.builddmaster.dbuser)
 
 options = ServerOptions()
 options.parseOptions()

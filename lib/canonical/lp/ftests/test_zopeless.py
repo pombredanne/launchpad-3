@@ -6,7 +6,7 @@ Tests to make sure that initZopeless works as expected.
 """
 
 from doctest import DocTestSuite
-from canonical.lp import initZopeless
+from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.testing.layers import ZopelessDatabaseLayer
 
 
@@ -17,7 +17,7 @@ def test_isZopeless():
     >>> isZopeless()
     False
 
-    >>> tm = initZopeless(dbuser='launchpad')
+    >>> tm = ZopelessTransactionManager.initZopeless(dbuser='launchpad')
     >>> isZopeless()
     True
 
