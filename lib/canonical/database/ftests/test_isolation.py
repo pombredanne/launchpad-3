@@ -115,8 +115,6 @@ class TestIsolation(unittest.TestCase):
                 read committed
                 serializable
                 serializable
-                serializable
-                serializable
                 """))
 
     def test_connect(self):
