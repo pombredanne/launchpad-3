@@ -12,6 +12,8 @@ import sys
 from textwrap import dedent
 import unittest
 
+import transaction
+
 from canonical.database.sqlbase import (
     cursor, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_DEFAULT,
     ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_SERIALIZABLE,
@@ -56,14 +58,13 @@ class TestIsolation(unittest.TestCase):
 
         # So we need to confirm we are actually in autocommit mode
         # by seeing if we an roll back
-        con = self.txn.conn()
-        cur = con.cursor()
+        cur = cursor()
         cur.execute(
             "SELECT COUNT(*) FROM Person WHERE homepage_content IS NULL")
         self.failIfEqual(cur.fetchone()[0], 0)
         cur.execute("UPDATE Person SET homepage_content=NULL")
-        con.rollback()
-        cur = con.cursor()
+        transaction.abort()
+        cur = cursor()
         cur.execute(
             "SELECT COUNT(*) FROM Person WHERE homepage_content IS NOT NULL")
         self.failUnlessEqual(cur.fetchone()[0], 0)
@@ -82,10 +83,9 @@ class TestIsolation(unittest.TestCase):
         set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
-        con = self.txn.conn()
-        cur = con.cursor()
+        cur = cursor()
         cur.execute("UPDATE Person SET homepage_content=NULL")
-        con.commit()
+        transaction.commit()
         cur.execute("UPDATE Person SET homepage_content='foo'")
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
@@ -95,10 +95,9 @@ class TestIsolation(unittest.TestCase):
         set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
-        con = self.txn.conn()
-        cur = con.cursor()
+        cur = cursor()
         cur.execute("UPDATE Person SET homepage_content=NULL")
-        con.rollback()
+        transaction.abort()
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_script(self):
