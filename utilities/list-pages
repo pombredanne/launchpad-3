@@ -64,7 +64,7 @@ from canonical.launchpad.webapp.publisher import canonical_url
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 
-def load_zcml(zopeless=False):
+def load_zcml(zopeless=True):
     """Load ZCML the way we do in the web site."""
     # We can't load ZCML without generating configuration.
     config.generate_overrides()
