@@ -10,18 +10,11 @@ __all__ = [
 
 from zope.component import getUtility
 
-# XXX JeroenVermeulen 2011-09-08, bug=844550: The GeneralizedPublication
-# import violates import policy and elicits a warning from the test
-# suite.  The warning helps remind us to retire this code as soon as
-# possible.
-from lp.archivepublisher.domination import (
-    Dominator,
-    GeneralizedPublication,
-    )
+from lp.archivepublisher.domination import Dominator
 from lp.registry.interfaces.distribution import IDistributionSet
 
 
-def dominate_imported_source_packages(logger, distro_name, series_name,
+def dominate_imported_source_packages(txn, logger, distro_name, series_name,
                                       pocket, packages_map):
     """Perform domination."""
     series = getUtility(IDistributionSet)[distro_name].getSeries(series_name)
@@ -63,16 +56,46 @@ def dominate_imported_source_packages(logger, distro_name, series_name,
             # we remove this transitional hack.
             # To remove the transitional hack, just let live_versions
             # default to the empty list instead of doing this:
-            pubs = dominator.findPublishedSPPHs(series, pocket, package_name)
-            generalization = GeneralizedPublication(is_source=True)
-            pubs_dict = dominator._sortPackages(pubs, generalization)
-            sorted_pubs = pubs_dict[package_name]
-            if len(sorted_pubs) <= 1:
-                # If there's only one published SPPH, the transitional
-                # code will just leave it Published.  Don't bother; the
-                # migration will be costly enough as it is.
+            import apt_pkg
+            from lp.services.database.bulk import load_related
+            from lp.soyuz.model.sourcepackagerelease import (
+                SourcePackageRelease,
+                )
+            pubs = list(
+                dominator.findPublishedSPPHs(series, pocket, package_name))
+            if len(pubs) <= 1:
+                # Without at least two published SPPHs, the transitional
+                # code will make no changes.  Skip, and leave the
+                # algorithm free to assume there's a pubs[0].
                 continue
-            live_versions = [sorted_pubs[0].sourcepackagerelease.version]
+            load_related(
+                SourcePackageRelease, pubs, ['sourcepackagereleaseID'])
+
+            # Close off the transaction to avoid being idle-killed.
+            # Nothing else is going to supersede or delete these
+            # publications in the meantime, so our data stays valid; and
+            # if new ones become published, they still won't be
+            # considered anyway.
+            txn.commit()
+
+            # Find the "latest" publication.  A purely in-memory
+            # operation; won't open a new transaction.
+            def is_newer(candidate, reference):
+                comparison = apt_pkg.VersionCompare(
+                    candidate.sourcepackagerelease.version,
+                    reference.sourcepackagerelease.version)
+                if comparison > 0:
+                    return True
+                elif comparison < 0:
+                    return False
+                else:
+                    return candidate.datecreated > reference.datecreated
+
+            latest_pub = pubs[0]
+            for pub in pubs[1:]:
+                if is_newer(pub, latest_pub):
+                    latest_pub = pub
+            live_versions = [latest_pub.sourcepackagerelease.version]
         else:
             live_versions = [
                 entry['Version']
@@ -80,3 +103,5 @@ def dominate_imported_source_packages(logger, distro_name, series_name,
 
         dominator.dominateRemovedSourceVersions(
             series, pocket, package_name, live_versions)
+
+        txn.commit()

@@ -16,7 +16,7 @@ from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 execute_zcml_for_scripts()
-ZopelessTransactionManager.initZopeless(dbuser=config.builddmaster.dbuser)
+ZopelessTransactionManager.initZopeless(dbuser='buildd_manager')
 
 options = ServerOptions()
 options.parseOptions()

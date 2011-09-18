@@ -97,6 +97,8 @@ class QueueScript(LaunchpadScript):
             no_mail, self.options.component_name, self.options.section_name,
             self.options.priority_name, log=self.logger)
 
+        print "Initializing connection to queue %s" % self.options.queue_name
+
         for single_args in args_list:
             try:
                 cmd_runner.execute(single_args, self.options.exact_match)
