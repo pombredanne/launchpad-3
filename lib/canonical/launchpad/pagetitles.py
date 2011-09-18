@@ -230,8 +230,6 @@ distroseries_queue = ContextTitle('Queue for %s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
-hassprints_sprints = ContextTitle("Events related to %s")
-
 object_templates = ContextDisplayName('Translation templates for %s')
 
 person_packagebugs = ContextDisplayName("%s's package bug reports")

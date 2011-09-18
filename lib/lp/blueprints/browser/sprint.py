@@ -164,6 +164,11 @@ class SprintSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview', ]
 
 
+class HasSprintsView(LaunchpadView):
+
+    page_title = 'Events'
+
+
 class SprintView(HasSpecificationsView):
 
     implements(IMajorHeadingView)
