@@ -1868,6 +1868,8 @@ class PersonSpecWorkloadTableView(LaunchpadView):
     in a single table.
     """
 
+    page_title = 'Blueprint workload'
+
     class PersonSpec:
         """One record from the workload list."""
 

@@ -253,8 +253,6 @@ oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
 object_templates = ContextDisplayName('Translation templates for %s')
 
-oops = 'Oops!'
-
 people_mergerequest_sent = 'Merge request sent'
 
 person_packagebugs = ContextDisplayName("%s's package bug reports")
@@ -262,10 +260,6 @@ person_packagebugs = ContextDisplayName("%s's package bug reports")
 person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs
-
-person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
-
-person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
