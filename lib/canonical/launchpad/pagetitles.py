@@ -234,8 +234,6 @@ hasannouncements_index = ContextDisplayName('%s news and announcements')
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
-launchpad_forbidden = 'Forbidden'
-
 object_templates = ContextDisplayName('Translation templates for %s')
 
 person_packagebugs = ContextDisplayName("%s's package bug reports")
