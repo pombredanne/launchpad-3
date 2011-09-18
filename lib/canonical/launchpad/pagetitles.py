@@ -257,9 +257,6 @@ oops = 'Oops!'
 
 people_mergerequest_sent = 'Merge request sent'
 
-person_answer_contact_for = ContextDisplayName(
-    'Projects for which %s is an answer contact')
-
 person_packagebugs = ContextDisplayName("%s's package bug reports")
 
 person_packagebugs_overview = person_packagebugs
