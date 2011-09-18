@@ -78,8 +78,8 @@ storing the respective SourcePackageRelease.
 
 Clean up this change and carry on:
 
-    >>> from canonical.database.sqlbase import rollback
-    >>> rollback()
+    >>> import transaction
+    >>> transaction.abort()
 
 
 === Collision in queue DONE ===
@@ -182,7 +182,7 @@ item should be rejected:
 
 Clean up this change and carry on:
 
-    >>> rollback()
+    >>> transaction.abort()
 
 
 == Dealing with Epochs and diverging binary versions ==

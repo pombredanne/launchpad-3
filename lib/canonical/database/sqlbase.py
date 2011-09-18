@@ -682,15 +682,6 @@ def reset_store(func):
 # Some helpers intended for use with initZopeless.  These allow you to avoid
 # passing the transaction manager all through your code.
 
-def begin():
-    """Begins a transaction."""
-    transaction.begin()
-
-
-def rollback():
-    transaction.abort()
-
-
 def commit():
     transaction.commit()
 
