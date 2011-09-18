@@ -332,6 +332,4 @@ team_polls = ContextTitle('Polls for team %s')
 
 token_authorized = 'Almost finished ...'
 
-translationimportqueueentry_index = 'Translation import queue entry'
-
 unauthorized = 'Error: Not authorized'
