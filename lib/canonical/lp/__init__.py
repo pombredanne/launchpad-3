@@ -11,28 +11,12 @@ This module is deprecated.
 
 __metaclass__ = type
 
-from canonical.database.postgresql import ConnectionString
-from canonical.config import dbconfig
-from canonical.database.sqlbase import (
-    ISOLATION_LEVEL_DEFAULT, ZopelessTransactionManager)
+from canonical.database.sqlbase import ZopelessTransactionManager
 
-
-__all__ = [
-    'isZopeless', 'initZopeless',
-    ]
+__all__ = ['isZopeless']
 
 
 def isZopeless():
     """Returns True if we are running in the Zopeless environment"""
     # pylint: disable-msg=W0212
     return ZopelessTransactionManager._installed is not None
-
-
-def initZopeless(dbuser=None, isolation=ISOLATION_LEVEL_DEFAULT):
-    """Initialize the Zopeless environment."""
-    if dbuser is None:
-        dbuser = (
-            ConnectionString(dbconfig.main_master).user or dbconfig.dbuser)
-
-    return ZopelessTransactionManager.initZopeless(
-        dbuser=dbuser, isolation=isolation)
