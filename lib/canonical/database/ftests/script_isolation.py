@@ -41,13 +41,6 @@ txn = initZopeless()
 check()
 txn.uninstall()
 
-# We run the checks twice to ensure that both methods of setting the
-# isolation level stick across transaction boundaries.
 txn = initZopeless(isolation=ISOLATION_LEVEL_SERIALIZABLE)
 check()
 txn.uninstall()
-
-txn = initZopeless()
-txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
-check()
-

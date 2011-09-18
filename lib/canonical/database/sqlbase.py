@@ -370,22 +370,6 @@ class ZopelessTransactionManager(object):
         cls._reset_stores()
         cls._installed = None
 
-    @classmethod
-    def set_isolation_level(cls, isolation):
-        """Set the transaction isolation level.
-
-        Level can be one of ISOLATION_LEVEL_AUTOCOMMIT,
-        ISOLATION_LEVEL_READ_COMMITTED or
-        ISOLATION_LEVEL_SERIALIZABLE. As changing the isolation level
-        must be done before any other queries are issued in the
-        current transaction, this method automatically issues a
-        rollback to ensure this is the case.
-        """
-        assert cls._installed is not None, (
-            "ZopelessTransactionManager not installed")
-        cls.uninstall()
-        cls.initZopeless(cls._dbuser, isolation)
-
     @staticmethod
     def conn():
         store = _get_sqlobject_store()
