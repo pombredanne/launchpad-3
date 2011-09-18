@@ -28,23 +28,6 @@ The initZopeless() call defaults to read committed isolation:
     >>> print c.fetchone()[0]
     read committed
 
-We can commit transactions:
-
-    >>> c.execute("UPDATE person SET name = 'something' WHERE id = 1")
-    >>> ZopelessTransactionManager.commit()
-
-We can also explicitly start transactions with begin(), and abort
-transactions:
-
-    >>> ZopelessTransactionManager.begin()
-    >>> c = cursor()
-    >>> c.execute("UPDATE person SET name = 'blah' WHERE id = 1")
-    >>> ZopelessTransactionManager.abort()
-    >>> c = cursor()
-    >>> c.execute("SELECT name FROM person WHERE id = 1")
-    >>> print c.fetchone()[0]
-    something
-
 The uninstall() method can be used to uninstall the transaction
 manager:
 
