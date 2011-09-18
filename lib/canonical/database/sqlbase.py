@@ -328,7 +328,6 @@ class ZopelessTransactionManager(object):
             cls._isolation = isolation
             cls._reset_stores()
             cls._installed = cls
-        return cls._installed
 
     @staticmethod
     def _reset_stores():
