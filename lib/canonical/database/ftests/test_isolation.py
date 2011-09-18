@@ -30,9 +30,6 @@ def set_isolation_level(isolation):
 class TestIsolation(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        self.txn = LaunchpadZopelessLayer.txn
-
     def getCurrentIsolation(self, con=None):
         if con is None:
             cur = cursor()
