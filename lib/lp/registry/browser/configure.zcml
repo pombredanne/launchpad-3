@@ -1219,7 +1219,7 @@
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
-            class="lp.registry.browser.person.PersonView"
+            class="lp.registry.browser.poll.TeamPollsView"
             name="+polls"
             template="../templates/team-polls.pt"/>
         <browser:page

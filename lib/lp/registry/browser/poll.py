@@ -15,6 +15,7 @@ __all__ = [
     'PollView',
     'PollVoteView',
     'PollBreadcrumb',
+    'TeamPollsView',
     ]
 
 from z3c.ptcompat import ViewPageTemplateFile
@@ -45,6 +46,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.registry.browser.person import PersonView
 from lp.registry.interfaces.poll import (
     IPoll,
     IPollOption,
@@ -467,3 +469,10 @@ class PollOptionAddView(LaunchpadFormView):
         polloption = self.context.newOption(data['name'], data['title'])
         self.next_url = canonical_url(self.context)
         notify(ObjectCreatedEvent(polloption))
+
+
+class TeamPollsView(PersonView):
+
+    @property
+    def page_title(self):
+        return 'Polls for team %s' % self.context.displayname
