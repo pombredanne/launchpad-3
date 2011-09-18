@@ -301,15 +301,3 @@ rosetta_index = 'Launchpad Translations'
 rosetta_products = 'Projects with Translations in Launchpad'
 
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
-
-signedcodeofconduct_index = ContextDisplayName('%s')
-
-signedcodeofconduct_add = ContextTitle('Sign %s')
-
-signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
-
-signedcodeofconduct_activate = ContextDisplayName('Activating %s')
-
-signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-token_authorized = 'Almost finished ...'

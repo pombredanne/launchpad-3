@@ -171,6 +171,10 @@ class SignedCodeOfConductAddView(LaunchpadFormView):
     schema = ISignedCodeOfConduct
     field_names = ['signedcode']
 
+    @property
+    def page_title(self):
+        return 'Sign %s' % self.context.title
+
     @action('Continue', name='continue')
     def continue_action(self, action, data):
         signedcode = data["signedcode"]
@@ -212,12 +216,8 @@ class SignedCodeOfConductAckView(LaunchpadFormView):
             user=data['owner'], recipient=self.user)
 
 
-class SignedCodeOfConductView:
+class SignedCodeOfConductView(CodeOfConductView):
     """Simple view class for SignedCoC page."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
 
 class SignedCodeOfConductAdminView(LaunchpadView):
