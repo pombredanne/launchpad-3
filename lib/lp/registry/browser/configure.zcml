@@ -1282,13 +1282,13 @@
         <browser:page
             name="+requestmerge"
             for="lp.registry.interfaces.person.IPersonSet"
-            class="canonical.launchpad.browser.RequestPeopleMergeView"
+            class="lp.registry.browser.peoplemerge.RequestPeopleMergeView"
             permission="launchpad.AnyPerson"
             template="../templates/people-requestmerge.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPersonSet"
             permission="launchpad.Admin"
-            class="canonical.launchpad.browser.AdminPeopleMergeView"
+            class="lp.registry.browser.peoplemerge.AdminPeopleMergeView"
             name="+adminpeoplemerge"
             template="../templates/people-adminrequestmerge.pt"/>
         <browser:page
@@ -1300,7 +1300,7 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="launchpad.AnyPerson"
-            class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
+            class="lp.registry.browser.peoplemerge.RequestPeopleMergeMultipleEmailsView">
             <browser:page
                 name="+requestmerge-multiple"
                 template="../templates/people-requestmerge-multiple.pt"/>
@@ -1308,7 +1308,7 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="launchpad.AnyPerson"
-            class="canonical.launchpad.browser.FinishedPeopleMergeRequestView">
+            class="lp.registry.browser.peoplemerge.FinishedPeopleMergeRequestView">
             <browser:page
                 name="+mergerequest-sent"
                 template="../templates/people-mergerequest-sent.pt"/>

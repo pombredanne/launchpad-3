@@ -238,8 +238,6 @@ launchpad_forbidden = 'Forbidden'
 
 object_templates = ContextDisplayName('Translation templates for %s')
 
-people_mergerequest_sent = 'Merge request sent'
-
 person_packagebugs = ContextDisplayName("%s's package bug reports")
 
 person_packagebugs_overview = person_packagebugs
