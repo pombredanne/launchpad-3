@@ -31,12 +31,11 @@ history" in the sampledata to test those tools properly.
   >>> process.returncode
   0
   >>> print stderr
-  DEBUG   Acquiring lock
-  DEBUG   Initializing connection.
+  INFO    Creating lockfile: ...
   DEBUG   Considering: ubuntu/warty/RELEASE/CURRENT.
   DEBUG   ... published sources
   DEBUG   Rolling back any remaining transactions.
-  DEBUG   Releasing lock
+  DEBUG   Removing lock file: ...
   <BLANKLINE>
 
 

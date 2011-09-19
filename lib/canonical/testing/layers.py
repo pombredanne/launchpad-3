@@ -129,7 +129,6 @@ from canonical.lazr.timeout import (
     set_default_timeout_function,
     )
 from canonical.librarian.testing.server import LibrarianServerFixture
-from canonical.lp import initZopeless
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
@@ -1529,7 +1528,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
         if ZopelessTransactionManager._installed is not None:
             raise LayerIsolationError(
                 "Last test using Zopeless failed to tearDown correctly")
-        initZopeless()
+        ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
 
         # Connect Storm
         reconnect_stores()
@@ -1565,7 +1564,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
         initZopeless with the given keyword arguments.
         """
         ZopelessTransactionManager.uninstall()
-        initZopeless(**kw)
+        ZopelessTransactionManager.initZopeless(**kw)
 
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
