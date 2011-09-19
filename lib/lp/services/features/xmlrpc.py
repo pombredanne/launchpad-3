@@ -47,12 +47,11 @@ class FeatureFlagApplication:
         if username:
             person = getUtility(IPersonSet).getByName(username)
         def scope_lookup(scope):
-            if scope in scopes:
-                return True
             if person is not None and scope.startswith('team:'):
                 team_name = scope[len('team:'):]
                 return person.inTeam(team_name)
-            return False
+            else:
+                return scope in scopes
         flag_name = unicode(flag_name)
         controller = FeatureController(scope_lookup, StormFeatureRuleSource())
         return controller.getFlag(flag_name)

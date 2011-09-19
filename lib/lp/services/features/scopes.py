@@ -9,7 +9,9 @@ run from cron scripts and potentially also other places.
 """
 
 __all__ = [
+    'DefaultScope',
     'HANDLERS',
+    'MultiScopeHandler',
     'ScopesForScript',
     'ScopesFromRequest',
     'undocumented_scopes',
