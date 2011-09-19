@@ -10,6 +10,7 @@ run from cron scripts and potentially also other places.
 
 __all__ = [
     'DefaultScope',
+    'default_scopes',
     'FixedScope',
     'HANDLERS',
     'MultiScopeHandler',

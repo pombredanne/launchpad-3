@@ -8,6 +8,7 @@ __metaclass__ = type
 import xmlrpclib
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.config import config
 from lp.services import features
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
@@ -84,13 +85,13 @@ class TestGetFeatureFlag(TestCaseWithFactory):
 
     def test_xmlrpc_interface_unset(self):
         sp = xmlrpclib.ServerProxy(
-            'http://xmlrpc-private.launchpad.dev:8087/featureflags/',
+            config.launchpad.feature_flags_endpoint,
             transport=XMLRPCTestTransport(), allow_none=True)
         self.assertEqual(None, sp.getFeatureFlag(u'flag'))
 
     def test_xmlrpc_interface_set(self):
         sp = xmlrpclib.ServerProxy(
-            'http://xmlrpc-private.launchpad.dev:8087/featureflags/',
+            config.launchpad.feature_flags_endpoint,
             transport=XMLRPCTestTransport(), allow_none=True)
         flag_name = u'flag'
         with feature_flags():
