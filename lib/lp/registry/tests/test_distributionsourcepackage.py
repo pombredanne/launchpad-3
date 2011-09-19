@@ -9,18 +9,23 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackage,
+    DistributionSourcePackageInDatabase,
+    )
 from lp.registry.model.karma import KarmaTotalCache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-class TestDistributionSourcePackage(TestCaseWithFactory):
+class DistributionSourcePackageTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -36,6 +41,44 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         self.factory.makeSourcePackage(distroseries=distribution)
         dsp = naked_distribution.getSourcePackage(name='pmount')
         self.assertEqual(None, dsp.summary)
+
+    def test_ensure_creates_a_dsp_in_db(self):
+        # The DSP.ensure() class methods creates a persistent instance
+        # if one does not exist.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        spph_dsp = spph.sourcepackagerelease.distrosourcepackage
+        DistributionSourcePackage.ensure(spph)
+        new_dsp = DistributionSourcePackage._get(
+            spph_dsp.distribution, spph_dsp.sourcepackagename)
+        self.assertIsNot(None, new_dsp)
+        self.assertIsNot(spph_dsp, new_dsp)
+        self.assertEqual(spph_dsp.distribution, new_dsp.distribution)
+        self.assertEqual(
+            spph_dsp.sourcepackagename, new_dsp.sourcepackagename)
+
+    def test_ensure_dsp_in_db_exists(self):
+        # The DSP.ensure() class methods does not create duplicate
+        # persistent instances; it skips the query to create the DSP.
+        store = IStore(DistributionSourcePackageInDatabase)
+        start_count = store.find(DistributionSourcePackageInDatabase).count()
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        DistributionSourcePackage.ensure(spph)
+        new_count = store.find(DistributionSourcePackageInDatabase).count()
+        self.assertEqual(start_count + 1, new_count)
+        final_count = store.find(DistributionSourcePackageInDatabase).count()
+        self.assertEqual(new_count, final_count)
+
+    def test_ensure_does_not_create_dsp_in_db_non_primary_archive(self):
+        # The DSP.ensure() class methods creates a persistent instance
+        # if one does not exist.
+        archive = self.factory.makeArchive()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive)
+        spph_dsp = spph.sourcepackagerelease.distrosourcepackage
+        DistributionSourcePackage.ensure(spph)
+        new_dsp = DistributionSourcePackage._get(
+            spph_dsp.distribution, spph_dsp.sourcepackagename)
+        self.assertIs(None, new_dsp)
 
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
