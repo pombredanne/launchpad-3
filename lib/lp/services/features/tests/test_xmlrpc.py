@@ -18,7 +18,7 @@ from lp.services.features.xmlrpc import FeatureFlagApplication
 from lp.testing import (
     feature_flags,
     set_feature_flag,
-    TestCase,
+    TestCaseWithFactory,
     )
 
 
@@ -29,7 +29,7 @@ class FixedScope(BaseScope):
         return True
 
 
-class TestGetFeatureFlag(TestCase):
+class TestGetFeatureFlag(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -53,6 +53,9 @@ class TestGetFeatureFlag(TestCase):
             self.assertEqual(u'1', self.endpoint.getFeatureFlag(flag_name))
 
     def test_getFeatureFlag_ignores_relevant_feature_controller(self):
+        # getFeatureFlag should only consider the scopes it is asked to
+        # consider, not any that happen to be active due to the XML-RPC
+        # request itself.
         self.installFeatureController(
             FeatureController(
                 MultiScopeHandler([DefaultScope(), FixedScope()]).lookup,
@@ -60,3 +63,23 @@ class TestGetFeatureFlag(TestCase):
         flag_name = u'flag'
         set_feature_flag(flag_name, u'1', u'fixed')
         self.assertEqual(None, self.endpoint.getFeatureFlag(flag_name))
+
+    def test_getFeatureFlag_considers_supplied_scope(self):
+        flag_name = u'flag'
+        scope_name = u'scope'
+        with feature_flags():
+            set_feature_flag(flag_name, u'1', u'scope')
+            self.assertEqual(
+                None,
+                self.endpoint.getFeatureFlag(flag_name, scopes=[scope_name]))
+
+    def test_getFeatureFlag_evaluates_team_scope(self):
+        flag_name = u'flag'
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        with feature_flags():
+            set_feature_flag(flag_name, u'1', u'team' + team.name)
+            self.assertEqual(
+                None,
+                self.endpoint.getFeatureFlag(
+                    flag_name, username=person.name))

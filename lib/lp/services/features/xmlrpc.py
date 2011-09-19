@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""XXX: Module docstring goes here."""
+"""FeatureFlagApplication allows access to information about feature flags."""
 
 __metaclass__ = type
 __all__ = [
@@ -23,14 +23,24 @@ from lp.services.features.scopes import (
 class IFeatureFlagApplication(ILaunchpadApplication):
     """Mailing lists application root."""
 
-    def getFeatureFlag(flag_name):
-        """ XXX """
+    def getFeatureFlag(flag_name, username=None, scopes=()):
+        """Return the value of the given feature flag.
+
+        :param flag_name: The name of the flag to query.
+        :param username: If supplied, the name of a Person to use in
+            evaluating the 'team:' scope.
+        :param scopes: A list of scopes to consider active.  The 'default'
+            scope is always considered to be active, and does not need to be
+            included here.
+        """
+
 
 class FeatureFlagApplication:
 
     implements(IFeatureFlagApplication)
 
     def getFeatureFlag(self, flag_name):
+        flag_name = unicode(flag_name)
         controller = FeatureController(
             MultiScopeHandler([DefaultScope()]).lookup,
             StormFeatureRuleSource())
