@@ -134,7 +134,7 @@ of the 'getFeatureFlag' XML-RPC method.
     server_proxy = xmlrpclib.ServerProxy(
         config.launchpad.feature_flags_endpoint, allow_none=True)
     if server_proxy.getFeatureFlag(
-        'codehosting.use_forking_server', ['user:' + user_name])
+        'codehosting.use_forking_server', ['user:' + user_name]):
         pass
 
 Debugging feature usage
