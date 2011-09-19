@@ -768,13 +768,8 @@ Predictably, private bugs are sent with a slightly different header:
     >>> bug_three.private
     True
 
-When the bug is made private, the bugtask pillar owners and bug supervisors
-are subscribed in addition any other direct subscribers which already exist.
-
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    foo.bar@canonical.com ['yes']
-    mark@example.com ['yes']
     test@canonical.com ['yes']
 
 
@@ -791,15 +786,13 @@ security vulnerability. It can have the value "yes" or "no".
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    foo.bar@canonical.com ['no']
-    mark@example.com ['no']
     test@canonical.com ['no']
 
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
 
     >>> with lp_dbuser():
-    ...     bug_three.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    ...     bug_three.setSecurityRelated(True)
     True
     >>> bug_three.security_related
     True
@@ -807,8 +800,6 @@ simple "yes":
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    foo.bar@canonical.com ['yes']
-    mark@example.com ['yes']
     test@canonical.com ['yes']
 
 
@@ -819,8 +810,8 @@ The X-Launchpad-Bug-Recipient-Commented header lists all user IDs of
 people who have ever commented on the bug. It's a space-separated
 list.
 
-    >>> message = trigger_and_get_email_messages(bug_three)[0]
-    >>> print message.get('X-Launchpad-Bug-Commenters')
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Commenters')
     name12
 
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -831,8 +822,8 @@ list.
     ...     ignored = getUtility(IBugMessageSet).createMessage(
     ...         'Hungry', bug_three, foo_bar, "Make me a sandwich.")
 
-    >>> message = trigger_and_get_email_messages(bug_three)[0]
-    >>> print message.get('X-Launchpad-Bug-Commenters')
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Commenters')
     name12 name16
 
 It only lists each user once, no matter how many comments they've
@@ -842,8 +833,8 @@ made.
     ...     ignored = getUtility(IBugMessageSet).createMessage(
     ...         'Hungry', bug_three, foo_bar, "Make me a sandwich.")
 
-    >>> message = trigger_and_get_email_messages(bug_three)[0]
-    >>> print message.get('X-Launchpad-Bug-Commenters')
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Commenters')
     name12 name16
 
 
@@ -853,8 +844,8 @@ The X-Launchpad-Bug-Reporter header
 The X-Launchpad-Bug-Reporter header contains information about the Launchpad
 user who originally reported the bug and opened the bug's first bug task.
 
-    >>> message = trigger_and_get_email_messages(bug_three)[0]
-    >>> print message.get('X-Launchpad-Bug-Reporter')
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Reporter')
     Foo Bar (name16)
 
 
@@ -1185,7 +1176,7 @@ notifications.
     ----------------------------------------------------------------------
     To: owner@example.com
     ...
-    You received this bug notification because you are a member of
+    You received this bug notification because you are a member of 
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
@@ -1249,7 +1240,7 @@ COMMENTS, he also receives these notifications.
     ----------------------------------------------------------------------
     To: owner@example.com
     ...
-    You received this bug notification because you are a member of
+    You received this bug notification because you are a member of 
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
@@ -1302,7 +1293,7 @@ no comment notifications.
     no comment for no-priv.
     <BLANKLINE>
     --
-    You received this bug notification because you are a member of
+    You received this bug notification because you are a member of 
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
@@ -1366,7 +1357,7 @@ receives these notifications.
     ----------------------------------------------------------------------
     To: owner@example.com
     ...
-    You received this bug notification because you are a member of
+    You received this bug notification because you are a member of 
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
@@ -1421,7 +1412,7 @@ no notifications created by addChange().
     + Whatever else
     <BLANKLINE>
     --
-    You received this bug notification because you are a member of
+    You received this bug notification because you are a member of 
     Addressless Team, which is subscribed to the bug report.
     http://bugs.launchpad.dev/bugs/1
     ...
@@ -1488,7 +1479,7 @@ after all.
     ----------------------------------------------------------------------
     To: owner@example.com
     ...
-    You received this bug notification because you are a member of
+    You received this bug notification because you are a member of 
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
