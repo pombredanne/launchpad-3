@@ -14,6 +14,7 @@ BUILDID="$1"
 GREP=/bin/grep
 CUT=/usr/bin/cut
 XARGS=/usr/bin/xargs
+SORT=/usr/bin/sort
 
 set -e
 
@@ -21,11 +22,9 @@ exec 2>&1
 
 echo "Unmounting chroot for build $BUILDID..."
 
-#$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/proc"
-#$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/dev/pts"
-#$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/home/buildd/.ccache"
-#$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/var/cache/apt/archives"
-#$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/dev/shm"
+# binfmt-support adds a mount under /proc, which means that our first
+# pass at umounting fails unless we reverse the list.  Leave the while
+# loop in just to handle pathological cases, too.
 COUNT=0
 while $GREP "$HOME/build-$BUILDID/chroot-autobuild" /proc/mounts; do 
     COUNT=$(($COUNT+1))
@@ -37,5 +36,5 @@ while $GREP "$HOME/build-$BUILDID/chroot-autobuild" /proc/mounts; do
 	exit 1
     fi
     $GREP "$HOME/build-$BUILDID/chroot-autobuild" /proc/mounts | \
-	  $CUT -d\  -f2 | $XARGS -r -n 1 $SUDO umount || sleep 1
+	  $CUT -d\  -f2 | LANG=C $SORT -r | $XARGS -r -n 1 $SUDO umount || sleep 1
 done
