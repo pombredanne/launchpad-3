@@ -106,7 +106,7 @@ class PageScope(BaseScope):
 
 
 class TeamScope(BaseScope):
-    """The current user's team memberships.
+    """A user's team memberships.
 
     Team ID scopes are written as 'team:' + the team name to match.
 
