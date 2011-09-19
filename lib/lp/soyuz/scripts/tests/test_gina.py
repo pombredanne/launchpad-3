@@ -71,7 +71,7 @@ class TestGina(TestCaseWithFactory):
         # published; older active publications are superseded, newer
         # ones deleted.
         dominate_imported_source_packages(
-            logger, series.distribution.name, series.name, pocket,
+            txn, logger, series.distribution.name, series.name, pocket,
             FakePackagesMap({package.name: [{'Version': '1.1.1'}]}))
         self.assertEqual([
             PackagePublishingStatus.SUPERSEDED,
