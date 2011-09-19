@@ -5368,9 +5368,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     def _addStatsToPackages(self, spphs):
         """Add stats to the given package releases, and return them."""
+        filtered_spphs = [
+            spph for spph in spphs if
+            check_permission('launchpad.View', spph)]
         distro_packages = [
             spph.sourcepackagerelease.distrosourcepackage
-            for spph in spphs]
+            for spph in filtered_spphs]
         package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
             self.user, distro_packages)
         open_bugs = {}
@@ -5383,17 +5386,17 @@ class PersonRelatedSoftwareView(LaunchpadView):
             distro_packages)
 
         builds_by_package, needs_build_by_package = self._calculateBuildStats(
-            spphs)
+            filtered_spphs)
 
         return [
             SourcePackagePublishingHistoryWithStats(
                 spph,
-                open_bugs[spph.sourcepackagerelease.distrosourcepackage],
+                open_bugs[spph.meta_sourcepackage.distribution_sourcepackage],
                 package_question_counts[
-                    spph.sourcepackagerelease.distrosourcepackage],
+                    spph.meta_sourcepackage.distribution_sourcepackage],
                 builds_by_package[spph.sourcepackagerelease],
                 needs_build_by_package[spph.sourcepackagerelease])
-            for spph in spphs]
+            for spph in filtered_spphs]
 
     def setUpBatch(self, packages):
         """Set up the batch navigation for the page being viewed.
