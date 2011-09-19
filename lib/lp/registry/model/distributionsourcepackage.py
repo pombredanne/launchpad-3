@@ -207,6 +207,16 @@ class DistributionSourcePackage(BugTargetBase,
         # in the database.
         return self._get(self.distribution, self.sourcepackagename)
 
+    def delete(self):
+        """See `DistributionSourcePackage`."""
+        dsp_in_db = self._self_in_database
+        no_spph = self.publishing_history.count() == 0
+        if dsp_in_db is not None and no_spph:
+            store = IStore(dsp_in_db)
+            store.remove(dsp_in_db)
+            return True
+        return False
+
     def recalculateBugHeatCache(self):
         """See `IHasBugHeat`."""
         row = IStore(Bug).find(

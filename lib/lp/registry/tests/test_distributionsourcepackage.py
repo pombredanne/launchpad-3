@@ -83,13 +83,37 @@ class DistributionSourcePackageTestCase(TestCaseWithFactory):
     def test_ensure_suitesourcepackage_creates_a_dsp_in_db(self):
         # The DSP.ensure() class methods creates a persistent instance
         # if one does not exist.
-        ssp = self.factory.makeSuiteSourcePackage()
-        DistributionSourcePackage.ensure(ssp=ssp)
+        sourcepackage = self.factory.makeSourcePackage()
+        DistributionSourcePackage.ensure(sourcepackage=sourcepackage)
         new_dsp = DistributionSourcePackage._get(
-            ssp.distribution, ssp.sourcepackagename)
+            sourcepackage.distribution, sourcepackage.sourcepackagename)
         self.assertIsNot(None, new_dsp)
-        self.assertEqual(ssp.distribution, new_dsp.distribution)
-        self.assertEqual(ssp.sourcepackagename, new_dsp.sourcepackagename)
+        self.assertEqual(sourcepackage.distribution, new_dsp.distribution)
+        self.assertEqual(
+            sourcepackage.sourcepackagename, new_dsp.sourcepackagename)
+
+    def test_delete_without_dsp_in_db(self):
+        # Calling delete() on a DSP without persistence returns False.
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertFalse(dsp.delete())
+
+    def test_delete_with_dsp_in_db_with_history(self):
+        # Calling delete() on a persistent DSP with SPPH returns False.
+        # Once a package is uploaded, it cannot be deleted.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        dsp = spph.sourcepackagerelease.distrosourcepackage
+        DistributionSourcePackage.ensure(spph=spph)
+        transaction.commit()
+        self.assertFalse(dsp.delete())
+
+    def test_delete_with_dsp_in_db_without_history(self):
+        # Calling delete() on a persistent DSP without SPPH returns True.
+        # A package without history was a mistake.
+        sp = self.factory.makeSourcePackage()
+        DistributionSourcePackage.ensure(sourcepackage=sp)
+        transaction.commit()
+        dsp = sp.distribution_sourcepackage
+        self.assertTrue(dsp.delete())
 
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
