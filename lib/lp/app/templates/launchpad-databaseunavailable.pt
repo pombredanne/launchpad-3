@@ -1,0 +1,230 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xml:lang="en"
+  lang="en"
+>
+  <head
+     tal:define="
+       revno modules/lp.app.versioninfo/revno | string:unknown;
+       icingroot string:/+icing/rev${revno}"
+     >
+    <title>Error: database unavailable</title>
+    
+    <style type="text/css">
+    
+    html {
+        background: #fff;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'UbuntuBeta Regular', Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+        font-size: 0.75em;
+        line-height: 1.3em;
+        color: #000;
+        margin: 0 0 40px 0;
+    }
+
+    a {
+        color: #03a;
+        text-decoration: none;
+    }
+    
+    h1 {
+        font-size: 3.7em;
+    }
+    
+    h2,
+    h3,
+    h4 {
+        font-weight: normal;
+    }
+
+    h2 {
+        margin: 1.3em 0 1em 0;
+        font-size: 1.8em;
+        line-height: 26px;
+        }
+
+    h3, h4{
+        margin: 0;
+    }
+    
+    h4 {
+        font-size: 1.4em;
+        color: #333;
+    }
+    
+    p.sub {
+        color: #333;
+    }
+    
+    p.large {
+        font-size: 1.2em;
+    }
+
+    a img {
+        vertical-align: middle;
+    }
+
+    .page-center-wrap {
+	    text-align: left;
+    }
+    .page-center {
+	    text-align: center;
+	    margin: 0px;
+	    margin: auto;
+        width: 780px;
+    }
+    .page-center-content {
+        text-align: left;
+    }
+    
+    #header,
+    #status-feed,
+    #status-subscribe,
+    #footer {
+        padding-left: 50px;
+        padding-right: 50px;
+    }
+    
+    #header {
+        border: 1px solid #d7d3cf;
+        padding-top: 20px;
+        padding-bottom: 20px;
+        margin-top: 15%;
+    }
+    
+    #header .graphic {
+        font-size: 110px;
+        color: #646464;
+        float: right;
+        padding: 100px 80px 0 0;
+    }
+    
+    #header .content {
+        margin-right: 300px;
+    }
+    
+    #header-shadow {
+        height: 2px;
+        background-color: #ebe9e7;
+    }
+    
+    #status-feed {
+        padding-top: 10px;
+        width: 450px;
+    }
+    
+    #status-feed h2 {
+        border-bottom: 1px solid #d7d3cf;
+        padding-bottom: 0.7em;
+        margin-bottom: 0.3em;
+    }
+    
+    /* Hide the twitter feed footer */
+    .twtr-ft {
+        display: none !important;
+    }
+    
+    #status-subscribe img {
+        margin-right: 3px;
+    }
+    
+    #status-subscribe a:last-child {
+        margin-left: 20px;
+    }
+    
+    #footer {
+        border-top: 1px solid #d7d3cf;
+        margin-top: 40px;
+        padding-top: 20px;
+    }
+    
+    </style>
+</head>
+<body>
+    <div class="page-center-wrap">
+        <div class="page-center">
+            <div class="page-center-content">
+                <div id="header">
+                    <div class="graphic">
+                        :(
+                    </div>
+                    <div class="content">
+                        <h1>Uh oh!</h1>
+                        <h4>Something has gone wrong, sorry about this.</h4>
+                        <p>This happens when we are doing an update, in which
+                         case Launchpad will be back in less than five 
+                         minutes, or in the case that something else has gone
+                         wrong someone will have already been notified.</p>
+                        <p class="sub">Technically, this is a 503 error and 
+                        has been caused by our database being temporarily
+                        offline.
+                        </p>
+                        <p><a href="javascript: window.location.reload()">Reload</a> this page or try
+                        again in a few minutes</p>
+                    </div>
+                </div>
+                <div id="header-shadow"></div>
+                <div id="status-feed">
+                    <h2>Recent status updates</h2>
+                    
+                    <script type="text/javascript"
+                        src="http://widgets.twimg.com/j/2/widget.js"></script>
+                    <script type="text/javascript">
+                    new TWTR.Widget({
+                      version: 2,
+                      type: 'profile',
+                      rpp: 3,
+                      interval: 30000,
+                      width: 450,
+                      height: 300,
+                      theme: {
+                        shell: {
+                          background: '#ffffff',
+                          color: '#000000'
+                        },
+                        tweets: {
+                          background: '#ffffff',
+                          color: '#000000',
+                          links: '#0033aa'
+                        }
+                      },
+                      features: {
+                        scrollbar: false,
+                        loop: false,
+                        live: false,
+                        hashtags: true,
+                        timestamp: true,
+                        avatars: false,
+                        behavior: 'all'
+                      }
+                    }).render().setUser('launchpadstatus').start();
+                    </script>
+                </div>
+                <div id="status-subscribe">
+                    <h2>Subscribe to updates</h2>
+                    <a href="http://identi.ca/launchpadstatus">
+                        <img src="/@@/identica_logo.png" alt="Identi.ca" />
+                        @launchpadstatus
+                    </a>
+                    on Identi.ca
+                    <a href="http://twitter.com/launchpadstatus">
+                        <img src="/@@/twitter_logo.png" alt="Twitter" />
+                        @launchpadstatus
+                    </a>
+                    on Twitter
+                </div>
+                <div id="footer">
+                    <a href="http://launchpad.net/">
+                        <img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad" />
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+  </body>
+</html>
