@@ -61,7 +61,7 @@
     </browser:pages>
     <browser:pages
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="canonical.launchpad.browser.HasSpecificationsView"
+        class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
         facet="specifications"
         permission="zope.Public">
         <browser:page
@@ -76,7 +76,7 @@
     <browser:page
         name="+assignments"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="canonical.launchpad.browser.SpecificationAssignmentsView"
+        class="lp.blueprints.browser.specificationtarget.SpecificationAssignmentsView"
         facet="specifications"
         permission="zope.Public"
         template="../templates/specificationtarget-assignments.pt"/>
@@ -97,14 +97,14 @@
     <browser:page
         name="+attend"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="canonical.launchpad.browser.SprintAttendanceAttendView"
+        class="lp.blueprints.browser.sprintattendance.SprintAttendanceAttendView"
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/sprint-attend.pt"/>
     <browser:page
         name="+register"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="canonical.launchpad.browser.SprintAttendanceRegisterView"
+        class="lp.blueprints.browser.sprintattendance.SprintAttendanceRegisterView"
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/sprint-register.pt"/>

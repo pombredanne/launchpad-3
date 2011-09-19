@@ -14,20 +14,20 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+request-token"
-      class="canonical.launchpad.browser.OAuthRequestTokenView"
+      class="canonical.launchpad.browser.oauth.OAuthRequestTokenView"
       permission="zope.Public" />
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+authorize-token"
-      class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
+      class="canonical.launchpad.browser.oauth.OAuthAuthorizeTokenView"
       template="../templates/oauth-authorize.pt"
       permission="launchpad.AnyPerson" />
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+access-token"
-      class="canonical.launchpad.browser.OAuthAccessTokenView"
+      class="canonical.launchpad.browser.oauth.OAuthAccessTokenView"
       permission="zope.Public" />
 
 </facet>
