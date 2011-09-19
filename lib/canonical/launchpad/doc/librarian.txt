@@ -95,9 +95,9 @@ We can get its URL too
     >>> from canonical.config import config
     >>> import re
     >>> re.search(
-    ...        r'^%s\d+/text.txt$' % config.librarian.download_url,
-    ...        alias.http_url
-    ...        ) is not None
+    ...     r'^%s\d+/text.txt$' % config.librarian.download_url,
+    ...     alias.http_url
+    ...     ) is not None
     True
 
 Librarian also serves the same file through https, we use this for
@@ -114,20 +114,20 @@ or the https one, depending on a config value.
     False
 
     >>> re.search(
-    ...        r'^%s\d+/text.txt$' % config.librarian.download_url,
-    ...        alias.getURL()
-    ...        ) is not None
+    ...     r'^%s\d+/text.txt$' % config.librarian.download_url,
+    ...     alias.getURL()
+    ...     ) is not None
     True
 
     >>> from textwrap import dedent
     >>> test_data = dedent("""
-    ...        [librarian]
-    ...        use_https: true
-    ...        """)
+    ...     [librarian]
+    ...     use_https: true
+    ...     """)
     >>> config.push('test', test_data)
     >>> re.search(
-    ...        r'^https://.+/\d+/text.txt$', alias.https_url
-    ...        ) is not None
+    ...     r'^https://.+/\d+/text.txt$', alias.https_url
+    ...     ) is not None
     True
 
 However, we can force the use of HTTP by setting the 'HTTP_X_SCHEME'
@@ -137,8 +137,7 @@ header in the request to 'http', even when 'use_https' is True.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from urlparse import urlparse
     >>> request = LaunchpadTestRequest(
-    ...        environ={'REQUEST_METHOD': 'GET',
-    ...                 'HTTP_X_SCHEME' : 'http' })
+    ...     environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME': 'http'})
     >>> view = getMultiAdapter((alias,request), name='+index')
     >>> view.initialize()
     >>> print urlparse(request.response.getHeader('Location'))[0]
@@ -148,8 +147,7 @@ When the incoming scheme is 'https' then the redirect scheme is
 unaffected.
 
     >>> request = LaunchpadTestRequest(
-    ...        environ={'REQUEST_METHOD': 'GET',
-    ...                 'HTTP_X_SCHEME' : 'https' })
+    ...     environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME': 'https'})
     >>> view = getMultiAdapter((alias,request), name='+index')
     >>> view.initialize()
     >>> print urlparse(request.response.getHeader('Location'))[0]
