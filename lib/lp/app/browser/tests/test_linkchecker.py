@@ -24,9 +24,15 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
 
     def check_invalid_links(self, result_json, link_type, invalid_links):
         link_dict = simplejson.loads(result_json)
-        links_to_check = link_dict[link_type]
+        links_to_check = link_dict[link_type]['invalid']
         self.assertEqual(len(invalid_links), len(links_to_check))
         self.assertEqual(set(invalid_links), set(links_to_check))
+
+    def check_valid_links(self, result_json, link_type, valid_links):
+        link_dict = simplejson.loads(result_json)
+        links_to_check = link_dict[link_type]['valid']
+        self.assertEqual(len(valid_links), len(links_to_check))
+        self.assertEqual(set(valid_links), set(links_to_check))
 
     def make_valid_branch_links(self):
         branch = self.factory.makeProductBranch()
@@ -48,8 +54,13 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
             ]
 
     def make_valid_bug_links(self):
-        bug = self.factory.makeBug()
-        return ['/bugs/%d' % (bug.id)]
+        bug1 = self.factory.makeBug()
+        bug2 = self.factory.makeBug()
+        self.factory.makeBugTask(bug=bug2)
+        return [
+            '/bugs/%d' % (bug1.id),
+            '/bugs/%d' % (bug2.id)
+            ]
 
     def make_invalid_bug_links(self):
         """
@@ -86,7 +97,11 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
         link_checker = LinkCheckerAPI(object(), request)
         result_json = link_checker()
         self.check_invalid_links(
-            result_json, 'invalid_branch_links', invalid_branch_urls)
+            result_json, 'branch_links', invalid_branch_urls)
+        self.check_invalid_links(
+            result_json, 'bug_links', invalid_bug_urls)
+        self.check_valid_links(
+            result_json, 'bug_links', valid_bug_urls)
 
     def test_with_no_data(self):
         request = LaunchpadTestRequest()

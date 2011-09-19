@@ -12,6 +12,10 @@ from storm.expr import (
     compile,
     Desc,
     )
+from testtools.matchers import (
+    LessThan,
+    Not,
+    )
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad.components.decoratedresultset import (
@@ -715,3 +719,31 @@ class TestStormRangeFactory(TestCaseWithFactory):
         self.assertEqual(2, shadow_list[0])
         self.assertEqual(0, shadow_list.shadow_values[-1])
         self.assertEqual(2, shadow_list.shadow_values[0])
+
+    def test_rough_length(self):
+        # StormRangeFactory.rough_length returns an estimate of the
+        # length of the result set.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.id)
+        range_factory = StormRangeFactory(resultset)
+        estimated_length = range_factory.rough_length
+        self.assertThat(estimated_length, LessThan(10))
+        self.assertThat(estimated_length, Not(LessThan(1)))
+
+    def test_rough_length_first_sort_column_desc(self):
+        # StormRangeFactory.rough_length can handle result sets where
+        # the first sort column has descendig order.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Desc(Person.id))
+        range_factory = StormRangeFactory(resultset)
+        estimated_length = range_factory.rough_length
+        self.assertThat(estimated_length, LessThan(10))
+        self.assertThat(estimated_length, Not(LessThan(1)))
+
+    def test_rough_length_decorated_result_set(self):
+        # StormRangeFactory.rough_length can handle DecoratedResultSets.
+        resultset = self.makeDecoratedStormResultSet()
+        range_factory = StormRangeFactory(resultset)
+        estimated_length = range_factory.rough_length
+        self.assertThat(estimated_length, LessThan(10))
+        self.assertThat(estimated_length, Not(LessThan(1)))

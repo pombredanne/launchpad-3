@@ -572,3 +572,11 @@ class DistributionSourcePackageInDatabase(Storm):
     po_message_count = Int()
     is_upstream_link_allowed = Bool()
     enable_bugfiling_duplicate_search = Bool()
+    
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
+    @property
+    def currentrelease(self):
+        """See `IDistributionSourcePackage`."""
+        releases = self.distribution.getCurrentSourceReleases(
+            [self.sourcepackagename])
+        return releases.get(self)

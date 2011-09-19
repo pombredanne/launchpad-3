@@ -1022,3 +1022,20 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, unreferenced_msgsets.count())
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
+
+    def test_SPPH_and_BPPH_populator(self):
+        # If SPPHs (or BPPHs) do not have sourcepackagename (or 
+        # binarypackagename) set, the populator will set it.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        spn = spph.sourcepackagename
+        removeSecurityProxy(spph).sourcepackagename = None
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        bpn = bpph.binarypackagename
+        removeSecurityProxy(bpph).binarypackagename = None
+        transaction.commit()
+        self.assertIs(None, spph.sourcepackagename)
+        self.assertIs(None, bpph.binarypackagename)
+        self.runHourly()
+        self.assertEqual(spn, spph.sourcepackagename)
+        self.assertEqual(bpn, bpph.binarypackagename)
