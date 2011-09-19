@@ -1092,6 +1092,12 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
     # We never truncate comments in this view; there would be no point.
     visible_comments_truncated_for_display = False
 
+    def initialize(self):
+        super(BugTaskBatchedCommentsAndActivityView, self).initialize()
+        # This is here to save us from the pain of recursion,
+        # particularly in tests.
+        activity_and_comments = self.activity_and_comments
+
     @property
     def offset(self):
         try:
@@ -1121,18 +1127,31 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
     def next_offset(self):
         return self.offset + self.batch_size
 
-    @cachedproperty
+    @property
     def _event_groups(self):
         """See `BugTaskView`."""
+        batch_size = self.batch_size
+        if (batch_size > (self.total_comments) or
+            not self.has_more_comments_and_activity):
+            # If the batch size is big enough to encompass all the
+            # remaining comments and activity, trim it so that we don't
+            # re-show things.
+            if self.offset == self.visible_initial_comments + 1:
+                offset_to_remove = self.visible_initial_comments
+            else:
+                offset_to_remove = self.offset
+            batch_size = (
+                self.total_comments - self.visible_recent_comments -
+                # This last bit is to make sure that _getEventGroups()
+                # doesn't accidentally inflate the batch size later on.
+                offset_to_remove)
         return self._getEventGroups(
-            batch_size=self.batch_size,
-            offset=self.offset)
+            batch_size=batch_size, offset=self.offset)
 
     @cachedproperty
     def has_more_comments_and_activity(self):
         """Return True if there are more camments and activity to load."""
         return (
-            len(self.activity_and_comments) > 0 and
             self.next_offset < (self.total_comments + self.total_activity))
 
 

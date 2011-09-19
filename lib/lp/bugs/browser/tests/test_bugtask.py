@@ -1046,19 +1046,20 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def _makeNoisyBug(self, comments_only=False):
+    def _makeNoisyBug(self, comments_only=False, number_of_comments=10,
+                      number_of_changes=10):
         """Create and return a bug with a lot of comments and activity."""
         bug = self.factory.makeBug(
             date_created=datetime.now(UTC) - timedelta(days=30))
         with person_logged_in(bug.owner):
             if not comments_only:
-                for i in range(10):
-                    task = self.factory.makeBugTask(bug=bug)
+                for i in range(number_of_changes):
                     change = BugTaskStatusChange(
-                        task, datetime.now(UTC), task.product.owner, 'status',
+                        bug.default_bugtask, datetime.now(UTC),
+                        bug.default_bugtask.product.owner, 'status',
                         BugTaskStatus.NEW, BugTaskStatus.TRIAGED)
                     bug.addChange(change)
-            for i in range (10):
+            for i in range (number_of_comments):
                 msg = self.factory.makeMessage(
                     owner=bug.owner, content="Message %i." % i,
                     datecreated=datetime.now(UTC) - timedelta(days=20-i))
@@ -1095,11 +1096,23 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
     def test_event_groups_only_returns_batch_size_results(self):
         # BugTaskBatchedCommentsAndActivityView._event_groups will
         # return only batch_size results.
-        bug = self._makeNoisyBug()
+        bug = self._makeNoisyBug(number_of_comments=20)
         view = create_initialized_view(
             bug.default_bugtask, '+batched-comments',
             form={'batch_size': 10, 'offset': 1})
         self.assertEqual(10, len([group for group in view._event_groups]))
+
+    def test_event_groups_excludes_visible_recent_comments(self):
+        # BugTaskBatchedCommentsAndActivityView._event_groups will
+        # not return the last view comments - those covered by the
+        # visible_recent_comments property.
+        bug = self._makeNoisyBug()
+        view = create_initialized_view(
+            bug.default_bugtask, '+batched-comments',
+            form={'batch_size': 10, 'offset': 1})
+        self.assertEqual(
+            10-view.visible_recent_comments,
+            len([group for group in view._event_groups]))
 
     def test_activity_and_comments_matches_unbatched_version(self):
         # BugTaskBatchedCommentsAndActivityView extends BugTaskView in
@@ -1109,20 +1122,26 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         # We create a bug with comments only so that we can test the
         # contents of activity_and_comments properly. Trying to test it
         # with multiply different datatypes is fragile at best.
-        bug = self._makeNoisyBug(comments_only=True)
+        bug = self._makeNoisyBug(comments_only=True, number_of_comments=20)
         # We create a batched view with an offset of 0 so that all the
         # comments are returned.
         batched_view = create_initialized_view(
             bug.default_bugtask, '+batched-comments',
-            form={'offset': 0})
+            {'offset': 5, 'batch_size': 10})
         unbatched_view = create_initialized_view(
-            bug.default_bugtask, '+index')
-        self.assertEqual(
-            len(unbatched_view.activity_and_comments),
-            len(batched_view.activity_and_comments))
-        for i in range(len(unbatched_view.activity_and_comments)):
-            unbatched_item = unbatched_view.activity_and_comments[i]
-            batched_item = batched_view.activity_and_comments[i]
+            bug.default_bugtask, '+index', form={'comments': 'all'})
+        # It may look slightly confusing, but it's because the unbatched
+        # view's activity_and_comments list is indexed from comment 1,
+        # whereas the batched view indexes from zero for ease-of-coding.
+        # Comment 0 is the original bug description and so is rarely
+        # returned.
+        unbatched_activity = unbatched_view.activity_and_comments[4:14]
+        for index, unbatched_item in enumerate(unbatched_activity):
+            batched_item = batched_view.activity_and_comments[index]
             self.assertEqual(
-                unbatched_item['comment'].text_for_display,
-                batched_item['comment'].text_for_display)
+                unbatched_item['comment'].index,
+                batched_item['comment'].index,
+                "The comments at index %i don't match. Expected to see "
+                "comment %i, got comment %i instead." %
+                (index, unbatched_item['comment'].index,
+                batched_item['comment'].index))
