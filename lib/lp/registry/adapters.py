@@ -130,3 +130,8 @@ def distribution_to_publisherconfig(distro):
     # Used for traversal from distro to +pubconf.
     config = getUtility(IPublisherConfigSet).getByDistribution(distro)
     return config
+
+
+def package_to_sourcepackagename(package):
+    """Adapts a package to its `ISourcePackageName`."""
+    return package.sourcepackagename

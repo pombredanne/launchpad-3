@@ -22,7 +22,6 @@ __metaclass__ = type
 
 import _pythonpath
 
-from optparse import OptionParser
 import re
 import os
 import subprocess
@@ -37,11 +36,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from storm.store import Store
 
-from canonical.lp import initZopeless
-
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.scripts.logger import logger, logger_options
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
@@ -49,6 +44,7 @@ from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
+from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -107,28 +103,6 @@ def check_preconditions(options):
         raise DoNotRunOnProduction(
             "I won't delete Ubuntu data on %s and you can't --force me."
             % current_config)
-
-
-def parse_args(arguments):
-    """Parse command-line arguments.
-
-    :return: (options, args, logger)
-    """
-    parser = OptionParser(
-        description="Set up fresh Ubuntu series and %s identity." % user_name)
-    parser.add_option('-f', '--force', action='store_true', dest='force',
-        help="DANGEROUS: run even if the database looks production-like.")
-    parser.add_option('-e', '--email', action='store', dest='email',
-        default=default_email,
-        help=(
-            "Email address to use for %s.  Should match your GPG key."
-            % user_name))
-
-    logger_options(parser)
-
-    options, args = parser.parse_args(arguments)
-
-    return options, args, logger(options)
 
 
 def get_person_set():
@@ -374,38 +348,48 @@ def create_ppa(distribution, person, name):
         "main restricted universe multiverse\n")
 
 
-def main(argv):
-    options, args, log = parse_args(argv[1:])
+class SoyuzSampledataSetup(LaunchpadScript):
 
-    execute_zcml_for_scripts()
-    txn = initZopeless(dbuser='launchpad')
+    description = "Set up fresh Ubuntu series and %s identity." % user_name
 
-    check_preconditions(options.force)
+    def add_my_options(self):
+        self.parser.add_option(
+            '-f', '--force', action='store_true', dest='force',
+            help="DANGEROUS: run even if the database looks production-like.")
+        self.parser.add_option(
+            '-e', '--email', action='store', dest='email',
+            default=default_email,
+            help=(
+                "Email address to use for %s.  Should match your GPG key."
+                % user_name))
 
-    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    clean_up(ubuntu, log)
+    def main(self):
+        check_preconditions(self.options.force)
 
-    # Use Hoary as the root, as Breezy and Grumpy are broken.
-    populate(ubuntu, 'hoary', 'ubuntu-team', options, log)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        clean_up(ubuntu, self.logger)
 
-    admin = get_person_set().getByName('name16')
-    person = create_ppa_user(user_name, options, admin, log)
+        # Use Hoary as the root, as Breezy and Grumpy are broken.
+        populate(ubuntu, 'hoary', 'ubuntu-team', self.options, self.logger)
 
-    create_ppa(ubuntu, person, 'test-ppa')
+        admin = get_person_set().getByName('name16')
+        person = create_ppa_user(user_name, self.options, admin, self.logger)
 
-    txn.commit()
-    log.info("Done.")
+        create_ppa(ubuntu, person, 'test-ppa')
 
-    print dedent("""
-        Now start your local Launchpad with "make run_codehosting" and log
-        into https://launchpad.dev/ as "%(email)s" with "test" as the
-        password.
-        Your user name will be %(user_name)s."""
-        % {
-            'email': options.email,
-            'user_name': user_name,
-            })
+        transaction.commit()
+        self.logger.info("Done.")
+
+        print dedent("""
+            Now start your local Launchpad with "make run_codehosting" and log
+            into https://launchpad.dev/ as "%(email)s" with "test" as the
+            password.
+            Your user name will be %(user_name)s."""
+            % {
+                'email': self.options.email,
+                'user_name': user_name,
+                })
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    SoyuzSampledataSetup('soyuz-sampledata-setup').lock_and_run()

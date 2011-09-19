@@ -206,7 +206,3 @@ class LoggingTextProgressView(TextProgressView):
             self._bytes_since_update = 0
             self._last_transport_msg = msg
             self._repaint()
-
-    # bzr 1.17 renamed _show_transport_activity to show_transport_activity.
-    # When we have upgraded to bzr 1.17, this compatibility hack can go away.
-    _show_transport_activity = show_transport_activity
