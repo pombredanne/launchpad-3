@@ -527,16 +527,29 @@ class DistributionSourcePackage(BugTargetBase,
         return dsp
 
     @classmethod
-    def ensure(cls, spph):
+    def ensure(cls, spph=None, ssp=None):
         """Create DistributionSourcePackage record, if necessary.
 
-        Only create a record for primary archives (i.e. not for PPAs).
-        """
-        if spph.archive.purpose != ArchivePurpose.PRIMARY:
-            return
+        Only create a record for primary archives (i.e. not for PPAs) or
+        for official package branches. Requires either a SuiteSourcePackage
+        or a SourcePackagePublishingHistory.
 
-        distribution = spph.distroseries.distribution
-        sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+        :param spph: A SourcePackagePublishingHistory to create a DSP
+            to represent an official uploaded/published package.
+        :param ssp: A SuiteSourcePackage to create a DSP to represent an
+            official package branch.
+        """
+        if spph is None and ssp is None:
+            raise ValueError(
+                'ensure() must be called with either a SPPH or a SSP.')
+        if spph is not None:
+            if spph.archive.purpose != ArchivePurpose.PRIMARY:
+                return
+            distribution = spph.distroseries.distribution
+            sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+        else:
+            distribution = ssp.distribution
+            sourcepackagename = ssp.sourcepackagename
         dsp = cls._get(distribution, sourcepackagename)
         if dsp is None:
             upstream_link_allowed = is_upstream_link_allowed(spph)
@@ -572,8 +585,7 @@ class DistributionSourcePackageInDatabase(Storm):
     po_message_count = Int()
     is_upstream_link_allowed = Bool()
     enable_bugfiling_duplicate_search = Bool()
-    
-    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
+
     @property
     def currentrelease(self):
         """See `IDistributionSourcePackage`."""

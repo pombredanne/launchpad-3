@@ -42,7 +42,7 @@ class DistributionSourcePackageTestCase(TestCaseWithFactory):
         dsp = naked_distribution.getSourcePackage(name='pmount')
         self.assertEqual(None, dsp.summary)
 
-    def test_ensure_creates_a_dsp_in_db(self):
+    def test_ensure_spph_creates_a_dsp_in_db(self):
         # The DSP.ensure() class methods creates a persistent instance
         # if one does not exist.
         spph = self.factory.makeSourcePackagePublishingHistory()
@@ -56,7 +56,7 @@ class DistributionSourcePackageTestCase(TestCaseWithFactory):
         self.assertEqual(
             spph_dsp.sourcepackagename, new_dsp.sourcepackagename)
 
-    def test_ensure_dsp_in_db_exists(self):
+    def test_ensure_spph_dsp_in_db_exists(self):
         # The DSP.ensure() class methods does not create duplicate
         # persistent instances; it skips the query to create the DSP.
         store = IStore(DistributionSourcePackageInDatabase)
@@ -68,7 +68,7 @@ class DistributionSourcePackageTestCase(TestCaseWithFactory):
         final_count = store.find(DistributionSourcePackageInDatabase).count()
         self.assertEqual(new_count, final_count)
 
-    def test_ensure_does_not_create_dsp_in_db_non_primary_archive(self):
+    def test_ensure_spph_does_not_create_dsp_in_db_non_primary_archive(self):
         # The DSP.ensure() class methods creates a persistent instance
         # if one does not exist.
         archive = self.factory.makeArchive()
@@ -79,6 +79,17 @@ class DistributionSourcePackageTestCase(TestCaseWithFactory):
         new_dsp = DistributionSourcePackage._get(
             spph_dsp.distribution, spph_dsp.sourcepackagename)
         self.assertIs(None, new_dsp)
+
+    def test_ensure_suitesourcepackage_creates_a_dsp_in_db(self):
+        # The DSP.ensure() class methods creates a persistent instance
+        # if one does not exist.
+        ssp = self.factory.makeSuiteSourcePackage()
+        DistributionSourcePackage.ensure(ssp=ssp)
+        new_dsp = DistributionSourcePackage._get(
+            ssp.distribution, ssp.sourcepackagename)
+        self.assertIsNot(None, new_dsp)
+        self.assertEqual(ssp.distribution, new_dsp.distribution)
+        self.assertEqual(ssp.sourcepackagename, new_dsp.sourcepackagename)
 
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
