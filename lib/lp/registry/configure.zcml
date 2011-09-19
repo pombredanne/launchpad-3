@@ -870,12 +870,12 @@
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.registry.interfaces.person.ITeam"
-            factory="canonical.launchpad.browser.TeamPrivacyAdapter"
+            factory="lp.registry.browser.team.TeamPrivacyAdapter"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.badge.IHasBadges"
             for="lp.registry.interfaces.person.ITeam"
-            factory="canonical.launchpad.browser.TeamBadges"
+            factory="lp.registry.browser.team.TeamBadges"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

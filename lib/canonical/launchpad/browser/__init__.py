@@ -39,16 +39,6 @@ from lp.code.browser.codeimport import *
 from lp.code.browser.codeimportmachine import *
 from lp.code.browser.codereviewcomment import *
 from lp.hardwaredb.browser.hwdb import *
-from lp.registry.browser.codeofconduct import *
-from lp.registry.browser.distributionmirror import *
-from lp.registry.browser.featuredproject import *
-from lp.registry.browser.karma import *
-from lp.registry.browser.mailinglists import *
-from lp.registry.browser.objectreassignment import *
-from lp.registry.browser.peoplemerge import *
-from lp.registry.browser.poll import *
-from lp.registry.browser.team import *
-from lp.registry.browser.teammembership import *
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 from lp.soyuz.browser.binarypackagerelease import *
