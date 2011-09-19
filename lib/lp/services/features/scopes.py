@@ -224,15 +224,18 @@ class MultiScopeHandler():
             undocumented_scopes.add(scope_name)
 
 
+default_scopes = (DefaultScope(),)
+
+
 class ScopesFromRequest(MultiScopeHandler):
     """Identify feature scopes based on request state."""
 
     def __init__(self, request):
-        scopes = [
-            DefaultScope(),
+        scopes = list(default_scopes)
+        scopes.extend([
             PageScope(request._orig_env.get('launchpad.pageid', '')),
             ServerScope(),
-            ]
+            ])
         person = IPerson(request.principal, None)
         if person is not None:
             scopes.append(TeamScope(person))
@@ -243,6 +246,6 @@ class ScopesForScript(MultiScopeHandler):
     """Identify feature scopes for a given script."""
 
     def __init__(self, script_name):
-        super(ScopesForScript, self).__init__([
-            DefaultScope(),
-            ScriptScope(script_name)])
+        scopes = list(default_scopes)
+        scopes.append(ScriptScope(script_name))
+        super(ScopesForScript, self).__init__(scopes)

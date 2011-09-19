@@ -17,7 +17,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.services.features.scopes import (
-    DefaultScope,
+    default_scopes,
     FixedScope,
     MultiScopeHandler,
     TeamScope,
@@ -44,7 +44,7 @@ class FeatureFlagApplication:
     implements(IFeatureFlagApplication)
 
     def getFeatureFlag(self, flag_name, active_scopes=()):
-        scopes = [DefaultScope()]
+        scopes = list(default_scopes)
         for scope_name in active_scopes:
             if scope_name.startswith('user:'):
                 person = getUtility(IPersonSet).getByName(
