@@ -39,19 +39,6 @@ class FakeEvent(LongPollEvent):
         return "event-key-%s-%s" % (self.source, self.event)
 
 
-class FakeObjectEvent(LongPollEvent):
-
-    adapts(basestring, IObjectEvent)
-    implements(ILongPollEvent)
-
-    @property
-    def event_key(self):
-        return "event-key-%s-created" % self.source
-
-    def emit(self, data):
-        super(FakeObjectEvent, self).emit(data.object)
-
-
 class TestLongPollEvent(TestCase):
 
     layer = LaunchpadFunctionalLayer
@@ -79,6 +66,19 @@ class TestLongPollEvent(TestCase):
             message for (call, message) in
             RabbitMessageBase.class_locals.messages]
         self.assertThat(pending_messages, Contains(expected_message))
+
+
+class FakeObjectEvent(LongPollEvent):
+
+    adapts(basestring, IObjectEvent)
+    implements(ILongPollEvent)
+
+    @property
+    def event_key(self):
+        return "event-key-%s-created" % self.source
+
+    def emit(self, data):
+        super(FakeObjectEvent, self).emit(data.object)
 
 
 class TestObjectEventBridge(TestCase):
