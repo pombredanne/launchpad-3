@@ -759,6 +759,9 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                 DistributionSourcePackage,
                 )
             DistributionSourcePackage.ensure(sourcepackage=self)
+        else:
+            # Delete the official DSP if there is no publishing history.
+            self.distribution_sourcepackage.delete()
 
     @property
     def linked_branches(self):
