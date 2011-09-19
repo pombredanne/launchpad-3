@@ -16,6 +16,12 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
+from lp.services.features.scopes import (
+    DefaultScope,
+    FixedScope,
+    MultiScopeHandler,
+    TeamScope,
+    )
 
 
 class IFeatureFlagApplication(ILaunchpadApplication):
@@ -37,18 +43,17 @@ class FeatureFlagApplication:
 
     implements(IFeatureFlagApplication)
 
-    def getFeatureFlag(self, flag_name, username=None, scopes=()):
-        scopes = tuple(scopes) + ('default',)
-        person = None
-        if username:
-            person = getUtility(IPersonSet).getByName(username)
-
-        def scope_lookup(scope):
-            if person is not None and scope.startswith('team:'):
-                team_name = scope[len('team:'):]
-                return person.inTeam(team_name)
+    def getFeatureFlag(self, flag_name, active_scopes=()):
+        scopes = [DefaultScope()]
+        for scope_name in active_scopes:
+            if scope_name.startswith('user:'):
+                person = getUtility(IPersonSet).getByName(
+                    scope_name[len('user:'):])
+                if person is not None:
+                    scopes.append(TeamScope(person))
             else:
-                return scope in scopes
+                scopes.append(FixedScope(scope_name))
         flag_name = unicode(flag_name)
-        controller = FeatureController(scope_lookup, StormFeatureRuleSource())
+        controller = FeatureController(
+            MultiScopeHandler(scopes).lookup, StormFeatureRuleSource())
         return controller.getFlag(flag_name)

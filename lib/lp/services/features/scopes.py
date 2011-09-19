@@ -10,10 +10,12 @@ run from cron scripts and potentially also other places.
 
 __all__ = [
     'DefaultScope',
+    'FixedScope',
     'HANDLERS',
     'MultiScopeHandler',
     'ScopesForScript',
     'ScopesFromRequest',
+    'TeamScope',
     'undocumented_scopes',
     ]
 
@@ -162,6 +164,20 @@ class ScriptScope(BaseScope):
     def lookup(self, scope_name):
         """Match the running script as a scope."""
         return scope_name == self.script_scope
+
+
+class FixedScope(BaseScope):
+    """A scope that matches an exact value.
+
+    Functionally `ScriptScope` and `DefaultScope` are equivalent to instances
+    of this class, but their docstings are used on the +feature-info page.
+    """
+
+    def __init__(self, scope):
+        self.pattern = re.escape(scope) + '$'
+
+    def lookup(self, scope_name):
+        return True
 
 
 # These are the handlers for all of the allowable scopes, listed here so that
