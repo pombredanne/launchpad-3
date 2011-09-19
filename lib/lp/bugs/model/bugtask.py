@@ -1416,6 +1416,35 @@ def get_bug_privacy_filter_with_decorator(user):
              WHERE TeamParticipation.person = %(personid)s AND
                    TeamParticipation.team = BugTask.assignee AND
                    BugTask.bug = Bug.id
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, Product
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = Product.owner AND
+                   BugTask.product = Product.id AND
+                   BugTask.bug = Bug.id
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, ProductSeries
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = ProductSeries.owner AND
+                   BugTask.productseries = ProductSeries.id AND
+                   BugTask.bug = Bug.id
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, Distribution
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = Distribution.owner AND
+                   BugTask.distribution = Distribution.id AND
+                   BugTask.bug = Bug.id
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, DistroSeries, Distribution
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = Distribution.owner AND
+                   DistroSeries.distribution = Distribution.id AND
+                   BugTask.distroseries = DistroSeries.id AND
+                   BugTask.bug = Bug.id
                    ))
                      """ % sqlvalues(personid=user.id),
         _make_cache_user_can_view_bug(user))

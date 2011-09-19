@@ -92,20 +92,26 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=None)
         self.assertSearchFinds(params, self.bugtasks)
 
-    def test_private_bug_in_search_result(self):
+    def test_private_bug_in_search_result_anonymous_users(self):
         # Private bugs are not included in search results for anonymous users.
         with person_logged_in(self.owner):
             self.bugtasks[-1].bug.setPrivate(True, self.owner)
         params = self.getBugTaskSearchParams(user=None)
         self.assertSearchFinds(params, self.bugtasks[:-1])
 
+    def test_private_bug_in_search_result_unauthorised_users(self):
         # Private bugs are not included in search results for ordinary users.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         user = self.factory.makePerson()
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks[:-1])
 
+    def test_private_bug_in_search_result_subscribers(self):
         # If the user is subscribed to the bug, it is included in the
         # search result.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         user = self.factory.makePerson()
         admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         with person_logged_in(admin):
@@ -114,16 +120,34 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
+    def test_private_bug_in_search_result_admins(self):
         # Private bugs are included in search results for admins.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
         self.assertSearchFinds(params, self.bugtasks)
 
+    def test_private_bug_in_search_result_assignees(self):
         # Private bugs are included in search results for the assignee.
-        user = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         bugtask = self.bugtasks[-1]
+        user = self.factory.makePerson()
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         with person_logged_in(admin):
             bugtask.transitionToAssignee(user)
         params = self.getBugTaskSearchParams(user=user)
+        self.assertSearchFinds(params, self.bugtasks)
+
+    def test_private_bug_in_search_result_pillar_owners(self):
+        # Private bugs are included in search results for the pillar owners.
+        bugtask = self.bugtasks[-1]
+        pillar_owner = bugtask.pillar.owner
+        with person_logged_in(self.owner):
+            bugtask.bug.setPrivate(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        params = self.getBugTaskSearchParams(user=pillar_owner)
         self.assertSearchFinds(params, self.bugtasks)
 
     def test_search_by_bug_reporter(self):
