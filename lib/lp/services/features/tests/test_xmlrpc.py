@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import xmlrpclib
+
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services import features
 from lp.services.features.flags import FeatureController
@@ -20,6 +22,7 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     )
+from lp.testing.xmlrpc import XMLRPCTestTransport
 
 
 class FixedScope(BaseScope):
@@ -83,3 +86,18 @@ class TestGetFeatureFlag(TestCaseWithFactory):
                 u'value',
                 self.endpoint.getFeatureFlag(
                     flag_name, username=person.name))
+
+    def test_xmlrpc_interface_unset(self):
+        sp = xmlrpclib.ServerProxy(
+            'http://xmlrpc-private.launchpad.dev:8087/featureflags/',
+            transport=XMLRPCTestTransport(), allow_none=True)
+        self.assertEqual(None, sp.getFeatureFlag(u'flag'))
+
+    def test_xmlrpc_interface_set(self):
+        sp = xmlrpclib.ServerProxy(
+            'http://xmlrpc-private.launchpad.dev:8087/featureflags/',
+            transport=XMLRPCTestTransport(), allow_none=True)
+        flag_name = u'flag'
+        with feature_flags():
+            set_feature_flag(flag_name, u'1')
+            self.assertEqual(u'1', sp.getFeatureFlag(flag_name))
