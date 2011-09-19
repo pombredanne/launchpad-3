@@ -7,4 +7,5 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
     <adapter factory=".adapters.subscriber.LongPollSubscriber" />
+    <subscriber handler=".adapters.event.object_event" />
 </configure>
