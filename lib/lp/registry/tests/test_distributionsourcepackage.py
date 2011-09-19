@@ -25,7 +25,7 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-class DistributionSourcePackageTestCase(TestCaseWithFactory):
+class TestDistributionSourcePackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
