@@ -686,9 +686,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
 
     def validateDomain(self, domain, similar_templates,
                        sourcepackage_changed, productseries_changed):
-        other_template = similar_templates.getPOTemplateByTranslationDomain(
-            domain)
-        if other_template is not None:
+        clashes = similar_templates.getPOTemplatesByTranslationDomain(domain)
+        if not clashes.is_empty():
             if sourcepackage_changed:
                 self.setFieldError(
                     'sourcepackagename',

@@ -12,18 +12,23 @@ import sys
 from textwrap import dedent
 import unittest
 
+import transaction
+
 from canonical.database.sqlbase import (
     cursor, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_DEFAULT,
     ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_SERIALIZABLE,
-    connect)
+    connect, ZopelessTransactionManager)
 from canonical.testing.layers import LaunchpadZopelessLayer
+
+
+def set_isolation_level(isolation):
+    user = ZopelessTransactionManager._dbuser
+    ZopelessTransactionManager.uninstall()
+    ZopelessTransactionManager.initZopeless(dbuser=user, isolation=isolation)
 
 
 class TestIsolation(unittest.TestCase):
     layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        self.txn = LaunchpadZopelessLayer.txn
 
     def getCurrentIsolation(self, con=None):
         if con is None:
@@ -38,11 +43,11 @@ class TestIsolation(unittest.TestCase):
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_default2(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_DEFAULT)
+        set_isolation_level(ISOLATION_LEVEL_DEFAULT)
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_autocommit(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         # There is no actual 'autocommit' mode in PostgreSQL. psycopg
         # implements this feature by using read committed isolation and
         # issuing commit() statements after every query.
@@ -50,49 +55,46 @@ class TestIsolation(unittest.TestCase):
 
         # So we need to confirm we are actually in autocommit mode
         # by seeing if we an roll back
-        con = self.txn.conn()
-        cur = con.cursor()
+        cur = cursor()
         cur.execute(
             "SELECT COUNT(*) FROM Person WHERE homepage_content IS NULL")
         self.failIfEqual(cur.fetchone()[0], 0)
         cur.execute("UPDATE Person SET homepage_content=NULL")
-        con.rollback()
-        cur = con.cursor()
+        transaction.abort()
+        cur = cursor()
         cur.execute(
             "SELECT COUNT(*) FROM Person WHERE homepage_content IS NOT NULL")
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
     def test_readCommitted(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
+        set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_serializable(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+        set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_commit(self):
         # Change the isolation level
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-        self.txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+        set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
-        con = self.txn.conn()
-        cur = con.cursor()
+        cur = cursor()
         cur.execute("UPDATE Person SET homepage_content=NULL")
-        con.commit()
+        transaction.commit()
         cur.execute("UPDATE Person SET homepage_content='foo'")
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_rollback(self):
         # Change the isolation level
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-        self.txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+        set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
-        con = self.txn.conn()
-        cur = con.cursor()
+        cur = cursor()
         cur.execute("UPDATE Person SET homepage_content=NULL")
-        con.rollback()
+        transaction.abort()
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_script(self):
@@ -107,8 +109,6 @@ class TestIsolation(unittest.TestCase):
         self.failUnlessEqual(script_output, dedent("""\
                 read committed
                 read committed
-                serializable
-                serializable
                 serializable
                 serializable
                 """))

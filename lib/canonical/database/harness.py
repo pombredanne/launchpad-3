@@ -50,16 +50,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR)
 
 
-def switch_db_user(dbuser, commit_first=True):
-    global transactionmgr
-    if commit_first:
-        transactionmgr.commit()
-    else:
-        transactionmgr.abort()
-    transactionmgr.uninstall()
-    transactionmgr = initZopeless(dbuser=dbuser)
-
-
 def _get_locals():
     if len(sys.argv) > 1:
         dbuser = sys.argv[1]

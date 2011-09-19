@@ -8,6 +8,7 @@ __all__ = [
     'DistroSeriesDifferenceJob',
     ]
 
+import simplejson
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -84,8 +85,8 @@ def compose_job_insertion_tuple(derived_series, parent_series,
     :return: A tuple of: derived distribution id, derived distroseries id,
         job type, job id, JSON data map.
     """
-    json = DistributionJob.serializeMetadata(make_metadata(
-        sourcepackagename_id, parent_series.id))
+    json = simplejson.dumps(
+        make_metadata(sourcepackagename_id, parent_series.id))
     return (
         derived_series.distribution.id,
         derived_series.id,
@@ -141,8 +142,7 @@ def find_waiting_jobs(derived_series, sourcepackagename, parent_series):
     # the metadata string.  It's fragile, but this is only an
     # optimization.  It's not actually disastrous to create
     # redundant jobs occasionally.
-    json_metadata = DistributionJob.serializeMetadata(
-        make_metadata(sourcepackagename.id, parent_series.id))
+    json_metadata = make_metadata(sourcepackagename.id, parent_series.id)
 
     # Use master store because we don't like outdated information
     # here.
@@ -153,7 +153,7 @@ def find_waiting_jobs(derived_series, sourcepackagename, parent_series):
         DistributionJob.job_type ==
             DistributionJobType.DISTROSERIESDIFFERENCE,
         DistributionJob.distroseries == derived_series,
-        DistributionJob._json_data == json_metadata,
+        DistributionJob.metadata == json_metadata,
         DistributionJob.job_id.is_in(Job.ready_jobs))
 
     return [

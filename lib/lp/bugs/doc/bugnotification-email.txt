@@ -87,7 +87,7 @@ as well.
 
 New security related bugs are sent with a prominent warning:
 
-    >>> changed = bug_four.setSecurityRelated(True)
+    >>> changed = bug_four.setSecurityRelated(True, getUtility(ILaunchBag).user)
 
     >>> subject, body = generate_bug_add_email(bug_four)
     >>> subject
@@ -204,7 +204,7 @@ logins to a user that is explicitly subscribed to this bug):
 
     >>> edited_bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
-    >>> changed = edited_bug.setSecurityRelated(True)
+    >>> changed = edited_bug.setSecurityRelated(True, getUtility(ILaunchBag).user)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
@@ -227,7 +227,7 @@ e-mail sent changed as well.
 
     >>> edited_bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> changed = edited_bug.setSecurityRelated(False)
+    >>> changed = edited_bug.setSecurityRelated(False, getUtility(ILaunchBag).user)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
