@@ -23,15 +23,18 @@ class LoggingRouter:
     """A test double for instances of `RabbitRoutingKey`.
 
     Saves messages as `LongPollEventRecord` tuples to a log.
+
+    :param log: A callable accepting a single `LongPollEventRecord`.
+    :param routing_key: See `RabbitRoutingKey.__init__`.
     """
 
-    def __init__(self, event_key, log):
-        self.event_key = event_key
+    def __init__(self, log, routing_key):
         self.log = log
+        self.routing_key = routing_key
 
     def send(self, data):
-        record = LongPollEventRecord(self.event_key, data)
-        self.log.append(record)
+        record = LongPollEventRecord(self.routing_key, data)
+        self.log(record)
 
 
 @contextmanager
@@ -40,10 +43,13 @@ def capture_longpoll_emissions():
 
     This returns a list in which `LongPollEventRecord` tuples will be
     recorded, in the order they're emitted.
+
+    Note that normal event emission is *suppressed globally* while this
+    context is in force; *all* events will be stored in the log.
     """
     log = []
     original_router_factory = event.router_factory
-    event.router_factory = partial(LoggingRouter, log=log)
+    event.router_factory = partial(LoggingRouter, log.append)
     try:
         yield log
     finally:
