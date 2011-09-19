@@ -9,12 +9,13 @@ __all__ = [
     "subscribe",
     ]
 
-from .interfaces import (
+from lazr.restful.utils import get_current_browser_request
+from zope.component import getMultiAdapter
+
+from lp.services.longpoll.interfaces import (
     ILongPollEvent,
     ILongPollSubscriber,
     )
-from lazr.restful.utils import get_current_browser_request
-from zope.component import getMultiAdapter
 
 
 def subscribe(target, event, request=None):

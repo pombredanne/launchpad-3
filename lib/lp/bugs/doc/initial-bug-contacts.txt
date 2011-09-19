@@ -316,10 +316,12 @@ and then the bug gets reassigned to mozilla firefox:
     >>> transaction.commit()
     >>> stub.test_emails = []
 
-the unallowed subscribers are removed:
+the subscriptions remain unchanged:
 
     >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
-    [u'Foo Bar', u'Mark Shuttleworth', u'Sample Person', u'Ubuntu Team']
+    [u'Dafydd Harries', u'Foo Bar', u'Mark Shuttleworth',
+     u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team',
+     u'Ubuntu Team']
 
 
 Product Bug Supervisors and Bug Tasks

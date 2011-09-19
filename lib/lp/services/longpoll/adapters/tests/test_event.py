@@ -11,11 +11,11 @@ from canonical.testing.layers import (
     BaseLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.app.longpoll.adapters.event import (
+from lp.services.longpoll.adapters.event import (
     generate_event_key,
     LongPollEvent,
     )
-from lp.app.longpoll.interfaces import ILongPollEvent
+from lp.services.longpoll.interfaces import ILongPollEvent
 from lp.services.messaging.queue import RabbitMessageBase
 from lp.testing import TestCase
 from lp.testing.matchers import Contains

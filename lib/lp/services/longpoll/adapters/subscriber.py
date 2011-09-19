@@ -16,7 +16,7 @@ from zope.component import adapts
 from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
-from lp.app.longpoll.interfaces import ILongPollSubscriber
+from lp.services.longpoll.interfaces import ILongPollSubscriber
 from lp.services.messaging.queue import (
     RabbitQueue,
     RabbitRoutingKey,
