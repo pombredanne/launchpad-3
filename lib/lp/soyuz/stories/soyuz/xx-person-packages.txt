@@ -201,7 +201,6 @@ so that they appear in his +packages page.
     >>> source2.sourcepackagerelease.creator=cprov
 
     >>> flush_database_updates()
-    >>> transaction.commit()
     >>> logout()
 
 "source1" is now published in cprov and mark's PPA.  "source2" is only
@@ -322,14 +321,21 @@ Now we'll publish it in the primary archive.
     >>> flush_database_updates()
     >>> logout()
 
-This makes the package appear in the 'Uploaded packages' of th listings
+This makes the package appear in the 'Uploaded packages' of the listings
 because the primary archive is public.
 
     >>> MemcachedLayer.purge()
-    >>> transaction.commit()
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> user_browser.getLink("Uploaded packages").click()
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'packages'))
+    1...1 of 1 result
+    ...
+    source1     Ubuntu...test    666 ...ago  None    0   0
+
+    >>> MemcachedLayer.purge()
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
+    >>> anon_browser.getLink("Uploaded packages").click()
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'packages'))
     1...1 of 1 result
     ...
     source1     Ubuntu...test    666 ...ago  None    0   0

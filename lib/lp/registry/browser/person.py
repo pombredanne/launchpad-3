@@ -5368,8 +5368,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
     def _addStatsToPackages(self, spphs):
         """Add stats to the given package releases, and return them."""
         filtered_spphs = [
-           spph for spph in spphs if
-           check_permission('launchpad.View', spph)]
+            spph for spph in spphs if
+            check_permission('launchpad.View', spph)]
         distro_packages = [
             spph.meta_sourcepackage.distribution_sourcepackage
             for spph in filtered_spphs]
