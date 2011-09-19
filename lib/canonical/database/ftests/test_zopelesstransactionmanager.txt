@@ -8,16 +8,16 @@ used to configure the database adapter.
 
 == Initialization ==
 
-The ZopelessTransactionManager is initialized with the initZopeless()
-function.
+The ZopelessTransactionManager is initialized with its initZopeless()
+class method.
 
-    >>> from canonical.lp import initZopeless
-    >>> ztm = initZopeless()
+    >>> from canonical.database.sqlbase import ZopelessTransactionManager
+    >>> ztm = ZopelessTransactionManager.initZopeless(
+    ...     dbuser='launchpad_main')
 
 The returned transaction manager happens to be the same as the
 ZopelessTransactionManager class:
 
-    >>> from canonical.database.sqlbase import ZopelessTransactionManager
     >>> ztm is ZopelessTransactionManager
     True
 
@@ -61,7 +61,7 @@ manager:
 
 We can log in as alternative users with initZopeless():
 
-    >>> ztm = initZopeless(dbuser='testadmin')
+    >>> ztm = ZopelessTransactionManager.initZopeless(dbuser='testadmin')
     >>> c = cursor()
     >>> c.execute("SELECT current_user")
     >>> print c.fetchone()[0]
@@ -72,8 +72,8 @@ Or we can specify other transaction isolation modes:
 
     >>> from canonical.database.sqlbase import (
     ...     ISOLATION_LEVEL_SERIALIZABLE)
-    >>> ztm = initZopeless(dbuser='librarian',
-    ...                    isolation=ISOLATION_LEVEL_SERIALIZABLE)
+    >>> ztm = ZopelessTransactionManager.initZopeless(
+    ...     dbuser='librarian', isolation=ISOLATION_LEVEL_SERIALIZABLE)
     >>> c = cursor()
     >>> c.execute("SHOW transaction_isolation")
     >>> print c.fetchone()[0]

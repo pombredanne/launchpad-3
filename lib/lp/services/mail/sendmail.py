@@ -51,7 +51,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
-from canonical.lp import isZopeless
+from canonical.database.sqlbase import ZopelessTransactionManager
 from lp.app import versioninfo
 from lp.services.encoding import is_ascii_only
 from lp.services.mail.stub import TestMailer
@@ -422,7 +422,7 @@ def sendmail(message, to_addrs=None, bulk=True):
 
     raw_message = message.as_string()
     message_detail = message['Subject']
-    if isZopeless():
+    if ZopelessTransactionManager._installed is not None:
         # Zopeless email sending is not unit tested, and won't be.
         # The zopeless specific stuff is pretty simple though so this
         # should be fine.
@@ -491,12 +491,3 @@ def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
         return mailer.send(from_addr, to_addrs, raw_message)
     finally:
         action.finish()
-
-
-if __name__ == '__main__':
-    from canonical.lp import initZopeless
-    tm = initZopeless()
-    simple_sendmail(
-            'stuart.bishop@canonical.com', ['stuart@stuartbishop.net'],
-            'Testing Zopeless', 'This is the body')
-    tm.uninstall()

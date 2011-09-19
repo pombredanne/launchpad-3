@@ -1200,27 +1200,10 @@ class POTemplateSubset:
         result = self._build_query(POTemplate.name == name, ordered=False)
         return result.one()
 
-    def getPOTemplateByTranslationDomain(self, translation_domain):
+    def getPOTemplatesByTranslationDomain(self, translation_domain):
         """See `IPOTemplateSubset`."""
-        query_result = self._build_query(
+        return self._build_query(
             POTemplate.translation_domain == translation_domain)
-
-        # Fetch up to 2 templates, to check for duplicates.
-        matches = query_result.config(limit=2)
-
-        result = [match for match in matches]
-        if len(result) == 0:
-            return None
-        elif len(result) == 1:
-            return result[0]
-        else:
-            templates = ['"%s"' % template.displayname for template in result]
-            templates.sort()
-            log.warn(
-                "Found %d competing templates with translation domain '%s': "
-                "%s."
-                % (len(templates), translation_domain, '; '.join(templates)))
-            return None
 
     def getPOTemplateByPath(self, path):
         """See `IPOTemplateSubset`."""

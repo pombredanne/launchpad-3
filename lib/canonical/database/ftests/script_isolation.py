@@ -16,9 +16,12 @@ warnings.filterwarnings(
     'ignore', '.*(md5|sha|sets)', DeprecationWarning,
     )
 
-from canonical.database.sqlbase import cursor, ISOLATION_LEVEL_SERIALIZABLE
+from canonical.database.sqlbase import (
+    cursor,
+    ISOLATION_LEVEL_SERIALIZABLE,
+    ZopelessTransactionManager,
+    )
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.lp import initZopeless
 
 execute_zcml_for_scripts()
 
@@ -37,10 +40,12 @@ def check():
     print cur.fetchone()[0]
 
 # First confirm the default isolation level
-txn = initZopeless()
+txn = ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
 check()
 txn.uninstall()
 
-txn = initZopeless(isolation=ISOLATION_LEVEL_SERIALIZABLE)
+txn = ZopelessTransactionManager.initZopeless(
+    dbuser='launchpad_main',
+    isolation=ISOLATION_LEVEL_SERIALIZABLE)
 check()
 txn.uninstall()

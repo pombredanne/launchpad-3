@@ -25,9 +25,6 @@ SCRIPT_LOCATIONS = [
 KNOWN_BROKEN = [
     # Needs mysqldb module
     'scripts/migrate-bugzilla-initialcontacts.py',
-    # circular import from hell (IHasOwner).
-    'scripts/clean-sourceforge-project-entries.py',
-    'scripts/import-zope-specs.py',
     'scripts/rosetta/gettext_check_messages.py',
     # sqlobject.DatbaseIndex ?
     'scripts/linkreport.py',
