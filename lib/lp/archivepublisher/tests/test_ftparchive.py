@@ -316,7 +316,7 @@ class TestFTPArchive(TestCaseWithFactory):
         # Test that a publisher run now will generate an empty apt
         # config and nothing else.
         apt_conf = fa.generateConfig()
-        assert len(file(apt_conf).readlines()) == 23
+        assert len(file(apt_conf).readlines()) == 24
 
         # XXX cprov 2007-03-21: see above, do not run a-f on dev machines.
         fa.runApt(apt_conf)

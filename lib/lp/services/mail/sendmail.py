@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The One True Way to send mail from the Launchpad application.
@@ -42,6 +42,7 @@ from email.Utils import (
     )
 import hashlib
 from smtplib import SMTP
+import sys
 
 from lazr.restful.utils import get_current_browser_request
 from zope.app import zapi
@@ -50,7 +51,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
-from canonical.lp import isZopeless
+from canonical.database.sqlbase import ZopelessTransactionManager
 from lp.app import versioninfo
 from lp.services.encoding import is_ascii_only
 from lp.services.mail.stub import TestMailer
@@ -355,6 +356,10 @@ def sendmail(message, to_addrs=None, bulk=True):
     Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
 
+    This function looks at the `config` singleton for configuration as to
+    where to send the mail; in particular for whether this code is running in
+    zopeless mode, and for a `sendmail_to_stdout` attribute for testing.
+
     :param bulk: By default, a Precedence: bulk header is added to the
         message. Pass False to disable this.
 
@@ -417,7 +422,7 @@ def sendmail(message, to_addrs=None, bulk=True):
 
     raw_message = message.as_string()
     message_detail = message['Subject']
-    if isZopeless():
+    if ZopelessTransactionManager._installed is not None:
         # Zopeless email sending is not unit tested, and won't be.
         # The zopeless specific stuff is pretty simple though so this
         # should be fine.
@@ -427,6 +432,9 @@ def sendmail(message, to_addrs=None, bulk=True):
             # when running in the testing environment, store emails
             TestMailer().send(
                 config.canonical.bounce_address, to_addrs, raw_message)
+        elif getattr(config, 'sendmail_to_stdout', False):
+            # For debugging, from process-one-mail, just print it.
+            sys.stdout.write(raw_message)
         else:
             if config.zopeless.send_email:
                 # Note that we simply throw away dud recipients. This is fine,
@@ -483,12 +491,3 @@ def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
         return mailer.send(from_addr, to_addrs, raw_message)
     finally:
         action.finish()
-
-
-if __name__ == '__main__':
-    from canonical.lp import initZopeless
-    tm = initZopeless()
-    simple_sendmail(
-            'stuart.bishop@canonical.com', ['stuart@stuartbishop.net'],
-            'Testing Zopeless', 'This is the body')
-    tm.uninstall()

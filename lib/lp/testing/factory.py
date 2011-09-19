@@ -1627,8 +1627,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, date_closed=None, title=None,
-                date_created=None, description=None, comment=None,
+                private=False, security_related=False, date_closed=None,
+                title=None, date_created=None, description=None, comment=None,
                 status=None, distribution=None, milestone=None, series=None,
                 tags=None, sourcepackagename=None):
         """Create and return a new, arbitrary Bug.
@@ -1679,6 +1679,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, private=private,
+            security_related=security_related,
             datecreated=date_created, description=description,
             status=status, tags=tags)
         create_bug_params.setBugTarget(
@@ -2952,7 +2953,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None,
-                       copy_pofiles=True, side=None, sourcepackage=None):
+                       copy_pofiles=True, side=None, sourcepackage=None,
+                       iscurrent=True):
         """Make a new translation template."""
         if sourcepackage is not None:
             assert distroseries is None, (
@@ -2993,7 +2995,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if path is None:
             path = 'messages.pot'
 
-        return subset.new(name, translation_domain, path, owner, copy_pofiles)
+        pot = subset.new(name, translation_domain, path, owner, copy_pofiles)
+        removeSecurityProxy(pot).iscurrent = iscurrent
+        return pot
 
     def makePOTemplateAndPOFiles(self, language_codes, **kwargs):
         """Create a POTemplate and associated POFiles.

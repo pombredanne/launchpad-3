@@ -22,6 +22,7 @@ from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
+    LeaseHeld,
     SuspendJobException,
     )
 from lp.services.job.model.job import Job
@@ -499,6 +500,29 @@ class MemoryHogJob(StaticJobSource):
         self.x = '*' * (10 ** 6)
 
 
+class NoJobs(StaticJobSource):
+
+    done = False
+
+    jobs = []
+
+
+class LeaseHeldJob(StaticJobSource):
+
+    implements(IRunnableJob)
+
+    jobs = [()]
+
+    done = False
+
+    def __init__(self, id):
+        self.job = Job()
+        self.id = id
+
+    def acquireLease(self):
+        raise LeaseHeld()
+
+
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -606,6 +630,24 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertIn('Job resulted in OOPS', logger.getLogBuffer())
         oops = self.getOopsReport(runner, 0)
         self.assertEqual('MemoryError', oops.type)
+
+    def test_no_jobs(self):
+        logger = BufferLogger()
+        logger.setLevel(logging.INFO)
+        runner = TwistedJobRunner.runFromSource(
+            NoJobs, 'branchscanner', logger)
+        self.assertEqual(
+            (0, 0), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+
+    def test_lease_held_handled(self):
+        """Jobs that raise LeaseHeld are handled correctly."""
+        logger = BufferLogger()
+        logger.setLevel(logging.DEBUG)
+        runner = TwistedJobRunner.runFromSource(
+            LeaseHeldJob, 'branchscanner', logger)
+        self.assertIn('Could not acquire lease', logger.getLogBuffer())
+        self.assertEqual(
+            (0, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
 
 
 class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
