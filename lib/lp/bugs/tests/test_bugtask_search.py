@@ -439,10 +439,10 @@ class SearchTestBase:
         utc_now = datetime.now(pytz.timezone('UTC'))
         self.assertTrue(utc_now >= self.bugtasks[2].date_closed)
         params = self.getBugTaskSearchParams(
-            user=None, date_closed=greater_than(utc_now-timedelta(days=1)))
+            user=None, date_closed=greater_than(utc_now - timedelta(days=1)))
         self.assertSearchFinds(params, self.bugtasks[2:])
         params = self.getBugTaskSearchParams(
-            user=None, date_closed=greater_than(utc_now+timedelta(days=1)))
+            user=None, date_closed=greater_than(utc_now + timedelta(days=1)))
         self.assertSearchFinds(params, [])
 
     def test_created_since(self):
@@ -585,7 +585,6 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
     def test_deactivated_listings_not_seen(self):
         # Someone without permission to see deactiveated projects does
         # not see bugtasks for deactivated projects.
-        nopriv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         bugtask_set = getUtility(IBugTaskSet)
         param = BugTaskSearchParams(user=None, fast_searchtext='Monkeys')
         results = bugtask_set.search(param, _noprejoins=True)
@@ -631,13 +630,13 @@ class ProjectGroupAndDistributionTests:
 
 class BugTargetTestBase:
     """A base class for the bug target mixin classes.
-    
+
     :ivar searchtarget: A bug context to search within.
     :ivar searchtarget2: A sibling bug context for testing cross-context
         searches. Created on demand when
         getBugTaskSearchParams(multitarget=True) is called.
-    :ivar bugtasks2: Bugtasks created for searchtarget2. Twice as many are made
-        as for searchtarget.
+    :ivar bugtasks2: Bugtasks created for searchtarget2. Twice as many are
+        made as for searchtarget.
     :ivar group_on: The columns to group on when calling countBugs. None
         if the target being testing is not sensible/implemented for counting
         bugs. For instance, grouping by project group may be interesting but
@@ -896,7 +895,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
                 owner=self.owner, project=self.searchtarget)
             bug1 = self.factory.makeBug(product=product1)
             bug1.default_bugtask.updateTargetNameCache()
-            bug2 = self.factory.makeBug(product=product2)
+            self.factory.makeBug(product=product2)
         params = self.getBugTaskSearchParams(user=None, searchtext='uct-fo')
         # With no flag, we find the first bug.
         self.assertSearchFinds(params, [bug1.default_bugtask])
