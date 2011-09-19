@@ -26,6 +26,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductPackagesView',
     'ProductPackagesPortletView',
+    'ProductPurchaseSubscriptionView',
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSeriesSetView',
