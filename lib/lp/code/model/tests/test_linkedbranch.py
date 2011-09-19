@@ -17,9 +17,6 @@ from lp.code.interfaces.linkedbranch import (
     ICanHasLinkedBranch,
     )
 from lp.registry.errors import NoSuchDistroSeries
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackage,
-    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     person_logged_in,
@@ -127,11 +124,6 @@ class TestSuiteSourcePackageLinkedBranch(TestCaseWithFactory):
             branch,
             suite_sourcepackage.sourcepackage.getBranch(
                 suite_sourcepackage.pocket))
-        # A DSP was created for the official branch.
-        new_dsp = DistributionSourcePackage._get(
-            suite_sourcepackage.distribution,
-            suite_sourcepackage.sourcepackagename)
-        self.assertIsNot(None, new_dsp)
 
     def test_bzr_path(self):
         # The bzr_path of a suite source package linked branch is the path
@@ -186,11 +178,6 @@ class TestDistributionSourcePackageLinkedBranch(TestCaseWithFactory):
         dev_sourcepackage = sourcepackage.development_version
         pocket = PackagePublishingPocket.RELEASE
         self.assertEqual(branch, dev_sourcepackage.getBranch(pocket))
-        # A DSP was created for the official branch.
-        new_dsp = DistributionSourcePackage._get(
-            distribution_sourcepackage.distribution,
-            distribution_sourcepackage.sourcepackagename)
-        self.assertIsNot(None, new_dsp)
 
     def test_setBranch_with_no_series(self):
         distribution_sourcepackage = (

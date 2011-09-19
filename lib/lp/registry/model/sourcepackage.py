@@ -754,6 +754,11 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             SeriesSourcePackageBranchSet.new(
                 self.distroseries, pocket, self.sourcepackagename, branch,
                 registrant)
+            # Avoid circular imports.
+            from lp.registry.model.distributionsourcepackage import (
+                DistributionSourcePackage,
+                )
+            DistributionSourcePackage.ensure(sourcepackage=self)
 
     @property
     def linked_branches(self):

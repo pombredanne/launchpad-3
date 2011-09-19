@@ -21,9 +21,6 @@ from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackage,
-    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -183,7 +180,6 @@ class PackageLinkedBranch(BaseLinkedBranch):
         package = self.suite_sourcepackage.sourcepackage
         pocket = self.suite_sourcepackage.pocket
         package.setBranch(pocket, branch, registrant)
-        DistributionSourcePackage.ensure(ssp=self.suite_sourcepackage)
 
 
 class DistributionPackageLinkedBranch(BaseLinkedBranch):
@@ -241,4 +237,3 @@ class DistributionPackageLinkedBranch(BaseLinkedBranch):
         suite_sourcepackage = development_package.getSuiteSourcePackage(
             PackagePublishingPocket.RELEASE)
         ICanHasLinkedBranch(suite_sourcepackage).setBranch(branch, registrant)
-        DistributionSourcePackage.ensure(ssp=suite_sourcepackage)

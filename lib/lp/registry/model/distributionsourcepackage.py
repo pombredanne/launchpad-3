@@ -527,29 +527,30 @@ class DistributionSourcePackage(BugTargetBase,
         return dsp
 
     @classmethod
-    def ensure(cls, spph=None, ssp=None):
+    def ensure(cls, spph=None, sourcepackage=None):
         """Create DistributionSourcePackage record, if necessary.
 
         Only create a record for primary archives (i.e. not for PPAs) or
-        for official package branches. Requires either a SuiteSourcePackage
+        for official package branches. Requires either a SourcePackage
         or a SourcePackagePublishingHistory.
 
         :param spph: A SourcePackagePublishingHistory to create a DSP
             to represent an official uploaded/published package.
-        :param ssp: A SuiteSourcePackage to create a DSP to represent an
+        :param sourcepackage: A SourcePackage to create a DSP to represent an
             official package branch.
         """
-        if spph is None and ssp is None:
+        if spph is None and sourcepackage is None:
             raise ValueError(
-                'ensure() must be called with either a SPPH or a SSP.')
+                'ensure() must be called with either a SPPH '
+                'or a SourcePackage.')
         if spph is not None:
             if spph.archive.purpose != ArchivePurpose.PRIMARY:
                 return
             distribution = spph.distroseries.distribution
             sourcepackagename = spph.sourcepackagerelease.sourcepackagename
         else:
-            distribution = ssp.distribution
-            sourcepackagename = ssp.sourcepackagename
+            distribution = sourcepackage.distribution
+            sourcepackagename = sourcepackage.sourcepackagename
         dsp = cls._get(distribution, sourcepackagename)
         if dsp is None:
             upstream_link_allowed = is_upstream_link_allowed(spph)
