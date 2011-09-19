@@ -50,16 +50,6 @@ from lp.registry.model.projectgroup import ProjectGroup
 from lp.testing.factory import LaunchpadObjectFactory
 
 
-def switch_db_user(dbuser, commit_first=True):
-    global transactionmgr
-    if commit_first:
-        transactionmgr.commit()
-    else:
-        transactionmgr.abort()
-    transactionmgr.uninstall()
-    transactionmgr = initZopeless(dbuser=dbuser)
-
-
 def _get_locals():
     if len(sys.argv) > 1:
         dbuser = sys.argv[1]
