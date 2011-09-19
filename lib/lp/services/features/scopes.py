@@ -21,9 +21,7 @@ __metaclass__ = type
 
 import re
 
-from zope.component import getUtility
-
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.registry.interfaces.person import IPerson
 from lp.services.propertycache import cachedproperty
 import canonical.config
 
@@ -62,14 +60,7 @@ class DefaultScope(BaseScope):
         return True
 
 
-class BaseWebRequestScope(BaseScope):
-    """Base class for scopes that key off web request attributes."""
-
-    def __init__(self, request):
-        self.request = request
-
-
-class PageScope(BaseWebRequestScope):
+class PageScope(BaseScope):
     """The current page ID.
 
     Pageid scopes are written as 'pageid:' + the pageid to match.  Pageids
@@ -82,6 +73,9 @@ class PageScope(BaseWebRequestScope):
     """
 
     pattern = r'pageid:'
+
+    def __init__(self, pageid):
+        self._pageid = pageid
 
     def lookup(self, scope_name):
         """Is the given scope match the current pageid?"""
@@ -106,8 +100,7 @@ class PageScope(BaseWebRequestScope):
 
     @cachedproperty
     def _request_pageid_namespace(self):
-        return tuple(self._pageid_to_namespace(
-            self.request._orig_env.get('launchpad.pageid', '')))
+        return tuple(self._pageid_to_namespace(self._pageid))
 
 
 class TeamScope(BaseScope):
@@ -121,6 +114,9 @@ class TeamScope(BaseScope):
 
     pattern = r'team:'
 
+    def __init__(self, person):
+        self.person = person
+
     def lookup(self, scope_name):
         """Is the given scope a team membership?
 
@@ -129,10 +125,7 @@ class TeamScope(BaseScope):
         fixed to reduce this to one query).
         """
         team_name = scope_name[len('team:'):]
-        person = getUtility(ILaunchBag).user
-        if person is None:
-            return False
-        return person.inTeam(team_name)
+        return self.person.inTeam(team_name)
 
 
 class ServerScope(BaseScope):
@@ -219,11 +212,15 @@ class ScopesFromRequest(MultiScopeHandler):
     """Identify feature scopes based on request state."""
 
     def __init__(self, request):
-        super(ScopesFromRequest, self).__init__([
+        scopes = [
             DefaultScope(),
-            PageScope(request),
-            TeamScope(),
-            ServerScope()])
+            PageScope(request._orig_env.get('launchpad.pageid', '')),
+            ServerScope(),
+            ]
+        person = IPerson(request.principal, None)
+        if person is not None:
+            scopes.append(TeamScope(person))
+        super(ScopesFromRequest, self).__init__(scopes)
 
 
 class ScopesForScript(MultiScopeHandler):
