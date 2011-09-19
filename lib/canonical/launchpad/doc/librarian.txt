@@ -65,7 +65,7 @@ because of this should probably never be used.
     True
 
     >>> alias = lfas.create(
-    ...        'text.txt', len(data), StringIO(data), 'text/plain')
+    ...     'text.txt', len(data), StringIO(data), 'text/plain')
 
 The default expiry of None means the file will expire a few days after
 it is no longer referenced in the database.
@@ -270,8 +270,7 @@ rolls back. However, the records in the database will not be visible to
 the client until it begins a new transaction.
 
     >>> url = client.remoteAddFile(
-    ...        'text.txt', len(data), StringIO(data), 'text/plain'
-    ...        )
+    ...     'text.txt', len(data), StringIO(data), 'text/plain')
     >>> print url
     http://.../text.txt
 
@@ -290,9 +289,8 @@ You can also set the expiry date on the file this way too:
     >>> from datetime import date, datetime
     >>> from pytz import utc
     >>> url = client.remoteAddFile(
-    ...        'text.txt', len(data), StringIO(data), 'text/plain',
-    ...        expires=datetime(2005,9,1,12,0,0, tzinfo=utc)
-    ...        )
+    ...     'text.txt', len(data), StringIO(data), 'text/plain',
+    ...     expires=datetime(2005,9,1,12,0,0, tzinfo=utc))
     >>> transaction.abort()
 
 To check the expiry is set, we need to extract the alias id from the
@@ -348,7 +346,7 @@ Restricted files are accessible with HTTP on a private domain.
     http://.../private.txt
 
     >>> file_alias.http_url.startswith(
-    ...        config.librarian.restricted_download_url)
+    ...     config.librarian.restricted_download_url)
     True
 
 They can also be accessed externally using a time-limited token appended
@@ -365,8 +363,8 @@ provide such a token.
 
     >>> private_path = TimeLimitedToken.url_to_token_path(
     ...        file_alias.private_url)
-    >>> token_url.endswith(session_store().find(TimeLimitedToken,
-    ...        path=private_path).any().token)
+    >>> token_url.endswith(session_store().find(
+    ...     TimeLimitedToken, path=private_path).any().token)
     True
 
 LibraryFileAliasView doesn't work on restricted files. This is a
@@ -405,8 +403,8 @@ Trying to access that file directly on the normal librarian will fail
 (by switching the port)
 
     >>> sneaky_url = file_url.replace(
-    ...        config.librarian.restricted_download_url,
-    ...        config.librarian.download_url)
+    ...     config.librarian.restricted_download_url,
+    ...     config.librarian.download_url)
     >>> urlopen(sneaky_url).read()
     Traceback (most recent call last):
       ...
@@ -422,8 +420,8 @@ also fails:
 
     >>> public_content = 'This is public data.'
     >>> public_file_id = getUtility(ILibrarianClient).addFile(
-    ...        'public.txt', len(public_content), StringIO(public_content),
-    ...        'text/plain')
+    ...     'public.txt', len(public_content), StringIO(public_content),
+    ...     'text/plain')
     >>> file_alias = getUtility(ILibraryFileAliasSet)[public_file_id]
     >>> file_alias.restricted
     False
@@ -444,8 +442,8 @@ The remoteAddFile() on the restricted client, also creates a restricted
 file:
 
     >>> url = restricted_client.remoteAddFile(
-    ...        'another-private.txt', len(private_content),
-    ...        StringIO(private_content), 'text/plain')
+    ...     'another-private.txt', len(private_content),
+    ...     StringIO(private_content), 'text/plain')
     >>> print url
     http://.../another-private.txt
 
@@ -461,8 +459,8 @@ Another way to create a restricted file is by using the restricted
 parameter to ILibraryFileAliasSet:
 
     >>> restricted_file = getUtility(ILibraryFileAliasSet).create(
-    ...        'yet-another-private.txt', len(private_content),
-    ...        StringIO(private_content), 'text/plain', restricted=True)
+    ...     'yet-another-private.txt', len(private_content),
+    ...     StringIO(private_content), 'text/plain', restricted=True)
     >>> restricted_file.restricted
     True
 
@@ -501,8 +499,8 @@ content
 
 If you really want a zero length file you can do it:
 
-    >>> aid = client.addFile('test.txt', 0, StringIO(''), 'text/plain',
-    ...        allow_zero_length=True)
+    >>> aid = client.addFile(
+    ...     'test.txt', 0, StringIO(''), 'text/plain', allow_zero_length=True)
     >>> transaction.commit()
     >>> f = client.getFileByAlias(aid)
     >>> f.read()
@@ -519,7 +517,7 @@ read from the file don't match the declared size.
 Filenames with spaces in them work.
 
     >>> aid = client.addFile(
-    ...        'hot dog', len(data), StringIO(data), 'text/plain')
+    ...     'hot dog', len(data), StringIO(data), 'text/plain')
     >>> transaction.commit()
     >>> f = client.getFileByAlias(aid)
     >>> f.read()
@@ -532,8 +530,8 @@ Filenames with spaces in them work.
 Unicode file names work.  Note that the filename in the resulting URL is
 encoded as UTF-8.
 
-    >>> aid = client.addFile(u'Yow\N{INTERROBANG}', len(data), StringIO(data),
-    ...                         'text/plain')
+    >>> aid = client.addFile(
+    ...     u'Yow\N{INTERROBANG}', len(data), StringIO(data), 'text/plain')
     >>> transaction.commit()
     >>> f = client.getFileByAlias(aid)
     >>> f.read()
@@ -574,8 +572,8 @@ URL.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> req = LaunchpadTestRequest()
     >>> alias = lfas.create(
-    ...        'text2.txt', len(data), StringIO(data), 'text/plain',
-    ...        NEVER_EXPIRES)
+    ...     'text2.txt', len(data), StringIO(data), 'text/plain',
+    ...     NEVER_EXPIRES)
     >>> transaction.commit()
     >>> lfa_view = getMultiAdapter((alias, req), name='+index')
     >>> lfa_view.initialize()
@@ -591,26 +589,25 @@ We need some files to test different ways of accessing them.
     >>> filename = 'public.txt'
     >>> content = 'PUBLIC'
     >>> public_file = getUtility(ILibraryFileAliasSet).create(
-    ...        filename, len(content), StringIO(content), 'text/plain',
-    ...        NEVER_EXPIRES, restricted=False)
+    ...     filename, len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=False)
 
     >>> filename = 'restricted.txt'
     >>> content = 'RESTRICTED'
     >>> restricted_file = getUtility(ILibraryFileAliasSet).create(
-    ...        filename, len(content), StringIO(content), 'text/plain',
-    ...        NEVER_EXPIRES, restricted=True)
+    ...     filename, len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=True)
 
     # Create a new LibraryFileAlias not referencing any LibraryFileContent
     # record. Such records are considered as being deleted.
 
     >>> from canonical.launchpad.database.librarian import LibraryFileAlias
     >>> from canonical.launchpad.webapp.interfaces import (
-    ...        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
     >>> deleted_file = LibraryFileAlias(
-    ...        content=None, filename='deleted.txt',
-    ...        mimetype='text/plain')
+    ...     content=None, filename='deleted.txt', mimetype='text/plain')
     >>> ignore = store.add(deleted_file)
 
 Commit the just-created files.
@@ -679,8 +676,8 @@ so a new LibraryFileDownloadCount was created.
     >>> from storm.locals import Store
     >>> store = Store.of(public_file)
     >>> brazil_entry = store.find(
-    ...        LibraryFileDownloadCount, libraryfilealias=public_file,
-    ...        country=brazil, day=november_1st_2006).one()
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=brazil, day=november_1st_2006).one()
     >>> brazil_entry.count
     1
 
@@ -693,8 +690,8 @@ create a new LibraryFileDownloadCount.
     4
 
     >>> japan_entry = store.find(
-    ...        LibraryFileDownloadCount, libraryfilealias=public_file,
-    ...        country=japan, day=november_1st_2006).one()
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=japan, day=november_1st_2006).one()
     >>> japan_entry.count
     3
 
@@ -717,8 +714,8 @@ created.
     16
 
     >>> brazil_entry2 = store.find(
-    ...        LibraryFileDownloadCount, libraryfilealias=public_file,
-    ...        country=brazil, day=november_2nd_2006).one()
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=brazil, day=november_2nd_2006).one()
     >>> brazil_entry2.count
     10
 
@@ -738,7 +735,7 @@ downloaded.
 
     >>> content = 'something'
     >>> brand_new_file = getUtility(ILibraryFileAliasSet).create(
-    ...        'new.txt', len(content), StringIO(content), 'text/plain',
-    ...        NEVER_EXPIRES, restricted=False)
+    ...     'new.txt', len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=False)
     >>> print brand_new_file.last_downloaded
     None

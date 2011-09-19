@@ -469,7 +469,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         p = plpy.prepare("SELECT to_tsquery('%s', $1) AS x", ["text"])
         query = plpy.execute(p, [query], 1)[0]["x"]
         return query or None
-        """  % configuration
+        """ % configuration
     sexecute(con, r"""
         CREATE OR REPLACE FUNCTION ts2._ftq(text) RETURNS text AS %s
         LANGUAGE plpythonu IMMUTABLE
