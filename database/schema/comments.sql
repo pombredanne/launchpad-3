@@ -64,7 +64,7 @@ COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a bran
 COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in the mirrored area.';
 COMMENT ON COLUMN Branch.merge_queue IS 'A reference to the BranchMergeQueue record that manages merges.';
 COMMENT ON COLUMN Branch.merge_queue_config IS 'A JSON string of configuration values that can be read by a merge queue script.';
-
+COMMENT ON COLUMN Branch.transitively_private IS 'A branch is transitively private if it is explicitly private or is stacked on a transitively private branch.';
 
 -- BranchMergeQueue
 COMMENT ON TABLE BranchMergeQueue IS 'Queue for managing the merge workflow for branches.';

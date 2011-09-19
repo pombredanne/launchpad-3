@@ -421,6 +421,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
     implements(ISourcePackagePublishingHistory)
 
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='sourcepackagename')
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
     distroseries = ForeignKey(foreignKey='DistroSeries',
@@ -683,6 +685,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.distroseries.distribution.getSourcePackageRelease(
             self.supersededby)
 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # self.sourcepackagename is populated.
     @property
     def source_package_name(self):
         """See `ISourcePackagePublishingHistory`"""
@@ -904,6 +908,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     implements(IBinaryPackagePublishingHistory)
 
+    binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
+        dbName='binarypackagename')
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
     distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
@@ -951,6 +957,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IBinaryPackagePublishingHistory`"""
         return self.distroarchseries.distroseries
 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # self.binarypackagename is populated.
     @property
     def binary_package_name(self):
         """See `IBinaryPackagePublishingHistory`"""
@@ -1198,6 +1206,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Append the modified package publishing entry
         return BinaryPackagePublishingHistory(
+            binarypackagename=self.binarypackagerelease.binarypackagename,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
@@ -1429,12 +1438,14 @@ class PublishingSet:
         insert_head = """
             INSERT INTO BinaryPackagePublishingHistory
             (archive, distroarchseries, pocket, binarypackagerelease,
-             component, section, priority, status, datecreated)
+             binarypackagename, component, section, priority, status,
+             datecreated)
             VALUES
             """
         insert_pubs = ", ".join(
             "(%s)" % ", ".join(sqlvalues(
                 get_archive(archive, bpr).id, das.id, pocket, bpr.id,
+                bpr.binarypackagename,
                 get_component(archive, das.distroseries, component).id,
                 section.id, priority, PackagePublishingStatus.PENDING,
                 UTC_NOW))
@@ -1463,6 +1474,7 @@ class PublishingSet:
             "Will not create new publications in a disabled architecture.")
         return BinaryPackagePublishingHistory(
             archive=archive,
+            binarypackagename=binarypackagerelease.binarypackagename,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
             component=get_component(
@@ -1485,6 +1497,7 @@ class PublishingSet:
             distroseries=distroseries,
             pocket=pocket,
             archive=archive,
+            sourcepackagename=sourcepackagerelease.sourcepackagename,
             sourcepackagerelease=sourcepackagerelease,
             component=get_component(archive, distroseries, component),
             section=section,
