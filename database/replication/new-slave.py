@@ -44,7 +44,7 @@ def main():
 
     # Confirm we can connect to the source database.
     # Keep the connection as we need it later.
-    source_connection_string = ConnectionString(connect_string('slony'))
+    source_connection_string = ConnectionString(connect_string(user='slony'))
     try:
         log.debug(
             "Opening source connection to '%s'" % source_connection_string)

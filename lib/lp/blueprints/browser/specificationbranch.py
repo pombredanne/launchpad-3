@@ -12,6 +12,7 @@ __all__ = [
     'SpecificationBranchURL',
     ]
 
+from lazr.restful.utils import smartquote
 from zope.interface import implements
 
 from canonical.launchpad import _
@@ -19,7 +20,6 @@ from canonical.launchpad.webapp import (
     canonical_url,
     )
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,

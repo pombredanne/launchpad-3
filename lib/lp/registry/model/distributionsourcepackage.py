@@ -15,6 +15,7 @@ __all__ = [
 import itertools
 import operator
 
+from lazr.restful.utils import smartquote
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
@@ -35,7 +36,6 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.lazr.utils import smartquote
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
@@ -572,3 +572,11 @@ class DistributionSourcePackageInDatabase(Storm):
     po_message_count = Int()
     is_upstream_link_allowed = Bool()
     enable_bugfiling_duplicate_search = Bool()
+    
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
+    @property
+    def currentrelease(self):
+        """See `IDistributionSourcePackage`."""
+        releases = self.distribution.getCurrentSourceReleases(
+            [self.sourcepackagename])
+        return releases.get(self)

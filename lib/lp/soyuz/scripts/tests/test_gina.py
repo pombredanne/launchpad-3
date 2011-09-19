@@ -19,6 +19,7 @@ from lp.soyuz.scripts.gina.packages import (
     SourcePackageData,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.faketransaction import FakeTransaction
 
 
 class FakePackagesMap:
@@ -34,6 +35,7 @@ class TestGina(TestCaseWithFactory):
         # dominate_imported_source_packages dominates the source
         # packages that Gina imports.
         logger = DevNullLogger()
+        txn = FakeTransaction()
         series = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
         package = self.factory.makeSourcePackageName()
@@ -98,8 +100,9 @@ class TestGina(TestCaseWithFactory):
         # In this scenario, 1.0 is a superseded release.
         pubs[0].supersede()
         logger = DevNullLogger()
+        txn = FakeTransaction()
         dominate_imported_source_packages(
-            logger, series.distribution.name, series.name, pocket,
+            txn, logger, series.distribution.name, series.name, pocket,
             FakePackagesMap({}))
 
         # The older, superseded release stays superseded; but the

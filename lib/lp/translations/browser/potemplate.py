@@ -30,6 +30,7 @@ import datetime
 import operator
 import os.path
 
+from lazr.restful.utils import smartquote
 from storm.info import ClassAlias
 from storm.expr import (
     And,
@@ -64,7 +65,6 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     )
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import (
@@ -686,9 +686,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
 
     def validateDomain(self, domain, similar_templates,
                        sourcepackage_changed, productseries_changed):
-        other_template = similar_templates.getPOTemplateByTranslationDomain(
-            domain)
-        if other_template is not None:
+        clashes = similar_templates.getPOTemplatesByTranslationDomain(domain)
+        if not clashes.is_empty():
             if sourcepackage_changed:
                 self.setFieldError(
                     'sourcepackagename',

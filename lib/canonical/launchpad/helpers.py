@@ -12,7 +12,6 @@ __metaclass__ = type
 
 from difflib import unified_diff
 import os
-import random
 import re
 from StringIO import StringIO
 import subprocess
@@ -95,81 +94,10 @@ def backslashreplace(str):
     return str.decode('UTF-8').encode('ASCII', 'backslashreplace')
 
 
-def join_lines(*lines):
-    """Concatenate a list of strings, adding a newline at the end of each."""
-
-    return ''.join([x + '\n' for x in lines])
-
-
 def string_to_tarfile(s):
     """Convert a binary string containing a tar file into a tar file obj."""
 
     return tarfile.open('', 'r', StringIO(s))
-
-
-def shortest(sequence):
-    """Return a list with the shortest items in sequence.
-
-    Return an empty list if the sequence is empty.
-    """
-    shortest_list = []
-    shortest_length = None
-
-    for item in list(sequence):
-        new_length = len(item)
-
-        if shortest_length is None:
-            # First item.
-            shortest_list.append(item)
-            shortest_length = new_length
-        elif new_length == shortest_length:
-            # Same length than shortest item found, we append it to the list.
-            shortest_list.append(item)
-        elif min(new_length, shortest_length) != shortest_length:
-            # Shorter than our shortest length found, discard old values.
-            shortest_list = [item]
-            shortest_length = new_length
-
-    return shortest_list
-
-
-def getRosettaBestBinaryPackageName(sequence):
-    """Return the best binary package name from a list.
-
-    It follows the Rosetta policy:
-
-    We don't need a concrete value from binary package name, we use shortest
-    function as a kind of heuristic to choose the shortest binary package
-    name that we suppose will be the more descriptive one for our needs with
-    PO templates. That's why we get always the first element.
-    """
-    return shortest(sequence)[0]
-
-
-def getRosettaBestDomainPath(sequence):
-    """Return the best path for a concrete .pot file from a list of paths.
-
-    It follows the Rosetta policy for this path:
-
-    We don't need a concrete value from domain_paths list, we use shortest
-    function as a kind of heuristic to choose the shortest path if we have
-    more than one, usually, we will have only one element.
-    """
-    return shortest(sequence)[0]
-
-
-def getValidNameFromString(invalid_name):
-    """Return a valid name based on a string.
-
-    A name in launchpad has a set of restrictions that not all strings follow.
-    This function converts any string in another one that follows our name
-    restriction rules.
-
-    To know more about all restrictions, please, look at valid_name function
-    in the database.
-    """
-    # All chars should be lower case, underscores and spaces become dashes.
-    return text_replaced(invalid_name.lower(), {'_': '-', ' ': '-'})
 
 
 def browserLanguages(request):
@@ -212,36 +140,6 @@ def get_contact_email_addresses(person):
     return set(
         str(removeSecurityProxy(mail_person.preferredemail).email)
         for mail_person in get_recipients(person))
-
-
-replacements = {0: {'.': ' |dot| ',
-                    '@': ' |at| '},
-                1: {'.': ' ! ',
-                    '@': ' {} '},
-                2: {'.': ' , ',
-                    '@': ' % '},
-                3: {'.': ' (!) ',
-                    '@': ' (at) '},
-                4: {'.': ' {dot} ',
-                    '@': ' {at} '},
-                }
-
-
-def obfuscateEmail(emailaddr, idx=None):
-    """Return an obfuscated version of the provided email address.
-
-    Randomly chose a set of replacements for some email address characters and
-    replace them. This will make harder for email harvesters to fetch email
-    address from launchpad.
-
-    >>> obfuscateEmail('foo@bar.com', 0)
-    'foo |at| bar |dot| com'
-    >>> obfuscateEmail('foo.bar@xyz.com.br', 1)
-    'foo ! bar {} xyz ! com ! br'
-    """
-    if idx is None:
-        idx = random.randint(0, len(replacements) - 1)
-    return text_replaced(emailaddr, replacements[idx])
 
 
 class ShortListTooBigError(Exception):
@@ -431,30 +329,6 @@ def intOrZero(value):
         return int(value)
     except (ValueError, TypeError):
         return 0
-
-
-def positiveIntOrZero(value):
-    """Return 0 if int(value) fails or if int(value) is less than 0.
-
-    Return int(value) otherwise.
-
-    >>> positiveIntOrZero(None)
-    0
-    >>> positiveIntOrZero(-9)
-    0
-    >>> positiveIntOrZero(1)
-    1
-    >>> positiveIntOrZero('-3')
-    0
-    >>> positiveIntOrZero('5')
-    5
-    >>> positiveIntOrZero(3.1415)
-    3
-    """
-    value = intOrZero(value)
-    if value < 0:
-        return 0
-    return value
 
 
 def get_email_template(filename, app=None):

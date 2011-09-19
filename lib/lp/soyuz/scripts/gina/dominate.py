@@ -14,7 +14,7 @@ from lp.archivepublisher.domination import Dominator
 from lp.registry.interfaces.distribution import IDistributionSet
 
 
-def dominate_imported_source_packages(logger, distro_name, series_name,
+def dominate_imported_source_packages(txn, logger, distro_name, series_name,
                                       pocket, packages_map):
     """Perform domination."""
     series = getUtility(IDistributionSet)[distro_name].getSeries(series_name)
@@ -31,3 +31,5 @@ def dominate_imported_source_packages(logger, distro_name, series_name,
 
         dominator.dominateRemovedSourceVersions(
             series, pocket, package_name, live_versions)
+
+        txn.commit()

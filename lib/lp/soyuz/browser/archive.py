@@ -35,6 +35,7 @@ from datetime import (
     timedelta,
     )
 
+from lazr.restful.utils import smartquote
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import Desc
@@ -80,7 +81,6 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     structured,
     )
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

@@ -43,10 +43,10 @@ order after the helpers.
 """
 __metaclass__ = type
 
+from lazr.restful.utils import smartquote
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.lazr.utils import smartquote
 from lp.bugs.interfaces.malone import IMaloneApplication
 
 
