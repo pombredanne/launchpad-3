@@ -46,8 +46,6 @@ ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
 check()
 ZopelessTransactionManager.uninstall()
 
-# We run the checks twice to ensure that both methods of setting the
-# isolation level stick across transaction boundaries.
 ZopelessTransactionManager.initZopeless(
     dbuser='launchpad_main',
     isolation=ISOLATION_LEVEL_SERIALIZABLE)
