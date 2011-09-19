@@ -16,10 +16,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
-from lp.services.features.scopes import (
-    DefaultScope,
-    MultiScopeHandler,
-    )
 
 
 class IFeatureFlagApplication(ILaunchpadApplication):
@@ -46,6 +42,7 @@ class FeatureFlagApplication:
         person = None
         if username:
             person = getUtility(IPersonSet).getByName(username)
+
         def scope_lookup(scope):
             if person is not None and scope.startswith('team:'):
                 team_name = scope[len('team:'):]

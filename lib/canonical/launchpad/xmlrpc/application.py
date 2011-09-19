@@ -133,4 +133,3 @@ class RosettaSelfTest(LaunchpadXMLRPCView):
 
     def run_test(self):
         return "OK"
-
