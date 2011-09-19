@@ -34,7 +34,7 @@ class TestGetFeatureFlag(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCase.setUp(self)
+        TestCaseWithFactory.setUp(self)
         self.endpoint = FeatureFlagApplication()
 
     def installFeatureController(self, feature_controller):
@@ -68,9 +68,9 @@ class TestGetFeatureFlag(TestCaseWithFactory):
         flag_name = u'flag'
         scope_name = u'scope'
         with feature_flags():
-            set_feature_flag(flag_name, u'1', u'scope')
+            set_feature_flag(flag_name, u'value', scope_name)
             self.assertEqual(
-                None,
+                u'value',
                 self.endpoint.getFeatureFlag(flag_name, scopes=[scope_name]))
 
     def test_getFeatureFlag_evaluates_team_scope(self):
@@ -78,8 +78,8 @@ class TestGetFeatureFlag(TestCaseWithFactory):
         person = self.factory.makePerson()
         team = self.factory.makeTeam(members=[person])
         with feature_flags():
-            set_feature_flag(flag_name, u'1', u'team' + team.name)
+            set_feature_flag(flag_name, u'value', u'team:' + team.name)
             self.assertEqual(
-                None,
+                u'value',
                 self.endpoint.getFeatureFlag(
                     flag_name, username=person.name))

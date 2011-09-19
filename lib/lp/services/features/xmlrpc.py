@@ -9,9 +9,11 @@ __all__ = [
     'FeatureFlagApplication',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.services.features.scopes import (
@@ -39,9 +41,18 @@ class FeatureFlagApplication:
 
     implements(IFeatureFlagApplication)
 
-    def getFeatureFlag(self, flag_name):
+    def getFeatureFlag(self, flag_name, username=None, scopes=()):
+        scopes = tuple(scopes) + ('default',)
+        person = None
+        if username:
+            person = getUtility(IPersonSet).getByName(username)
+        def scope_lookup(scope):
+            if scope in scopes:
+                return True
+            if person is not None and scope.startswith('team:'):
+                team_name = scope[len('team:'):]
+                return person.inTeam(team_name)
+            return False
         flag_name = unicode(flag_name)
-        controller = FeatureController(
-            MultiScopeHandler([DefaultScope()]).lookup,
-            StormFeatureRuleSource())
+        controller = FeatureController(scope_lookup, StormFeatureRuleSource())
         return controller.getFlag(flag_name)
