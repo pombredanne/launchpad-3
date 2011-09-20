@@ -750,8 +750,7 @@ Changing bug security.
 
     >>> firefox_bug.security_related
     False
-    >>> changed = firefox_bug.setSecurityRelated(True,
-    ...     getUtility(ILaunchBag).user)
+    >>> changed = firefox_bug.setSecurityRelated(True)
 
     >>> bug_security_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["security_related"])

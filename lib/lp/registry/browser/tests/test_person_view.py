@@ -3,13 +3,18 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import doctest
+import re
 
+import pytz
+import soupmatchers
 from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import (
     DocTestMatches,
     LessThan,
+    Not,
     )
 import transaction
 from zope.component import getUtility
@@ -45,6 +50,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -692,30 +698,83 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         ppa = self.factory.makeArchive(owner=self.user)
-        src_pub = publisher.getPubSource(
+        self.src_pub = publisher.getPubSource(
             creator=self.user, maintainer=self.user, archive=ppa)
         binaries = publisher.getPubBinaries(
-            pub_source=src_pub)
+            pub_source=self.src_pub)
         self.build = binaries[0].binarypackagerelease.build
         self.build.status = BuildStatus.FAILEDTOBUILD
         self.build.archive = publisher.distroseries.main_archive
         login(ANONYMOUS)
 
+    def assertFailedBuildLinkInView(self, view, build):
+        link_url = '/ubuntutest/+source/foo/666/+build/%d' % build.id
+        failed_build_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Failed build link', 'a', text='i386',
+                attrs=dict(href=link_url)))
+
+        self.assertThat(view(), failed_build_link)
+
     def test_related_software_with_failed_build(self):
         # The link to the failed build is displayed.
-        self.view = create_view(self.user, name='+related-software')
-        html = self.view()
-        self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+        view = create_view(self.user, name='+related-software')
+        self.assertFailedBuildLinkInView(view, self.build)
 
     def test_related_ppa_packages_with_failed_build(self):
         # The link to the failed build is displayed.
-        self.view = create_view(self.user, name='+ppa-packages')
-        html = self.view()
-        self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+        view = create_view(self.user, name='+ppa-packages')
+        self.assertFailedBuildLinkInView(view, self.build)
+
+    def test_related_software_copy(self):
+        # If someone has copied over a package cross distro, this
+        # package shows up on the +related-software page.
+        copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        self.src_pub.copyTo(
+            dest_distroseries, creator=copier,
+            pocket=PackagePublishingPocket.UPDATES,
+            archive=dest_distroseries.main_archive)
+        self.view = create_view(copier, name='+related-software')
+        source_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source link', 'a', text='foo',
+                attrs=dict(href='/%s/+source/foo' %
+                    dest_distroseries.distribution.name)))
+
+        self.assertThat(self.view(), source_link)
+
+    def test_related_software_copy_in_distro(self):
+        # If someone has copied over a package inside the same distro
+        # this package won't show up on the +related-software page.
+        copier = self.factory.makePerson()
+        dest_distroseries = self.src_pub.distroseries
+        self.src_pub.copyTo(
+            dest_distroseries, creator=copier,
+            pocket=PackagePublishingPocket.UPDATES,
+            archive=self.src_pub.archive)
+        self.view = create_view(copier, name='+related-software')
+        source_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source link', 'a', text='foo',
+                attrs=dict(href='/%s/+source/foo' %
+                    dest_distroseries.distribution.name)))
+
+        self.assertThat(self.view(), Not(source_link))
+
+    def test_related_software_spph_date(self):
+        # The date displayed for each package is the spph.datecreated.
+        view = create_view(self.user, name='+related-software')
+        self.src_pub.sourcepackagerelease.dateuploaded = datetime(
+            2010, 01, 01, tzinfo=pytz.UTC)
+        self.src_pub.datecreated = datetime(
+            2011, 10, 01, tzinfo=pytz.UTC)
+        date_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source link', 'td',
+                attrs=dict(title=re.compile('2011-10-01\s*'))))
+
+        self.assertThat(view(), date_matcher)
 
 
 class TestPersonDeactivateAccountView(TestCaseWithFactory):

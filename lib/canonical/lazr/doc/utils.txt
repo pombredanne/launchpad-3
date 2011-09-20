@@ -1,7 +1,9 @@
-= Various utility functions =
+Various utility functions
+=========================
 
 
-== camelcase_to_underscore_separated ==
+camelcase_to_underscore_separated
+---------------------------------
 
 LAZR provides a way of converting TextThatIsWordSeparatedWithInterCaps
 to text_that_is_word_separated_with_underscores.
@@ -9,19 +11,25 @@ to text_that_is_word_separated_with_underscores.
     >>> from lazr.restful.utils import camelcase_to_underscore_separated
     >>> camelcase_to_underscore_separated('lowercase')
     'lowercase'
+
     >>> camelcase_to_underscore_separated('TwoWords')
     'two_words'
+
     >>> camelcase_to_underscore_separated('twoWords')
     'two_words'
+
     >>> camelcase_to_underscore_separated('ThreeLittleWords')
     'three_little_words'
+
     >>> camelcase_to_underscore_separated('UNCLE')
     'u_n_c_l_e'
+
     >>> camelcase_to_underscore_separated('_StartsWithUnderscore')
     '__starts_with_underscore'
 
 
-== safe_hasattr() ==
+safe_hasattr()
+--------------
 
 LAZR provides a safe_hasattr() that doesn't hide exception from the
 caller. This behaviour of the builtin hasattr() is annoying because it
@@ -30,12 +38,13 @@ makes problems harder to diagnose.
     >>> from lazr.restful.utils import safe_hasattr
 
     >>> class Oracle(object):
-    ...     @property
-    ...     def is_full_moon(self):
-    ...         return full_moon
+    ...        @property
+    ...        def is_full_moon(self):
+    ...            return full_moon
     >>> oracle = Oracle()
     >>> hasattr(oracle, 'is_full_moon')
     False
+
     >>> safe_hasattr(oracle, 'is_full_moon')
     Traceback (most recent call last):
       ...
@@ -44,40 +53,51 @@ makes problems harder to diagnose.
     >>> full_moon = True
     >>> hasattr(oracle, 'is_full_moon')
     True
+
     >>> safe_hasattr(oracle, 'is_full_moon')
     True
 
     >>> hasattr(oracle, 'weather')
     False
+
     >>> safe_hasattr(oracle, 'weather')
     False
 
 
-== smartquote() ==
+smartquote()
+------------
 
-smartquote() converts pairs of inch marks (") in a string to typographical
-quotation marks.
+smartquote() converts pairs of inch marks (") in a string to
+typographical quotation marks.
 
     >>> from lazr.restful.utils import smartquote
     >>> smartquote('')
     u''
+
     >>> smartquote('foo "bar" baz')
     u'foo \u201cbar\u201d baz'
+
     >>> smartquote('foo "bar baz')
     u'foo \u201cbar baz'
+
     >>> smartquote('foo bar" baz')
     u'foo bar\u201d baz'
+
     >>> smartquote('""foo " bar "" baz""')
     u'""foo " bar "" baz""'
+
     >>> smartquote('" foo "')
     u'" foo "'
+
     >>> smartquote('"foo".')
     u'\u201cfoo\u201d.'
+
     >>> smartquote('a lot of "foo"?')
     u'a lot of \u201cfoo\u201d?'
 
 
-== safe_js_escape() ==
+safe_js_escape()
+----------------
 
 This will escape the given text so that it can be used in Javascript
 code.
@@ -85,7 +105,10 @@ code.
     >>> from lazr.restful.utils import safe_js_escape
     >>> print safe_js_escape('John "nasty" O\'Brien')
     "John &quot;nasty&quot; O'Brien"
+
     >>> print safe_js_escape("John O\'Brien")
     "John O'Brien"
+
     >>> print safe_js_escape("John <strong>O\'Brien</strong>")
     "John &lt;strong&gt;O'Brien&lt;/strong&gt;"
+

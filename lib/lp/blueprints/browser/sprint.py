@@ -485,11 +485,12 @@ class SprintMeetingExportView(LaunchpadView):
                 continue
             people[subscription.specificationID][
                 subscription.personID] = subscription.essential
-        # Specials - drafter/assignee. Don't need approver for performance
-        # as specifications() above eager loaded the people, and approvers
-        # don't count as a 'required person'.
+
+        # Spec specials - drafter/assignee.  Don't need approver for
+        # performance, as specifications() above eager-loaded the
+        # people, and approvers don't count as "required persons."
         for spec in model_specs:
-            # get the list of attendees that will attend the sprint
+            # Get the list of attendees that will attend the sprint.
             spec_people = people[spec.id]
             if spec.assigneeID is not None:
                 spec_people[spec.assigneeID] = True

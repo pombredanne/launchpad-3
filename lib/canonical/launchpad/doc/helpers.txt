@@ -1,16 +1,18 @@
-= Helper Functions and Classes =
+Helper Functions and Classes
+============================
 
 There are some helper functions and classes located in
 canonical.launchpad.helpers which can be used in order to avoid
 duplicating code in different parts of Launchpad.
 
 
-== Concatenating lists English-style ==
+Concatenating lists English-style
+---------------------------------
 
-The english_list function takes a list of strings and concatenates
-them in a form suitable for inclusion in an English sentence. For
-lists of 3 or more elements it follows the advice given in The
-Elements of Style, chapter I, section 2.
+The english_list function takes a list of strings and concatenates them
+in a form suitable for inclusion in an English sentence. For lists of 3
+or more elements it follows the advice given in The Elements of Style,
+chapter I, section 2.
 
     >>> from canonical.launchpad.helpers import english_list
 
@@ -20,10 +22,13 @@ these delimiters as appropriate.
 
     >>> english_list([])
     ''
+
     >>> english_list(['Fred'])
     'Fred'
+
     >>> english_list(['Fred', 'Bob'])
     'Fred and Bob'
+
     >>> english_list(['Fred', 'Bob', 'Harold'])
     'Fred, Bob, and Harold'
 
@@ -31,6 +36,7 @@ It accepts any iterable that yields strings:
 
     >>> english_list('12345')
     '1, 2, 3, 4, and 5'
+
     >>> english_list(str(i) for i in xrange(5))
     '0, 1, 2, 3, and 4'
 
@@ -47,16 +53,17 @@ The conjunction can be changed:
     '1, 2, or 3'
 
 
-== get_contact_email_addresses ==
+get_contact_email_addresses
+---------------------------
 
-The get_contact_email_addresses function is used to get a person's preferred
-address as a set for function that require the a set of email addresses.
+The get_contact_email_addresses function is used to get a person's
+preferred address as a set for function that require the a set of email
+addresses.
 
     >>> from canonical.launchpad.helpers import get_contact_email_addresses
 
     >>> user = factory.makePerson(
-    ...     email='user@canonical.com',
-    ...     name='user',)
+    ...        email='user@canonical.com',
+    ...        name='user',)
     >>> get_contact_email_addresses(user)
     set(['user@canonical.com'])
-

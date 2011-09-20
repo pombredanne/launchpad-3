@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Parse Hardware Database submissions.
@@ -1693,7 +1693,7 @@ class BaseDevice:
         0: HWBus.SCSI,
         1: HWBus.IDE,
         2: HWBus.FLOPPY,
-        3: HWBus.IPI, # Intelligent Peripheral Interface
+        3: HWBus.IPI,  # Intelligent Peripheral Interface.
         5: HWBus.ATA,
         6: HWBus.SATA,
         7: HWBus.SAS,
@@ -3048,7 +3048,7 @@ class ProcessingLoopBase(object):
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch these exceptions.
                 raise
-            except LibrarianServerError, error:
+            except LibrarianServerError:
                 # LibrarianServerError is raised when the server could
                 # not be reaches for 30 minutes.
                 #
@@ -3067,7 +3067,7 @@ class ProcessingLoopBase(object):
                     'Could not reach the Librarian while processing HWDB '
                     'submission %s' % submission.submission_key)
                 raise
-            except Exception, error:
+            except Exception:
                 self.transaction.abort()
                 self.reportOops(
                     'Exception while processing HWDB submission %s'

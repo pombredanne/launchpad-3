@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generate a report on the replication setup.
@@ -16,22 +16,28 @@ by this report.
 __metaclass__ = type
 __all__ = []
 
-import _pythonpath
-
 from cgi import escape as html_escape
 from cStringIO import StringIO
 from optparse import OptionParser
 import sys
 
-from canonical.database.sqlbase import connect, quote_identifier, sqlvalues
-from canonical.launchpad.scripts import db_options
+import _pythonpath
 import replication.helpers
+
+from canonical.database.sqlbase import (
+    connect,
+    quote_identifier,
+    sqlvalues,
+    )
+from canonical.launchpad.scripts import db_options
 
 
 class Table:
-    labels = None # List of labels to render as the first row of the table.
-    rows = None # List of rows, each row being a list of strings.
+    """Representation of a table.
 
+    :ivar labels: List of labels to render as the table's first row.
+    :ivar rows: List of rows, each being a list of strings.
+    """
     def __init__(self, labels=None):
         if labels is None:
             self.labels = []
@@ -76,11 +82,9 @@ class TextReport:
         for label in table.labels:
             max_col_widths.append(len(label))
         for row in table.rows:
-            row = list(row) # We need len()
-            for col_idx in range(0,len(row)):
-                col = row[col_idx]
+            for col_idx, col in enumerate(row):
                 max_col_widths[col_idx] = max(
-                    len(str(row[col_idx])), max_col_widths[col_idx])
+                    len(str(col)), max_col_widths[col_idx])
 
         out = StringIO()
         for label_idx in range(0, len(table.labels)):
@@ -88,12 +92,13 @@ class TextReport:
                 max_col_widths[label_idx]),
         print >> out
         for width in max_col_widths:
-            print >> out, '='*width,
+            print >> out, '=' * width,
         print >> out
         for row in table.rows:
             row = list(row)
             for col_idx in range(0, len(row)):
-                print >> out, str(row[col_idx]).ljust(max_col_widths[col_idx]),
+                print >> out, str(
+                    row[col_idx]).ljust(max_col_widths[col_idx]),
             print >> out
         print >> out
 
@@ -265,7 +270,6 @@ def main():
                 "No Slony-I cluster called %s in that database"
                 % replication.helpers.CLUSTERNAME)
         return 1
-
 
     # Set our search path to the schema of the cluster we care about.
     cur.execute(

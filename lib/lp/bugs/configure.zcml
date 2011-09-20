@@ -844,7 +844,6 @@
                     removeWatch
                     setPrivate
                     setSecurityRelated
-                    setPrivacyAndSecurityRelated
                     setStatus
                     subscribe
                     unlinkBranch

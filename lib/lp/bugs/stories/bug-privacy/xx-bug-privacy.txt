@@ -33,13 +33,13 @@ anyway, because he is an admin.
   http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
 
 
-Subscribers have been updated according to the privacy rules.
+All the implicit subscribers have been made explicit.
 
   >>> browser.open(
   ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-details")
   >>> print_direct_subscribers(browser.contents)
-  Mark Shuttleworth (Unsubscribe)
   Sample Person (Unsubscribe)
+  Steve Alexander (Unsubscribe)
   Ubuntu Team (Unsubscribe)
 
   >>> print_also_notified(browser.contents)
