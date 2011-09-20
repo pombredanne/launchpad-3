@@ -15,27 +15,24 @@ from lazr.lifecycle.interfaces import (
     )
 from storm.base import Storm
 from storm.info import get_obj_info
-from zope.component import (
-    adapter,
-    adapts,
-    )
-from zope.interface import implements
+from zope.component import adapter
 
 from lp.services.longpoll.adapters.event import (
     generate_event_key,
     LongPollEvent,
     )
-from lp.services.longpoll.interfaces import ILongPollEvent
+from lp.services.longpoll.interfaces import (
+    ILongPollEvent,
+    long_poll_event,
+    )
 
 
+@long_poll_event(Storm)
 class LongPollStormEvent(LongPollEvent):
     """A `ILongPollEvent` for events of `Storm` objects.
 
     This class knows how to construct a stable event key given a Storm object.
     """
-
-    adapts(Storm)
-    implements(ILongPollEvent)
 
     @property
     def event_key(self):
