@@ -16,7 +16,6 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.services.longpoll.testing import capture_longpoll_emissions
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -25,6 +24,10 @@ from lp.services.job.model.job import (
     InvalidTransition,
     Job,
     LeaseHeld,
+    )
+from lp.services.longpoll.testing import (
+    capture_longpoll_emissions,
+    LongPollEventRecord,
     )
 from lp.testing import (
     TestCase,
@@ -268,12 +271,16 @@ class TestJob(TestCaseWithFactory):
             job.start()
             job.fail()
         expected = [
-            ('longpoll.event.job.%d.RUNNING' % job.id,
-             {'event_data': {'old_status': 'WAITING', 'status': 'RUNNING'},
-              'event_key': 'longpoll.event.job.%s.RUNNING' % job.id}),
-            ('longpoll.event.job.%d.FAILED' % job.id,
-             {'event_data': {'old_status': 'RUNNING', 'status': 'FAILED'},
-              'event_key': 'longpoll.event.job.%d.FAILED' % job.id}),
+            LongPollEventRecord(
+                'longpoll.event.job.%d' % job.id,
+                {'event_key': 'longpoll.event.job.%s' % job.id,
+                 'what': 'modified',
+                 'edited_fields': ['status']}),
+            LongPollEventRecord(
+                'longpoll.event.job.%d' % job.id,
+                {'event_key': 'longpoll.event.job.%s' % job.id,
+                 'what': 'modified',
+                 'edited_fields': ['status']}),
             ]
         self.assertEqual(expected, log)
 
