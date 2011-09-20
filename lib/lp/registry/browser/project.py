@@ -353,6 +353,10 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
 
+    @property
+    def page_title(self):
+        return '%s in Launchpad' % self.context.displayname
+
     @cachedproperty
     def has_many_projects(self):
         """Does the projectgroup have many sub projects.
