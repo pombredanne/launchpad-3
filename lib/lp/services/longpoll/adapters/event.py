@@ -12,6 +12,9 @@ __all__ = [
 from lp.services.messaging.queue import RabbitRoutingKey
 
 
+router_factory = RabbitRoutingKey
+
+
 def generate_event_key(*components):
     """Generate a suitable event name."""
     if len(components) == 0:
@@ -43,5 +46,5 @@ class LongPollEvent:
     def emit(self, data):
         """See `ILongPollEvent`."""
         payload = {"event_key": self.event_key, "event_data": data}
-        routing_key = RabbitRoutingKey(self.event_key)
-        routing_key.send(payload)
+        router = router_factory(self.event_key)
+        router.send(payload)

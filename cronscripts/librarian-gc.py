@@ -17,9 +17,11 @@ __metaclass__ = type
 import _pythonpath
 import logging
 
-from canonical.librarian import librariangc
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
+from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.librarian import librariangc
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -57,14 +59,16 @@ class LibrarianGC(LaunchpadCronScript):
                 help="Skip expiring aliases with an expiry date in the past."
                 )
 
-
     def main(self):
         librariangc.log = self.logger
 
         if self.options.loglevel <= logging.DEBUG:
             librariangc.debug = True
 
-        conn = self.txn.conn()
+        # XXX wgrant 2011-09-18 bug=853066: Using Storm's raw connection
+        # here is wrong. We should either create our own or use
+        # Store.execute or cursor() and the transaction module.
+        conn = IStore(LibraryFileAlias)._connection._raw_connection
 
         # Refuse to run if we have significant clock skew between the
         # librarian and the database.

@@ -10,70 +10,47 @@
 A kind of archive garbage collector, supersede NBS binaries (not build
 from source).
 """
+
 import _pythonpath
-import optparse
-import sys
 
 from canonical.config import config
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger, logger_options)
+from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 from lp.soyuz.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftCheckerError)
-from canonical.lp import initZopeless
-from contrib.glock import GlobalLock
 
 
-def main():
-    # Parse command-line arguments
-    parser = optparse.OptionParser()
+class ArchiveCruftCheckerScript(LaunchpadScript):
 
-    logger_options(parser)
+    usage = "Usage: archive-cruft-check.py [options] <ARCHIVE_PATH>"
 
-    parser.add_option(
-        "-d", "--distro", dest="distro", help="remove from DISTRO")
-    parser.add_option(
-        "-n", "--no-action", dest="action", default=True,
-        action="store_false", help="don't do anything")
-    parser.add_option(
-        "-s", "--suite", dest="suite", help="only act on SUITE")
+    def add_my_options(self):
+        self.parser.add_option(
+            "-d", "--distro", dest="distro", help="remove from DISTRO")
+        self.parser.add_option(
+            "-n", "--no-action", dest="action", default=True,
+            action="store_false", help="don't do anything")
+        self.parser.add_option(
+            "-s", "--suite", dest="suite", help="only act on SUITE")
 
-    (options, args) = parser.parse_args()
+    def main(self):
+        if len(self.args) != 1:
+            self.parser.error('ARCHIVEPATH is require')
+        archive_path = self.args[0]
 
-    log = logger(options, "archive-cruft-check")
+        checker = ArchiveCruftChecker(
+            self.logger, distribution_name=self.options.distro,
+            suite=self.options.suite, archive_path=archive_path)
 
-    log.debug("Acquiring lock")
-    lock = GlobalLock('/var/lock/launchpad-archive-cruft-check.lock')
-    lock.acquire(blocking=True)
+        try:
+            checker.initialize()
+        except ArchiveCruftCheckerError, info:
+            raise LaunchpadScriptFailure(info)
 
-    log.debug("Initializing connection.")
-    execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
-
-
-    if len(args) > 0:
-        archive_path = args[0]
-    else:
-        log.error('ARCHIVEPATH is require')
-        return 1
-
-    checker = ArchiveCruftChecker(
-        log, distribution_name=options.distro, suite=options.suite,
-        archive_path=archive_path)
-
-    try:
-        checker.initialize()
-    except ArchiveCruftCheckerError, info:
-        log.error(info)
-        return 1
-
-# XXX cprov 2007-06-26 bug=121784: Disabling by distro-team request.
-#    if checker.nbs_to_remove and options.action:
-#        checker.doRemovals()
-#        ztm.commit()
-
-    lock.release()
-    return 0
-
+        # XXX cprov 2007-06-26 bug=121784: Disabling by distro-team request.
+        #    if checker.nbs_to_remove and options.action:
+        #        checker.doRemovals()
+        #        ztm.commit()
 
 if __name__ == '__main__':
-    sys.exit(main())
+    ArchiveCruftCheckerScript(
+        'archive-cruft-check', config.archivepublisher.dbuser).lock_and_run()

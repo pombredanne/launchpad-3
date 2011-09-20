@@ -7,7 +7,7 @@
 
 LPDIR=lib/canonical/launchpad
 REGISTRY="lib/canonical/launchpad/zcml/*.zcml lib/canonical/*.zcml
-          lib/canonical/launchpad/*.zcml lib/canonical/lp/*.zcml *.zcml 
+          lib/canonical/launchpad/*.zcml *.zcml 
           lib/zope/app/exception/browser/configure.zcml
           lib/zope/app/debugskin/configure.zcml
           lib/canonical/launchpad/webapp/*.zcml

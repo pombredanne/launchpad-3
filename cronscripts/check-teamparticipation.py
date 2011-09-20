@@ -20,25 +20,13 @@ situation, but that's not a simple thing and this should do for now.
 
 import _pythonpath
 
-import optparse
-import sys
+import transaction
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger)
-from canonical.lp import initZopeless
+from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 
 
-if __name__ == '__main__':
-    parser = optparse.OptionParser(
-        description="Check for invalid/missing TeamParticipation entries.")
-    logger_options(parser)
-    options, args = parser.parse_args(sys.argv[1:])
-    log = logger(options, 'check-teamparticipation')
-
-    execute_zcml_for_scripts()
-    ztm = initZopeless()
-
+def check_teamparticipation(log):
     # Check self-participation.
     query = """
         SELECT id, name
@@ -46,7 +34,6 @@ if __name__ == '__main__':
             SELECT person FROM Teamparticipation WHERE person = team
             ) AND merged IS NULL
         """
-    ztm.begin()
     cur = cursor()
     cur.execute(query)
     non_self_participants = cur.fetchall()
@@ -64,13 +51,13 @@ if __name__ == '__main__':
         """)
     circular_references = cur.fetchall()
     if len(circular_references) > 0:
-        log.warn("Circular references found: %s" % circular_references)
-        sys.exit(1)
+        raise LaunchpadScriptFailure(
+            "Circular references found: %s" % circular_references)
 
     # Check if there are any missing/spurious TeamParticipation entries.
     cur.execute("SELECT id FROM Person WHERE teamowner IS NOT NULL")
     team_ids = cur.fetchall()
-    ztm.abort()
+    transaction.abort()
 
     def get_participants(team):
         """Recurse through the team's members to get all its participants."""
@@ -86,7 +73,6 @@ if __name__ == '__main__':
     team_ids = team_ids[50:]
     while batch:
         for [id] in batch:
-            ztm.begin()
             team = Person.get(id)
             expected = get_participants(team)
             found = set(team.allmembers)
@@ -102,6 +88,16 @@ if __name__ == '__main__':
                                    for person in reverse_difference)
                 log.warn("%s (%s): spurious TeamParticipation entries for %s."
                          % (team.name, team.id, people))
-            ztm.abort()
+            transaction.abort()
         batch = team_ids[:50]
         team_ids = team_ids[50:]
+
+
+class CheckTeamParticipationScript(LaunchpadScript):
+    description = "Check for invalid/missing TeamParticipation entries."
+
+    def main(self):
+        check_teamparticipation(self.logger)
+
+if __name__ == '__main__':
+    CheckTeamParticipationScript("check-teamparticipation").run()

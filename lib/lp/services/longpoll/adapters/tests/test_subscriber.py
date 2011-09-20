@@ -19,11 +19,11 @@ from canonical.testing.layers import (
     BaseLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.app.longpoll.adapters.subscriber import (
+from lp.services.longpoll.adapters.subscriber import (
     generate_subscribe_key,
     LongPollSubscriber,
     )
-from lp.app.longpoll.interfaces import (
+from lp.services.longpoll.interfaces import (
     ILongPollEvent,
     ILongPollSubscriber,
     )

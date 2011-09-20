@@ -14,9 +14,11 @@ Long term once soyuz is monitoring other archives regularly, syncing
 will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
+
+import _pythonpath
+
 import commands
 import errno
-import optparse
 import os
 import re
 import shutil
@@ -25,10 +27,8 @@ import string
 import tempfile
 import urllib
 
-import _pythonpath
 from _syncorigins import origins
 import apt_pkg
-from contrib.glock import GlobalLock
 import dak_utils
 from debian.deb822 import Dsc
 from zope.component import getUtility
@@ -37,13 +37,7 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts,
-    logger,
-    logger_options,
-    )
 from canonical.librarian.client import LibrarianClient
-from canonical.lp import initZopeless
 from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
@@ -51,6 +45,7 @@ from lp.archiveuploader.utils import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     re_bug_numbers,
@@ -72,7 +67,6 @@ re_changelog_header = re.compile(
 
 Blacklisted = None
 Library = None
-Lock = None
 Log = None
 Options = None
 
@@ -648,68 +642,6 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         print "Total:                    %s" % (stat_count)
 
 
-def options_setup():
-    global Log, Options
-
-    parser = optparse.OptionParser()
-    logger_options(parser)
-    parser.add_option("-a", "--all", dest="all",
-                      default=False, action="store_true",
-                      help="sync all packages")
-    parser.add_option("-b", "--requested-by", dest="requestor",
-                      help="who the sync was requested by")
-    parser.add_option("-f", "--force", dest="force",
-                      default=False, action="store_true",
-                      help="force sync over the top of Ubuntu changes")
-    parser.add_option("-F", "--force-more", dest="forcemore",
-                      default=False, action="store_true",
-                      help="force sync even when components don't match")
-    parser.add_option("-n", "--noaction", dest="action",
-                      default=True, action="store_false",
-                      help="don't do anything")
-
-    # XXX cprov 2007-07-03: Why the heck doesn't -v provide by logger provide
-    # Options.verbose?
-    parser.add_option("-V", "--moreverbose", dest="moreverbose",
-                      default=False, action="store_true",
-                      help="be even more verbose")
-
-    # Options controlling where to sync packages to:
-    parser.add_option("-c", "--to-component", dest="tocomponent",
-                      help="limit syncs to packages in COMPONENT")
-    parser.add_option("-d", "--to-distro", dest="todistro",
-                      default='ubuntu', help="sync to DISTRO")
-    parser.add_option("-s", "--to-suite", dest="tosuite",
-                      help="sync to SUITE (aka distroseries)")
-
-    # Options controlling where to sync packages from:
-    parser.add_option("-C", "--from-component", dest="fromcomponent",
-                      help="sync from COMPONENT")
-    parser.add_option("-D", "--from-distro", dest="fromdistro",
-                      default='debian', help="sync from DISTRO")
-    parser.add_option("-S", "--from-suite", dest="fromsuite",
-                      help="sync from SUITE (aka distroseries)")
-    parser.add_option("-B", "--blacklist", dest="blacklist_path",
-                      default="/srv/launchpad.net/dak/sync-blacklist.txt",
-                      help="Blacklist file path.")
-
-
-    (Options, arguments) = parser.parse_args()
-
-    distro = Options.fromdistro.lower()
-    if not Options.fromcomponent:
-        Options.fromcomponent = origins[distro]["default component"]
-    if not Options.fromsuite:
-        Options.fromsuite = origins[distro]["default suite"]
-
-    # Sanity checks on options
-    if not Options.all and not arguments:
-        dak_utils.fubar(
-            "Need -a/--all or at least one package name as an argument.")
-
-    return arguments
-
-
 def objectize_options():
     """Parse given options.
 
@@ -787,45 +719,77 @@ def parseBlacklist(path):
     return blacklist
 
 
-def init():
-    global Blacklisted, Library, Lock, Log, Options
+class SyncSourceScript(LaunchpadScript):
 
-    apt_pkg.init()
+    def add_my_options(self):
+        self.parser.add_option("-a", "--all", dest="all",
+                        default=False, action="store_true",
+                        help="sync all packages")
+        self.parser.add_option("-b", "--requested-by", dest="requestor",
+                        help="who the sync was requested by")
+        self.parser.add_option("-f", "--force", dest="force",
+                        default=False, action="store_true",
+                        help="force sync over the top of Ubuntu changes")
+        self.parser.add_option("-F", "--force-more", dest="forcemore",
+                        default=False, action="store_true",
+                        help="force sync even when components don't match")
+        self.parser.add_option("-n", "--noaction", dest="action",
+                        default=True, action="store_false",
+                        help="don't do anything")
 
-    arguments = options_setup()
+        # Options controlling where to sync packages to:
+        self.parser.add_option("-c", "--to-component", dest="tocomponent",
+                        help="limit syncs to packages in COMPONENT")
+        self.parser.add_option("-d", "--to-distro", dest="todistro",
+                        default='ubuntu', help="sync to DISTRO")
+        self.parser.add_option("-s", "--to-suite", dest="tosuite",
+                        help="sync to SUITE (aka distroseries)")
 
-    Log = logger(Options, "sync-source")
+        # Options controlling where to sync packages from:
+        self.parser.add_option("-C", "--from-component", dest="fromcomponent",
+                        help="sync from COMPONENT")
+        self.parser.add_option("-D", "--from-distro", dest="fromdistro",
+                        default='debian', help="sync from DISTRO")
+        self.parser.add_option("-S", "--from-suite", dest="fromsuite",
+                        help="sync from SUITE (aka distroseries)")
+        self.parser.add_option("-B", "--blacklist", dest="blacklist_path",
+                        default="/srv/launchpad.net/dak/sync-blacklist.txt",
+                        help="Blacklist file path.")
 
-    Log.debug("Acquiring lock")
-    Lock = GlobalLock('/var/lock/launchpad-sync-source.lock')
-    Lock.acquire(blocking=True)
+    def main(self):
+        global Blacklisted, Library, Log, Options
 
-    Log.debug("Initializing connection.")
-    execute_zcml_for_scripts()
-    initZopeless(dbuser="ro")
+        Log = self.logger
+        Options = self.options
 
-    Library = LibrarianClient()
+        distro = Options.fromdistro.lower()
+        if not Options.fromcomponent:
+            Options.fromcomponent = origins[distro]["default component"]
+        if not Options.fromsuite:
+            Options.fromsuite = origins[distro]["default suite"]
 
-    objectize_options()
+        # Sanity checks on options
+        if not Options.all and not self.args:
+            dak_utils.fubar(
+                "Need -a/--all or at least one package name as an argument.")
 
-    Blacklisted = parseBlacklist(Options.blacklist_path)
+        apt_pkg.init()
+        Library = LibrarianClient()
 
-    return arguments
+        objectize_options()
 
+        Blacklisted = parseBlacklist(Options.blacklist_path)
 
-def main():
-    arguments = init()
+        origin = origins[Options.fromdistro]
+        origin["suite"] = Options.fromsuite
+        origin["component"] = Options.fromcomponent
 
-    origin = origins[Options.fromdistro]
-    origin["suite"] = Options.fromsuite
-    origin["component"] = Options.fromcomponent
-
-    Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(
-        Options.tosuite, Options.tocomponent, arguments)
-    current_binaries = read_current_binaries(Options.tosuite)
-    do_diff(Sources, Suite, origin, arguments, current_binaries)
+        Sources = read_Sources("Sources", origin)
+        Suite = read_current_source(
+            Options.tosuite, Options.tocomponent, self.args)
+        current_binaries = read_current_binaries(Options.tosuite)
+        do_diff(Sources, Suite, origin, self.args, current_binaries)
 
 
 if __name__ == '__main__':
-    main()
+    SyncSourceScript('sync-source', 'ro').lock_and_run()
