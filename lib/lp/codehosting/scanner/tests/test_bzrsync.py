@@ -24,6 +24,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
@@ -65,7 +66,7 @@ def run_as_db_user(username):
     def _run_with_different_user(f):
 
         def decorated(*args, **kwargs):
-            current_user = LaunchpadZopelessLayer.txn._dbuser
+            current_user = ZopelessTransactionManager._dbuser
             if current_user == username:
                 return f(*args, **kwargs)
             LaunchpadZopelessLayer.switchDbUser(username)

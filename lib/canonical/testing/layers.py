@@ -1510,7 +1510,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     """
 
     isSetUp = False
-    txn = ZopelessTransactionManager
+    txn = transaction
 
     @classmethod
     @profiled

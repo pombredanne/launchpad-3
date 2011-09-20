@@ -50,17 +50,16 @@ class TestInitZopeless(TestCase):
         warnings.warn = self.warn_hooked
         self.warned = False
         try:
-            # Calling initZopeless with the same arguments twice should return
-            # the exact same object twice, but also emit a warning.
+            # Calling initZopeless with the same arguments twice should emit
+            # a warning.
             try:
-                tm1 = ZopelessTransactionManager.initZopeless(
+                ZopelessTransactionManager.initZopeless(
                     dbuser='launchpad')
-                tm2 = ZopelessTransactionManager.initZopeless(
+                ZopelessTransactionManager.initZopeless(
                     dbuser='launchpad')
-                self.failUnless(tm1 is tm2)
                 self.failUnless(self.warned)
             finally:
-                tm1.uninstall()
+                ZopelessTransactionManager.uninstall()
         finally:
             # Put the warnings module back the way we found it.
             warnings.warn = original_warn
