@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Long poll lifecycle adapters."""
+"""Long-poll life-cycle adapters."""
 
 __metaclass__ = type
 __all__ = []
@@ -24,11 +24,22 @@ from lp.services.longpoll.interfaces import ILongPollEvent
 
 
 class LongPollStormLifecycleEvent(LongPollEvent):
+    """A `ILongPollEvent` for life-cycle events of `Storm` objects.
+
+    In fact, there is little specialization towards life-cycle here; this
+    class merely knows how to construct a stable event key given a Storm
+    object.
+    """
 
     implements(ILongPollEvent)
 
     @property
     def event_key(self):
+        """See `ILongPollEvent`.
+
+        Constructs the key from the table name and primary key values of the
+        Storm model object.
+        """
         cls_info = get_obj_info(self.source).cls_info
         key_parts = [cls_info.table.name.lower()]
         key_parts.extend(
@@ -40,17 +51,20 @@ class LongPollStormLifecycleEvent(LongPollEvent):
 
 @adapter(Storm, IObjectCreatedEvent)
 def storm_object_created(model_instance, object_event):
+    """Subscription handler for `Storm` creation events."""
     event = LongPollStormLifecycleEvent(model_instance, "created")
     event.emit({})
 
 
 @adapter(Storm, IObjectDeletedEvent)
 def storm_object_deleted(model_instance, object_event):
+    """Subscription handler for `Storm` deletion events."""
     event = LongPollStormLifecycleEvent(model_instance, "deleted")
     event.emit({})
 
 
 @adapter(Storm, IObjectModifiedEvent)
 def storm_object_modified(model_instance, object_event):
+    """Subscription handler for `Storm` modification events."""
     event = LongPollStormLifecycleEvent(model_instance, "modified")
     event.emit({"edited_fields": sorted(object_event.edited_fields)})
