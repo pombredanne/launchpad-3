@@ -2112,36 +2112,3 @@ $$;
 
 COMMENT ON FUNCTION version_sort_key(text) IS
 'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions. Numbers will be sorted after letters unlike typical ASCII, so that a descending sort will put the latest version number that starts with a number instead of a letter will be at the top. E.g. ascending is [a, z, 1, 9] and descending is [9, 1, z, a].';
-
-CREATE OR REPLACE FUNCTION update_transitively_private(root int) RETURNS VOID
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO PUBLIC AS
-$$
-BEGIN
-    UPDATE Branch SET transitively_private = (
-        -- The root branch and all branches it is stacked on.
-        WITH RECURSIVE stacked_branches AS (
-            SELECT
-                top_branch.id, top_branch.stacked_on, top_branch.private
-            FROM Branch AS top_branch
-            WHERE top_branch.id = Branch.id
-            UNION ALL
-            SELECT
-                sub_branch.id, sub_branch.stacked_on, sub_branch.private
-            FROM stacked_branches, Branch AS sub_branch
-            WHERE
-                stacked_branches.stacked_on = sub_branch.id
-                -- Shortcircuit. No need to recurse if already private.
-                AND stacked_branches.private IS FALSE
-                )
-        SELECT COUNT(*) > 0
-        FROM stacked_branches
-        WHERE private IS TRUE)
-    WHERE Branch.id = root;
-
-    PERFORM update_transitively_private(Branch.id)
-    FROM Branch WHERE stacked_on = root;
-END;
-$$;
-
-COMMENT ON FUNCTION update_transitively_private(int) IS
-'A branch is transitively private if it is private or is stacked on any transitively private branches.';
