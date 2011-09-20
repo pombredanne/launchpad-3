@@ -57,6 +57,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.mail.commands import (
     EditEmailCommand,
     EmailCommand,
@@ -127,7 +128,7 @@ class BugEmailCommand(EmailCommand):
             params = CreateBugParams(
                 msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
-            return getUtility(IBugSet).createBugWithoutTarget(params)
+            return params, None
         else:
             try:
                 bugid = int(bugid)
@@ -181,6 +182,13 @@ class PrivateEmailCommand(EmailCommand):
                     error_templates=error_templates),
                 stop_processing=True)
 
+        if isinstance(context, CreateBugParams):
+            if context.security_related:
+                # BugSet.createBug() requires new security bugs to be private.
+                private = True
+            context.private = private
+            return context, current_event
+
         # Snapshot.
         edited_fields = set()
         if IObjectModifiedEvent.providedBy(current_event):
@@ -230,6 +238,13 @@ class SecurityEmailCommand(EmailCommand):
                     error_templates=error_templates),
                 stop_processing=True)
 
+        if isinstance(context, CreateBugParams):
+            context.security_related = security_related
+            if security_related:
+                # BugSet.createBug() requires new security bugs to be private.
+                context.private = True
+            return context, current_event
+
         # Take a snapshot.
         edited = False
         edited_fields = set()
@@ -241,13 +256,13 @@ class SecurityEmailCommand(EmailCommand):
                 context, providing=providedBy(context))
 
         # Apply requested changes.
-        user = getUtility(ILaunchBag).user
         if security_related:
+            user = getUtility(ILaunchBag).user
             if context.setPrivate(True, user):
                 edited = True
                 edited_fields.add('private')
         if context.security_related != security_related:
-            context.setSecurityRelated(security_related, user)
+            context.setSecurityRelated(security_related)
             edited = True
             edited_fields.add('security_related')
 
@@ -287,6 +302,13 @@ class SubscribeEmailCommand(EmailCommand):
                     'subscribe-too-many-arguments.txt',
                     error_templates=error_templates))
 
+        if isinstance(bug, CreateBugParams):
+            if len(bug.subscribers) == 0:
+                bug.subscribers = [person]
+            else:
+                bug.subscribers.append(person)
+            return bug, current_event
+
         if bug.isSubscribed(person):
             # but we still need to find the subscription
             for bugsubscription in bug.subscriptions:
@@ -308,6 +330,11 @@ class UnsubscribeEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
+        if isinstance(bug, CreateBugParams):
+            # Return the input because there is not yet a bug to
+            # unsubscribe too.
+            return bug, current_event
+
         string_args = list(self.string_args)
         if len(string_args) == 1:
             person = get_person_or_team(string_args.pop())
@@ -359,6 +386,10 @@ class SummaryEmailCommand(EditEmailCommand):
                     'summary-too-many-arguments.txt',
                     error_templates=error_templates))
 
+        if isinstance(bug, CreateBugParams):
+            bug.title = self.string_args[0]
+            return bug, current_event
+
         return EditEmailCommand.execute(self, bug, current_event)
 
     def convertArguments(self, context):
@@ -375,6 +406,10 @@ class DuplicateEmailCommand(EmailCommand):
 
     def execute(self, context, current_event):
         """See IEmailCommand."""
+        if isinstance(context, CreateBugParams):
+            # No one intentially reports a duplicate bug. Bug email commands
+            # support CreateBugParams, so in this case, just return.
+            return context, current_event
         self._ensureNumberOfArguments()
         [bug_id] = self.string_args
 
@@ -421,6 +456,10 @@ class CVEEmailCommand(EmailCommand):
         if cve is None:
             raise EmailProcessingError(
                 'Launchpad can\'t find the CVE "%s".' % cve_sequence)
+        if isinstance(bug, CreateBugParams):
+            bug.cve = cve
+            return bug, current_event
+
         bug.linkCVE(cve, getUtility(ILaunchBag).user)
         return bug, current_event
 
@@ -528,7 +567,7 @@ class AffectsEmailCommand(EmailCommand):
         assert rest, "This is the fallback for unexpected path components."
         raise BugTargetNotFound("Unexpected path components: %s" % rest)
 
-    def execute(self, bug):
+    def execute(self, bug, bug_event):
         """See IEmailCommand."""
         if bug is None:
             raise EmailProcessingError(
@@ -551,6 +590,20 @@ class AffectsEmailCommand(EmailCommand):
         except BugTargetNotFound, error:
             raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
+
+        if isinstance(bug, CreateBugParams):
+            # Enough information has been gathered to create a new bug.
+            kwargs = {
+                'product': IProduct(bug_target, None),
+                'distribution': IDistribution(bug_target, None),
+                'sourcepackagename': ISourcePackageName(bug_target, None),
+                }
+            bug.setBugTarget(**kwargs)
+            bug, bug_event = getUtility(IBugSet).createBug(
+                bug, notify_event=False)
+            event = ObjectCreatedEvent(bug.bugtasks[0])
+            # Continue because the bug_target may be a subordinate bugtask.
+
         bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
             IDistributionSourcePackage.providedBy(bug_target)):
@@ -568,7 +621,7 @@ class AffectsEmailCommand(EmailCommand):
             bugtask = self._create_bug_task(bug, bug_target)
             event = ObjectCreatedEvent(bugtask)
 
-        return bugtask, event
+        return bugtask, event, bug_event
 
     def _targetBug(self, user, bug, series, sourcepackagename=None):
         """Try to target the bug the given distroseries.
@@ -796,16 +849,10 @@ class TagEmailCommand(EmailCommand):
         """See `IEmailCommand`."""
         # Tags are always lowercase.
         string_args = [arg.lower() for arg in self.string_args]
-        # Bug.tags returns a Zope List, which does not support Python list
-        # operations so we need to convert it.
-        tags = list(bug.tags)
-
-        # XXX: DaveMurphy 2007-07-11: in the following loop we process each
-        # tag in turn. Each tag that is either invalid or unassigned will
-        # result in a mail to the submitter. This may result in several mails
-        # for a single command. This will need to be addressed if that becomes
-        # a problem.
-
+        if bug.tags is None:
+            tags = []
+        else:
+            tags = list(bug.tags)
         for arg in string_args:
             # Are we adding or removing a tag?
             if arg.startswith('-'):
@@ -832,13 +879,6 @@ class TagEmailCommand(EmailCommand):
                             tag=tag))
             else:
                 tags.append(arg)
-
-        # Duplicates are dealt with when the tags are stored in the DB (which
-        # incidentally uses a set to achieve this). Since the code already
-        # exists we don't duplicate it here.
-
-        # Bug.tags expects to be given a Python list, so there is no need to
-        # convert it back.
         bug.tags = tags
 
         return bug, current_event

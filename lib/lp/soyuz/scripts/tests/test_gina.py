@@ -19,6 +19,7 @@ from lp.soyuz.scripts.gina.packages import (
     SourcePackageData,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.faketransaction import FakeTransaction
 
 
 class FakePackagesMap:
@@ -34,13 +35,14 @@ class TestGina(TestCaseWithFactory):
         # dominate_imported_source_packages dominates the source
         # packages that Gina imports.
         logger = DevNullLogger()
+        txn = FakeTransaction()
         pub = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED)
         series = pub.distroseries
         spr = pub.sourcepackagerelease
         package = spr.sourcepackagename
         dominate_imported_source_packages(
-            logger, series.distribution.name, series.name, pub.pocket,
+            txn, logger, series.distribution.name, series.name, pub.pocket,
             FakePackagesMap({package.name: []}))
         self.assertEqual(PackagePublishingStatus.DELETED, pub.status)
 
@@ -59,8 +61,9 @@ class TestGina(TestCaseWithFactory):
                     sourcepackagename=package, version=version))
             for version in ['1.0', '1.1', '1.1a']]
         logger = DevNullLogger()
+        txn = FakeTransaction()
         dominate_imported_source_packages(
-            logger, series.distribution.name, series.name, pocket,
+            txn, logger, series.distribution.name, series.name, pocket,
             FakePackagesMap({}))
         # XXX JeroenVermeulen 2011-09-08, bug=844550: This is
         # "transitional" domination which supersedes older versions of
@@ -88,8 +91,9 @@ class TestGina(TestCaseWithFactory):
         spr = spph.sourcepackagerelease
         package_name = spr.sourcepackagename.name
         logger = DevNullLogger()
+        txn = FakeTransaction()
         dominate_imported_source_packages(
-            logger, series.distribution.name, series.name, spph.pocket,
+            txn, logger, series.distribution.name, series.name, spph.pocket,
             FakePackagesMap({package_name: [{"Version": spr.version}]}))
         self.assertEqual(PackagePublishingStatus.PUBLISHED, spph.status)
 
@@ -124,8 +128,9 @@ class TestGina(TestCaseWithFactory):
             for spr, status in zip(sprs, statuses_before)]
 
         logger = DevNullLogger()
+        txn = FakeTransaction()
         dominate_imported_source_packages(
-            logger, series.distribution.name, series.name, pocket,
+            txn, logger, series.distribution.name, series.name, pocket,
             FakePackagesMap({package.name: [{"Version": live_version}]}))
 
         self.assertEqual(statuses_after, [spph.status for spph in spphs])

@@ -13,142 +13,127 @@ __metaclass__ = type
 
 import _pythonpath
 
-from optparse import OptionParser
-import sys
-
+import transaction
 from zope.component import getUtility
 
-# Still needed fake import to stop circular imports.
-import canonical.launchpad.interfaces
-
-from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from lp.app.errors import NotFoundError
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger)
-from canonical.lp import initZopeless
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 
 
-def main():
-    parser = OptionParser()
-    logger_options(parser)
+class BuilddMassRetryScript(LaunchpadScript):
 
-    parser.add_option("-d", "--distribution",
-                      dest="distribution", metavar="DISTRIBUTION",
-                      default="ubuntu", help="distribution name")
+    dbuser = "fiera"
 
-    parser.add_option("-s", "--suite",
-                      dest="suite", metavar="SUITE", default=None,
-                      help="suite name")
+    def add_my_options(self):
+        self.parser.add_option(
+            "-d", "--distribution", dest="distribution",
+            metavar="DISTRIBUTION", default="ubuntu",
+            help="distribution name")
 
-    parser.add_option("-a", "--architecture",
-                      dest="architecture", metavar="ARCH", default=None,
-                      help="architecture tag")
+        self.parser.add_option(
+            "-s", "--suite", dest="suite", metavar="SUITE", help="suite name")
 
-    parser.add_option("-N", "--dry-run", action="store_true",
-                      dest="dryrun", metavar="DRY_RUN", default=False,
-                      help="Whether to treat this as a dry-run or not.")
+        self.parser.add_option(
+            "-a", "--architecture", dest="architecture", metavar="ARCH",
+            help="architecture tag")
 
-    parser.add_option("-F", "--failed", action="store_true",
-                      dest="failed", default=False,
-                      help="Reset builds in FAILED state.")
+        self.parser.add_option(
+            "-N", "--dry-run", action="store_true", dest="dryrun",
+            metavar="DRY_RUN", default=False,
+            help="Whether to treat this as a dry-run or not.")
 
-    parser.add_option("-D", "--dep-wait", action="store_true",
-                      dest="depwait", default=False,
-                      help="Reset builds in DEPWAIT state.")
+        self.parser.add_option(
+            "-F", "--failed", action="store_true", dest="failed",
+            default=False, help="Reset builds in FAILED state.")
 
-    parser.add_option("-C", "--chroot-wait", action="store_true",
-                      dest="chrootwait", default=False,
-                      help="Reset builds in CHROOTWAIT state.")
+        self.parser.add_option(
+            "-D", "--dep-wait", action="store_true", dest="depwait",
+            default=False, help="Reset builds in DEPWAIT state.")
 
-    (options, args) = parser.parse_args()
+        self.parser.add_option(
+            "-C", "--chroot-wait", action="store_true", dest="chrootwait",
+            default=False, help="Reset builds in CHROOTWAIT state.")
 
-    log = logger(options, "build-mass-retry")
-
-    log.debug("Intitialising connection.")
-    execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser="fiera",
-                       isolation=ISOLATION_LEVEL_READ_COMMITTED)
-
-    try:
-        distribution = getUtility(IDistributionSet)[options.distribution]
-    except NotFoundError, info:
-        log.error("Distribution not found: %s" % info)
-        return 1
-
-    try:
-        if options.suite is not None:
-            series, pocket = distribution.getDistroSeriesAndPocket(
-                options.suite)
-        else:
-            series = distribution.currentseries
-            pocket = PackagePublishingPocket.RELEASE
-    except NotFoundError, info:
-        log.error("Suite not found: %s" % info)
-        return 1
-
-    # store distroseries as the current IHasBuildRecord provider
-    build_provider = series
-
-    if options.architecture:
+    def main(self):
         try:
-            dar = series[options.architecture]
+            distribution = getUtility(IDistributionSet)[
+                self.options.distribution]
         except NotFoundError, info:
-            log.error(info)
-            return 1
+            raise LaunchpadScriptFailure("Distribution not found: %s" % info)
 
-        # store distroarchseries as the current IHasBuildRecord provider
-        build_provider = dar
+        try:
+            if self.options.suite is not None:
+                series, pocket = distribution.getDistroSeriesAndPocket(
+                    self.options.suite)
+            else:
+                series = distribution.currentseries
+                pocket = PackagePublishingPocket.RELEASE
+        except NotFoundError, info:
+            raise LaunchpadScriptFailure("Suite not found: %s" % info)
 
-    log.info("Initializing Build Mass-Retry for '%s/%s'"
-              % (build_provider.title, pocket.name))
+        # store distroseries as the current IHasBuildRecord provider
+        build_provider = series
 
-    requested_states_map = {
-        BuildStatus.FAILEDTOBUILD : options.failed,
-        BuildStatus.MANUALDEPWAIT : options.depwait,
-        BuildStatus.CHROOTWAIT : options.chrootwait,
-        }
+        if self.options.architecture:
+            try:
+                dar = series[self.options.architecture]
+            except NotFoundError, info:
+                raise LaunchpadScriptFailure(info)
 
-    # XXX cprov 2006-08-31: one query per requested state
-    # could organise it in a single one nicely if I have
-    # an empty SQLResult instance, than only iteration + union()
-    # would work.
-    for target_state, requested in requested_states_map.items():
-        if not requested:
-            continue
+            # store distroarchseries as the current IHasBuildRecord provider
+            build_provider = dar
 
-        log.info("Processing builds in '%s'" % target_state.title)
-        target_builds = build_provider.getBuildRecords(
-            build_state=target_state, pocket=pocket)
+        self.logger.info(
+            "Initializing Build Mass-Retry for '%s/%s'"
+            % (build_provider.title, pocket.name))
 
-        for build in target_builds:
-            # Skip builds for superseded sources; they won't ever
-            # actually build.
-            if not build.current_source_publication:
-                log.debug(
-                    'Skipping superseded %s (%s)' % (build.title, build.id))
+        requested_states_map = {
+            BuildStatus.FAILEDTOBUILD: self.options.failed,
+            BuildStatus.MANUALDEPWAIT: self.options.depwait,
+            BuildStatus.CHROOTWAIT: self.options.chrootwait,
+            }
+
+        # XXX cprov 2006-08-31: one query per requested state
+        # could organise it in a single one nicely if I have
+        # an empty SQLResult instance, than only iteration + union()
+        # would work.
+        for target_state, requested in requested_states_map.items():
+            if not requested:
                 continue
 
-            if not build.can_be_retried:
-                log.warn('Can not retry %s (%s)' % (build.title, build.id))
-                continue
+            self.logger.info("Processing builds in '%s'" % target_state.title)
+            target_builds = build_provider.getBuildRecords(
+                build_state=target_state, pocket=pocket)
 
-            log.info('Retrying %s (%s)' % (build.title, build.id))
-            build.retry()
+            for build in target_builds:
+                # Skip builds for superseded sources; they won't ever
+                # actually build.
+                if not build.current_source_publication:
+                    self.logger.debug(
+                        'Skipping superseded %s (%s)'
+                        % (build.title, build.id))
+                    continue
 
-    log.info("Success.")
+                if not build.can_be_retried:
+                    self.logger.warn(
+                        'Can not retry %s (%s)' % (build.title, build.id))
+                    continue
 
-    if options.dryrun:
-        ztm.abort()
-        log.info('Dry-run.')
-    else:
-        ztm.commit()
-        log.info("Committed")
+                self.logger.info('Retrying %s (%s)' % (build.title, build.id))
+                build.retry()
 
-    return 0
+        self.logger.info("Success.")
+
+        if self.options.dryrun:
+            transaction.abort()
+            self.logger.info('Dry-run.')
+        else:
+            transaction.commit()
+            self.logger.info("Committed")
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    BuilddMassRetryScript('buildd-mass-retry', 'fiera').lock_and_run()

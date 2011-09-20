@@ -554,6 +554,11 @@
         factory="lp.registry.adapters.sourcepackage_to_distribution"
         permission="zope.Public"/>
     <adapter
+        provides="lp.registry.interfaces.sourcepackagename.ISourcePackageName"
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        factory="lp.registry.adapters.package_to_sourcepackagename"
+        permission="zope.Public"/>
+    <adapter
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
 
     <!-- CommercialSubscription -->
@@ -865,12 +870,12 @@
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.registry.interfaces.person.ITeam"
-            factory="canonical.launchpad.browser.TeamPrivacyAdapter"
+            factory="lp.registry.browser.team.TeamPrivacyAdapter"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.badge.IHasBadges"
             for="lp.registry.interfaces.person.ITeam"
-            factory="canonical.launchpad.browser.TeamBadges"
+            factory="lp.registry.browser.team.TeamBadges"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -1478,6 +1483,11 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
+        provides="lp.registry.interfaces.product.IProduct"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        factory="lp.registry.adapters.productseries_to_product"
+        permission="zope.Public"/>
+    <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
@@ -1669,6 +1679,11 @@
         permission="zope.Public"/>
     <adapter
         factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"/>
+    <adapter
+        provides="lp.registry.interfaces.sourcepackagename.ISourcePackageName"
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        factory="lp.registry.adapters.package_to_sourcepackagename"
+        permission="zope.Public"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

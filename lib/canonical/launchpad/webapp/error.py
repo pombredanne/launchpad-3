@@ -10,6 +10,7 @@ __all__ = [
     'RequestExpiredView',
     'SystemErrorView',
     'TranslationUnavailableView',
+    'UnexpectedFormDataView',
     ]
 
 
@@ -189,6 +190,11 @@ class ProtocolErrorView(SystemErrorView):
         for header, value in exception.headers.items():
             self.request.response.setHeader(header, value)
         return self.index()
+
+
+class UnexpectedFormDataView(SystemErrorView):
+
+    page_title = 'Error: Unexpected form data'
 
 
 class NotFoundView(SystemErrorView):
