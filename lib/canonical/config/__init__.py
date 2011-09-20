@@ -424,7 +424,7 @@ class DatabaseConfig:
         'ro_main_slave'])
 
     def __init__(self):
-        self.overrides = DatabaseConfigOverrides()
+        self.reset()
 
     @property
     def main_master(self):
@@ -457,6 +457,9 @@ class DatabaseConfig:
                     delattr(self.overrides, attr)
             else:
                 setattr(self.overrides, attr, value)
+
+    def reset(self):
+        self.overrides = DatabaseConfigOverrides()
 
     def setConfigSection(self, section_name):
         self._config_section = section_name

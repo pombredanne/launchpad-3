@@ -64,6 +64,16 @@ class TestDatabaseConfig(TestCase):
         self.assertEqual('launchpad_main', dbc.dbuser)
         self.assertEqual('serializable', dbc.isolation_level)
 
+    def test_reset(self):
+        # reset() removes any overrides.
+        dbc = DatabaseConfig()
+        dbc.setConfigSection('launchpad')
+        self.assertEqual('launchpad_main', dbc.dbuser)
+        dbc.override(dbuser='not_launchpad')
+        self.assertEqual('not_launchpad', dbc.dbuser)
+        dbc.reset()
+        self.assertEqual('launchpad_main', dbc.dbuser)
+
     def test_required_values(self):
         # Some variables are required to have a value, such as dbuser.  So we
         # get a ValueError if they are not set.
