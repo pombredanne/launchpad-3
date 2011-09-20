@@ -934,7 +934,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def total_activity(self):
         """Return the count of all activity items for the bug."""
-        return self.context.bug.activity.count()
+        # Ignore the first activity item, since it relates to the bug's
+        # creation.
+        return self.context.bug.activity.count() - 1
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""

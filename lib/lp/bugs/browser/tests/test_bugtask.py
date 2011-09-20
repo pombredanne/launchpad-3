@@ -1106,13 +1106,16 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         # BugTaskBatchedCommentsAndActivityView._event_groups will
         # not return the last view comments - those covered by the
         # visible_recent_comments property.
-        bug = self._makeNoisyBug()
+        bug = self._makeNoisyBug(number_of_comments=20, comments_only=True)
         view = create_initialized_view(
             bug.default_bugtask, '+batched-comments',
-            form={'batch_size': 10, 'offset': 1})
+            form={'batch_size': 10, 'offset': 10})
+        expected_length = 10 - view.visible_recent_comments
+        actual_length = len([group for group in view._event_groups])
         self.assertEqual(
-            10-view.visible_recent_comments,
-            len([group for group in view._event_groups]))
+            expected_length, actual_length,
+            "Expected %i comments, got %i." %
+            (expected_length, actual_length))
 
     def test_activity_and_comments_matches_unbatched_version(self):
         # BugTaskBatchedCommentsAndActivityView extends BugTaskView in
