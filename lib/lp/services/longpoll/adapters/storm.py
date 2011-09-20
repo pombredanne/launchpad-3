@@ -3,6 +3,8 @@
 
 """Long-poll life-cycle adapters."""
 
+from __future__ import absolute_import
+
 __metaclass__ = type
 __all__ = []
 
@@ -23,12 +25,10 @@ from lp.services.longpoll.adapters.event import (
 from lp.services.longpoll.interfaces import ILongPollEvent
 
 
-class LongPollStormLifecycleEvent(LongPollEvent):
-    """A `ILongPollEvent` for life-cycle events of `Storm` objects.
+class LongPollStormEvent(LongPollEvent):
+    """A `ILongPollEvent` for events of `Storm` objects.
 
-    In fact, there is little specialization towards life-cycle here; this
-    class merely knows how to construct a stable event key given a Storm
-    object.
+    This class knows how to construct a stable event key given a Storm object.
     """
 
     implements(ILongPollEvent)
@@ -50,21 +50,21 @@ class LongPollStormLifecycleEvent(LongPollEvent):
 
 
 @adapter(Storm, IObjectCreatedEvent)
-def storm_object_created(model_instance, object_event):
+def object_created(model_instance, object_event):
     """Subscription handler for `Storm` creation events."""
-    event = LongPollStormLifecycleEvent(model_instance, "created")
+    event = LongPollStormEvent(model_instance, "created")
     event.emit({})
 
 
 @adapter(Storm, IObjectDeletedEvent)
-def storm_object_deleted(model_instance, object_event):
+def object_deleted(model_instance, object_event):
     """Subscription handler for `Storm` deletion events."""
-    event = LongPollStormLifecycleEvent(model_instance, "deleted")
+    event = LongPollStormEvent(model_instance, "deleted")
     event.emit({})
 
 
 @adapter(Storm, IObjectModifiedEvent)
-def storm_object_modified(model_instance, object_event):
+def object_modified(model_instance, object_event):
     """Subscription handler for `Storm` modification events."""
-    event = LongPollStormLifecycleEvent(model_instance, "modified")
+    event = LongPollStormEvent(model_instance, "modified")
     event.emit({"edited_fields": sorted(object_event.edited_fields)})
