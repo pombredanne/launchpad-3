@@ -186,7 +186,7 @@ announcement immediately:
     ...     'Derby announcement summary')
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.title
-    Derby - Java Database in Launchpad
+    Derby in Launchpad
     >>> 'Derby announcement' in latest_news(priv_browser.contents)
     True
 
@@ -206,7 +206,7 @@ date in the future when the announcement will be made:
     ...          '2021-12-24 09:00:00')
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.title
-    Jokosher Audio Editor in Launchpad
+    Jokosher in Launchpad
     >>> 'Jokosher announcement' in latest_news(priv_browser.contents)
     True
 
@@ -222,7 +222,7 @@ a date for the announcement at all:
     >>> priv_browser.getControl('some time in the future').click()
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.title
-    Kubuntu - Free KDE-based Linux in Launchpad
+    Kubuntu in Launchpad
     >>> "Kubuntu announcement" in latest_news(priv_browser.contents)
     True
 
@@ -236,7 +236,7 @@ And finally for RedHat, an IDistribution, with immediate announcement:
     ...     'RedHat announcement summary')
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.title
-    Redhat Advanced Server in Launchpad
+    Redhat in Launchpad
     >>> "RedHat announcement" in latest_news(priv_browser.contents)
     True
 
