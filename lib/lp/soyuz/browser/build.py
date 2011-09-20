@@ -648,6 +648,7 @@ class BuildRecordsView(LaunchpadView):
     def no_results(self):
         return self.form_submitted and not self.complete_builds
 
+
 class DistributionBuildRecordsView(BuildRecordsView):
     """See BuildRecordsView."""
 
