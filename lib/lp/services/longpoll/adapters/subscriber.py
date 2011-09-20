@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     "generate_subscribe_key",
-    "LongPollSubscriber",
+    "LongPollApplicationRequestSubscriber",
     ]
 
 from uuid import uuid4
@@ -28,7 +28,7 @@ def generate_subscribe_key():
     return "longpoll.subscribe.%s" % uuid4()
 
 
-class LongPollSubscriber:
+class LongPollApplicationRequestSubscriber:
 
     adapts(IApplicationRequest)
     implements(ILongPollSubscriber)
