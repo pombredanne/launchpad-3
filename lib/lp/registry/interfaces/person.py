@@ -1234,24 +1234,26 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         """
 
     def getLatestMaintainedPackages():
-        """Return `SourcePackageRelease`s maintained by this person.
+        """Return `SourcePackagePublishingHistory`s related to SPRs maintained
+        by this person.
 
-        This method will only include the latest source package release
+        This method will only include the latest source package publishings
         for each source package name, distribution series combination.
         """
 
     def getLatestUploadedButNotMaintainedPackages():
-        """Return `SourcePackageRelease`s created by this person but
-        not maintained by him.
+        """Return `SourcePackagePublishingHistory`s created by this person
+        but not maintained by him.
 
-        This method will only include the latest source package release
+        This method will only include the latest source package publishings
         for each source package name, distribution series combination.
         """
 
     def getLatestUploadedPPAPackages():
-        """Return `SourcePackageRelease`s uploaded by this person to any PPA.
+        """Return `SourcePackagePublishingHistory`s related to SPRs uploaded
+        by this person to any PPA.
 
-        This method will only include the latest source package release
+        This method will only include the latest source package publishings
         for each source package name, distribution series combination.
         """
 

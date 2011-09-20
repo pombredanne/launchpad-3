@@ -25,9 +25,9 @@
        replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <tal:maintained-packages
-    define="sourcepackagereleases view/batch">
+    define="spphs view/batch">
 
-  <table class="listing" condition="sourcepackagereleases">
+  <table class="listing" condition="spphs">
     <thead>
       <tr>
         <th>Name</th>
@@ -40,14 +40,14 @@
       </tr>
     </thead>
     <tbody>
-    <div metal:use-macro="context/@@+person-macros/sourcepackagerelease-rows"/>
+    <div metal:use-macro="context/@@+person-macros/spph-rows"/>
     </tbody>
   </table>
 
   <tal:navigation_bottom
        replace="structure view/batchnav/@@+navigation-links-lower" />
 
-  <tal:no_packages condition="not: sourcepackagereleases">
+  <tal:no_packages condition="not: spphs">
     <tal:name replace="context/fmt:displayname"/>
     does not maintain any packages.
   </tal:no_packages>

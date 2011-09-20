@@ -344,6 +344,8 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     def label(self):
         return self.context.title
 
+    page_title = label
+
     @property
     def next_url(self):
         """See `LaunchpadFormView`."""
