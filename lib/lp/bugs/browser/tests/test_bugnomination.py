@@ -14,6 +14,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -71,6 +72,25 @@ class TestBugNominationView(TestCaseWithFactory):
         self.assertEqual(
             "You do not have permission to nominate this bug.",
             notifications[0].message)
+
+    def test_nominate_another_series(self):
+        person = self.factory.makePerson(
+            name='main-person-test', password='test')
+        distro = self.factory.makeDistribution()
+        owner = distro.owner
+        members = [self.factory.makePerson() for i in range(2)]
+        members.append(person)
+        bug_supervisor = self.factory.makeTeam(members=members, owner=owner)
+        with person_logged_in(owner):
+            distro.setBugSupervisor(bug_supervisor, owner)
+        current_series = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        older_series = self.factory.makeDistroSeries(distribution=distro)
+        bug = self.factory.makeBug(distribution=distro, series=current_series)
+        series_bugtask = bug.bugtasks[1]
+        login_person(person)
+        view = create_initialized_view(bug.default_bugtask, name='+nominate')
+        self.assertEqual(0, len(view.request.notifications))
 
 
 class TestBugNominationEditView(TestCaseWithFactory):
