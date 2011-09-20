@@ -43,7 +43,7 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         self.assertEqual(None, dsp.summary)
 
     def test_ensure_spph_creates_a_dsp_in_db(self):
-        # The DSP.ensure() class methods creates a persistent instance
+        # The DSP.ensure() class method creates a persistent instance
         # if one does not exist.
         spph = self.factory.makeSourcePackagePublishingHistory()
         spph_dsp = spph.sourcepackagerelease.distrosourcepackage
@@ -57,7 +57,7 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
             spph_dsp.sourcepackagename, new_dsp.sourcepackagename)
 
     def test_ensure_spph_dsp_in_db_exists(self):
-        # The DSP.ensure() class methods does not create duplicate
+        # The DSP.ensure() class method does not create duplicate
         # persistent instances; it skips the query to create the DSP.
         store = IStore(DistributionSourcePackageInDatabase)
         start_count = store.find(DistributionSourcePackageInDatabase).count()
@@ -69,7 +69,7 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         self.assertEqual(new_count, final_count)
 
     def test_ensure_spph_does_not_create_dsp_in_db_non_primary_archive(self):
-        # The DSP.ensure() class methods creates a persistent instance
+        # The DSP.ensure() class method creates a persistent instance
         # if one does not exist.
         archive = self.factory.makeArchive()
         spph = self.factory.makeSourcePackagePublishingHistory(
@@ -81,7 +81,7 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         self.assertIs(None, new_dsp)
 
     def test_ensure_suitesourcepackage_creates_a_dsp_in_db(self):
-        # The DSP.ensure() class methods creates a persistent instance
+        # The DSP.ensure() class method creates a persistent instance
         # if one does not exist.
         sourcepackage = self.factory.makeSourcePackage()
         DistributionSourcePackage.ensure(sourcepackage=sourcepackage)
