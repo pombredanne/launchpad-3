@@ -15,11 +15,13 @@ from storm.properties import Int
 from zope.event import notify
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.longpoll.interfaces import ILongPollEvent
 from lp.services.longpoll.testing import (
     capture_longpoll_emissions,
     LongPollEventRecord,
     )
 from lp.testing import TestCase
+from lp.testing.matchers import Provides
 
 
 class FakeStormClass(Storm):
@@ -32,6 +34,15 @@ class FakeStormClass(Storm):
 class TestStormLifecycle(TestCase):
 
     layer = LaunchpadFunctionalLayer
+
+    def test_storm_event_adapter(self):
+        storm_object = FakeStormClass()
+        storm_object.id = 1234
+        event = ILongPollEvent(storm_object)
+        self.assertThat(event, Provides(ILongPollEvent))
+        self.assertEqual(
+            "longpoll.event.faketable.1234",
+            event.event_key)
 
     def test_storm_object_created(self):
         storm_object = FakeStormClass()
