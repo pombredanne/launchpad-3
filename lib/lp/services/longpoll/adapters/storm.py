@@ -55,14 +55,14 @@ class LongPollStormEvent(LongPollEvent):
 def object_created(model_instance, object_event):
     """Subscription handler for `Storm` creation events."""
     event = ILongPollEvent(model_instance)
-    event.emit({"event_name": "created"})
+    event.emit(what="created")
 
 
 @adapter(Storm, IObjectDeletedEvent)
 def object_deleted(model_instance, object_event):
     """Subscription handler for `Storm` deletion events."""
     event = ILongPollEvent(model_instance)
-    event.emit({"event_name": "deleted"})
+    event.emit(what="deleted")
 
 
 @adapter(Storm, IObjectModifiedEvent)
@@ -70,6 +70,4 @@ def object_modified(model_instance, object_event):
     """Subscription handler for `Storm` modification events."""
     edited_fields = sorted(object_event.edited_fields)
     event = ILongPollEvent(model_instance)
-    event.emit(
-        {"event_name": "modified",
-         "edited_fields": edited_fields})
+    event.emit(what="modified", edited_fields=edited_fields)

@@ -55,7 +55,7 @@ class FakeEvent:
     def event_key(self):
         return "event-key-%s" % self.source.ident
 
-    def emit(self, data):
+    def emit(self, **data):
         # Don't cargo-cult this; see .adapters.event.LongPollEvent instead.
         RabbitRoutingKey(self.event_key).send_now(data)
 
@@ -78,7 +78,7 @@ class TestFunctions(TestCase):
         # Emitting an event-key-12345-foo event will put something on the
         # subscriber's queue.
         event_data = {"1234": 5678}
-        event.emit(event_data)
+        event.emit(**event_data)
         subscriber = ILongPollSubscriber(request)
         subscribe_queue = RabbitQueue(subscriber.subscribe_key)
         message = subscribe_queue.receive(timeout=5)
@@ -98,14 +98,14 @@ class TestFunctions(TestCase):
         # given data to its emit() method. It then returns the event.
         an_object = FakeObject(12345)
         with ZopeAdapterFixture(FakeEvent):
-            event = emit(an_object, data={})
+            event = emit(an_object)
             routing_key = RabbitRoutingKey(event.event_key)
             subscribe_queue = RabbitQueue("whatever")
             routing_key.associateConsumer(subscribe_queue)
             # Emit the event again; the subscribe queue was not associated
             # with the event before now.
             event_data = {"8765": 4321}
-            event = emit(an_object, data=event_data)
+            event = emit(an_object, **event_data)
         message = subscribe_queue.receive(timeout=5)
         self.assertEqual(event_data, message)
 
@@ -114,5 +114,5 @@ class TestFunctions(TestCase):
         # get the ILongPollEvent for the given target.
         an_object = FakeObject(12345)
         with ZopeAdapterFixture(FakeEvent, name="foo"):
-            event = emit(an_object, "foo", data={})
+            event = emit(an_object, "foo")
         self.assertIsInstance(event, FakeEvent)

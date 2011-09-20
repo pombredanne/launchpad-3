@@ -48,11 +48,8 @@ class TestLongPollEvent(TestCase):
         # LongPollEvent.emit() sends the given data to `event_key`.
         event = FakeEvent("source")
         event_data = {"hello": 1234}
-        event.emit(event_data)
-        expected_message = {
-            "event_key": event.event_key,
-            "event_data": event_data,
-            }
+        event.emit(**event_data)
+        expected_message = dict(event_data, event_key=event.event_key)
         pending_messages = [
             message for (call, message) in
             RabbitMessageBase.class_locals.messages]

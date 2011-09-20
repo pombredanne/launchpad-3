@@ -42,8 +42,12 @@ class LongPollEvent:
         """See `ILongPollEvent`."""
         raise NotImplementedError(self.__class__.event_key)
 
-    def emit(self, data):
-        """See `ILongPollEvent`."""
-        payload = {"event_key": self.event_key, "event_data": data}
-        router = router_factory(self.event_key)
-        router.send(payload)
+    def emit(self, **data):
+        """See `ILongPollEvent`.
+
+        The data will be updated with `event_key`, a copy of `self.event_key`.
+        """
+        event_key = self.event_key
+        data.update(event_key=event_key)
+        router = router_factory(event_key)
+        router.send(data)

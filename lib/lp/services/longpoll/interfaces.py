@@ -26,14 +26,10 @@ class ILongPollEvent(Interface):
         "The key with which events will be emitted. Should be predictable "
         "and stable.")
 
-    def emit(data):
+    def emit(**data):
         """Emit the given data to `event_key`.
 
-        The data will be wrapped up into a `dict` with the keys `event_key`
-        and `event_data`, where `event_key` is a copy of `self.event_key` and
-        `event_data` is the `data` argument.
-
-        :param data: Any data structure that can be dumped as JSON.
+        :param data: Any data structures that can be dumped as JSON.
         """
 
 

@@ -36,14 +36,15 @@ def subscribe(target, event_name=u"", request=None):
     return event
 
 
-def emit(source, event_name=u"", data=None):
+def emit(source, event_name=u"", **data):
     """Convenience method to emit a message for an event.
 
     :param source: Something that can be be adapted to `ILongPollEvent`.
     :param event_name: The name of the event to subscribe to. This is used to
         look up a named adapter from `target` to `ILongPollEvent`.
+    :param data: See `ILongPollEvent.emit`.
     :return: The `ILongPollEvent` that has been emitted.
     """
     event = getAdapter(source, ILongPollEvent, name=event_name)
-    event.emit(data)
+    event.emit(**data)
     return event

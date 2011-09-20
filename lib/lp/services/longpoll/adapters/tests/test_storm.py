@@ -53,7 +53,7 @@ class TestStormLifecycle(TestCase):
             LongPollEventRecord(
                 "longpoll.event.faketable.1234",
                 {"event_key": "longpoll.event.faketable.1234",
-                 "event_data": {"event_name": "created"}}),
+                 "what": "created"}),
             ]
         self.assertEqual(expected, log)
 
@@ -66,7 +66,7 @@ class TestStormLifecycle(TestCase):
             LongPollEventRecord(
                 "longpoll.event.faketable.1234",
                 {"event_key": "longpoll.event.faketable.1234",
-                 "event_data": {"event_name": "deleted"}}),
+                 "what": "deleted"}),
             ]
         self.assertEqual(expected, log)
 
@@ -80,8 +80,7 @@ class TestStormLifecycle(TestCase):
             LongPollEventRecord(
                 "longpoll.event.faketable.1234",
                 {"event_key": "longpoll.event.faketable.1234",
-                 "event_data":
-                     {"event_name": "modified",
-                      "edited_fields": ["itchy", "scratchy"]}}),
+                 "what": "modified",
+                 "edited_fields": ["itchy", "scratchy"]}),
             ]
         self.assertEqual(expected, log)
