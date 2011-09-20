@@ -7,10 +7,7 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from canonical.testing.layers import (
-    BaseLayer,
-    LaunchpadFunctionalLayer,
-    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.longpoll.adapters.event import (
     generate_event_key,
     LongPollEvent,
@@ -57,8 +54,6 @@ class TestLongPollEvent(TestCase):
 
 
 class TestFunctions(TestCase):
-
-    layer = BaseLayer
 
     def test_generate_event_key_no_components(self):
         self.assertRaises(

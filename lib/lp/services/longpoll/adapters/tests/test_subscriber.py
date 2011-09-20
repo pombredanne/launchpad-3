@@ -15,10 +15,7 @@ from testtools.matchers import (
 from zope.interface import implements
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    BaseLayer,
-    LaunchpadFunctionalLayer,
-    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.longpoll.adapters.subscriber import (
     generate_subscribe_key,
     LongPollApplicationRequestSubscriber,
@@ -124,8 +121,6 @@ class TestLongPollSubscriber(TestCase):
 
 
 class TestFunctions(TestCase):
-
-    layer = BaseLayer
 
     def test_generate_subscribe_key(self):
         subscribe_key = generate_subscribe_key()
