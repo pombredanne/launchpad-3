@@ -7,9 +7,9 @@
     xmlns:browser="http://namespaces.zope.org/browser">
 
     <browser:page
-        name="+yui-unittest"
+        name="+yuitest"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="lp.testing.views.YUITestFileView"
+        class="lp.testing.yuixhr.YUITestFixtureControllerView"
         attribute="__call__"
         permission="zope.Public"/>
 

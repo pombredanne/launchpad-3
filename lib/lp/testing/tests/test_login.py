@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
+from zope.security.management import getInteraction
 
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
@@ -212,6 +213,18 @@ class TestLoginHelpers(TestCaseWithFactory):
         with person_logged_in(b):
             self.assertLoggedIn(b)
         self.assertLoggedIn(a)
+
+    def test_person_logged_in_restores_participation(self):
+        # Once outside of the person_logged_in context, the original
+        # participation (e.g., request) is used.  This can be important for
+        # yuixhr test fixtures, in particular.
+        a = self.factory.makePerson()
+        login_as(a)
+        participation = getInteraction().participations[0]
+        b = self.factory.makePerson()
+        with person_logged_in(b):
+            self.assertLoggedIn(b)
+        self.assertIs(participation, getInteraction().participations[0])
 
     def test_person_logged_in_restores_logged_out(self):
         # If we are logged out before the person_logged_in context, then we
