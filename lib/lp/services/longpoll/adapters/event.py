@@ -27,10 +27,23 @@ def generate_event_key(*components):
 class LongPollEvent:
     """Base-class for event adapters.
 
-    Sub-classes need to declare something along the lines of:
+    Sub-classes need to define the `event_key` property and declare something
+    along the lines of::
 
-        adapts(Interface)
-        implements(ILongPollEvent)
+        class LongPollAwesomeThingEvent(LongPollEvent):
+            adapts(IAwesomeThing)
+            implements(ILongPollEvent)
+
+    Alternatively, use the `long_poll_event` class decorator::
+
+        @long_poll_event(IAwesomeThing)
+        class LongPollAwesomeThingEvent(LongPollEvent):
+            ...
+
+    In both cases the adapter should be registered in a `configure.zcml`
+    somewhere sensible::
+
+        <adapter factory=".adapters.LongPollAwesomeThingEvent" />
 
     """
 
