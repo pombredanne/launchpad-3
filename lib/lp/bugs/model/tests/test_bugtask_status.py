@@ -181,7 +181,7 @@ class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):
         team = self.factory.makeTeam(members=[self.reporter])
         team_bug = self.factory.makeBug(owner=team)
         naked_task = removeSecurityProxy(team_bug.default_bugtask)
-        naked_task.status = BugTaskStatus.FIXRELEASED
+        naked_task._status = BugTaskStatus.FIXRELEASED
         with person_logged_in(self.reporter):
             team_bug.default_bugtask.transitionToStatus(
                 BugTaskStatus.CONFIRMED, self.reporter)

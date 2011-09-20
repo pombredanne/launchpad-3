@@ -38,7 +38,7 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.bugs.interfaces.bugtask import DB_UNRESOLVED_BUGTASK_STATUSES
 from lp.bugs.model.bug import (
     Bug,
     BugSet,
@@ -215,7 +215,7 @@ class DistributionSourcePackage(BugTargetBase,
             BugTask.distributionID == self.distribution.id,
             BugTask.sourcepackagenameID == self.sourcepackagename.id,
             Bug.duplicateof == None,
-            BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES)).one()
+            BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES)).one()
 
         # Aggregate functions return NULL if zero rows match.
         row = list(row)

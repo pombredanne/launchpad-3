@@ -32,6 +32,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    DB_UNRESOLVED_BUGTASK_STATUSES,
     IBugTaskSet,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -1349,6 +1350,7 @@ class TestBugTaskStatuses(TestCase):
         """
         self.assertNotIn(BugTaskStatus.UNKNOWN, RESOLVED_BUGTASK_STATUSES)
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
+        self.assertNotIn(BugTaskStatus.UNKNOWN, DB_UNRESOLVED_BUGTASK_STATUSES)
 
 
 class TestBugTaskContributor(TestCaseWithFactory):

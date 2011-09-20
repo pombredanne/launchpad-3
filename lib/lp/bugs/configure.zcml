@@ -213,6 +213,7 @@
                     distribution
                     distroseries
                     milestone
+                    _status
                     status
                     importance
                     assignee
