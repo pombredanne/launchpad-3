@@ -29,14 +29,13 @@ class LongPollEvent:
 
     Sub-classes need to declare something along the lines of:
 
-        adapts(Interface, Interface)
+        adapts(Interface)
         implements(ILongPollEvent)
 
     """
 
-    def __init__(self, source, event):
+    def __init__(self, source):
         self.source = source
-        self.event = event
 
     @property
     def event_key(self):

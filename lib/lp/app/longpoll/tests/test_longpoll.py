@@ -45,17 +45,15 @@ class FakeObject:
 
 class FakeEvent:
 
-    adapts(IFakeObject, Interface)
+    adapts(IFakeObject)
     implements(ILongPollEvent)
 
-    def __init__(self, source, event):
+    def __init__(self, source):
         self.source = source
-        self.event = event
 
     @property
     def event_key(self):
-        return "event-key-%s-%s" % (
-            self.source.ident, self.event)
+        return "event-key-%s" % self.source.ident
 
     def emit(self, data):
         # Don't cargo-cult this; see .adapters.event.LongPollEvent instead.
@@ -67,16 +65,16 @@ class TestFunctions(TestCase):
     layer = LaunchpadFunctionalLayer
 
     def test_subscribe(self):
-        # subscribe() gets the ILongPollEvent for the given (target, event)
-        # and the ILongPollSubscriber for the given request (or the current
-        # request is discovered). It subscribes the latter to the event, then
-        # returns the event.
+        # subscribe() gets the ILongPollEvent for the given target and the
+        # ILongPollSubscriber for the given request (or the current request is
+        # discovered). It subscribes the latter to the event, then returns the
+        # event.
         request = LaunchpadTestRequest()
         an_object = FakeObject(12345)
         with ZopeAdapterFixture(FakeEvent):
-            event = subscribe(an_object, "foo", request=request)
+            event = subscribe(an_object, request=request)
         self.assertIsInstance(event, FakeEvent)
-        self.assertEqual("event-key-12345-foo", event.event_key)
+        self.assertEqual("event-key-12345", event.event_key)
         # Emitting an event-key-12345-foo event will put something on the
         # subscriber's queue.
         event_data = {"1234": 5678}
@@ -86,19 +84,35 @@ class TestFunctions(TestCase):
         message = subscribe_queue.receive(timeout=5)
         self.assertEqual(event_data, message)
 
+    def test_subscribe_to_named_event(self):
+        # When an event_name is given to subscribe(), a named adapter is used
+        # to get the ILongPollEvent for the given target.
+        request = LaunchpadTestRequest()
+        an_object = FakeObject(12345)
+        with ZopeAdapterFixture(FakeEvent, name="foo"):
+            event = subscribe(an_object, event_name="foo", request=request)
+        self.assertIsInstance(event, FakeEvent)
+
     def test_emit(self):
-        # subscribe() gets the ILongPollEvent for the given (target, event)
-        # and passes the given data to its emit() method. It then returns the
-        # event.
+        # emit() gets the ILongPollEvent for the given target and passes the
+        # given data to its emit() method. It then returns the event.
         an_object = FakeObject(12345)
         with ZopeAdapterFixture(FakeEvent):
-            event = emit(an_object, "bar", {})
+            event = emit(an_object, data={})
             routing_key = RabbitRoutingKey(event.event_key)
             subscribe_queue = RabbitQueue("whatever")
             routing_key.associateConsumer(subscribe_queue)
             # Emit the event again; the subscribe queue was not associated
             # with the event before now.
             event_data = {"8765": 4321}
-            event = emit(an_object, "bar", event_data)
+            event = emit(an_object, data=event_data)
         message = subscribe_queue.receive(timeout=5)
         self.assertEqual(event_data, message)
+
+    def test_emit_named_event(self):
+        # When an event_name is given to emit(), a named adapter is used to
+        # get the ILongPollEvent for the given target.
+        an_object = FakeObject(12345)
+        with ZopeAdapterFixture(FakeEvent, name="foo"):
+            event = emit(an_object, "foo", data={})
+        self.assertIsInstance(event, FakeEvent)

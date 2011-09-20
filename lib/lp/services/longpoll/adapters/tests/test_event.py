@@ -27,7 +27,7 @@ class FakeEvent(LongPollEvent):
 
     @property
     def event_key(self):
-        return "event-key-%s-%s" % (self.source, self.event)
+        return "event-key-%s" % self.source
 
 
 class TestLongPollEvent(TestCase):
@@ -35,18 +35,18 @@ class TestLongPollEvent(TestCase):
     layer = LaunchpadFunctionalLayer
 
     def test_interface(self):
-        event = FakeEvent("source", "event")
+        event = FakeEvent("source")
         self.assertProvides(event, ILongPollEvent)
 
     def test_event_key(self):
         # event_key is not implemented in LongPollEvent; subclasses must
         # provide it.
-        event = LongPollEvent("source", "event")
+        event = LongPollEvent("source")
         self.assertRaises(NotImplementedError, getattr, event, "event_key")
 
     def test_emit(self):
         # LongPollEvent.emit() sends the given data to `event_key`.
-        event = FakeEvent("source", "event")
+        event = FakeEvent("source")
         event_data = {"hello": 1234}
         event.emit(event_data)
         expected_message = {
