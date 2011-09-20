@@ -40,7 +40,7 @@ The archive mirrors display the "freshness", how far behind they are.
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Archive mirrors').click()
     >>> print browser.title
-    Mirrors of Ubuntu Linux...
+    Mirrors :...
     >>> print_mirrors_by_countries(browser.contents)
     Antarctica: [(u'Archive-mirror2', u'http', u'128 Kbps',
       u'Six hours behind')]

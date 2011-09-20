@@ -635,6 +635,10 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
 
+    @property
+    def page_title(self):
+        return '%s in Launchpad' % self.context.displayname
+
     def linkedMilestonesForSeries(self, series):
         """Return a string of linkified milestones in the series."""
         # Listify to remove repeated queries.
@@ -1074,6 +1078,7 @@ class DistributionMirrorsView(LaunchpadView):
     show_freshness = True
     show_mirror_type = False
     description = None
+    page_title = 'Mirrors'
 
     @cachedproperty
     def mirror_count(self):
