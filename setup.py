@@ -81,7 +81,6 @@ setup(
         'timeline',
         'transaction',
         'Twisted',
-        'txlongpoll',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
