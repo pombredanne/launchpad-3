@@ -406,6 +406,10 @@ def loglevel(value):
                 )
 
 
+class DatabaseConfigOverrides(object):
+     pass
+
+
 class DatabaseConfig:
     """A class to provide the Launchpad database configuration."""
     _config_section = None
@@ -419,6 +423,9 @@ class DatabaseConfig:
     _db_config_required_attrs = frozenset([
         'dbuser', 'rw_main_master', 'rw_main_slave', 'ro_main_master',
         'ro_main_slave'])
+
+    def __init__(self):
+        self.overrides = DatabaseConfigOverrides()
 
     @property
     def main_master(self):
@@ -438,6 +445,20 @@ class DatabaseConfig:
         else:
             return self.rw_main_slave
 
+    def override(self, **kwargs):
+        """Override one or more config attributes.
+
+        Overriding a value to None removes the override.
+        """
+        for attr, value in kwargs.iteritems():
+            assert attr in self._db_config_attrs, (
+                "%s cannot be overriden" % attr)
+            if value is None:
+                if hasattr(self.overrides, attr):
+                    delattr(self.overrides, attr)
+            else:
+                setattr(self.overrides, attr, value)
+
     def setConfigSection(self, section_name):
         self._config_section = section_name
 
@@ -456,7 +477,7 @@ class DatabaseConfig:
         overlay = config
         for part in self._config_section.split('.'):
             overlay = getattr(overlay, part)
-        return [overlay, config.database]
+        return [self.overrides, overlay, config.database]
 
     def __getattr__(self, name):
         sections = self._getConfigSections()
