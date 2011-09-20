@@ -57,9 +57,13 @@ def long_poll_event(source_spec, event_spec=basestring):
     """Class decorator to declare an `ILongPollEvent`.
 
     :param source_spec: An interface or other specification understood by
-        `zope.component`.
+        `zope.component` (a plain class can be passed too) that defines the
+        source of an event. `IJob` or `storm.base.Storm` for example.
     :param source_event: An interface or other specification understood by
-        `zope.component`.
+        `zope.component`. The exact use here is left to implementers. By
+        default it is `basestring` so that terms like "modified" or
+        "lifecycle" can be used when looking up the event, but it could also
+        be `IObjectModifiedEvent`. The dominant use case is evolving.
     """
     declare_adapter = adapter(source_spec, event_spec)
 

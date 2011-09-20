@@ -8,4 +8,5 @@
     i18n_domain="launchpad">
     <adapter factory=".adapters.subscriber.LongPollSubscriber" />
     <adapter factory=".adapters.job.JobLongPollEvent" />
+    <subscriber handler=".adapters.event.object_event" />
 </configure>
