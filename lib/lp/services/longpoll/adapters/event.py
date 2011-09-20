@@ -9,13 +9,6 @@ __all__ = [
     "LongPollEvent",
     ]
 
-from zope.component import (
-    adapter,
-    queryMultiAdapter,
-    )
-from zope.component.interfaces import IObjectEvent
-
-from lp.services.longpoll.interfaces import ILongPollEvent
 from lp.services.messaging.queue import RabbitRoutingKey
 
 
@@ -55,20 +48,3 @@ class LongPollEvent:
         payload = {"event_key": self.event_key, "event_data": data}
         router = router_factory(self.event_key)
         router.send(payload)
-
-
-@adapter(IObjectEvent)
-def object_event(object_event):
-    """A subscription handler for `IObjectEvent` events.
-
-    This forms a bridge from `zope.event` style `notify()` events using
-    `IObjectEvent`s, `lazr.lifecycle` for example.
-
-    This looks for an adapter from `(object_event.object, object_event)` to
-    `ILongPollEvent`. If one exists, its `emit()` method is called with
-    `object_event` as the sole argument.
-    """
-    longpoll_event = queryMultiAdapter(
-        (object_event.object, object_event), ILongPollEvent)
-    if longpoll_event is not None:
-        longpoll_event.emit(object_event)
