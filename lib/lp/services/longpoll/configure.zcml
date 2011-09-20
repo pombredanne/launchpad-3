@@ -8,4 +8,7 @@
     i18n_domain="launchpad">
     <adapter factory=".adapters.subscriber.LongPollSubscriber" />
     <subscriber handler=".adapters.event.object_event" />
+    <subscriber handler=".adapters.lifecycle.storm_object_created" />
+    <subscriber handler=".adapters.lifecycle.storm_object_deleted" />
+    <subscriber handler=".adapters.lifecycle.storm_object_modified" />
 </configure>
