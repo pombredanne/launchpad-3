@@ -54,6 +54,9 @@ from lp.testing import (
     )
 from lp.testing.matchers import HasQueryCount
 
+PRIVATE_BUG_VISIBILITY_FLAG = {
+    'disclosure.private_bug_visibility_rules.enabled': 'on'}
+
 
 class SearchTestBase:
     """A mixin class with tests useful for all targets and search variants."""
@@ -141,14 +144,19 @@ class SearchTestBase:
         self.assertSearchFinds(params, self.bugtasks)
 
     def test_private_bug_in_search_result_pillar_owners(self):
-        # Private bugs are included in search results for the pillar owners.
+        # Private bugs are included in search results for the pillar owners if
+        # the correct feature flag is enabled.
         bugtask = self.bugtasks[-1]
         pillar_owner = bugtask.pillar.owner
         with person_logged_in(self.owner):
             bugtask.bug.setPrivate(True, self.owner)
             bugtask.bug.unsubscribe(pillar_owner, self.owner)
         params = self.getBugTaskSearchParams(user=pillar_owner)
-        self.assertSearchFinds(params, self.bugtasks)
+        # Check the results with the feature flag.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks)
+        # Check the results without the feature flag.
+        self.assertSearchFinds(params, self.bugtasks[:-1])
 
     def test_search_by_bug_reporter(self):
         # Search results can be limited to bugs filed by a given person.

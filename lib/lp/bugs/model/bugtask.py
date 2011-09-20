@@ -1403,19 +1403,10 @@ def get_bug_privacy_filter_with_decorator(user):
     # part of the WHERE condition (i.e. the bit below.) The
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
-    return ("""
-        (Bug.private = FALSE OR EXISTS (
-             SELECT BugSubscription.bug
-             FROM BugSubscription, TeamParticipation
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = BugSubscription.person AND
-                   BugSubscription.bug = Bug.id
-             UNION
-             SELECT BugTask.bug
-             FROM BugTask, TeamParticipation
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = BugTask.assignee AND
-                   BugTask.bug = Bug.id
+    pillar_privacy_filters = ''
+    if features.getFeatureFlag(
+        'disclosure.private_bug_visibility_rules.enabled'):
+        pillar_privacy_filters = """
              UNION
              SELECT BugTask.bug
              FROM BugTask, TeamParticipation, Product
@@ -1445,9 +1436,26 @@ def get_bug_privacy_filter_with_decorator(user):
                    DistroSeries.distribution = Distribution.id AND
                    BugTask.distroseries = DistroSeries.id AND
                    BugTask.bug = Bug.id
+        """ % sqlvalues(personid=user.id)
+    query = """
+        (Bug.private = FALSE OR EXISTS (
+             SELECT BugSubscription.bug
+             FROM BugSubscription, TeamParticipation
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = BugSubscription.person AND
+                   BugSubscription.bug = Bug.id
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = BugTask.assignee AND
+                   BugTask.bug = Bug.id
+             %(extra_filters)s
                    ))
-                     """ % sqlvalues(personid=user.id),
-        _make_cache_user_can_view_bug(user))
+        """ % dict(
+                personid=quote(user.id),
+                extra_filters=pillar_privacy_filters)
+    return query, _make_cache_user_can_view_bug(user)
 
 
 def build_tag_set_query(joiner, tags):
