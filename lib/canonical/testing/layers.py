@@ -217,7 +217,10 @@ def reconnect_stores(database_config_section='launchpad'):
     sure the right data is available.
     """
     disconnect_stores()
-    dbconfig.setConfigSection(database_config_section)
+    section = getattr(config, database_config_section)
+    dbconfig.override(
+        dbuser=getattr(section, 'dbuser', None),
+        isolation_level=getattr(section, 'isolation_level', None))
 
     main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
