@@ -402,12 +402,11 @@ def loglevel(value):
         raise ValueError(
                 "Invalid log level %s. "
                 "Should be DEBUG, CRITICAL, ERROR, FATAL, INFO, WARNING "
-                "as per logging module." % value
-                )
+                "as per logging module." % value)
 
 
 class DatabaseConfigOverrides(object):
-     pass
+    pass
 
 
 class DatabaseConfig:
