@@ -21,7 +21,7 @@ from canonical.testing.layers import (
     )
 from lp.services.longpoll.adapters.subscriber import (
     generate_subscribe_key,
-    LongPollSubscriber,
+    LongPollApplicationRequestSubscriber,
     )
 from lp.services.longpoll.interfaces import (
     ILongPollEvent,
@@ -51,12 +51,12 @@ class TestLongPollSubscriber(TestCase):
 
     def test_interface(self):
         request = LaunchpadTestRequest()
-        subscriber = LongPollSubscriber(request)
+        subscriber = LongPollApplicationRequestSubscriber(request)
         self.assertProvides(subscriber, ILongPollSubscriber)
 
     def test_subscribe_key(self):
         request = LaunchpadTestRequest()
-        subscriber = LongPollSubscriber(request)
+        subscriber = LongPollApplicationRequestSubscriber(request)
         # A subscribe key is not generated yet.
         self.assertIs(subscriber.subscribe_key, None)
         # It it only generated on the first subscription.
@@ -71,7 +71,8 @@ class TestLongPollSubscriber(TestCase):
     def test_adapter(self):
         request = LaunchpadTestRequest()
         subscriber = ILongPollSubscriber(request)
-        self.assertIsInstance(subscriber, LongPollSubscriber)
+        self.assertIsInstance(
+            subscriber, LongPollApplicationRequestSubscriber)
         # A difference subscriber is returned on subsequent adaptions, but it
         # has the same subscribe_key.
         subscriber2 = ILongPollSubscriber(request)
@@ -79,8 +80,8 @@ class TestLongPollSubscriber(TestCase):
         self.assertEqual(subscriber.subscribe_key, subscriber2.subscribe_key)
 
     def test_subscribe_queue(self):
-        # LongPollSubscriber.subscribe() creates a new queue with a new unique
-        # name that is bound to the event's event_key.
+        # LongPollApplicationRequestSubscriber.subscribe() creates a new queue
+        # with a new unique name that is bound to the event's event_key.
         request = LaunchpadTestRequest()
         event = FakeEvent()
         subscriber = ILongPollSubscriber(request)
@@ -93,8 +94,8 @@ class TestLongPollSubscriber(TestCase):
             message, subscribe_queue.receive(timeout=5))
 
     def test_json_cache_not_populated_on_init(self):
-        # LongPollSubscriber does not put the name of the new queue into the
-        # JSON cache.
+        # LongPollApplicationRequestSubscriber does not put the name of the
+        # new queue into the JSON cache.
         request = LaunchpadTestRequest()
         cache = IJSONRequestCache(request)
         self.assertThat(cache.objects, Not(Contains("longpoll")))
