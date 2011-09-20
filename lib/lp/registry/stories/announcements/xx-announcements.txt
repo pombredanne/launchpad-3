@@ -236,7 +236,7 @@ And finally for RedHat, an IDistribution, with immediate announcement:
     ...     'RedHat announcement summary')
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.title
-    Redhat in Launchpad
+    Red Hat in Launchpad
     >>> "RedHat announcement" in latest_news(priv_browser.contents)
     True
 

@@ -22,7 +22,7 @@ The overview page for project groups is accessible to all users.
 
     >>> anon_browser.open('http://launchpad.dev/gnome')
     >>> anon_browser.title
-    'The GNOME in Launchpad'
+    'GNOME in Launchpad'
 
 The page lists the member projects, together with the releases/milestones of
 its development focus.
