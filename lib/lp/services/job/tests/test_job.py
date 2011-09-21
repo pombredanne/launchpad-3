@@ -44,12 +44,6 @@ class TestJob(TestCaseWithFactory):
         """Job should implement IJob."""
         verifyObject(IJob, Job())
 
-    def test_job_id(self):
-        """The job_id is a unique ID for a job (i.e. a primary key)."""
-        job = Job()
-        self.assertIsNot(None, job.id)
-        self.assertEqual(job.id, job.job_id)
-
     def test_default_status(self):
         """The default status should be WAITING."""
         job = Job()

@@ -6,7 +6,6 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
-    <adapter factory=".adapters.job.JobLongPollEvent" />
     <adapter factory=".adapters.storm.LongPollStormEvent" />
     <adapter factory=".adapters.subscriber.LongPollApplicationRequestSubscriber" />
     <subscriber handler=".adapters.storm.object_created" />

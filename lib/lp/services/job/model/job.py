@@ -115,11 +115,6 @@ class Job(SQLBase):
     status = property(lambda x: x._status)
 
     @property
-    def job_id(self):
-        """See `IJob`."""
-        return self.id
-
-    @property
     def is_pending(self):
         """See `IJob`."""
         return self.status in self.PENDING_STATUSES
