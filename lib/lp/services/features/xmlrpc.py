@@ -50,7 +50,7 @@ class FeatureFlagApplication:
                 person = getUtility(IPersonSet).getByName(
                     scope_name[len('user:'):])
                 if person is not None:
-                    scopes.append(TeamScope(person))
+                    scopes.append(TeamScope(lambda: person))
             else:
                 scopes.append(FixedScope(scope_name))
         flag_name = unicode(flag_name)

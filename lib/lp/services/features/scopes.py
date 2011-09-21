@@ -113,12 +113,21 @@ class TeamScope(BaseScope):
 
     The scope 'team:launchpad-beta-users' will match members of the team
     'launchpad-beta-users'.
+
+    The constructor takes a callable that returns the currently logged in
+    person because Scopes are set up very early in the request publication
+    process -- in particular, before authentication has happened.
     """
 
     pattern = r'team:'
 
-    def __init__(self, person):
-        self.person = person
+    def __init__(self, get_person):
+        self._get_person = get_person
+        self._person = None
+
+    @cachedproperty
+    def person(self):
+        return self._get_person()
 
     def lookup(self, scope_name):
         """Is the given scope a team membership?
@@ -127,8 +136,9 @@ class TeamScope(BaseScope):
         team based scopes in use to a small number. (Person.inTeam could be
         fixed to reduce this to one query).
         """
-        team_name = scope_name[len('team:'):]
-        return self.person.inTeam(team_name)
+        if self.person is not None:
+            team_name = scope_name[len('team:'):]
+            return self.person.inTeam(team_name)
 
 
 class ServerScope(BaseScope):
@@ -232,14 +242,14 @@ class ScopesFromRequest(MultiScopeHandler):
     """Identify feature scopes based on request state."""
 
     def __init__(self, request):
+        def person_from_request():
+            return IPerson(request.principal, None)
         scopes = list(default_scopes)
         scopes.extend([
             PageScope(request._orig_env.get('launchpad.pageid', '')),
             ServerScope(),
+            TeamScope(person_from_request)
             ])
-        person = IPerson(request.principal, None)
-        if person is not None:
-            scopes.append(TeamScope(person))
         super(ScopesFromRequest, self).__init__(scopes)
 
 
