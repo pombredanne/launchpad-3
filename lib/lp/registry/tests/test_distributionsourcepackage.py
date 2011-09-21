@@ -9,11 +9,16 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackage,
+    DistributionSourcePackageInDatabase,
+    )
 from lp.registry.model.karma import KarmaTotalCache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -36,6 +41,79 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         self.factory.makeSourcePackage(distroseries=distribution)
         dsp = naked_distribution.getSourcePackage(name='pmount')
         self.assertEqual(None, dsp.summary)
+
+    def test_ensure_spph_creates_a_dsp_in_db(self):
+        # The DSP.ensure() class method creates a persistent instance
+        # if one does not exist.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        spph_dsp = spph.sourcepackagerelease.distrosourcepackage
+        DistributionSourcePackage.ensure(spph)
+        new_dsp = DistributionSourcePackage._get(
+            spph_dsp.distribution, spph_dsp.sourcepackagename)
+        self.assertIsNot(None, new_dsp)
+        self.assertIsNot(spph_dsp, new_dsp)
+        self.assertEqual(spph_dsp.distribution, new_dsp.distribution)
+        self.assertEqual(
+            spph_dsp.sourcepackagename, new_dsp.sourcepackagename)
+
+    def test_ensure_spph_dsp_in_db_exists(self):
+        # The DSP.ensure() class method does not create duplicate
+        # persistent instances; it skips the query to create the DSP.
+        store = IStore(DistributionSourcePackageInDatabase)
+        start_count = store.find(DistributionSourcePackageInDatabase).count()
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        DistributionSourcePackage.ensure(spph)
+        new_count = store.find(DistributionSourcePackageInDatabase).count()
+        self.assertEqual(start_count + 1, new_count)
+        final_count = store.find(DistributionSourcePackageInDatabase).count()
+        self.assertEqual(new_count, final_count)
+
+    def test_ensure_spph_does_not_create_dsp_in_db_non_primary_archive(self):
+        # The DSP.ensure() class method creates a persistent instance
+        # if one does not exist.
+        archive = self.factory.makeArchive()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive)
+        spph_dsp = spph.sourcepackagerelease.distrosourcepackage
+        DistributionSourcePackage.ensure(spph)
+        new_dsp = DistributionSourcePackage._get(
+            spph_dsp.distribution, spph_dsp.sourcepackagename)
+        self.assertIs(None, new_dsp)
+
+    def test_ensure_suitesourcepackage_creates_a_dsp_in_db(self):
+        # The DSP.ensure() class method creates a persistent instance
+        # if one does not exist.
+        sourcepackage = self.factory.makeSourcePackage()
+        DistributionSourcePackage.ensure(sourcepackage=sourcepackage)
+        new_dsp = DistributionSourcePackage._get(
+            sourcepackage.distribution, sourcepackage.sourcepackagename)
+        self.assertIsNot(None, new_dsp)
+        self.assertEqual(sourcepackage.distribution, new_dsp.distribution)
+        self.assertEqual(
+            sourcepackage.sourcepackagename, new_dsp.sourcepackagename)
+
+    def test_delete_without_dsp_in_db(self):
+        # Calling delete() on a DSP without persistence returns False.
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertFalse(dsp.delete())
+
+    def test_delete_with_dsp_in_db_with_history(self):
+        # Calling delete() on a persistent DSP with SPPH returns False.
+        # Once a package is uploaded, it cannot be deleted.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        dsp = spph.sourcepackagerelease.distrosourcepackage
+        DistributionSourcePackage.ensure(spph=spph)
+        transaction.commit()
+        self.assertFalse(dsp.delete())
+
+    def test_delete_with_dsp_in_db_without_history(self):
+        # Calling delete() on a persistent DSP without SPPH returns True.
+        # A package without history was a mistake.
+        sp = self.factory.makeSourcePackage()
+        DistributionSourcePackage.ensure(sourcepackage=sp)
+        transaction.commit()
+        dsp = sp.distribution_sourcepackage
+        self.assertTrue(dsp.delete())
 
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
