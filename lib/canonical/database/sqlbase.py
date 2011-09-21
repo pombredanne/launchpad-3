@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'alreadyInstalledMsg',
-    'begin',
     'block_implicit_flushes',
     'clear_current_connection_cache',
     'commit',
@@ -12,7 +11,6 @@ __all__ = [
     'connect',
     'convert_storm_clause_to_string',
     'cursor',
-    'expire_from_cache',
     'flush_database_caches',
     'flush_database_updates',
     'get_transaction_timestamp',
@@ -25,7 +23,6 @@ __all__ = [
     'quoteIdentifier',
     'quote_identifier',
     'reset_store',
-    'rollback',
     'session_store',
     'SQLBase',
     'sqlvalues',
@@ -328,7 +325,6 @@ class ZopelessTransactionManager(object):
             cls._isolation = isolation
             cls._reset_stores()
             cls._installed = cls
-        return cls._installed
 
     @staticmethod
     def _reset_stores():
@@ -370,32 +366,11 @@ class ZopelessTransactionManager(object):
         cls._reset_stores()
         cls._installed = None
 
-    @staticmethod
-    def begin():
-        """Begin a transaction."""
-        transaction.begin()
-
-    @staticmethod
-    def commit():
-        """Commit the current transaction."""
-        transaction.commit()
-
-    @staticmethod
-    def abort():
-        """Abort the current transaction."""
-        transaction.abort()
-
 
 def clear_current_connection_cache():
     """Clear SQLObject's object cache. SQLObject compatibility - DEPRECATED.
     """
     _get_sqlobject_store().invalidate()
-
-
-def expire_from_cache(obj):
-    """Expires a single object from the SQLObject cache.
-    SQLObject compatibility - DEPRECATED."""
-    _get_sqlobject_store().invalidate(obj)
 
 
 def get_transaction_timestamp():
@@ -695,18 +670,7 @@ def reset_store(func):
     return mergeFunctionMetadata(func, reset_store_decorator)
 
 
-# Some helpers intended for use with initZopeless.  These allow you to avoid
-# passing the transaction manager all through your code.
-
-def begin():
-    """Begins a transaction."""
-    transaction.begin()
-
-
-def rollback():
-    transaction.abort()
-
-
+# DEPRECATED -- use transaction.commit() directly.
 def commit():
     transaction.commit()
 

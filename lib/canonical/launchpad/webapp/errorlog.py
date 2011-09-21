@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0702
@@ -14,9 +14,6 @@ import logging
 import operator
 import os
 import re
-import stat
-import types
-import urllib
 import urlparse
 
 from lazr.restful.utils import (
@@ -109,7 +106,8 @@ class ErrorReport:
         self.username = username
         self.url = url
         self.duration = duration
-        # informational is ignored - will be going from the oops module soon too.
+        # informational is ignored - will be going from the oops module
+        # soon too.
         self.req_vars = req_vars
         self.db_statements = db_statements
         self.branch_nick = branch_nick or versioninfo.branch_nick
@@ -144,7 +142,7 @@ def attach_exc_info(report, context):
     This reads the 'exc_info' key from the context and sets the:
     * type
     * value
-    * tb_text 
+    * tb_text
     keys in the report.
     """
     info = context.get('exc_info')
@@ -162,9 +160,10 @@ def attach_exc_info(report, context):
 
 _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
 
+
 def attach_http_request(report, context):
     """Add request metadata into the error report.
-    
+
     This reads the exc_info and http_request keys from the context and will
     write to:
     * url
@@ -308,8 +307,8 @@ class ErrorReportingUtility:
         # threadsafe - so only scripts) - a todo item is to only add this
         # for scripts (or to make it threadsafe)
         self._oops_config.on_create.append(self._attach_messages)
-        # In the zope environment we track how long a script / http request has
-        # been running for - this is useful data!
+        # In the zope environment we track how long a script / http
+        # request has been running for - this is useful data!
         self._oops_config.on_create.append(attach_adapter_duration)
         # We want to publish reports to disk for gathering to the central
         # analysis server.
@@ -327,7 +326,7 @@ class ErrorReportingUtility:
                 operator.methodcaller('get', 'ignore'))
         #  - have a type listed in self._ignored_exceptions.
         self._oops_config.filters.append(
-                lambda report:report['type'] in self._ignored_exceptions)
+                lambda report: report['type'] in self._ignored_exceptions)
         #  - have a missing or offset REFERER header with a type listed in
         #    self._ignored_exceptions_for_offsite_referer
         self._oops_config.filters.append(self._filter_bad_urls_by_referer)
@@ -347,12 +346,12 @@ class ErrorReportingUtility:
         """Return the contents of the OOPS report logged at 'time'."""
         # How this works - get a serial that was logging in the dir
         # that logs for time are logged in.
-        serial_from_time = self._oops_datedir_repo.log_namer._findHighestSerial(
-            self._oops_datedir_repo.log_namer.output_dir(time))
+        log_namer = self._oops_datedir_repo.log_namer
+        serial_from_time = log_namer._findHighestSerial(
+            log_namer.output_dir(time))
         # Calculate a filename which combines this most recent serial,
         # the current log_namer naming rules and the exact timestamp.
-        oops_filename = self._oops_datedir_repo.log_namer.getFilename(
-                serial_from_time, time)
+        oops_filename = log_namer.getFilename(serial_from_time, time)
         # Note that if there were no logs written, or if there were two
         # oops that matched the time window of directory on disk, this
         # call can raise an IOError.
