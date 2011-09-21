@@ -33,11 +33,9 @@ from zope.security.management import (
 
 from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,
-    get_current_principal,
     setupInteractionByEmail,
     setupInteractionForPerson,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
