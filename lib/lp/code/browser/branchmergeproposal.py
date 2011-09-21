@@ -125,7 +125,6 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 
@@ -606,13 +605,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         cache = IJSONRequestCache(self.request)
         cache.objects.update({
             'branch_diff_link':
-                'https://%s/+loggerhead/%s/diff/' %
-                (config.launchpad.code_domain,
-                 self.context.source_branch.unique_name)
+                'https://%s/+loggerhead/%s/diff/' % (
+                    config.launchpad.code_domain,
+                    self.context.source_branch.unique_name),
+            # XXX: GavinPanella 2011-09-21: Not sure about this name; this is
+            # done to match up with rvb's JavaScript code.
+            'new_mp_diff_event': subscribe(self.context),
             })
-        if self.next_preview_diff_job is not None:
-            self.pending_diff_event = subscribe(
-                self.next_preview_diff_job, JobStatus.COMPLETED)
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
@@ -680,14 +679,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             result.append(dict(style=style, comment=comment))
         return result
 
-    @cachedproperty
-    def next_preview_diff_job(self):
-        return self.context.next_preview_diff_job
-
     @property
     def pending_diff(self):
         return (
-            self.next_preview_diff_job is not None or
+            self.context.next_preview_diff_job is not None or
             self.context.source_branch.pending_writes)
 
     @cachedproperty
