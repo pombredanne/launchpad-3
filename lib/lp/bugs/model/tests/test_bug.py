@@ -500,20 +500,14 @@ class TestBugActivityMethods(TestCaseWithFactory):
         super(TestBugActivityMethods, self).setUp()
         self.now = datetime.now(UTC)
 
-    def _makeActivityForBug(self, bug):
+    def _makeActivityForBug(self, bug, activity_ages):
         with person_logged_in(bug.owner):
-            earliest_activity = BugTitleChange(
-                when=self.now-timedelta(days=300), person=bug.owner,
-                what_changed='title', old_value='foo', new_value='baz')
-            bug.addChange(earliest_activity)
-            middle_activity = BugTitleChange(
-                when=self.now-timedelta(days=200), person=bug.owner,
-                what_changed='title', old_value='baz', new_value='bar')
-            bug.addChange(middle_activity)
-            oldest_activity = BugTitleChange(
-                when=self.now-timedelta(days=100), person=bug.owner,
-                what_changed='title', old_value='bar', new_value='spam')
-            bug.addChange(oldest_activity)
+            for days_ago in activity_ages:
+                earliest_activity = BugTitleChange(
+                    when=self.now - timedelta(days=days_ago),
+                    person=bug.owner, what_changed='title',
+                    old_value='foo', new_value='baz')
+                bug.addChange(earliest_activity)
         store = Store.of(bug)
         store.flush()
 
@@ -521,8 +515,8 @@ class TestBugActivityMethods(TestCaseWithFactory):
         # Bug.getActivityForDateRange() will return the activity for
         # that bug that falls within a given date range.
         bug = self.factory.makeBug(
-            date_created=self.now-timedelta(days=365))
-        self._makeActivityForBug(bug)
+            date_created=self.now - timedelta(days=365))
+        self._makeActivityForBug(bug, activity_ages=[200,100])
         start_date = self.now - timedelta(days=250)
         end_date = self.now - timedelta(days=150)
         activity = bug.getActivityForDateRange(
@@ -533,8 +527,8 @@ class TestBugActivityMethods(TestCaseWithFactory):
         # Bug.getActivityForDateRange() will return the activity that
         # falls on the start_ and end_ dates.
         bug = self.factory.makeBug(
-            date_created=self.now-timedelta(days=365))
-        self._makeActivityForBug(bug)
+            date_created=self.now - timedelta(days=365))
+        self._makeActivityForBug(bug, activity_ages=[300,200,100])
         start_date = self.now - timedelta(days=300)
         end_date = self.now - timedelta(days=100)
         activity = bug.getActivityForDateRange(
