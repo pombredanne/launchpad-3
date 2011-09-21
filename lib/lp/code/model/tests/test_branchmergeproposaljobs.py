@@ -11,6 +11,7 @@ from datetime import (
     )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.events import IObjectModifiedEvent
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Select
@@ -60,7 +61,10 @@ from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.osutils import override_environ
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    EventRecorder,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -203,9 +207,21 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         bmp.source_branch.next_mirror_time = None
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        JobRunner([job]).runAll()
-        transaction.commit()
+        with EventRecorder() as event_recorder:
+            JobRunner([job]).runAll()
+            transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
+        # A single IObjectModifiedEvent is issued when the preview diff has
+        # been calculated.
+        bmp_object_events = [
+            event for event in event_recorder.events
+            if (IObjectModifiedEvent.providedBy(event) and
+                event.object == bmp)]
+        self.assertEqual(
+            1, len(bmp_object_events),
+            "Expected one event, got: %r" % bmp_object_events)
+        self.assertEqual(
+            ["preview_diff"], bmp_object_events[0].edited_fields)
 
     def test_run_branches_not_ready(self):
         # If the job has been waiting for a significant period of time (15
