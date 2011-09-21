@@ -5,10 +5,7 @@ __metaclass__ = type
 
 import transaction
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -24,6 +21,7 @@ from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -1049,22 +1047,34 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
     def _makeNoisyBug(self, comments_only=False, number_of_comments=10,
                       number_of_changes=10):
         """Create and return a bug with a lot of comments and activity."""
-        bug = self.factory.makeBug(
-            date_created=datetime.now(UTC) - timedelta(days=30))
+        bug = self.factory.makeBug()
         with person_logged_in(bug.owner):
             if not comments_only:
                 for i in range(number_of_changes):
                     change = BugTaskStatusChange(
-                        bug.default_bugtask, datetime.now(UTC),
+                        bug.default_bugtask, UTC_NOW,
                         bug.default_bugtask.product.owner, 'status',
                         BugTaskStatus.NEW, BugTaskStatus.TRIAGED)
                     bug.addChange(change)
             for i in range (number_of_comments):
                 msg = self.factory.makeMessage(
-                    owner=bug.owner, content="Message %i." % i,
-                    datecreated=datetime.now(UTC) - timedelta(days=20-i))
+                    owner=bug.owner, content="Message %i." % i)
                 bug.linkMessage(msg, user=bug.owner)
         return bug
+
+    def _assertThatUnbatchedAndBatchedActivityMatch(self, unbatched_activity,
+                                                    batched_activity):
+        zipped_activity = zip(
+            unbatched_activity, batched_activity)
+        for index, items in enumerate(zipped_activity):
+            unbatched_item, batched_item = items
+            self.assertEqual(
+                unbatched_item['comment'].index,
+                batched_item['comment'].index,
+                "The comments at index %i don't match. Expected to see "
+                "comment %i, got comment %i instead." %
+                (index, unbatched_item['comment'].index,
+                batched_item['comment'].index))
 
     def test_offset(self):
         # BugTaskBatchedCommentsAndActivityView.offset returns the
@@ -1107,15 +1117,20 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         # not return the last view comments - those covered by the
         # visible_recent_comments property.
         bug = self._makeNoisyBug(number_of_comments=20, comments_only=True)
-        view = create_initialized_view(
+        batched_view = create_initialized_view(
             bug.default_bugtask, '+batched-comments',
             form={'batch_size': 10, 'offset': 10})
-        expected_length = 10 - view.visible_recent_comments
-        actual_length = len([group for group in view._event_groups])
+        expected_length = 10 - batched_view.visible_recent_comments
+        actual_length = len([group for group in batched_view._event_groups])
         self.assertEqual(
             expected_length, actual_length,
             "Expected %i comments, got %i." %
             (expected_length, actual_length))
+        unbatched_view = create_initialized_view(
+            bug.default_bugtask, '+index', form={'comments': 'all'})
+        self._assertThatUnbatchedAndBatchedActivityMatch(
+            unbatched_view.activity_and_comments[9:],
+            batched_view.activity_and_comments)
 
     def test_activity_and_comments_matches_unbatched_version(self):
         # BugTaskBatchedCommentsAndActivityView extends BugTaskView in
@@ -1138,13 +1153,6 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         # whereas the batched view indexes from zero for ease-of-coding.
         # Comment 0 is the original bug description and so is rarely
         # returned.
-        unbatched_activity = unbatched_view.activity_and_comments[4:14]
-        for index, unbatched_item in enumerate(unbatched_activity):
-            batched_item = batched_view.activity_and_comments[index]
-            self.assertEqual(
-                unbatched_item['comment'].index,
-                batched_item['comment'].index,
-                "The comments at index %i don't match. Expected to see "
-                "comment %i, got comment %i instead." %
-                (index, unbatched_item['comment'].index,
-                batched_item['comment'].index))
+        self._assertThatUnbatchedAndBatchedActivityMatch(
+            unbatched_view.activity_and_comments[4:],
+            batched_view.activity_and_comments)

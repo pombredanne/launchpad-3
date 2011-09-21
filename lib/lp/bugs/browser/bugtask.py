@@ -792,7 +792,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             oldest_count = 1 + self.visible_initial_comments
             new_count = 1 + self.total_comments - self.visible_recent_comments
             slice_info = [
-                slice(None, oldest_count), slice(new_count, None)]
+                slice(None, oldest_count),
+                slice(new_count, None),
+                ]
             comments = self._getComments(slice_info)
 
         visible_comments = get_visible_comments(
@@ -1093,12 +1095,6 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
 
     # We never truncate comments in this view; there would be no point.
     visible_comments_truncated_for_display = False
-
-    def initialize(self):
-        super(BugTaskBatchedCommentsAndActivityView, self).initialize()
-        # This is here to save us from the pain of recursion,
-        # particularly in tests.
-        activity_and_comments = self.activity_and_comments
 
     @property
     def offset(self):
