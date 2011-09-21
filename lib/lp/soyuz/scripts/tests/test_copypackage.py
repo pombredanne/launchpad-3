@@ -1603,27 +1603,6 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # Only the source package has been copied.
         self.assertEqual(1, len(copies))
 
-    def test_copy_sets_creator(self):
-        # The creator for the copied SPPH is the person passed
-        # to do_copy.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
-        target_archive = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest)
-        [copied_source] = do_copy(
-            [source], target_archive, nobby, source.pocket, False,
-            person=target_archive.owner, check_permissions=False,
-            send_email=False)
-
-        self.assertEqual(
-            target_archive.owner,
-            copied_source.creator)
-
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
 
