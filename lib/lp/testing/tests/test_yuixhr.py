@@ -289,7 +289,7 @@ class TestYUITestFixtureController(TestCase):
         self.assertEqual(
             '1',
             view.request.response.getHeader('Content-Length'))
-        del test_yuixhr_fixture._received[:] # Cleanup
+        del test_yuixhr_fixture._received[:]  # Cleanup
 
     def test_do_teardown_resets_database_only_after_request_completes(self):
         view = create_traversed_view(

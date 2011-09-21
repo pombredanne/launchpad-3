@@ -243,7 +243,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         b = self.factory.makePerson()
         try:
             with person_logged_in(b):
-                1/0
+                1 / 0
         except ZeroDivisionError:
             pass
         self.assertLoggedIn(a)

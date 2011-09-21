@@ -7,8 +7,6 @@
 __metaclass__ = type
 __all__ = []
 
-from zope.security.proxy import removeSecurityProxy
-
 from lp.testing import person_logged_in
 from lp.testing.yuixhr import (
     login_as_person,
@@ -35,6 +33,7 @@ from lp.testing.factory import LaunchpadObjectFactory
 # {launchpad}/lib/lp/testing/tests/test_yui_fixture[.py|.js].
 
 # Put your Python test fixtures here, just like these examples below.
+
 
 @setup
 def example(request, data):
@@ -73,7 +72,7 @@ def example(request, data):
     #
     # You can compose these setups and teardowns as well, using .extend.
     # There is a small example of this as well, below.
-    # 
+    #
     # As a full example, we will create an administrator and another
     # person; we will have the administrator create an object; we will
     # log the browser in as the other person; and we will stash
@@ -113,11 +112,14 @@ def example(request, data):
     # wanted to, and do something with it.  We don't really need to do
     # anything with it, so we'll just show that the data is still
     # around, and then stop.
-    assert data['some random data we might need for cleaning up'] == 'rutebega'
+    assert (
+        data['some random data we might need for cleaning up'] == 'rutebega')
 
 # Sometimes you might have setup and teardown code that can be shared
 # within your test suite as part of several larger jobs.  You can use
 # "extend" for that if you like.
+
+
 @example.extend
 def extended_example(request, data):
     # We have declared a new fixture named "extended_example", but
@@ -146,5 +148,7 @@ def extended_example(request, data):
 # Launchpad's testrunner find the associated Javascript tests and run
 # them.  You should not have to change them, but you do need to have
 # them.  Feel free to delete these comments, though. :-)
+
+
 def test_suite():
     return make_suite(__name__)

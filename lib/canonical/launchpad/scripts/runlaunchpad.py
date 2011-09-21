@@ -317,6 +317,7 @@ def process_config_arguments(args):
         args.extend(['-C', zope_config_file])
     return args
 
+
 def start_testapp(argv=list(sys.argv)):
     from canonical.testing.layers import (
         BaseLayer,
@@ -330,17 +331,20 @@ def start_testapp(argv=list(sys.argv)):
         uninstallFakeConnect,
         )
     assert config.instance_name.startswith('testrunner-appserver'), (
-        '%r does not start with "testrunner-appserver"' % config.instance_name)
+        '%r does not start with "testrunner-appserver"' %
+        config.instance_name)
     interactive_tests = 'INTERACTIVE_TESTS' in os.environ
+
     def setup():
         # This code needs to be run after other zcml setup happens in
         # runlaunchpad, so it is passed in as a callable.
         BaseLayer.setUp()
         if interactive_tests:
-            # The test suite runs its own RabbitMQ.  We only need this for
-            # interactive tests.  We set it up here rather than by passing it
-            # in as an argument to start_launchpad because the appserver config
-            # does not normally need/have RabbitMQ config set.
+            # The test suite runs its own RabbitMQ.  We only need this
+            # for interactive tests.  We set it up here rather than by
+            # passing it in as an argument to start_launchpad because
+            # the appserver config does not normally need/have
+            # RabbitMQ config set.
             RabbitMQLayer.setUp()
         # We set up the database here even for the test suite because we want
         # to be able to control the database here in the subprocess.  It is

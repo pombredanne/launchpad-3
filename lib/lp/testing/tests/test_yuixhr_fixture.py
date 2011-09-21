@@ -22,14 +22,17 @@ from lp.testing.factory import LaunchpadObjectFactory
 # We use this variable for test results.
 _received = []
 
+
 @setup
 def baseline(request, data):
     data['hello'] = 'world'
+
 
 @baseline.add_cleanup
 def baseline(request, data):
     global _received
     _received.append(('baseline', request, data))
+
 
 @setup
 def second(request, data):
@@ -41,6 +44,7 @@ def second(request, data):
 
 test_value = None
 
+
 @setup
 def faux_database_thing(request, data):
     global test_value
@@ -50,6 +54,7 @@ def faux_database_thing(request, data):
 def faux_database_thing(request, data):
     global test_value
     test_value = 'teardown was called'
+
 
 @setup
 def show_teardown_value(request, data):
@@ -61,9 +66,11 @@ def show_teardown_value(request, data):
 
 factory = LaunchpadObjectFactory()
 
+
 @setup
 def make_product(request, data):
     data['product'] = factory.makeProduct()
+
 
 @setup
 def make_product_loggedin(request, data):
@@ -71,9 +78,11 @@ def make_product_loggedin(request, data):
     login_person(data['person'])
     data['product'] = factory.makeProduct(owner=data['person'])
 
+
 @setup
 def naughty_make_product(request, data):
     data['product'] = removeSecurityProxy(factory.makeProduct())
+
 
 @setup
 def teardown_will_fail(request, data):
@@ -82,10 +91,12 @@ def teardown_will_fail(request, data):
 def teardown_will_fail(request, data):
     raise RuntimeError('rutebegas')
 
+
 @setup
 def login_as_admin(request, data):
     data['user'] = factory.makeAdministrator()
     login_as_person(data['user'])
+
 
 def test_suite():
     return make_suite(__name__)
