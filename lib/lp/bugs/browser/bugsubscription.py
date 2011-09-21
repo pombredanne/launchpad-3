@@ -417,9 +417,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
     def _handleUnsubscribeCurrentUser(self):
         """Handle the special cases for unsubscribing the current user."""
-        # XXX: Need to confirm: lib/lp/app/javascript/confirmationoverlay/confirmationoverlay.js
-        # XXX: Used in lib/lp/registry/templates/distroseries-localdifferences.pt
-
         # We call unsubscribeFromDupes() before unsubscribe(), because
         # if the bug is private, the current user will be prevented from
         # calling methods on the main bug after they unsubscribe from it.
@@ -621,6 +618,7 @@ class BugSubscriptionListView(LaunchpadView):
         cache = IJSONRequestCache(self.request).objects
         cache.update(references)
         cache['bug_subscription_info'] = subdata
+        cache['bug_is_private'] = self.context.bug.private
 
     @property
     def label(self):
