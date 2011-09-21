@@ -37,10 +37,14 @@ from bzrlib.errors import (
     NoRepositoryPresent,
     NoSuchFile,
     NotBranchError,
+    TooManyRedirections,
     )
-from bzrlib.transport import get_transport
-from bzrlib.upgrade import upgrade
+from bzrlib.transport import (
+    do_catching_redirections,
+    get_transport,
+    )
 import bzrlib.ui
+from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
@@ -675,17 +679,30 @@ class PullingImportWorker(ImportWorker):
         :param url: URL to open
         :return: ControlDir instance
         """
-        transport = get_transport(url)
-        for prober_kls in self.probers:
-            prober = prober_kls()
-            try:
-                format = prober.probe_transport(transport)
-            except NotBranchError:
-                pass
+        def redirected(transport, e, redirection_notice):
+            self._opener_policy.checkOneURL(e.target)
+            redirected_transport = transport._redirected_to(
+                e.source, e.target)
+            if redirected_transport is None:
+                raise NotBranchError(e.source)
+            self._logger.info('%s is%s redirected to %s',
+                 transport.base, e.permanently, redirected_transport.base)
+            return redirected_transport
+
+        def find_format(transport):
+            last_error = None
+            for prober_kls in self.probers:
+                prober = prober_kls()
+                try:
+                    return transport, prober.probe_transport(transport)
+                except NotBranchError, e:
+                    last_error = e
             else:
-                return format.open(transport)
-        else:
-            raise NotBranchError("Not a valid branch")
+                raise last_error
+        transport = get_transport(url)
+        transport, format = do_catching_redirections(find_format, transport,
+            redirected)
+        return format.open(transport)
 
     def _doImport(self):
         self._logger.info("Starting job.")
@@ -699,6 +716,9 @@ class PullingImportWorker(ImportWorker):
             try:
                 remote_branch = opener.open(
                     self.source_details.url, self._open_dir)
+            except TooManyRedirections:
+                self._logger.info("Too many redirections.")
+                return CodeImportWorkerExitCode.FAILURE_INVALID
             except NotBranchError:
                 self._logger.info("No branch found at remote location.")
                 return CodeImportWorkerExitCode.FAILURE_INVALID

@@ -14,6 +14,8 @@ import subprocess
 import sys
 
 import fixtures
+from lazr.config import as_host_port
+from rabbitfixture.server import RabbitServerResources
 from zope.app.server.main import main
 
 from canonical.config import config
@@ -22,9 +24,10 @@ from canonical.lazr.pidfile import (
     make_pidfile,
     pidfile_path,
     )
+from lp.services.googlesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
-from lp.services.googlesearch import googletestservice
+from lp.services.rabbit.server import RabbitServer
 
 
 def make_abspath(path):
@@ -221,6 +224,20 @@ class ForkingSessionService(Service):
         process.stdin.close()
 
 
+class RabbitService(Service):
+    """A RabbitMQ service."""
+
+    @property
+    def should_launch(self):
+        return config.rabbitmq.launch
+
+    def launch(self):
+        hostname, port = as_host_port(config.rabbitmq.host, None, None)
+        self.server = RabbitServer(
+            RabbitServerResources(hostname=hostname, port=port))
+        self.useFixture(self.server)
+
+
 def stop_process(process):
     """kill process and BLOCK until process dies.
 
@@ -245,6 +262,7 @@ SERVICES = {
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),
     'memcached': MemcachedService(),
+    'rabbitmq': RabbitService(),
     }
 
 
@@ -287,8 +305,8 @@ def process_config_arguments(args):
     """
     if '-i' in args:
         index = args.index('-i')
-        config.setInstance(args[index+1])
-        del args[index:index+2]
+        config.setInstance(args[index + 1])
+        del args[index:index + 2]
 
     if '-C' not in args:
         zope_config_file = config.zope_config_file
@@ -319,10 +337,10 @@ def start_launchpad(argv=list(sys.argv)):
         if config.launchpad.launch:
             main(argv)
         else:
-            # We just need the foreground process to sit around forever waiting
-            # for the signal to shut everything down.  Normally, Zope itself would
-            # be this master process, but we're not starting that up, so we need
-            # to do something else.
+            # We just need the foreground process to sit around forever
+            # waiting for the signal to shut everything down.  Normally, Zope
+            # itself would be this master process, but we're not starting that
+            # up, so we need to do something else.
             try:
                 signal.pause()
             except KeyboardInterrupt:

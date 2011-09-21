@@ -1868,6 +1868,8 @@ class PersonSpecWorkloadTableView(LaunchpadView):
     in a single table.
     """
 
+    page_title = 'Blueprint workload'
+
     class PersonSpec:
         """One record from the workload list."""
 
@@ -5085,6 +5087,8 @@ class PersonAnswerContactForView(LaunchpadView):
         return 'Projects for which %s is an answer contact' % (
             self.context.displayname)
 
+    page_title = label
+
     @cachedproperty
     def direct_question_targets(self):
         """List of targets that the IPerson is a direct answer contact.
@@ -5920,7 +5924,7 @@ class EmailToPersonView(LaunchpadFormView):
         return throttle_date + interval
 
     @property
-    def specific_contact_title_text(self):
+    def page_title(self):
         """Return the appropriate pagetitle."""
         if self.context.is_team:
             if self.user.inTeam(self.context):

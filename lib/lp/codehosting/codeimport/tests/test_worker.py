@@ -27,7 +27,10 @@ from bzrlib.bzrdir import (
     format_registry,
     )
 from bzrlib.errors import NoSuchFile
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import (
+    http_utils,
+    TestCaseWithTransport,
+    )
 from bzrlib.transport import (
     get_transport,
     get_transport_from_url,
@@ -77,6 +80,7 @@ from lp.codehosting.safe_open import (
     AcceptAnythingPolicy,
     BadUrl,
     BlacklistPolicy,
+    BranchOpenPolicy,
     SafeBranchOpener,
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
@@ -1150,10 +1154,10 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.makeForeignCommit(source_details, ref="refs/heads/master",
             message="Message for master")
         source_details.url = urlutils.join_segment_parameters(
-                source_details.url, { "branch": "other" })
+                source_details.url, {"branch": "other"})
         source_transport = get_transport_from_url(source_details.url)
         self.assertEquals(
-            { "branch": "other" },
+            {"branch": "other"},
             source_transport.get_segment_parameters())
         worker = self.makeImportWorker(source_details,
             opener_policy=AcceptAnythingPolicy())
@@ -1201,11 +1205,11 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         repo = localrepository(ui(), local_path_from_url(source_details.url))
         extra = {}
         if branch is not None:
-            extra = { "branch": branch }
+            extra = {"branch": branch}
         if message is None:
             message = self.factory.getUniqueString()
-        repo.commit(text=message, user="Jane Random Hacker", force=1,
-            extra=extra)
+        repo.commit(
+            text=message, user="Jane Random Hacker", force=1, extra=extra)
         self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
@@ -1231,10 +1235,10 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         self.makeForeignCommit(source_details, branch="default",
             message="Message for default")
         source_details.url = urlutils.join_segment_parameters(
-                source_details.url, { "branch": "other" })
+                source_details.url, {"branch": "other"})
         source_transport = get_transport_from_url(source_details.url)
         self.assertEquals(
-            { "branch": "other" },
+            {"branch": "other"},
             source_transport.get_segment_parameters())
         worker = self.makeImportWorker(source_details,
             opener_policy=AcceptAnythingPolicy())
@@ -1368,3 +1372,72 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.assertBadUrl("svn+ssh://svn.example.com/bla")
         self.assertGoodUrl("git://git.example.com/repo")
         self.assertGoodUrl("https://hg.example.com/hg/repo/branch")
+
+
+class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
+
+    layer = ForeignBranchPluginLayer
+
+    def setUp(self):
+        http_utils.TestCaseWithRedirectedWebserver.setUp(self)
+        self.disable_directory_isolation()
+        SafeBranchOpener.install_hook()
+        tree = self.make_branch_and_tree('.')
+        self.revid = tree.commit("A commit")
+        self.bazaar_store = BazaarBranchStore(
+            self.get_transport('bazaar_store'))
+
+    def makeImportWorker(self, url, opener_policy):
+        """Make a new `ImportWorker`."""
+        source_details = self.factory.makeCodeImportSourceDetails(
+            rcstype='bzr', url=url)
+        return BzrImportWorker(
+            source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger(), opener_policy)
+
+    def test_follow_redirect(self):
+        worker = self.makeImportWorker(
+            self.get_old_url(), AcceptAnythingPolicy())
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+        branch_url = self.bazaar_store._getMirrorURL(
+            worker.source_details.branch_id)
+        branch = Branch.open(branch_url)
+        self.assertEquals(self.revid, branch.last_revision())
+
+    def test_redirect_to_forbidden_url(self):
+        class NewUrlBlacklistPolicy(BranchOpenPolicy):
+
+            def __init__(self, new_url):
+                self.new_url = new_url
+
+            def shouldFollowReferences(self):
+                return True
+
+            def checkOneURL(self, url):
+                if url.startswith(self.new_url):
+                    raise BadUrl(url)
+
+            def transformFallbackLocation(self, branch, url):
+                return urlutils.join(branch.base, url), False
+
+        policy = NewUrlBlacklistPolicy(self.get_new_url())
+        worker = self.makeImportWorker(self.get_old_url(), policy)
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
+
+    def test_too_many_redirects(self):
+        # Make the server redirect to itself
+        self.old_server = http_utils.HTTPServerRedirecting(
+            protocol_version=self._protocol_version)
+        self.old_server.redirect_to(self.old_server.host,
+            self.old_server.port)
+        self.old_server._url_protocol = self._url_protocol
+        self.old_server.start_server()
+        try:
+            worker = self.makeImportWorker(
+                self.old_server.get_url(), AcceptAnythingPolicy())
+        finally:
+            self.old_server.stop_server()
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())

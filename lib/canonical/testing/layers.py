@@ -129,7 +129,6 @@ from canonical.lazr.timeout import (
     set_default_timeout_function,
     )
 from canonical.librarian.testing.server import LibrarianServerFixture
-from canonical.lp import initZopeless
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
@@ -143,13 +142,13 @@ from lp.services.mail.mailbox import (
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
+from lp.services.rabbit.server import RabbitServer
 from lp.testing import (
     ANONYMOUS,
     is_logged_in,
     login,
     logout,
     )
-from lp.testing.fixture import RabbitServer
 from lp.testing.pgsql import PgTestSetup
 
 
@@ -211,14 +210,18 @@ def disconnect_stores():
             store.close()
 
 
-def reconnect_stores(database_config_section='launchpad'):
+def reconnect_stores(database_config_section=None):
     """Reconnect Storm stores, resetting the dbconfig to its defaults.
 
     After reconnecting, the database revision will be checked to make
     sure the right data is available.
     """
     disconnect_stores()
-    dbconfig.setConfigSection(database_config_section)
+    if database_config_section:
+        section = getattr(config, database_config_section)
+        dbconfig.override(
+            dbuser=getattr(section, 'dbuser', None),
+            isolation_level=getattr(section, 'isolation_level', None))
 
     main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
@@ -1350,7 +1353,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
     @profiled
     def testSetUp(cls):
         # Connect Storm
-        reconnect_stores()
+        reconnect_stores('launchpad')
 
     @classmethod
     @profiled
@@ -1381,7 +1384,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         OpStats.resetStats()
 
         # Connect Storm
-        reconnect_stores()
+        reconnect_stores('launchpad')
 
     @classmethod
     @profiled
@@ -1448,7 +1451,7 @@ class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
     def testSetUp(cls):
         # LaunchpadZopelessLayer takes care of reconnecting the stores
         if not LaunchpadZopelessLayer.isSetUp:
-            reconnect_stores()
+            reconnect_stores('launchpad')
 
     @classmethod
     @profiled
@@ -1486,7 +1489,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def testSetUp(cls):
         # LaunchpadZopelessLayer takes care of reconnecting the stores
         if not LaunchpadZopelessLayer.isSetUp:
-            reconnect_stores()
+            reconnect_stores('launchpad')
 
     @classmethod
     @profiled
@@ -1511,7 +1514,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     """
 
     isSetUp = False
-    txn = ZopelessTransactionManager
+    txn = transaction
 
     @classmethod
     @profiled
@@ -1529,7 +1532,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
         if ZopelessTransactionManager._installed is not None:
             raise LayerIsolationError(
                 "Last test using Zopeless failed to tearDown correctly")
-        initZopeless()
+        ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
 
         # Connect Storm
         reconnect_stores()
@@ -1565,7 +1568,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
         initZopeless with the given keyword arguments.
         """
         ZopelessTransactionManager.uninstall()
-        initZopeless(**kw)
+        ZopelessTransactionManager.initZopeless(**kw)
 
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):

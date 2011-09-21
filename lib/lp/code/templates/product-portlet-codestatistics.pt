@@ -11,7 +11,7 @@
       <tal:project replace="context/displayname"/> has
       <tal:active-count replace="count"/>
       <tal:link replace="structure python: link.render().lower()"/>.
-    </p> 
+    </p>
 
     <!--branches-->
     <p>
@@ -25,7 +25,7 @@
       <tal:branch-count replace="count"/>
       <tal:branches replace="python: view.branch_text.lower()">
         branches
-      </tal:branches 
+      </tal:branches
       ><tal:has-branches condition="view/branch_count">
         owned by
         <tal:individuals condition="view/person_owner_count">
@@ -42,6 +42,7 @@
     </span>
 
     <!--commits-->
+    <tal:commit-info condition="view/branch_count">
     <span id="commits"
           tal:define="count view/commit_count">
       There were
@@ -56,5 +57,6 @@
         </tal:has-committers>
         in the last month.
     </span>
+    </tal:commit-info>
     </p>
 </div>

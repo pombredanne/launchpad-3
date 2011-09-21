@@ -100,7 +100,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model import distroseriesdifferencejob
 from lp.soyuz.model.archivepermission import ArchivePermission
-from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.testing import (
