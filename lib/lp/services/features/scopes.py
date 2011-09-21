@@ -9,14 +9,9 @@ run from cron scripts and potentially also other places.
 """
 
 __all__ = [
-    'DefaultScope',
-    'default_scopes',
-    'FixedScope',
     'HANDLERS',
-    'MultiScopeHandler',
     'ScopesForScript',
     'ScopesFromRequest',
-    'TeamScope',
     'undocumented_scopes',
     ]
 
@@ -24,7 +19,9 @@ __metaclass__ = type
 
 import re
 
-from lp.registry.interfaces.person import IPerson
+from zope.component import getUtility
+
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.propertycache import cachedproperty
 import canonical.config
 
@@ -63,7 +60,14 @@ class DefaultScope(BaseScope):
         return True
 
 
-class PageScope(BaseScope):
+class BaseWebRequestScope(BaseScope):
+    """Base class for scopes that key off web request attributes."""
+
+    def __init__(self, request):
+        self.request = request
+
+
+class PageScope(BaseWebRequestScope):
     """The current page ID.
 
     Pageid scopes are written as 'pageid:' + the pageid to match.  Pageids
@@ -76,9 +80,6 @@ class PageScope(BaseScope):
     """
 
     pattern = r'pageid:'
-
-    def __init__(self, pageid):
-        self._pageid = pageid
 
     def lookup(self, scope_name):
         """Is the given scope match the current pageid?"""
@@ -103,11 +104,12 @@ class PageScope(BaseScope):
 
     @cachedproperty
     def _request_pageid_namespace(self):
-        return tuple(self._pageid_to_namespace(self._pageid))
+        return tuple(self._pageid_to_namespace(
+            self.request._orig_env.get('launchpad.pageid', '')))
 
 
 class TeamScope(BaseScope):
-    """A user's team memberships.
+    """The current user's team memberships.
 
     Team ID scopes are written as 'team:' + the team name to match.
 
@@ -117,9 +119,6 @@ class TeamScope(BaseScope):
 
     pattern = r'team:'
 
-    def __init__(self, person):
-        self.person = person
-
     def lookup(self, scope_name):
         """Is the given scope a team membership?
 
@@ -128,7 +127,10 @@ class TeamScope(BaseScope):
         fixed to reduce this to one query).
         """
         team_name = scope_name[len('team:'):]
-        return self.person.inTeam(team_name)
+        person = getUtility(ILaunchBag).user
+        if person is None:
+            return False
+        return person.inTeam(team_name)
 
 
 class ServerScope(BaseScope):
@@ -165,20 +167,6 @@ class ScriptScope(BaseScope):
     def lookup(self, scope_name):
         """Match the running script as a scope."""
         return scope_name == self.script_scope
-
-
-class FixedScope(BaseScope):
-    """A scope that matches an exact value.
-
-    Functionally `ScriptScope` and `DefaultScope` are equivalent to instances
-    of this class, but their docstings are used on the +feature-info page.
-    """
-
-    def __init__(self, scope):
-        self.pattern = re.escape(scope) + '$'
-
-    def lookup(self, scope_name):
-        return True
 
 
 # These are the handlers for all of the allowable scopes, listed here so that
@@ -225,28 +213,21 @@ class MultiScopeHandler():
             undocumented_scopes.add(scope_name)
 
 
-default_scopes = (DefaultScope(),)
-
-
 class ScopesFromRequest(MultiScopeHandler):
     """Identify feature scopes based on request state."""
 
     def __init__(self, request):
-        scopes = list(default_scopes)
-        scopes.extend([
-            PageScope(request._orig_env.get('launchpad.pageid', '')),
-            ServerScope(),
-            ])
-        person = IPerson(request.principal, None)
-        if person is not None:
-            scopes.append(TeamScope(person))
-        super(ScopesFromRequest, self).__init__(scopes)
+        super(ScopesFromRequest, self).__init__([
+            DefaultScope(),
+            PageScope(request),
+            TeamScope(),
+            ServerScope()])
 
 
 class ScopesForScript(MultiScopeHandler):
     """Identify feature scopes for a given script."""
 
     def __init__(self, script_name):
-        scopes = list(default_scopes)
-        scopes.append(ScriptScope(script_name))
-        super(ScopesForScript, self).__init__(scopes)
+        super(ScopesForScript, self).__init__([
+            DefaultScope(),
+            ScriptScope(script_name)])
