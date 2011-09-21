@@ -610,7 +610,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                     self.context.source_branch.unique_name),
             # XXX: GavinPanella 2011-09-21: Not sure about this name; this is
             # done to match up with rvb's JavaScript code.
-            'new_mp_diff_event': subscribe(self.context),
+            'new_mp_diff_event': subscribe(self.context).event_key,
             })
 
     @action('Claim', name='claim')
