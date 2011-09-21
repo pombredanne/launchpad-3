@@ -1,11 +1,10 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0222,W0231
 
 __metaclass__ = type
 
-from datetime import datetime
 import logging
 import os
 import textwrap
@@ -16,7 +15,6 @@ from bzrlib.bzrdir import (
     format_registry,
     )
 from bzrlib.urlutils import join as urljoin
-import pytz
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
@@ -62,9 +60,11 @@ class FakeCodehostingEndpointProxy:
     def callRemote(self, method_name, *args):
         method = getattr(self, '_remote_%s' % method_name, self._default)
         deferred = method(*args)
+
         def append_to_log(pass_through):
             self.calls.append((method_name,) + tuple(args))
             return pass_through
+
         deferred.addCallback(append_to_log)
         return deferred
 
@@ -140,7 +140,7 @@ class TestPullerWireProtocol(TestCase):
             self.calls.append(('method',) + args)
 
         def do_raise(self):
-            return 1/0
+            return 1 / 0
 
         def unexpectedError(self, failure):
             self.failure = failure
@@ -406,9 +406,11 @@ class TestPullerMonitorProtocol(ProcessTestsMixin, TestCase):
         # attempt to call mirrorFailed().
 
         runtime_error_failure = makeFailure(RuntimeError)
+
         class FailingMirrorFailedStubPullerListener(self.StubPullerListener):
             def mirrorFailed(self, message, oops):
                 return runtime_error_failure
+
         self.protocol.listener = FailingMirrorFailedStubPullerListener()
         self.listener = self.protocol.listener
         self.protocol.errReceived('traceback')
@@ -436,7 +438,6 @@ class TestPullerMaster(TestCase):
         """The puller master logs an OOPS when it receives an unexpected
         error.
         """
-        now = datetime.now(pytz.timezone('UTC'))
         fail = makeFailure(RuntimeError, 'error message')
         self.eventHandler.unexpectedError(fail)
         oops = self.oopses[-1]
@@ -565,8 +566,10 @@ class TestPullerMasterSpawning(TestCase):
         deferred = self.eventHandler.run()
         # Fake a successful run.
         deferred.callback(None)
+
         def check_available_prefixes(ignored):
             self.assertEqual(self.available_oops_prefixes, set(['foo']))
+
         return deferred.addCallback(check_available_prefixes)
 
     def test_restoresOopsPrefixToSetOnFailure(self):
@@ -579,8 +582,10 @@ class TestPullerMasterSpawning(TestCase):
         except RuntimeError:
             fail = failure.Failure()
         deferred.errback(fail)
+
         def check_available_prefixes(ignored):
             self.assertEqual(self.available_oops_prefixes, set(['foo']))
+
         return deferred.addErrback(check_available_prefixes)
 
     def test_logOopsWhenNoAvailablePrefix(self):
@@ -591,8 +596,10 @@ class TestPullerMasterSpawning(TestCase):
         self.available_oops_prefixes.clear()
 
         unexpected_errors = []
+
         def unexpectedError(failure):
             unexpected_errors.append(failure)
+
         self.eventHandler.unexpectedError = unexpectedError
         self.assertRaises(KeyError, self.eventHandler.run)
         self.assertEqual(unexpected_errors[0].type, KeyError)
@@ -717,8 +724,10 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
 
         old_oops_raising = errorlog.globalErrorUtility.raising
         errorlog.globalErrorUtility.raising = new_oops_raising
+
         def restore_oops():
             errorlog.globalErrorUtility.raising = old_oops_raising
+
         self.addCleanup(restore_oops)
 
         expected_output = 'foo\nbar'
@@ -755,7 +764,6 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
             def do_lock_id(self, id):
                 """Record the lock id on the listener."""
                 self.listener.lock_ids.append(id)
-
 
         class PullerMasterWithLockID(scheduler.PullerMaster):
             """A subclass of PullerMaster that allows recording of lock ids.
@@ -887,7 +895,8 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
 
         # We need to create a branch at the destination_url, so that the
         # subprocess can actually create a lock.
-        BzrDir.create_branch_convenience(locking_puller_master.destination_url)
+        BzrDir.create_branch_convenience(
+            locking_puller_master.destination_url)
 
         # Because when the deferred returned by 'func' is done we kill the
         # locking subprocess, we know that when the subprocess is done, the
@@ -944,6 +953,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
             puller_master = self.makePullerMaster(
                 script_text=lower_timeout_script)
             deferred = puller_master.mirror()
+
             def check_mirror_failed(ignored):
                 self.assertEqual(len(self.client.calls), 1)
                 mirror_failed_call = self.client.calls[0]
@@ -953,6 +963,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
                 self.assertTrue(
                     "Could not acquire lock" in mirror_failed_call[2])
                 return ignored
+
             deferred.addCallback(check_mirror_failed)
             return deferred
 
