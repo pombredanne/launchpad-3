@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -572,7 +572,7 @@ class DistributionSourcePackageInDatabase(Storm):
     po_message_count = Int()
     is_upstream_link_allowed = Bool()
     enable_bugfiling_duplicate_search = Bool()
-    
+
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def currentrelease(self):

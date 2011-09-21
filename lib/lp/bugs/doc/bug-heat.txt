@@ -293,8 +293,8 @@ the bugs have been updated.
 Caculating the maximum heat for a target
 ----------------------------------------
 
-When we update the heat value for a bug, the maximum heat value for the targets
-for all of its tasks is calculated and cached.
+When we update the heat value for a bug, the maximum heat value for the
+targets for all of its tasks is calculated and cached.
 
     >>> product = factory.makeProduct()
     >>> bug = factory.makeBug(product=product)
