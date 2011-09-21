@@ -75,7 +75,7 @@ class TestFunctions(TestCase):
             event = subscribe(an_object, request=request)
         self.assertIsInstance(event, FakeEvent)
         self.assertEqual("event-key-12345", event.event_key)
-        # Emitting an event-key-12345-foo event will put something on the
+        # Emitting an event-key-12345 event will put something on the
         # subscriber's queue.
         event_data = {"1234": 5678}
         event.emit(**event_data)

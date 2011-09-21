@@ -50,9 +50,10 @@ class TestStormLifecycle(TestCase):
         with capture_longpoll_emissions() as log:
             notify(ObjectCreatedEvent(storm_object))
         expected = LongPollEventRecord(
-            "longpoll.event.faketable.1234",
-            {"event_key": "longpoll.event.faketable.1234",
-             "what": "created"})
+            "longpoll.event.faketable.1234", {
+                "event_key": "longpoll.event.faketable.1234",
+                "what": "created",
+                })
         self.assertEqual([expected], log)
 
     def test_storm_object_deleted(self):
@@ -61,9 +62,10 @@ class TestStormLifecycle(TestCase):
         with capture_longpoll_emissions() as log:
             notify(ObjectDeletedEvent(storm_object))
         expected = LongPollEventRecord(
-            "longpoll.event.faketable.1234",
-            {"event_key": "longpoll.event.faketable.1234",
-             "what": "deleted"})
+            "longpoll.event.faketable.1234", {
+                "event_key": "longpoll.event.faketable.1234",
+                "what": "deleted",
+                })
         self.assertEqual([expected], log)
 
     def test_storm_object_modified(self):
@@ -74,8 +76,9 @@ class TestStormLifecycle(TestCase):
                 storm_object, storm_object, ("itchy", "scratchy"))
             notify(object_event)
         expected = LongPollEventRecord(
-            "longpoll.event.faketable.1234",
-            {"event_key": "longpoll.event.faketable.1234",
-             "what": "modified",
-             "edited_fields": ["itchy", "scratchy"]})
+            "longpoll.event.faketable.1234", {
+                "event_key": "longpoll.event.faketable.1234",
+                "what": "modified",
+                "edited_fields": ["itchy", "scratchy"],
+                })
         self.assertEqual([expected], log)
