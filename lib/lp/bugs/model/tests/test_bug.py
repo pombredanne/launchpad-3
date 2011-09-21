@@ -503,13 +503,11 @@ class TestBugActivityMethods(TestCaseWithFactory):
     def _makeActivityForBug(self, bug, activity_ages):
         with person_logged_in(bug.owner):
             for days_ago in activity_ages:
-                earliest_activity = BugTitleChange(
+                activity = BugTitleChange(
                     when=self.now - timedelta(days=days_ago),
                     person=bug.owner, what_changed='title',
                     old_value='foo', new_value='baz')
-                bug.addChange(earliest_activity)
-        store = Store.of(bug)
-        store.flush()
+                bug.addChange(activity)
 
     def test_getActivityForDateRange_returns_items_between_dates(self):
         # Bug.getActivityForDateRange() will return the activity for
@@ -521,7 +519,8 @@ class TestBugActivityMethods(TestCaseWithFactory):
         end_date = self.now - timedelta(days=150)
         activity = bug.getActivityForDateRange(
             start_date=start_date, end_date=end_date)
-        self.assertEqual(1, activity.count())
+        expected_activity = bug.activity[1:2]
+        self.assertContentEqual(expected_activity, activity)
 
     def test_getActivityForDateRange_is_inclusive_of_date_limits(self):
         # Bug.getActivityForDateRange() will return the activity that
@@ -533,7 +532,8 @@ class TestBugActivityMethods(TestCaseWithFactory):
         end_date = self.now - timedelta(days=100)
         activity = bug.getActivityForDateRange(
             start_date=start_date, end_date=end_date)
-        self.assertEqual(3, activity.count())
+        expected_activity = bug.activity[1:]
+        self.assertContentEqual(expected_activity, activity)
 
 
 class TestBugPrivateAndSecurityRelatedUpdates(TestCaseWithFactory):
