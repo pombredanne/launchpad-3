@@ -11,6 +11,8 @@ from calendar import timegm
 import datetime
 import time
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import (
     IntCol,
@@ -25,6 +27,7 @@ from storm.locals import (
     Int,
     Reference,
     )
+from zope.event import notify
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -34,7 +37,6 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     )
-from lp.app.longpoll import emit
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -106,19 +108,11 @@ class Job(SQLBase):
     def _set_status(self, status):
         if status not in self._valid_transitions[self._status]:
             raise InvalidTransition(self._status, status)
-        old_status, self._status = self._status, status
-        # Announce the status change.
-        change = dict(
-            status=self._status.name,
-            old_status=old_status.name)
-        emit(self, status, change)
+        snapshot = Snapshot(self, providing=IJob)
+        self._status = status
+        notify(ObjectModifiedEvent(self, snapshot, ["status"]))
 
     status = property(lambda x: x._status)
-
-    @property
-    def job_id(self):
-        """See `IJob`."""
-        return self.id
 
     @property
     def is_pending(self):
