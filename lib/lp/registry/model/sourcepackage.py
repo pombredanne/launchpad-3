@@ -754,6 +754,14 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             SeriesSourcePackageBranchSet.new(
                 self.distroseries, pocket, self.sourcepackagename, branch,
                 registrant)
+            # Avoid circular imports.
+            from lp.registry.model.distributionsourcepackage import (
+                DistributionSourcePackage,
+                )
+            DistributionSourcePackage.ensure(sourcepackage=self)
+        else:
+            # Delete the official DSP if there is no publishing history.
+            self.distribution_sourcepackage.delete()
 
     @property
     def linked_branches(self):

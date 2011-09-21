@@ -43,8 +43,8 @@ from bzrlib.transport import (
     do_catching_redirections,
     get_transport,
     )
-from bzrlib.upgrade import upgrade
 import bzrlib.ui
+from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
@@ -681,12 +681,14 @@ class PullingImportWorker(ImportWorker):
         """
         def redirected(transport, e, redirection_notice):
             self._opener_policy.checkOneURL(e.target)
-            redirected_transport = transport._redirected_to(e.source, e.target)
+            redirected_transport = transport._redirected_to(
+                e.source, e.target)
             if redirected_transport is None:
                 raise NotBranchError(e.source)
             self._logger.info('%s is%s redirected to %s',
                  transport.base, e.permanently, redirected_transport.base)
             return redirected_transport
+
         def find_format(transport):
             last_error = None
             for prober_kls in self.probers:
