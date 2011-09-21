@@ -958,78 +958,57 @@ The 3rd method returns SourcePackageReleases uploaded by the person in
 question to any PPA.
 
     >>> mark = personset.getByName('mark')
-    >>> for spph in mark.getLatestMaintainedPackages():
-    ...     sprelease = spph.sourcepackagerelease
+    >>> for sprelease in mark.getLatestMaintainedPackages():
     ...     print (sprelease.name,
-    ...            spph.distroseries.fullseriesname,
-    ...            spph.archive.id,
+    ...            sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
-    (u'alsa-utils', u'Ubuntutest Breezy-autotest', 8, u'1.0.9a-4')
-    (u'mozilla-firefox', u'Ubuntu Warty', 8, u'0.9')
-    (u'mozilla-firefox', u'Ubuntu Warty', 1, u'0.9')
-    (u'alsa-utils', u'Ubuntu Warty', 1, u'1.0.9a-4')
-    (u'alsa-utils', u'Ubuntu Hoary', 1, u'1.0.9a-4')
-    (u'alsa-utils', u'Debian Sid', 3, u'1.0.9a-4')
-    (u'pmount', u'Ubuntu Hoary', 1, u'0.1-2')
-    (u'evolution', u'Ubuntu Hoary', 1, u'1.0')
-    (u'netapplet', u'Ubuntu Warty', 1, u'0.99.6-1')
-    (u'netapplet', u'Ubuntu Hoary', 1, u'1.0-1')
+    (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
+    (u'pmount', u'Ubuntu Hoary', u'0.1-2')
+    (u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
+    (u'netapplet', u'Ubuntu Hoary', u'1.0-1')
+    (u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
+    (u'mozilla-firefox', u'Ubuntu Warty', u'0.9')
+    (u'evolution', u'Ubuntu Hoary', u'1.0')
 
-    >>> for spph in mark.getLatestUploadedButNotMaintainedPackages():
-    ...     sprelease = spph.sourcepackagerelease
+    >>> for sprelease in mark.getLatestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name,
-    ...            spph.distroseries.fullseriesname,
+    ...            sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
+    (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
-    (u'cdrkit', u'Ubuntu Warty', u'1.0')
-    (u'foobar', u'Ubuntu Warty', u'1.0')
-    (u'iceweasel', u'Ubuntu Warty', u'1.0')
-    (u'alsa-utils', u'Ubuntu Warty', u'1.0.9a-4ubuntu1')
-    (u'linux-source-2.6.15', u'Ubuntu Warty', u'2.6.15.3')
-    (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
-    (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
-    (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
+    (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
+    (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
+    (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
-    >>> mark_spphs = mark.getLatestUploadedPPAPackages()
-    >>> for spph in mark_spphs:
-    ...     sprelease = spph.sourcepackagerelease
+    >>> mark_spreleases = mark.getLatestUploadedPPAPackages()
+    >>> for sprelease in mark_spreleases:
     ...     print (sprelease.name,
     ...            sprelease.version,
     ...            sprelease.creator.name,
     ...            sprelease.maintainer.name,
-    ...            spph.archive.owner.name,
-    ...            spph.distroseries.fullseriesname)
-    (u'cdrkit', u'1.0', u'mark', u'name16', u'cprov',
-        u'Ubuntu Breezy-autotest')
-    (u'iceweasel', u'1.0', u'mark', u'name16', u'mark',
-        u'Ubuntu Breezy-autotest')
-    (u'pmount', u'0.1-1', u'mark', u'mark', u'cprov', u'Ubuntu Warty')
-    (u'iceweasel', u'1.0', u'mark', u'name16', u'cprov', u'Ubuntu Warty')
+    ...            sprelease.upload_archive.owner.name,
+    ...            sprelease.upload_distroseries.fullseriesname)
+    (u'iceweasel', u'1.0', u'mark', u'name16', u'mark', u'Ubuntu Warty')
 
 We will change modify the first SourcePackageRelease to reproduce the
 issue mentioned in bug 157303, where source with same creator and
 maintainer got omitted from the results:
 
-    >>> any_spph = mark_spphs[0]
-    >>> naked_spph = removeSecurityProxy(any_spph)
-    >>> naked_spph.sourcepackagerelease.maintainer = mark
+    >>> any_spr = mark_spreleases[0]
+    >>> naked_spr = removeSecurityProxy(any_spr)
+    >>> naked_spr.maintainer = mark
     >>> flush_database_updates()
 
-    >>> mark_spphs = mark.getLatestUploadedPPAPackages()
-    >>> for spph in mark_spphs:
-    ...     sprelease = spph.sourcepackagerelease
+    >>> mark_spreleases = mark.getLatestUploadedPPAPackages()
+    >>> for sprelease in mark_spreleases:
     ...     print (sprelease.name,
     ...            sprelease.version,
     ...            sprelease.creator.name,
     ...            sprelease.maintainer.name,
-    ...            spph.archive.owner.name,
-    ...            spph.distroseries.fullseriesname)
-    (u'cdrkit', u'1.0', u'mark', u'mark', u'cprov', u'Ubuntu Breezy-autotest')
-    (u'iceweasel', u'1.0', u'mark', u'name16', u'mark',
-        u'Ubuntu Breezy-autotest')
-    (u'pmount', u'0.1-1', u'mark', u'mark', u'cprov', u'Ubuntu Warty')
-    (u'iceweasel', u'1.0', u'mark', u'name16', u'cprov', u'Ubuntu Warty')
+    ...            sprelease.upload_archive.owner.name,
+    ...            sprelease.upload_distroseries.fullseriesname)
+    (u'iceweasel', u'1.0', u'mark', u'mark', u'mark', u'Ubuntu Warty')
 
 
 Packages a Person is subscribed to
