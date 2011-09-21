@@ -9,6 +9,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -54,8 +55,9 @@ class TestBugAttachmentEditView(TestCaseWithFactory):
     def test_change_action_private_bug(self):
         # Subscribers of a private bug can edit attachments.
         user = self.factory.makePerson()
-        self.bug.subscribe(user, self.bug_owner)
         self.bug.setPrivate(True, self.bug_owner)
+        with person_logged_in(self.bug_owner):
+            self.bug.subscribe(user, self.bug_owner)
         transaction.commit()
         login_person(user)
         create_initialized_view(
@@ -90,8 +92,9 @@ class TestBugAttachmentEditView(TestCaseWithFactory):
     def test_delete_action_private_bug(self):
         # Subscribers of a private bug can delete attachments.
         user = self.factory.makePerson()
-        self.bug.subscribe(user, self.bug_owner)
         self.bug.setPrivate(True, self.bug_owner)
+        with person_logged_in(self.bug_owner):
+            self.bug.subscribe(user, self.bug_owner)
         login_person(user)
         create_initialized_view(
             self.bugattachment, name='+edit', form=self.DELETE_FORM_DATA)

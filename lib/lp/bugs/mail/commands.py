@@ -256,13 +256,13 @@ class SecurityEmailCommand(EmailCommand):
                 context, providing=providedBy(context))
 
         # Apply requested changes.
+        user = getUtility(ILaunchBag).user
         if security_related:
-            user = getUtility(ILaunchBag).user
             if context.setPrivate(True, user):
                 edited = True
                 edited_fields.add('private')
         if context.security_related != security_related:
-            context.setSecurityRelated(security_related)
+            context.setSecurityRelated(security_related, user)
             edited = True
             edited_fields.add('security_related')
 
