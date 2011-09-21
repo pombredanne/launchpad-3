@@ -224,10 +224,10 @@
         (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
             ).render();
 
-        if (Y.Lang.isValue(LP.cache.diff_job_event)) {
+        if (Y.Lang.isValue(LP.cache.new_mp_diff_event)) {
             var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
                 {srcNode: Y.one('#diff-area')});
-            Y.on(LP.cache.diff_job_event, updater.update, updater);
+            Y.on(LP.cache.new_mp_diff_event, updater.update, updater);
             updater.on(updater.NAME + '.updated', function() {
                 (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
                     ).render();
