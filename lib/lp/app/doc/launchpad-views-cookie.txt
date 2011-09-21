@@ -1,4 +1,5 @@
-= launchpad_views cookie =
+launchpad_views cookie
+======================
 
 The launchpad UI can remember the state of how a user chooses to view it.
 The state is stored in a cookie. The cookie is set by the browser scripts
@@ -9,7 +10,7 @@ not interested in.
 The get_launchpad_views function accepts the request.cookies object and
 returns a dict of True or False values for the predefined keys.
 
-    >>> from canonical.launchpad.browser import get_launchpad_views
+    >>> from lp.app.browser.launchpad import get_launchpad_views
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> def test_get_launchpad_views(cookie):
