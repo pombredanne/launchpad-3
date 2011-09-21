@@ -9,18 +9,20 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.services.features.scopes import (
     BaseScope,
-    BaseWebRequestScope,
     MultiScopeHandler,
     ScopesForScript,
     ScriptScope,
     )
 
 
-class FakeScope(BaseWebRequestScope):
+class FakeScope(BaseScope):
     pattern = r'fake:'
 
+    def __init__(self, name):
+        self.name = name
+
     def lookup(self, scope_name):
-        return scope_name == (self.pattern + self.request)
+        return scope_name == (self.pattern + self.name)
 
 
 class TestScopes(TestCaseWithFactory):

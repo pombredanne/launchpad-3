@@ -242,20 +242,3 @@ class FileUploadFactory(protocol.Factory):
     protocol = FileUploadProtocol
     def __init__(self, fileLibrary):
         self.fileLibrary = fileLibrary
-
-
-if __name__ == '__main__':
-    import os, sys
-    from twisted.internet import reactor
-    log.startLogging(sys.stdout)
-    from canonical.librarian import db, storage
-    from canonical.lp import initZopeless
-    initZopeless()
-
-    try:
-        os.mkdir('/tmp/fatsam')
-    except:
-        pass
-    f = FileUploadFactory(storage.LibrarianStorage('/tmp/fatsam', db.Library()))
-    reactor.listenTCP(9090, f)
-    reactor.run()
