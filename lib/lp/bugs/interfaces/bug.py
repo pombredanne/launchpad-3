@@ -101,7 +101,7 @@ class CreateBugParams:
                  status=None, datecreated=None, security_related=False,
                  private=False, subscribers=(),
                  tags=None, subscribe_owner=True, filed_by=None,
-                 importance=None, milestone=None, assignee=None):
+                 importance=None, milestone=None, assignee=None, cve=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -121,6 +121,7 @@ class CreateBugParams:
         self.importance = importance
         self.milestone = milestone
         self.assignee = assignee
+        self.cve = cve
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -1124,10 +1125,13 @@ class IBugSet(Interface):
         the given bug tracker and remote bug id.
         """
 
-    def createBug(bug_params):
+    def createBug(bug_params, notify_event=True):
         """Create a bug and return it.
 
-        :bug_params: A CreateBugParams object.
+        :param bug_params: A CreateBugParams object.
+        :param notify_event: notify subscribers of the bug creation event.
+        :return: the new bug, or a tuple of bug, event when notify_event
+            is false.
 
         Things to note when using this factory:
 

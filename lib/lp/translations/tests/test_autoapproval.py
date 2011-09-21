@@ -475,39 +475,117 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
             sourcepackagename=self.from_packagename)
         self.assertEqual(guessed_template, None)
 
-    def test_ByTranslationDomain(self):
-        # getPOTemplateByTranslationDomain looks up a template by
-        # translation domain.
-        self._setUpDistro()
-        subset = POTemplateSubset(distroseries=self.distroseries)
-        self.becomeTheGardener()
-        potemplate = subset.getPOTemplateByTranslationDomain('test1')
-        self.assertEqual(potemplate, self.distrotemplate1)
+    def test_ByDomain_finds_by_domain(self):
+        # matchPOTemplateByDomain looks for a template of a given domain
+        # in the entry's context.  It ignores other domains.
+        series = self.factory.makeProductSeries()
+        templates = [
+            self.factory.makePOTemplate(productseries=series)
+            for counter in xrange(2)]
+        entry = self.factory.makeTranslationImportQueueEntry(
+            productseries=series)
+        self.assertEqual(
+            templates[0],
+            removeSecurityProxy(entry).matchPOTemplateByDomain(
+                templates[0].translation_domain))
 
-    def test_ByTranslationDomain_none(self):
-        # Test getPOTemplateByTranslationDomain for the zero-match case.
-        self._setUpDistro()
-        subset = POTemplateSubset(distroseries=self.distroseries)
-        self.becomeTheGardener()
-        potemplate = subset.getPOTemplateByTranslationDomain('notesthere')
-        self.assertEqual(potemplate, None)
+    def test_byDomain_finds_in_productseries(self):
+        # matchPOTemplateByDomain for a productseries upload looks only
+        # in that productseries.
+        domain = self.factory.getUniqueString()
+        templates = [
+            self.factory.makePOTemplate(
+                translation_domain=domain,
+                productseries=self.factory.makeProductSeries())
+            for counter in xrange(2)]
+        entry = self.factory.makeTranslationImportQueueEntry(
+            productseries=templates[0].productseries)
+        self.assertEqual(
+            templates[0],
+            removeSecurityProxy(entry).matchPOTemplateByDomain(domain))
 
-    def test_ByTranslationDomain_duplicate(self):
-        # getPOTemplateByTranslationDomain returns no template if there
-        # is more than one match.
-        self._setUpDistro()
-        self.distrotemplate1.iscurrent = True
-        other_package = SourcePackageNameSet().new('other-package')
-        other_subset = POTemplateSubset(
-            distroseries=self.distroseries, sourcepackagename=other_package)
-        clashing_template = other_subset.new(
-            'test3', 'test1', 'test3.pot', self.distro.owner)
-        distro_subset = POTemplateSubset(distroseries=self.distroseries)
-        self.becomeTheGardener()
-        potemplate = distro_subset.getPOTemplateByTranslationDomain('test1')
-        self.assertEqual(potemplate, None)
+    def test_byDomain_finds_in_source_package(self):
+        # matchPOTemplateByDomain for a distro upload, if given a source
+        # package, looks only in that source package.  It doesn't matter
+        # if the entry itself is for the same source package or not.
+        domain = self.factory.getUniqueString()
+        distroseries = self.factory.makeDistroSeries()
+        templates = [
+            self.factory.makePOTemplate(
+                translation_domain=domain, distroseries=distroseries,
+                sourcepackagename=self.factory.makeSourcePackageName())
+            for counter in xrange(2)]
+        entry = self.factory.makeTranslationImportQueueEntry(
+            distroseries=distroseries,
+            sourcepackagename=templates[1].sourcepackagename)
+        self.assertEqual(
+            templates[0],
+            removeSecurityProxy(entry).matchPOTemplateByDomain(
+                domain, templates[0].sourcepackagename))
 
-        clashing_template.destroySelf()
+    def test_byDomain_ignores_sourcepackagename_by_default(self):
+        # If no sourcepackagename is given, matchPOTemplateByDomain
+        # on a distroseries searches all packages in the series.
+        distroseries = self.factory.makeDistroSeries()
+        template = self.factory.makePOTemplate(
+            distroseries=distroseries,
+            sourcepackagename=self.factory.makeSourcePackageName())
+        entry = self.factory.makeTranslationImportQueueEntry(
+            distroseries=distroseries,
+            sourcepackagename=self.factory.makeSourcePackageName())
+        self.assertEqual(
+            template,
+            removeSecurityProxy(entry).matchPOTemplateByDomain(
+                template.translation_domain))
+
+    def test_ByDomain_may_return_None(self):
+        # If no templates match, matchPOTemplateByDomain returns None.
+        entry = self.factory.makeTranslationImportQueueEntry()
+        self.assertEqual(
+            None,
+            removeSecurityProxy(entry).matchPOTemplateByDomain("domain"))
+
+    def test_ByDomain_reports_conflicts(self):
+        # If multiple templates match, matchPOTemplateByDomain registers
+        # an error in the entry's error_output, and returns None.
+        domain = self.factory.getUniqueString()
+        series = self.factory.makeProductSeries()
+        templates = [
+            self.factory.makePOTemplate(
+                translation_domain=domain, productseries=series)
+            for counter in xrange(2)]
+        entry = self.factory.makeTranslationImportQueueEntry(
+            productseries=series)
+
+        with self.beingTheGardener():
+            result = removeSecurityProxy(entry).matchPOTemplateByDomain(
+                domain)
+
+        self.assertIs(None, result)
+        self.assertIn(templates[0].displayname, entry.error_output)
+
+    def test_ByDomain_ignores_inactive_templates(self):
+        series = self.factory.makeProductSeries()
+        template = self.factory.makePOTemplate(
+            productseries=series, iscurrent=False)
+        entry = self.factory.makeTranslationImportQueueEntry(
+            productseries=series)
+        self.assertIs(
+            None,
+            removeSecurityProxy(entry).matchPOTemplateByDomain(
+                template.translation_domain))
+
+    def test_approval_clears_error_output(self):
+        # If a previous approval attempt set an error notice on the
+        # entry, successful approval clears it away.
+        template = self.factory.makePOTemplate(path='messages.pot')
+        pofile = self.factory.makePOFile(potemplate=template)
+        entry = self.factory.makeTranslationImportQueueEntry(
+            productseries=pofile.potemplate.productseries,
+            potemplate=pofile.potemplate, pofile=pofile)
+        entry.setErrorOutput("Entry can't be approved for whatever reason.")
+        TranslationImportQueue()._attemptToApprove(entry)
+        self.assertIs(None, entry.error_output)
 
     def test_ClashingEntries(self):
         # Very rarely two entries may have the same uploader, path, and

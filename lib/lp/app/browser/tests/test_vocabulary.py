@@ -10,7 +10,6 @@ from urllib import urlencode
 
 import pytz
 import simplejson
-
 from zope.app.form.interfaces import MissingInputError
 from zope.component import (
     getSiteManager,
@@ -20,7 +19,6 @@ from zope.interface import implements
 from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
-
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.webapp.vocabulary import (
@@ -35,12 +33,20 @@ from lp.app.browser.vocabulary import (
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
+
+
+def get_picker_entry(item_subject, context_object, **kwargs):
+    """Adapt `item_subject` to `IPickerEntrySource` and return its item."""
+    [entry] = IPickerEntrySource(item_subject).getPickerEntries(
+        [item_subject], context_object, **kwargs)
+    return entry
 
 
 class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
@@ -56,16 +62,17 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
     def test_PersonPickerEntrySourceAdapter_email_anonymous(self):
         # Anonymous users cannot see entry email addresses.
         person = self.factory.makePerson(email='snarf@eg.dom')
-        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
-        self.assertEqual('<email address hidden>', entry.description)
+        self.assertEqual(
+            "<email address hidden>",
+            get_picker_entry(person, None).description)
 
     def test_PersonPickerEntrySourceAdapter_visible_email_logged_in(self):
         # Logged in users can see visible email addresses.
         observer = self.factory.makePerson()
         login_person(observer)
         person = self.factory.makePerson(email='snarf@eg.dom')
-        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
-        self.assertEqual('snarf@eg.dom', entry.description)
+        self.assertEqual(
+            'snarf@eg.dom', get_picker_entry(person, None).description)
 
     def test_PersonPickerEntrySourceAdapter_hidden_email_logged_in(self):
         # Logged in users cannot see hidden email addresses.
@@ -74,16 +81,16 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         person.hide_email_addresses = True
         observer = self.factory.makePerson()
         login_person(observer)
-        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
-        self.assertEqual('<email address hidden>', entry.description)
+        self.assertEqual(
+            "<email address hidden>",
+            get_picker_entry(person, None).description)
 
     def test_PersonPickerEntrySourceAdapter_no_email_logged_in(self):
         # Teams without email address have no desriptions.
         team = self.factory.makeTeam()
         observer = self.factory.makePerson()
         login_person(observer)
-        [entry] = IPickerEntrySource(team).getPickerEntries([team], None)
-        self.assertEqual(None, entry.description)
+        self.assertEqual(None, get_picker_entry(team, None).description)
 
     def test_PersonPickerEntrySourceAdapter_logged_in(self):
         # Logged in users can see visible email addresses.
@@ -91,7 +98,7 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         login_person(observer)
         person = self.factory.makePerson(
             email='snarf@eg.dom', name='snarf')
-        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
+        entry = get_picker_entry(person, None)
         self.assertEqual('sprite person', entry.css)
         self.assertEqual('sprite new-window', entry.link_css)
 
@@ -103,8 +110,8 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         removeSecurityProxy(person).datecreated = creation_date
         getUtility(IIrcIDSet).new(person, 'eg.dom', 'snarf')
         getUtility(IIrcIDSet).new(person, 'ex.dom', 'pting')
-        [entry] = IPickerEntrySource(person).getPickerEntries(
-            [person], None, enhanced_picker_enabled=True,
+        entry = get_picker_entry(
+            person, None, enhanced_picker_enabled=True,
             picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~snarf', entry.alt_title_link)
         self.assertEqual(
@@ -114,8 +121,8 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
     def test_PersonPickerEntrySourceAdapter_enhanced_picker_team(self):
         # The enhanced person picker provides more information for teams.
         team = self.factory.makeTeam(email='fnord@eg.dom', name='fnord')
-        [entry] = IPickerEntrySource(team).getPickerEntries(
-            [team], None, enhanced_picker_enabled=True,
+        entry = get_picker_entry(
+            team, None, enhanced_picker_enabled=True,
             picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
@@ -126,8 +133,8 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         project = self.factory.makeProduct(
             name='fnord', owner=person, bug_supervisor=person)
         bugtask = self.factory.makeBugTask(target=project)
-        [entry] = IPickerEntrySource(person).getPickerEntries(
-            [person], bugtask, enhanced_picker_enabled=True,
+        entry = get_picker_entry(
+            person, bugtask, enhanced_picker_enabled=True,
             picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
         self.assertEqual(3, len(entry.badges))
@@ -146,11 +153,11 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         # IHasAffilliation.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         thing = object()
-        [entry] = IPickerEntrySource(person).getPickerEntries(
-            [person], thing, enhanced_picker_enabled=True,
+        entry = get_picker_entry(
+            person, thing, enhanced_picker_enabled=True,
             picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
-        self.assertEqual(None, None)
+        self.assertIsNot(None, entry)
 
 
 class TestDistributionSourcePackagePickerEntrySourceAdapter(
@@ -158,10 +165,43 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestDistributionSourcePackagePickerEntrySourceAdapter,
+              self).setUp()
+        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
+        self.useFixture(FeatureFixture(flag))
+
+    def getPickerEntry(self, dsp):
+        return get_picker_entry(dsp, object())
+
     def test_dsp_to_picker_entry(self):
         dsp = self.factory.makeDistributionSourcePackage()
         adapter = IPickerEntrySource(dsp)
         self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_dsp_target_type(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        release = self.factory.makeSourcePackageRelease(
+            distroseries=series,
+            sourcepackagename=dsp.sourcepackagename)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series,
+            sourcepackagerelease=release)
+        self.assertEqual('package', self.getPickerEntry(dsp).target_type)
+
+    def test_dsp_provides_details(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        release = self.factory.makeSourcePackageRelease(
+            distroseries=series,
+            sourcepackagename=dsp.sourcepackagename)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series,
+            sourcepackagerelease=release)
+        self.assertEqual(
+            "Maintainer: %s" % dsp.currentrelease.maintainer.displayname,
+            self.getPickerEntry(dsp).details[1])
 
     def test_dsp_provides_summary(self):
         dsp = self.factory.makeDistributionSourcePackage()
@@ -172,8 +212,8 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=series,
             sourcepackagerelease=release)
-        [entry] = IPickerEntrySource(dsp).getPickerEntries([dsp], object())
-        self.assertEqual(entry.description, 'Not yet built.')
+        self.assertEqual(
+            "Not yet built.", self.getPickerEntry(dsp).description)
 
         archseries = self.factory.makeDistroArchSeries(distroseries=series)
         bpn = self.factory.makeBinaryPackageName(name='fnord')
@@ -182,41 +222,165 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             source_package_release=release,
             sourcepackagename=dsp.sourcepackagename,
             distroarchseries=archseries)
-        [entry] = IPickerEntrySource(dsp).getPickerEntries([dsp], object())
-        self.assertEqual(entry.description, 'fnord')
-
+        self.assertEqual("fnord", self.getPickerEntry(dsp).description)
 
 class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductPickerEntrySourceAdapter, self).setUp()
+        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
+        self.useFixture(FeatureFixture(flag))
+
+    def getPickerEntry(self, product):
+        return get_picker_entry(product, object())
 
     def test_product_to_picker_entry(self):
         product = self.factory.makeProduct()
         adapter = IPickerEntrySource(product)
         self.assertTrue(IPickerEntrySource.providedBy(adapter))
 
+    def test_product_provides_alt_title(self):
+        product = self.factory.makeProduct()
+        self.assertEqual(product.name, self.getPickerEntry(product).alt_title)
+
+    def test_product_target_type(self):
+        product = self.factory.makeProduct()
+        # We check for project, not product, because users don't see
+        # products.
+        self.assertEqual('project', self.getPickerEntry(product).target_type)
+
+    def test_product_provides_details(self):
+        product = self.factory.makeProduct()
+        self.assertEqual(
+            "Maintainer: %s" % product.owner.displayname,
+            self.getPickerEntry(product).details[1])
+
     def test_product_provides_summary(self):
         product = self.factory.makeProduct()
-        [entry] = IPickerEntrySource(product).getPickerEntries(
-                [product], object())
-        self.assertEqual(entry.description, product.summary)
+        self.assertEqual(
+            product.summary, self.getPickerEntry(product).description)
 
+    def test_product_truncates_summary(self):
+        summary = ("This is a deliberately, overly long summary. It goes on"
+                   "and on and on so as to break things up a good bit.")
+        product = self.factory.makeProduct(summary=summary)
+        index = summary.rfind(' ', 0, 45)
+        expected_summary = summary[:index + 1]
+        expected_details = summary[index:]
+        entry = self.getPickerEntry(product)
+        self.assertEqual(
+            expected_summary, entry.description)
+        self.assertEqual(
+            expected_details, entry.details[0])
+
+
+class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupPickerEntrySourceAdapter, self).setUp()
+        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
+        self.useFixture(FeatureFixture(flag))
+
+    def getPickerEntry(self, projectgroup):
+        return get_picker_entry(projectgroup, object())
+
+    def test_projectgroup_to_picker_entry(self):
+        projectgroup = self.factory.makeProject()
+        adapter = IPickerEntrySource(projectgroup)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_projectgroup_provides_alt_title(self):
+        projectgroup = self.factory.makeProject()
+        self.assertEqual(
+            projectgroup.name, self.getPickerEntry(projectgroup).alt_title)
+
+    def test_projectgroup_target_type(self):
+        projectgroup = self.factory.makeProject()
+        self.assertEqual(
+            'project group', self.getPickerEntry(projectgroup).target_type)
+
+    def test_projectgroup_provides_details(self):
+        projectgroup = self.factory.makeProject()
+        self.assertEqual(
+            "Maintainer: %s" % projectgroup.owner.displayname,
+            self.getPickerEntry(projectgroup).details[1])
+
+    def test_projectgroup_provides_summary(self):
+        projectgroup = self.factory.makeProject()
+        self.assertEqual(
+            projectgroup.summary,
+            self.getPickerEntry(projectgroup).description)
+
+    def test_projectgroup_truncates_summary(self):
+        summary = ("This is a deliberately, overly long summary. It goes on"
+                   "and on and on so as to break things up a good bit.")
+        projectgroup = self.factory.makeProject(summary=summary)
+        index = summary.rfind(' ', 0, 45)
+        expected_summary = summary[:index + 1]
+        expected_details = summary[index:]
+        entry = self.getPickerEntry(projectgroup)
+        self.assertEqual(
+            expected_summary, entry.description)
+        self.assertEqual(
+            expected_details, entry.details[0])
 
 class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionPickerEntrySourceAdapter, self).setUp()
+        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
+        self.useFixture(FeatureFixture(flag))
+
+    def getPickerEntry(self, distribution):
+        return get_picker_entry(distribution, object())
 
     def test_distribution_to_picker_entry(self):
         distribution = self.factory.makeDistribution()
         adapter = IPickerEntrySource(distribution)
         self.assertTrue(IPickerEntrySource.providedBy(adapter))
 
+    def test_distribution_provides_alt_title(self):
+        distribution = self.factory.makeDistribution()
+        self.assertEqual(
+            distribution.name, self.getPickerEntry(distribution).alt_title)
+
+    def test_distribution_provides_details(self):
+        distribution = self.factory.makeDistribution()
+        self.factory.makeDistroSeries(
+            distribution=distribution, status=SeriesStatus.CURRENT)
+        self.assertEqual(
+            "Maintainer: %s" % distribution.currentseries.owner.displayname,
+            self.getPickerEntry(distribution).details[1])
+
     def test_distribution_provides_summary(self):
         distribution = self.factory.makeDistribution()
-        [entry] = IPickerEntrySource(distribution).getPickerEntries(
-                [distribution], object())
-        self.assertEqual(entry.description, distribution.summary)
+        self.assertEqual(
+            distribution.summary,
+            self.getPickerEntry(distribution).description)
 
+    def test_distribution_target_type(self):
+        distribution = self.factory.makeDistribution()
+        self.assertEqual(
+            'distribution', self.getPickerEntry(distribution).target_type)
+
+    def test_distribution_truncates_summary(self):
+        summary = ("This is a deliberately, overly long summary. It goes on"
+                   "and on and on so as to break things up a good bit.")
+        distribution= self.factory.makeDistribution(summary=summary)
+        index = summary.rfind(' ', 0, 45)
+        expected_summary = summary[:index + 1]
+        expected_details = summary[index:]
+        entry = self.getPickerEntry(distribution)
+        self.assertEqual(
+            expected_summary, entry.description)
+        self.assertEqual(
+            expected_details, entry.details[0])
 
 class TestPersonVocabulary:
     implements(IHugeVocabulary)

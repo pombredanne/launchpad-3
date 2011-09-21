@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Parse Hardware Database submissions.
@@ -128,6 +128,7 @@ UDEV_USB_PRODUCT_RE = re.compile(
     '^[0-9a-f]{1,4}/[0-9a-f]{1,4}/[0-9a-f]{1,4}$', re.I)
 UDEV_USB_TYPE_RE = re.compile('^[0-9]{1,3}/[0-9]{1,3}/[0-9]{1,3}$')
 SYSFS_SCSI_DEVICE_ATTRIBUTES = set(('vendor', 'model', 'type'))
+
 
 class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
@@ -405,7 +406,6 @@ class SubmissionParser(object):
 
         :return: (name, (value, type)) of a property.
         """
-        property_name = property_node.get('name')
         return (property_node.get('name'),
                 self._getValueAndType(property_node))
 
@@ -1004,7 +1004,7 @@ class SubmissionParser(object):
                  the content.
         """
         self.submission_key = submission_key
-        submission_doc  = self._getValidatedEtree(submission, submission_key)
+        submission_doc = self._getValidatedEtree(submission, submission_key)
         if submission_doc is None:
             return None
 
@@ -1565,7 +1565,7 @@ class SubmissionParser(object):
                     'Invalid device path name: %r' % path_name,
                     self.submission_key)
                 return False
-            for parent_path in path_names[path_index+1:]:
+            for parent_path in path_names[path_index + 1:]:
                 if path_name.startswith(parent_path):
                     self.devices[parent_path].addChild(
                         self.devices[path_name])
@@ -1693,7 +1693,7 @@ class BaseDevice:
         0: HWBus.SCSI,
         1: HWBus.IDE,
         2: HWBus.FLOPPY,
-        3: HWBus.IPI, # Intelligent Peripheral Interface
+        3: HWBus.IPI,  # Intelligent Peripheral Interface.
         5: HWBus.ATA,
         6: HWBus.SATA,
         7: HWBus.SAS,
@@ -2822,7 +2822,6 @@ class UdevDevice(BaseDevice):
             # SubmissionParser.checkUdevScsiProperties() ensures that
             # each SCSI device has a record in self.sysfs and that
             # the attribute 'vendor' exists.
-            path = self.udev['P']
             return self.sysfs['vendor']
         else:
             return None
@@ -2834,7 +2833,6 @@ class UdevDevice(BaseDevice):
             # SubmissionParser.checkUdevScsiProperties() ensures that
             # each SCSI device has a record in self.sysfs and that
             # the attribute 'model' exists.
-            path = self.udev['P']
             return self.sysfs['model']
         else:
             return None
@@ -3050,7 +3048,7 @@ class ProcessingLoopBase(object):
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch these exceptions.
                 raise
-            except LibrarianServerError, error:
+            except LibrarianServerError:
                 # LibrarianServerError is raised when the server could
                 # not be reaches for 30 minutes.
                 #
@@ -3069,7 +3067,7 @@ class ProcessingLoopBase(object):
                     'Could not reach the Librarian while processing HWDB '
                     'submission %s' % submission.submission_key)
                 raise
-            except Exception, error:
+            except Exception:
                 self.transaction.abort()
                 self.reportOops(
                     'Exception while processing HWDB submission %s'
@@ -3080,6 +3078,7 @@ class ProcessingLoopBase(object):
                 # further submissions in this batch raise an exception.
                 self.transaction.commit()
 
+            self.start = submission.id + 1
             if self.max_submissions is not None:
                 if self.max_submissions <= (
                     self.valid_submissions + self.invalid_submissions):
@@ -3113,8 +3112,6 @@ class ProcessingLoopForReprocessingBadSubmissions(ProcessingLoopBase):
         submissions = removeSecurityProxy(submissions).find(
             HWSubmission.id >= self.start)
         submissions = list(submissions[:chunk_size])
-        if len(submissions) > 0:
-            self.start = submissions[-1].id + 1
         return submissions
 
 
@@ -3139,6 +3136,7 @@ def process_pending_submissions(transaction, logger, max_submissions=None,
         'Processed %i valid and %i invalid HWDB submissions'
         % (loop.valid_submissions, loop.invalid_submissions))
 
+
 def reprocess_invalid_submissions(start, transaction, logger,
                                   max_submissions=None, record_warnings=True):
     """Reprocess invalid submissions.
@@ -3160,3 +3158,4 @@ def reprocess_invalid_submissions(start, transaction, logger,
         'Processed %i valid and %i invalid HWDB submissions'
         % (loop.valid_submissions, loop.invalid_submissions))
     logger.info('last processed: %i' % loop.start)
+    return loop.start

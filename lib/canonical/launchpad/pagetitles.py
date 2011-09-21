@@ -101,12 +101,22 @@ class ViewLabel:
         return view.label
 
 
+def bugtarget_filebug_advanced(context, view):
+    """Return the page title for reporting a bug."""
+    if IMaloneApplication.providedBy(context):
+        # We're generating a title for a top-level, contextless bug
+        # filing page.
+        return 'Report a bug'
+    else:
+        # We're generating a title for a contextual bug filing page.
+        return 'Report a bug about %s' % context.title
+
+
 bazaar_index = 'Launchpad Branches'
 
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
-branch_index = ContextDisplayName(smartquote(
-    '"%s" branch in Launchpad'))
+branch_index = ContextDisplayName(smartquote('"%s" branch in Launchpad'))
 
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
@@ -145,16 +155,6 @@ def bugnomination_edit(context, view):
 
 bugtarget_bugs = ContextTitle('Bugs in %s')
 
-def bugtarget_filebug_advanced(context, view):
-    """Return the page title for reporting a bug."""
-    if IMaloneApplication.providedBy(context):
-        # We're generating a title for a top-level, contextless bug
-        # filing page.
-        return 'Report a bug'
-    else:
-        # We're generating a title for a contextual bug filing page.
-        return 'Report a bug about %s' % context.title
-
 bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
@@ -164,8 +164,6 @@ bugtask_affects_new_product = LaunchbagBugID(
 
 bugtask_choose_affected_product = bugtask_affects_new_product
 
-# This page is used for both projects/distros so we have to say 'software'
-# rather than distro or project here.
 bugtask_confirm_bugtracker_creation = LaunchbagBugID(
     'Bug #%d - Record as affecting another software')
 
@@ -185,13 +183,6 @@ def codeimport_machine_index(context, view):
 
 codeimport_new = ViewLabel()
 
-codeofconduct_admin = 'Administer Codes of Conduct'
-
-codeofconduct_list = 'Ubuntu Codes of Conduct'
-
-def contact_user(context, view):
-    return view.specific_contact_title_text
-
 cveset_all = 'All CVE entries registered in Launchpad'
 
 cveset_index = 'Launchpad CVE tracker'
@@ -208,15 +199,9 @@ distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
-distribution_mirrors = ContextTitle("Mirrors of %s")
-
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
-
-distribution_index = ContextTitle('%s in Launchpad')
-
-distributionsourcepackage_index = ContextTitle('%s')
 
 distroarchseries_index = ContextTitle('%s in Launchpad')
 
@@ -226,75 +211,22 @@ distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
 distroseries_cvereport = ContextDisplayName('CVE report for %s')
 
-def distroseries_language_packs(context, view):
-    return view.page_title
-
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
 distroseries_queue = ContextTitle('Queue for %s')
 
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
-hasannouncements_index = ContextDisplayName('%s news and announcements')
-
-hassprints_sprints = ContextTitle("Events related to %s")
-
-launchpad_feedback = 'Help improve Launchpad'
-
-launchpad_forbidden = 'Forbidden'
-
-def launchpad_search(context, view):
-    """Return the page title corresponding to the user's search."""
-    return view.page_title
-
-launchpad_unexpectedformdata = 'Error: Unexpected form data'
-
-launchpad_librarianfailure = "Sorry, you can't do this right now"
-
-oauth_authorize = 'Authorize application to access Launchpad on your behalf'
-
 object_templates = ContextDisplayName('Translation templates for %s')
 
-oops = 'Oops!'
+person_packagebugs_overview = ContextDisplayName("%s's package bug reports")
 
-people_mergerequest_sent = 'Merge request sent'
-
-person_answer_contact_for = ContextDisplayName(
-    'Projects for which %s is an answer contact')
-
-person_packagebugs = ContextDisplayName("%s's package bug reports")
-
-person_packagebugs_overview = person_packagebugs
-
-person_packagebugs_search = person_packagebugs
-
-person_specfeedback = ContextDisplayName('Feature feedback requests for %s')
-
-person_specworkload = ContextDisplayName('Blueprint workload for %s')
+person_packagebugs_search = ContextDisplayName("%s's package bug reports")
 
 person_translations_to_review = ContextDisplayName(
     'Translations for review by %s')
 
-poll_edit = ContextTitle(smartquote('Edit poll "%s"'))
-
-poll_index = ContextTitle(smartquote('Poll: "%s"'))
-
-poll_newoption = ContextTitle(smartquote('New option for poll "%s"'))
-
-def polloption_edit(context, view):
-    """Return the page title to edit a poll's option."""
-    return 'Edit option: %s' % context.title
-
-poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
-
-poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
-
 product_cvereport = ContextTitle('CVE reports for %s')
-
-product_index = ContextTitle('%s in Launchpad')
-
-product_purchase_subscription = ContextDisplayName(
-    'Purchase Subscription for %s')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
@@ -302,36 +234,12 @@ productseries_translations = ContextTitle('Translations overview for %s')
 
 productseries_translations_settings = 'Settings for translations'
 
-project_index = ContextTitle('%s in Launchpad')
-
 project_translations = ContextTitle('Translatable projects for %s')
 
 remotebug_index = ContextTitle('%s')
-
-root_index = 'Launchpad'
 
 rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
-
-signedcodeofconduct_index = ContextDisplayName('%s')
-
-signedcodeofconduct_add = ContextTitle('Sign %s')
-
-signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
-
-signedcodeofconduct_activate = ContextDisplayName('Activating %s')
-
-signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-team_newpoll = ContextTitle('New poll for team %s')
-
-team_polls = ContextTitle('Polls for team %s')
-
-token_authorized = 'Almost finished ...'
-
-translationimportqueueentry_index = 'Translation import queue entry'
-
-unauthorized = 'Error: Not authorized'

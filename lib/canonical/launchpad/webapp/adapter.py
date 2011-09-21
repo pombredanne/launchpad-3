@@ -53,7 +53,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import (
     config,
-    DatabaseConfig,
+    dbconfig,
     )
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.postgresql import ConnectionString
@@ -524,38 +524,35 @@ class LaunchpadDatabase(Postgres):
             raise StormAccessFromMainThread()
 
         try:
-            config_section, realm, flavor = self._uri.database.split('-')
+            realm, flavor = self._uri.database.split('-')
         except ValueError:
             raise AssertionError(
-                'Connection uri %s does not match section-realm-flavor format'
+                'Connection uri %s does not match realm-flavor format'
                 % repr(self._uri.database))
 
         assert realm == 'main', 'Unknown realm %s' % realm
         assert flavor in ('master', 'slave'), 'Unknown flavor %s' % flavor
 
-        my_dbconfig = DatabaseConfig()
-        my_dbconfig.setConfigSection(config_section)
-
         # We set self._dsn here rather than in __init__ so when the Store
         # is reconnected it pays attention to any config changes.
         config_entry = '%s_%s' % (realm, flavor)
-        connection_string = getattr(my_dbconfig, config_entry)
+        connection_string = getattr(dbconfig, config_entry)
         assert 'user=' not in connection_string, (
                 "Database username should not be specified in "
                 "connection string (%s)." % connection_string)
 
         # Try to lookup dbuser using the $realm_dbuser key. If this fails,
         # fallback to the dbuser key.
-        dbuser = getattr(my_dbconfig, '%s_dbuser' % realm, my_dbconfig.dbuser)
+        dbuser = getattr(dbconfig, '%s_dbuser' % realm, dbconfig.dbuser)
 
         self._dsn = "%s user=%s" % (connection_string, dbuser)
 
         flags = _get_dirty_commit_flags()
 
-        if my_dbconfig.isolation_level is None:
+        if dbconfig.isolation_level is None:
             self._isolation = ISOLATION_LEVEL_SERIALIZABLE
         else:
-            self._isolation = isolation_level_map[my_dbconfig.isolation_level]
+            self._isolation = isolation_level_map[dbconfig.isolation_level]
 
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
 

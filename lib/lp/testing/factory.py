@@ -505,7 +505,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    def loginAsAnyone(self):
+    def loginAsAnyone(self, participation=None):
         """Log in as an arbitrary person.
 
         If you want to log in as a celebrity, including admins, see
@@ -513,7 +513,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         login(ANONYMOUS)
         person = self.makePerson()
-        login_as(person)
+        login_as(person, participation)
         return person
 
     @with_celebrity_logged_in('admin')
@@ -2345,7 +2345,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          aliases=None, bug_supervisor=None, driver=None,
                          security_contact=None, publish_root_dir=None,
                          publish_base_url=None, publish_copy_base_url=None,
-                         no_pubconf=False, icon=None):
+                         no_pubconf=False, icon=None, summary=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2354,7 +2354,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString()
         description = self.getUniqueString()
-        summary = self.getUniqueString()
+        if summary is None:
+            summary = self.getUniqueString()
         domainname = self.getUniqueString()
         if registrant is None:
             registrant = self.makePerson()
@@ -2952,7 +2953,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None,
-                       copy_pofiles=True, side=None, sourcepackage=None):
+                       copy_pofiles=True, side=None, sourcepackage=None,
+                       iscurrent=True):
         """Make a new translation template."""
         if sourcepackage is not None:
             assert distroseries is None, (
@@ -2993,7 +2995,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if path is None:
             path = 'messages.pot'
 
-        return subset.new(name, translation_domain, path, owner, copy_pofiles)
+        pot = subset.new(name, translation_domain, path, owner, copy_pofiles)
+        removeSecurityProxy(pot).iscurrent = iscurrent
+        return pot
 
     def makePOTemplateAndPOFiles(self, language_codes, **kwargs):
         """Create a POTemplate and associated POFiles.

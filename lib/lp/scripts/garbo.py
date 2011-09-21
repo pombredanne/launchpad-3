@@ -86,6 +86,10 @@ from lp.services.scripts.base import (
     SilentLaunchpadScriptFailure,
     )
 from lp.services.session.model import SessionData
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.potmsgset import POTMsgSet
@@ -950,6 +954,60 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
+# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
+class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
+    """Populate the new sourcepackagename column of SPPH."""
+
+    done = False
+    maximum_chunk_size = 5000
+
+    def findSPPHs(self):
+        return IMasterStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.sourcepackagename == None
+            ).order_by(SourcePackagePublishingHistory.id)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.done
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        spphs = self.findSPPHs()[:chunk_size]
+        for spph in spphs:
+            spph.sourcepackagename = (
+                spph.sourcepackagerelease.sourcepackagename)
+        transaction.commit()
+        self.done = self.findSPPHs().is_empty()
+
+
+# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
+class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
+    """Populate the new binarypackagename column of BPPH."""
+
+    done = False
+    maximum_chunk_size = 5000
+
+    def findBPPHs(self):
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.binarypackagename == None
+            ).order_by(BinaryPackagePublishingHistory.id)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.done
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        bpphs = self.findBPPHs()[:chunk_size]
+        for bpph in bpphs:
+            bpph.binarypackagename = (
+                bpph.binarypackagerelease.binarypackagename)
+        transaction.commit()
+        self.done = self.findBPPHs().is_empty()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1199,6 +1257,8 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        SourcePackagePublishingHistorySPNPopulator,
+        BinaryPackagePublishingHistoryBPNPopulator,
         ]
     experimental_tunable_loops = []
 

@@ -228,7 +228,7 @@ def snapshot_bug_params(bug_params):
             "distribution", "sourcepackagename",
             "product", "status", "subscribers", "tags",
             "subscribe_owner", "filed_by", "importance",
-            "milestone", "assignee"])
+            "milestone", "assignee", "cve"])
 
 
 class BugTag(SQLBase):
@@ -2504,7 +2504,7 @@ class BugSet:
                 orderBy=['datecreated'])
         return bug
 
-    def createBug(self, bug_params):
+    def createBug(self, bug_params, notify_event=True):
         """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
@@ -2566,11 +2566,14 @@ class BugSet:
             bug_task.transitionToMilestone(params.milestone, params.owner)
 
         # Tell everyone.
-        notify(event)
+        if notify_event:
+            notify(event)
 
         # Calculate the bug's initial heat.
         bug.updateHeat()
 
+        if not notify_event:
+            return bug, event
         return bug
 
     def createBugWithoutTarget(self, bug_params):
@@ -2633,6 +2636,9 @@ class BugSet:
 
         # Mark the bug reporter as affected by that bug.
         bug.markUserAffected(bug.owner)
+
+        if params.cve is not None:
+            bug.linkCVE(params.cve, params.owner)
 
         # Populate the creation event.
         if params.filed_by is None:

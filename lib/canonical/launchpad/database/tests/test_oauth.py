@@ -35,7 +35,7 @@ class BaseOAuthTestCase(unittest.TestCase):
         """
         zstorm = getUtility(IZStorm)
         self.assertEquals(
-            'launchpad-%s-%s' % (MAIN_STORE, MASTER_FLAVOR),
+            '%s-%s' % (MAIN_STORE, MASTER_FLAVOR),
             zstorm.get_name(self.class_._get_store()))
 
 
