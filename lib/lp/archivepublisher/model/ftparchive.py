@@ -841,4 +841,4 @@ class FTPArchiveHandler:
                     if not distroseries.include_long_descriptions:
                         safe_mkdir(os.path.join(base_path, "i18n"))
                 for arch in archs:
-                    safe_mkdir(os.path.join(base_path, "binary-"+arch))
+                    safe_mkdir(os.path.join(base_path, "binary-" + arch))

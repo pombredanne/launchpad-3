@@ -4,7 +4,7 @@ QuestionWorkflowView: Handling of the subscribe_me option
 This test makes sure that it is possible to subscribe to the question
 whatever the action used.
 
-    >>> from canonical.launchpad.browser import QuestionWorkflowView
+    >>> from lp.answers.browser.question import QuestionWorkflowView
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.product import IProductSet

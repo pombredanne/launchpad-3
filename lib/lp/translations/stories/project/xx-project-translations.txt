@@ -40,7 +40,7 @@ Let's confirm what we just stated.
     >>> anon_browser.open('http://launchpad.dev/gnome')
     >>> anon_browser.getLink('NetApplet').click()
     >>> print anon_browser.title
-    Network Applet in Launchpad
+    NetApplet in Launchpad
 
 Anonymous users don't see the translations
 
