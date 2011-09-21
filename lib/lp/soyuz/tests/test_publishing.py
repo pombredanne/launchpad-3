@@ -282,8 +282,7 @@ class SoyuzTestPublisher:
             datepublished=datepublished,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            archive=archive,
-            creator=creator)
+            archive=archive)
 
         return spph
 
@@ -1011,15 +1010,6 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         self.assertEqual('universe', copy.component.name)
         # Section has no default so it comes from the old publication.
         self.assertEqual(spph.section, copy.section)
-
-    def test_copyTo_sets_ancestor(self):
-        # SPPH's ancestor get's populated when a spph is copied over.
-        target_archive = self.factory.makeArchive()
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        copy = spph.copyTo(
-            spph.distroseries, spph.pocket, target_archive)
-
-        self.assertEqual(spph, copy.ancestor)
 
 
 class BuildRecordCreationTests(TestNativePublishingBase):

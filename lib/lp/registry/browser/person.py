@@ -326,7 +326,7 @@ from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 COMMASPACE = ', '
@@ -5160,18 +5160,17 @@ class PersonAnswersMenu(NavigationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class SourcePackagePublishingHistoryWithStats:
-    """An ISourcePackagePublishinghistory, with extra stats added."""
+class SourcePackageReleaseWithStats:
+    """An ISourcePackageRelease, with extra stats added."""
 
-    implements(ISourcePackagePublishingHistory)
-    delegates(ISourcePackagePublishingHistory)
+    implements(ISourcePackageRelease)
+    delegates(ISourcePackageRelease)
     failed_builds = None
     needs_building = None
 
-    def __init__(self, spph, open_bugs, open_questions,
+    def __init__(self, sourcepackage_release, open_bugs, open_questions,
                  failed_builds, needs_building):
-        self.context = spph
-        self.spr = spph.sourcepackagerelease
+        self.context = sourcepackage_release
         self.open_bugs = open_bugs
         self.open_questions = open_questions
         self.failed_builds = failed_builds
@@ -5260,8 +5259,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
         return header_message
 
-    def filterPPAPackageList(self, spphs):
-        """Remove publishings that the user is not allowed to see.
+    def filterPPAPackageList(self, packages):
+        """Remove packages that the user is not allowed to see.
 
         Given a list of PPA packages, some might be in a PPA that the
         user is not allowed to see, so they are filtered out of the list.
@@ -5274,16 +5273,16 @@ class PersonRelatedSoftwareView(LaunchpadView):
         # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
         # query is virtually impossible!
         results = []
-        for spph in spphs:
-            package = spph.sourcepackagerelease
+        for package in packages:
             # Make a shallow copy to remove the Zope security.
             archives = set(package.published_archives)
             # Ensure the SPR.upload_archive is also considered.
             archives.add(package.upload_archive)
             for archive in archives:
                 if check_permission('launchpad.View', archive):
-                    results.append(spph)
+                    results.append(package)
                     break
+
         return results
 
     def _getDecoratedPackagesSummary(self, packages):
@@ -5334,10 +5333,10 @@ class PersonRelatedSoftwareView(LaunchpadView):
         self.uploaded_packages_header_message = header_message
         return results
 
-    def _calculateBuildStats(self, spphs):
+    def _calculateBuildStats(self, package_releases):
         """Calculate failed builds and needs_build state.
 
-        For each of the spphs, calculate the failed builds
+        For each of the package_releases, calculate the failed builds
         and the needs_build state, and return a tuple of two dictionaries,
         one containing the failed builds and the other containing
         True or False according to the needs_build state, both keyed by
@@ -5346,15 +5345,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
         # Calculate all the failed builds with one query.
         build_set = getUtility(IBinaryPackageBuildSet)
         package_release_ids = [
-            spph.sourcepackagerelease.id for spph in spphs]
+            package_release.id for package_release in package_releases]
         all_builds = build_set.getBuildsBySourcePackageRelease(
             package_release_ids)
         # Make a dictionary of lists of builds keyed by SourcePackageRelease
         # and a dictionary of "needs build" state keyed by the same.
         builds_by_package = {}
         needs_build_by_package = {}
-        for spph in spphs:
-            package = spph.sourcepackagerelease
+        for package in package_releases:
             builds_by_package[package] = []
             needs_build_by_package[package] = False
         for build in all_builds:
@@ -5369,14 +5367,11 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
         return (builds_by_package, needs_build_by_package)
 
-    def _addStatsToPackages(self, spphs):
+    def _addStatsToPackages(self, package_releases):
         """Add stats to the given package releases, and return them."""
-        filtered_spphs = [
-            spph for spph in spphs if
-            check_permission('launchpad.View', spph)]
         distro_packages = [
-            spph.meta_sourcepackage.distribution_sourcepackage
-            for spph in filtered_spphs]
+            package_release.distrosourcepackage
+            for package_release in package_releases]
         package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
             self.user, distro_packages)
         open_bugs = {}
@@ -5389,17 +5384,15 @@ class PersonRelatedSoftwareView(LaunchpadView):
             distro_packages)
 
         builds_by_package, needs_build_by_package = self._calculateBuildStats(
-            filtered_spphs)
+            package_releases)
 
         return [
-            SourcePackagePublishingHistoryWithStats(
-                spph,
-                open_bugs[spph.meta_sourcepackage.distribution_sourcepackage],
-                package_question_counts[
-                    spph.meta_sourcepackage.distribution_sourcepackage],
-                builds_by_package[spph.sourcepackagerelease],
-                needs_build_by_package[spph.sourcepackagerelease])
-            for spph in filtered_spphs]
+            SourcePackageReleaseWithStats(
+                package, open_bugs[package.distrosourcepackage],
+                package_question_counts[package.distrosourcepackage],
+                builds_by_package[package],
+                needs_build_by_package[package])
+            for package in package_releases]
 
     def setUpBatch(self, packages):
         """Set up the batch navigation for the page being viewed.

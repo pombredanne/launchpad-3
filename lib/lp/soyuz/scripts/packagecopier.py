@@ -642,7 +642,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 source, archive, destination_series, pocket,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
-                close_bugs_since_version=old_version, creator=person)
+                close_bugs_since_version=old_version)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
@@ -659,7 +659,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
-                    close_bugs_since_version=None, creator=None):
+                    close_bugs_since_version=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -685,7 +685,6 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     :param close_bugs_since_version: If close_bugs is True,
         then this parameter says which changelog entries to parse looking
         for bugs to close.  See `close_bugs_for_sourcepackagerelease`.
-    :param creator: the requester `IPerson`.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -715,8 +714,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
                 "More than one override encountered, something is wrong.")
             override = overrides[0]
         source_copy = source.copyTo(
-            series, pocket, archive, override, create_dsd_job=create_dsd_job,
-            creator=creator)
+            series, pocket, archive, override, create_dsd_job=create_dsd_job)
         if close_bugs:
             close_bugs_for_sourcepublication(
                 source_copy, close_bugs_since_version)

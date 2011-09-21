@@ -483,14 +483,6 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         description=_('The previous release of this source package.'),
         required=False, readonly=True)
 
-    creator = exported(
-        Reference(
-            IPerson,
-            title=_('Publication Creator'),
-            description=_('The IPerson who created this publication.'),
-            required=False, readonly=True
-        ))
-
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
@@ -598,7 +590,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive, overrides=None, creator=None):
+    def copyTo(distroseries, pocket, archive, overrides=None):
         """Copy this publication to another location.
 
         :param distroseries: The `IDistroSeries` to copy the source
@@ -606,9 +598,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :param pocket: The `PackagePublishingPocket` to copy into.
         :param archive: The `IArchive` to copy the source publication into.
         :param overrides: A tuple of override data as returned from a
-            `IOverridePolicy`.
-        :param creator: the `IPerson` to use as the creator for the copied
-            publication.
+            `IOverridePolicy`
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
@@ -975,8 +965,6 @@ class IPublishingSet(Interface):
             version of this publishing record
         :param create_dsd_job: A boolean indicating whether or not a dsd job
              should be created for the new source publication.
-        :param creator: An optional `IPerson`. If this is None, the
-            sourcepackagerelease's creator will be used.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING
