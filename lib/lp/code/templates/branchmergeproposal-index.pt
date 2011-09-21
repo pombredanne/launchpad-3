@@ -185,8 +185,7 @@
       <div class="pending-update" id="diff-pending-update">
         <h3>Updating diff...</h3>
         <p>
-          An updated diff will be available in a few minutes. Reload to see the
-          changes.
+          An updated diff will be available in a few minutes.
         </p>
       </div>
     </div>
