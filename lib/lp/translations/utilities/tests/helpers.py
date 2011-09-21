@@ -13,10 +13,6 @@ __all__ = [
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (
-    commit,
-    ZopelessTransactionManager,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.log.logger import FakeLogger
 from lp.translations.enums import RosettaImportStatus
@@ -66,10 +62,7 @@ def import_pofile_or_potemplate(file_contents, person,
                 potemplate=potemplate)
         target = potemplate
     # Allow Librarian to see the change.
-    if ZopelessTransactionManager._installed is None:
-        transaction.commit()
-    else:
-        commit()
+    transaction.commit()
 
     entry.setStatus(RosettaImportStatus.APPROVED,
                     getUtility(ILaunchpadCelebrities).rosetta_experts)

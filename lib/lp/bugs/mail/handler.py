@@ -13,11 +13,11 @@ import os
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 from lazr.lifecycle.interfaces import IObjectCreatedEvent
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mailnotification import (
     MailWrapper,
@@ -30,6 +30,7 @@ from lp.bugs.interfaces.bugattachment import (
     IBugAttachmentSet,
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
+from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import BugEmailCommands
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
@@ -273,18 +274,20 @@ class MaloneHandler:
                             message = self.appendBugComment(
                                 bug, signed_msg, filealias)
                             add_comment_to_bug = False
-                        else:
-                            message = bug.initial_message
-                        self.processAttachments(bug, message, signed_msg)
+                            self.processAttachments(bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
                         self.notify_bugtask_event(bugtask_event, bug_event)
-                        bugtask, bugtask_event = command.execute(
-                            bug)
+                        bugtask, bugtask_event, bug_event = command.execute(
+                            bug, bug_event)
+                        if isinstance(bug, CreateBugParams):
+                            bug = bugtask.bug
+                            message = bug.initial_message
+                            self.processAttachments(bug, message, signed_msg)
                     elif IBugEditEmailCommand.providedBy(command):
                         bug, bug_event = command.execute(bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
-                            if len(bug.bugtasks) == 0:
+                            if isinstance(bug, CreateBugParams):
                                 self.handleNoAffectsTarget()
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
@@ -297,7 +300,7 @@ class MaloneHandler:
                     processing_errors.append((error, command))
                     if error.stop_processing:
                         commands = []
-                        rollback()
+                        transaction.abort()
                     else:
                         continue
 
@@ -306,6 +309,9 @@ class MaloneHandler:
                     '\n'.join(str(error) for error, command
                               in processing_errors),
                     [command for error, command in processing_errors])
+            if isinstance(bug, CreateBugParams):
+                # A new bug without any commands was sent.
+                self.handleNoAffectsTarget()
             self.notify_bug_event(bug_event)
             self.notify_bugtask_event(bugtask_event, bug_event)
 
@@ -425,7 +431,7 @@ class MaloneHandler:
                 notify(bugtask_event)
 
     def handleNoAffectsTarget(self):
-        rollback()
+        transaction.abort()
         raise IncomingEmailError(
             get_error_message(
                 'no-affects-target-on-submit.txt',

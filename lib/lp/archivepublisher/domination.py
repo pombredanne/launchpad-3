@@ -58,6 +58,7 @@ import apt_pkg
 from storm.expr import (
     And,
     Count,
+    Desc,
     Select,
     )
 
@@ -524,12 +525,18 @@ class Dominator:
         # Avoid circular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
-        return IStore(SourcePackagePublishingHistory).find(
+        query = IStore(SourcePackagePublishingHistory).find(
             SourcePackagePublishingHistory,
             join_spph_spr(),
             join_spr_spn(),
             SourcePackageName.name == package_name,
             self._composeActiveSourcePubsCondition(distroseries, pocket))
+        # Sort by descending version (SPR.version has type debversion in
+        # the database, so this should be a real proper comparison) so
+        # that _sortPackage will have slightly less work to do later.
+        return query.order_by(
+            Desc(SourcePackageRelease.version),
+            Desc(SourcePackagePublishingHistory.datecreated))
 
     def dominateRemovedSourceVersions(self, distroseries, pocket,
                                       package_name, live_versions):
