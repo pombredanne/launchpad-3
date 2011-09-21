@@ -38,6 +38,8 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import simplejson
 from sqlobject import SQLObjectNotFound
@@ -54,6 +56,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import (
     classProvides,
     implements,
@@ -61,11 +64,6 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from lp.services.messages.model.message import (
-    MessageJob,
-    MessageJobAction,
-    )
-from lp.services.messages.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
@@ -105,6 +103,7 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
@@ -112,7 +111,11 @@ from lp.services.job.runner import (
     BaseRunnableJobSource,
     )
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.database.stormbase import StormBase
+from lp.services.messages.interfaces.message import IMessageJob
+from lp.services.messages.model.message import (
+    MessageJob,
+    MessageJobAction,
+    )
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -376,7 +379,13 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         self.checkReady()
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
+        branch_merge_proposal_snapshot = Snapshot(
+            self.branch_merge_proposal, names=["preview_diff"])
         self.branch_merge_proposal.preview_diff = preview
+        modified_event = ObjectModifiedEvent(
+            self.branch_merge_proposal, branch_merge_proposal_snapshot,
+            vars(branch_merge_proposal_snapshot).keys())
+        notify(modified_event)
 
     def getOperationDescription(self):
         return ('generating the diff for a merge proposal')

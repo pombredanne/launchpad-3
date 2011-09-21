@@ -12,10 +12,7 @@ from storm.locals import Store
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -24,10 +21,6 @@ from lp.services.job.model.job import (
     InvalidTransition,
     Job,
     LeaseHeld,
-    )
-from lp.services.longpoll.testing import (
-    capture_longpoll_emissions,
-    LongPollEventRecord,
     )
 from lp.testing import (
     TestCase,
@@ -38,7 +31,7 @@ from lp.testing import (
 class TestJob(TestCaseWithFactory):
     """Ensure Job behaves as intended."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def test_implements_IJob(self):
         """Job should implement IJob."""
@@ -258,25 +251,6 @@ class TestJob(TestCaseWithFactory):
             job = Job(_status=status)
             self.assertEqual(
                 status in Job.PENDING_STATUSES, job.is_pending)
-
-    def test_status_change_events(self):
-        job = Job()
-        with capture_longpoll_emissions() as log:
-            job.start()
-            job.fail()
-        expected = [
-            LongPollEventRecord(
-                'longpoll.event.job.%d' % job.id,
-                {'event_key': 'longpoll.event.job.%s' % job.id,
-                 'what': 'modified',
-                 'edited_fields': ['status']}),
-            LongPollEventRecord(
-                'longpoll.event.job.%d' % job.id,
-                {'event_key': 'longpoll.event.job.%s' % job.id,
-                 'what': 'modified',
-                 'edited_fields': ['status']}),
-            ]
-        self.assertEqual(expected, log)
 
 
 class TestReadiness(TestCase):

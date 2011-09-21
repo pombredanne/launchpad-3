@@ -11,8 +11,6 @@ from calendar import timegm
 import datetime
 import time
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import (
     IntCol,
@@ -27,7 +25,6 @@ from storm.locals import (
     Int,
     Reference,
     )
-from zope.event import notify
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -108,9 +105,7 @@ class Job(SQLBase):
     def _set_status(self, status):
         if status not in self._valid_transitions[self._status]:
             raise InvalidTransition(self._status, status)
-        snapshot = Snapshot(self, providing=IJob)
         self._status = status
-        notify(ObjectModifiedEvent(self, snapshot, ["status"]))
 
     status = property(lambda x: x._status)
 
