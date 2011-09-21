@@ -23,7 +23,7 @@ class TestZopelessTransactionManager(TestCase):
     def test_reset_stores_only_does_so_on_active_stores(self):
         active_stores = [item[0] for item in getUtility(IZStorm).iterstores()]
         self.assertContentEqual(
-            ['launchpad-main-master', 'session'], active_stores)
+            ['main-master', 'session'], active_stores)
         ZopelessTransactionManager._reset_stores()
         # If any other stores had been reset, they'd be activated and would
         # then be returned by ZStorm.iterstores().
@@ -50,17 +50,16 @@ class TestInitZopeless(TestCase):
         warnings.warn = self.warn_hooked
         self.warned = False
         try:
-            # Calling initZopeless with the same arguments twice should return
-            # the exact same object twice, but also emit a warning.
+            # Calling initZopeless with the same arguments twice should emit
+            # a warning.
             try:
-                tm1 = ZopelessTransactionManager.initZopeless(
+                ZopelessTransactionManager.initZopeless(
                     dbuser='launchpad')
-                tm2 = ZopelessTransactionManager.initZopeless(
+                ZopelessTransactionManager.initZopeless(
                     dbuser='launchpad')
-                self.failUnless(tm1 is tm2)
                 self.failUnless(self.warned)
             finally:
-                tm1.uninstall()
+                ZopelessTransactionManager.uninstall()
         finally:
             # Put the warnings module back the way we found it.
             warnings.warn = original_warn

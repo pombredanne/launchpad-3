@@ -12,19 +12,12 @@ The ZopelessTransactionManager is initialized with its initZopeless()
 class method.
 
     >>> from canonical.database.sqlbase import ZopelessTransactionManager
-    >>> ztm = ZopelessTransactionManager.initZopeless(
-    ...     dbuser='launchpad_main')
-
-The returned transaction manager happens to be the same as the
-ZopelessTransactionManager class:
-
-    >>> ztm is ZopelessTransactionManager
-    True
+    >>> ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
 
 After initZopeless() has been called, the '_installed' attribute of
 ZopelessTransactionManager will be set to the transaction manager:
 
-    >>> ZopelessTransactionManager._installed is ztm
+    >>> ZopelessTransactionManager._installed is ZopelessTransactionManager
     True
 
 The initZopeless() call defaults to read committed isolation:
@@ -35,47 +28,30 @@ The initZopeless() call defaults to read committed isolation:
     >>> print c.fetchone()[0]
     read committed
 
-We can commit transactions:
-
-    >>> c.execute("UPDATE person SET name = 'something' WHERE id = 1")
-    >>> ztm.commit()
-
-We can also explicitly start transactions with begin(), and abort
-transactions:
-
-    >>> ztm.begin()
-    >>> c = cursor()
-    >>> c.execute("UPDATE person SET name = 'blah' WHERE id = 1")
-    >>> ztm.abort()
-    >>> c = cursor()
-    >>> c.execute("SELECT name FROM person WHERE id = 1")
-    >>> print c.fetchone()[0]
-    something
-
 The uninstall() method can be used to uninstall the transaction
 manager:
 
-    >>> ztm.uninstall()
+    >>> ZopelessTransactionManager.uninstall()
     >>> print ZopelessTransactionManager._installed
     None
 
 We can log in as alternative users with initZopeless():
 
-    >>> ztm = ZopelessTransactionManager.initZopeless(dbuser='testadmin')
+    >>> ZopelessTransactionManager.initZopeless(dbuser='testadmin')
     >>> c = cursor()
     >>> c.execute("SELECT current_user")
     >>> print c.fetchone()[0]
     testadmin
-    >>> ztm.uninstall()
+    >>> ZopelessTransactionManager.uninstall()
 
 Or we can specify other transaction isolation modes:
 
     >>> from canonical.database.sqlbase import (
     ...     ISOLATION_LEVEL_SERIALIZABLE)
-    >>> ztm = ZopelessTransactionManager.initZopeless(
+    >>> ZopelessTransactionManager.initZopeless(
     ...     dbuser='librarian', isolation=ISOLATION_LEVEL_SERIALIZABLE)
     >>> c = cursor()
     >>> c.execute("SHOW transaction_isolation")
     >>> print c.fetchone()[0]
     serializable
-    >>> ztm.uninstall()
+    >>> ZopelessTransactionManager.uninstall()

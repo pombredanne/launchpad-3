@@ -15,7 +15,6 @@ __all__ = [
     'ProductReleaseView',
     ]
 
-import cgi
 import mimetypes
 
 from lazr.restful.interface import copy_field
@@ -135,8 +134,6 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
         # should not be targeted to a milestone in the past.
         if data.get('keep_milestone_active') is False:
             milestone.active = False
-            milestone_link = '<a href="%s">%s milestone</a>' % (
-                canonical_url(milestone), cgi.escape(milestone.name))
         self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 

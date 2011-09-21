@@ -114,6 +114,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import Archive
 
 
@@ -196,8 +197,8 @@ class SourcePackageRecipeContextMenu(ContextMenu):
         """Provide a link for requesting a daily build of a recipe."""
         recipe = self.context
         ppa = recipe.daily_build_archive
-        if (ppa is None or not recipe.build_daily or not recipe.is_stale
-                or not recipe.distroseries):
+        if (ppa is None or not ppa.enabled or not recipe.build_daily or not
+            recipe.is_stale or not recipe.distroseries):
             show_request_build = False
         else:
             has_upload = ppa.checkArchivePermission(recipe.owner)
@@ -544,7 +545,7 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
         recipe = self.context
         try:
             builds = recipe.performDailyBuild()
-        except TooManyBuilds, e:
+        except (TooManyBuilds, ArchiveDisabled) as e:
             self.request.response.addErrorNotification(str(e))
             self.next_url = canonical_url(recipe)
             return
