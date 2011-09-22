@@ -7,7 +7,6 @@
 
 import _pythonpath
 
-from canonical.config import config
 from lp.soyuz.scripts.publishdistro import PublishDistro
 
 
