@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -270,4 +270,3 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
         return canonical_url(self.branch)
 
     cancel_url = next_url
-

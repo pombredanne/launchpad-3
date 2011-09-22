@@ -9,6 +9,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from debian.deb822 import Changes
 from optparse import OptionValueError
 from testtools.matchers import LessThan
+import transaction
 
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
@@ -167,7 +168,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
         synch = UploadCheckingSynchronizer()
-        script.txn.registerSynch(synch)
+        transaction.manager.registerSynch(synch)
         script.main()
         self.assertThat(len(uploads), LessThan(synch.commit_count))
 

@@ -37,7 +37,7 @@ Passing only suite, request retry on all failed states:
   >>> process.returncode
   0
   >>> print stderr
-  DEBUG   Intitialising connection.
+  INFO    Creating lockfile: ...
   INFO    Initializing Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Processing builds in 'Dependency wait'
@@ -45,6 +45,7 @@ Passing only suite, request retry on all failed states:
   INFO    Processing builds in 'Chroot problem'
   INFO    Success.
   INFO    Dry-run.
+  DEBUG   Removing lock file: ...
   <BLANKLINE>
 
 Superseded builds won't be retried; buildd-manager will just skip the build
@@ -74,7 +75,7 @@ A new run doesn't pick it up.
   >>> process.returncode
   0
   >>> print stderr
-  DEBUG   Intitialising connection.
+  INFO    Creating lockfile: ...
   INFO    Initializing Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Processing builds in 'Dependency wait'
@@ -82,6 +83,7 @@ A new run doesn't pick it up.
   INFO    Processing builds in 'Chroot problem'
   INFO    Success.
   INFO    Dry-run.
+  DEBUG   Removing lock file: ...
   <BLANKLINE>
 
   >>> pub.status = PackagePublishingStatus.PUBLISHED
@@ -98,13 +100,14 @@ nothing is done:
   >>> process.returncode
   0
   >>> print stderr
-  DEBUG   Intitialising connection.
+  INFO    Creating lockfile: ...
   INFO    Initializing Build Mass-Retry for 'The Hoary Hedgehog Release for hppa (hppa)/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Processing builds in 'Dependency wait'
   INFO    Processing builds in 'Chroot problem'
   INFO    Success.
   INFO    Dry-run.
+  DEBUG   Removing lock file: ...
   <BLANKLINE>
 
 
@@ -118,9 +121,10 @@ Selecting only a specific failed state:
   >>> process.returncode
   0
   >>> print stderr
-  DEBUG   Intitialising connection.
+  INFO    Creating lockfile: ...
   INFO    Initializing Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Success.
   INFO    Dry-run.
+  DEBUG   Removing lock file: ...
   <BLANKLINE>

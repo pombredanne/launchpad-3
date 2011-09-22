@@ -46,6 +46,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
@@ -73,6 +74,7 @@ class IPickerEntry(Interface):
     link_css = Attribute('CSS Class for links')
     badges = Attribute('List of badge img attributes')
     metadata = Attribute('Metadata about the entry')
+    target_type = Attribute('Target data for target picker entries.')
 
 
 class PickerEntry:
@@ -81,7 +83,8 @@ class PickerEntry:
 
     def __init__(self, description=None, image=None, css=None, alt_title=None,
                  title_link=None, details=None, alt_title_link=None,
-                 link_css='sprite new-window', badges=None, metadata=None):
+                 link_css='sprite new-window', badges=None, metadata=None,
+                 target_type=None):
         self.description = description
         self.image = image
         self.css = css
@@ -92,6 +95,7 @@ class PickerEntry:
         self.link_css = link_css
         self.badges = badges
         self.metadata = metadata
+        self.target_type = target_type
 
 
 class IPickerEntrySource(Interface):
@@ -233,8 +237,14 @@ class BranchPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
 class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
     """Adapt targets (Product, Package, Distribution) to PickerEntrySource."""
 
+    target_type = ""
+
     def getDescription(self, target):
         """Gets the description data for target picker entries."""
+        raise NotImplemented
+
+    def getMaintainer(self, target):
+        """Gets the maintainer information for the target picker entry."""
         raise NotImplemented
 
     def getPickerEntries(self, term_values, context_object, **kwarg):
@@ -244,6 +254,30 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                 .getPickerEntries(term_values, context_object, **kwarg))
         for target, picker_entry in izip(term_values, entries):
             picker_entry.description = self.getDescription(target)
+            enhanced = bool(getFeatureFlag(
+                'disclosure.target_picker_enhancements.enabled'))
+            if enhanced:
+                picker_entry.details = []
+                summary = picker_entry.description
+                if len(summary) > 45:
+                    index =  summary.rfind(' ', 0, 45)
+                    first_line = summary[0:index + 1]
+                    second_line = summary[index:]
+                else:
+                    first_line = summary
+                    second_line = ''
+
+                if len(second_line) > 90:
+                    index =  second_line.rfind(' ', 0, 90)
+                    second_line = second_line[0:index+1] 
+                picker_entry.description = first_line
+                picker_entry.details.append(second_line)
+                picker_entry.alt_title = target.name
+                picker_entry.target_type = self.target_type
+                maintainer = self.getMaintainer(target)
+                if maintainer is not None:
+                    picker_entry.details.append( 
+                        'Maintainer: %s' % self.getMaintainer(target))
         return entries
 
 
@@ -269,6 +303,12 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
     TargetPickerEntrySourceAdapter):
     """Adapts IDistributionSourcePackage to IPickerEntrySource."""
 
+    target_type = "package"
+
+    def getMaintainer(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.currentrelease.maintainer.displayname
+
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
         binaries = target.publishing_history[0].getBuiltBinaries()
@@ -280,9 +320,30 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
         return description
 
 
+@adapter(IProjectGroup)
+class ProjectGroupPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
+    """Adapts IProduct to IPickerEntrySource."""
+
+    target_type = "project group"
+
+    def getMaintainer(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.owner.displayname
+
+    def getDescription(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.summary
+
+
 @adapter(IProduct)
 class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
     """Adapts IProduct to IPickerEntrySource."""
+
+    target_type = "project"
+
+    def getMaintainer(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.owner.displayname
 
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
@@ -291,6 +352,15 @@ class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
 
 @adapter(IDistribution)
 class DistributionPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
+
+    target_type = "distribution"
+
+    def getMaintainer(self, target):
+        """See `TargetPickerEntrySource`"""
+        try:
+            return target.currentseries.owner.displayname
+        except AttributeError:
+            return None
 
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
@@ -434,6 +504,8 @@ class HugeVocabularyJSONView:
                 entry['badges'] = picker_entry.badges
             if picker_entry.metadata is not None:
                 entry['metadata'] = picker_entry.metadata
+            if picker_entry.target_type is not None:
+                entry['target_type'] = picker_entry.target_type
             result.append(entry)
 
         self.request.response.setHeader('Content-type', 'application/json')

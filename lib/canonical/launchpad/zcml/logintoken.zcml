@@ -31,7 +31,7 @@
         for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+index"
         permission="zope.Public"
-        class="canonical.launchpad.browser.LoginTokenView"
+        class="canonical.launchpad.browser.logintoken.LoginTokenView"
         template="../templates/logintoken-index.pt"
         />
 
@@ -55,7 +55,7 @@
         for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validategpg"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateGPGKeyView"
+        class="canonical.launchpad.browser.logintoken.ValidateGPGKeyView"
         template="../templates/logintoken-validategpg.pt"
         />
 
@@ -63,7 +63,7 @@
         for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validatesignonlygpg"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateGPGKeyView"
+        class="canonical.launchpad.browser.logintoken.ValidateGPGKeyView"
         template="../templates/logintoken-validatesignonlygpg.pt"
         />
 
@@ -71,7 +71,7 @@
         for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+accountmerge"
         permission="zope.Public"
-        class="canonical.launchpad.browser.MergePeopleView"
+        class="canonical.launchpad.browser.logintoken.MergePeopleView"
         template="../templates/logintoken-mergepeople.pt"
         />
 
@@ -79,13 +79,13 @@
         for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+claimteam"
         permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.ClaimTeamView"
+        class="canonical.launchpad.browser.logintoken.ClaimTeamView"
         template="../templates/logintoken-claimteam.pt" />
 
     <browser:page
         name="+bugtracker-handshake"
         for="canonical.launchpad.interfaces.logintoken.ILoginToken"
-        class="canonical.launchpad.browser.BugTrackerHandshakeView"
+        class="canonical.launchpad.browser.logintoken.BugTrackerHandshakeView"
         permission="zope.Public"
         />
 
@@ -101,7 +101,7 @@
     </securedutility>
 
     <browser:navigation
-        module="canonical.launchpad.browser"
+        module="canonical.launchpad.browser.logintoken"
         classes="LoginTokenSetNavigation"
         />
 

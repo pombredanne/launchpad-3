@@ -3,16 +3,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'alreadyInstalledMsg',
-    'begin',
     'block_implicit_flushes',
     'clear_current_connection_cache',
     'commit',
-    'ConflictingTransactionManagerError',
     'connect',
     'convert_storm_clause_to_string',
     'cursor',
-    'expire_from_cache',
     'flush_database_caches',
     'flush_database_updates',
     'get_transaction_timestamp',
@@ -25,7 +21,6 @@ __all__ = [
     'quoteIdentifier',
     'quote_identifier',
     'reset_store',
-    'rollback',
     'session_store',
     'SQLBase',
     'sqlvalues',
@@ -35,8 +30,6 @@ __all__ = [
 
 
 from datetime import datetime
-from textwrap import dedent
-import warnings
 
 from lazr.restful.interfaces import IRepresentationCache
 import psycopg2
@@ -64,10 +57,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import (
-    config,
-    dbconfig,
-    )
+from canonical.config import dbconfig
 from canonical.database.interfaces import ISQLBase
 from lp.services.propertycache import clear_property_cache
 
@@ -272,19 +262,10 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         clear_property_cache(self)
 
 
-alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
-"already installed.  This is probably caused by calling initZopeless twice.")
-
-
-class ConflictingTransactionManagerError(Exception):
-    pass
-
-
 class ZopelessTransactionManager(object):
     """Compatibility shim for initZopeless()"""
 
     _installed = None
-    _CONFIG_OVERLAY_NAME = 'initZopeless config overlay'
 
     def __init__(self):
         raise AssertionError("ZopelessTransactionManager should not be "
@@ -302,33 +283,12 @@ class ZopelessTransactionManager(object):
             ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
             ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
 
-        # Construct a config fragment:
-        overlay = dedent("""\
-            [database]
-            isolation_level: %(isolation_level)s
+        dbconfig.override(dbuser=dbuser, isolation_level=isolation_level)
 
-            [launchpad]
-            dbuser: %(dbuser)s
-            """ % dict(
-                isolation_level=isolation_level,
-                dbuser=dbuser))
-
-        if cls._installed is not None:
-            if cls._config_overlay != overlay:
-                raise ConflictingTransactionManagerError(
-                        "A ZopelessTransactionManager with different "
-                        "settings is already installed")
-            # There's an identical ZopelessTransactionManager already
-            # installed, so return that one, but also emit a warning.
-            warnings.warn(alreadyInstalledMsg, stacklevel=3)
-        else:
-            config.push(cls._CONFIG_OVERLAY_NAME, overlay)
-            cls._config_overlay = overlay
-            cls._dbuser = dbuser
-            cls._isolation = isolation
-            cls._reset_stores()
-            cls._installed = cls
-        return cls._installed
+        cls._dbuser = dbuser
+        cls._isolation = isolation
+        cls._reset_stores()
+        cls._installed = cls
 
     @staticmethod
     def _reset_stores():
@@ -366,71 +326,15 @@ class ZopelessTransactionManager(object):
         """
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
-        config.pop(cls._CONFIG_OVERLAY_NAME)
+        dbconfig.override(dbuser=None, isolation_level=None)
         cls._reset_stores()
         cls._installed = None
-
-    @classmethod
-    def set_isolation_level(cls, isolation):
-        """Set the transaction isolation level.
-
-        Level can be one of ISOLATION_LEVEL_AUTOCOMMIT,
-        ISOLATION_LEVEL_READ_COMMITTED or
-        ISOLATION_LEVEL_SERIALIZABLE. As changing the isolation level
-        must be done before any other queries are issued in the
-        current transaction, this method automatically issues a
-        rollback to ensure this is the case.
-        """
-        assert cls._installed is not None, (
-            "ZopelessTransactionManager not installed")
-        cls.uninstall()
-        cls.initZopeless(cls._dbuser, isolation)
-
-    @staticmethod
-    def conn():
-        store = _get_sqlobject_store()
-        # Use of the raw connection will not be coherent with Storm's
-        # cache.
-        connection = store._connection
-        connection._ensure_connected()
-        return connection._raw_connection
-
-    @staticmethod
-    def begin():
-        """Begin a transaction."""
-        transaction.begin()
-
-    @staticmethod
-    def commit():
-        """Commit the current transaction."""
-        transaction.commit()
-
-    @staticmethod
-    def abort():
-        """Abort the current transaction."""
-        transaction.abort()
-
-    @staticmethod
-    def registerSynch(synch):
-        """Register an ISynchronizer."""
-        transaction.manager.registerSynch(synch)
-
-    @staticmethod
-    def unregisterSynch(synch):
-        """Unregister an ISynchronizer."""
-        transaction.manager.unregisterSynch(synch)
 
 
 def clear_current_connection_cache():
     """Clear SQLObject's object cache. SQLObject compatibility - DEPRECATED.
     """
     _get_sqlobject_store().invalidate()
-
-
-def expire_from_cache(obj):
-    """Expires a single object from the SQLObject cache.
-    SQLObject compatibility - DEPRECATED."""
-    _get_sqlobject_store().invalidate(obj)
 
 
 def get_transaction_timestamp():
@@ -730,18 +634,7 @@ def reset_store(func):
     return mergeFunctionMetadata(func, reset_store_decorator)
 
 
-# Some helpers intended for use with initZopeless.  These allow you to avoid
-# passing the transaction manager all through your code.
-
-def begin():
-    """Begins a transaction."""
-    transaction.begin()
-
-
-def rollback():
-    transaction.abort()
-
-
+# DEPRECATED -- use transaction.commit() directly.
 def commit():
     transaction.commit()
 

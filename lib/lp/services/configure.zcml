@@ -11,6 +11,7 @@
   <include package=".googlesearch" />
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
+  <include package=".longpoll" />
   <include package=".memcache" />
   <include package=".messages" />
   <include package=".openid" />
