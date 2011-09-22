@@ -12,6 +12,7 @@ from storm.expr import (
     compile,
     Desc,
     )
+from storm.store import EmptyResultSet
 from testtools.matchers import (
     LessThan,
     Not,
@@ -785,3 +786,45 @@ class TestStormRangeFactory(TestCaseWithFactory):
         self.assertIsInstance(sliced, ShadowedList)
         self.assertEqual(all_results[2:4], list(sliced))
         self.assertEqual(all_undecorated_results[2:4], sliced.shadow_values)
+
+    def test_StormRangeFactory__EmptyResultSet(self):
+        # It is possible to create StormRangeFactory instances for
+        # EmptyResultSets,
+        resultset = EmptyResultSet()
+        range_factory = StormRangeFactory(resultset)
+        # rough_length is always zero.
+        self.assertEqual(0, range_factory.rough_length)
+        # getSlice() and getSliceByIndex() return empty ShadowedLists.
+        sliced = range_factory.getSlice(1)
+        self.assertEqual([], sliced.values)
+        self.assertEqual([], sliced.shadow_values)
+        sliced = range_factory.getSliceByIndex(0, 1)
+        self.assertEqual([], sliced.values)
+        self.assertEqual([], sliced.shadow_values)
+        # The endpoint memos are empty strings.
+        request = LaunchpadTestRequest()
+        batchnav = BatchNavigator(
+            resultset, request, size=3, range_factory=range_factory)
+        first, last = range_factory.getEndpointMemos(batchnav.batch)
+        self.assertEqual('', first)
+        self.assertEqual('', last)
+
+    def test_StormRangeFactory__empty_real_resultset(self):
+        # StormRangeFactory works with empty regular result sets,
+        resultset = self.factory.makeProduct().open_bugtasks
+        self.assertEqual(0, resultset.count())
+        range_factory = StormRangeFactory(resultset)
+        # getSlice() and getSliceByIndex() return empty ShadowedLists.
+        sliced = range_factory.getSlice(1)
+        self.assertEqual([], sliced.values)
+        self.assertEqual([], sliced.shadow_values)
+        sliced = range_factory.getSliceByIndex(0, 1)
+        self.assertEqual([], sliced.values)
+        self.assertEqual([], sliced.shadow_values)
+        # The endpoint memos are empty strings.
+        request = LaunchpadTestRequest()
+        batchnav = BatchNavigator(
+            resultset, request, size=3, range_factory=range_factory)
+        first, last = range_factory.getEndpointMemos(batchnav.batch)
+        self.assertEqual('', first)
+        self.assertEqual('', last)

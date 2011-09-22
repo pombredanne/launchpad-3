@@ -23,6 +23,7 @@ from storm.expr import (
     SQL,
     )
 from storm.properties import PropertyColumn
+from storm.store import EmptyResultSet
 from storm.zope.interfaces import IResultSet
 from zope.component import (
     adapts,
@@ -294,11 +295,16 @@ class StormRangeFactory:
         else:
             self.plain_resultset = resultset
         self.error_cb = error_cb
-        self.forward_sort_order = self.getOrderBy()
-        if self.forward_sort_order is Undef:
-            raise StormRangeFactoryError(
-                'StormRangeFactory requires a sorted result set.')
-        self.backward_sort_order = self.reverseSortOrder()
+        if not self.empty_resultset:
+            self.forward_sort_order = self.getOrderBy()
+            if self.forward_sort_order is Undef:
+                raise StormRangeFactoryError(
+                    'StormRangeFactory requires a sorted result set.')
+            self.backward_sort_order = self.reverseSortOrder()
+
+    @property
+    def empty_resultset(self):
+        return zope_isinstance(self.plain_resultset, EmptyResultSet)
 
     def getOrderBy(self):
         """Return the order_by expressions of the result set."""
@@ -334,6 +340,8 @@ class StormRangeFactory:
     def getEndpointMemos(self, batch):
         """See `IRangeFactory`."""
         plain_slice = batch.sliced_list.shadow_values
+        if len(plain_slice) == 0:
+            return ('', '')
         lower = self.getOrderValuesFor(plain_slice[0])
         upper = self.getOrderValuesFor(plain_slice[batch.trueSize - 1])
         return (
@@ -549,6 +557,8 @@ class StormRangeFactory:
 
     def getSlice(self, size, endpoint_memo='', forwards=True):
         """See `IRangeFactory`."""
+        if self.empty_resultset:
+            return ShadowedList([], [])
         if forwards:
             self.resultset.order_by(*self.forward_sort_order)
         else:
@@ -585,6 +595,8 @@ class StormRangeFactory:
         # in the result set, so let's use them. Moreover, for SELECT
         # DISTINCT queries, each column used for sorting must appear
         # in the result.
+        if self.empty_resultset:
+            return 0
         columns = [plain_expression(column) for column in self.getOrderBy()]
         select = removeSecurityProxy(self.plain_resultset).get_select_expr(
             *columns)
