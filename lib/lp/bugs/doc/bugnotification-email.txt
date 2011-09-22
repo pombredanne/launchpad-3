@@ -210,7 +210,7 @@ is wrapped properly:
     + edit notification email generator knows how to indent and wrap
     + descriptions, so this will appear quite nice in the actual email that
     + gets sent.
-    + 
+    +
     + It's also smart enough to preserve whitespace, finally!
     -----------------------------
 

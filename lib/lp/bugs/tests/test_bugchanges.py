@@ -18,7 +18,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
