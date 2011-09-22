@@ -60,9 +60,8 @@ class UsesBugsDistributionVocabularyTestCase(TestCaseWithFactory):
             "Vocabulary missing context distro.")
 
     def test_contains_missing_context(self):
-        # The vocabulary contains the context distro even it it does not
-        # use Launchpad to track bugs. The distro may have tracked bugs
-        # in the past so it is a legitimate choise for historic data.
+        # The vocabulary contains does not contain the context if the
+        # context is not adaptable to a distribution.
         thing = self.factory.makeProduct()
         vocabulary = UsesBugsDistributionVocabulary(thing)
         self.assertFalse(
