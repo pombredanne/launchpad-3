@@ -182,7 +182,6 @@ from lp.app.interfaces.launchpad import (
     IServiceUsage,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
@@ -203,6 +202,7 @@ from lp.bugs.browser.widgets.bugtask import (
     BugTaskAssigneeWidget,
     BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget,
+    BugTaskTargetWidget,
     DBItemDisplayWidget,
     NewLineToSpacesWidget,
     NominationReviewActionWidget,
@@ -1215,7 +1215,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     # the form.
     default_field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                            'status']
-    custom_widget('target', LaunchpadTargetWidget)
+    custom_widget('target', BugTaskTargetWidget)
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
