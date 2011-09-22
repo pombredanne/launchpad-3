@@ -668,8 +668,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         naked_bugtask = removeSecurityProxy(bug.default_bugtask)
         self.assertContentEqual(
             set((naked_bugtask.pillar.owner, bug_owner, who)),
-            subscribers
-        )
+            subscribers)
 
     def test_setPillarOwnerSubscribedIfNoSecurityContact(self):
         # The pillar owner is subscribed if the security contact is not set.
@@ -684,8 +683,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         naked_bugtask = removeSecurityProxy(bug.default_bugtask)
         self.assertContentEqual(
             set((naked_bugtask.pillar.owner, bug_owner)),
-            subscribers
-        )
+            subscribers)
 
     def _fetch_notifications(self, bug, header, body):
         return IStore(BugNotification).find(
