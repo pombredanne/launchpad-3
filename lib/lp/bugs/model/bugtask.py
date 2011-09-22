@@ -114,13 +114,13 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
+    DB_UNRESOLVED_BUGTASK_STATUSES,
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
     IllegalRelatedBugTasksParams,
     IllegalTarget,
     RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskAssignee,
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
@@ -2639,7 +2639,7 @@ class BugTaskSet:
         conditions = []
         # Open bug statuses
         conditions.append(
-            BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES))
+            BugSummary.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES))
         # BugSummary does not include duplicates so no need to exclude.
         context_conditions = []
         for context in contexts:

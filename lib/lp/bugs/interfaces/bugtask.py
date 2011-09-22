@@ -17,6 +17,7 @@ __all__ = [
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
+    'DB_UNRESOLVED_BUGTASK_STATUSES',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
@@ -301,7 +302,6 @@ class BugTaskStatusSearch(DBEnumeratedType):
         This bug requires more information, but no additional
         details were supplied yet..
         """)
-
 
 
 class BugTagsSearchCombinator(EnumeratedType):
