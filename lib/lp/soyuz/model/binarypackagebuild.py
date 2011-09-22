@@ -29,9 +29,9 @@ from storm.store import (
     EmptyResultSet,
     Store,
     )
+from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import (
@@ -1021,16 +1021,21 @@ class BinaryPackageBuildSet:
             BuildStatus.NEEDSBUILD,
             BuildStatus.BUILDING,
             BuildStatus.UPLOADING]:
-            orderBy = ["-BuildQueue.lastscore", "BinaryPackageBuild.id"]
+            order_by = [Desc(BuildQueue.lastscore), BinaryPackageBuild.id]
+            order_by_table = BuildQueue
             clauseTables.append('BuildQueue')
             clauseTables.append('BuildPackageJob')
             condition_clauses.append(
                 'BuildPackageJob.build = BinaryPackageBuild.id')
             condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
         elif status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-BuildFarmJob.date_created"]
+            order_by = [Desc(BuildFarmJob.date_created),
+                        BinaryPackageBuild.id]
+            order_by_table = BuildFarmJob
         else:
-            orderBy = ["-BuildFarmJob.date_finished"]
+            order_by = [Desc(BuildFarmJob.date_finished),
+                        BinaryPackageBuild.id]
+            order_by_table = BuildFarmJob
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
@@ -1043,14 +1048,22 @@ class BinaryPackageBuildSet:
             "PackageBuild.archive IN %s" %
             sqlvalues(list(distribution.all_distro_archive_ids)))
 
+        store = Store.of(distribution)
+        clauseTables = [BinaryPackageBuild] + clauseTables
+        result_set = store.using(*clauseTables).find(
+            (BinaryPackageBuild, order_by_table), *condition_clauses)
+        result_set.order_by(*order_by)
+
+        def get_bpp(result_row):
+            return result_row[0]
+
         return self._decorate_with_prejoins(
-            BinaryPackageBuild.select(' AND '.join(condition_clauses),
-            clauseTables=clauseTables, orderBy=orderBy))
+            DecoratedResultSet(result_set, result_decorator=get_bpp))
 
     def _decorate_with_prejoins(self, result_set):
         """Decorate build records with related data prefetch functionality."""
         # Grab the native storm result set.
-        result_set = removeSecurityProxy(result_set)._result_set
+        result_set = IResultSet(result_set)
         decorated_results = DecoratedResultSet(
             result_set, pre_iter_hook=self._prefetchBuildData)
         return decorated_results

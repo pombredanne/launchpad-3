@@ -200,8 +200,8 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             distroseries=series,
             sourcepackagerelease=release)
         self.assertEqual(
-            ["Maintainer: %s" % dsp.currentrelease.maintainer.displayname],
-            self.getPickerEntry(dsp).details)
+            "Maintainer: %s" % dsp.currentrelease.maintainer.displayname,
+            self.getPickerEntry(dsp).details[1])
 
     def test_dsp_provides_summary(self):
         dsp = self.factory.makeDistributionSourcePackage()
@@ -223,7 +223,6 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             sourcepackagename=dsp.sourcepackagename,
             distroarchseries=archseries)
         self.assertEqual("fnord", self.getPickerEntry(dsp).description)
-
 
 class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
@@ -255,13 +254,26 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
     def test_product_provides_details(self):
         product = self.factory.makeProduct()
         self.assertEqual(
-            ["Maintainer: %s" % product.owner.displayname],
-            self.getPickerEntry(product).details)
+            "Maintainer: %s" % product.owner.displayname,
+            self.getPickerEntry(product).details[1])
 
     def test_product_provides_summary(self):
         product = self.factory.makeProduct()
         self.assertEqual(
             product.summary, self.getPickerEntry(product).description)
+
+    def test_product_truncates_summary(self):
+        summary = ("This is a deliberately, overly long summary. It goes on"
+                   "and on and on so as to break things up a good bit.")
+        product = self.factory.makeProduct(summary=summary)
+        index = summary.rfind(' ', 0, 45)
+        expected_summary = summary[:index + 1]
+        expected_details = summary[index:]
+        entry = self.getPickerEntry(product)
+        self.assertEqual(
+            expected_summary, entry.description)
+        self.assertEqual(
+            expected_details, entry.details[0])
 
 
 class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
@@ -294,8 +306,8 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
     def test_projectgroup_provides_details(self):
         projectgroup = self.factory.makeProject()
         self.assertEqual(
-            ["Maintainer: %s" % projectgroup.owner.displayname],
-            self.getPickerEntry(projectgroup).details)
+            "Maintainer: %s" % projectgroup.owner.displayname,
+            self.getPickerEntry(projectgroup).details[1])
 
     def test_projectgroup_provides_summary(self):
         projectgroup = self.factory.makeProject()
@@ -303,6 +315,18 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
             projectgroup.summary,
             self.getPickerEntry(projectgroup).description)
 
+    def test_projectgroup_truncates_summary(self):
+        summary = ("This is a deliberately, overly long summary. It goes on"
+                   "and on and on so as to break things up a good bit.")
+        projectgroup = self.factory.makeProject(summary=summary)
+        index = summary.rfind(' ', 0, 45)
+        expected_summary = summary[:index + 1]
+        expected_details = summary[index:]
+        entry = self.getPickerEntry(projectgroup)
+        self.assertEqual(
+            expected_summary, entry.description)
+        self.assertEqual(
+            expected_details, entry.details[0])
 
 class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
 
@@ -331,8 +355,8 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
         self.factory.makeDistroSeries(
             distribution=distribution, status=SeriesStatus.CURRENT)
         self.assertEqual(
-            ["Maintainer: %s" % distribution.currentseries.owner.displayname],
-            self.getPickerEntry(distribution).details)
+            "Maintainer: %s" % distribution.currentseries.owner.displayname,
+            self.getPickerEntry(distribution).details[1])
 
     def test_distribution_provides_summary(self):
         distribution = self.factory.makeDistribution()
@@ -345,6 +369,18 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
         self.assertEqual(
             'distribution', self.getPickerEntry(distribution).target_type)
 
+    def test_distribution_truncates_summary(self):
+        summary = ("This is a deliberately, overly long summary. It goes on"
+                   "and on and on so as to break things up a good bit.")
+        distribution= self.factory.makeDistribution(summary=summary)
+        index = summary.rfind(' ', 0, 45)
+        expected_summary = summary[:index + 1]
+        expected_details = summary[index:]
+        entry = self.getPickerEntry(distribution)
+        self.assertEqual(
+            expected_summary, entry.description)
+        self.assertEqual(
+            expected_details, entry.details[0])
 
 class TestPersonVocabulary:
     implements(IHugeVocabulary)

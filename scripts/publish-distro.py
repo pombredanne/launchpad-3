@@ -7,10 +7,9 @@
 
 import _pythonpath
 
-from canonical.config import config
 from lp.soyuz.scripts.publishdistro import PublishDistro
 
 
 if __name__ == "__main__":
-    script = PublishDistro(dbuser=config.archivepublisher.dbuser)
+    script = PublishDistro('publish-distro', dbuser='publish_distro')
     script.lock_and_run()
