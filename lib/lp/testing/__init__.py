@@ -89,12 +89,7 @@ import fixtures
 import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
-from storm.expr import Variable
 from storm.store import Store
-from storm.tracer import (
-    install_tracer,
-    remove_tracer_type,
-    )
 import subunit
 import testtools
 from testtools.content import Content
@@ -120,7 +115,10 @@ from canonical.launchpad.webapp import (
     errorlog,
     )
 from canonical.launchpad.webapp.adapter import (
+    print_queries,
     set_permit_timeout_from_features,
+    start_sql_logging,
+    stop_sql_logging,
     )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
@@ -270,53 +268,43 @@ class StormStatementRecorder:
         do somestuff
     self.assertThat(recorder, HasQueryCount(LessThan(42)))
 
-    Note that due to the storm API used, only one of these recorders may be in
-    place at a time: all will be removed when the first one is removed (by
-    calling __exit__ or leaving the scope of a with statement).
+    This also can be useful for investigation, such as in make harness.
+    Try printing it after you have collected some queries.  You can
+    even collect tracebacks, passing True to "tracebacks_if" for tracebacks
+    of every SQL query, or a callable that takes the SQL query string and
+    returns a boolean decision as to whether a traceback is desired.
     """
+    # Note that tests for this are in canonical.launchpad.webapp.tests.
+    # test_statementtracer, because this is really just a small wrapper of
+    # the functionality found there.
 
-    def __init__(self):
-        self.statements = []
-
-    @property
-    def count(self):
-        return len(self.statements)
+    def __init__(self, tracebacks_if=False):
+        self.tracebacks_if = tracebacks_if
+        self.query_data = []
 
     @property
     def queries(self):
-        """The statements executed as per get_request_statements."""
-        # Perhaps we could just consolidate this code with the request tracer
-        # code and not need a custom tracer at all - if we provided a context
-        # factory to the tracer, which in the production tracers would
-        # use the adapter magic, and in test created ones would log to a list.
-        # We would need to be able to remove just one tracer though, which I
-        # haven't looked into yet. RBC 20100831
-        result = []
-        for statement in self.statements:
-            result.append((0, 0, 'unknown', statement))
-        return result
+        return [record['sql'] for record in self.query_data]
+
+    @property
+    def count(self):
+        return len(self.query_data)
+
+    @property
+    def statements(self):
+        return [record['sql'][3] for record in self.query_data]
 
     def __enter__(self):
-        """Context manager protocol - return this object as the context."""
-        install_tracer(self)
+        self.query_data = start_sql_logging(self.tracebacks_if)
         return self
 
-    def __exit__(self, _ignored, _ignored2, _ignored3):
-        """Content manager protocol - do not swallow exceptions."""
-        remove_tracer_type(StormStatementRecorder)
-        return False
+    def __exit__(self, exc_type, exc_value, tb):
+        stop_sql_logging()
 
-    def connection_raw_execute(self, ignored, raw_cursor, statement, params):
-        """Increment the counter.  We don't care about the args."""
-
-        raw_params = []
-        for param in params:
-            if isinstance(param, Variable):
-                raw_params.append(param.get())
-            else:
-                raw_params.append(param)
-        raw_params = tuple(raw_params)
-        self.statements.append("%r, %r" % (statement, raw_params))
+    def __str__(self):
+        out = StringIO()
+        print_queries(self.query_data, file=out)
+        return out.getvalue()
 
 
 def record_statements(function, *args, **kwargs):
