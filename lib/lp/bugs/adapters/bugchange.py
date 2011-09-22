@@ -179,11 +179,9 @@ class AttributeChange(BugChangeBase):
 class UnsubscribedFromBug(BugChangeBase):
     """A user got unsubscribed from a bug."""
 
-    def __init__(self, when, person, unsubscribed_user, **kwargs):
+    def __init__(self, when, person, unsubscribed_user):
         super(UnsubscribedFromBug, self).__init__(when, person)
         self.unsubscribed_user = unsubscribed_user
-        self.send_notification = kwargs.get('send_notification', False)
-        self.notification_text = kwargs.get('notification_text')
 
     def getBugActivity(self):
         """See `IBugChange`."""
@@ -193,10 +191,7 @@ class UnsubscribedFromBug(BugChangeBase):
 
     def getBugNotification(self):
         """See `IBugChange`."""
-        if self.send_notification and self.notification_text:
-            return {'text': '** %s' % self.notification_text}
-        else:
-            return None
+        return None
 
 
 class BugConvertedToQuestion(BugChangeBase):

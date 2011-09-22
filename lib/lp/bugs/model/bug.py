@@ -822,7 +822,6 @@ BugMessage""" % sqlvalues(self.id))
             person = unsubscribed_by
 
         ignore_permissions = kwargs.get('ignore_permissions', False)
-        record_change = kwargs.get('record_change', True)
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 if (not ignore_permissions
@@ -831,17 +830,17 @@ BugMessage""" % sqlvalues(self.id))
                         '%s does not have permission to unsubscribe %s.' % (
                             unsubscribed_by.displayname,
                             person.displayname))
-                if record_change:
-                    self.addChange(UnsubscribedFromBug(
-                        when=UTC_NOW, person=unsubscribed_by,
-                        unsubscribed_user=person))
-                    self.updateHeat()
+
+                self.addChange(UnsubscribedFromBug(
+                    when=UTC_NOW, person=unsubscribed_by,
+                    unsubscribed_user=person))
                 store = Store.of(sub)
                 store.remove(sub)
                 # Make sure that the subscription removal has been
                 # flushed so that code running with implicit flushes
                 # disabled see the change.
                 store.flush()
+                self.updateHeat()
                 del get_property_cache(self)._known_viewers
                 return
 
@@ -1741,29 +1740,6 @@ BugMessage""" % sqlvalues(self.id))
                 result.add(who)
         return result
 
-    def getAutoRemovedSubscribers(self, for_private, for_security_related):
-        """Return the to be removed subscribers for bug with given attributes.
-
-        When a bug's privacy or security related attributes change, some
-        existing subscribers may need to be automatically removed.
-        The rules are:
-            security=false ->
-                auto removed subscribers = (bugtask security contacts)
-            privacy=false ->
-                auto removed subscribers = (bugtask bug supervisors)
-
-        """
-        bug_supervisors = []
-        security_contacts = []
-        for pillar in self.affected_pillars:
-            if (self.security_related and not for_security_related
-                and pillar.security_contact):
-                    security_contacts.append(pillar.security_contact)
-            if (self.private and not for_private
-                and pillar.bug_supervisor):
-                    bug_supervisors.append(pillar.bug_supervisor)
-        return bug_supervisors, security_contacts
-
     def reconcileSubscribers(self, for_private, for_security_related, who):
         """ Ensure only appropriate people are subscribed to private bugs.
 
@@ -1785,8 +1761,6 @@ BugMessage""" % sqlvalues(self.id))
             self.getSubscriptionInfo().direct_subscribers)
         required_subscribers = self.getRequiredSubscribers(
             for_private, for_security_related, who)
-        removed_bug_supervisors, removed_security_contacts = (
-            self.getAutoRemovedSubscribers(for_private, for_security_related))
         allowed_subscribers = set()
         allowed_subscribers.add(self.owner)
         for bugtask in self.bugtasks:
@@ -1794,31 +1768,6 @@ BugMessage""" % sqlvalues(self.id))
             allowed_subscribers.add(bugtask.pillar.owner)
             allowed_subscribers.update(set(bugtask.pillar.drivers))
         allowed_subscribers = required_subscribers.union(allowed_subscribers)
-
-        for subscriber in removed_bug_supervisors:
-            recipients = BugNotificationRecipients()
-            recipients.addBugSupervisor(subscriber)
-            self.unsubscribe(
-                subscriber, who, ignore_permissions=True, record_change=False)
-            notification_text = ("This bug is no longer private so you will "
-                "no longer be notified of changes.")
-            change = UnsubscribedFromBug(
-                UTC_NOW, who, subscriber,
-                send_notification=True,
-                notification_text=notification_text)
-            self.addChange(change, recipients=recipients)
-        for subscriber in removed_security_contacts:
-            recipients = BugNotificationRecipients()
-            recipients.addSecurityContact(subscriber)
-            self.unsubscribe(
-                subscriber, who, ignore_permissions=True, record_change=False)
-            notification_text = ("This bug is no longer security related so "
-                "you will no longer be notified of changes.")
-            change = UnsubscribedFromBug(
-                UTC_NOW, who, subscriber,
-                send_notification=True,
-                notification_text=notification_text)
-            self.addChange(change, recipients=recipients)
 
         # If this bug is for a project that is marked as having private bugs
         # by default, and the bug is private or security related, we will

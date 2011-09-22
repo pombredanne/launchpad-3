@@ -695,65 +695,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             BugNotificationRecipient.reason_body == body,
             BugNotification.bug == bug)
 
-    def test_bugSupervisorUnsubscribedIfBugMadePublic(self):
-        # The bug supervisors are unsubscribed if a bug is made public and an
-        # email is sent telling them they have been unsubscribed.
-
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers(private_security_related=True))
-
-        with person_logged_in(bug_owner):
-            bug.subscribe(bugtask_a.pillar.bug_supervisor, bug_owner)
-            who = self.factory.makePerson(name="who")
-            bug.setPrivacyAndSecurityRelated(
-                private=False, security_related=True, who=who)
-            subscribers = bug.getDirectSubscribers()
-        self.assertFalse(bugtask_a.pillar.bug_supervisor in subscribers)
-
-        notifications = self._fetch_notifications(
-            bug,
-            header='Bug Supervisor',
-            body=('You received this bug notification because you are '
-                    'a bug supervisor.'))
-        recipients = []
-        for n in notifications:
-            recipients.extend(recipient.person for recipient in n.recipients)
-        expected_recipients = [
-            default_bugtask.pillar.bug_supervisor,
-            bugtask_a.pillar.bug_supervisor,
-            ]
-        self.assertContentEqual(expected_recipients, recipients)
-
-    def test_securityContactUnsubscribedIfBugNotSecurityRelated(self):
-        # The security contacts are unsubscribed if a bug has security_related
-        # set to false and an email is sent telling them they have been
-        # unsubscribed.
-
-        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers(private_security_related=True))
-
-        with person_logged_in(bug_owner):
-            bug.subscribe(bugtask_a.pillar.security_contact, bug_owner)
-            who = self.factory.makePerson(name="who")
-            bug.setPrivacyAndSecurityRelated(
-                private=True, security_related=False, who=who)
-            subscribers = bug.getDirectSubscribers()
-        self.assertFalse(bugtask_a.pillar.security_contact in subscribers)
-
-        notifications = self._fetch_notifications(
-            bug,
-            header='Security Contact',
-            body=('You received this bug notification because you are '
-                    'a security contact.'))
-        recipients = []
-        for n in notifications:
-            recipients.extend(recipient.person for recipient in n.recipients)
-        expected_recipients = [
-            bugtask_a.pillar.security_contact,
-            bugtask_b.pillar.security_contact,
-            ]
-        self.assertContentEqual(expected_recipients, recipients)
-
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
         TestBugPrivateAndSecurityRelatedUpdatesMixin, TestCaseWithFactory):

@@ -403,6 +403,7 @@ direct subscribers (eg bugtask pillar maintainers) will remain subscribed.
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
+    Mark Shuttleworth
     Robert Collins
     Ubuntu Team
 
@@ -428,6 +429,7 @@ any subscribers not converted to direct subscribers.
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
+    Mark Shuttleworth
     Robert Collins
     Ubuntu Team
 
@@ -454,6 +456,7 @@ You can query for the addresses and reasons:
     >>> addresses = recipients.getEmails()
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
+     ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
@@ -469,7 +472,6 @@ notification level or higher will be returned.
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
-     ('no-priv@canonical.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
