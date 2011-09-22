@@ -12,6 +12,7 @@ from lp.services.messaging.interfaces import (
     EmptyQueueException,
     IMessageConsumer,
     IMessageProducer,
+    IMessageSession,
     )
 from lp.services.messaging.queue import (
     MessagingDataManager,
@@ -40,6 +41,7 @@ class TestRabbitQueue(TestCase):
 
     def test_interfaces(self):
         self.assertThat(self.queue, Provides(IMessageConsumer))
+        self.assertThat(self.queue.session, Provides(IMessageSession))
         self.assertThat(self.key, Provides(IMessageProducer))
         self.assertThat(
             MessagingDataManager(),

@@ -8,14 +8,35 @@ __all__ = [
     'EmptyQueueException',
     'IMessageProducer',
     'IMessageConsumer',
+    'IMessageSession',
     ]
 
 
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 
 class EmptyQueueException(Exception):
     """Raised if there are no queued messages on a non-blocking read."""
+
+
+class IMessageSession(Interface):
+
+    connection = Attribute("A connection to the messaging system.")
+
+    def connect():
+        """Connect to the messaging system.
+
+        If the session is already connected this should be a no-op.
+        """
+
+    def disconnect():
+        """Disconnect from the messaging system.
+
+        If the session is already disconnected this should be a no-op.
+        """
 
 
 class IMessageConsumer(Interface):

@@ -23,6 +23,7 @@ from lp.services.messaging.interfaces import (
     EmptyQueueException,
     IMessageConsumer,
     IMessageProducer,
+    IMessageSession,
     )
 
 
@@ -76,20 +77,45 @@ class MessagingDataManager:
 
 class RabbitSession(threading.local):
 
+    implements(IMessageSession)
+
     def __init__(self):
         self._connection = None
         self._data_manager = None
 
     @property
     def connection(self):
-        # Open a connection and channel for this thread if necessary.
-        # Connections cannot be shared between threads.
+        """See `IMessageSession`.
+
+        Don't return closed connection.
+        """
+        if self._connection is None:
+            return None
+        elif self._connection.transport is None:
+            return None
+        else:
+            return self._connection
+
+    def connect(self):
+        """See `IMessageSession`.
+
+        Open a connection for this thread if necessary. Connections cannot be
+        shared between threads.
+        """
         if self._connection is None or self._connection.transport is None:
             self._connection = amqp.Connection(
                 host=config.rabbitmq.host, userid=config.rabbitmq.userid,
                 password=config.rabbitmq.password,
                 virtual_host=config.rabbitmq.virtual_host, insist=False)
         return self._connection
+
+    def disconnect(self):
+        """See `IMessageSession`."""
+        if self._connection is not None:
+            try:
+                self._connection.close()
+            finally:
+                self._connection = None
 
     def defer(self, func, *args, **kwargs):
         if self._data_manager is None:
@@ -111,7 +137,8 @@ class RabbitMessageBase:
     @property
     def channel(self):
         if self._channel is None or not self._channel.is_open:
-            self._channel = self.session.connection.channel()
+            connection = self.session.connect()
+            self._channel = connection.channel()
             #self._channel.access_request(
             #    '/data', active=True, write=True, read=True)
             self._channel.exchange_declare(
