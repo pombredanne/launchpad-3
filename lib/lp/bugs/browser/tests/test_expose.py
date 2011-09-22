@@ -124,7 +124,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         # the team.  (If the team has a preferredemail, muting is not
         # possible).
         context = self.factory.makeProduct(owner=self.user)
-        team1 = self.factory.makeTeam(name='team-1', owner=self.user)
+        self.factory.makeTeam(name='team-1', owner=self.user)
         team2 = self.factory.makeTeam(name='team-2', owner=self.user)
         self.factory.makeEmail('foo@example.net',
                                team2,
@@ -313,13 +313,13 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
             sub = target.addBugSubscription(team, team.teamowner)
         expose_user_subscriptions_to_js(user, [sub], request)
         info = IJSONRequestCache(request).objects['subscription_info']
-        self.assertEqual(len(info), 1) # One target.
+        self.assertEqual(len(info), 1)  # One target.
         target_info = info[0]
         self.assertEqual(target_info['target_title'], target.title)
         self.assertEqual(
             target_info['target_url'], canonical_url(
                 target, rootsite='mainsite'))
-        self.assertEqual(len(target_info['filters']), 1) # One filter.
+        self.assertEqual(len(target_info['filters']), 1)  # One filter.
         filter_info = target_info['filters'][0]
         self.assertEqual(filter_info['filter'], sub.bug_filters[0])
         self.assertTrue(filter_info['subscriber_is_team'])
