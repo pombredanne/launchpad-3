@@ -541,9 +541,9 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
 
         (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers())
-        initial_subscribers = set(
-            (self.factory.makePerson(), bugtask_a.owner, bug_owner,
-                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+        initial_subscribers = set((
+            self.factory.makePerson(), bugtask_a.owner, bug_owner,
+            bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
@@ -577,9 +577,9 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
 
         (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
-        initial_subscribers = set(
-            (self.factory.makePerson(), bug_owner,
-                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+        initial_subscribers = set((
+            self.factory.makePerson(), bug_owner,
+            bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
@@ -611,10 +611,10 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
 
         (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
-        initial_subscribers = set(
-            (self.factory.makePerson(),  bug_owner,
-                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver,
-                bugtask_a.pillar.bug_supervisor))
+        initial_subscribers = set((
+            self.factory.makePerson(),  bug_owner,
+            bugtask_a.pillar.security_contact, bugtask_a.pillar.driver,
+            bugtask_a.pillar.bug_supervisor))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
@@ -640,9 +640,9 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
 
         (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
-        initial_subscribers = set(
-            (self.factory.makePerson(), bug_owner,
-                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+        initial_subscribers = set((
+            self.factory.makePerson(), bug_owner,
+            bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
