@@ -14,13 +14,16 @@ from lp.services.messaging.interfaces import (
     IMessageProducer,
     )
 from lp.services.messaging.queue import (
+    MessagingDataManager,
     RabbitQueue,
     RabbitRoutingKey,
     )
 from lp.testing import TestCase
+from lp.testing.matchers import Provides
 
 
 class TestRabbitQueue(TestCase):
+
     layer = RabbitMQLayer
 
     def setUp(self):
@@ -35,9 +38,12 @@ class TestRabbitQueue(TestCase):
         self.queue._disconnect()
         super(TestCase, self).tearDown()
 
-    def test_implements(self):
-        self.assertTrue(IMessageConsumer.providedBy(self.queue))
-        self.assertTrue(IMessageProducer.providedBy(self.key))
+    def test_interfaces(self):
+        self.assertThat(self.queue, Provides(IMessageConsumer))
+        self.assertThat(self.key, Provides(IMessageProducer))
+        self.assertThat(
+            MessagingDataManager([]),
+            Provides(transaction.interfaces.IDataManager))
 
     def test_send_now(self):
         for data in range(50, 60):

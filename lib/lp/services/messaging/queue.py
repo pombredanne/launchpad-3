@@ -9,19 +9,21 @@ __all__ = [
     "RabbitQueue",
     ]
 
-from amqplib import client_0_8 as amqp
 import json
 from threading import local as thread_local
 import time
+
+from amqplib import client_0_8 as amqp
 import transaction
 from zope.interface import implements
 
 from canonical.config import config
 from lp.services.messaging.interfaces import (
+    EmptyQueueException,
     IMessageConsumer,
     IMessageProducer,
-    EmptyQueueException,
     )
+
 
 LAUNCHPAD_EXCHANGE = "launchpad-exchange"
 
@@ -33,7 +35,11 @@ class MessagingDataManager:
     the Zope transactions are committed.  It will iterate over the messages
     and send them using queue.send(oncommit=False).
     """
+
+    implements(transaction.interfaces.IDataManager)
+
     def __init__(self, messages):
+        self.transaction_manager = transaction.manager
         self.messages = messages
 
     def _cleanup(self):
@@ -181,10 +187,10 @@ class RabbitQueue(RabbitMessageBase):
         # XXX The code below will be useful when we can implement this
         # properly.
         result = []
+
         def callback(msg):
             result.append(json.loads(msg.body))
 
         self.channel.basic_consume(self.name, callback=callback)
         self.channel.wait()
         return result[0]
-
