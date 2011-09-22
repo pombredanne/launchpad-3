@@ -20,9 +20,13 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import Provides
+from lp.testing.matchers import (
+    HasQueryCount,
+    Provides,
+    )
 
 
 class TestPersonSubscriptionInfo(TestCaseWithFactory):
@@ -509,12 +513,11 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             team.addMember(self.subscriber, team.teamowner,
                            status=TeamMembershipStatus.ADMIN)
         self.makeDuplicates(count=1, subscriber=team)
-        logger = SQLLogger()
-        with logger:
+        with StormStatementRecorder() as recorder:
             self.subscriptions.reload()
         # This should produce a very small number of queries.
-        count_with_one_subscribed_duplicate = len(logger.queries)
-        self.assertThat(count_with_one_subscribed_duplicate, LessThan(5))
+        self.assertThat(recorder, HasQueryCount(LessThan(5)))
+        count_with_one_subscribed_duplicate = recorder.count
         # It should have the correct result.
         self.assertCollectionsAreEmpty(except_='from_duplicate')
         self.assertCollectionContents(
@@ -522,10 +525,10 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # If we increase the number of duplicates subscribed via the team that
         # the user administers...
         self.makeDuplicates(count=4, subscriber=team)
-        with logger:
+        with StormStatementRecorder() as recorder:
             self.subscriptions.reload()
         # ...then the query count should remain the same.
-        count_with_five_subscribed_duplicates = len(logger.queries)
+        count_with_five_subscribed_duplicates = recorder.count
         self.assertEqual(
             count_with_one_subscribed_duplicate,
             count_with_five_subscribed_duplicates)
