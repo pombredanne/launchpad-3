@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -26,7 +26,6 @@ __all__ = [
     ]
 
 import httplib
-import simplejson
 
 from lazr.restful import (
     EntryResource,
@@ -36,6 +35,7 @@ from lazr.restful.declarations import error_status
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.tales import WebLayerAPI
 from lazr.restful.utils import get_current_browser_request
+import simplejson
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
@@ -79,7 +79,6 @@ from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
-
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
@@ -360,8 +359,8 @@ class LaunchpadView(UserAttributeCache):
 
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
-        # By default, any LaunchpadView cannot be traversed through. Those that
-        # can override this method.
+        # By default, a LaunchpadView cannot be traversed through.
+        # Those that can be must override this method.
         raise NotFound(self, name, request=request)
 
 

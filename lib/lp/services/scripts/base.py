@@ -30,6 +30,7 @@ from contrib.glock import (
     LockAlreadyAcquired,
     )
 import pytz
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config, dbconfig
@@ -359,8 +360,9 @@ class LaunchpadScript:
         if dbuser is None:
             connstr = ConnectionString(dbconfig.main_master)
             dbuser = connstr.user or dbconfig.dbuser
-        self.txn = ZopelessTransactionManager.initZopeless(
+        ZopelessTransactionManager.initZopeless(
             dbuser=dbuser, isolation=isolation)
+        self.txn = transaction
 
     def record_activity(self, date_started, date_completed):
         """Hook to record script activity."""

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -14,18 +14,19 @@ __all__ = [
 
 
 import hashlib
-import re
+from select import select
 import socket
-import time
+from socket import (
+    SOCK_STREAM,
+    AF_INET,
+    )
 import threading
+import time
 import urllib
 import urllib2
-
-from select import select
-from socket import SOCK_STREAM, AF_INET
 from urlparse import (
-    urlparse,
     urljoin,
+    urlparse,
     urlunparse,
     )
 
@@ -34,13 +35,24 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config, dbconfig
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.database.postgresql import ConnectionString
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from canonical.librarian.interfaces import (
-    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
-    LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
+    DownloadFailed,
+    ILibrarianClient,
+    IRestrictedLibrarianClient,
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    LibrarianServerError,
+    UploadFailed,
+    )
 from lp.services.timeline.requesttimeline import get_request_timeline
 
 
@@ -516,9 +528,12 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
         return config.librarian.download_url
 
     @property
-    def _internal_download_url(self): # used by _getURLForDownload
-        return 'http://%s:%s/' % (config.librarian.download_host,
-                                  config.librarian.download_port)
+    def _internal_download_url(self):
+        """Used by `_getURLForDownload`."""
+        return 'http://%s:%s/' % (
+            config.librarian.download_host,
+            config.librarian.download_port,
+            )
 
 
 class RestrictedLibrarianClient(LibrarianClient):
@@ -540,6 +555,9 @@ class RestrictedLibrarianClient(LibrarianClient):
         return config.librarian.restricted_download_url
 
     @property
-    def _internal_download_url(self): # used by _getURLForDownload
-        return 'http://%s:%s/' % (config.librarian.restricted_download_host,
-                                  config.librarian.restricted_download_port)
+    def _internal_download_url(self):
+        """Used by `_getURLForDownload`."""
+        return 'http://%s:%s/' % (
+            config.librarian.restricted_download_host,
+            config.librarian.restricted_download_port,
+            )

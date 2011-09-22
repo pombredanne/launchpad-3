@@ -323,32 +323,6 @@ COMMENT ON COLUMN BugNotificationRecipient.reason_header IS 'The reason this per
 COMMENT ON COLUMN BugNotificationRecipient.reason_body IS 'A line of text describing the reason this person is receiving this notification (to be included in the email message).';
 
 
--- BugPackageInfestation
-
-COMMENT ON TABLE BugPackageInfestation IS 'A BugPackageInfestation records the impact that a bug is known to have on a specific sourcepackagerelease. This allows us to track the versions of a package that are known to be affected or unaffected by a bug.';
-COMMENT ON COLUMN BugPackageInfestation.bug IS 'The Bug that infests this source package release.';
-COMMENT ON COLUMN BugPackageInfestation.sourcepackagerelease IS 'The package (software) release that is infested with the bug. This points at the specific source package release version, such as "apache 2.0.48-1".';
-COMMENT ON COLUMN BugPackageInfestation.explicit IS 'This field records whether or not the infestation was documented by a user of the system, or inferred from some other source such as the fact that it is documented to affect prior and subsequent releases of the package.';
-COMMENT ON COLUMN BugPackageInfestation.infestationstatus IS 'The nature of the bug infestation for this source package release. Values are documented in dbschema.BugInfestationStatus, and include AFFECTED, UNAFFECTED, FIXED and VICTIMISED. See the dbschema.py file for details.';
-COMMENT ON COLUMN BugPackageInfestation.creator IS 'The person who recorded this infestation. Typically, this is the user who reports the specific problem on that specific package release.';
-COMMENT ON COLUMN BugPackageInfestation.verifiedby IS 'The person who verified that this infestation affects this specific package.';
-COMMENT ON COLUMN BugPackageInfestation.dateverified IS 'The timestamp when the problem was verified on that specific release. This a small step towards a complete workflow for defect verification and management on specific releases.';
-COMMENT ON COLUMN BugPackageInfestation.lastmodified IS 'The timestamp when this infestation report was last modified in any way. For example, when the infestation was adjusted, or it was verified, or otherwise modified.';
-COMMENT ON COLUMN BugPackageInfestation.lastmodifiedby IS 'The person who touched this infestation report last, in any way.';
-
--- BugProductInfestation
-
-COMMENT ON TABLE BugProductInfestation IS 'A BugProductInfestation records the impact that a bug is known to have on a specific productrelease. This allows us to track the versions of a product that are known to be affected or unaffected by a bug.';
-COMMENT ON COLUMN BugProductInfestation.bug IS 'The Bug that infests this product release.';
-COMMENT ON COLUMN BugProductInfestation.productrelease IS 'The product (software) release that is infested with the bug. This points at the specific release version, such as "apache 2.0.48".';
-COMMENT ON COLUMN BugProductInfestation.explicit IS 'This field records whether or not the infestation was documented by a user of the system, or inferred from some other source such as the fact that it is documented to affect prior and subsequent releases of the product.';
-COMMENT ON COLUMN BugProductInfestation.infestationstatus IS 'The nature of the bug infestation for this product release. Values are documented in dbschema.BugInfestationStatus, and include AFFECTED, UNAFFECTED, FIXED and VICTIMISED. See the dbschema.py file for details.';
-COMMENT ON COLUMN BugProductInfestation.creator IS 'The person who recorded this infestation. Typically, this is the user who reports the specific problem on that specific product release.';
-COMMENT ON COLUMN BugProductInfestation.verifiedby IS 'The person who verified that this infestation affects this specific product release.';
-COMMENT ON COLUMN BugProductInfestation.dateverified IS 'The timestamp when the problem was verified on that specific release. This a small step towards a complete workflow for defect verification and management on specific releases.';
-COMMENT ON COLUMN BugProductInfestation.lastmodified IS 'The timestamp when this infestation report was last modified in any way. For example, when the infestation was adjusted, or it was verified, or otherwise modified.';
-COMMENT ON COLUMN BugProductInfestation.lastmodifiedby IS 'The person who touched this infestation report last, in any way.';
-
 -- BugTracker
 
 COMMENT ON TABLE BugTracker IS 'A bug tracker in some other project. Malone allows us to link Malone bugs with bugs recorded in other bug tracking systems, and to keep the status of the relevant bug task in sync with the status in that upstream bug tracker. So, for example, you might note that Malone bug #43224 is the same as a bug in the Apache bugzilla, number 534536. Then when the upstream guys mark that bug fixed in their bugzilla, Malone know that the bug is fixed upstream.';
@@ -682,18 +656,6 @@ COMMENT ON COLUMN MailingListSubscription.mailing_list IS 'The mailing list this
 COMMENT ON COLUMN MailingListSubscription.date_joined IS 'The date this person subscribed to the mailing list.';
 COMMENT ON COLUMN MailingListSubscription.email_address IS 'Which of the person''s email addresses are subscribed to the mailing list.  This may be NULL to indicate that it''s the person''s preferred address.';
 
--- MailingListBan
-
-COMMENT ON TABLE MailingListBan IS 'Track explicit Launchpad-wide posting bans imposed on people by Launchpad administrators.';
-COMMENT ON COLUMN MailingListBan.person IS 'The person who was banned.';
-COMMENT ON COLUMN MailingListBan.banned_by IS 'The administrator who imposed the ban.';
-COMMENT ON COLUMN MailingListBan.date_banned IS 'When the ban was imposed.';
-COMMENT ON COLUMN MailingListBan.reason IS 'The reason for the ban.';
-
--- MentoringOffer
-COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
-COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
-
 -- MergeDirectiveJob
 COMMENT ON TABLE MergeDirectiveJob IS 'A job to process a merge directive.';
 COMMENT ON COLUMN MergeDirectiveJob.job IS 'The job associated with this MergeDirectiveJob.';
@@ -815,12 +777,6 @@ translations imports from codehosting branch: None, templates only, templates
 and translations. See TranslationsBranchImportMode.';
 COMMENT ON COLUMN ProductSeries.translations_branch IS 'Branch to push translations updates to.';
 
--- ProductSeriesCodeImport
-
-COMMENT ON TABLE ProductSeriesCodeImport IS 'A record of which ProductSeries'' import data a CodeImport was constructed from.';
-COMMENT ON COLUMN ProductSeriesCodeImport.productseries IS 'The source ProductSeries.';
-COMMENT ON COLUMN ProductSeriesCodeImport.codeimport IS 'The CodeImport that was constructed from the ProductSeries.';
-
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
 COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';
@@ -860,14 +816,6 @@ COMMENT ON COLUMN Project.bug_reporting_guidelines IS 'Guidelines to the end use
 COMMENT ON COLUMN Project.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 COMMENT ON COLUMN Project.max_bug_heat IS 'The highest heat value across bugs for products in this project.';
 COMMENT ON COLUMN Project.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
-
-
--- ProjectRelationship
-COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the ''label'' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
-COMMENT ON COLUMN ProjectRelationship.subject IS 'The subject of the relationship. Relationships are generally unidirectional - A AGGREGATES B is not the same as B AGGREGATES A. In the example "Gnome AGGREGATES Evolution", Gnome is the subject.';
-COMMENT ON COLUMN ProjectRelationship.object IS 'The object of the relationship. In the example "Gnome AGGREGATES Evolution", Evolution is the object.';
-COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. This integer takes one of the values enumerated in dbschema.py ProjectRelationship';
-
 
 -- POTMsgSet
 COMMENT ON TABLE POTMsgSet IS 'This table is stores a collection of msgids
@@ -956,12 +904,6 @@ COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments s
 COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated this specification for the agenda of the sprint.';
 COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
-
--- StaticDiff
-COMMENT ON TABLE StaticDiff IS 'Information about static diffs.';
-COMMENT ON COLUMN StaticDiff.from_revision_id IS 'The revision-id that the diff is from.';
-COMMENT ON COLUMN StaticDiff.diff IS 'The Diff.';
-COMMENT ON COLUMN StaticDiff.to_revision_id IS 'The revision-id that the diff is to.';
 
 -- TeamMembership
 COMMENT ON TABLE TeamMembership IS 'The direct membership of a person on a given team.';
@@ -1370,25 +1312,6 @@ COMMENT ON COLUMN QuestionJob.job_type IS 'The type of job, such as new-answer-n
 COMMENT ON COLUMN QuestionJob.json_data IS 'Data that is specific to the type of job, normally stores text to append to email notifications.';
 COMMENT ON COLUMN QuestionJob.question IS 'The newly added question message.';
 
--- Bounty
-COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
-COMMENT ON COLUMN Bounty.usdvalue IS 'This is the ESTIMATED value in US Dollars of the bounty. We say "estimated" because the bounty might one day be offered in one of several currencies, or people might contribute different amounts in different currencies to each bounty. This field will reflect an estimate based on recent currency exchange rates of the value of this bounty in USD.';
-COMMENT ON COLUMN Bounty.difficulty IS 'An estimate of the difficulty of the bounty, as a dbschema.BountyDifficulty.';
-COMMENT ON COLUMN Bounty.bountystatus IS 'The current status of this bounty
-- an indicator of whether or not it is open, closed, or withdrawn.';
-COMMENT ON COLUMN Bounty.reviewer IS 'The person who will review this bounty regularly for progress. The reviewer is the person who is responsible for establishing when the bounty is complete.';
-COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner can update the specification of the bounty, and appoints the reviewer.';
-
-COMMENT ON TABLE BountySubscription IS 'This table records whether or not someone it interested in a bounty. Subscribers will show up on the page with the bounty details.';
-COMMENT ON COLUMN BountySubscription.bounty IS 'The bounty to which the person is subscribed.';
-COMMENT ON COLUMN BountySubscription.person IS 'The person being subscribed to this bounty.';
-
-COMMENT ON TABLE ProductBounty IS 'This table records a simple link between a bounty and a product. This bounty will be listed on the product web page, and the product will be mentioned on the bounty web page.';
-
-COMMENT ON TABLE DistributionBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
-
-COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
-
 -- BugMessages
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
@@ -1686,14 +1609,6 @@ COMMENT ON TABLE DistroArchSeries IS 'DistroArchSeries: A soyuz distribution rel
 COMMENT ON COLUMN DistroArchSeries.distroseries IS 'The distribution which this distroarchseries is part of.';
 
 
--- DistroComponentUploader
-
-COMMENT ON TABLE DistroComponentUploader IS 'DistroComponentUploader: A record of who can upload what to where. Distributions are permitted to have multiple components. Those components are often subject to different uploader constraints. This table represents those variable constraints by linking a team to a distribution,component tuple.';
-COMMENT ON COLUMN DistroComponentUploader.distribution IS 'The distribution to which this upload permission applies.';
-COMMENT ON COLUMN DistroComponentUploader.component IS 'The component to which this upload permission applies.';
-COMMENT ON COLUMN DIstroComponentUploader.uploader IS 'The uploader(s) permitted to upload to the given component in the given distribution. This is commonly a team but may be a single person in the case of a simple distribution.';
-
-
 -- LibraryFileContent
 
 COMMENT ON TABLE LibraryFileContent IS 'LibraryFileContent: A librarian file''s contents. The librarian stores files in a safe and transactional way. This table represents the contents of those files within the database.';
@@ -1743,16 +1658,6 @@ COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be valid
 COMMENT ON COLUMN LoginToken.date_consumed IS 'The date and time when this token was consumed. It''s NULL if it hasn''t been consumed yet.';
 
 
-COMMENT ON TABLE AuthToken IS 'AuthToken stores one time tokens used by the authentication service for validating email addresses and other tasks that require verifying an email address is valid such as password recovery and account merging. This table will be cleaned occasionally to remove expired tokens. Expiry time is not yet defined.';
-COMMENT ON COLUMN AuthToken.requester IS 'The Account that made this request. This will be null for password recovery requests.';
-COMMENT ON COLUMN AuthToken.requester_email IS 'The email address that was used to login when making this request. This provides an audit trail to help the end user confirm that this is a valid request. It is not a link to the EmailAddress table as this may be changed after the request is made. This field will be null for password recovery requests.';
-COMMENT ON COLUMN AuthToken.email IS 'The email address that this request was sent to.';
-COMMENT ON COLUMN AuthToken.date_created IS 'The timestamp that this request was made.';
-COMMENT ON COLUMN AuthToken.token_type IS 'The type of request, as per dbschema.TokenType.';
-COMMENT ON COLUMN AuthToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
-COMMENT ON COLUMN AuthToken.date_consumed IS 'The date and time when this token was consumed. It''s NULL if it hasn''t been consumed yet.';
-
-
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
 COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
@@ -1763,10 +1668,6 @@ COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this i
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
 COMMENT ON COLUMN Milestone.active IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
 COMMENT ON COLUMN Milestone.summary IS 'This can be used to summarize the changes included in past milestones and to document the status of current milestones.';
-
-COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
-COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
-COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';
 
 -- BuildFarmJob, and its related tables, PackageBuild, BinaryPackageBuild
 COMMENT ON TABLE BuildFarmJob IS 'BuildFarmJob: This table stores the information common to all jobs on the Launchpad build farm.';
@@ -1859,7 +1760,6 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsib
 COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for this publishing record.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The source package record published immediately before this one.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.creator IS 'The creator of this publishing record.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -1977,69 +1877,6 @@ COMMENT ON TABLE VoteCast IS 'Here we store who has already voted in a poll, to 
 COMMENT ON COLUMN VoteCast.person IS 'The person who voted.';
 COMMENT ON COLUMN VoteCast.poll IS 'The poll in which this person voted.';
 
--- ShippingRequest
-COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
-COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
-COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
-COMMENT ON COLUMN ShippingRequest.type IS 'The type of the request.';
-COMMENT ON COLUMN ShippingRequest.status IS 'The status of the request.';
-COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
-COMMENT ON COLUMN ShippingRequest.whocancelled IS 'The person who cancelled this.';
-COMMENT ON COLUMN ShippingRequest.reason IS 'A comment from the requester explaining why he want the CDs.';
-COMMENT ON COLUMN ShippingRequest.highpriority IS 'Is this a high priority request?';
-COMMENT ON COLUMN ShippingRequest.city IS 'The city to which this request should be shipped.';
-COMMENT ON COLUMN ShippingRequest.phone IS 'The phone number of the requester.';
-COMMENT ON COLUMN ShippingRequest.country IS 'The country to which this request should be shipped.';
-COMMENT ON COLUMN ShippingRequest.province IS 'The province to which this request should be shipped.';
-COMMENT ON COLUMN ShippingRequest.postcode IS 'The postcode to which this request should be shipped.';
-COMMENT ON COLUMN ShippingRequest.addressline1 IS 'The address (first line) to which this request should be shipped.';
-COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to which this request should be shipped.';
-COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
-COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient''s name when a request is made by a ShipIt admin in behalf of someone else';
-COMMENT ON COLUMN ShippingRequest.shipment IS 'The corresponding Shipment record for this request, generated on export.';
-COMMENT ON COLUMN ShippingRequest.normalized_address IS 'The normalized
-address of this request. It is maintained by a trigger because it''s safer than hacking sqlobject''s internals (specially because we sometimes update data behind sqlobject''s back).';
-
--- RequestedCDs
-COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
-COMMENT ON COLUMN RequestedCDs.quantity IS 'The number of CDs.';
-COMMENT ON COLUMN RequestedCDs.quantityapproved IS 'The number of CDs that were approved for shipping, in case the request was approved.';
-COMMENT ON COLUMN RequestedCDs.request IS 'The request itself.';
-COMMENT ON COLUMN RequestedCDs.distroseries IS 'The distroseries of the CDs (e.g. Ubuntu Breezy).';
-COMMENT ON COLUMN RequestedCDs.architecture IS 'The architecture the CDs are meant to be installed on (e.g. x86).';
-COMMENT ON COLUMN RequestedCDs.flavour IS 'The flavour of the distroseries (e.g. EdUbuntu).';
-
--- StandardShipItRequest
-COMMENT ON TABLE StandardShipItRequest IS 'The Standard ShipIt Requests. This is what we want most of the people to choose, having only a few people placing custom requests.';
-COMMENT ON COLUMN StandardShipItRequest.flavour IS 'The Distribution Flavour';
-COMMENT ON COLUMN StandardShipItRequest.quantityx86 IS 'The quantity of X86 CDs';
-COMMENT ON COLUMN StandardShipItRequest.quantityamd64 IS 'The quantity of AMD64 CDs';
-COMMENT ON COLUMN StandardShipItRequest.quantityppc IS 'The quantity of PowerPC CDs';
-COMMENT ON COLUMN StandardShipItRequest.isdefault IS 'Is this the order that is pre-selected in the options we give for the user?';
-COMMENT ON COLUMN StandardShipItRequest.description IS 'The description of this option.';
-
--- ShipItSurvey*
-COMMENT ON TABLE ShipItSurvey IS 'A sequence of questions and their answers given by a ShipIt user.';
-COMMENT ON TABLE ShipItSurveyQuestion IS 'The text of a question that is asked of ShipIt users.';
-COMMENT ON TABLE ShipItSurveyAnswer IS 'The text of an answer given by ShipIt users. Answers are usually multiple choice, but freeform answers could be stored here too.';
-COMMENT ON TABLE ShipItSurveyResult IS 'A single element in a ShipItSurvey.';
-COMMENT ON COLUMN ShipItSurveyResult.answer IS 'The given answer. NULL indicates not answered (which may be different to declined to answer).';
-
--- Shipment
-COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can''t be changed anymore.';
-COMMENT ON COLUMN Shipment.logintoken IS 'A unique token used to identify users that come back after receiving CDs as part of an shock and awe campaign.';
-COMMENT ON COLUMN Shipment.shippingrun IS 'The shippingrun to which this shipment belongs.';
-COMMENT ON COLUMN Shipment.dateshipped IS 'The date when this shipment was shipped by the shipping company.';
-COMMENT ON COLUMN Shipment.shippingservice IS 'The shipping service used for this shipment.';
-COMMENT ON COLUMN Shipment.trackingcode IS 'A code used to track the shipment after it''s shipped.';
-
--- ShippingRun
-COMMENT ON TABLE ShippingRun IS 'A shipping run is a set of shipments that are sent to the shipping company in the same date.';
-COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was created.';
-COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
-COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';
-COMMENT ON COLUMN ShippingRun.requests_count IS 'A cache of the number of requests that are part of this ShippingRun, to avoid an expensive COUNT(*) query to get this data.';
-
 -- Language
 COMMENT ON TABLE Language IS 'A human language.';
 COMMENT ON COLUMN Language.code IS 'The ISO 639 code for this language';
@@ -2050,11 +1887,6 @@ COMMENT ON COLUMN Language.pluralforms IS 'The number of plural forms this langu
 COMMENT ON COLUMN Language.pluralexpression IS 'The plural expression for this language, as used by gettext';
 COMMENT ON COLUMN Language.visible IS 'Whether this language should usually be visible or not';
 COMMENT ON COLUMN Language.direction IS 'The direction that text is written in this language';
-
--- ShipItReport
-COMMENT ON TABLE ShipItReport IS 'A report generated with the ShipIt data.';
-COMMENT ON COLUMN ShipItReport.datecreated IS 'The date this report run was created.';
-COMMENT ON COLUMN ShipItReport.csvfile IS 'A csv file with the report';
 
 -- Continent
 COMMENT ON TABLE Continent IS 'A continent in this huge world.';
@@ -2301,26 +2133,6 @@ COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this en
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
--- OpenIdRPConfig
-COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
-COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
-COMMENT ON COLUMN OpenIdRPConfig.displayname IS 'The human readable name for this RP';
-COMMENT ON COLUMN OpenIDRPConfig.description IS 'A description of the RP.  Should indicate why the RP wants the user to log in';
-COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
-COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
-COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
-COMMENT ON COLUMN OpenIdRPConfig.can_query_any_team IS 'This RP can query for membership of any or all teams, including private teams. This setting overrides any other private team query ACLs, and should not be used if more granular options are suitable.';
-COMMENT ON COLUMN OpenIdRPConfig.auto_authorize IS 'True if the user authorisation page is skipped by default for this RP.';
-
---OpenIDRPSummary
-COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
-COMMENT ON COLUMN OpenIDRPSummary.account IS 'The account who used the RP.';
-COMMENT ON COLUMN OpenIDRPSummary.openid_identifier IS 'The OpenID identifier used to login.';
-COMMENT ON COLUMN OpenIDRPSummary.trust_root IS 'The trust root for the RP';
-COMMENT ON COLUMN OpenIDRPSummary.date_created IS 'The creation date of this summary; the first time the person used the RP.';
-COMMENT ON COLUMN OpenIDRPSummary.date_last_used IS 'The date the RP was last used.';
-COMMENT ON COLUMN OpenIDRPSummary.total_logins IS 'The total number of times the RP was used by the person.';
-
 -- ProductSubscription
 -- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
 
@@ -2522,14 +2334,6 @@ COMMENT ON TABLE OAuthNonce IS 'The unique nonce for any request with a given ti
 COMMENT ON COLUMN OAuthNonce.access_token IS 'The access token.';
 COMMENT ON COLUMN OAuthNonce.nonce IS 'The nonce itself.';
 COMMENT ON COLUMN OAuthNonce.request_timestamp IS 'The date and time (as a timestamp) in which the request was made.';
-
-COMMENT ON TABLE WebServiceBan IS 'A list of specifications of clients which should be denied access on the web service.';
-COMMENT ON COLUMN WebServiceBan.person IS 'If set, all access by this person should be denied access.';
-COMMENT ON COLUMN WebServiceBan.consumer IS 'If set, all access by this consumer should be denied.';
-COMMENT ON COLUMN WebServiceBan.token IS 'If set, all all access using this token should be denied.';
-COMMENT ON COLUMN WebServiceBan.ip IS 'If set, all requests from that host or network should be denied. If either person, consumer or token is also set, then only requests matching both the IP and the other constraint will be denied.';
-COMMENT ON COLUMN WebServiceBan.date_created IS 'When this ban was created.';
-COMMENT ON COLUMN WebServiceBan.active IS 'Is the ban still in effect?';
 
 COMMENT ON TABLE UserToUserEmail IS 'A log of all direct user-to-user email contacts that have gone through Launchpad.';
 COMMENT ON COLUMN UserToUserEmail.sender IS 'The person sending this email.';

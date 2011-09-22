@@ -10,6 +10,7 @@ __all__ = [
     "BugTaskAssigneeWidget",
     "BugTaskBugWatchWidget",
     "BugTaskSourcePackageNameWidget",
+    "BugTaskTargetWidget",
     "BugWatchEditForm",
     "DBItemDisplayWidget",
     "NewLineToSpacesWidget",
@@ -66,11 +67,13 @@ from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
     )
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet,
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
+from lp.bugs.vocabulary import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
@@ -471,6 +474,14 @@ class BugTaskBugWatchWidget(RadioWidget):
         return renderElement(
             'table', cssClass=self.cssClass,
             contents='\n'.join(rendered_items))
+
+
+class BugTaskTargetWidget(LaunchpadTargetWidget):
+
+    def getDistributionVocabulary(self):
+        distro = self.context.context.distribution
+        vocabulary = UsesBugsDistributionVocabulary(distro)
+        return vocabulary
 
 
 class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):

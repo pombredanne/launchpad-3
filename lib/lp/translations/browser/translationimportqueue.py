@@ -92,6 +92,8 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
     max_series_to_display = 3
 
+    page_title = 'Translation import queue entry'
+
     @property
     def initial_values(self):
         """Initialize some values on the form, when it's possible."""

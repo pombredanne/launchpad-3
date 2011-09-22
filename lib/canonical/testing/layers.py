@@ -44,6 +44,7 @@ __all__ = [
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
     'YUITestLayer',
+    'YUIAppServerLayer',
     'ZopelessAppServerLayer',
     'ZopelessDatabaseLayer',
     'ZopelessLayer',
@@ -210,14 +211,18 @@ def disconnect_stores():
             store.close()
 
 
-def reconnect_stores(database_config_section='launchpad'):
+def reconnect_stores(database_config_section=None):
     """Reconnect Storm stores, resetting the dbconfig to its defaults.
 
     After reconnecting, the database revision will be checked to make
     sure the right data is available.
     """
     disconnect_stores()
-    dbconfig.setConfigSection(database_config_section)
+    if database_config_section:
+        section = getattr(config, database_config_section)
+        dbconfig.override(
+            dbuser=getattr(section, 'dbuser', None),
+            isolation_level=getattr(section, 'isolation_level', None))
 
     main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
@@ -755,8 +760,9 @@ class DatabaseLayer(BaseLayer):
         cls.force_dirty_database()
         cls._db_fixture.tearDown()
         cls._db_fixture = None
-        cls._db_template_fixture.tearDown()
-        cls._db_template_fixture = None
+        if os.environ.get('LP_TEST_INSTANCE'):
+            cls._db_template_fixture.tearDown()
+            cls._db_template_fixture = None
 
     @classmethod
     @profiled
@@ -1349,7 +1355,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
     @profiled
     def testSetUp(cls):
         # Connect Storm
-        reconnect_stores()
+        reconnect_stores('launchpad')
 
     @classmethod
     @profiled
@@ -1380,7 +1386,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         OpStats.resetStats()
 
         # Connect Storm
-        reconnect_stores()
+        reconnect_stores('launchpad')
 
     @classmethod
     @profiled
@@ -1447,7 +1453,7 @@ class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
     def testSetUp(cls):
         # LaunchpadZopelessLayer takes care of reconnecting the stores
         if not LaunchpadZopelessLayer.isSetUp:
-            reconnect_stores()
+            reconnect_stores('launchpad')
 
     @classmethod
     @profiled
@@ -1485,7 +1491,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def testSetUp(cls):
         # LaunchpadZopelessLayer takes care of reconnecting the stores
         if not LaunchpadZopelessLayer.isSetUp:
-            reconnect_stores()
+            reconnect_stores('launchpad')
 
     @classmethod
     @profiled
@@ -1510,7 +1516,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     """
 
     isSetUp = False
-    txn = ZopelessTransactionManager
+    txn = transaction
 
     @classmethod
     @profiled
@@ -1745,14 +1751,14 @@ class LayerProcessController:
     smtp_controller = None
 
     @classmethod
-    def _setConfig(cls):
+    def setConfig(cls):
         """Stash a config for use."""
         cls.appserver_config = CanonicalConfig(
             BaseLayer.appserver_config_name, 'runlaunchpad')
 
     @classmethod
     def setUp(cls):
-        cls._setConfig()
+        cls.setConfig()
         cls.startSMTPServer()
         cls.startAppServer()
 
@@ -1778,12 +1784,12 @@ class LayerProcessController:
 
     @classmethod
     @profiled
-    def startAppServer(cls):
+    def startAppServer(cls, run_name='run'):
         """Start the app server if it hasn't already been started."""
         if cls.appserver is not None:
             raise LayerInvariantError('App server already running')
         cls._cleanUpStaleAppServer()
-        cls._runAppServer()
+        cls._runAppServer(run_name)
         cls._waitUntilAppServerIsReady()
 
     @classmethod
@@ -1875,11 +1881,11 @@ class LayerProcessController:
             pidfile.remove_pidfile('launchpad', cls.appserver_config)
 
     @classmethod
-    def _runAppServer(cls):
+    def _runAppServer(cls, run_name):
         """Start the app server using runlaunchpad.py"""
         _config = cls.appserver_config
         cmd = [
-            os.path.join(_config.root, 'bin', 'run'),
+            os.path.join(_config.root, 'bin', run_name),
             '-C', 'configs/%s/launchpad.conf' % _config.instance_name]
         environ = dict(os.environ)
         environ['LPCONFIG'] = _config.instance_name
@@ -1888,10 +1894,14 @@ class LayerProcessController:
             env=environ, cwd=_config.root)
 
     @classmethod
+    def appserver_root_url(cls):
+        return cls.appserver_config.vhost.mainsite.rooturl
+
+    @classmethod
     def _waitUntilAppServerIsReady(cls):
         """Wait until the app server accepts connection."""
         assert cls.appserver is not None, "App server isn't started."
-        root_url = cls.appserver_config.vhost.mainsite.rooturl
+        root_url = cls.appserver_root_url()
         until = datetime.datetime.now() + WAIT_INTERVAL
         while until > datetime.datetime.now():
             try:
@@ -2001,4 +2011,24 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
 
 
 class YUITestLayer(FunctionalLayer):
-    """The base class for all YUITests cases."""
+    """The layer for all YUITests cases."""
+
+
+class YUIAppServerLayer(MemcachedLayer, RabbitMQLayer):
+    """The layer for all YUIAppServer test cases."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        LayerProcessController.setConfig()
+        LayerProcessController.startAppServer('run-testapp')
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        LayerProcessController.stopAppServer()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        LaunchpadLayer.resetSessionDb()

@@ -7,7 +7,10 @@ __metaclass__ = type
 
 __all__ = []
 
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.answers.browser.question import QuestionTargetWidget
+from lp.answers.interfaces.question import IQuestion
 from lp.answers.publisher import AnswersLayer
 from lp.testing import (
     login_person,
@@ -51,3 +54,84 @@ class TestQuestionAddView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'The summary cannot exceed 250 characters.', view.errors[0])
+
+
+class QuestionEditViewTestCase(TestCaseWithFactory):
+    """Verify the behavior of the QuestionEditView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def getForm(self, question):
+        if question.assignee is None:
+            assignee = ''
+        else:
+            assignee = question.assignee.name
+        return {
+            'field.title': question.title,
+            'field.description': question.description,
+            'field.language': question.language.code,
+            'field.assignee': assignee,
+            'field.target': 'product',
+            'field.target.distribution': '',
+            'field.target.package': '',
+            'field.target.product': question.target.name,
+            'field.whiteboard': question.whiteboard,
+            'field.actions.change': 'Change',
+            }
+
+    def test_retarget_with_other_changed(self):
+        # Retargeting must be the last change made to the question
+        # to ensure that user permission do not change while there
+        # are more changes to make.
+        target = self.factory.makeProduct()
+        question = self.factory.makeQuestion(target=target)
+        other_target = self.factory.makeProduct()
+        login_person(target.owner)
+        form = self.getForm(question)
+        form['field.whiteboard'] = 'comment'
+        form['field.target.product'] = other_target.name
+        view = create_initialized_view(
+            question, name='+edit', layer=AnswersLayer, form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(other_target, question.target)
+        self.assertEqual('comment', question.whiteboard)
+
+
+class QuestionTargetWidgetTestCase(TestCaseWithFactory):
+    """Test that QuestionTargetWidgetTestCase behaves as expected."""
+    layer = DatabaseFunctionalLayer
+
+    def getWidget(self, question):
+        field = IQuestion['target']
+        bound_field = field.bind(question)
+        request = LaunchpadTestRequest()
+        return QuestionTargetWidget(bound_field, request)
+
+    def test_getDistributionVocabulary_with_product_question(self):
+        # The vocabulary does not contain distros that do not use
+        # launchpad to track answers.
+        distribution = self.factory.makeDistribution()
+        product = self.factory.makeProduct()
+        question = self.factory.makeQuestion(target=product)
+        target_widget = self.getWidget(question)
+        vocabulary = target_widget.getDistributionVocabulary()
+        self.assertEqual(None, vocabulary.distribution)
+        self.assertFalse(
+            distribution in vocabulary,
+            "Vocabulary contains distros that do not use Launchpad Answers.")
+
+    def test_getDistributionVocabulary_with_distribution_question(self):
+        # The vocabulary does not contain distros that do not use
+        # launchpad to track answers.
+        distribution = self.factory.makeDistribution()
+        other_distribution = self.factory.makeDistribution()
+        question = self.factory.makeQuestion(target=distribution)
+        target_widget = self.getWidget(question)
+        vocabulary = target_widget.getDistributionVocabulary()
+        self.assertEqual(distribution, vocabulary.distribution)
+        self.assertTrue(
+            distribution in vocabulary,
+            "Vocabulary missing context distribution.")
+        self.assertFalse(
+            other_distribution in vocabulary,
+            "Vocabulary contains distros that do not use Launchpad Answers.")
