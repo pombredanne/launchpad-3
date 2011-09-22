@@ -12,4 +12,8 @@ from lp.registry.vocabularies import DistributionVocabulary
 
 
 class UsesBugsDistributionVocabulary(DistributionVocabulary):
-    """Active distributions that use Launchpad to track bugs."""
+    """Distributions that use Launchpad to track bugs."""
+
+    @property
+    def _filter(self):
+        return self._table.q.official_malone == True

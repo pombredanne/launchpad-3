@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.vocabulary import UsesBugsDistributionVocabulary
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class UsesBugsDistributionVocabularyTestCase(TestCaseWithFactory):
@@ -20,3 +23,18 @@ class UsesBugsDistributionVocabularyTestCase(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         vocabulary = UsesBugsDistributionVocabulary(distribution)
         self.assertEqual(distribution, vocabulary.context)
+
+    def test_contains_distros_that_use_bugs(self):
+        # The vocabulary contains distributions that also use
+        # Launchpad to track bugs.
+        distro_less_bugs = self.factory.makeDistribution()
+        distro_uses_bugs = self.factory.makeDistribution()
+        with person_logged_in(distro_uses_bugs.owner):
+            distro_uses_bugs.official_malone = True
+        vocabulary = UsesBugsDistributionVocabulary()
+        self.assertFalse(
+            distro_less_bugs in vocabulary,
+            "Vocabulary contains distros that do not use Launchpad Bugs.")
+        self.assertTrue(
+            distro_uses_bugs in vocabulary,
+            "Vocabulary missing distros that use Launchpad Bugs.")
