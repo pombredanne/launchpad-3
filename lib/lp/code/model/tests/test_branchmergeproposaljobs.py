@@ -11,7 +11,7 @@ from datetime import (
     )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.events import IObjectModifiedEvent
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Select
@@ -21,10 +21,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
@@ -70,7 +67,7 @@ from lp.testing.mail_helpers import pop_notifications
 
 class TestBranchMergeProposalJob(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
         """BranchMergeProposalJob implements expected interfaces."""
