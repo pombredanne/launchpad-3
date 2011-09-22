@@ -170,9 +170,9 @@ class RabbitRoutingKey(RabbitMessageBase):
 
     def send(self, data):
         """See `IMessageProducer`."""
-        self.session.defer(self.send_now, data)
+        self.session.defer(self.sendNow, data)
 
-    def send_now(self, data):
+    def sendNow(self, data):
         """Immediately send a message to the broker."""
         json_data = json.dumps(data)
         msg = amqp.Message(json_data)

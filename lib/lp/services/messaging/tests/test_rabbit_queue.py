@@ -47,15 +47,15 @@ class TestRabbitQueue(TestCase):
             MessagingDataManager(),
             Provides(transaction.interfaces.IDataManager))
 
-    def test_send_now(self):
+    def test_sendNow(self):
         for data in range(50, 60):
-            self.key.send_now(data)
+            self.key.sendNow(data)
             received_data = self.queue.receive(timeout=5)
             self.assertEqual(received_data, data)
 
     def test_receive_consumes(self):
         for data in range(55, 65):
-            self.key.send_now(data)
+            self.key.sendNow(data)
             self.assertEqual(self.queue.receive(timeout=5), data)
 
         # None of the messages we received were put back. They were all
@@ -69,14 +69,14 @@ class TestRabbitQueue(TestCase):
         key = RabbitRoutingKey(self.key_name)
         queue = RabbitQueue(self.queue_name)
         key.associateConsumer(queue)
-        key.send_now('new conn sync')
+        key.sendNow('new conn sync')
         self.assertEqual(queue.receive(timeout=5), 'new conn sync')
 
     def test_send(self):
         for data in range(90, 100):
             self.key.send(data)
 
-        self.key.send_now('sync')
+        self.key.sendNow('sync')
         # There is nothing in the queue except the sync we just sent.
         self.assertEqual(self.queue.receive(timeout=5), 'sync')
 
@@ -86,14 +86,14 @@ class TestRabbitQueue(TestCase):
             self.assertEqual(self.queue.receive(), data)
 
         # There are no more messages. They have all been consumed.
-        self.key.send_now('sync')
+        self.key.sendNow('sync')
         self.assertEqual(self.queue.receive(timeout=5), 'sync')
 
     def test_abort(self):
         for data in range(90, 100):
             self.key.send(data)
 
-        self.key.send_now('sync')
+        self.key.sendNow('sync')
         # There is nothing in the queue except the sync we just sent.
         self.assertEqual(self.queue.receive(timeout=5), 'sync')
 
@@ -101,5 +101,5 @@ class TestRabbitQueue(TestCase):
         transaction.abort()
 
         # There are no more messages. They have all been consumed.
-        self.key.send_now('sync2')
+        self.key.sendNow('sync2')
         self.assertEqual(self.queue.receive(timeout=5), 'sync2')

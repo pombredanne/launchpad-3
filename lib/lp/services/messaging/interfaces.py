@@ -53,7 +53,7 @@ class IMessageProducer(Interface):
     def send(data):
         """Serialize `data` into JSON and send it to the queue on commit."""
 
-    def send_now(data):
+    def sendNow(data):
         """Serialize `data` into JSON and send it to the queue immediately."""
 
     def associateConsumer(consumer):
