@@ -22,6 +22,6 @@ from lp.soyuz.scripts.processaccepted import ProcessAccepted
 
 if __name__ == '__main__':
     script = ProcessAccepted(
-        "process-accepted", dbuser=config.uploadqueue.dbuser)
+        "process-accepted", dbuser='process_accepted')
     script.lock_and_run(isolation=ISOLATION_LEVEL_READ_COMMITTED)
 
