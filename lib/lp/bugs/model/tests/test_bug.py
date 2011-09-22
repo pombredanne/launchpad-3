@@ -1,7 +1,5 @@
 # Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.bugs.model.bugnotification import BugNotificationRecipient
 
 __metaclass__ = type
 
@@ -10,11 +8,14 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import (
     BugNotificationLevel,
     BugNotificationStatus,
     )
+from lp.bugs.model.bugnotification import BugNotificationRecipient
+from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import (
@@ -496,20 +497,22 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # Used with the various setPrivateAndSecurityRelated tests to create
         # a bug and add some initial subscribers.
         bug_owner = self.factory.makePerson(name='bugowner')
-        bug_supervisor = self.factory.makePerson(name='bugsupervisor')
+        bug_supervisor = self.factory.makePerson(
+            name='bugsupervisor', email='bugsupervisor@example.com')
         product_owner = self.factory.makePerson(name='productowner')
         bug_product = self.factory.makeProduct(
             owner=product_owner, bug_supervisor=bug_supervisor)
         if self.private_project:
             removeSecurityProxy(bug_product).private_bugs = True
-        bug = self.factory.makeBug(
-            owner=bug_owner,
-            product=bug_product,
-            private=private_security_related,
-            security_related=private_security_related)
+        bug = self.factory.makeBug(owner=bug_owner, product=bug_product)
+        with person_logged_in(bug_owner):
+            bug.setPrivacyAndSecurityRelated(
+                private_security_related, private_security_related, bug_owner)
         owner_a = self.factory.makePerson(name='ownera')
-        security_contact_a = self.factory.makePerson(name='securitycontacta')
-        bug_supervisor_a = self.factory.makePerson(name='bugsupervisora')
+        security_contact_a = self.factory.makePerson(
+            name='securitycontacta', email='securitycontacta@example.com')
+        bug_supervisor_a = self.factory.makePerson(
+            name='bugsupervisora', email='bugsupervisora@example.com')
         driver_a = self.factory.makePerson(name='drivera')
         product_a = self.factory.makeProduct(
             owner=owner_a,
@@ -517,7 +520,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug_supervisor=bug_supervisor_a,
             driver=driver_a)
         owner_b = self.factory.makePerson(name='ownerb')
-        security_contact_b = self.factory.makePerson(name='securitycontactb')
+        security_contact_b = self.factory.makePerson(
+            name='securitycontactb', email='securitycontactb@example.com')
         product_b = self.factory.makeProduct(
             owner=owner_b,
             security_contact=security_contact_b)
@@ -652,7 +656,10 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.setPrivacyAndSecurityRelated(
                 private=False, security_related=False, who=who)
         subscribers = set(bug.getDirectSubscribers())
-        expected_direct_subscribers.remove(bugtask_a.pillar.security_contact)
+        expected_direct_subscribers.difference_update(
+            (default_bugtask.pillar.security_contact,
+             default_bugtask.pillar.bug_supervisor,
+             bugtask_a.pillar.security_contact))
         self.assertContentEqual(expected_direct_subscribers, subscribers)
 
     def test_setPillarOwnerSubscribedIfNoBugSupervisor(self):
@@ -687,13 +694,110 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             subscribers
         )
 
-    def _fetch_notifications(self, bug, header, body):
-        return IStore(BugNotification).find(
+    def _fetch_notifications(self, bug, reason_header):
+        store = IStore(BugNotification)
+        return store.find(
             BugNotification,
-            BugNotification.id == BugNotificationRecipient.bug_notificationID,
-            BugNotificationRecipient.reason_header == header,
-            BugNotificationRecipient.reason_body == body,
-            BugNotification.bug == bug)
+            BugNotificationRecipient.bug_notificationID == BugNotification.id,
+            BugNotificationRecipient.reason_header == reason_header,
+            BugNotification.bug == bug,
+            BugNotification.status == BugNotificationStatus.PENDING,
+            BugNotification.date_emailed == None)
+
+    def _check_email_content(self, message, expected_headers,
+                             expected_body_text):
+        # Ensure that the email header values and message body text is as
+        # expected.
+        headers = {}
+        for header in ['X-Launchpad-Message-Rationale',
+                       'X-Launchpad-Bug-Security-Vulnerability',
+                       'X-Launchpad-Bug-Private']:
+            if message[header]:
+                headers[header] = message[header]
+        self.assertEqual(expected_headers, headers)
+        body_text = message.get_payload(decode=True)
+        self.assertTrue(expected_body_text in body_text)
+
+    def _check_notifications(self, bug, expected_recipients,
+                             expected_body_text, expected_reason_body,
+                             is_private, is_security_related, role):
+        # Ensure that the content of the pending email notifications is
+        # correct.
+        notifications = self._fetch_notifications(bug, role)
+        actual_recipients = []
+        email_notifications = get_email_notifications(notifications)
+        for bug_notifications, omitted, messages in email_notifications:
+            for message in messages:
+                expected_headers = {
+                    'X-Launchpad-Bug-Private':
+                        'yes' if is_private else 'no',
+                    'X-Launchpad-Bug-Security-Vulnerability':
+                        'yes' if is_security_related else 'no',
+                    'X-Launchpad-Message-Rationale': role,
+                }
+                self._check_email_content(
+                    message, expected_headers, expected_body_text)
+            expected_reason_header = role
+            for notification in bug_notifications:
+                for recipient in notification.recipients:
+                    self.assertEqual(
+                        expected_reason_header, recipient.reason_header)
+                    self.assertEqual(
+                        expected_reason_body, recipient.reason_body)
+                    actual_recipients.append(recipient.person)
+        self.assertContentEqual(expected_recipients, actual_recipients)
+
+    def test_bugSupervisorUnsubscribedIfBugMadePublic(self):
+        # The bug supervisors are unsubscribed if a bug is made public and an
+        # email is sent telling them they have been unsubscribed.
+
+        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+            self.createBugTasksAndSubscribers(private_security_related=True))
+
+        with person_logged_in(bug_owner):
+            bug.subscribe(bugtask_a.pillar.bug_supervisor, bug_owner)
+            who = self.factory.makePerson(name="who")
+            bug.setPrivacyAndSecurityRelated(
+                private=False, security_related=True, who=who)
+            subscribers = bug.getDirectSubscribers()
+            self.assertFalse(bugtask_a.pillar.bug_supervisor in subscribers)
+
+            expected_recipients = [
+                default_bugtask.pillar.bug_supervisor,
+                bugtask_a.pillar.bug_supervisor,
+                ]
+            expected_body_text = '** This bug is no longer private'
+            expected_reason_body = ('You received this bug notification '
+                    'because you are a bug supervisor.')
+            self._check_notifications(
+                bug, expected_recipients, expected_body_text,
+                expected_reason_body, False, True, 'Bug Supervisor')
+
+    def test_securityContactUnsubscribedIfBugNotSecurityRelated(self):
+        # The security contacts are unsubscribed if a bug has security_related
+        # set to false and an email is sent telling them they have been
+        # unsubscribed.
+
+        (bug, bug_owner,  bugtask_a, bugtask_b, default_bugtask) = (
+            self.createBugTasksAndSubscribers(private_security_related=True))
+
+        with person_logged_in(bug_owner):
+            bug.subscribe(bugtask_a.pillar.security_contact, bug_owner)
+            who = self.factory.makePerson(name="who")
+            bug.setPrivacyAndSecurityRelated(
+                private=True, security_related=False, who=who)
+            subscribers = bug.getDirectSubscribers()
+            self.assertFalse(bugtask_a.pillar.security_contact in subscribers)
+
+            expected_recipients = [
+                bugtask_a.pillar.security_contact,
+                ]
+            expected_body_text = '** This bug is no longer security related'
+            expected_reason_body = ('You received this bug notification '
+                    'because you are a security contact.')
+            self._check_notifications(
+                bug, expected_recipients, expected_body_text,
+                expected_reason_body, True, False, 'Security Contact')
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
