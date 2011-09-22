@@ -27,7 +27,26 @@ class BugTaskTargetWidgetTestCase(TestCaseWithFactory):
         request = LaunchpadTestRequest()
         target_widget = BugTaskTargetWidget(bound_field, request)
         vocabulary = target_widget.getDistributionVocabulary()
-        self.assertIs(None, vocabulary.distribution)
+        self.assertEqual(None, vocabulary.distribution)
         self.assertFalse(
             distribution in vocabulary,
+            "Vocabulary contains distros that do not use Launchpad Bugs.")
+
+    def test_getDistributionVocabulary_with_distribution_bugtask(self):
+        # The vocabulary does not contain distros that do not use
+        # launchpad to track bugs.
+        distribution = self.factory.makeDistribution()
+        other_distribution = self.factory.makeDistribution()
+        bugtask = self.factory.makeBugTask(target=distribution)
+        field = IBugTask['target']
+        bound_field = field.bind(bugtask)
+        request = LaunchpadTestRequest()
+        target_widget = BugTaskTargetWidget(bound_field, request)
+        vocabulary = target_widget.getDistributionVocabulary()
+        self.assertEqual(distribution, vocabulary.distribution)
+        self.assertTrue(
+            distribution in vocabulary,
+            "Vocabulary missing context distribution.")
+        self.assertFalse(
+            other_distribution in vocabulary,
             "Vocabulary contains distros that do not use Launchpad Bugs.")
