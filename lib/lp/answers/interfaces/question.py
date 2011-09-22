@@ -157,9 +157,8 @@ class IQuestion(IHasOwner):
         description=_('Up-to-date notes on the status of the question.'))
     # other attributes
     target = exported(Reference(
-        title=_('This question is about'), required=True,
-        schema=IQuestionTarget,
-        description=_('The distribution, source package, or project the '
+        title=_('Project'), required=True, schema=IQuestionTarget,
+        description=_('The distribution, source package, or product the '
                       'question pertains to.')),
         as_of="devel")
     faq = Object(
