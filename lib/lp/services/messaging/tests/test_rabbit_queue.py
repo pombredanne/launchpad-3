@@ -35,14 +35,14 @@ class TestRabbitQueue(TestCase):
         self.key.associateConsumer(self.queue)
 
     def tearDown(self):
-        self.queue._disconnect()
+        self.queue.session.connection.close()
         super(TestCase, self).tearDown()
 
     def test_interfaces(self):
         self.assertThat(self.queue, Provides(IMessageConsumer))
         self.assertThat(self.key, Provides(IMessageProducer))
         self.assertThat(
-            MessagingDataManager([]),
+            MessagingDataManager(),
             Provides(transaction.interfaces.IDataManager))
 
     def test_send_now(self):
@@ -63,7 +63,7 @@ class TestRabbitQueue(TestCase):
             self.queue.receive, timeout=5)
 
         # New connections to the queue see an empty queue too.
-        self.queue._disconnect()
+        self.queue.session.connection.close()
         key = RabbitRoutingKey(self.key_name)
         queue = RabbitQueue(self.queue_name)
         key.associateConsumer(queue)

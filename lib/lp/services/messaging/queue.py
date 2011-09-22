@@ -11,7 +11,7 @@ __all__ = [
 
 from functools import partial
 import json
-from threading import local as thread_local
+import threading
 import time
 
 from amqplib import client_0_8 as amqp
@@ -35,12 +35,13 @@ class MessagingDataManager:
     This class implements the necessary code to interact with RabbitMQ only
     when the Zope transactions are committed.
     """
+    # XXX: The data manager should close channels and flush too.
 
     implements(transaction.interfaces.IDataManager)
 
-    def __init__(self, actions):
+    def __init__(self):
         self.transaction_manager = transaction.manager
-        self.actions = actions
+        self.actions = []
 
     def _cleanup(self):
         """Completely remove the list of actions."""
@@ -73,47 +74,50 @@ class MessagingDataManager:
             self._cleanup()
 
 
-class RabbitMessageBase:
-    """Base class for all RabbitMQ messaging."""
+class RabbitSession(threading.local):
 
-    class_locals = thread_local()
+    def __init__(self):
+        self._connection = None
+        self._data_manager = None
 
-    channel = None
-
-    def _initialize(self):
+    @property
+    def connection(self):
         # Open a connection and channel for this thread if necessary.
         # Connections cannot be shared between threads.
-        if not hasattr(self.class_locals, "rabbit_connection"):
-            conn = amqp.Connection(
+        if self._connection is None or self._connection.transport is None:
+            self._connection = amqp.Connection(
                 host=config.rabbitmq.host, userid=config.rabbitmq.userid,
                 password=config.rabbitmq.password,
                 virtual_host=config.rabbitmq.virtual_host, insist=False)
-            self.class_locals.rabbit_connection = conn
+        return self._connection
 
-            # Initialize storage for oncommit messages.
-            self.class_locals.deferred_actions = []
+    def defer(self, func, *args, **kwargs):
+        if self._data_manager is None:
+            self._data_manager = MessagingDataManager()
+        if len(self._data_manager.actions) == 0:
+            transaction.get().join(self._data_manager)
+        self._data_manager.actions.append(
+            partial(func, *args, **kwargs))
 
-        conn = self.class_locals.rabbit_connection
-        self.channel = conn.channel()
-        #self.channel.access_request(
-        #    '/data', active=True, write=True, read=True)
-        self.channel.exchange_declare(
-            LAUNCHPAD_EXCHANGE, "direct", durable=False,
-            auto_delete=False, nowait=False)
 
-    def close(self):
-        # Note the connection is not closed - it is shared with other
-        # queues. Just close our channel.
-        if self.channel:
-            self.channel.close()
+class RabbitMessageBase:
+    """Base class for all RabbitMQ messaging."""
 
-    def _disconnect(self):
-        """Disconnect from rabbit. The connection is shared, so this will
-        break other RabbitQueue instances."""
-        self.close()
-        if hasattr(self.class_locals, 'rabbit_connection'):
-            self.class_locals.rabbit_connection.close()
-            del self.class_locals.rabbit_connection
+    session = RabbitSession()
+
+    def __init__(self):
+        self._channel = None
+
+    @property
+    def channel(self):
+        if self._channel is None or not self._channel.is_open:
+            self._channel = self.session.connection.channel()
+            #self._channel.access_request(
+            #    '/data', active=True, write=True, read=True)
+            self._channel.exchange_declare(
+                LAUNCHPAD_EXCHANGE, "direct", durable=False,
+                auto_delete=False, nowait=False)
+        return self._channel
 
 
 class RabbitRoutingKey(RabbitMessageBase):
@@ -122,34 +126,27 @@ class RabbitRoutingKey(RabbitMessageBase):
     implements(IMessageProducer)
 
     def __init__(self, routing_key):
+        super(RabbitRoutingKey, self).__init__()
         self.key = routing_key
 
     def associateConsumer(self, consumer):
         """Only receive messages for requested routing key."""
-        self._initialize()
         self.channel.queue_bind(
             queue=consumer.name, exchange=LAUNCHPAD_EXCHANGE,
             routing_key=self.key, nowait=False)
 
     def disassociateConsumer(self, consumer):
         """Stop receiving messages for the requested routing key."""
-        self._initialize()
         self.channel.queue_unbind(
             queue=consumer.name, exchange=LAUNCHPAD_EXCHANGE,
             routing_key=self.key, nowait=False)
 
     def send(self, data):
         """See `IMessageProducer`."""
-        self._initialize()
-        actions = self.class_locals.deferred_actions
-        # XXX: The data manager should close channels and flush too
-        if len(actions) == 0:
-            transaction.get().join(MessagingDataManager(actions))
-        actions.append(partial(self.send_now, data))
+        self.session.defer(self.send_now, data)
 
     def send_now(self, data):
         """Immediately send a message to the broker."""
-        self._initialize()
         json_data = json.dumps(data)
         msg = amqp.Message(json_data)
         self.channel.basic_publish(
@@ -162,8 +159,8 @@ class RabbitQueue(RabbitMessageBase):
     implements(IMessageConsumer)
 
     def __init__(self, name):
+        super(RabbitQueue, self).__init__()
         self.name = name
-        self._initialize()
         self.channel.queue_declare(self.name, nowait=False)
 
     def receive(self, timeout=0.0):

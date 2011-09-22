@@ -16,18 +16,15 @@ from zope.interface import Interface
 
 class EmptyQueueException(Exception):
     """Raised if there are no queued messages on a non-blocking read."""
-    pass
 
 
 class IMessageConsumer(Interface):
+
     def receive(blocking=True):
         """Receive data from the queue.
 
         :raises EmptyQueueException: If non-blocking and the queue is empty.
         """
-
-    def close():
-        """Cleanup nicely."""
 
 
 class IMessageProducer(Interface):
@@ -37,9 +34,6 @@ class IMessageProducer(Interface):
 
     def send_now(data):
         """Serialize `data` into JSON and send it to the queue immediately."""
-
-    def close():
-        """Cleanup nicely."""
 
     def associateConsumer(consumer):
         """Make the consumer receive messages from this producer.
