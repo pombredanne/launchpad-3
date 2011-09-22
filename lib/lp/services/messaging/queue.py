@@ -9,6 +9,7 @@ __all__ = [
     "RabbitQueue",
     ]
 
+from functools import partial
 import json
 from threading import local as thread_local
 import time
@@ -31,20 +32,19 @@ LAUNCHPAD_EXCHANGE = "launchpad-exchange"
 class MessagingDataManager:
     """A Zope transaction data manager for Launchpad messaging.
 
-    This class implements the necessary code to send messages only when
-    the Zope transactions are committed.  It will iterate over the messages
-    and send them using queue.send(oncommit=False).
+    This class implements the necessary code to interact with RabbitMQ only
+    when the Zope transactions are committed.
     """
 
     implements(transaction.interfaces.IDataManager)
 
-    def __init__(self, messages):
+    def __init__(self, actions):
         self.transaction_manager = transaction.manager
-        self.messages = messages
+        self.actions = actions
 
     def _cleanup(self):
-        """Completely remove the list of stored messages"""
-        del self.messages[:]
+        """Completely remove the list of actions."""
+        del self.actions[:]
 
     def abort(self, txn):
         self._cleanup()
@@ -62,14 +62,15 @@ class MessagingDataManager:
         self._cleanup()
 
     def sortKey(self):
-        """Ensure that messages are sent after PostgresSQL connections
-        are committed."""
+        """Execute actions after PostgresSQL connections are committed."""
         return "zz_messaging_%s" % id(self)
 
     def commit(self, txn):
-        for send_func, data in self.messages:
-            send_func(data)
-        self._cleanup()
+        try:
+            for action in self.actions:
+                action()
+        finally:
+            self._cleanup()
 
 
 class RabbitMessageBase:
@@ -90,7 +91,7 @@ class RabbitMessageBase:
             self.class_locals.rabbit_connection = conn
 
             # Initialize storage for oncommit messages.
-            self.class_locals.messages = []
+            self.class_locals.deferred_actions = []
 
         conn = self.class_locals.rabbit_connection
         self.channel = conn.channel()
@@ -140,11 +141,11 @@ class RabbitRoutingKey(RabbitMessageBase):
     def send(self, data):
         """See `IMessageProducer`."""
         self._initialize()
-        messages = self.class_locals.messages
+        actions = self.class_locals.deferred_actions
         # XXX: The data manager should close channels and flush too
-        if not messages:
-            transaction.get().join(MessagingDataManager(messages))
-        messages.append((self.send_now, data))
+        if len(actions) == 0:
+            transaction.get().join(MessagingDataManager(actions))
+        actions.append(partial(self.send_now, data))
 
     def send_now(self, data):
         """Immediately send a message to the broker."""
