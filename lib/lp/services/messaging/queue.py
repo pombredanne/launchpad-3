@@ -192,7 +192,7 @@ class RabbitQueue(RabbitMessageBase):
         """Pull a message from the queue.
 
         :param timeout: Wait a maximum of `timeout` seconds before giving up,
-            trying at least once.  If timeout is None, block forever.
+            trying at least once.
         :raises: EmptyQueueException if the timeout passes.
         """
         starttime = time.time()
