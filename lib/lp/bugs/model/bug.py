@@ -1761,13 +1761,6 @@ BugMessage""" % sqlvalues(self.id))
             self.getSubscriptionInfo().direct_subscribers)
         required_subscribers = self.getRequiredSubscribers(
             for_private, for_security_related, who)
-        allowed_subscribers = set()
-        allowed_subscribers.add(self.owner)
-        for bugtask in self.bugtasks:
-            allowed_subscribers.add(bugtask.owner)
-            allowed_subscribers.add(bugtask.pillar.owner)
-            allowed_subscribers.update(set(bugtask.pillar.drivers))
-        allowed_subscribers = required_subscribers.union(allowed_subscribers)
 
         # If this bug is for a project that is marked as having private bugs
         # by default, and the bug is private or security related, we will
@@ -1775,6 +1768,14 @@ BugMessage""" % sqlvalues(self.id))
         pillar = self.default_bugtask.pillar
         private_project = IProduct.providedBy(pillar) and pillar.private_bugs
         if private_project and (for_private or for_security_related):
+            allowed_subscribers = set()
+            allowed_subscribers.add(self.owner)
+            for bugtask in self.bugtasks:
+                allowed_subscribers.add(bugtask.owner)
+                allowed_subscribers.add(bugtask.pillar.owner)
+                allowed_subscribers.update(set(bugtask.pillar.drivers))
+            allowed_subscribers = required_subscribers.union(
+                allowed_subscribers)
             subscribers_to_remove = (
                 current_direct_subscribers.difference(allowed_subscribers))
             for subscriber in subscribers_to_remove:
