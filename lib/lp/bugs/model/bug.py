@@ -1791,8 +1791,11 @@ BugMessage""" % sqlvalues(self.id))
         for subscriber in removed_bug_supervisors:
             recipients = BugNotificationRecipients()
             recipients.addBugSupervisor(subscriber)
-            notification_text = ("This bug is no longer private so you will "
-                "no longer be notified of changes.")
+            notification_text = ("This bug is no longer private so the bug "
+                "supervisor was unsubscribed. You will no longer be notified "
+                "of changes to this bug for privacy related reasons, but you "
+                "may receive notifications about this bug from other "
+                "subscriptions.")
             self.unsubscribe(
                 subscriber, who, ignore_permissions=True,
                 send_notification=True,
@@ -1802,7 +1805,10 @@ BugMessage""" % sqlvalues(self.id))
             recipients = BugNotificationRecipients()
             recipients.addSecurityContact(subscriber)
             notification_text = ("This bug is no longer security related so "
-                "you will no longer be notified of changes.")
+                "the security contact was unsubscribed. You will no longer "
+                "be notified of changes to this bug for privacy related "
+                "reasons, but you may receive notifications about this bug "
+                "from other subscriptions.")
             self.unsubscribe(
                 subscriber, who, ignore_permissions=True,
                 send_notification=True,
