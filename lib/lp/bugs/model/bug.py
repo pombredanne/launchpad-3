@@ -822,8 +822,6 @@ BugMessage""" % sqlvalues(self.id))
             person = unsubscribed_by
 
         ignore_permissions = kwargs.get('ignore_permissions', False)
-        send_notification = kwargs.get('send_notification', False)
-        notification_text = kwargs.get('notification_text')
         recipients = kwargs.get('recipients')
         for sub in self.subscriptions:
             if sub.person.id == person.id:
@@ -836,9 +834,7 @@ BugMessage""" % sqlvalues(self.id))
 
                 self.addChange(UnsubscribedFromBug(
                         when=UTC_NOW, person=unsubscribed_by,
-                        unsubscribed_user=person,
-                        send_notification=send_notification,
-                        notification_text=notification_text),
+                        unsubscribed_user=person, **kwargs),
                     recipients=recipients)
                 store = Store.of(sub)
                 store.remove(sub)
