@@ -549,10 +549,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_make_private(self):
         # Marking a bug as private adds items to the bug's activity log
         # and notifications.
-        bug_before_modification = Snapshot(self.bug, providing=IBug)
         self.bug.setPrivate(True, self.user)
-        notify(ObjectModifiedEvent(
-            self.bug, bug_before_modification, ['private'], self.user))
 
         visibility_change_activity = {
             'person': self.user,
@@ -577,10 +574,7 @@ class TestBugChanges(TestCaseWithFactory):
         self.saveOldChanges(private_bug)
         self.assertTrue(private_bug.private)
 
-        bug_before_modification = Snapshot(private_bug, providing=IBug)
         private_bug.setPrivate(False, self.user)
-        notify(ObjectModifiedEvent(
-            private_bug, bug_before_modification, ['private'], self.user))
 
         visibility_change_activity = {
             'person': self.user,
@@ -673,6 +667,7 @@ class TestBugChanges(TestCaseWithFactory):
         # Unmarking a bug as a security vulnerability adds to the
         # bug's activity log and sends a notification.
         self.bug.setSecurityRelated(True, self.user)
+        self.saveOldChanges()
         self.changeAttribute(self.bug, 'security_related', False)
 
         security_change_activity = {
