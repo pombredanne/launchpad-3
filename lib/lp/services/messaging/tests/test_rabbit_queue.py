@@ -8,6 +8,7 @@ __metaclass__ = type
 from itertools import count
 
 import transaction
+from transaction._transaction import Status as TransactionStatus
 
 from canonical.testing.layers import RabbitMQLayer
 from lp.services.messaging.interfaces import (
@@ -17,15 +18,15 @@ from lp.services.messaging.interfaces import (
     IMessageSession,
     )
 from lp.services.messaging.queue import (
-    MessagingDataManager,
     RabbitMessageBase,
     RabbitQueue,
     RabbitRoutingKey,
     RabbitSession,
+    RabbitSessionTransactionSync,
     )
 from lp.testing import TestCase
+from lp.testing.faketransaction import FakeTransaction
 from lp.testing.matchers import Provides
-from testtools.matchers import StartsWith
 
 # RabbitMQ is not (yet) torn down or reset between tests, so here are sources
 # of distinct names.
@@ -33,56 +34,40 @@ queue_names = ("queue.%d" % num for num in count(1))
 key_names = ("key.%d" % num for num in count(1))
 
 
-class TestMessagingDataManager(TestCase):
+class FakeRabbitSession:
+
+    def __init__(self):
+        self.log = []
+
+    def finish(self):
+        self.log.append("finish")
+
+    def reset(self):
+        self.log.append("reset")
+
+
+class TestRabbitSessionTransactionSync(TestCase):
 
     def test_interface(self):
         self.assertThat(
-            MessagingDataManager(),
-            Provides(transaction.interfaces.IDataManager))
+            RabbitSessionTransactionSync(None),
+            Provides(transaction.interfaces.ISynchronizer))
 
-    def test_abort(self):
-        data_manager = MessagingDataManager()
-        data_manager.actions.append(lambda: None)
-        data_manager.abort(None)
-        self.assertEqual([], data_manager.actions)
+    def test_afterCompletion_COMMITTED(self):
+        txn = FakeTransaction()
+        txn.status = TransactionStatus.COMMITTED
+        session = FakeRabbitSession()
+        sync = RabbitSessionTransactionSync(session)
+        sync.afterCompletion(txn)
+        self.assertEqual(["finish"], session.log)
 
-    def test_tpc_finish(self):
-        data_manager = MessagingDataManager()
-        data_manager.actions.append(lambda: None)
-        data_manager.tpc_finish(None)
-        self.assertEqual([], data_manager.actions)
-
-    def test_tpc_abort(self):
-        data_manager = MessagingDataManager()
-        data_manager.actions.append(lambda: None)
-        data_manager.tpc_abort(None)
-        self.assertEqual([], data_manager.actions)
-
-    def test_commit(self):
-        log = []
-        data_manager = MessagingDataManager()
-        data_manager.actions.append(lambda: log.append(1))
-        data_manager.actions.append(lambda: log.append(3))
-        data_manager.actions.append(lambda: log.append(2))
-        data_manager.commit(None)
-        self.assertEqual([1, 3, 2], log)
-        self.assertEqual([], data_manager.actions)
-
-    def test_commit_cleanup(self):
-        # The actions list is emptied even if one of the actions
-        # fails. However, the remaining actions are not executed.
-        log = []
-        data_manager = MessagingDataManager()
-        data_manager.actions.append(lambda: log.append(1))
-        data_manager.actions.append(lambda: 0/0)
-        data_manager.actions.append(lambda: log.append(2))
-        self.assertRaises(ZeroDivisionError, data_manager.commit, None)
-        self.assertEqual([1], log)
-        self.assertEqual([], data_manager.actions)
-
-    def test_sortKey(self):
-        data_manager = MessagingDataManager()
-        self.assertThat(data_manager.sortKey(), StartsWith("zz"))
+    def test_afterCompletion_ACTIVE(self):
+        txn = FakeTransaction()
+        txn.status = TransactionStatus.ACTIVE
+        session = FakeRabbitSession()
+        sync = RabbitSessionTransactionSync(session)
+        sync.afterCompletion(txn)
+        self.assertEqual(["reset"], session.log)
 
 
 class RabbitTestCase(TestCase):

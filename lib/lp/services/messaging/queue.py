@@ -16,6 +16,7 @@ import time
 
 from amqplib import client_0_8 as amqp
 import transaction
+from transaction._transaction import Status as TransactionStatus
 from zope.interface import implements
 
 from canonical.config import config
@@ -30,49 +31,24 @@ from lp.services.messaging.interfaces import (
 LAUNCHPAD_EXCHANGE = "launchpad-exchange"
 
 
-class MessagingDataManager:
-    """A Zope transaction data manager for Launchpad messaging.
+class RabbitSessionTransactionSync:
 
-    This class implements the necessary code to interact with RabbitMQ only
-    when the Zope transactions are committed.
-    """
-    # XXX: The data manager should close channels and flush too.
+    implements(transaction.interfaces.ISynchronizer)
 
-    implements(transaction.interfaces.IDataManager)
+    def __init__(self, session):
+        self.session = session
 
-    def __init__(self):
-        self.transaction_manager = transaction.manager
-        self.actions = []
-
-    def _cleanup(self):
-        """Completely remove the list of actions."""
-        del self.actions[:]
-
-    def abort(self, txn):
-        self._cleanup()
-
-    def tpc_begin(self, txn):
+    def newTransaction(self, txn):
         pass
 
-    def tpc_vote(self, txn):
+    def beforeCompletion(self, txn):
         pass
 
-    def tpc_finish(self, txn):
-        self._cleanup()
-
-    def tpc_abort(self, txn):
-        self._cleanup()
-
-    def sortKey(self):
-        """Execute actions after PostgresSQL connections are committed."""
-        return "zz_messaging_%s" % id(self)
-
-    def commit(self, txn):
-        try:
-            for action in self.actions:
-                action()
-        finally:
-            self._cleanup()
+    def afterCompletion(self, txn):
+        if txn.status == TransactionStatus.COMMITTED:
+            self.session.finish()
+        else:
+            self.session.reset()
 
 
 class RabbitSession(threading.local):
@@ -81,7 +57,10 @@ class RabbitSession(threading.local):
 
     def __init__(self):
         self._connection = None
-        self._data_manager = None
+        self._deferred = []
+        # Keep strong reference to sync.
+        self._sync = RabbitSessionTransactionSync(self)
+        transaction.manager.registerSynch(self._sync)
 
     @property
     def connection(self):
@@ -117,13 +96,19 @@ class RabbitSession(threading.local):
             finally:
                 self._connection = None
 
+    def finish(self):
+        try:
+            for action in self._deferred:
+                action()
+        finally:
+            self.reset()
+
+    def reset(self):
+        del self._deferred[:]
+        self.disconnect()
+
     def defer(self, func, *args, **kwargs):
-        if self._data_manager is None:
-            self._data_manager = MessagingDataManager()
-        if len(self._data_manager.actions) == 0:
-            transaction.get().join(self._data_manager)
-        self._data_manager.actions.append(
-            partial(func, *args, **kwargs))
+        self._deferred.append(partial(func, *args, **kwargs))
 
 
 class RabbitMessageBase:
