@@ -24,8 +24,8 @@ class TestScopesFromRequest(TestCase):
 
     def test_pageid_scope_normal(self):
         request = LaunchpadTestRequest()
-        request.setInWSGIEnvironment('launchpad.pageid', 'foo:bar')
         scopes = webapp.ScopesFromRequest(request)
+        request.setInWSGIEnvironment('launchpad.pageid', 'foo:bar')
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertTrue(scopes.lookup('pageid:foo'))
         self.assertTrue(scopes.lookup('pageid:foo:bar'))
@@ -33,8 +33,8 @@ class TestScopesFromRequest(TestCase):
 
     def test_pageid_scope_collection(self):
         request = LaunchpadTestRequest()
-        request.setInWSGIEnvironment('launchpad.pageid', 'scoped:thing:#type')
         scopes = webapp.ScopesFromRequest(request)
+        request.setInWSGIEnvironment('launchpad.pageid', 'scoped:thing:#type')
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertTrue(scopes.lookup('pageid:scoped'))
         self.assertTrue(scopes.lookup('pageid:scoped:thing'))
@@ -43,8 +43,8 @@ class TestScopesFromRequest(TestCase):
 
     def test_pageid_scope_empty(self):
         request = LaunchpadTestRequest()
-        request.setInWSGIEnvironment('launchpad.pageid', '')
         scopes = webapp.ScopesFromRequest(request)
+        request.setInWSGIEnvironment('launchpad.pageid', '')
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertFalse(scopes.lookup('pageid:foo'))
         self.assertFalse(scopes.lookup('pageid:foo:bar'))

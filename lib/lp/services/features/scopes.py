@@ -77,8 +77,8 @@ class PageScope(BaseScope):
 
     pattern = r'pageid:'
 
-    def __init__(self, pageid):
-        self._pageid = pageid
+    def __init__(self, request):
+        self._request = request
 
     def lookup(self, scope_name):
         """Is the given scope match the current pageid?"""
@@ -103,7 +103,8 @@ class PageScope(BaseScope):
 
     @cachedproperty
     def _request_pageid_namespace(self):
-        return tuple(self._pageid_to_namespace(self._pageid))
+        return tuple(self._pageid_to_namespace(
+            self._request._orig_env.get('launchpad.pageid', '')))
 
 
 class TeamScope(BaseScope):
@@ -246,7 +247,7 @@ class ScopesFromRequest(MultiScopeHandler):
             return IPerson(request.principal, None)
         scopes = list(default_scopes)
         scopes.extend([
-            PageScope(request._orig_env.get('launchpad.pageid', '')),
+            PageScope(request),
             ServerScope(),
             TeamScope(person_from_request)
             ])
