@@ -32,10 +32,10 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
+from functools import wraps
 import operator
 
 from lazr.delegates import delegates
-from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
     IJSONRequestCache,
@@ -48,7 +48,6 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
-from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import (
     implements,
@@ -67,7 +66,6 @@ from zope.schema.vocabulary import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -81,13 +79,16 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import NavigationMenu, structured
+from canonical.launchpad.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
-   )
+    )
 from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     vocabulary_to_choice_edit_items,
@@ -122,6 +123,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 
 
@@ -167,12 +169,10 @@ class BranchMergeProposalBreadcrumb(Breadcrumb):
 
 def notify(func):
     """Decorate a view method to send a notification."""
-
+    @wraps(func)
     def decorator(view, *args, **kwargs):
-        snapshot = BranchMergeProposalDelta.snapshot(view.context)
-        result = func(view, *args, **kwargs)
-        zope_notify(ObjectModifiedEvent(view.context, snapshot, []))
-        return result
+        with BranchMergeProposalDelta.monitor(view.context):
+            return func(view, *args, **kwargs)
     return decorator
 
 
