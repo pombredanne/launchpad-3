@@ -240,7 +240,12 @@ default_scopes = (DefaultScope(),)
 
 
 class ScopesFromRequest(MultiScopeHandler):
-    """Identify feature scopes based on request state."""
+    """Identify feature scopes based on request state.
+
+    Because the feature controller is constructed very very early in the
+    publication process, this needs to be very careful about looking at the
+    request -- in particular, this is called before authentication happens.
+    """
 
     def __init__(self, request):
         def person_from_request():
