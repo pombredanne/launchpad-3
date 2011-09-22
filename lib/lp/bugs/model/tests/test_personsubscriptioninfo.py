@@ -8,7 +8,6 @@ __metaclass__ = type
 from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.adapter import SQLLogger
 from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IRealSubscriptionInfo,
