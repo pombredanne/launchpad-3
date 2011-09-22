@@ -37,6 +37,6 @@ from lp.soyuz.scripts.processdeathrow import DeathRowProcessor
 
 if __name__ == "__main__":
     script = DeathRowProcessor(
-        'process-death-row', dbuser=config.archivepublisher.dbuser)
+        'process-death-row', dbuser='process_death_row')
     script.lock_and_run()
 
