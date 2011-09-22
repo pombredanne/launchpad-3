@@ -16,5 +16,5 @@ from lp.soyuz.scripts.soyuz_process_upload import ProcessUpload
 
 
 if __name__ == '__main__':
-    script = ProcessUpload('process-upload', dbuser=config.uploader.dbuser)
+    script = ProcessUpload('process-upload', dbuser='process_upload')
     script.lock_and_run()

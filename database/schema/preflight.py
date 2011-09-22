@@ -48,6 +48,7 @@ FRAGILE_USERS = frozenset([
     # process_accepted is fragile, but also fast so we likely shouldn't
     # need to ever manually shut it down.
     'process_accepted',
+    'process_upload',
     ])
 
 # How lagged the cluster can be before failing the preflight check.
