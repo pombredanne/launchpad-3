@@ -16,16 +16,19 @@ class BugTaskTargetWidgetTestCase(TestCaseWithFactory):
     """Test that BugTaskTargetWidget behaves as expected."""
     layer = DatabaseFunctionalLayer
 
+    def getWidget(self, bugtask):
+        field = IBugTask['target']
+        bound_field = field.bind(bugtask)
+        request = LaunchpadTestRequest()
+        return BugTaskTargetWidget(bound_field, request)
+
     def test_getDistributionVocabulary_with_product_bugtask(self):
         # The vocabulary does not contain distros that do not use
         # launchpad to track bugs.
         distribution = self.factory.makeDistribution()
         product = self.factory.makeProduct()
         bugtask = self.factory.makeBugTask(target=product)
-        field = IBugTask['target']
-        bound_field = field.bind(bugtask)
-        request = LaunchpadTestRequest()
-        target_widget = BugTaskTargetWidget(bound_field, request)
+        target_widget = self.getWidget(bugtask)
         vocabulary = target_widget.getDistributionVocabulary()
         self.assertEqual(None, vocabulary.distribution)
         self.assertFalse(
@@ -38,10 +41,7 @@ class BugTaskTargetWidgetTestCase(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         other_distribution = self.factory.makeDistribution()
         bugtask = self.factory.makeBugTask(target=distribution)
-        field = IBugTask['target']
-        bound_field = field.bind(bugtask)
-        request = LaunchpadTestRequest()
-        target_widget = BugTaskTargetWidget(bound_field, request)
+        target_widget = self.getWidget(bugtask)
         vocabulary = target_widget.getDistributionVocabulary()
         self.assertEqual(distribution, vocabulary.distribution)
         self.assertTrue(
