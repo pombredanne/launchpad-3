@@ -714,7 +714,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 headers[header] = message[header]
         self.assertEqual(expected_headers, headers)
         body_text = message.get_payload(decode=True)
-        print body_text
         self.assertTrue(expected_body_text in body_text)
 
     def _check_notifications(self, bug, expected_recipients,
