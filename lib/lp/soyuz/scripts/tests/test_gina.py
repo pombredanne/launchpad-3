@@ -36,15 +36,51 @@ class TestGina(TestCaseWithFactory):
         # packages that Gina imports.
         logger = DevNullLogger()
         txn = FakeTransaction()
-        pub = self.factory.makeSourcePackagePublishingHistory(
-            status=PackagePublishingStatus.PUBLISHED)
-        series = pub.distroseries
-        spr = pub.sourcepackagerelease
-        package = spr.sourcepackagename
+        series = self.factory.makeDistroSeries()
+        pocket = PackagePublishingPocket.RELEASE
+        package = self.factory.makeSourcePackageName()
+
+        # Realistic situation: there's an older, superseded publication;
+        # a series of active ones; and a newer, pending publication
+        # that's not in the Sources lists yet.
+        # Gina dominates the Published ones and leaves the rest alone.
+        old_spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, archive=series.main_archive,
+            pocket=pocket, status=PackagePublishingStatus.SUPERSEDED,
+            sourcepackagerelease=self.factory.makeSourcePackageRelease(
+                sourcepackagename=package, version='1.0'))
+
+        active_spphs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=series, archive=series.main_archive,
+                pocket=pocket, status=PackagePublishingStatus.PUBLISHED,
+                sourcepackagerelease=self.factory.makeSourcePackageRelease(
+                    sourcepackagename=package, version=version))
+            for version in ['1.1', '1.1.1', '1.1.1.1']]
+
+        new_spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, archive=series.main_archive,
+            pocket=pocket, status=PackagePublishingStatus.PENDING,
+            sourcepackagerelease=self.factory.makeSourcePackageRelease(
+                sourcepackagename=package, version='1.2'))
+
+        spphs = [old_spph] + active_spphs + [new_spph]
+
+        # Of the active publications, in this scenario, only one version
+        # matches what Gina finds in the Sources list.  It stays
+        # published; older active publications are superseded, newer
+        # ones deleted.
         dominate_imported_source_packages(
-            txn, logger, series.distribution.name, series.name, pub.pocket,
-            FakePackagesMap({package.name: []}))
-        self.assertEqual(PackagePublishingStatus.DELETED, pub.status)
+            txn, logger, series.distribution.name, series.name, pocket,
+            FakePackagesMap({package.name: [{'Version': '1.1.1'}]}))
+        self.assertEqual([
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.DELETED,
+            PackagePublishingStatus.PENDING,
+            ],
+            [pub.status for pub in spphs])
 
     def test_dominate_imported_source_packages_dominates_deletions(self):
         # dominate_imported_source_packages dominates the source
@@ -60,80 +96,24 @@ class TestGina(TestCaseWithFactory):
                 sourcepackagerelease=self.factory.makeSourcePackageRelease(
                     sourcepackagename=package, version=version))
             for version in ['1.0', '1.1', '1.1a']]
+
+        # In this scenario, 1.0 is a superseded release.
+        pubs[0].supersede()
         logger = DevNullLogger()
         txn = FakeTransaction()
         dominate_imported_source_packages(
             txn, logger, series.distribution.name, series.name, pocket,
             FakePackagesMap({}))
-        # XXX JeroenVermeulen 2011-09-08, bug=844550: This is
-        # "transitional" domination which supersedes older versions of
-        # deleted packages with the last known version.  Permanent
-        # domination will then mark the last known version as deleted.
-        # For permanent domination, the expected outcome is that all
-        # these publications will be Deleted (but any pre-existing
-        # Superseded publications for older versions will remain
-        # Superseded).
+
+        # The older, superseded release stays superseded; but the
+        # releases that dropped out of the imported Sources list without
+        # known successors are marked deleted.
         self.assertEqual([
             PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.DELETED,
+            PackagePublishingStatus.DELETED,
             ],
             [pub.status for pub in pubs])
-
-    def test_dominate_imported_source_packages_cleans_up_pending_spphs(self):
-        # XXX JeroenVermeulen 2011-09-08, bug=844550: For transition to
-        # Gina domination, dominate_imported_source_packages turns any
-        # remaining Pending SPPHS into Published ones.
-        series = self.factory.makeDistroSeries()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=series, archive=series.main_archive,
-            status=PackagePublishingStatus.PENDING)
-        spr = spph.sourcepackagerelease
-        package_name = spr.sourcepackagename.name
-        logger = DevNullLogger()
-        txn = FakeTransaction()
-        dominate_imported_source_packages(
-            txn, logger, series.distribution.name, series.name, spph.pocket,
-            FakePackagesMap({package_name: [{"Version": spr.version}]}))
-        self.assertEqual(PackagePublishingStatus.PUBLISHED, spph.status)
-
-    def test_dominate_imported_source_packages_cleans_up_first(self):
-        # XXX JeroenVermeulen 2011-09-08, bug=844550: For transition to
-        # Gina domination, dominate_imported_source_packages turns any
-        # remaining Pending SPPHS into Published ones.  It does this
-        # *before* dominating, so no domination happens while some of
-        # the SPPHs are still mistakenly Pending (which would result in
-        # mistaken deletions).
-        series = self.factory.makeDistroSeries()
-        package = self.factory.makeSourcePackageName()
-        pocket = PackagePublishingPocket.RELEASE
-        versions = ['1.0', '1.1']
-        statuses_before = [
-            PackagePublishingStatus.PUBLISHED,
-            PackagePublishingStatus.PENDING,
-            ]
-        statuses_after = [
-            PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.PUBLISHED,
-            ]
-        live_version = versions[-1]
-        sprs = [
-            self.factory.makeSourcePackageRelease(
-                sourcepackagename=package, version=version)
-            for version in versions]
-        spphs = [
-            self.factory.makeSourcePackagePublishingHistory(
-                archive=series.main_archive, distroseries=series,
-                sourcepackagerelease=spr, pocket=pocket, status=status)
-            for spr, status in zip(sprs, statuses_before)]
-
-        logger = DevNullLogger()
-        txn = FakeTransaction()
-        dominate_imported_source_packages(
-            txn, logger, series.distribution.name, series.name, pocket,
-            FakePackagesMap({package.name: [{"Version": live_version}]}))
-
-        self.assertEqual(statuses_after, [spph.status for spph in spphs])
 
 
 class TestSourcePackagePublisher(TestCaseWithFactory):

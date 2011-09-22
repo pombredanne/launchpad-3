@@ -19,11 +19,4 @@
         handler="lp.services.features.webapp.end_request"
         />
 
-    <securedutility
-        class="lp.services.features.xmlrpc.FeatureFlagApplication"
-        provides="lp.services.features.xmlrpc.IFeatureFlagApplication">
-        <allow
-            interface="lp.services.features.xmlrpc.IFeatureFlagApplication"/>
-    </securedutility>
-
 </configure>

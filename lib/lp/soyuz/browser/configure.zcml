@@ -785,7 +785,7 @@
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distribution.IDistribution"
-            class="lp.soyuz.browser.build.BuildRecordsView"
+            class="lp.soyuz.browser.build.DistributionBuildRecordsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"

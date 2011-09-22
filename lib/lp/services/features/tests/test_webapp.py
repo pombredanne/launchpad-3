@@ -86,14 +86,14 @@ class TestDBScopes(TestCaseWithFactory):
 
     def test_team_scope_outside_team(self):
         request = LaunchpadTestRequest()
-        self.factory.loginAsAnyone(request)
         scopes = webapp.ScopesFromRequest(request)
+        self.factory.loginAsAnyone()
         self.assertFalse(scopes.lookup('team:nonexistent'))
 
     def test_team_scope_in_team(self):
         request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(members=[member])
-        login_as(member, request)
-        scopes = webapp.ScopesFromRequest(request)
+        login_as(member)
         self.assertTrue(scopes.lookup('team:%s' % team.name))
