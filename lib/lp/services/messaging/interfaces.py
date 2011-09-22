@@ -57,13 +57,13 @@ class IMessageProducer(Interface):
         """Serialize `data` into JSON and send it to the queue immediately."""
 
     def associateConsumer(consumer):
-        """Make the consumer receive messages from this producer.
+        """Make the consumer receive messages from this producer on commit.
 
         :param consumer: An `IMessageConsumer`
         """
 
-    def disassociateConsumer(consumer):
-        """Make the consumer stop receiving messages from this producer.
+    def associateConsumerNow(consumer):
+        """Make the consumer receive messages from this producer.
 
         :param consumer: An `IMessageConsumer`
         """

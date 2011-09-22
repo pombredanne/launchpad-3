@@ -158,13 +158,11 @@ class RabbitRoutingKey(RabbitMessageBase):
 
     def associateConsumer(self, consumer):
         """Only receive messages for requested routing key."""
-        self.channel.queue_bind(
-            queue=consumer.name, exchange=LAUNCHPAD_EXCHANGE,
-            routing_key=self.key, nowait=False)
+        self.session.defer(self.associateConsumerNow, consumer)
 
-    def disassociateConsumer(self, consumer):
-        """Stop receiving messages for the requested routing key."""
-        self.channel.queue_unbind(
+    def associateConsumerNow(self, consumer):
+        """Only receive messages for requested routing key."""
+        self.channel.queue_bind(
             queue=consumer.name, exchange=LAUNCHPAD_EXCHANGE,
             routing_key=self.key, nowait=False)
 
