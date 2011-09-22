@@ -38,3 +38,14 @@ class UsesBugsDistributionVocabularyTestCase(TestCaseWithFactory):
         self.assertTrue(
             distro_uses_bugs in vocabulary,
             "Vocabulary missing distros that use Launchpad Bugs.")
+
+    def test_contains_context_distro(self):
+        # The vocabulary contains the context distro even it it does not
+        # use Launchpad to track bugs. The distro may have tracked bugs
+        # in the past so it is a legitimate choise for historic data.
+        distro_less_bugs = self.factory.makeDistribution()
+        vocabulary = UsesBugsDistributionVocabulary(distro_less_bugs)
+        self.assertFalse(distro_less_bugs.official_malone)
+        self.assertTrue(
+            distro_less_bugs in vocabulary,
+            "Vocabulary missing context distro.")

@@ -16,4 +16,10 @@ class UsesBugsDistributionVocabulary(DistributionVocabulary):
 
     @property
     def _filter(self):
-        return self._table.q.official_malone == True
+        if self.context is None:
+            distro_id = 0
+        else:
+            distro_id = self.context.id
+        return OR(
+            self._table.q.official_malone == True,
+            self._table.id == distro_id)
