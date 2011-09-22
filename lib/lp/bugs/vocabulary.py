@@ -4,7 +4,9 @@
 """Bug domain vocabularies"""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'UsesBugsDistributionVocabulary',
+    ]
 
 from sqlobject import OR
 
