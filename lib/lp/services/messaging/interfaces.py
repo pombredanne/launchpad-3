@@ -39,7 +39,7 @@ class IMessageSession(Interface):
         """
 
     def flush():
-        """Run deferred actions."""
+        """Run deferred tasks."""
 
     def finish():
         """Flush the session and reset."""

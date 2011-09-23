@@ -118,52 +118,52 @@ class TestRabbitSession(RabbitTestCase):
         self.assertIs(None, session.connection)
 
     def test_defer(self):
-        action = lambda foo, bar: None
+        task = lambda foo, bar: None
         session = RabbitSession()
-        session.defer(action, "foo", bar="baz")
+        session.defer(task, "foo", bar="baz")
         self.assertEqual(1, len(session._deferred))
-        [deferred_action] = session._deferred
-        self.assertIsInstance(deferred_action, partial)
-        self.assertIs(action, deferred_action.func)
-        self.assertEqual(("foo",), deferred_action.args)
-        self.assertEqual({"bar": "baz"}, deferred_action.keywords)
+        [deferred_task] = session._deferred
+        self.assertIsInstance(deferred_task, partial)
+        self.assertIs(task, deferred_task.func)
+        self.assertEqual(("foo",), deferred_task.args)
+        self.assertEqual({"bar": "baz"}, deferred_task.keywords)
 
     def test_flush(self):
-        # RabbitSession.flush() runs deferred actions.
+        # RabbitSession.flush() runs deferred tasks.
         log = []
-        action = lambda: log.append("action")
+        task = lambda: log.append("task")
         session = RabbitSession()
-        session.defer(action)
+        session.defer(task)
         session.connect()
         session.flush()
-        self.assertEqual(["action"], log)
-        self.assertEqual([], session._deferred)
+        self.assertEqual(["task"], log)
+        self.assertEqual([], list(session._deferred))
         self.assertIsNot(None, session.connection)
 
     def test_reset(self):
         # RabbitSession.reset() resets session variables and does not run
-        # deferred actions.
+        # deferred tasks.
         log = []
-        action = lambda: log.append("action")
+        task = lambda: log.append("task")
         session = RabbitSession()
-        session.defer(action)
+        session.defer(task)
         session.connect()
         session.reset()
         self.assertEqual([], log)
-        self.assertEqual([], session._deferred)
+        self.assertEqual([], list(session._deferred))
         self.assertIs(None, session.connection)
 
     def test_finish(self):
         # RabbitSession.finish() resets session variables after running
-        # deferred actions.
+        # deferred tasks.
         log = []
-        action = lambda: log.append("action")
+        task = lambda: log.append("task")
         session = RabbitSession()
-        session.defer(action)
+        session.defer(task)
         session.connect()
         session.finish()
-        self.assertEqual(["action"], log)
-        self.assertEqual([], session._deferred)
+        self.assertEqual(["task"], log)
+        self.assertEqual([], list(session._deferred))
         self.assertIs(None, session.connection)
 
     def test_getProducer(self):

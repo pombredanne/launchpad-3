@@ -9,6 +9,7 @@ __all__ = [
     "unreliable_session",
     ]
 
+from collections import deque
 from functools import partial
 import json
 import threading
@@ -60,7 +61,7 @@ class RabbitSession(threading.local):
     def __init__(self):
         super(RabbitSession, self).__init__()
         self._connection = None
-        self._deferred = []  # XXX: deque?
+        self._deferred = deque()
         # Maintain sessions according to transaction boundaries. Keep a strong
         # reference to the sync because the transaction manager does not. We
         # need one per thread (definining it here is enough to ensure that).
@@ -104,8 +105,8 @@ class RabbitSession(threading.local):
     def flush(self):
         """See `IMessageSession`."""
         while len(self._deferred) != 0:
-            action = self._deferred.pop(0)
-            action()
+            task = self._deferred.popleft()
+            task()
 
     def finish(self):
         """See `IMessageSession`."""
@@ -116,7 +117,7 @@ class RabbitSession(threading.local):
 
     def reset(self):
         """See `IMessageSession`."""
-        del self._deferred[:]
+        self._deferred.clear()
         self.disconnect()
 
     def defer(self, func, *args, **kwargs):
