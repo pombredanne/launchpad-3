@@ -32,10 +32,10 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
+from functools import wraps
 import operator
 
 from lazr.delegates import delegates
-from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
     IJSONRequestCache,
@@ -48,7 +48,6 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
-from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import (
     implements,
@@ -171,12 +170,10 @@ class BranchMergeProposalBreadcrumb(Breadcrumb):
 
 def notify(func):
     """Decorate a view method to send a notification."""
-
+    @wraps(func)
     def decorator(view, *args, **kwargs):
-        snapshot = BranchMergeProposalDelta.snapshot(view.context)
-        result = func(view, *args, **kwargs)
-        zope_notify(ObjectModifiedEvent(view.context, snapshot, []))
-        return result
+        with BranchMergeProposalDelta.monitor(view.context):
+            return func(view, *args, **kwargs)
     return decorator
 
 

@@ -38,8 +38,6 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import simplejson
 from sqlobject import SQLObjectNotFound
@@ -56,7 +54,6 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import (
     classProvides,
     implements,
@@ -73,6 +70,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.code.adapters.branch import BranchMergeProposalWithPreviewDiffDelta
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
@@ -379,13 +377,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         self.checkReady()
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
-        branch_merge_proposal_snapshot = Snapshot(
-            self.branch_merge_proposal, names=["preview_diff"])
-        self.branch_merge_proposal.preview_diff = preview
-        modified_event = ObjectModifiedEvent(
-            self.branch_merge_proposal, branch_merge_proposal_snapshot,
-            vars(branch_merge_proposal_snapshot).keys())
-        notify(modified_event)
+        with BranchMergeProposalWithPreviewDiffDelta.monitor(
+            self.branch_merge_proposal):
+            self.branch_merge_proposal.preview_diff = preview
 
     def getOperationDescription(self):
         return ('generating the diff for a merge proposal')

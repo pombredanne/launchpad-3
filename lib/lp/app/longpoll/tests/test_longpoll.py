@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from zope.component import adapts
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import (
     Attribute,
     implements,
@@ -22,10 +25,7 @@ from lp.services.longpoll.interfaces import (
     ILongPollEvent,
     ILongPollSubscriber,
     )
-from lp.services.messaging.queue import (
-    RabbitQueue,
-    RabbitRoutingKey,
-    )
+from lp.services.messaging.interfaces import IMessageSession
 from lp.testing import TestCase
 from lp.testing.fixture import ZopeAdapterFixture
 
@@ -57,7 +57,9 @@ class FakeEvent:
 
     def emit(self, **data):
         # Don't cargo-cult this; see .adapters.event.LongPollEvent instead.
-        RabbitRoutingKey(self.event_key).send_now(data)
+        session = getUtility(IMessageSession)
+        producer = session.getProducer(self.event_key)
+        producer.sendNow(data)
 
 
 class TestFunctions(TestCase):
@@ -69,18 +71,20 @@ class TestFunctions(TestCase):
         # ILongPollSubscriber for the given request (or the current request is
         # discovered). It subscribes the latter to the event, then returns the
         # event.
+        session = getUtility(IMessageSession)
         request = LaunchpadTestRequest()
         an_object = FakeObject(12345)
         with ZopeAdapterFixture(FakeEvent):
             event = subscribe(an_object, request=request)
         self.assertIsInstance(event, FakeEvent)
         self.assertEqual("event-key-12345", event.event_key)
+        session.flush()
         # Emitting an event-key-12345 event will put something on the
         # subscriber's queue.
         event_data = {"1234": 5678}
         event.emit(**event_data)
         subscriber = ILongPollSubscriber(request)
-        subscribe_queue = RabbitQueue(subscriber.subscribe_key)
+        subscribe_queue = session.getConsumer(subscriber.subscribe_key)
         message = subscribe_queue.receive(timeout=5)
         self.assertEqual(event_data, message)
 
@@ -99,9 +103,10 @@ class TestFunctions(TestCase):
         an_object = FakeObject(12345)
         with ZopeAdapterFixture(FakeEvent):
             event = emit(an_object)
-            routing_key = RabbitRoutingKey(event.event_key)
-            subscribe_queue = RabbitQueue("whatever")
-            routing_key.associateConsumer(subscribe_queue)
+            session = getUtility(IMessageSession)
+            producer = session.getProducer(event.event_key)
+            subscribe_queue = session.getConsumer("whatever")
+            producer.associateConsumerNow(subscribe_queue)
             # Emit the event again; the subscribe queue was not associated
             # with the event before now.
             event_data = {"8765": 4321}
