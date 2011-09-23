@@ -97,6 +97,7 @@ from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
     )
+from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -723,6 +724,15 @@ class QuestionChangeStatusView(LaunchpadFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+class QuestionTargetWidget(LaunchpadTargetWidget):
+    """A targeting widget that is aware of pillars that use Answers."""
+
+    def getDistributionVocabulary(self):
+        distro = self.context.context.distribution
+        vocabulary = UsesAnswersDistributionVocabulary(distro)
+        return vocabulary
 
 
 class QuestionEditView(LaunchpadEditFormView):
