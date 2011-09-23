@@ -56,6 +56,47 @@ class TestQuestionAddView(TestCaseWithFactory):
             'The summary cannot exceed 250 characters.', view.errors[0])
 
 
+class QuestionEditViewTestCase(TestCaseWithFactory):
+    """Verify the behavior of the QuestionEditView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def getForm(self, question):
+        if question.assignee is None:
+            assignee = ''
+        else:
+            assignee = question.assignee.name
+        return {
+            'field.title': question.title,
+            'field.description': question.description,
+            'field.language': question.language.code,
+            'field.assignee': assignee,
+            'field.target': 'product',
+            'field.target.distribution': '',
+            'field.target.package': '',
+            'field.target.product': question.target.name,
+            'field.whiteboard': question.whiteboard,
+            'field.actions.change': 'Change',
+            }
+
+    def test_retarget_with_other_changed(self):
+        # Retargeting must be the last change made to the question
+        # to ensure that user permission do not change while there
+        # are more changes to make.
+        target = self.factory.makeProduct()
+        question = self.factory.makeQuestion(target=target)
+        other_target = self.factory.makeProduct()
+        login_person(target.owner)
+        form = self.getForm(question)
+        form['field.whiteboard'] = 'comment'
+        form['field.target.product'] = other_target.name
+        view = create_initialized_view(
+            question, name='+edit', layer=AnswersLayer, form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(other_target, question.target)
+        self.assertEqual('comment', question.whiteboard)
+
+
 class QuestionTargetWidgetTestCase(TestCaseWithFactory):
     """Test that QuestionTargetWidgetTestCase behaves as expected."""
     layer = DatabaseFunctionalLayer

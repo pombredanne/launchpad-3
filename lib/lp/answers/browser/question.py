@@ -772,7 +772,15 @@ class QuestionEditView(LaunchpadEditFormView):
     @action(_("Save Changes"), name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
+        # Target must be the last field processed because it implicitly
+        # changes the user's permissions.
+        target_data = {'target': self.context.target}
+        if 'target' in data:
+            target_data['target'] = data['target']
+            del data['target']
         self.updateContextFromData(data)
+        if target_data['target'] != self.context.target:
+            self.updateContextFromData(target_data)
 
     @property
     def next_url(self):
