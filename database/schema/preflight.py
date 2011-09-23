@@ -47,6 +47,7 @@ FRAGILE_USERS = frozenset([
     'process_accepted',
     'process_upload',
     'publish_distro',
+    'publish_ftpmaster',
     ])
 
 # How lagged the cluster can be before failing the preflight check.
