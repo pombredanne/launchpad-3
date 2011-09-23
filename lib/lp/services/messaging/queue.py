@@ -121,8 +121,8 @@ transaction.manager.registerSynch(session_sync)
 class RabbitMessageBase:
     """Base class for all RabbitMQ messaging."""
 
-    def __init__(self, session=session):
-        self.session = session
+    def __init__(self, session):
+        self.session = IMessageSession(session)
         self._channel = None
 
     @property
@@ -143,8 +143,8 @@ class RabbitRoutingKey(RabbitMessageBase):
 
     implements(IMessageProducer)
 
-    def __init__(self, routing_key):
-        super(RabbitRoutingKey, self).__init__()
+    def __init__(self, session, routing_key):
+        super(RabbitRoutingKey, self).__init__(session)
         self.key = routing_key
 
     def associateConsumer(self, consumer):
@@ -174,8 +174,8 @@ class RabbitQueue(RabbitMessageBase):
 
     implements(IMessageConsumer)
 
-    def __init__(self, name):
-        super(RabbitQueue, self).__init__()
+    def __init__(self, session, name):
+        super(RabbitQueue, self).__init__(session)
         self.name = name
         self.channel.queue_declare(self.name, nowait=False)
 

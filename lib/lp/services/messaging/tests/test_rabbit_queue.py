@@ -149,13 +149,12 @@ class TestRabbitSession(RabbitTestCase):
 class TestRabbitMessageBase(RabbitTestCase):
 
     def test_session(self):
-        # RabbitMessageBase.session defaults to the global shared session.
-        base = RabbitMessageBase()
+        base = RabbitMessageBase(session)
         self.assertIs(session, base.session)
 
     def test_channel(self):
         # Referencing the channel property causes the session to connect.
-        base = RabbitMessageBase()
+        base = RabbitMessageBase(session)
         self.assertIs(None, base.session.connection)
         channel = base.channel
         self.assertIsNot(None, base.session.connection)
@@ -165,7 +164,7 @@ class TestRabbitMessageBase(RabbitTestCase):
 
     def test_channel_session_closed(self):
         # When the session is disconnected the channel is thrown away too.
-        base = RabbitMessageBase()
+        base = RabbitMessageBase(session)
         channel1 = base.channel
         base.session.disconnect()
         channel2 = base.channel
@@ -175,14 +174,14 @@ class TestRabbitMessageBase(RabbitTestCase):
 class TestRabbitRoutingKey(RabbitTestCase):
 
     def test_interface(self):
-        routing_key = RabbitRoutingKey(next(key_names))
+        routing_key = RabbitRoutingKey(session, next(key_names))
         self.assertThat(routing_key, Provides(IMessageProducer))
 
     def test_associateConsumer(self):
         # associateConsumer() only associates the consumer at transaction
         # commit time. However, order is preserved.
-        consumer = RabbitQueue(next(queue_names))
-        routing_key = RabbitRoutingKey(next(key_names))
+        consumer = RabbitQueue(session, next(queue_names))
+        routing_key = RabbitRoutingKey(session, next(key_names))
         routing_key.associateConsumer(consumer)
         routing_key.sendNow('now')
         routing_key.send('later')
@@ -196,8 +195,8 @@ class TestRabbitRoutingKey(RabbitTestCase):
 
     def test_associateConsumerNow(self):
         # associateConsumerNow() associates the consumer right away.
-        consumer = RabbitQueue(next(queue_names))
-        routing_key = RabbitRoutingKey(next(key_names))
+        consumer = RabbitQueue(session, next(queue_names))
+        routing_key = RabbitRoutingKey(session, next(key_names))
         routing_key.associateConsumerNow(consumer)
         routing_key.sendNow('now')
         routing_key.send('later')
@@ -209,8 +208,8 @@ class TestRabbitRoutingKey(RabbitTestCase):
         self.assertEqual('later', consumer.receive(timeout=2))
 
     def test_send(self):
-        consumer = RabbitQueue(next(queue_names))
-        routing_key = RabbitRoutingKey(next(key_names))
+        consumer = RabbitQueue(session, next(queue_names))
+        routing_key = RabbitRoutingKey(session, next(key_names))
         routing_key.associateConsumerNow(consumer)
 
         for data in range(90, 100):
@@ -230,8 +229,8 @@ class TestRabbitRoutingKey(RabbitTestCase):
         self.assertEqual('sync', consumer.receive(timeout=2))
 
     def test_sendNow(self):
-        consumer = RabbitQueue(next(queue_names))
-        routing_key = RabbitRoutingKey(next(key_names))
+        consumer = RabbitQueue(session, next(queue_names))
+        routing_key = RabbitRoutingKey(session, next(key_names))
         routing_key.associateConsumerNow(consumer)
 
         for data in range(50, 60):
@@ -243,12 +242,12 @@ class TestRabbitRoutingKey(RabbitTestCase):
 class TestRabbitQueue(RabbitTestCase):
 
     def test_interface(self):
-        consumer = RabbitQueue(next(queue_names))
+        consumer = RabbitQueue(session, next(queue_names))
         self.assertThat(consumer, Provides(IMessageConsumer))
 
     def test_receive(self):
-        consumer = RabbitQueue(next(queue_names))
-        routing_key = RabbitRoutingKey(next(key_names))
+        consumer = RabbitQueue(session, next(queue_names))
+        routing_key = RabbitRoutingKey(session, next(key_names))
         routing_key.associateConsumerNow(consumer)
 
         for data in range(55, 65):
@@ -262,8 +261,8 @@ class TestRabbitQueue(RabbitTestCase):
 
         # New connections to the queue see an empty queue too.
         consumer.session.disconnect()
-        consumer = RabbitQueue(next(queue_names))
-        routing_key = RabbitRoutingKey(next(key_names))
+        consumer = RabbitQueue(session, next(queue_names))
+        routing_key = RabbitRoutingKey(session, next(key_names))
         routing_key.associateConsumerNow(consumer)
         self.assertRaises(
             EmptyQueueException,
@@ -274,8 +273,8 @@ class TestRabbit(RabbitTestCase):
     """Integration-like tests for the RabbitMQ messaging abstractions."""
 
     def test_abort(self):
-        consumer = RabbitQueue(next(queue_names))
-        routing_key = RabbitRoutingKey(next(key_names))
+        consumer = RabbitQueue(session, next(queue_names))
+        routing_key = RabbitRoutingKey(session, next(key_names))
         routing_key.associateConsumerNow(consumer)
 
         for data in range(90, 100):
