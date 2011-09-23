@@ -125,18 +125,6 @@ and if you want to use the value ::
      if value:
         print value
 
-Checking flags without access to the database
-=============================================
-
-Feature flags can also be checked without access to the database by making use
-of the 'getFeatureFlag' XML-RPC method.
-
-    server_proxy = xmlrpclib.ServerProxy(
-        config.launchpad.feature_flags_endpoint, allow_none=True)
-    if server_proxy.getFeatureFlag(
-        'codehosting.use_forking_server', ['user:' + user_name]):
-        pass
-
 Debugging feature usage
 =======================
 

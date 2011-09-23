@@ -7,10 +7,7 @@ __metaclass__ = type
 __all__ = [
     'create_view',
     'create_initialized_view',
-    'YUITestFileView',
     ]
-
-import os
 
 from zope.component import (
     getMultiAdapter,
@@ -21,7 +18,6 @@ from zope.security.management import (
     newInteraction,
     )
 
-from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.launchpad.webapp.interfaces import (
@@ -30,7 +26,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.publisher import layer_for_rootsite
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.lazr import ExportedFolder
 
 
 def create_view(context, name, form=None, layer=None, server_url=None,
@@ -100,13 +95,6 @@ def create_initialized_view(context, name, form=None, layer=None,
         current_request=current_request)
     view.initialize()
     return view
-
-
-class YUITestFileView(ExportedFolder):
-    """Export the lib directory where the test assets reside."""
-
-    folder = os.path.join(config.root, 'lib/')
-    export_subdirectories = True
 
 
 def create_webservice_error_view(error):

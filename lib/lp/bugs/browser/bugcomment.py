@@ -85,8 +85,7 @@ def build_comments_from_chunks(
     return comments
 
 
-def group_comments_with_activity(comments, activities, batch_size=None,
-                                 offset=None):
+def group_comments_with_activity(comments, activities):
     """Group comments and activity together for human consumption.
 
     Generates a stream of comment instances (with the activity grouped within)
@@ -116,13 +115,6 @@ def group_comments_with_activity(comments, activities, batch_size=None,
     # second, when two events are tied the comment index is used to
     # disambiguate.
     events = sorted(chain(comments, activity), key=itemgetter(0, 1, 2))
-    if batch_size is not None:
-        # If we're limiting to a given set of results, we work on just
-        # that subset of results from hereon in, which saves on
-        # processing time a bit.
-        if offset is None:
-            offset = 0
-        events = events[offset:offset+batch_size]
 
     def gen_event_windows(events):
         """Generate event windows.
