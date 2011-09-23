@@ -53,6 +53,12 @@ class IMessageSession(Interface):
     def defer(func, *args, **kwargs):
         """Schedule something to happen when this session is finished."""
 
+    def getProducer(name):
+        """Get a `IMessageProducer` associated with this session."""
+
+    def getConsumer(name):
+        """Get a `IMessageConsumer` associated with this session."""
+
 
 class IMessageConsumer(Interface):
 

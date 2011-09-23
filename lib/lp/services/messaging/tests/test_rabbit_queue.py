@@ -145,6 +145,20 @@ class TestRabbitSession(RabbitTestCase):
         self.assertEqual([], fake_session._deferred)
         self.assertIs(None, fake_session.connection)
 
+    def test_getProducer(self):
+        fake_session = RabbitSession()
+        producer = fake_session.getProducer("foo")
+        self.assertIsInstance(producer, RabbitRoutingKey)
+        self.assertIs(fake_session, producer.session)
+        self.assertEqual("foo", producer.key)
+
+    def test_getConsumer(self):
+        fake_session = RabbitSession()
+        consumer = fake_session.getConsumer("foo")
+        self.assertIsInstance(consumer, RabbitQueue)
+        self.assertIs(fake_session, consumer.session)
+        self.assertEqual("foo", consumer.name)
+
 
 class TestRabbitMessageBase(RabbitTestCase):
 

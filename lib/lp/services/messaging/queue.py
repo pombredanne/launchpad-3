@@ -95,6 +95,7 @@ class RabbitSession(threading.local):
                 self._connection = None
 
     def finish(self):
+        """See `IMessageSession`."""
         try:
             for action in self._deferred:
                 action()
@@ -102,11 +103,21 @@ class RabbitSession(threading.local):
             self.reset()
 
     def reset(self):
+        """See `IMessageSession`."""
         del self._deferred[:]
         self.disconnect()
 
     def defer(self, func, *args, **kwargs):
+        """See `IMessageSession`."""
         self._deferred.append(partial(func, *args, **kwargs))
+
+    def getProducer(self, name):
+        """See `IMessageSession`."""
+        return RabbitRoutingKey(self, name)
+
+    def getConsumer(self, name):
+        """See `IMessageSession`."""
+        return RabbitQueue(self, name)
 
 
 # Per-thread sessions.
