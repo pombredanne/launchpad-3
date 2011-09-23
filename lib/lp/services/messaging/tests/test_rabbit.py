@@ -12,8 +12,12 @@ import thread
 from amqplib import client_0_8 as amqp
 import transaction
 from transaction._transaction import Status as TransactionStatus
+from zope.component import getUtility
 
-from canonical.testing.layers import RabbitMQLayer
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    RabbitMQLayer,
+    )
 from lp.services.messaging.interfaces import (
     EmptyQueueException,
     IMessageConsumer,
@@ -343,3 +347,16 @@ class TestRabbit(RabbitTestCase):
         self.assertRaises(
             EmptyQueueException,
             consumer.receive, timeout=2)
+
+
+class TestRabbitWithLaunchpad(RabbitTestCase):
+    """Integration-like tests for the RabbitMQ messaging abstractions."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_utility(self):
+        # The unreliable session is registered as the default IMessageSession
+        # utility.
+        self.assertIs(
+            global_unreliable_session,
+            getUtility(IMessageSession))
