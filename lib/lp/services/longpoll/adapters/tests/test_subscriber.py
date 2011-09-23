@@ -12,6 +12,7 @@ from testtools.matchers import (
     Not,
     StartsWith,
     )
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -27,10 +28,7 @@ from lp.services.longpoll.interfaces import (
     ILongPollEvent,
     ILongPollSubscriber,
     )
-from lp.services.messaging.rabbit import (
-    RabbitQueue,
-    RabbitRoutingKey,
-    )
+from lp.services.messaging.interfaces import IMessageSession
 from lp.testing import TestCase
 from lp.testing.matchers import Contains
 
@@ -86,9 +84,11 @@ class TestLongPollSubscriber(TestCase):
         subscriber = ILongPollSubscriber(request)
         subscriber.subscribe(event)
         message = '{"hello": 1234}'
-        routing_key = RabbitRoutingKey(event.event_key)
-        routing_key.send_now(message)
-        subscribe_queue = RabbitQueue(subscriber.subscribe_key)
+        session = getUtility(IMessageSession)
+        routing_key = session.getProducer(event.event_key)
+        routing_key.send(message)
+        session.flush()
+        subscribe_queue = session.getConsumer(subscriber.subscribe_key)
         self.assertEqual(
             message, subscribe_queue.receive(timeout=5))
 
