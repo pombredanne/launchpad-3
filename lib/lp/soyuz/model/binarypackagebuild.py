@@ -1014,7 +1014,9 @@ class BinaryPackageBuildSet:
 
         # Ordering according status
         # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
-        # * SUPERSEDED & All by -datecreated
+        # * SUPERSEDED & All by -PackageBuild.build_farm_job
+        #   (nearly equivalent to -datecreated, but much more
+        #   efficient.)
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status in [
@@ -1029,9 +1031,8 @@ class BinaryPackageBuildSet:
                 'BuildPackageJob.build = BinaryPackageBuild.id')
             condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
         elif status == BuildStatus.SUPERSEDED or status is None:
-            order_by = [Desc(BuildFarmJob.date_created),
-                        BinaryPackageBuild.id]
-            order_by_table = BuildFarmJob
+            order_by = [Desc(PackageBuild.build_farm_job_id)]
+            order_by_table = PackageBuild
         else:
             order_by = [Desc(BuildFarmJob.date_finished),
                         BinaryPackageBuild.id]
