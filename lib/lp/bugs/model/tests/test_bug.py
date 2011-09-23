@@ -3,6 +3,12 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from pytz import UTC
+
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
@@ -10,6 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enum import (
     BugNotificationLevel,
     BugNotificationStatus,
@@ -814,6 +821,47 @@ class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
         s = super(TestBugPrivateAndSecurityRelatedUpdatesPublicProject, self)
         s.setUp()
         self.private_project = False
+
+
+class TestBugActivityMethods(TestCaseWithFactory):
+    def setUp(self):
+        super(TestBugActivityMethods, self).setUp()
+        self.now = datetime.now(UTC)
+
+    def _makeActivityForBug(self, bug, activity_ages):
+        with person_logged_in(bug.owner):
+            for days_ago in activity_ages:
+                activity = BugTitleChange(
+                    when=self.now - timedelta(days=days_ago),
+                    person=bug.owner, what_changed='title',
+                    old_value='foo', new_value='baz')
+                bug.addChange(activity)
+
+    def test_getActivityForDateRange_returns_items_between_dates(self):
+        # Bug.getActivityForDateRange() will return the activity for
+        # that bug that falls within a given date range.
+        bug = self.factory.makeBug(
+            date_created=self.now - timedelta(days=365))
+        self._makeActivityForBug(bug, activity_ages=[200,100])
+        start_date = self.now - timedelta(days=250)
+        end_date = self.now - timedelta(days=150)
+        activity = bug.getActivityForDateRange(
+            start_date=start_date, end_date=end_date)
+        expected_activity = bug.activity[1:2]
+        self.assertContentEqual(expected_activity, activity)
+
+    def test_getActivityForDateRange_is_inclusive_of_date_limits(self):
+        # Bug.getActivityForDateRange() will return the activity that
+        # falls on the start_ and end_ dates.
+        bug = self.factory.makeBug(
+            date_created=self.now - timedelta(days=365))
+        self._makeActivityForBug(bug, activity_ages=[300,200,100])
+        start_date = self.now - timedelta(days=300)
+        end_date = self.now - timedelta(days=100)
+        activity = bug.getActivityForDateRange(
+            start_date=start_date, end_date=end_date)
+        expected_activity = bug.activity[1:]
+        self.assertContentEqual(expected_activity, activity)
 
 
 class TestBugAutoConfirmation(TestCaseWithFactory):

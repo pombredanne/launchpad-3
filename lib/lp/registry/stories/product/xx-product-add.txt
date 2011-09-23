@@ -123,7 +123,7 @@ This time, Sample Person remembers to select a license.
     >>> user_browser.getControl('Python License').click()
     >>> user_browser.getControl('Complete Registration').click()
     >>> print user_browser.title
-    Aardvark Central Command in Launchpad
+    Aardvark Center in Launchpad
 
 Let's ensure the summary and description are presented.
 

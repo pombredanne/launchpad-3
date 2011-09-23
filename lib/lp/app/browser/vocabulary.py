@@ -257,12 +257,27 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
             enhanced = bool(getFeatureFlag(
                 'disclosure.target_picker_enhancements.enabled'))
             if enhanced:
+                picker_entry.details = []
+                summary = picker_entry.description
+                if len(summary) > 45:
+                    index =  summary.rfind(' ', 0, 45)
+                    first_line = summary[0:index + 1]
+                    second_line = summary[index:]
+                else:
+                    first_line = summary
+                    second_line = ''
+
+                if len(second_line) > 90:
+                    index =  second_line.rfind(' ', 0, 90)
+                    second_line = second_line[0:index+1] 
+                picker_entry.description = first_line
+                picker_entry.details.append(second_line)
                 picker_entry.alt_title = target.name
                 picker_entry.target_type = self.target_type
                 maintainer = self.getMaintainer(target)
                 if maintainer is not None:
-                    picker_entry.details = [
-                        'Maintainer: %s' % self.getMaintainer(target)]
+                    picker_entry.details.append( 
+                        'Maintainer: %s' % self.getMaintainer(target))
         return entries
 
 

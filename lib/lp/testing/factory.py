@@ -505,7 +505,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    def loginAsAnyone(self, participation=None):
+    def loginAsAnyone(self):
         """Log in as an arbitrary person.
 
         If you want to log in as a celebrity, including admins, see
@@ -513,7 +513,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         login(ANONYMOUS)
         person = self.makePerson()
-        login_as(person, participation)
+        login_as(person)
         return person
 
     @with_celebrity_logged_in('admin')
@@ -2346,7 +2346,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          aliases=None, bug_supervisor=None, driver=None,
                          security_contact=None, publish_root_dir=None,
                          publish_base_url=None, publish_copy_base_url=None,
-                         no_pubconf=False, icon=None):
+                         no_pubconf=False, icon=None, summary=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2355,7 +2355,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString()
         description = self.getUniqueString()
-        summary = self.getUniqueString()
+        if summary is None:
+            summary = self.getUniqueString()
         domainname = self.getUniqueString()
         if registrant is None:
             registrant = self.makePerson()

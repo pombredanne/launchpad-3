@@ -158,6 +158,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
+from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -2228,6 +2229,15 @@ BugMessage""" % sqlvalues(self.id))
             self._attachments_query(),
             operator.itemgetter(0))
 
+    def getActivityForDateRange(self, start_date, end_date):
+        """See `IBug`."""
+        store = Store.of(self)
+        activity_in_range = store.find(
+            BugActivity,
+            BugActivity.bug == self,
+            BugActivity.datechanged >= start_date,
+            BugActivity.datechanged <= end_date)
+        return activity_in_range
 
 @ProxyFactory
 def get_also_notified_subscribers(

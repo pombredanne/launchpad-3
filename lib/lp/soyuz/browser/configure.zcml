@@ -112,7 +112,7 @@
     </browser:pages>
     <browser:page
         for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
-        class="canonical.launchpad.browser.QuestionCollectionOpenCountView"
+        class="lp.answers.browser.questiontarget.QuestionCollectionOpenCountView"
         name="+open_questions_count"
         permission="zope.Public"/>
     <browser:pages
@@ -785,7 +785,7 @@
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distribution.IDistribution"
-            class="lp.soyuz.browser.build.BuildRecordsView"
+            class="lp.soyuz.browser.build.DistributionBuildRecordsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"

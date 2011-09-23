@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'HasSprintsView',
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
@@ -162,6 +163,11 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
     usedfor = ISprintSet
     enable_only = ['overview', ]
+
+
+class HasSprintsView(LaunchpadView):
+
+    page_title = 'Events'
 
 
 class SprintView(HasSpecificationsView):
@@ -477,8 +483,8 @@ class SprintMeetingExportView(LaunchpadView):
                 model_specs, ['specificationID']):
             if subscription.personID not in attendee_set:
                 continue
-            people[subscription.specificationID][subscription.personID] = \
-                subscription.essential
+            people[subscription.specificationID][
+                subscription.personID] = subscription.essential
 
         # Spec specials - drafter/assignee.  Don't need approver for
         # performance, as specifications() above eager-loaded the

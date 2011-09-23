@@ -729,6 +729,7 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getActivityForDateRange
                     getBugTask
                     getDirectSubscribers
                     getDirectSubscribersWithDetails

@@ -986,6 +986,15 @@ class IBug(IPrivacy, IHasLinkedBranches):
         Returns True or False.
         """
 
+    def getActivityForDateRange(start_date, end_date):
+        """Return all the `IBugActivity` for this bug in a date range.
+
+        :param start_date: The earliest date for which activity can be
+            returned.
+        :param end_date: The latest date for which activity can be
+            returned.
+        """
+
 
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug

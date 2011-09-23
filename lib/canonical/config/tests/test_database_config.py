@@ -3,7 +3,11 @@
 
 __metaclass__ = type
 
-from canonical.config import config, dbconfig
+from canonical.config import (
+    config,
+    DatabaseConfig,
+    dbconfig,
+    )
 from canonical.launchpad.readonly import read_only_file_exists
 from canonical.launchpad.tests.readonly import (
     remove_read_only_file,
@@ -36,6 +40,39 @@ class TestDatabaseConfig(TestCase):
         dbconfig.setConfigSection('launchpad')
         self.assertEquals(expected_db, dbconfig.rw_main_master)
         self.assertEquals('launchpad_main', dbconfig.dbuser)
+
+    def test_override(self):
+        # dbuser and isolation_level can be overridden at runtime, without
+        # requiring a custom config overlay.
+        dbc = DatabaseConfig()
+        dbc.setConfigSection('launchpad')
+        self.assertEqual('launchpad_main', dbc.dbuser)
+        self.assertEqual('serializable', dbc.isolation_level)
+
+        # dbuser and isolation_level overrides both work.
+        dbc.override(dbuser='not_launchpad', isolation_level='autocommit')
+        self.assertEqual('not_launchpad', dbc.dbuser)
+        self.assertEqual('autocommit', dbc.isolation_level)
+
+        # Overriding dbuser again preserves the isolation_level override.
+        dbc.override(dbuser='also_not_launchpad')
+        self.assertEqual('also_not_launchpad', dbc.dbuser)
+        self.assertEqual('autocommit', dbc.isolation_level)
+
+        # Overriding with None removes the override.
+        dbc.override(dbuser=None, isolation_level=None)
+        self.assertEqual('launchpad_main', dbc.dbuser)
+        self.assertEqual('serializable', dbc.isolation_level)
+
+    def test_reset(self):
+        # reset() removes any overrides.
+        dbc = DatabaseConfig()
+        dbc.setConfigSection('launchpad')
+        self.assertEqual('launchpad_main', dbc.dbuser)
+        dbc.override(dbuser='not_launchpad')
+        self.assertEqual('not_launchpad', dbc.dbuser)
+        dbc.reset()
+        self.assertEqual('launchpad_main', dbc.dbuser)
 
     def test_required_values(self):
         # Some variables are required to have a value, such as dbuser.  So we
