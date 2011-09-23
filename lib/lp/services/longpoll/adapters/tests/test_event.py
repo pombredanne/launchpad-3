@@ -13,7 +13,10 @@ from lp.services.longpoll.adapters.event import (
     LongPollEvent,
     )
 from lp.services.longpoll.interfaces import ILongPollEvent
-from lp.services.messaging.queue import RabbitMessageBase
+from lp.services.longpoll.testing import (
+    capture_longpoll_emissions,
+    LongPollEventRecord,
+    )
 from lp.testing import TestCase
 from lp.testing.matchers import Contains
 
@@ -45,12 +48,12 @@ class TestLongPollEvent(TestCase):
         # LongPollEvent.emit() sends the given data to `event_key`.
         event = FakeEvent("source")
         event_data = {"hello": 1234}
-        event.emit(**event_data)
-        expected_message = dict(event_data, event_key=event.event_key)
-        pending_messages = [
-            message for (call, message) in
-            RabbitMessageBase.class_locals.messages]
-        self.assertThat(pending_messages, Contains(expected_message))
+        with capture_longpoll_emissions() as log:
+            event.emit(**event_data)
+        expected_message = LongPollEventRecord(
+            event_key=event.event_key,
+            data=dict(event_data, event_key=event.event_key))
+        self.assertThat(log, Contains(expected_message))
 
 
 class TestFunctions(TestCase):
