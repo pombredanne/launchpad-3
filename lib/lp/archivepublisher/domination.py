@@ -225,7 +225,7 @@ class Dominator:
             publications, cmp=generalization.compare, reverse=True)
 
         self.logger.debug(
-            "Package has %d live publication(s).  Live versions: %s", 
+            "Package has %d live publication(s).  Live versions: %s",
             len(publications), live_versions)
 
         current_dominant = None
