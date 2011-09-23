@@ -824,6 +824,9 @@ class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
 
 
 class TestBugActivityMethods(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
     def setUp(self):
         super(TestBugActivityMethods, self).setUp()
         self.now = datetime.now(UTC)
