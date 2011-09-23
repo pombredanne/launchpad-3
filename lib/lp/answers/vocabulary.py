@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Named vocabularies defined by the Answers application."""
@@ -6,7 +6,10 @@
 __metaclass__ = type
 __all__ = [
     'FAQVocabulary',
+    'UsesAnswersDistributionVocabulary',
     ]
+
+from sqlobject import OR
 
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
@@ -18,6 +21,8 @@ from canonical.launchpad.webapp.vocabulary import (
     )
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.vocabularies import DistributionVocabulary
 
 
 class FAQVocabulary(FilteredVocabularyBase):
@@ -74,3 +79,28 @@ class FAQVocabulary(FilteredVocabularyBase):
         """See `IHugeVocabulary`."""
         results = self.context.findSimilarFAQs(query)
         return CountableIterator(results.count(), results, self.toTerm)
+
+
+class UsesAnswersDistributionVocabulary(DistributionVocabulary):
+    """Distributions that use Launchpad to track questions.
+
+    If the context is a distribution, it is always included in the
+    vocabulary. Historic data is not invalidated if a distro stops
+    using Launchpad to track questions. This vocabulary offers the correct
+    choices of distributions at this moment.
+    """
+
+    def __init__(self, context=None):
+        super(UsesAnswersDistributionVocabulary, self).__init__(
+            context=context)
+        self.distribution = IDistribution(self.context, None)
+
+    @property
+    def _filter(self):
+        if self.distribution is None:
+            distro_id = 0
+        else:
+            distro_id = self.distribution.id
+        return OR(
+            self._table.q.official_answers == True,
+            self._table.id == distro_id)
