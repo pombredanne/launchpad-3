@@ -321,11 +321,11 @@ class TestRabbit(RabbitTestCase):
                 sync.session for sync in syncs_set.data.itervalues()
                 if isinstance(sync, RabbitSessionTransactionSync))
 
-    def test_global_sesssion(self):
+    def test_global_session(self):
         self.assertIsInstance(global_session, RabbitSession)
         self.assertIn(global_session, self.get_synced_sessions())
 
-    def test_global_unreliable_sesssion(self):
+    def test_global_unreliable_session(self):
         self.assertIsInstance(
             global_unreliable_session, RabbitUnreliableSession)
         self.assertIn(global_unreliable_session, self.get_synced_sessions())
