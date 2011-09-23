@@ -745,7 +745,7 @@ class QuestionEditView(LaunchpadEditFormView):
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
-    custom_widget('target', LaunchpadTargetWidget)
+    custom_widget('target', QuestionTargetWidget)
 
     @property
     def page_title(self):
