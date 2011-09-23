@@ -465,6 +465,9 @@ class DatabaseConfig:
 
         The first section in the list has highest priority.
         """
+        # config.launchpad remains here for compatibility -- production
+        # appserver configs customise its dbuser. Eventually they should
+        # be migrated into config.database, and this can be removed.
         return [self.overrides, config.launchpad, config.database]
 
     def __getattr__(self, name):
