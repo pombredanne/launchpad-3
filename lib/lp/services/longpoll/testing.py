@@ -21,12 +21,12 @@ LongPollEventRecord = namedtuple(
 
 
 class LoggingRouter:
-    """A test double for instances of `RabbitRoutingKey`.
+    """A test double for `IMessageProducer`.
 
     Saves messages as `LongPollEventRecord` tuples to a log.
 
     :param log: A callable accepting a single `LongPollEventRecord`.
-    :param routing_key: See `RabbitRoutingKey.__init__`.
+    :param routing_key: See `IMessageSession.getProducer`.
     """
 
     def __init__(self, log, routing_key):
