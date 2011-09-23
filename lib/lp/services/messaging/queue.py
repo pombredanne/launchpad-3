@@ -54,6 +54,8 @@ class RabbitSession(threading.local):
 
     implements(IMessageSession)
 
+    exchange = LAUNCHPAD_EXCHANGE
+
     def __init__(self):
         self._connection = None
         self._deferred = []
@@ -142,7 +144,7 @@ class RabbitMessageBase:
             #self._channel.access_request(
             #    '/data', active=True, write=True, read=True)
             self._channel.exchange_declare(
-                LAUNCHPAD_EXCHANGE, "direct", durable=False,
+                self.session.exchange, "direct", durable=False,
                 auto_delete=False, nowait=False)
         return self._channel
 
@@ -163,7 +165,7 @@ class RabbitRoutingKey(RabbitMessageBase):
     def associateConsumerNow(self, consumer):
         """Only receive messages for requested routing key."""
         self.channel.queue_bind(
-            queue=consumer.name, exchange=LAUNCHPAD_EXCHANGE,
+            queue=consumer.name, exchange=self.session.exchange,
             routing_key=self.key, nowait=False)
 
     def send(self, data):
@@ -175,7 +177,8 @@ class RabbitRoutingKey(RabbitMessageBase):
         json_data = json.dumps(data)
         msg = amqp.Message(json_data)
         self.channel.basic_publish(
-            exchange=LAUNCHPAD_EXCHANGE, routing_key=self.key, msg=msg)
+            exchange=self.session.exchange,
+            routing_key=self.key, msg=msg)
 
 
 class RabbitQueue(RabbitMessageBase):
