@@ -7,7 +7,9 @@ __metaclass__ = type
 
 from functools import partial
 from itertools import count
+import thread
 
+from amqplib import client_0_8 as amqp
 import transaction
 from transaction._transaction import Status as TransactionStatus
 
@@ -24,7 +26,9 @@ from lp.services.messaging.queue import (
     RabbitRoutingKey,
     RabbitSession,
     RabbitSessionTransactionSync,
+    RabbitUnreliableSession,
     session as global_session,
+    unreliable_session as global_unreliable_session,
     )
 from lp.testing import TestCase
 from lp.testing.faketransaction import FakeTransaction
@@ -160,6 +164,26 @@ class TestRabbitSession(RabbitTestCase):
         self.assertEqual("foo", consumer.name)
 
 
+class TestRabbitUnreliableSession(RabbitTestCase):
+
+    def raise_AMQPException(self):
+        raise amqp.AMQPException(123, "Suffin broke.", "Whut?")
+
+    def test_finish_suppresses_some_errors(self):
+        session = RabbitUnreliableSession()
+        session.defer(self.raise_AMQPException)
+        session.finish()
+        # Look, no exceptions!
+
+    def raise_Exception(self):
+        raise Exception("That hent worked.")
+
+    def test_finish_does_not_suppress_other_errors(self):
+        session = RabbitUnreliableSession()
+        session.defer(self.raise_Exception)
+        self.assertRaises(Exception, session.finish)
+
+
 class TestRabbitMessageBase(RabbitTestCase):
 
     def test_session(self):
@@ -285,6 +309,26 @@ class TestRabbitQueue(RabbitTestCase):
 
 class TestRabbit(RabbitTestCase):
     """Integration-like tests for the RabbitMQ messaging abstractions."""
+
+    def get_synced_sessions(self):
+        thread_id = thread.get_ident()
+        try:
+            syncs_set = transaction.manager._synchs[thread_id]
+        except KeyError:
+            return set()
+        else:
+            return set(
+                sync.session for sync in syncs_set.data.itervalues()
+                if isinstance(sync, RabbitSessionTransactionSync))
+
+    def test_global_sesssion(self):
+        self.assertIsInstance(global_session, RabbitSession)
+        self.assertIn(global_session, self.get_synced_sessions())
+
+    def test_global_unreliable_sesssion(self):
+        self.assertIsInstance(
+            global_unreliable_session, RabbitUnreliableSession)
+        self.assertIn(global_unreliable_session, self.get_synced_sessions())
 
     def test_abort(self):
         consumer = RabbitQueue(global_session, next(queue_names))

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     "session",
+    "unreliable_session",
     ]
 
 from functools import partial
@@ -57,8 +58,14 @@ class RabbitSession(threading.local):
     exchange = LAUNCHPAD_EXCHANGE
 
     def __init__(self):
+        super(RabbitSession, self).__init__()
         self._connection = None
         self._deferred = []
+        # Maintain sessions according to transaction boundaries. Keep a strong
+        # reference to the sync because the transaction manager does not. We
+        # need one per thread (definining it here is enough to ensure that).
+        self._sync = RabbitSessionTransactionSync(self)
+        transaction.manager.registerSynch(self._sync)
 
     @property
     def connection(self):
@@ -123,10 +130,33 @@ class RabbitSession(threading.local):
 # Per-thread sessions.
 session = RabbitSession()
 
-# Maintain the per-thread sessions according to transaction boundaries. Keep a
-# strong reference to the sync because the transaction manager does not.
-session_sync = RabbitSessionTransactionSync(session)
-transaction.manager.registerSynch(session_sync)
+
+class RabbitUnreliableSession(RabbitSession):
+    """An "unreliable" `RabbitSession`.
+
+    Unreliable in this case means that certain errors in deferred tasks are
+    silently suppressed, `AMQPException` in particular. This means that
+    services can continue to function even in the absence of a running and
+    fully functional message queue.
+    """
+
+    ignored_errors = (
+        amqp.AMQPException,
+        )
+
+    def finish(self):
+        """See `IMessageSession`.
+
+        Suppresses errors listed in `ignored_errors`.
+        """
+        try:
+            super(RabbitUnreliableSession, self).finish()
+        except self.ignored_errors:
+            pass
+
+
+# Per-thread "unreliable" sessions.
+unreliable_session = RabbitUnreliableSession()
 
 
 class RabbitMessageBase:
