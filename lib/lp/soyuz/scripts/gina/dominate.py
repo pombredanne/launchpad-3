@@ -48,5 +48,4 @@ def dominate_imported_source_packages(txn, logger, distro_name, series_name,
         if pub_count != len(live_versions):
             dominator.dominateRemovedSourceVersions(
                 series, pocket, package_name, live_versions)
-
-        txn.commit()
+            txn.commit()
