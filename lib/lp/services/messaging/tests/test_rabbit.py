@@ -20,7 +20,7 @@ from lp.services.messaging.interfaces import (
     IMessageProducer,
     IMessageSession,
     )
-from lp.services.messaging.queue import (
+from lp.services.messaging.rabbit import (
     RabbitMessageBase,
     RabbitQueue,
     RabbitRoutingKey,
