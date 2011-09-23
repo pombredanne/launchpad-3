@@ -280,6 +280,19 @@ class TestGeneralizedPublication(TestCaseWithFactory):
             bpph.binarypackagerelease.version,
             GeneralizedPublication(is_source=False).getPackageVersion(bpph))
 
+    def test_load_releases_loads_sourcepackagerelease(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        self.assertContentEqual(
+            [spph.sourcepackagerelease],
+            GeneralizedPublication(is_source=True).load_releases([spph]))
+
+    def test_load_releases_loads_binarypackagerelease(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=self.factory.makeBinaryPackageRelease())
+        self.assertContentEqual(
+            [bpph.binarypackagerelease],
+            GeneralizedPublication(is_source=False).load_releases([bpph]))
+
     def test_compare_sorts_versions(self):
         versions = [
             '1.1v2',

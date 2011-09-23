@@ -69,6 +69,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_related
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
@@ -109,6 +110,9 @@ class SourcePublicationTraits:
     Used by `GeneralizedPublication` to hide the differences from
     `BinaryPackagePublishingHistory`.
     """
+    release_class = SourcePackageRelease
+    release_reference_name = 'sourcepackagereleaseID'
+
     @staticmethod
     def getPackageName(spph):
         """Return the name of this publication's source package."""
@@ -126,6 +130,9 @@ class BinaryPublicationTraits:
     Used by `GeneralizedPublication` to hide the differences from
     `SourcePackagePublishingHistory`.
     """
+    release_class = BinaryPackageRelease
+    release_reference_name = 'binarypackagereleaseID'
+
     @staticmethod
     def getPackageName(bpph):
         """Return the name of this publication's binary package."""
@@ -156,8 +163,14 @@ class GeneralizedPublication:
         return self.traits.getPackageName(pub)
 
     def getPackageVersion(self, pub):
-        """Obtain the version string for a publicaiton record."""
+        """Obtain the version string for a publication record."""
         return self.traits.getPackageRelease(pub).version
+
+    def load_releases(self, pubs):
+        """Load the releases associated with a series of publications."""
+        return load_related(
+            self.traits.release_class, pubs,
+            [self.traits.release_reference_name])
 
     def compare(self, pub1, pub2):
         """Compare publications by version.
@@ -217,6 +230,9 @@ class Dominator:
         :param generalization: A `GeneralizedPublication` helper representing
             the kind of publications these are--source or binary.
         """
+        publications = list(publications)
+        generalization.load_releases(publications)
+
         # Go through publications from latest version to oldest.  This
         # makes it easy to figure out which release superseded which:
         # the dominant is always the oldest live release that is newer

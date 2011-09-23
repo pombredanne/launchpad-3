@@ -114,9 +114,8 @@ from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 
-# XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
-
 def makePoolPath(source_name, component_name):
+    # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
     """Return the pool path for a given source name and component name."""
     from lp.archivepublisher.diskpool import poolify
     return os.path.join(
@@ -421,12 +420,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
     implements(ISourcePackagePublishingHistory)
 
-    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
-        dbName='sourcepackagename')
-    sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
-        dbName='sourcepackagerelease')
-    distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distroseries')
+    sourcepackagename = ForeignKey(
+        foreignKey='SourcePackageName', dbName='sourcepackagename')
+    sourcepackagerelease = ForeignKey(
+        foreignKey='SourcePackageRelease', dbName='sourcepackagerelease')
+    distroseries = ForeignKey(
+        foreignKey='DistroSeries', dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -685,7 +684,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.distroseries.distribution.getSourcePackageRelease(
             self.supersededby)
 
-    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when
     # self.sourcepackagename is populated.
     @property
     def source_package_name(self):
@@ -908,12 +907,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     implements(IBinaryPackagePublishingHistory)
 
-    binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
-        dbName='binarypackagename')
-    binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
-                                      dbName='binarypackagerelease')
-    distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchseries')
+    binarypackagename = ForeignKey(
+        foreignKey='BinaryPackageName', dbName='binarypackagename')
+    binarypackagerelease = ForeignKey(
+        foreignKey='BinaryPackageRelease', dbName='binarypackagerelease')
+    distroarchseries = ForeignKey(
+        foreignKey='DistroArchSeries', dbName='distroarchseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
@@ -957,7 +956,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IBinaryPackagePublishingHistory`"""
         return self.distroarchseries.distroseries
 
-    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when
     # self.binarypackagename is populated.
     @property
     def binary_package_name(self):
