@@ -61,6 +61,10 @@ import SCM
 from canonical.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branch import get_blacklisted_hostnames
+from lp.code.interfaces.codehosting import (
+    branch_id_alias,
+    compose_public_url,
+    )
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree,
     SubversionWorkingTree,
@@ -292,7 +296,8 @@ class CodeImportSourceDetails:
         branch = code_import.branch
         branch_id = branch.id
         if branch.stacked_on is not None and not branch.stacked_on.private:
-            stacked_on_url = branch.stacked_on_url.composePublicURL()
+            stacked_path = branch_id_alias(branch.stacked_on)
+            stacked_on_url = compose_public_url('http', stacked_path)
         else:
             stacked_on_url = None
         if code_import.rcs_type == RevisionControlSystems.SVN:
