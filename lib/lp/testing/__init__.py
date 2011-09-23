@@ -8,6 +8,7 @@ from __future__ import absolute_import
 
 __metaclass__ = type
 __all__ = [
+    'AbstractYUITestCase',
     'ANONYMOUS',
     'anonymous_logged_in',
     'api_url',
@@ -863,41 +864,42 @@ def quote_jquery_expression(expression):
         "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
 
 
-class YUIUnitTestCase(TestCase):
+class AbstractYUITestCase(TestCase):
 
     layer = None
     suite_name = ''
     js_timeout = 30000
+    html_uri = None
+    test_path = None
 
     TIMEOUT = object()
     MISSING_REPORT = object()
 
     _yui_results = None
 
-    def __init__(self):
+    def __init__(self, methodName=None):
         """Create a new test case without a choice of test method name.
 
         Preventing the choice of test method ensures that we can safely
         provide a test ID based on the file path.
         """
-        super(YUIUnitTestCase, self).__init__("checkResults")
-
-    def initialize(self, test_path):
-        self.test_path = test_path
+        if methodName is None:
+            methodName = self._testMethodName
+        else:
+            assert methodName == self._testMethodName
+        super(AbstractYUITestCase, self).__init__(methodName)
 
     def id(self):
         """Return an ID for this test based on the file path."""
         return os.path.relpath(self.test_path, config.root)
 
     def setUp(self):
-        super(YUIUnitTestCase, self).setUp()
+        super(AbstractYUITestCase, self).setUp()
         # html5browser imports from the gir/pygtk stack which causes
         # twisted tests to break because of gtk's initialize.
         import html5browser
         client = html5browser.Browser()
-        html_uri = 'file://%s' % os.path.join(
-            config.root, 'lib', self.test_path)
-        page = client.load_page(html_uri, timeout=self.js_timeout)
+        page = client.load_page(self.html_uri, timeout=self.js_timeout)
         if page.return_code == page.CODE_FAIL:
             self._yui_results = self.TIMEOUT
             return
@@ -942,6 +944,17 @@ class YUIUnitTestCase(TestCase):
                     'Failure in %s.%s: %s' % (
                     self.test_path, test_name, result['message']))
         self.assertEqual([], failures, '\n'.join(failures))
+
+
+class YUIUnitTestCase(AbstractYUITestCase):
+
+    _testMethodName = 'checkResults'
+
+    def initialize(self, test_path):
+        # The path is a .html file.
+        self.test_path = test_path
+        self.html_uri = 'file://%s' % os.path.join(
+            config.root, 'lib', self.test_path)
 
 
 def build_yui_unittest_suite(app_testing_path, yui_test_class):
