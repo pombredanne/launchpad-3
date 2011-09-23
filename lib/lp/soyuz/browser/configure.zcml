@@ -686,6 +686,12 @@
             name="+ppa-packages"
             template="../templates/person-ppa-packages.pt"/>
         <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            class="lp.registry.browser.person.PersonSynchronisedPackagesView"
+            name="+synchronised-packages"
+            template="../templates/person-synchronised-packages.pt"/>
+         <browser:page
             name="+archivesubscriptions"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.soyuz.browser.archivesubscription.PersonArchiveSubscriptionsView"
