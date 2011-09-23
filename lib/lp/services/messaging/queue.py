@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    "session",
     "RabbitRoutingKey",
     "RabbitQueue",
     ]
@@ -58,9 +59,6 @@ class RabbitSession(threading.local):
     def __init__(self):
         self._connection = None
         self._deferred = []
-        # Keep strong reference to sync.
-        self._sync = RabbitSessionTransactionSync(self)
-        transaction.manager.registerSynch(self._sync)
 
     @property
     def connection(self):
@@ -111,12 +109,20 @@ class RabbitSession(threading.local):
         self._deferred.append(partial(func, *args, **kwargs))
 
 
+# Per-thread sessions.
+session = RabbitSession()
+
+# Maintain the per-thread sessions according to transaction boundaries. Keep a
+# strong reference to the sync because the transaction manager does not.
+session_sync = RabbitSessionTransactionSync(session)
+transaction.manager.registerSynch(session_sync)
+
+
 class RabbitMessageBase:
     """Base class for all RabbitMQ messaging."""
 
-    session = RabbitSession()
-
-    def __init__(self):
+    def __init__(self, session=session):
+        self.session = session
         self._channel = None
 
     @property

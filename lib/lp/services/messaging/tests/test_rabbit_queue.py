@@ -24,6 +24,7 @@ from lp.services.messaging.queue import (
     RabbitRoutingKey,
     RabbitSession,
     RabbitSessionTransactionSync,
+    session,
     )
 from lp.testing import TestCase
 from lp.testing.faketransaction import FakeTransaction
@@ -57,18 +58,18 @@ class TestRabbitSessionTransactionSync(TestCase):
     def test_afterCompletion_COMMITTED(self):
         txn = FakeTransaction()
         txn.status = TransactionStatus.COMMITTED
-        session = FakeRabbitSession()
-        sync = RabbitSessionTransactionSync(session)
+        fake_session = FakeRabbitSession()
+        sync = RabbitSessionTransactionSync(fake_session)
         sync.afterCompletion(txn)
-        self.assertEqual(["finish"], session.log)
+        self.assertEqual(["finish"], fake_session.log)
 
     def test_afterCompletion_ACTIVE(self):
         txn = FakeTransaction()
         txn.status = TransactionStatus.ACTIVE
-        session = FakeRabbitSession()
-        sync = RabbitSessionTransactionSync(session)
+        fake_session = FakeRabbitSession()
+        sync = RabbitSessionTransactionSync(fake_session)
         sync.afterCompletion(txn)
-        self.assertEqual(["reset"], session.log)
+        self.assertEqual(["reset"], fake_session.log)
 
 
 class RabbitTestCase(TestCase):
@@ -77,79 +78,80 @@ class RabbitTestCase(TestCase):
 
     def tearDown(self):
         super(RabbitTestCase, self).tearDown()
-        RabbitMessageBase.session.reset()
+        session.reset()
 
 
 class TestRabbitSession(RabbitTestCase):
 
     def test_interface(self):
-        session = RabbitSession()
-        self.assertThat(session, Provides(IMessageSession))
+        fake_session = RabbitSession()
+        self.assertThat(fake_session, Provides(IMessageSession))
 
     def test_connect(self):
-        session = RabbitSession()
-        self.assertIs(None, session.connection)
-        connection = session.connect()
-        self.assertIsNot(None, session.connection)
-        self.assertIs(connection, session.connection)
+        fake_session = RabbitSession()
+        self.assertIs(None, fake_session.connection)
+        connection = fake_session.connect()
+        self.assertIsNot(None, fake_session.connection)
+        self.assertIs(connection, fake_session.connection)
 
     def test_disconnect(self):
-        session = RabbitSession()
-        session.connect()
-        session.disconnect()
-        self.assertIs(None, session.connection)
+        fake_session = RabbitSession()
+        fake_session.connect()
+        fake_session.disconnect()
+        self.assertIs(None, fake_session.connection)
 
     def test_connection(self):
         # The connection property is None once a connection has been closed.
-        session = RabbitSession()
-        session.connect()
+        fake_session = RabbitSession()
+        fake_session.connect()
         # Close the connection without using disconnect().
-        session.connection.close()
-        self.assertIs(None, session.connection)
+        fake_session.connection.close()
+        self.assertIs(None, fake_session.connection)
 
     def test_defer(self):
         action = lambda: None
-        session = RabbitSession()
-        session.defer(action, "foo", bar="baz")
-        self.assertEqual(1, len(session._deferred))
-        [deferred_action] = session._deferred
+        fake_session = RabbitSession()
+        fake_session.defer(action, "foo", bar="baz")
+        self.assertEqual(1, len(fake_session._deferred))
+        [deferred_action] = fake_session._deferred
         self.assertIsInstance(deferred_action, partial)
         self.assertIs(action, deferred_action.func)
         self.assertEqual(("foo",), deferred_action.args)
         self.assertEqual({"bar": "baz"}, deferred_action.keywords)
 
     def test_reset(self):
-        # RabbitSession.reset() resets session variables and does not run
+        # RabbitFake_Session.reset() resets session variables and does not run
         # deferred actions.
         log = []
         action = lambda: log.append("action")
-        session = RabbitSession()
-        session.defer(action)
-        session.connect()
-        session.reset()
+        fake_session = RabbitSession()
+        fake_session.defer(action)
+        fake_session.connect()
+        fake_session.reset()
         self.assertEqual([], log)
-        self.assertEqual([], session._deferred)
-        self.assertIs(None, session.connection)
+        self.assertEqual([], fake_session._deferred)
+        self.assertIs(None, fake_session.connection)
 
     def test_finish(self):
-        # RabbitSession.finish() resets session variables after running
+        # RabbitFake_Session.finish() resets session variables after running
         # deferred actions.
         log = []
         action = lambda: log.append("action")
-        session = RabbitSession()
-        session.defer(action)
-        session.connect()
-        session.finish()
+        fake_session = RabbitSession()
+        fake_session.defer(action)
+        fake_session.connect()
+        fake_session.finish()
         self.assertEqual(["action"], log)
-        self.assertEqual([], session._deferred)
-        self.assertIs(None, session.connection)
+        self.assertEqual([], fake_session._deferred)
+        self.assertIs(None, fake_session.connection)
 
 
 class TestRabbitMessageBase(RabbitTestCase):
 
     def test_session(self):
+        # RabbitMessageBase.session defaults to the global shared session.
         base = RabbitMessageBase()
-        self.assertIsInstance(base.session, RabbitSession)
+        self.assertIs(session, base.session)
 
     def test_channel(self):
         # Referencing the channel property causes the session to connect.
