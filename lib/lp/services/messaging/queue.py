@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = [
     "session",
-    "RabbitRoutingKey",
-    "RabbitQueue",
     ]
 
 from functools import partial
