@@ -60,7 +60,7 @@ class RabbitSession(threading.local):
     def __init__(self):
         super(RabbitSession, self).__init__()
         self._connection = None
-        self._deferred = []
+        self._deferred = []  # XXX: deque?
         # Maintain sessions according to transaction boundaries. Keep a strong
         # reference to the sync because the transaction manager does not. We
         # need one per thread (definining it here is enough to ensure that).
@@ -101,11 +101,16 @@ class RabbitSession(threading.local):
             finally:
                 self._connection = None
 
+    def flush(self):
+        """See `IMessageSession`."""
+        while len(self._deferred) != 0:
+            action = self._deferred.pop(0)
+            action()
+
     def finish(self):
         """See `IMessageSession`."""
         try:
-            for action in self._deferred:
-                action()
+            self.flush()
         finally:
             self.reset()
 

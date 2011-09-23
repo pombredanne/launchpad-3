@@ -87,6 +87,7 @@ class RabbitTestCase(TestCase):
     def tearDown(self):
         super(RabbitTestCase, self).tearDown()
         global_session.reset()
+        global_unreliable_session.reset()
 
 
 class TestRabbitSession(RabbitTestCase):
@@ -117,7 +118,7 @@ class TestRabbitSession(RabbitTestCase):
         self.assertIs(None, session.connection)
 
     def test_defer(self):
-        action = lambda: None
+        action = lambda foo, bar: None
         session = RabbitSession()
         session.defer(action, "foo", bar="baz")
         self.assertEqual(1, len(session._deferred))
@@ -126,6 +127,18 @@ class TestRabbitSession(RabbitTestCase):
         self.assertIs(action, deferred_action.func)
         self.assertEqual(("foo",), deferred_action.args)
         self.assertEqual({"bar": "baz"}, deferred_action.keywords)
+
+    def test_flush(self):
+        # RabbitSession.flush() runs deferred actions.
+        log = []
+        action = lambda: log.append("action")
+        session = RabbitSession()
+        session.defer(action)
+        session.connect()
+        session.flush()
+        self.assertEqual(["action"], log)
+        self.assertEqual([], session._deferred)
+        self.assertIsNot(None, session.connection)
 
     def test_reset(self):
         # RabbitSession.reset() resets session variables and does not run
