@@ -1441,3 +1441,11 @@ class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
             self.old_server.stop_server()
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
+
+
+class CodeImportSourceDetailsTests(TestCase):
+
+    def test_bzr_arguments(self):
+        code_import = self.factory.makeCodeImport(
+            bzr_branch_url="http://example.com/foo")
+        self.assertEquals([], code_import.asArguments())
