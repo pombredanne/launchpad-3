@@ -584,13 +584,13 @@ class TestDominatorMethods(TestCaseWithFactory):
             self.assertEqual(
                 expected_supersededby, [pub.supersededby for pub in pubs])
 
-    def test_dominateRemovedSourceVersions_dominates_publications(self):
-        # dominateRemovedSourceVersions finds the publications for a
-        # package and calls dominatePackage on them.
+    def test_dominateSourceVersions_dominates_publications(self):
+        # dominateSourceVersions finds the publications for a package
+        # and calls dominatePackage on them.
         pubs = make_spphs_for_versions(self.factory, ['0.1', '0.2', '0.3'])
         package_name = pubs[0].sourcepackagerelease.sourcepackagename.name
 
-        self.makeDominator(pubs).dominateRemovedSourceVersions(
+        self.makeDominator(pubs).dominateSourceVersions(
             pubs[0].distroseries, pubs[0].pocket, package_name, ['0.2'])
         self.assertEqual([
                 PackagePublishingStatus.SUPERSEDED,
@@ -602,21 +602,21 @@ class TestDominatorMethods(TestCaseWithFactory):
             [pubs[1].sourcepackagerelease, None, None],
             [pub.supersededby for pub in pubs])
 
-    def test_dominateRemovedSourceVersions_ignores_other_pockets(self):
-        # dominateRemovedSourceVersions ignores publications in other
-        # pockets than the one specified.
+    def test_dominateSourceVersions_ignores_other_pockets(self):
+        # dominateSourceVersions ignores publications in other pockets
+        # than the one specified.
         pubs = make_spphs_for_versions(self.factory, ['2.3', '2.4'])
         package_name = pubs[0].sourcepackagerelease.sourcepackagename.name
         removeSecurityProxy(pubs[0]).pocket = PackagePublishingPocket.UPDATES
         removeSecurityProxy(pubs[1]).pocket = PackagePublishingPocket.PROPOSED
-        self.makeDominator(pubs).dominateRemovedSourceVersions(
+        self.makeDominator(pubs).dominateSourceVersions(
             pubs[0].distroseries, pubs[0].pocket, package_name, ['2.3'])
         self.assertEqual(PackagePublishingStatus.PUBLISHED, pubs[1].status)
 
-    def test_dominateRemovedSourceVersions_ignores_other_packages(self):
+    def test_dominateSourceVersions_ignores_other_packages(self):
         pubs = make_spphs_for_versions(self.factory, ['1.0', '1.1'])
         other_package_name = self.factory.makeSourcePackageName().name
-        self.makeDominator(pubs).dominateRemovedSourceVersions(
+        self.makeDominator(pubs).dominateSourceVersions(
             pubs[0].distroseries, pubs[0].pocket, other_package_name, ['1.1'])
         self.assertEqual(PackagePublishingStatus.PUBLISHED, pubs[0].status)
 

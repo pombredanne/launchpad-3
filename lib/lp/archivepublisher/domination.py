@@ -574,8 +574,8 @@ class Dominator:
             Desc(SourcePackageRelease.version),
             Desc(SourcePackagePublishingHistory.datecreated))
 
-    def dominateRemovedSourceVersions(self, distroseries, pocket,
-                                      package_name, live_versions):
+    def dominateSourceVersions(self, distroseries, pocket, package_name,
+                               live_versions):
         """Dominate source publications based on a set of "live" versions.
 
         Active publications for the "live" versions will remain active.  All
