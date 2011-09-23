@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from functools import partial
 from itertools import count
 
 import transaction
@@ -76,7 +77,7 @@ class RabbitTestCase(TestCase):
 
     def tearDown(self):
         super(RabbitTestCase, self).tearDown()
-        RabbitMessageBase.session.disconnect()
+        RabbitMessageBase.session.reset()
 
 
 class TestRabbitSession(RabbitTestCase):
@@ -104,6 +105,43 @@ class TestRabbitSession(RabbitTestCase):
         session.connect()
         # Close the connection without using disconnect().
         session.connection.close()
+        self.assertIs(None, session.connection)
+
+    def test_defer(self):
+        action = lambda: None
+        session = RabbitSession()
+        session.defer(action, "foo", bar="baz")
+        self.assertEqual(1, len(session._deferred))
+        [deferred_action] = session._deferred
+        self.assertIsInstance(deferred_action, partial)
+        self.assertIs(action, deferred_action.func)
+        self.assertEqual(("foo",), deferred_action.args)
+        self.assertEqual({"bar": "baz"}, deferred_action.keywords)
+
+    def test_reset(self):
+        # RabbitSession.reset() resets session variables and does not run
+        # deferred actions.
+        log = []
+        action = lambda: log.append("action")
+        session = RabbitSession()
+        session.defer(action)
+        session.connect()
+        session.reset()
+        self.assertEqual([], log)
+        self.assertEqual([], session._deferred)
+        self.assertIs(None, session.connection)
+
+    def test_finish(self):
+        # RabbitSession.finish() resets session variables after running
+        # deferred actions.
+        log = []
+        action = lambda: log.append("action")
+        session = RabbitSession()
+        session.defer(action)
+        session.connect()
+        session.finish()
+        self.assertEqual(["action"], log)
+        self.assertEqual([], session._deferred)
         self.assertIs(None, session.connection)
 
 
