@@ -814,7 +814,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component,
             section,
             pocket,
-            ancestor=None,
+            ancestor=self,
             create_dsd_job=create_dsd_job,
             creator=creator)
 
