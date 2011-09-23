@@ -260,12 +260,13 @@ class CodeImportSourceDetails:
     """
 
     def __init__(self, branch_id, rcstype, url=None, cvs_root=None,
-                 cvs_module=None):
+                 cvs_module=None, stacked_on_url=None):
         self.branch_id = branch_id
         self.rcstype = rcstype
         self.url = url
         self.cvs_root = cvs_root
         self.cvs_module = cvs_module
+        self.stacked_on_url = stacked_on_url
 
     @classmethod
     def fromArguments(cls, arguments):
@@ -273,14 +274,16 @@ class CodeImportSourceDetails:
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
         if rcstype in ['svn', 'bzr-svn', 'git', 'hg', 'bzr']:
-            [url] = arguments
+            url = arguments.pop(0)
+            stacked_on_url = arguments.pop(0)
             cvs_root = cvs_module = None
         elif rcstype == 'cvs':
-            url = None
+            stacked_on_url =  url = None
             [cvs_root, cvs_module] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
-        return cls(branch_id, rcstype, url, cvs_root, cvs_module)
+        return cls(branch_id, rcstype, url, cvs_root, cvs_module,
+            stacked_on_url)
 
     @classmethod
     def fromCodeImport(cls, code_import):
@@ -310,6 +313,8 @@ class CodeImportSourceDetails:
         result = [str(self.branch_id), self.rcstype]
         if self.rcstype in ['svn', 'bzr-svn', 'git', 'hg', 'bzr']:
             result.append(self.url)
+            if self.stacked_on_url is not None:
+                result.append(self.stacked_on_url)
         elif self.rcstype == 'cvs':
             result.append(self.cvs_root)
             result.append(self.cvs_module)
