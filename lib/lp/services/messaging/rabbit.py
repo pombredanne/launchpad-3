@@ -104,9 +104,9 @@ class RabbitSession(threading.local):
 
     def flush(self):
         """See `IMessageSession`."""
-        while len(self._deferred) != 0:
-            task = self._deferred.popleft()
-            task()
+        tasks = self._deferred
+        while len(tasks) != 0:
+            tasks.popleft()()
 
     def finish(self):
         """See `IMessageSession`."""
