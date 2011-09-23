@@ -211,6 +211,12 @@ class TestBugChanges(TestCaseWithFactory):
         self.saveOldChanges()
         # Only the user can unsubscribe him or her self.
         self.bug.unsubscribe(self.user, self.user)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'removed_subscriber')
+        self.assertEqual(activity.target, None)
+
         unsubscribe_activity = dict(
             whatchanged='removed subscriber Arthur Dent',
             person=self.user)

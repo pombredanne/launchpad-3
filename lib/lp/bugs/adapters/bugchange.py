@@ -16,6 +16,7 @@ __all__ = [
     'CVE_UNLINKED',
     'MARKED_AS_DUPLICATE',
     'REMOVED_DUPLICATE_MARKER',
+    'REMOVED_SUBSCRIBER',
     'BranchLinkedToBug',
     'BranchUnlinkedFromBug',
     'BugAttachmentChange',
@@ -72,6 +73,7 @@ CVE_LINKED = 'cve linked'
 CVE_UNLINKED = 'cve unlinked'
 MARKED_AS_DUPLICATE = 'marked as duplicate'
 REMOVED_DUPLICATE_MARKER = 'removed duplicate marker'
+REMOVED_SUBSCRIBER = 'removed subscriber'
 
 
 class NoBugChangeFoundError(Exception):
@@ -188,7 +190,8 @@ class UnsubscribedFromBug(BugChangeBase):
     def getBugActivity(self):
         """See `IBugChange`."""
         return dict(
-            whatchanged='removed subscriber %s' % (
+            whatchanged='%s %s' % (
+                REMOVED_SUBSCRIBER,
                 self.unsubscribed_user.displayname))
 
     def getBugNotification(self):
