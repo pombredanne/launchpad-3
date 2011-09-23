@@ -63,7 +63,7 @@ class FAQVocabulary(FilteredVocabularyBase):
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
         try:
-            faq_id = int(token)
+            int(token)
         except ValueError:
             raise LookupError(token)
         faq = self.context.getFAQ(token)
