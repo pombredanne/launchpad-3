@@ -16,7 +16,7 @@ from lp.services.longpoll.adapters.event import (
     LongPollEvent,
     )
 from lp.services.longpoll.interfaces import ILongPollEvent
-from lp.services.messaging.queue import RabbitMessageBase
+from lp.services.messaging.rabbit import RabbitMessageBase
 from lp.testing import TestCase
 from lp.testing.matchers import Contains
 

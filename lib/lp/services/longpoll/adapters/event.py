@@ -9,7 +9,7 @@ __all__ = [
     "LongPollEvent",
     ]
 
-from lp.services.messaging.queue import RabbitRoutingKey
+from lp.services.messaging.rabbit import RabbitRoutingKey
 
 
 router_factory = RabbitRoutingKey

@@ -27,7 +27,7 @@ from lp.services.longpoll.interfaces import (
     ILongPollEvent,
     ILongPollSubscriber,
     )
-from lp.services.messaging.queue import (
+from lp.services.messaging.rabbit import (
     RabbitQueue,
     RabbitRoutingKey,
     )
