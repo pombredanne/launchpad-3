@@ -461,25 +461,12 @@ class DatabaseConfig:
     def reset(self):
         self.overrides = DatabaseConfigOverrides()
 
-    def setConfigSection(self, section_name):
-        self._config_section = section_name
-
-    def getSectionName(self):
-        """The name of the config file section this DatabaseConfig references.
-        """
-        return self._config_section
-
     def _getConfigSections(self):
         """Returns a list of sections to search for database configuration.
 
         The first section in the list has highest priority.
         """
-        if self._config_section is None:
-            return [config.database]
-        overlay = config
-        for part in self._config_section.split('.'):
-            overlay = getattr(overlay, part)
-        return [self.overrides, overlay, config.database]
+        return [self.overrides, config.launchpad, config.database]
 
     def __getattr__(self, name):
         sections = self._getConfigSections()
@@ -497,4 +484,3 @@ class DatabaseConfig:
 
 
 dbconfig = DatabaseConfig()
-dbconfig.setConfigSection('launchpad')

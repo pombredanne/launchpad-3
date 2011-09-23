@@ -21,31 +21,9 @@ class TestDatabaseConfig(TestCase):
 
     layer = DatabaseLayer
 
-    def test_overlay(self):
-        # The dbconfig option overlays the database configurations of a
-        # chosen config section over the base section.
-        self.assertRaises(
-            AttributeError, getattr, config.database, 'dbuser')
-        self.assertRaises(
-            AttributeError, getattr, config.launchpad, 'main_master')
-        self.assertEquals('launchpad_main', config.launchpad.dbuser)
-        self.assertEquals('librarian', config.librarian.dbuser)
-
-        dbconfig.setConfigSection('librarian')
-        expected_db = (
-            'dbname=%s host=localhost' % DatabaseLayer._db_fixture.dbname)
-        self.assertEquals(expected_db, dbconfig.rw_main_master)
-        self.assertEquals('librarian', dbconfig.dbuser)
-
-        dbconfig.setConfigSection('launchpad')
-        self.assertEquals(expected_db, dbconfig.rw_main_master)
-        self.assertEquals('launchpad_main', dbconfig.dbuser)
-
     def test_override(self):
-        # dbuser and isolation_level can be overridden at runtime, without
-        # requiring a custom config overlay.
+        # dbuser and isolation_level can be overridden at runtime.
         dbc = DatabaseConfig()
-        dbc.setConfigSection('launchpad')
         self.assertEqual('launchpad_main', dbc.dbuser)
         self.assertEqual('serializable', dbc.isolation_level)
 
@@ -67,21 +45,11 @@ class TestDatabaseConfig(TestCase):
     def test_reset(self):
         # reset() removes any overrides.
         dbc = DatabaseConfig()
-        dbc.setConfigSection('launchpad')
         self.assertEqual('launchpad_main', dbc.dbuser)
         dbc.override(dbuser='not_launchpad')
         self.assertEqual('not_launchpad', dbc.dbuser)
         dbc.reset()
         self.assertEqual('launchpad_main', dbc.dbuser)
-
-    def test_required_values(self):
-        # Some variables are required to have a value, such as dbuser.  So we
-        # get a ValueError if they are not set.
-        self.assertRaises(
-            AttributeError, getattr, config.codehosting, 'dbuser')
-        dbconfig.setConfigSection('codehosting')
-        self.assertRaises(ValueError, getattr, dbconfig, 'dbuser')
-        dbconfig.setConfigSection('launchpad')
 
     def test_main_master_and_main_slave(self):
         # DatabaseConfig provides two extra properties: main_master and
