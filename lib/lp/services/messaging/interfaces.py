@@ -38,6 +38,21 @@ class IMessageSession(Interface):
         If the session is already disconnected this should be a no-op.
         """
 
+    def finish():
+        """Finish the session and reset.
+
+        Deferred actions are run.
+        """
+
+    def reset():
+        """Reset the session.
+
+        Deferred actions are discarded.
+        """
+
+    def defer(func, *args, **kwargs):
+        """Schedule something to happen when this session is finished."""
+
 
 class IMessageConsumer(Interface):
 
