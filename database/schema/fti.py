@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This modules uses relative imports.
@@ -11,34 +11,41 @@ Add full text indexes to the launchpad database
 """
 __metaclass__ = type
 
-import _pythonpath
-
 from distutils.version import LooseVersion
-import os.path
 from optparse import OptionParser
+import os.path
 import subprocess
 import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 import time
 
+import _pythonpath
 import psycopg2.extensions
+import replication.helpers
 
 from canonical.config import config
 from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import (
-    connect, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
-    quote, quote_identifier)
-from canonical.launchpad.scripts import logger, logger_options, db_options
-
-import replication.helpers
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    ISOLATION_LEVEL_READ_COMMITTED,
+    quote,
+    quote_identifier,
+    )
+from canonical.launchpad.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 
 # Defines parser and locale to use.
 DEFAULT_CONFIG = 'default'
 
 PGSQL_BASE = '/usr/share/postgresql'
 
-A, B, C, D = 'ABCD' # tsearch2 ranking constants
+# tsearch2 ranking constants:
+A, B, C, D = 'ABCD'
 
 # This data structure defines all of our full text indexes.  Each tuple in the
 # top level list creates a 'fti' column in the specified table.
@@ -224,7 +231,7 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     # Create the trigger
     columns_and_weights = []
     for column, weight in qcolumns:
-        columns_and_weights.extend( (column, weight) )
+        columns_and_weights.extend((column, weight))
 
     sql = """
         CREATE TRIGGER tsvectorupdate BEFORE UPDATE OR INSERT ON %s
@@ -256,7 +263,9 @@ def nullify(con):
 def liverebuild(con):
     """Rebuild the data in all the fti columns against possibly live database.
     """
-    batch_size = 50 # Update maximum of this many rows per commit
+    # Update number of rows per transaction.
+    batch_size = 50
+
     cur = con.cursor()
     for table, ignored in ALL_FTI:
         table = quote_identifier(table)
@@ -316,13 +325,14 @@ def setup(con, configuration=DEFAULT_CONFIG):
         p = subprocess.Popen(
             cmd.split(' '), stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        tsearch2_sql = open(tsearch2_sql_path).read()
         out, err = p.communicate(
-            "SET client_min_messages=ERROR; CREATE SCHEMA ts2;"
-            + open(tsearch2_sql_path).read().replace('public;','ts2, public;'))
+            "SET client_min_messages=ERROR; CREATE SCHEMA ts2;" +
+            tsearch2_sql.replace('public;', 'ts2, public;'))
         if p.returncode != 0:
-            log.fatal('Error executing %s:', cmd)
+            log.fatal("Error executing %s:", cmd)
             log.debug(out)
-            sys.exit(rv)
+            sys.exit(p.returncode)
 
     # Create ftq helper and its sibling _ftq.
     # ftq(text) returns a tsquery, suitable for use querying the full text
@@ -363,7 +373,8 @@ def setup(con, configuration=DEFAULT_CONFIG):
         # Strip ! characters inside and at the end of a word
         query = re.sub(r"(?u)(?<=\w)[\!]+", " ", query)
 
-        # Now that we have handle case sensitive booleans, convert to lowercase
+        # Now that we have handled case-sensitive booleans, convert to
+        # lowercase.
         query = query.lower()
 
         # Convert foo-bar to ((foo&bar)|foobar) and foo-bar-baz to
@@ -454,7 +465,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         p = plpy.prepare("SELECT to_tsquery('%s', $1) AS x", ["text"])
         query = plpy.execute(p, [query], 1)[0]["x"]
         return query or None
-        """  % configuration
+        """ % configuration
     sexecute(con, r"""
         CREATE OR REPLACE FUNCTION ts2._ftq(text) RETURNS text AS %s
         LANGUAGE plpythonu IMMUTABLE
@@ -569,7 +580,7 @@ def needs_refresh(con, table, columns):
     We know this by looking in our cache to see what the previous
     definitions were, and the --force command line argument
     '''
-    current_columns = repr(sorted(columns)) # Convert to a string
+    current_columns = repr(sorted(columns))
 
     existing = execute(
         con, "SELECT columns FROM FtiCache WHERE tablename=%(table)s",
@@ -620,6 +631,7 @@ log = None
 
 # Files for output generated for slonik(1). None if not a Slony-I install.
 slonik_sql = None
+
 
 def main():
     parser = OptionParser()
@@ -706,5 +718,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
-
