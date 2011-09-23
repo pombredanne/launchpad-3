@@ -278,32 +278,43 @@ class CodeImportSourceDetails:
             stacked_on_url = arguments.pop(0)
             cvs_root = cvs_module = None
         elif rcstype == 'cvs':
-            stacked_on_url =  url = None
+            url = None
+            stacked_on_url = None
             [cvs_root, cvs_module] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
-        return cls(branch_id, rcstype, url, cvs_root, cvs_module,
-            stacked_on_url)
+        return cls(
+            branch_id, rcstype, url, cvs_root, cvs_module, stacked_on_url)
 
     @classmethod
     def fromCodeImport(cls, code_import):
         """Convert a `CodeImport` to an instance."""
-        branch_id = code_import.branch.id
+        branch = code_import.branch
+        branch_id = branch.id
+        if branch.stacked_on is not None and not branch.stacked_on.private:
+            stacked_on_url = branch.stacked_on_url.composePublicURL()
+        else:
+            stacked_on_url = None
         if code_import.rcs_type == RevisionControlSystems.SVN:
-            return cls(branch_id, 'svn', str(code_import.url))
+            return cls(
+                branch_id, 'svn', str(code_import.url), stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.BZR_SVN:
-            return cls(branch_id, 'bzr-svn', str(code_import.url))
+            return cls(
+                branch_id, 'bzr-svn', str(code_import.url), stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             return cls(
                 branch_id, 'cvs',
                 cvs_root=str(code_import.cvs_root),
                 cvs_module=str(code_import.cvs_module))
         elif code_import.rcs_type == RevisionControlSystems.GIT:
-            return cls(branch_id, 'git', str(code_import.url))
+            return cls(
+                branch_id, 'git', str(code_import.url), stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.HG:
-            return cls(branch_id, 'hg', str(code_import.url))
+            return cls(
+                branch_id, 'hg', str(code_import.url), stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.BZR:
-            return cls(branch_id, 'bzr', str(code_import.url))
+            return cls(
+                branch_id, 'bzr', str(code_import.url), stacked_on_url)
         else:
             raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
 
