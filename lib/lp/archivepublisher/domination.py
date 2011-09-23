@@ -512,13 +512,24 @@ class Dominator:
         flush_database_updates()
 
     def findPublishedSourcePackageNames(self, distroseries, pocket):
-        """Find names of currently published source packages."""
-        result = IStore(SourcePackageName).find(
+        """Find currently published source packages.
+
+        Returns an iterable of tuples: (name of source package, number of
+        publications in Published state).
+        """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
+        looking_for = (
             SourcePackageName.name,
+            Count(SourcePackagePublishingHistory.id),
+            )
+        result = IStore(SourcePackageName).find(
+            looking_for,
             join_spph_spr(),
             join_spr_spn(),
             self._composeActiveSourcePubsCondition(distroseries, pocket))
-        return result.config(distinct=True)
+        return result.group_by(SourcePackageName.name)
 
     def findPublishedSPPHs(self, distroseries, pocket, package_name):
         """Find currently published source publications for given package."""

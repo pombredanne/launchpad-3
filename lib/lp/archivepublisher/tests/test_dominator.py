@@ -5,9 +5,10 @@
 
 __metaclass__ = type
 
-import apt_pkg
 import datetime
 from operator import attrgetter
+
+import apt_pkg
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -659,22 +660,6 @@ class TestDominatorMethods(TestCaseWithFactory):
             [],
             dominator.findPublishedSourcePackageNames(
                 spph.distroseries, PackagePublishingPocket.SECURITY))
-
-    def test_findPublishedSourcePackageNames_does_not_return_duplicates(self):
-        series = self.factory.makeDistroSeries()
-        pocket = PackagePublishingPocket.RELEASE
-        package = self.factory.makeSourcePackageName()
-        spphs = [
-            self.factory.makeSourcePackagePublishingHistory(
-                distroseries=series, archive=series.main_archive,
-                pocket=pocket, status=PackagePublishingStatus.PUBLISHED,
-                sourcepackagerelease=self.factory.makeSourcePackageRelease(
-                    sourcepackagename=package))
-            for counter in xrange(2)]
-        dominator = self.makeDominator(spphs)
-        self.assertEqual(
-            [(package.name, 1)],
-            list(dominator.findPublishedSourcePackageNames(series, pocket)))
 
     def test_findPublishedSourcePackageNames_counts_published_SPPHs(self):
         series = self.factory.makeDistroSeries()

@@ -23,8 +23,8 @@ def dominate_imported_source_packages(txn, logger, distro_name, series_name,
     # Dominate all packages published in the series.  This includes all
     # packages listed in the Sources file we imported, but also packages
     # that have been recently deleted.
-    package_names = dominator.findPublishedSourcePackageNames(series, pocket)
-    for package_name in package_names:
+    package_counts = dominator.findPublishedSourcePackageNames(series, pocket)
+    for package_name, package_count in package_counts:
         entries = packages_map.src_map.get(package_name, [])
         live_versions = [
             entry['Version'] for entry in entries if 'Version' in entry]
