@@ -31,7 +31,6 @@ from lp.services.osutils import open_for_writing
 
 
 __all__ = [
-    'DatabaseConfig',
     'dbconfig',
     'config',
     ]
