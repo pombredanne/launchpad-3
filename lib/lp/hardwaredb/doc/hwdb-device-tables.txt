@@ -1110,6 +1110,8 @@ We can also search for submissions from a particular user.
     >>> sata_controller.getSubmissions(owner=not_owner).count()
     0
 
+    >>> import transaction
+    >>> transaction.abort()
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 HWDevice.drivers is the set of drivers that are associated via
@@ -1410,6 +1412,7 @@ HWDriverSet.getByID() returns None if no record with the passed ID exists.
     >>> print driver
     None
 
+    >>> transaction.abort()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
 We can search all the submissions related to a driver.
@@ -1458,6 +1461,7 @@ And We can search for submissions from a particular user.
     >>> driver.getSubmissions(owner=not_owner).count()
     0
 
+    >>> transaction.abort()
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 

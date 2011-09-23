@@ -170,6 +170,7 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
+    get_bug_privacy_filter
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
@@ -1793,10 +1794,10 @@ BugMessage""" % sqlvalues(self.id))
             recipients = BugNotificationRecipients()
             recipients.addBugSupervisor(subscriber)
             notification_text = ("This bug is no longer private so the bug "
-                "supervisor was unsubscribed. You will no longer be notified "
-                "of changes to this bug for privacy related reasons, but you "
-                "may receive notifications about this bug from other "
-                "subscriptions.")
+                "supervisor was unsubscribed. They will no longer be "
+                "notified of changes to this bug for privacy related "
+                "reasons, but may receive notifications about this bug from "
+                "other subscriptions.")
             self.unsubscribe(
                 subscriber, who, ignore_permissions=True,
                 send_notification=True,
@@ -1806,9 +1807,9 @@ BugMessage""" % sqlvalues(self.id))
             recipients = BugNotificationRecipients()
             recipients.addSecurityContact(subscriber)
             notification_text = ("This bug is no longer security related so "
-                "the security contact was unsubscribed. You will no longer "
-                "be notified of changes to this bug for privacy related "
-                "reasons, but you may receive notifications about this bug "
+                "the security contact was unsubscribed. They will no longer "
+                "be notified of changes to this bug for security related "
+                "reasons, but may receive notifications about this bug "
                 "from other subscriptions.")
             self.unsubscribe(
                 subscriber, who, ignore_permissions=True,
@@ -2602,35 +2603,9 @@ class BugSet:
         if duplicateof:
             where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
 
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user:
-            if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users,
-                # so that they can only see the private bugs that they're
-                # allowed to see.
-                where_clauses.append("""
-                    (Bug.private = FALSE OR
-                      Bug.id in (
-                         -- Users who have a subscription to this bug.
-                         SELECT BugSubscription.bug
-                           FROM BugSubscription, TeamParticipation
-                           WHERE
-                             TeamParticipation.person = %(personid)s AND
-                             BugSubscription.person = TeamParticipation.team
-                         UNION
-                         -- Users who are the assignee for one of the bug's
-                         -- bugtasks.
-                         SELECT BugTask.bug
-                           FROM BugTask, TeamParticipation
-                           WHERE
-                             TeamParticipation.person = %(personid)s AND
-                             TeamParticipation.team = BugTask.assignee
-                      )
-                    )""" % sqlvalues(personid=user.id))
-        else:
-            # Anonymous user; filter to include only public bugs in
-            # the search results.
-            where_clauses.append("Bug.private = FALSE")
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            where_clauses.append(privacy_filter)
 
         other_params = {}
         if orderBy:

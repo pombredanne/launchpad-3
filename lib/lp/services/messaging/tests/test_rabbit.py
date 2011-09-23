@@ -10,6 +10,7 @@ from itertools import count
 import thread
 
 from amqplib import client_0_8 as amqp
+from testtools.testcase import ExpectedException
 import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.component import getUtility
@@ -19,10 +20,12 @@ from canonical.testing.layers import (
     RabbitMQLayer,
     )
 from lp.services.messaging.interfaces import (
-    EmptyQueueException,
+    EmptyQueue,
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
+    MessagingException,
+    MessagingUnavailable,
     )
 from lp.services.messaging.rabbit import (
     RabbitMessageBase,
@@ -102,6 +105,13 @@ class TestRabbitSession(RabbitTestCase):
         connection = session.connect()
         self.assertIsNot(None, session.connection)
         self.assertIs(connection, session.connection)
+
+    def test_connect_with_incomplete_configuration(self):
+        self.pushConfig("rabbitmq", host="none")
+        session = RabbitSession()
+        with ExpectedException(
+            MessagingUnavailable, "Incomplete configuration"):
+            session.connect()
 
     def test_disconnect(self):
         session = RabbitSession()
@@ -186,9 +196,18 @@ class TestRabbitUnreliableSession(RabbitTestCase):
     def raise_AMQPException(self):
         raise amqp.AMQPException(123, "Suffin broke.", "Whut?")
 
-    def test_finish_suppresses_some_errors(self):
+    def test_finish_suppresses_AMQPException(self):
         session = RabbitUnreliableSession()
         session.defer(self.raise_AMQPException)
+        session.finish()
+        # Look, no exceptions!
+
+    def raise_MessagingException(self):
+        raise MessagingException("Arm stuck in combine.")
+
+    def test_finish_suppresses_MessagingException(self):
+        session = RabbitUnreliableSession()
+        session.defer(self.raise_MessagingException)
         session.finish()
         # Look, no exceptions!
 
@@ -242,7 +261,7 @@ class TestRabbitRoutingKey(RabbitTestCase):
         routing_key.send('later')
         # There is nothing in the queue because the consumer has not yet been
         # associated with the routing key.
-        self.assertRaises(EmptyQueueException, consumer.receive, timeout=2)
+        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
         transaction.commit()
         # Now that the transaction has been committed, the consumer is
         # associated, and receives the deferred message.
@@ -310,18 +329,14 @@ class TestRabbitQueue(RabbitTestCase):
             self.assertEqual(data, consumer.receive(timeout=2))
 
         # All the messages received were consumed.
-        self.assertRaises(
-            EmptyQueueException,
-            consumer.receive, timeout=2)
+        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
 
         # New connections to the queue see an empty queue too.
         consumer.session.disconnect()
         consumer = RabbitQueue(global_session, next(queue_names))
         routing_key = RabbitRoutingKey(global_session, next(key_names))
         routing_key.associateConsumerNow(consumer)
-        self.assertRaises(
-            EmptyQueueException,
-            consumer.receive, timeout=2)
+        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
 
 
 class TestRabbit(RabbitTestCase):
@@ -357,9 +372,7 @@ class TestRabbit(RabbitTestCase):
 
         # Messages sent using send() are forgotten on abort.
         transaction.abort()
-        self.assertRaises(
-            EmptyQueueException,
-            consumer.receive, timeout=2)
+        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
 
 
 class TestRabbitWithLaunchpad(RabbitTestCase):
