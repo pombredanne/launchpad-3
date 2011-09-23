@@ -138,7 +138,7 @@ class TestMoveDuplicates(TestCaseWithFactory):
         target_heat_cache_statements = [
             statement for statement in recorder.statements
             if statement.startswith(
-                "'SELECT MAX(Bug.heat), SUM(Bug.heat), COUNT(Bug.id)")]
+                "SELECT MAX(Bug.heat), SUM(Bug.heat), COUNT(Bug.id)")]
         return len(target_heat_cache_statements)
 
     def test_move_duplicates_efficient_target_heat_cache_calculation(self):
