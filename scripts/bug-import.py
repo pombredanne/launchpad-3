@@ -48,7 +48,7 @@ class BugImportScript(LaunchpadScript):
 
         # don't send email
         send_email_data = """
-            [zopeless]
+            [immediate_mail]
             send_email: False
             """
         config.push('send_email_data', send_email_data)
