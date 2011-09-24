@@ -109,7 +109,6 @@ from canonical.config.fixture import (
     )
 from canonical.database.sqlbase import (
     session_store,
-    update_store_connections,
     ZopelessTransactionManager,
     )
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -152,6 +151,7 @@ from lp.testing import (
     login,
     logout,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.pgsql import PgTestSetup
 
 
@@ -1566,8 +1566,8 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def switchDbUser(cls, dbuser):
-        dbconfig.override(dbuser=dbuser)
-        update_store_connections()
+        # DEPRECATED: use switch_dbuser directly.
+        switch_dbuser(dbuser)
 
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
