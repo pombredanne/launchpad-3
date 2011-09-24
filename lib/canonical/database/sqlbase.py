@@ -26,7 +26,6 @@ __all__ = [
     'sqlvalues',
     'StupidCache',
     'update_store_connections',
-    'ZopelessTransactionManager',
     ]
 
 
@@ -293,47 +292,6 @@ def update_store_connections():
             connection._raw_connection = None
             connection._state = storm.database.STATE_DISCONNECTED
     transaction.abort()
-
-
-class ZopelessTransactionManager(object):
-    """Compatibility shim for initZopeless()"""
-
-    _installed = None
-
-    def __init__(self):
-        raise AssertionError("ZopelessTransactionManager should not be "
-                             "directly instantiated.")
-
-    @classmethod
-    def initZopeless(cls, dbuser=None, isolation=ISOLATION_LEVEL_DEFAULT):
-        if dbuser is None:
-            raise AssertionError(
-                "dbuser is now required. All scripts must connect as unique "
-                "database users.")
-
-        isolation_level = {
-            ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
-            ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
-            ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
-
-        dbconfig.override(dbuser=dbuser, isolation_level=isolation_level)
-
-        cls._dbuser = dbuser
-        cls._isolation = isolation
-        update_store_connections()
-        cls._installed = cls
-
-    @classmethod
-    def uninstall(cls):
-        """Uninstall the ZopelessTransactionManager.
-
-        This entails removing the config overlay and resetting the store.
-        """
-        assert cls._installed is not None, (
-            "ZopelessTransactionManager not installed")
-        dbconfig.override(dbuser=None, isolation_level=None)
-        update_store_connections()
-        cls._installed = None
 
 
 def clear_current_connection_cache():
