@@ -450,12 +450,13 @@ def sendmail(message, to_addrs=None, bulk=True):
             # For debugging, from process-one-mail, just print it.
             sys.stdout.write(raw_message)
         else:
-            if config.zopeless.send_email:
+            if config.immediate_mail.send_email:
                 # Note that we simply throw away dud recipients. This is fine,
                 # as it emulates the Z3 API which doesn't report this either
                 # (because actual delivery is done later).
                 smtp = SMTP(
-                    config.zopeless.smtp_host, config.zopeless.smtp_port)
+                    config.immediate_mail.smtp_host,
+                    config.immediate_mail.smtp_port)
 
                 # The "MAIL FROM" is set to the bounce address, to behave in a
                 # way similar to mailing list software.
