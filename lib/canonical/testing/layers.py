@@ -107,10 +107,7 @@ from canonical.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from canonical.database.sqlbase import (
-    session_store,
-    ZopelessTransactionManager,
-    )
+from canonical.database.sqlbase import session_store
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -487,13 +484,6 @@ class BaseLayer:
             raise LayerIsolationError(
                 "Component architecture should not be loaded by tests. "
                 "This should only be loaded by the Layer.")
-
-        # Detect a test that installed the Zopeless database adapter
-        # but failed to unregister it. This could be done automatically,
-        # but it is better for the tear down to be explicit.
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerIsolationError(
-                "Zopeless environment was setup and not torn down.")
 
         # Detect a test that forgot to reset the default socket timeout.
         # This safety belt is cheap and protects us from very nasty
