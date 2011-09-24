@@ -13,8 +13,8 @@ from contextlib import contextmanager
 
 import transaction
 
+from canonical.config import dbconfig
 from canonical.database.sqlbase import ZopelessTransactionManager
-from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 @contextmanager
@@ -26,14 +26,14 @@ def dbuser(temporary_name):
     temporary_name is the name of the dbuser that should be in place for the
     code in the "with" block.
     """
-    restore_name = ZopelessTransactionManager._dbuser
     transaction.commit()
-    # Note that this will raise an assertion error if the
-    # LaunchpadZopelessLayer is not already set up.
-    LaunchpadZopelessLayer.switchDbUser(temporary_name)
+    old_name = getattr(dbconfig.overrides, 'dbuser', None)
+    dbconfig.override(dbuser=temporary_name)
+    ZopelessTransactionManager._reset_stores()
     yield
     transaction.commit()
-    LaunchpadZopelessLayer.switchDbUser(restore_name)
+    dbconfig.override(dbuser=old_name)
+    ZopelessTransactionManager._reset_stores()
 
 
 def lp_dbuser():
