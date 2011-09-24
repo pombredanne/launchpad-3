@@ -109,6 +109,7 @@ from canonical.config.fixture import (
     )
 from canonical.database.sqlbase import (
     session_store,
+    update_store_connections,
     ZopelessTransactionManager,
     )
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -1566,7 +1567,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @profiled
     def switchDbUser(cls, dbuser):
         dbconfig.override(dbuser=dbuser)
-        ZopelessTransactionManager._reset_stores()
+        update_store_connections()
 
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):

@@ -14,7 +14,7 @@ from contextlib import contextmanager
 import transaction
 
 from canonical.config import dbconfig
-from canonical.database.sqlbase import ZopelessTransactionManager
+from canonical.database.sqlbase import update_store_connections
 
 
 @contextmanager
@@ -29,11 +29,11 @@ def dbuser(temporary_name):
     transaction.commit()
     old_name = getattr(dbconfig.overrides, 'dbuser', None)
     dbconfig.override(dbuser=temporary_name)
-    ZopelessTransactionManager._reset_stores()
+    update_store_connections()
     yield
     transaction.commit()
     dbconfig.override(dbuser=old_name)
-    ZopelessTransactionManager._reset_stores()
+    update_store_connections()
 
 
 def lp_dbuser():
