@@ -140,6 +140,7 @@ from lp.services.mail.mailbox import (
     IMailBox,
     TestMailBox,
     )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
@@ -1535,6 +1536,10 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
             raise LayerIsolationError(
                 "Last test using Zopeless failed to tearDown correctly")
         ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
+        # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+        # Tests that still need it should eventually set this directly,
+        # so the whole layer is not polluted.
+        set_immediate_mail_delivery(True)
 
         # Connect Storm
         reconnect_stores()
@@ -1547,6 +1552,11 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager")
         # LaunchpadScriptLayer will disconnect the stores for us.
+
+        # XXX wgrant 2011-09-24 bug=29744: uninstall used to do this.
+        # Tests that still need immediate delivery should eventually do
+        # this directly.
+        set_immediate_mail_delivery(False)
 
     @classmethod
     @profiled

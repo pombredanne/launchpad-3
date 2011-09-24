@@ -59,7 +59,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import dbconfig
 from canonical.database.interfaces import ISQLBase
-from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.propertycache import clear_property_cache
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
@@ -290,10 +289,6 @@ class ZopelessTransactionManager(object):
         cls._isolation = isolation
         cls._reset_stores()
         cls._installed = cls
-        # sendmail used to use immediate delivery whenever a ZTM was
-        # installed. Emulate that old behaviour by always enabling
-        # immediate delivery when installing one.
-        set_immediate_mail_delivery(True)
 
     @staticmethod
     def _reset_stores():
@@ -334,7 +329,6 @@ class ZopelessTransactionManager(object):
         dbconfig.override(dbuser=None, isolation_level=None)
         cls._reset_stores()
         cls._installed = None
-        set_immediate_mail_delivery(False)
 
 
 def clear_current_connection_cache():

@@ -17,6 +17,9 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 execute_zcml_for_scripts()
 ZopelessTransactionManager.initZopeless(dbuser='buildd_manager')
+# XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+# Should be removed from callsites verified to not need it.
+set_immediate_mail_delivery(True)
 
 options = ServerOptions()
 options.parseOptions()
