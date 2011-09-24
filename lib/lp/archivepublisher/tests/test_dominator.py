@@ -684,9 +684,9 @@ class TestDominatorMethods(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED)
             for counter in xrange(2)]
         dominator = self.makeDominator(spphs)
-        [(name, publications)] = dominator.findPublishedSourcePackageNames(
-            series, pocket)
-        self.assertEqual(len(spphs), publications)
+        self.assertContentEqual(
+            [(spr.sourcepackagename.name, len(spphs))],
+            dominator.findPublishedSourcePackageNames(series, pocket))
 
     def test_findPublishedSourcePackageNames_counts_no_other_state(self):
         series = self.factory.makeDistroSeries()
@@ -698,9 +698,9 @@ class TestDominatorMethods(TestCaseWithFactory):
                 status=status)
             for status in PackagePublishingStatus.items]
         dominator = self.makeDominator(spphs)
-        [(name, publications)] = dominator.findPublishedSourcePackageNames(
-            series, pocket)
-        self.assertEqual(1, publications)
+        self.assertContentEqual(
+            [(spr.sourcepackagename.name, 1)],
+            dominator.findPublishedSourcePackageNames(series, pocket))
 
     def test_findPublishedSPPHs_finds_published_SPPH(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
