@@ -480,20 +480,6 @@ class LaunchpadScriptTestCase(BaseTestCase):
     want_memcached = True
     want_rabbitmq = True
 
-    def testSwitchDbConfig(self):
-        # Test that we can switch database configurations, and that we
-        # end up connected as the right user.
-
-        self.assertEqual(dbconfig.dbuser, 'launchpad_main')
-        LaunchpadScriptLayer.switchDbConfig('librarian')
-        self.assertEqual(dbconfig.dbuser, 'librarian')
-
-        from canonical.database.sqlbase import cursor
-        cur = cursor()
-        cur.execute('SELECT current_user;')
-        user = cur.fetchone()[0]
-        self.assertEqual(user, 'librarian')
-
 
 class LayerProcessControllerInvariantsTestCase(BaseTestCase):
     layer = AppServerLayer
