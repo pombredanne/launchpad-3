@@ -217,7 +217,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def createInitializedSecrecyView(self, person=None, bug=None,
-                                     request=None):
+                                     request=None, security_related=False):
         """Create and return an initialized BugSecrecyView."""
         if person is None:
             person = self.factory.makePerson()
@@ -227,7 +227,8 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             view = create_initialized_view(
                 bug.default_bugtask, name='+secrecy', form={
                     'field.private': 'on',
-                    'field.security_related': '',
+                    'field.security_related':
+                        'on' if security_related else 'off',
                     'field.actions.change': 'Change',
                     },
                 request=request)
@@ -276,7 +277,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # privacy as well as information used to populate the updated
         # subscribers list.
         person = self.factory.makePerson()
-        bug = self.factory.makeBug()
+        bug = self.factory.makeBug(owner=person)
         with person_logged_in(person):
             bug.subscribe(person, person)
 
@@ -285,7 +286,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             method='POST', form={
                 'field.actions.change': 'Change',
                 'field.private': 'on',
-                'field.security_related': 'ff'},
+                'field.security_related': 'off'},
             **extra)
         view = self.createInitializedSecrecyView(person, bug, request)
         result_data = simplejson.loads(view.render())
@@ -301,3 +302,18 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             subscription_data['person_link'])
         self.assertEqual(
             'Discussion', subscription_data['bug_notification_level'])
+
+        [subscriber_data] = result_data['subscription_data']
+        subscriber = removeSecurityProxy(bug.default_bugtask).pillar.owner
+        self.assertEqual(
+            subscriber.name, subscriber_data['subscriber']['name'])
+        self.assertEqual('Discussion', subscriber_data['subscription_level'])
+
+    def test_set_security_related(self):
+        # Test that the bug attribute 'security_related' can be updated
+        # using the view.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=owner)
+        self.createInitializedSecrecyView(bug=bug, security_related=True)
+        with person_logged_in(owner):
+            self.assertTrue(bug.security_related)

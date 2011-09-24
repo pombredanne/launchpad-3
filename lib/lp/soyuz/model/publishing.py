@@ -448,6 +448,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     ancestor = ForeignKey(
         dbName="ancestor", foreignKey="SourcePackagePublishingHistory",
         default=None)
+    creator = ForeignKey(
+        dbName='creator', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def package_creator(self):
@@ -794,7 +797,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive=current.archive)
 
     def copyTo(self, distroseries, pocket, archive, override=None,
-               create_dsd_job=True):
+               create_dsd_job=True, creator=None):
         """See `ISourcePackagePublishingHistory`."""
         component = self.component
         section = self.section
@@ -810,8 +813,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component,
             section,
             pocket,
-            ancestor=None,
-            create_dsd_job=create_dsd_job)
+            ancestor=self,
+            create_dsd_job=create_dsd_job,
+            creator=creator)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1486,11 +1490,15 @@ class PublishingSet:
 
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
-                             ancestor=None, create_dsd_job=True):
+                             ancestor=None, create_dsd_job=True,
+                             creator=None):
         """See `IPublishingSet`."""
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage)
+
+        if creator is None:
+            creator = sourcepackagerelease.creator
 
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,
@@ -1502,7 +1510,8 @@ class PublishingSet:
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            ancestor=ancestor)
+            ancestor=ancestor,
+            creator=creator)
         DistributionSourcePackage.ensure(pub)
 
         if create_dsd_job:
