@@ -12,10 +12,44 @@ __all__ = [
 
 from contextlib import contextmanager
 
+import storm.database
+from storm.zope.interfaces import IZStorm
 import transaction
+from zope.component import getUtility
 
 from canonical.config import dbconfig
-from canonical.database.sqlbase import update_store_connections
+
+
+def update_store_connections():
+    """Update the connection settings for all active stores.
+
+    This is required for connection setting changes to be made visible.
+
+    Unlike disconnect_stores and reconnect_stores, this changes the
+    underlying connection of *existing* stores, leaving existing objects
+    functional.
+    """
+    for name, store in getUtility(IZStorm).iterstores():
+        connection = store._connection
+        if connection._state == storm.database.STATE_CONNECTED:
+            if connection._raw_connection is not None:
+                connection._raw_connection.close()
+
+            # This method assumes that calling transaction.abort() will
+            # call rollback() on the store, but this is no longer the
+            # case as of jamesh's fix for bug 230977; Stores are not
+            # registered with the transaction manager until they are
+            # used. While storm doesn't provide an API which does what
+            # we want, we'll go under the covers and emit the
+            # register-transaction event ourselves. This method is
+            # only called by the test suite to kill the existing
+            # connections so the Store's reconnect with updated
+            # connection settings.
+            store._event.emit('register-transaction')
+
+            connection._raw_connection = None
+            connection._state = storm.database.STATE_DISCONNECTED
+    transaction.abort()
 
 
 def switch_dbuser(new_name):
