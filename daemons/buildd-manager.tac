@@ -8,12 +8,13 @@ from twisted.application import service
 from twisted.scripts.twistd import ServerOptions
 from twisted.web import server
 
-from lp.buildmaster.manager import BuilddManager
-from lp.services.twistedsupport.loggingsupport import RotatableFileLogObserver
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.buildmaster.manager import BuilddManager
+from lp.services.mail.sendmail import set_immediate_mail_delivery
+from lp.services.twistedsupport.loggingsupport import RotatableFileLogObserver
 
 execute_zcml_for_scripts()
 ZopelessTransactionManager.initZopeless(dbuser='buildd_manager')
