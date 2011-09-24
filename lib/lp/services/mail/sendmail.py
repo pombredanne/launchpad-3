@@ -21,6 +21,7 @@ __all__ = [
     'get_msgid',
     'MailController',
     'sendmail',
+    'set_immediate_mail_delivery',
     'simple_sendmail',
     'simple_sendmail_from_person',
     'validate_message',
