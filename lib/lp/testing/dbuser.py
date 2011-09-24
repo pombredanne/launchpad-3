@@ -3,6 +3,8 @@
 
 """Provides a context manager to run parts of a test as a different dbuser."""
 
+from __future__ import absolute_import
+
 __metaclass__ = type
 __all__ = [
     'dbuser',
@@ -12,7 +14,10 @@ __all__ = [
 
 from contextlib import contextmanager
 
-import storm.database
+from storm.database import (
+    STATE_CONNECTED,
+    STATE_DISCONNECTED,
+    )
 from storm.zope.interfaces import IZStorm
 import transaction
 from zope.component import getUtility
@@ -31,7 +36,7 @@ def update_store_connections():
     """
     for name, store in getUtility(IZStorm).iterstores():
         connection = store._connection
-        if connection._state == storm.database.STATE_CONNECTED:
+        if connection._state == STATE_CONNECTED:
             if connection._raw_connection is not None:
                 connection._raw_connection.close()
 
@@ -48,7 +53,7 @@ def update_store_connections():
             store._event.emit('register-transaction')
 
             connection._raw_connection = None
-            connection._state = storm.database.STATE_DISCONNECTED
+            connection._state = STATE_DISCONNECTED
     transaction.abort()
 
 
