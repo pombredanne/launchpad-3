@@ -1532,10 +1532,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerIsolationError(
-                "Last test using Zopeless failed to tearDown correctly")
-        ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
+        dbconfig.override(isolation_level='read_committed')
         # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
         # Tests that still need it should eventually set this directly,
         # so the whole layer is not polluted.
@@ -1547,10 +1544,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        ZopelessTransactionManager.uninstall()
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerInvariantError(
-                "Failed to uninstall ZopelessTransactionManager")
+        dbconfig.reset()
         # LaunchpadScriptLayer will disconnect the stores for us.
 
         # XXX wgrant 2011-09-24 bug=29744: uninstall used to do this.
@@ -1571,16 +1565,8 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def switchDbUser(cls, dbuser):
-        LaunchpadZopelessLayer._alterConnection(dbuser=dbuser)
-
-    @classmethod
-    @profiled
-    def _alterConnection(cls, **kw):
-        """Reset the connection, and reopen the connection by calling
-        initZopeless with the given keyword arguments.
-        """
-        ZopelessTransactionManager.uninstall()
-        ZopelessTransactionManager.initZopeless(**kw)
+        dbconfig.override(dbuser=dbuser)
+        ZopelessTransactionManager._reset_stores()
 
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
