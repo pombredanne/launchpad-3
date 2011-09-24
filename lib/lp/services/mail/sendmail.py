@@ -51,7 +51,6 @@ from zope.security.proxy import removeSecurityProxy
 from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
-from canonical.database.sqlbase import ZopelessTransactionManager
 from lp.app import versioninfo
 from lp.services.encoding import is_ascii_only
 from lp.services.mail.stub import TestMailer
@@ -63,6 +62,7 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 del Charset.CHARSETS['utf-8']
 Charset.add_charset('utf-8', Charset.SHORTEST, Charset.QP, 'utf-8')
 Charset.add_alias('utf8', 'utf-8')
+
 
 def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     """Validate various bits of the email.
@@ -159,6 +159,20 @@ def format_address_for_person(person):
     """Helper function to call format_address for a person."""
     email_address = removeSecurityProxy(person.preferredemail).email
     return format_address(person.displayname, email_address)
+
+
+_immediate_mail_delivery = False
+
+
+def set_immediate_mail_delivery(enabled):
+    """Enable or disable immediate mail delivery.
+
+    Mail is by default queued until the transaction is committed. But if
+    a script requires that mail violate transactions, immediate mail
+    delivery can be enabled.
+    """
+    global _immediate_mail_delivery
+    _immediate_mail_delivery = enabled
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
@@ -422,7 +436,7 @@ def sendmail(message, to_addrs=None, bulk=True):
 
     raw_message = message.as_string()
     message_detail = message['Subject']
-    if ZopelessTransactionManager._installed is not None:
+    if _immediate_mail_delivery:
         # Zopeless email sending is not unit tested, and won't be.
         # The zopeless specific stuff is pretty simple though so this
         # should be fine.
