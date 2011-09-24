@@ -437,10 +437,10 @@ def sendmail(message, to_addrs=None, bulk=True):
     raw_message = message.as_string()
     message_detail = message['Subject']
     if _immediate_mail_delivery:
-        # Zopeless email sending is not unit tested, and won't be.
-        # The zopeless specific stuff is pretty simple though so this
+        # Immediate email delivery is not unit tested, and won't be.
+        # The immediate-specific stuff is pretty simple though so this
         # should be fine.
-        # TODO: Store a timeline action for zopeless mail.
+        # TODO: Store a timeline action for immediate mail.
 
         if config.isTestRunner():
             # when running in the testing environment, store emails

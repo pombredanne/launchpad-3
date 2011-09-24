@@ -290,6 +290,9 @@ class ZopelessTransactionManager(object):
         cls._isolation = isolation
         cls._reset_stores()
         cls._installed = cls
+        # sendmail used to use immediate delivery whenever a ZTM was
+        # installed. Emulate that old behaviour by always enabling
+        # immediate delivery when installing one.
         set_immediate_mail_delivery(True)
 
     @staticmethod
