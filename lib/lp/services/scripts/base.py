@@ -35,10 +35,6 @@ from zope.component import getUtility
 
 from canonical.config import config, dbconfig
 from canonical.database.postgresql import ConnectionString
-from canonical.database.sqlbase import (
-    ISOLATION_LEVEL_DEFAULT,
-    ZopelessTransactionManager,
-    )
 from canonical.launchpad import scripts
 from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
@@ -319,7 +315,7 @@ class LaunchpadScript:
         """Actually run the script, executing zcml and initZopeless."""
 
         if isolation is None:
-            isolation = ISOLATION_LEVEL_DEFAULT
+            isolation = 'read_committed'
         self._init_zca(use_web_security=use_web_security)
         self._init_db(isolation=isolation)
 
@@ -365,8 +361,7 @@ class LaunchpadScript:
         if dbuser is None:
             connstr = ConnectionString(dbconfig.main_master)
             dbuser = connstr.user or dbconfig.dbuser
-        ZopelessTransactionManager.initZopeless(
-            dbuser=dbuser, isolation=isolation)
+        dbconfig.override(dbuser=dbuser, isolation_level=isolation)
         self.txn = transaction
 
     def record_activity(self, date_started, date_completed):
@@ -378,7 +373,7 @@ class LaunchpadScript:
     @log_unhandled_exception_and_exit
     def lock_and_run(self, blocking=False, skip_delete=False,
                      use_web_security=False,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
+                     isolation='read_committed'):
         """Call lock_or_die(), and then run() the script.
 
         Will die with sys.exit(1) if the locking call fails.
