@@ -1719,3 +1719,13 @@ class TestGetRecipients(TestCaseWithFactory):
                               super_team_member_person,
                               super_team_member_team]),
                          set(recipients))
+
+    def test_get_recipients_team_with_disabled_account(self):
+        """Mail is not sent to teams containing people with a non-active account.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/855150>
+        """
+        owner = self.factory.makePerson(email='foo@bar.com')
+        team = self.factory.makeTeam(owner)
+        owner.account.status = AccountStatus.DEACTIVATED
+        self.assertContentEqual([], get_recipients(team))
