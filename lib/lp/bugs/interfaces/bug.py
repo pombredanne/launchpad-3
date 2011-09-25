@@ -101,7 +101,7 @@ class CreateBugParams:
                  status=None, datecreated=None, security_related=False,
                  private=False, subscribers=(),
                  tags=None, subscribe_owner=True, filed_by=None,
-                 importance=None, milestone=None, assignee=None):
+                 importance=None, milestone=None, assignee=None, cve=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -121,6 +121,7 @@ class CreateBugParams:
         self.importance = importance
         self.milestone = milestone
         self.assignee = assignee
+        self.cve = cve
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -985,6 +986,15 @@ class IBug(IPrivacy, IHasLinkedBranches):
         Returns True or False.
         """
 
+    def getActivityForDateRange(start_date, end_date):
+        """Return all the `IBugActivity` for this bug in a date range.
+
+        :param start_date: The earliest date for which activity can be
+            returned.
+        :param end_date: The latest date for which activity can be
+            returned.
+        """
+
 
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
@@ -1143,10 +1153,13 @@ class IBugSet(Interface):
         the given bug tracker and remote bug id.
         """
 
-    def createBug(bug_params):
+    def createBug(bug_params, notify_event=True):
         """Create a bug and return it.
 
-        :bug_params: A CreateBugParams object.
+        :param bug_params: A CreateBugParams object.
+        :param notify_event: notify subscribers of the bug creation event.
+        :return: the new bug, or a tuple of bug, event when notify_event
+            is false.
 
         Things to note when using this factory:
 

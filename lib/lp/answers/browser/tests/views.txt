@@ -79,7 +79,7 @@ the form.
 
     # Setup a harness to easily test the view.
 
-    >>> from canonical.launchpad.browser import QuestionWorkflowView
+    >>> from lp.answers.browser.question import QuestionWorkflowView
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> workflow_harness = LaunchpadFormHarness(
     ...     firefox_question, QuestionWorkflowView)
@@ -633,7 +633,8 @@ The UserSupportLanguagesMixin can be used by views that needs to
 retrieve the set of languages in which the user is assumed to be
 interested.
 
-    >>> from canonical.launchpad.browser import UserSupportLanguagesMixin
+    >>> from lp.answers.browser.questiontarget import (
+    ...     UserSupportLanguagesMixin)
     >>> from canonical.launchpad.webapp import LaunchpadView
 
     >>> class UserSupportLanguagesView(UserSupportLanguagesMixin,
@@ -699,7 +700,7 @@ keeping those searchable.
     # Define a subclass to demonstrate the customizability of the base
     # view.
 
-    >>> from canonical.launchpad.browser import SearchQuestionsView
+    >>> from lp.answers.browser.questiontarget import SearchQuestionsView
     >>> class MyCustomSearchQuestionsView(SearchQuestionsView):
     ...
     ...     default_filter = {}

@@ -81,10 +81,8 @@ Rather than exporting a single bug, we'll usually want to export all
 the bugs for a product.  The export_bugtasks() function does this by
 successively serialising each of the tasks for that product.
 
-  >>> from canonical.database.sqlbase import ZopelessTransactionManager
-  >>> ztm = ZopelessTransactionManager._installed
-
-  >>> export_bugtasks(ztm, firefox, sys.stdout)
+  >>> import transaction
+  >>> export_bugtasks(transaction, firefox, sys.stdout)
   <launchpad-bugs xmlns="https://launchpad.net/xmlns/2006/bugs">
   <bug id="1">
   ...
@@ -128,7 +126,7 @@ the file when we later serialise the bug:
   ...                    'Added attachment', 'hello.txt',
   ...                    description='"Hello World" attachment')
   <BugAttachment ...>
-  >>> ztm.commit()
+  >>> transaction.commit()
 
 A reference to the attachment is included with the new comment with
 the attachment contents encoded using base-64:
@@ -163,13 +161,13 @@ import script.  To test this, we'll make a bug private:
 
   >>> bug1.setPrivate(True, getUtility(ILaunchBag).user)
   True
-  >>> ztm.commit()
+  >>> transaction.commit()
 
 
 Now we'll do a dump not including private bugs:
 
   >>> output = StringIO()
-  >>> export_bugtasks(ztm, firefox, output)
+  >>> export_bugtasks(transaction, firefox, output)
   >>> '<bug id="1">' in output.getvalue()
   False
 
@@ -177,6 +175,6 @@ Now we'll do a dump not including private bugs:
 However, bug #1 will appear in the export if we include private bugs:
 
   >>> output = StringIO()
-  >>> export_bugtasks(ztm, firefox, output, include_private=True)
+  >>> export_bugtasks(transaction, firefox, output, include_private=True)
   >>> '<bug id="1">' in output.getvalue()
   True

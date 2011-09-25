@@ -12,6 +12,7 @@ from storm.expr import (
     compile,
     Desc,
     )
+from storm.store import EmptyResultSet
 from testtools.matchers import (
     LessThan,
     Not,
@@ -747,3 +748,76 @@ class TestStormRangeFactory(TestCaseWithFactory):
         estimated_length = range_factory.rough_length
         self.assertThat(estimated_length, LessThan(10))
         self.assertThat(estimated_length, Not(LessThan(1)))
+
+    def test_rough_length_distinct_query(self):
+        # StormRangeFactory.rough_length with SELECT DISTINCT queries.
+        resultset = self.makeStormResultSet()
+        resultset.config(distinct=True)
+        resultset.order_by(Person.name, Person.id)
+        range_factory = StormRangeFactory(resultset)
+        estimated_length = range_factory.rough_length
+        self.assertThat(estimated_length, LessThan(10))
+        self.assertThat(estimated_length, Not(LessThan(1)))
+
+    def test_getSliceByIndex__storm_result_set(self):
+        # StormRangeFactory.getSliceByIndex() returns a slice of the
+        # resultset, wrapped into a ShadowedList. For plain Storm
+        # result sets, the main values and the shadow values are both
+        # the corresponding elements of the result set.
+        resultset = self.makeStormResultSet()
+        all_results = list(resultset)
+        range_factory = StormRangeFactory(resultset)
+        sliced = range_factory.getSliceByIndex(2, 4)
+        self.assertIsInstance(sliced, ShadowedList)
+        self.assertEqual(all_results[2:4], list(sliced))
+        self.assertEqual(all_results[2:4], sliced.shadow_values)
+
+    def test_getSliceByIndex__decorated_result_set(self):
+        # StormRangeFactory.getSliceByIndex() returns a slice of the
+        # resultset, wrapped into a ShadowedList. For decorated Storm
+        # result sets, the main values are the corresponding values of
+        # the decorated result set and the shadow values are the
+        # corresponding elements of the plain result set.
+        resultset = self.makeDecoratedStormResultSet()
+        all_results = list(resultset)
+        all_undecorated_results = list(resultset.get_plain_result_set())
+        range_factory = StormRangeFactory(resultset)
+        sliced = range_factory.getSliceByIndex(2, 4)
+        self.assertIsInstance(sliced, ShadowedList)
+        self.assertEqual(all_results[2:4], list(sliced))
+        self.assertEqual(all_undecorated_results[2:4], sliced.shadow_values)
+
+    def assertEmptyResultSetsWorking(self, range_factory):
+        # getSlice() and getSliceByIndex() return empty ShadowedLists.
+        sliced = range_factory.getSlice(1)
+        self.assertEqual([], sliced.values)
+        self.assertEqual([], sliced.shadow_values)
+        sliced = range_factory.getSliceByIndex(0, 1)
+        self.assertEqual([], sliced.values)
+        self.assertEqual([], sliced.shadow_values)
+        # The endpoint memos are empty strings.
+        request = LaunchpadTestRequest()
+        batchnav = BatchNavigator(
+            range_factory.resultset, request, size=3,
+            range_factory=range_factory)
+        first, last = range_factory.getEndpointMemos(batchnav.batch)
+        self.assertEqual('', first)
+        self.assertEqual('', last)
+
+    def test_StormRangeFactory__EmptyResultSet(self):
+        # It is possible to create StormRangeFactory instances for
+        # EmptyResultSets,
+        resultset = EmptyResultSet()
+        range_factory = StormRangeFactory(resultset)
+        self.assertEqual(0, range_factory.rough_length)
+        self.assertEmptyResultSetsWorking(range_factory)
+
+    def test_StormRangeFactory__empty_real_resultset(self):
+        # StormRangeFactory works with empty regular result sets,
+        resultset = self.factory.makeProduct().open_bugtasks
+        self.assertEqual(0, resultset.count())
+        range_factory = StormRangeFactory(resultset)
+        # rough_length is supposed to be zero, but the ANALYZE SELECT
+        # is not always precise.
+        self.assertThat(range_factory.rough_length, LessThan(10))
+        self.assertEmptyResultSetsWorking(range_factory)

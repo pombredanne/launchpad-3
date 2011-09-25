@@ -10,73 +10,47 @@ __all__ = [
 
 from zope.component import getUtility
 
-# XXX JeroenVermeulen 2011-09-08, bug=844550: The GeneralizedPublication
-# import violates import policy and elicits a warning from the test
-# suite.  The warning helps remind us to retire this code as soon as
-# possible.
-from lp.archivepublisher.domination import (
-    Dominator,
-    GeneralizedPublication,
-    )
+from lp.archivepublisher.domination import Dominator
 from lp.registry.interfaces.distribution import IDistributionSet
 
 
-def dominate_imported_source_packages(logger, distro_name, series_name,
+def dominate_imported_source_packages(txn, logger, distro_name, series_name,
                                       pocket, packages_map):
     """Perform domination."""
     series = getUtility(IDistributionSet)[distro_name].getSeries(series_name)
     dominator = Dominator(logger, series.main_archive)
 
-    # XXX JeroenVermeulen 2011-09-08, bug=844550: This is a transitional
-    # hack.  Gina used to create SPPHs in Pending state.  We cleaned up
-    # the bulk of them, and changed the code to create Published ones, but
-    # some new ones will have been created since.
-    # Update those to match what the new Gina does.
-    from canonical.launchpad.interfaces.lpstorm import IStore
-    from lp.soyuz.enums import PackagePublishingStatus
-    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-    SPPH = SourcePackagePublishingHistory
-    store = IStore(SPPH)
-    spphs = store.find(
-        SPPH,
-        SPPH.archive == series.main_archive,
-        SPPH.distroseries == series,
-        SPPH.pocket == pocket,
-        SPPH.status == PackagePublishingStatus.PENDING)
-    spphs.set(status=PackagePublishingStatus.PUBLISHED)
+    # Dominate all packages published in the series.  This includes all
+    # packages listed in the Sources file we imported, but also packages
+    # that have been recently deleted.
+    package_counts = dominator.findPublishedSourcePackageNames(series, pocket)
+    for package_name, pub_count in package_counts:
+        entries = packages_map.src_map.get(package_name, [])
+        live_versions = [
+            entry['Version'] for entry in entries if 'Version' in entry]
 
-    # Dominate packages found in the Sources list we're importing.
-    package_names = dominator.findPublishedSourcePackageNames(series, pocket)
-    for package_name in package_names:
-        entries = packages_map.src_map.get(package_name)
+        # Gina import just ensured that any live version in the Sources
+        # file has a Published publication.  So there should be at least
+        # as many Published publications as live versions.
+        if pub_count < len(live_versions):
+            logger.warn(
+                "Package %s has fewer live source publications (%s) than "
+                "live versions (%s).  The archive may be broken in some "
+                "way.",
+                package_name, pub_count, len(live_versions))
 
-        if entries is None:
-            # XXX JeroenVermeulen 2011-09-08, bug=844550: This is a
-            # transitional hack.  The database is full of "Published"
-            # Debian SPPHs whose packages have actually been deleted.
-            # In the future such publications should simply be marked
-            # Deleted, but for the legacy baggage we currently carry
-            # around we'll just do traditional domination first: pick
-            # the latest Published version, and mark the rest of the
-            # SPPHs as superseded by that version.  The latest version
-            # will then, finally, be marked appropriately Deleted once
-            # we remove this transitional hack.
-            # To remove the transitional hack, just let live_versions
-            # default to the empty list instead of doing this:
-            pubs = dominator.findPublishedSPPHs(series, pocket, package_name)
-            generalization = GeneralizedPublication(is_source=True)
-            pubs_dict = dominator._sortPackages(pubs, generalization)
-            sorted_pubs = pubs_dict[package_name]
-            if len(sorted_pubs) <= 1:
-                # If there's only one published SPPH, the transitional
-                # code will just leave it Published.  Don't bother; the
-                # migration will be costly enough as it is.
-                continue
-            live_versions = [sorted_pubs[0].sourcepackagerelease.version]
+        # Domination can only turn Published publications into
+        # non-Published ones, and ensures that we end up with one
+        # Published publication per live version.  Thus, if there are as
+        # many Published publications as live versions, there is no
+        # domination to do.  We skip these as an optimization.  Without
+        # it, dominating a single Debian series takes hours.
+        if pub_count != len(live_versions):
+            logger.debug("Dominating %s.", package_name)
+            dominator.dominateRemovedSourceVersions(
+                series, pocket, package_name, live_versions)
+            txn.commit()
         else:
-            live_versions = [
-                entry['Version']
-                for entry in entries if 'Version' in entry]
-
-        dominator.dominateRemovedSourceVersions(
-            series, pocket, package_name, live_versions)
+            logger.debug2(
+                "Skipping domination for %s: %d live version(s) and "
+                "publication(s).", package_name, pub_count)

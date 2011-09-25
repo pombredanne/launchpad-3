@@ -263,7 +263,7 @@ class TestBugSummary(TestCaseWithFactory):
             0)
         self.assertEqual(
             self.getCount(person_a, BugSummary.product == product),
-            0)
+            1)
         self.assertEqual(
             self.getCount(person_b, BugSummary.product == product),
             1)
