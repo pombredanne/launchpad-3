@@ -13,7 +13,6 @@ import _pythonpath
 import os
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.oops import (
@@ -54,4 +53,4 @@ class OOPSPruner(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = OOPSPruner('oops-prune', dbuser='oopsprune')
-    script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    script.lock_and_run(isolation='autocommit')
