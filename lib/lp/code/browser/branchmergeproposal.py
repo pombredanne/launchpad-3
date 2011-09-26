@@ -94,7 +94,7 @@ from lp.app.browser.lazrjs import (
     vocabulary_to_choice_edit_items,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
-from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.enums import (
@@ -171,7 +171,7 @@ def notify(func):
     """Decorate a view method to send a notification."""
     @wraps(func)
     def decorator(view, *args, **kwargs):
-        with BranchMergeProposalDelta.monitor(view.context):
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(view.context):
             return func(view, *args, **kwargs)
     return decorator
 

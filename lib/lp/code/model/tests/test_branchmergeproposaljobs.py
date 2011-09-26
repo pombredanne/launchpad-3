@@ -22,7 +22,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
@@ -476,7 +476,8 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         bmp = self.makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         self.completePendingJobs()
-        old_merge_proposal = BranchMergeProposalDelta.snapshot(bmp)
+        old_merge_proposal = (
+            BranchMergeProposalNoPreviewDiffDelta.snapshot(bmp))
         bmp.commit_message = 'new commit message'
         event = ObjectModifiedEvent(
             bmp, old_merge_proposal, [], bmp.registrant)
