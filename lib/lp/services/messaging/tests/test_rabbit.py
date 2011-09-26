@@ -10,6 +10,7 @@ from itertools import count
 import thread
 
 from amqplib import client_0_8 as amqp
+from testtools.testcase import ExpectedException
 import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.component import getUtility
@@ -23,6 +24,7 @@ from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
+    MessagingUnavailable,
     )
 from lp.services.messaging.rabbit import (
     RabbitMessageBase,
@@ -102,6 +104,13 @@ class TestRabbitSession(RabbitTestCase):
         connection = session.connect()
         self.assertIsNot(None, session.connection)
         self.assertIs(connection, session.connection)
+
+    def test_connect_with_incomplete_configuration(self):
+        self.pushConfig("rabbitmq", host="none")
+        session = RabbitSession()
+        with ExpectedException(
+            MessagingUnavailable, "Incomplete configuration"):
+            session.connect()
 
     def test_disconnect(self):
         session = RabbitSession()
