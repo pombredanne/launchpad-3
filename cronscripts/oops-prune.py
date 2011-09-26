@@ -26,6 +26,7 @@ from lp.services.scripts.base import (
 
 default_lock_filename = '/var/lock/oops-prune.lock'
 
+
 class OOPSPruner(LaunchpadCronScript):
     def add_my_options(self):
         self.parser.add_option(
