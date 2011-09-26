@@ -1,8 +1,6 @@
-#!/usr/bin/python -S
-
 __metaclass__ = type
 
-import _pythonpath
+__all__ = ['Upgrader']
 
 import os
 from shutil import rmtree
@@ -12,49 +10,28 @@ from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.transport import get_transport_from_path
 from bzrlib.upgrade import upgrade
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.code.bzr import RepositoryFormat
-from lp.code.model.branch import Branch
 from lp.codehosting.vfs import get_rw_server
-from lp.services.scripts.base import (
-    LaunchpadScript,
-    LaunchpadScriptFailure,
-    )
+
 
 class AlreadyUpgraded(Exception):
     pass
 
 
-class UpgradeAllBranches(LaunchpadScript):
-
-    def main(self):
-        if len(self.args) < 1:
-            raise LaunchpadScriptFailure('Please specify a target directory.')
-        if len(self.args) > 1:
-            raise LaunchpadScriptFailure('Too many arguments.')
-        target_dir = self.args[0]
-        store = IStore(Branch)
-        branches = store.find(
-            Branch, Branch.repository_format != RepositoryFormat.BZR_CHK_2A)
-        branches.order_by(Branch.unique_name)
-        Upgrader.run(branches, target_dir)
-
-
 class Upgrader:
 
-    def __init__(self, target_dir):
+    def __init__(self, target_dir, logger):
         self.target_format = format_registry.make_bzrdir('2a')
         self.target_dir = target_dir
+        self.logger = logger
 
     @classmethod
-    def run(cls, branches, target_dir):
+    def run(cls, branches, target_dir, logger):
         server = get_rw_server()
         server.start_server()
         try:
-            cls(target_dir).upgrade_branches(branches)
+            cls(target_dir, logger).upgrade_branches(branches)
         finally:
             server.stop_server()
-
 
     def upgrade_branches(self, branches):
         skipped = 0
@@ -100,9 +77,3 @@ class Upgrader:
         branch = BzrDir.create_branch_convenience(
             upgrade_dir, force_new_tree=False)
         branch.pull(bzr_branch)
-
-
-if __name__ == "__main__":
-    script = UpgradeAllBranches(
-        "upgrade-all-branches", dbuser='upgrade-branches')
-    script.lock_and_run()
