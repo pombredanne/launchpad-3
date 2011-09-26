@@ -211,6 +211,15 @@ class TestRabbitUnreliableSession(RabbitTestCase):
         session.finish()
         # Look, no exceptions!
 
+    def raise_IOError(self):
+        raise IOError("Leg eaten by cow.")
+
+    def test_finish_suppresses_IOError(self):
+        session = RabbitUnreliableSession()
+        session.defer(self.raise_IOError)
+        session.finish()
+        # Look, no exceptions!
+
     def raise_Exception(self):
         raise Exception("That hent worked.")
 

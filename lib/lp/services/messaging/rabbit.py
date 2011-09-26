@@ -154,8 +154,9 @@ class RabbitUnreliableSession(RabbitSession):
     """
 
     ignored_errors = (
-        amqp.AMQPException,
+        IOError,
         MessagingException,
+        amqp.AMQPException,
         )
 
     def finish(self):
