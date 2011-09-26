@@ -13,6 +13,7 @@ from lazr.lifecycle.event import (
 from storm.base import Storm
 from storm.properties import Int
 from zope.event import notify
+from zope.interface import Attribute
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.longpoll.interfaces import ILongPollEvent
@@ -80,5 +81,33 @@ class TestStormLifecycle(TestCase):
                 "event_key": "longpoll.event.faketable.1234",
                 "what": "modified",
                 "edited_fields": ["itchy", "scratchy"],
+                })
+        self.assertEqual([expected], log)
+
+    def test_storm_object_modified_no_edited_fields(self):
+        # A longpoll event is not emitted unless edited_fields is populated.
+        storm_object = FakeStormClass()
+        storm_object.id = 1234
+        with capture_longpoll_emissions() as log:
+            notify(ObjectModifiedEvent(storm_object, storm_object, None))
+        self.assertEqual([], log)
+        with capture_longpoll_emissions() as log:
+            notify(ObjectModifiedEvent(storm_object, storm_object, ()))
+        self.assertEqual([], log)
+
+    def test_storm_object_modified_edited_fields_are_zope_attributes(self):
+        # The names of IAttribute fields in edited_fields are used in the
+        # longpoll event.
+        storm_object = FakeStormClass()
+        storm_object.id = 1234
+        with capture_longpoll_emissions() as log:
+            object_event = ObjectModifiedEvent(
+                storm_object, storm_object, ("foo", Attribute("bar")))
+            notify(object_event)
+        expected = LongPollEventRecord(
+            "longpoll.event.faketable.1234", {
+                "event_key": "longpoll.event.faketable.1234",
+                "what": "modified",
+                "edited_fields": ["bar", "foo"],
                 })
         self.assertEqual([expected], log)
