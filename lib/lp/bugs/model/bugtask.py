@@ -1413,21 +1413,24 @@ def get_bug_privacy_filter_with_decorator(user):
              WHERE TeamParticipation.person = %(personid)s AND
                    TeamParticipation.team = Product.owner AND
                    BugTask.product = Product.id AND
-                   BugTask.bug = Bug.id
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
              UNION
              SELECT BugTask.bug
              FROM BugTask, TeamParticipation, ProductSeries
              WHERE TeamParticipation.person = %(personid)s AND
                    TeamParticipation.team = ProductSeries.owner AND
                    BugTask.productseries = ProductSeries.id AND
-                   BugTask.bug = Bug.id
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
              UNION
              SELECT BugTask.bug
              FROM BugTask, TeamParticipation, Distribution
              WHERE TeamParticipation.person = %(personid)s AND
                    TeamParticipation.team = Distribution.owner AND
                    BugTask.distribution = Distribution.id AND
-                   BugTask.bug = Bug.id
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
              UNION
              SELECT BugTask.bug
              FROM BugTask, TeamParticipation, DistroSeries, Distribution
@@ -1435,7 +1438,8 @@ def get_bug_privacy_filter_with_decorator(user):
                    TeamParticipation.team = Distribution.owner AND
                    DistroSeries.distribution = Distribution.id AND
                    BugTask.distroseries = DistroSeries.id AND
-                   BugTask.bug = Bug.id
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
         """ % sqlvalues(personid=user.id)
     query = """
         (Bug.private = FALSE OR EXISTS (
