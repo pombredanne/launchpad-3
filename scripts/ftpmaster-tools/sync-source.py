@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # <james.troup@canonical.com>
@@ -15,8 +15,6 @@ will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
 
-import _pythonpath
-
 import commands
 import errno
 import os
@@ -27,6 +25,7 @@ import string
 import tempfile
 import urllib
 
+import _pythonpath
 from _syncorigins import origins
 import apt_pkg
 import dak_utils

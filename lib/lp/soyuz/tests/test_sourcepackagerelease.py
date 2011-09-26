@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test SourcePackageRelease."""
@@ -6,29 +6,26 @@
 __metaclass__ = type
 
 from textwrap import dedent
+
 import transaction
 from zope.component import getUtility
 
 from canonical.testing.layers import (
-    ZopelessDatabaseLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.soyuz.enums import (
-    SourcePackageFormat,
-    )
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.scripts.packagecopier import do_copy
 from lp.testing import (
-    TestCaseWithFactory,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
 from lp.translations.interfaces.translationimportqueue import (

@@ -1,12 +1,10 @@
 #!/usr/bin/python -S
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generate the database statistics report."""
 
 __metaclass__ = type
-
-import _pythonpath
 
 from datetime import datetime
 from operator import attrgetter
@@ -15,7 +13,12 @@ from textwrap import (
     fill,
     )
 
-from canonical.database.sqlbase import connect, sqlvalues
+import _pythonpath
+
+from canonical.database.sqlbase import (
+    connect,
+    sqlvalues,
+    )
 from canonical.launchpad.scripts import db_options
 from lp.scripts.helpers import LPOptionParser
 from lp.services.database.namedrow import named_fetchall

@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Monitor scripts."""
@@ -8,17 +8,24 @@
 __metaclass__ = type
 __all__ = ['check_script']
 
-import _pythonpath
-
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from email.MIMEText import MIMEText
 from optparse import OptionParser
-from time import strftime
 import smtplib
 import sys
+from time import strftime
+
+import _pythonpath
 
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import db_options, logger_options, logger
+from canonical.launchpad.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 from canonical.launchpad.scripts.scriptmonitor import check_script
 
 
