@@ -120,25 +120,25 @@ class LaunchpadFormView(LaunchpadView):
             self.actions, data, self._validate)
 
         # no action selected, so return
-        if action is None:
+        if form_action is None:
             return
 
         # Check to see if an attempt was made to submit a non-safe
         # action with a GET query.
-        is_safe = getattr(action, 'is_safe', False)
+        is_safe = getattr(form_action, 'is_safe', False)
         if not is_safe and self.request.method != 'POST':
-            raise UnsafeFormGetSubmissionError(action.__name__)
+            raise UnsafeFormGetSubmissionError(form_action.__name__)
 
         if errors:
-            self.form_result = action.failure(data, errors)
+            self.form_result = form_action.failure(data, errors)
             self._abort()
         else:
-            self.form_result = action.success(data)
+            self.form_result = form_action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
         if self.request.is_ajax:
             self._processNotifications(self.request)
-        self.action_taken = action
+        self.action_taken = form_action
 
     def _processNotifications(self, request):
         """Add any notification messages to the response headers."""
