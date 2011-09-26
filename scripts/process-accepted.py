@@ -15,11 +15,10 @@ them for publishing as appropriate.
 
 import _pythonpath
 
-from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
 
 
 if __name__ == '__main__':
     script = ProcessAccepted(
         "process-accepted", dbuser='process_accepted')
-    script.lock_and_run(isolation=ISOLATION_LEVEL_READ_COMMITTED)
+    script.lock_and_run()

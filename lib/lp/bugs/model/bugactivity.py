@@ -29,6 +29,7 @@ from lp.bugs.adapters.bugchange import (
     CVE_UNLINKED,
     MARKED_AS_DUPLICATE,
     REMOVED_DUPLICATE_MARKER,
+    REMOVED_SUBSCRIBER,
     )
 from lp.bugs.interfaces.bugactivity import (
     IBugActivity,
@@ -103,6 +104,8 @@ class BugActivity(SQLBase):
                 result = 'watches'
             elif result in (CVE_LINKED, CVE_UNLINKED):
                 result = 'cves'
+            elif str(result).startswith(REMOVED_SUBSCRIBER):
+                result = 'removed_subscriber'
             elif result == 'summary':
                 result = 'title'
             return result

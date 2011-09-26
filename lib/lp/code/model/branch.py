@@ -175,6 +175,10 @@ class Branch(SQLBase, BzrIdentityMixin):
     # of the state of any stacked on branches.
     explicitly_private = BoolCol(
         default=False, notNull=True, dbName='private')
+    # A branch is transitively private if it is private or it is stacked on a
+    # transitively private branch. The value of this attribute is maintained
+    # by a database trigger.
+    transitively_private = BoolCol(dbName='transitively_private')
 
     @property
     def private(self):

@@ -5,9 +5,10 @@
 
 __metaclass__ = type
 
-import apt_pkg
 import datetime
 from operator import attrgetter
+
+import apt_pkg
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -611,7 +612,7 @@ class TestDominatorMethods(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         dominator = self.makeDominator([spph])
         self.assertContentEqual(
-            [spph.sourcepackagerelease.sourcepackagename.name],
+            [(spph.sourcepackagerelease.sourcepackagename.name, 1)],
             dominator.findPublishedSourcePackageNames(
                 spph.distroseries, spph.pocket))
 
@@ -626,7 +627,7 @@ class TestDominatorMethods(TestCaseWithFactory):
         published_spph = spphs[PackagePublishingStatus.PUBLISHED]
         dominator = self.makeDominator(spphs.values())
         self.assertContentEqual(
-            [published_spph.sourcepackagerelease.sourcepackagename.name],
+            [(published_spph.sourcepackagerelease.sourcepackagename.name, 1)],
             dominator.findPublishedSourcePackageNames(series, pocket))
 
     def test_findPublishedSourcePackageNames_ignores_other_archives(self):
@@ -660,21 +661,33 @@ class TestDominatorMethods(TestCaseWithFactory):
             dominator.findPublishedSourcePackageNames(
                 spph.distroseries, PackagePublishingPocket.SECURITY))
 
-    def test_findPublishedSourcePackageNames_does_not_return_duplicates(self):
+    def test_findPublishedSourcePackageNames_counts_published_SPPHs(self):
         series = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
-        package = self.factory.makeSourcePackageName()
+        spr = self.factory.makeSourcePackageRelease()
         spphs = [
             self.factory.makeSourcePackagePublishingHistory(
-                distroseries=series, archive=series.main_archive,
-                pocket=pocket, status=PackagePublishingStatus.PUBLISHED,
-                sourcepackagerelease=self.factory.makeSourcePackageRelease(
-                    sourcepackagename=package))
+                distroseries=series, sourcepackagerelease=spr, pocket=pocket,
+                status=PackagePublishingStatus.PUBLISHED)
             for counter in xrange(2)]
         dominator = self.makeDominator(spphs)
-        self.assertEqual(
-            [package.name],
-            list(dominator.findPublishedSourcePackageNames(series, pocket)))
+        [(name, publications)] = dominator.findPublishedSourcePackageNames(
+            series, pocket)
+        self.assertEqual(len(spphs), publications)
+
+    def test_findPublishedSourcePackageNames_counts_no_other_state(self):
+        series = self.factory.makeDistroSeries()
+        pocket = PackagePublishingPocket.RELEASE
+        spr = self.factory.makeSourcePackageRelease()
+        spphs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=series, sourcepackagerelease=spr, pocket=pocket,
+                status=status)
+            for status in PackagePublishingStatus.items]
+        dominator = self.makeDominator(spphs)
+        [(name, publications)] = dominator.findPublishedSourcePackageNames(
+            series, pocket)
+        self.assertEqual(1, publications)
 
     def test_findPublishedSPPHs_finds_published_SPPH(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
