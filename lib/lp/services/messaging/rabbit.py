@@ -185,8 +185,6 @@ class RabbitMessageBase:
         if self._channel is None or not self._channel.is_open:
             connection = self.session.connect()
             self._channel = connection.channel()
-            #self._channel.access_request(
-            #    '/data', active=True, write=True, read=True)
             self._channel.exchange_declare(
                 self.session.exchange, "direct", durable=False,
                 auto_delete=False, nowait=False)
