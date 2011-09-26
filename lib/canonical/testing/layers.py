@@ -107,10 +107,7 @@ from canonical.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from canonical.database.sqlbase import (
-    session_store,
-    ZopelessTransactionManager,
-    )
+from canonical.database.sqlbase import session_store
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -140,6 +137,7 @@ from lp.services.mail.mailbox import (
     IMailBox,
     TestMailBox,
     )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
@@ -150,6 +148,7 @@ from lp.testing import (
     login,
     logout,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.pgsql import PgTestSetup
 
 
@@ -485,13 +484,6 @@ class BaseLayer:
             raise LayerIsolationError(
                 "Component architecture should not be loaded by tests. "
                 "This should only be loaded by the Layer.")
-
-        # Detect a test that installed the Zopeless database adapter
-        # but failed to unregister it. This could be done automatically,
-        # but it is better for the tear down to be explicit.
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerIsolationError(
-                "Zopeless environment was setup and not torn down.")
 
         # Detect a test that forgot to reset the default socket timeout.
         # This safety belt is cheap and protects us from very nasty
@@ -1460,11 +1452,6 @@ class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
     def testTearDown(cls):
         disconnect_stores()
 
-    @classmethod
-    @profiled
-    def switchDbConfig(cls, database_config_section):
-        reconnect_stores(database_config_section=database_config_section)
-
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     """Testing layer for scripts using the main Launchpad database adapter"""
@@ -1498,11 +1485,6 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def testTearDown(cls):
         disconnect_stores()
 
-    @classmethod
-    @profiled
-    def switchDbConfig(cls, database_config_section):
-        reconnect_stores(database_config_section=database_config_section)
-
 
 class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
@@ -1531,10 +1513,11 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerIsolationError(
-                "Last test using Zopeless failed to tearDown correctly")
-        ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
+        dbconfig.override(isolation_level='read_committed')
+        # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+        # Tests that still need it should eventually set this directly,
+        # so the whole layer is not polluted.
+        set_immediate_mail_delivery(True)
 
         # Connect Storm
         reconnect_stores()
@@ -1542,11 +1525,13 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        ZopelessTransactionManager.uninstall()
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerInvariantError(
-                "Failed to uninstall ZopelessTransactionManager")
+        dbconfig.reset()
         # LaunchpadScriptLayer will disconnect the stores for us.
+
+        # XXX wgrant 2011-09-24 bug=29744: uninstall used to do this.
+        # Tests that still need immediate delivery should eventually do
+        # this directly.
+        set_immediate_mail_delivery(False)
 
     @classmethod
     @profiled
@@ -1561,16 +1546,8 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def switchDbUser(cls, dbuser):
-        LaunchpadZopelessLayer._alterConnection(dbuser=dbuser)
-
-    @classmethod
-    @profiled
-    def _alterConnection(cls, **kw):
-        """Reset the connection, and reopen the connection by calling
-        initZopeless with the given keyword arguments.
-        """
-        ZopelessTransactionManager.uninstall()
-        ZopelessTransactionManager.initZopeless(**kw)
+        # DEPRECATED: use switch_dbuser directly.
+        switch_dbuser(dbuser)
 
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
