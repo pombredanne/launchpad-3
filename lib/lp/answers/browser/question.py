@@ -97,6 +97,7 @@ from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
     )
+from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -725,6 +726,15 @@ class QuestionChangeStatusView(LaunchpadFormView):
     cancel_url = next_url
 
 
+class QuestionTargetWidget(LaunchpadTargetWidget):
+    """A targeting widget that is aware of pillars that use Answers."""
+
+    def getDistributionVocabulary(self):
+        distro = self.context.context.distribution
+        vocabulary = UsesAnswersDistributionVocabulary(distro)
+        return vocabulary
+
+
 class QuestionEditView(LaunchpadEditFormView):
     """View for editing a Question."""
     schema = IQuestion
@@ -735,7 +745,7 @@ class QuestionEditView(LaunchpadEditFormView):
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
-    custom_widget('target', LaunchpadTargetWidget)
+    custom_widget('target', QuestionTargetWidget)
 
     @property
     def page_title(self):
@@ -762,7 +772,15 @@ class QuestionEditView(LaunchpadEditFormView):
     @action(_("Save Changes"), name="change")
     def change_action(self, action, data):
         """Update the Question from the request form data."""
+        # Target must be the last field processed because it implicitly
+        # changes the user's permissions.
+        target_data = {'target': self.context.target}
+        if 'target' in data:
+            target_data['target'] = data['target']
+            del data['target']
         self.updateContextFromData(data)
+        if target_data['target'] != self.context.target:
+            self.updateContextFromData(target_data)
 
     @property
     def next_url(self):
