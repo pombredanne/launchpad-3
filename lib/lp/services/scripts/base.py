@@ -51,6 +51,7 @@ from lp.services.features import (
     install_feature_controller,
     make_script_feature_controller,
     )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
@@ -321,6 +322,10 @@ class LaunchpadScript:
             isolation = ISOLATION_LEVEL_DEFAULT
         self._init_zca(use_web_security=use_web_security)
         self._init_db(isolation=isolation)
+
+        # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+        # Should be called directly by scripts that actually need it.
+        set_immediate_mail_delivery(True)
 
         date_started = datetime.datetime.now(UTC)
         profiler = None
