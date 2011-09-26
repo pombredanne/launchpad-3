@@ -17,9 +17,11 @@ from zope.traversing.interfaces import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.app.browser.tales import (
     format_link,
+    ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -302,3 +304,25 @@ class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
             '<span class="discreet"> on </span>\n'
             '<strong>&lt;b&gt;irc.canonical.com&lt;/b&gt;</strong>\n',
             expected_html)
+
+
+class ObjectImageDisplayAPITestCase(TestCaseWithFactory):
+    """Tests for ObjectImageDisplayAPI"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_custom_icon_url_context_is_None(self):
+        display_api = ObjectImageDisplayAPI(None)
+        self.assertEqual('', display_api.custom_icon_url())
+
+    def test_custom_icon_url_context_is_has_no_icon(self):
+        product = self.factory.makeProduct()
+        display_api = ObjectImageDisplayAPI(product)
+        self.assertEqual(None, display_api.custom_icon_url())
+
+    def test_custom_icon_url_context_has_icon(self):
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        product = self.factory.makeProduct(icon=icon)
+        display_api = ObjectImageDisplayAPI(product)
+        self.assertEqual(icon.getURL(), display_api.custom_icon_url())
