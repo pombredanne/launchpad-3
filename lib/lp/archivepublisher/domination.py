@@ -224,6 +224,10 @@ class Dominator:
         publications = sorted(
             publications, cmp=generalization.compare, reverse=True)
 
+        self.logger.debug(
+            "Package has %d live publication(s).  Live versions: %s",
+            len(publications), live_versions)
+
         current_dominant = None
         dominant_version = None
 
@@ -238,21 +242,26 @@ class Dominator:
                 # superseded by a newer publication of the same version.
                 # Supersede it.
                 pub.supersede(current_dominant, logger=self.logger)
+                self.logger.debug2(
+                    "Superseding older publication for version %s.", version)
             elif version in live_versions:
                 # This publication stays active; if any publications
                 # that follow right after this are to be superseded,
                 # this is the release that they are superseded by.
                 current_dominant = pub
                 dominant_version = version
+                self.logger.debug2("Keeping version %s.", version)
             elif current_dominant is None:
                 # This publication is no longer live, but there is no
                 # newer version to supersede it either.  Therefore it
                 # must be deleted.
                 pub.requestDeletion(None)
+                self.logger.debug2("Deleting version %s.", version)
             else:
                 # This publication is superseded.  This is what we're
                 # here to do.
                 pub.supersede(current_dominant, logger=self.logger)
+                self.logger.debug2("Superseding version %s.", version)
 
     def _dominatePublications(self, pubs, generalization):
         """Perform dominations for the given publications.
@@ -512,13 +521,24 @@ class Dominator:
         flush_database_updates()
 
     def findPublishedSourcePackageNames(self, distroseries, pocket):
-        """Find names of currently published source packages."""
-        result = IStore(SourcePackageName).find(
+        """Find currently published source packages.
+
+        Returns an iterable of tuples: (name of source package, number of
+        publications in Published state).
+        """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
+        looking_for = (
             SourcePackageName.name,
+            Count(SourcePackagePublishingHistory.id),
+            )
+        result = IStore(SourcePackageName).find(
+            looking_for,
             join_spph_spr(),
             join_spr_spn(),
             self._composeActiveSourcePubsCondition(distroseries, pocket))
-        return result.config(distinct=True)
+        return result.group_by(SourcePackageName.name)
 
     def findPublishedSPPHs(self, distroseries, pocket, package_name):
         """Find currently published source publications for given package."""

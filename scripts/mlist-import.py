@@ -71,7 +71,7 @@ class MailingListImport(LaunchpadScript):
         # switch.  Notifications are disabled by default because they can
         # cause huge amounts to be sent to the team owner.
         send_email_config = """
-            [zopeless]
+            [immediate_mail]
             send_email: %s
             """ % self.options.notifications
         config.push('send_email_config', send_email_config)

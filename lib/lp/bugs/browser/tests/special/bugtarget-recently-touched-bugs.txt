@@ -69,8 +69,8 @@ Only bugs that the user is allowed to see will be present in the list.
     >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:3]:
     ...     print bugtask.bug.title
     Bug B
-    Bug C
     Bug A
+    Bug C
 
 == Duplicate bugs ==
 
@@ -81,8 +81,8 @@ well.
 
     >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:2]:
     ...     print bugtask.bug.title
-    Bug C
     Bug A
+    Bug C
 
 == Limit ==
 
