@@ -168,6 +168,7 @@
                         again in a few minutes</p>
                     </div>
                 </div>
+                <!--
                 <div id="header-shadow"></div>
                 <div id="status-feed">
                     <h2>Recent status updates</h2>
@@ -205,6 +206,7 @@
                     }).render().setUser('launchpadstatus').start();
                     </script>
                 </div>
+-->
                 <div id="status-subscribe">
                     <h2>Subscribe to updates</h2>
                     <a href="http://identi.ca/launchpadstatus">

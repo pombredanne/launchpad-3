@@ -751,29 +751,6 @@ class LaunchpadBrowserPublication(
                 if is_browser(request) and status_group == '5XXs':
                     OpStats.stats['5XXs_b'] += 1
 
-        # Make sure our databases are in a sane state for the next request.
-        thread_name = threading.currentThread().getName()
-        for name, store in getUtility(IZStorm).iterstores():
-            try:
-                assert store._connection._state != STATE_DISCONNECTED, (
-                    "Bug #504291: Store left in a disconnected state.")
-            except AssertionError:
-                # The Store is in a disconnected state. This should
-                # not happen, as store.rollback() should have been called
-                # by now. Log an OOPS so we know about this. This
-                # is Bug #504291 happening.
-                getUtility(IErrorReportingUtility).raising(
-                    sys.exc_info(), request)
-                # Repair things so the server can remain operational.
-                store.rollback()
-            # Reset all Storm stores when not running the test suite.
-            # We could reset them when running the test suite but
-            # that'd make writing tests a much more painful task. We
-            # still reset the slave stores though to minimize stale
-            # cache issues.
-            if thread_name != 'MainThread' or name.endswith('-slave'):
-                store.reset()
-
 
 class InvalidThreadsConfiguration(Exception):
     """Exception thrown when the number of threads isn't set correctly."""
