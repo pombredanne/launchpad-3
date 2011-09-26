@@ -72,3 +72,14 @@ class TestStormLifecycle(TestCase):
                  "event_data": {"edited_fields": ["itchy", "scratchy"]}}),
             ]
         self.assertEqual(expected, log)
+
+    def test_storm_object_no_edited_fields(self):
+        # A longpoll event is not emitted unless edited_fields is populated.
+        storm_object = FakeStormClass()
+        storm_object.id = 1234
+        with capture_longpoll_emissions() as log:
+            notify(ObjectModifiedEvent(storm_object, storm_object, None))
+        self.assertEqual([], log)
+        with capture_longpoll_emissions() as log:
+            notify(ObjectModifiedEvent(storm_object, storm_object, ()))
+        self.assertEqual([], log)

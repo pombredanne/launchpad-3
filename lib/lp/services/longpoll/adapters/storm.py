@@ -66,5 +66,7 @@ def object_deleted(model_instance, object_event):
 @adapter(Storm, IObjectModifiedEvent)
 def object_modified(model_instance, object_event):
     """Subscription handler for `Storm` modification events."""
-    event = LongPollStormEvent(model_instance, "modified")
-    event.emit({"edited_fields": sorted(object_event.edited_fields)})
+    edited_fields = object_event.edited_fields
+    if edited_fields is not None and len(edited_fields) != 0:
+        event = LongPollStormEvent(model_instance, "modified")
+        event.emit({"edited_fields": sorted(edited_fields)})
