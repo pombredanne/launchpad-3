@@ -91,7 +91,6 @@ class BranchMergeProposalDelta:
         'commit_message',
         'whiteboard',
         'description',
-        'preview_diff',
         )
     interface = IBranchMergeProposal
 
