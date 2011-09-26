@@ -819,7 +819,7 @@ class TestActualImportMixin:
         raise NotImplementedError(
             "Override this with a VCS-specific implementation.")
 
-    def makeSourceDetails(self, module_name, files):
+    def makeSourceDetails(self, module_name, files, stacked_on_url=None):
         """Make a `CodeImportSourceDetails` that points to a real repository.
 
         This should set `self.foreign_commit_count` to an appropriate value.
@@ -966,7 +966,7 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         self.foreign_commit_count += 1
         shutil.rmtree('working_dir')
 
-    def makeSourceDetails(self, module_name, files):
+    def makeSourceDetails(self, module_name, files, stacked_on_url=None):
         """Make a CVS `CodeImportSourceDetails` pointing at a real CVS repo.
         """
         cvs_server = CVSServer(self.makeTemporaryDirectory())
@@ -978,7 +978,8 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         self.foreign_commit_count = 2
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='cvs', cvs_root=cvs_server.getRoot(), cvs_module='trunk')
+            rcstype='cvs', cvs_root=cvs_server.getRoot(), cvs_module='trunk',
+            stacked_on_url=stacked_on_url)
 
 
 class SubversionImportHelpers:
@@ -1003,7 +1004,7 @@ class SubversionImportHelpers:
         self.foreign_commit_count += 1
         shutil.rmtree('working_tree')
 
-    def makeSourceDetails(self, branch_name, files):
+    def makeSourceDetails(self, branch_name, files, stacked_on_url=None):
         """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
         """
         svn_server = SubversionServer(self.makeTemporaryDirectory())
@@ -1014,7 +1015,8 @@ class SubversionImportHelpers:
         svn_branch_url = svn_branch_url.replace('://localhost/', ':///')
         self.foreign_commit_count = 2
         return self.factory.makeCodeImportSourceDetails(
-            rcstype=self.rcstype, url=svn_branch_url)
+            rcstype=self.rcstype, url=svn_branch_url,
+            stacked_on_url=stacked_on_url)
 
 
 class TestSubversionImport(WorkerTest, SubversionImportHelpers,
@@ -1104,6 +1106,22 @@ class PullingImportWorkerTests:
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
 
+    def test_stacked(self):
+        stacked_on = self.make_branch('stacked-on')
+        source_details = self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')],
+            stacked_on_url=stacked_on.base)
+        worker = self.makeImportWorker(
+            source_details,
+            opener_policy=AcceptAnythingPolicy())
+        self.makeForeignCommit(source_details)
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+        branch = self.getStoredBazaarBranch(worker)
+        # There should only be one revision there, the other
+        # one is in the stacked-on repository.
+        self.assertEquals(stacked_on.base, branch.get_stacked_on_url())
+
 
 class TestGitImport(WorkerTest, TestActualImportMixin,
                     PullingImportWorkerTests):
@@ -1143,7 +1161,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
             committer="Joe Random Hacker <joe@example.com>", ref=ref)
         self.foreign_commit_count += 1
 
-    def makeSourceDetails(self, branch_name, files):
+    def makeSourceDetails(self, branch_name, files, stacked_on_url=None):
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
         """
         repository_path = self.makeTemporaryDirectory()
@@ -1155,7 +1173,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', url=git_server.get_url())
+            rcstype='git', url=git_server.get_url(),
+            stacked_on_url=stacked_on_url)
 
     def test_non_master(self):
         # non-master branches can be specified in the import URL.
@@ -1224,7 +1243,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
             text=message, user="Jane Random Hacker", force=1, extra=extra)
         self.foreign_commit_count += 1
 
-    def makeSourceDetails(self, branch_name, files):
+    def makeSourceDetails(self, branch_name, files, stacked_on_url=None):
         """Make a Mercurial `CodeImportSourceDetails` pointing at a real repo.
         """
         repository_path = self.makeTemporaryDirectory()
@@ -1236,7 +1255,8 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='hg', url=hg_server.get_url())
+            rcstype='hg', url=hg_server.get_url(),
+            stacked_on_url=stacked_on_url)
 
     def test_non_default(self):
         # non-default branches can be specified in the import URL.
@@ -1303,7 +1323,7 @@ class TestBzrImport(WorkerTest, TestActualImportMixin,
             committer="Joe Random Hacker <joe@example.com>")
         self.foreign_commit_count += 1
 
-    def makeSourceDetails(self, branch_name, files):
+    def makeSourceDetails(self, branch_name, files, stacked_on_url=None):
         """Make Bzr `CodeImportSourceDetails` pointing at a real Bzr repo.
         """
         repository_path = self.makeTemporaryDirectory()
@@ -1315,7 +1335,8 @@ class TestBzrImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='bzr', url=bzr_server.get_url())
+            rcstype='bzr', url=bzr_server.get_url(),
+            stacked_on_url=stacked_on_url)
 
     def test_partial(self):
         self.skip(
