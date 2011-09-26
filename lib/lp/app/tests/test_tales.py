@@ -315,12 +315,12 @@ class ObjectImageDisplayAPITestCase(TestCaseWithFactory):
         display_api = ObjectImageDisplayAPI(None)
         self.assertEqual('', display_api.custom_icon_url())
 
-    def test_custom_icon_url_context_is_has_no_icon(self):
+    def test_custom_icon_url_context_has_no_icon(self):
         product = self.factory.makeProduct()
         display_api = ObjectImageDisplayAPI(product)
         self.assertEqual(None, display_api.custom_icon_url())
 
-    def test_custom_icon_url_context_has_icon(self):
+    def test_custom_icon_url_context_has_an_icon(self):
         icon = self.factory.makeLibraryFileAlias(
             filename='smurf.png', content_type='image/png')
         product = self.factory.makeProduct(icon=icon)
