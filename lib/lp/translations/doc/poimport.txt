@@ -133,22 +133,10 @@ The last update date is the one we got.
     >>> potemplate.date_last_updated > saved_date
     True
 
-A successful import is confirmed by email.
+We don't send mail about successful imports.
 
     >>> print subject
-    Translation template import - ...
-
-    >>> print body
-    Hello Mark Shuttleworth,
-    <BLANKLINE>
-    On ..., you uploaded a translation
-    template for ... in Launchpad.
-    <BLANKLINE>
-    The template has now been imported successfully.
-    <BLANKLINE>
-    Thank you,
-    <BLANKLINE>
-    The Launchpad team
+    None
 
 Since there was no error, the queue entry's error_output is blank.
 
