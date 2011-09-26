@@ -9,6 +9,7 @@ import datetime
 from operator import attrgetter
 
 import apt_pkg
+from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -25,7 +26,11 @@ from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestDominator(TestNativePublishingBase):
@@ -492,6 +497,16 @@ class TestDominatorMethods(TestCaseWithFactory):
             [pub.status for pub in pubs])
         self.assertEqual(
             [spr, spr, None], [pub.supersededby for pub in pubs])
+
+    def test_dominatePackage_is_efficient(self):
+        # dominatePackage avoids issuing too many queries.
+        versions = ["1.%s" % revision for revision in xrange(5)]
+        pubs = make_spphs_for_versions(self.factory, versions)
+        with StormStatementRecorder() as recorder:
+            self.makeDominator(pubs).dominatePackage(
+                pubs, versions[2:-1],
+                GeneralizedPublication(True))
+        self.assertThat(recorder, HasQueryCount(LessThan(5)))
 
     def test_dominatePackage_advanced_scenario(self):
         # Put dominatePackage through its paces with complex combined
