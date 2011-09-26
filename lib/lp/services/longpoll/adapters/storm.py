@@ -16,6 +16,7 @@ from lazr.lifecycle.interfaces import (
 from storm.base import Storm
 from storm.info import get_obj_info
 from zope.component import adapter
+from zope.interface.interfaces import IAttribute
 
 from lp.services.longpoll.adapters.event import (
     generate_event_key,
@@ -65,6 +66,10 @@ def object_deleted(model_instance, object_event):
 @adapter(Storm, IObjectModifiedEvent)
 def object_modified(model_instance, object_event):
     """Subscription handler for `Storm` modification events."""
-    edited_fields = sorted(object_event.edited_fields)
-    event = ILongPollEvent(model_instance)
-    event.emit(what="modified", edited_fields=edited_fields)
+    edited_fields = object_event.edited_fields
+    if edited_fields is not None and len(edited_fields) != 0:
+        edited_field_names = sorted(
+            (field.__name__ if IAttribute.providedBy(field) else field)
+            for field in edited_fields)
+        event = ILongPollEvent(model_instance)
+        event.emit(what="modified", edited_fields=edited_field_names)
