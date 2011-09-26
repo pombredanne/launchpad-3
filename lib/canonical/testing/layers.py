@@ -1452,11 +1452,6 @@ class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
     def testTearDown(cls):
         disconnect_stores()
 
-    @classmethod
-    @profiled
-    def switchDbConfig(cls, database_config_section):
-        reconnect_stores(database_config_section=database_config_section)
-
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     """Testing layer for scripts using the main Launchpad database adapter"""
@@ -1489,11 +1484,6 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     @profiled
     def testTearDown(cls):
         disconnect_stores()
-
-    @classmethod
-    @profiled
-    def switchDbConfig(cls, database_config_section):
-        reconnect_stores(database_config_section=database_config_section)
 
 
 class LaunchpadTestSetup(PgTestSetup):
