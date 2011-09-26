@@ -61,6 +61,7 @@ class Upgrader:
             raise
         else:
             os.rename(upgrade_dir, temp_location)
+            return temp_location
 
     def upgrade_to_dir(self, bzr_branch, upgrade_dir):
         t = get_transport_from_path(upgrade_dir)
