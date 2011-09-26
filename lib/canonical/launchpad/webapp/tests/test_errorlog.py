@@ -92,13 +92,9 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
         self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
-        self.assertEqual(len(entry.db_statements), 2)
-        self.assertEqual(
-            entry.db_statements[0],
-            (1, 5, 'store_a', 'SELECT 1'))
-        self.assertEqual(
-            entry.db_statements[1],
-            (5, 10, 'store_b', 'SELECT 2'))
+        self.assertEqual(len(entry.timeline), 2)
+        self.assertEqual(entry.timeline[0], (1, 5, 'store_a', 'SELECT 1'))
+        self.assertEqual(entry.timeline[1], (5, 10, 'store_b', 'SELECT 2'))
 
     def test_read(self):
         """Test ErrorReport.read()."""
@@ -138,13 +134,9 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
                                              'http://localhost:9000/'))
         self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
-        self.assertEqual(len(entry.db_statements), 2)
-        self.assertEqual(
-            entry.db_statements[0],
-            (1, 5, 'store_a', 'SELECT 1'))
-        self.assertEqual(
-            entry.db_statements[1],
-            (5, 10, 'store_b', 'SELECT 2'))
+        self.assertEqual(len(entry.timeline), 2)
+        self.assertEqual(entry.timeline[0], (1, 5, 'store_a', 'SELECT 1'))
+        self.assertEqual(entry.timeline[1], (5, 10, 'store_b', 'SELECT 2'))
 
 
 class TestErrorReportingUtility(testtools.TestCase):

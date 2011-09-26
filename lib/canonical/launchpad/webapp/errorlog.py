@@ -112,7 +112,7 @@ class ErrorReport:
         self.duration = duration
         # informational is ignored - will be going from the oops module soon too.
         self.req_vars = req_vars
-        self.db_statements = timeline
+        self.timeline = timeline
         self.branch_nick = branch_nick or versioninfo.branch_nick
         self.revno = revno or versioninfo.revno
 
