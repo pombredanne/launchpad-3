@@ -1420,7 +1420,45 @@ def get_bug_privacy_filter_with_decorator(user):
     # part of the WHERE condition (i.e. the bit below.) The
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
-    return ("""
+    pillar_privacy_filters = ''
+    if features.getFeatureFlag(
+        'disclosure.private_bug_visibility_rules.enabled'):
+        pillar_privacy_filters = """
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, Product
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = Product.owner AND
+                   BugTask.product = Product.id AND
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, ProductSeries
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = ProductSeries.owner AND
+                   BugTask.productseries = ProductSeries.id AND
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, Distribution
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = Distribution.owner AND
+                   BugTask.distribution = Distribution.id AND
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, DistroSeries, Distribution
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = Distribution.owner AND
+                   DistroSeries.distribution = Distribution.id AND
+                   BugTask.distroseries = DistroSeries.id AND
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
+        """ % sqlvalues(personid=user.id)
+    query = """
         (Bug.private = FALSE OR EXISTS (
              SELECT BugSubscription.bug
              FROM BugSubscription, TeamParticipation
@@ -1433,9 +1471,12 @@ def get_bug_privacy_filter_with_decorator(user):
              WHERE TeamParticipation.person = %(personid)s AND
                    TeamParticipation.team = BugTask.assignee AND
                    BugTask.bug = Bug.id
+             %(extra_filters)s
                    ))
-                     """ % sqlvalues(personid=user.id),
-        _make_cache_user_can_view_bug(user))
+        """ % dict(
+                personid=quote(user.id),
+                extra_filters=pillar_privacy_filters)
+    return query, _make_cache_user_can_view_bug(user)
 
 
 def build_tag_set_query(joiner, tags):
