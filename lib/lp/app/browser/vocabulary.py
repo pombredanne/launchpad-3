@@ -129,9 +129,12 @@ class DefaultPickerEntrySourceAdapter(object):
             if hasattr(term_value, 'summary'):
                 extra.description = term_value.summary
             display_api = ObjectImageDisplayAPI(term_value)
-            extra.css = display_api.sprite_css()
-            if extra.css is None:
-                extra.css = 'sprite bullet'
+            image_url = display_api.custom_icon_url() or None
+            css = display_api.sprite_css() or 'sprite bullet'
+            if image_url is not None:
+                extra.image = image_url
+            else:
+                extra.css = css
             entries.append(extra)
         return entries
 
