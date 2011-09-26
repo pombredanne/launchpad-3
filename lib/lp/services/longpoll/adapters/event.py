@@ -9,7 +9,14 @@ __all__ = [
     "LongPollEvent",
     ]
 
-from lp.services.messaging.queue import RabbitRoutingKey
+from zope.component import getUtility
+
+from lp.services.messaging.interfaces import IMessageSession
+
+
+def router_factory(event_key):
+    """Get a router for the given `event_key`."""
+    return getUtility(IMessageSession).getProducer(event_key)
 
 
 def generate_event_key(*components):
@@ -43,5 +50,5 @@ class LongPollEvent:
     def emit(self, data):
         """See `ILongPollEvent`."""
         payload = {"event_key": self.event_key, "event_data": data}
-        routing_key = RabbitRoutingKey(self.event_key)
-        routing_key.send(payload)
+        router = router_factory(self.event_key)
+        router.send(payload)

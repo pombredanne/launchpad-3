@@ -50,6 +50,17 @@ no expirable bugtasks in the sampledata.
     >>> expirable_bugtasks.count()
     0
 
+We need a function to reset the last_modified date of a bug because
+setPrivate() now publishes an object modified event which will cause the
+date_last_modified to be set to 'now'. We require some bugs used in this test
+to be last modified in the past.
+
+    >>> def reset_bug_modified_date(bug, days_ago):
+    ...     from datetime import datetime, timedelta
+    ...     import pytz
+    ...     UTC = pytz.timezone('UTC')
+    ...     date_modified = datetime.now(UTC) - timedelta(days=days_ago)
+    ...     bug.date_last_updated = date_modified
 
 == Setup ==
 
@@ -384,6 +395,7 @@ it as being marked for expiration.
     u'expirable_distro'
     >>> private_bug.setPrivate(True, sample_person)
     True
+    >>> reset_bug_modified_date(private_bug, 351)
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=None, target=ubuntu)
@@ -405,6 +417,7 @@ No Privileges Person can't see the bug either...
 
     >>> private_bug.subscribe(no_priv, sample_person)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
+    >>> reset_bug_modified_date(private_bug, 351)
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=no_priv, target=ubuntu)
     >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
@@ -428,7 +441,7 @@ even the private bugs are returned.
 
     >>> private_bug.setPrivate(False, sample_person)
     True
-
+    >>> reset_bug_modified_date(private_bug, 351)
 
 == The default expiration age ==
 

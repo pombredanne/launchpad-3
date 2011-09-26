@@ -12,15 +12,15 @@ __all__ = [
 from uuid import uuid4
 
 from lazr.restful.interfaces import IJSONRequestCache
-from zope.component import adapts
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
-from lp.app.longpoll.interfaces import ILongPollSubscriber
-from lp.services.messaging.queue import (
-    RabbitQueue,
-    RabbitRoutingKey,
-    )
+from lp.services.longpoll.interfaces import ILongPollSubscriber
+from lp.services.messaging.interfaces import IMessageSession
 
 
 def generate_subscribe_key():
@@ -50,7 +50,8 @@ class LongPollSubscriber:
                 "key": generate_subscribe_key(),
                 "subscriptions": [],
                 }
-        subscribe_queue = RabbitQueue(self.subscribe_key)
-        routing_key = RabbitRoutingKey(event.event_key)
-        routing_key.associateConsumer(subscribe_queue)
+        session = getUtility(IMessageSession)
+        subscribe_queue = session.getConsumer(self.subscribe_key)
+        producer = session.getProducer(event.event_key)
+        producer.associateConsumer(subscribe_queue)
         cache.objects["longpoll"]["subscriptions"].append(event.event_key)

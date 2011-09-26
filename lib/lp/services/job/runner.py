@@ -55,9 +55,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
-from canonical.lp import initZopeless
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
@@ -369,7 +369,7 @@ class JobRunnerProcess(child.AMPChild):
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
-        initZopeless(dbuser=cls.dbuser)
+        ZopelessTransactionManager.initZopeless(dbuser=cls.dbuser)
 
     @staticmethod
     def __exit__(exc_type, exc_val, exc_tb):

@@ -729,6 +729,7 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getActivityForDateRange
                     getBugTask
                     getDirectSubscribers
                     getDirectSubscribersWithDetails
@@ -1188,4 +1189,11 @@
   <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
+  <securedutility
+    name="UsesBugsDistribution"
+    component="lp.bugs.vocabulary.UsesBugsDistributionVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 </configure>

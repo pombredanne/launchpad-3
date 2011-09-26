@@ -210,3 +210,9 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         Distro sourcepackages compare not equal if either of their
         distribution or sourcepackagename compare not equal.
         """
+
+    def delete():
+        """Delete the persistent DSP if it exists.
+
+        :return: True if a persistent object was removed, otherwise False.
+        """

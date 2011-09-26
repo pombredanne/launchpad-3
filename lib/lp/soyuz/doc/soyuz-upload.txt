@@ -632,8 +632,7 @@ Defining path to the script:
     >>> process.returncode
     0
     >>> print stderr
-    DEBUG   Acquiring lock
-    DEBUG   Initializing connection.
+    INFO    Creating lockfile: ...
     DEBUG   Considering Sources:
     DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/restricted/source/Sources.gz
     DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/main/source/Sources.gz
@@ -642,6 +641,7 @@ Defining path to the script:
     DEBUG   Building not build from source list (NBS):
     DEBUG   Building all superseded by any list (ASBA):
     DEBUG   No NBS found
+    DEBUG   Removing lock file: ...
     <BLANKLINE>
 
 
