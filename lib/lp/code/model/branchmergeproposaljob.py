@@ -70,7 +70,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from lp.code.adapters.branch import BranchMergeProposalWithPreviewDiffDelta
+from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
@@ -377,7 +377,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         self.checkReady()
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
-        with BranchMergeProposalWithPreviewDiffDelta.monitor(
+        with BranchMergeProposalDelta.monitor(
             self.branch_merge_proposal):
             self.branch_merge_proposal.preview_diff = preview
 

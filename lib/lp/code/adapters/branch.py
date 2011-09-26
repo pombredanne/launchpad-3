@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     "BranchDelta",
     "BranchMergeProposalDelta",
-    "BranchMergeProposalWithPreviewDiffDelta",
+    "BranchMergeProposalNoPreviewDiffDelta",
     ]
 
 from contextlib import contextmanager
@@ -91,6 +91,7 @@ class BranchMergeProposalDelta:
         'commit_message',
         'whiteboard',
         'description',
+        'preview_diff',
         )
     interface = IBranchMergeProposal
 
@@ -140,10 +141,12 @@ class BranchMergeProposalDelta:
             notify(merge_proposal_event)
 
 
-class BranchMergeProposalWithPreviewDiffDelta(BranchMergeProposalDelta):
+class BranchMergeProposalNoPreviewDiffDelta(BranchMergeProposalDelta):
     """Represent changes made to a BranchMergeProposal.
 
-    Also includes changes to the preview diff.
+    *Excludes* changes to the preview diff.
     """
 
-    new_values = BranchMergeProposalDelta.new_values + ('preview_diff',)
+    new_values = tuple(
+        name for name in BranchMergeProposalDelta.new_values
+        if name != "preview_diff")

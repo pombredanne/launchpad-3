@@ -22,7 +22,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
@@ -210,6 +210,8 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.checkExampleMerge(bmp.preview_diff.text)
 
     def test_run_object_events(self):
+        # While the job runs a single IObjectModifiedEvent is issued when the
+        # preview diff has been calculated.
         self.useBzrBranches(direct_database=True)
         bmp = create_example_merge(self)[0]
         job = UpdatePreviewDiffJob.create(bmp)
@@ -219,8 +221,6 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
         with EventRecorder() as event_recorder:
             JobRunner([job]).runAll()
-        # A single IObjectModifiedEvent is issued when the preview diff has
-        # been calculated.
         bmp_object_events = [
             event for event in event_recorder.events
             if (IObjectModifiedEvent.providedBy(event) and
@@ -476,7 +476,8 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         bmp = self.makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         self.completePendingJobs()
-        old_merge_proposal = BranchMergeProposalDelta.snapshot(bmp)
+        old_merge_proposal = (
+            BranchMergeProposalNoPreviewDiffDelta.snapshot(bmp))
         bmp.commit_message = 'new commit message'
         event = ObjectModifiedEvent(
             bmp, old_merge_proposal, [], bmp.registrant)
