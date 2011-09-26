@@ -28,8 +28,8 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.errors import NoSuchFile
 from bzrlib.tests import (
-    TestCaseWithTransport,
     http_utils,
+    TestCaseWithTransport,
     )
 from bzrlib.transport import (
     get_transport,
@@ -1154,10 +1154,10 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.makeForeignCommit(source_details, ref="refs/heads/master",
             message="Message for master")
         source_details.url = urlutils.join_segment_parameters(
-                source_details.url, { "branch": "other" })
+                source_details.url, {"branch": "other"})
         source_transport = get_transport_from_url(source_details.url)
         self.assertEquals(
-            { "branch": "other" },
+            {"branch": "other"},
             source_transport.get_segment_parameters())
         worker = self.makeImportWorker(source_details,
             opener_policy=AcceptAnythingPolicy())
@@ -1205,11 +1205,11 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         repo = localrepository(ui(), local_path_from_url(source_details.url))
         extra = {}
         if branch is not None:
-            extra = { "branch": branch }
+            extra = {"branch": branch}
         if message is None:
             message = self.factory.getUniqueString()
-        repo.commit(text=message, user="Jane Random Hacker", force=1,
-            extra=extra)
+        repo.commit(
+            text=message, user="Jane Random Hacker", force=1, extra=extra)
         self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
@@ -1235,10 +1235,10 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         self.makeForeignCommit(source_details, branch="default",
             message="Message for default")
         source_details.url = urlutils.join_segment_parameters(
-                source_details.url, { "branch": "other" })
+                source_details.url, {"branch": "other"})
         source_transport = get_transport_from_url(source_details.url)
         self.assertEquals(
-            { "branch": "other" },
+            {"branch": "other"},
             source_transport.get_segment_parameters())
         worker = self.makeImportWorker(source_details,
             opener_policy=AcceptAnythingPolicy())

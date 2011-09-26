@@ -27,10 +27,7 @@ import xmlrpclib
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    commit,
-    ZopelessTransactionManager,
-    )
+from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import (
     login,
     logout,
@@ -82,8 +79,6 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     closed. After returning from this function, a new connection using
     the checkwatches db user is created.
     """
-    assert ZopelessTransactionManager._installed is not None, (
-        "This function can only be used for Zopeless tests.")
     LaunchpadZopelessLayer.switchDbUser('launchpad')
     owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     bugtracker_set = getUtility(IBugTrackerSet)

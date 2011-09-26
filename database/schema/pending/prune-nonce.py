@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Prune old nonces."""
@@ -8,13 +8,20 @@
 __metaclass__ = type
 __all__ = []
 
-import _pythonpath
-
 from optparse import OptionParser
 
-from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
+import _pythonpath
+
+from canonical.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
 from canonical.launchpad.scripts import db_options
-from canonical.launchpad.scripts.logger import log, logger_options
+from canonical.launchpad.scripts.logger import (
+    log,
+    logger_options,
+    )
+
 
 def update_until_done(con, table, query, vacuum_every=100):
     log.info("Running %s" % query)

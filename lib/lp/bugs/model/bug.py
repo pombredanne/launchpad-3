@@ -159,6 +159,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
+from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -823,6 +824,7 @@ BugMessage""" % sqlvalues(self.id))
             person = unsubscribed_by
 
         ignore_permissions = kwargs.get('ignore_permissions', False)
+        recipients = kwargs.get('recipients')
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 if (not ignore_permissions
@@ -833,8 +835,9 @@ BugMessage""" % sqlvalues(self.id))
                             person.displayname))
 
                 self.addChange(UnsubscribedFromBug(
-                    when=UTC_NOW, person=unsubscribed_by,
-                    unsubscribed_user=person))
+                        when=UTC_NOW, person=unsubscribed_by,
+                        unsubscribed_user=person, **kwargs),
+                    recipients=recipients)
                 store = Store.of(sub)
                 store.remove(sub)
                 # Make sure that the subscription removal has been
@@ -1658,6 +1661,7 @@ BugMessage""" % sqlvalues(self.id))
         """ See `IBug`."""
         private_changed = False
         security_related_changed = False
+        bug_before_modification = Snapshot(self, providing=providedBy(self))
 
         # Before we update the privacy or security_related status, we need to
         # reconcile the subscribers to avoid leaking private information.
@@ -1689,6 +1693,15 @@ BugMessage""" % sqlvalues(self.id))
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
+
+        if private_changed or security_related_changed:
+            changed_fields = []
+            if private_changed:
+                changed_fields.append('private')
+            if security_related_changed:
+                changed_fields.append('security_related')
+            notify(ObjectModifiedEvent(
+                    self, bug_before_modification, changed_fields, user=who))
 
         return private_changed, security_related_changed
 
@@ -1750,22 +1763,16 @@ BugMessage""" % sqlvalues(self.id))
                 auto removed subscribers = (bugtask bug supervisors)
 
         """
-        result = set()
-
-        # There has been some discussion as to whether we really want to
-        # automatically unsubscribe the security contact if a bug is marked
-        # as no longer security related or the bug supervisor if a bug is no
-        # longer private.
-        # We want this behaviour for Launchpad but perhaps not Ubuntu.
-        # Until this can be clarified, we will not automatically unsubscribe
-        # anyone.
-
-#        for bugtask in self.bugtasks:
-#            if not for_security_related and bugtask.pillar.security_contact:
-#                result.add(bugtask.pillar.security_contact)
-#            if not for_private and bugtask.pillar.bug_supervisor:
-#                result.add(bugtask.pillar.bug_supervisor)
-        return result
+        bug_supervisors = []
+        security_contacts = []
+        for pillar in self.affected_pillars:
+            if (self.security_related and not for_security_related
+                and pillar.security_contact):
+                    security_contacts.append(pillar.security_contact)
+            if (self.private and not for_private
+                and pillar.bug_supervisor):
+                    bug_supervisors.append(pillar.bug_supervisor)
+        return bug_supervisors, security_contacts
 
     def reconcileSubscribers(self, for_private, for_security_related, who):
         """ Ensure only appropriate people are subscribed to private bugs.
@@ -1788,22 +1795,53 @@ BugMessage""" % sqlvalues(self.id))
             self.getSubscriptionInfo().direct_subscribers)
         required_subscribers = self.getRequiredSubscribers(
             for_private, for_security_related, who)
-        auto_removed_subscribers = self.getAutoRemovedSubscribers(
-            for_private, for_security_related)
-        allowed_subscribers = set()
-        allowed_subscribers.add(self.owner)
-        for bugtask in self.bugtasks:
-            allowed_subscribers.add(bugtask.owner)
-            allowed_subscribers.add(bugtask.pillar.owner)
-            allowed_subscribers.update(set(bugtask.pillar.drivers))
-        allowed_subscribers = required_subscribers.union(allowed_subscribers)
+        removed_bug_supervisors, removed_security_contacts = (
+            self.getAutoRemovedSubscribers(for_private, for_security_related))
+        for subscriber in removed_bug_supervisors:
+            recipients = BugNotificationRecipients()
+            recipients.addBugSupervisor(subscriber)
+            notification_text = ("This bug is no longer private so the bug "
+                "supervisor was unsubscribed. They will no longer be "
+                "notified of changes to this bug for privacy related "
+                "reasons, but may receive notifications about this bug from "
+                "other subscriptions.")
+            self.unsubscribe(
+                subscriber, who, ignore_permissions=True,
+                send_notification=True,
+                notification_text=notification_text,
+                recipients=recipients)
+        for subscriber in removed_security_contacts:
+            recipients = BugNotificationRecipients()
+            recipients.addSecurityContact(subscriber)
+            notification_text = ("This bug is no longer security related so "
+                "the security contact was unsubscribed. They will no longer "
+                "be notified of changes to this bug for security related "
+                "reasons, but may receive notifications about this bug "
+                "from other subscriptions.")
+            self.unsubscribe(
+                subscriber, who, ignore_permissions=True,
+                send_notification=True,
+                notification_text=notification_text,
+                recipients=recipients)
 
-        subscribers_to_remove = auto_removed_subscribers
-        if for_private or for_security_related:
-            subscribers_to_remove = auto_removed_subscribers.union(
+        # If this bug is for a project that is marked as having private bugs
+        # by default, and the bug is private or security related, we will
+        # unsubscribe any unauthorised direct subscribers.
+        pillar = self.default_bugtask.pillar
+        private_project = IProduct.providedBy(pillar) and pillar.private_bugs
+        if private_project and (for_private or for_security_related):
+            allowed_subscribers = set()
+            allowed_subscribers.add(self.owner)
+            for bugtask in self.bugtasks:
+                allowed_subscribers.add(bugtask.owner)
+                allowed_subscribers.add(bugtask.pillar.owner)
+                allowed_subscribers.update(set(bugtask.pillar.drivers))
+            allowed_subscribers = required_subscribers.union(
+                allowed_subscribers)
+            subscribers_to_remove = (
                 current_direct_subscribers.difference(allowed_subscribers))
-        for subscriber in subscribers_to_remove:
-            self.unsubscribe(subscriber, who, ignore_permissions=True)
+            for subscriber in subscribers_to_remove:
+                self.unsubscribe(subscriber, who, ignore_permissions=True)
 
         subscribers_to_add = (
             required_subscribers.difference(current_direct_subscribers))
@@ -2199,6 +2237,15 @@ BugMessage""" % sqlvalues(self.id))
             self._attachments_query(),
             operator.itemgetter(0))
 
+    def getActivityForDateRange(self, start_date, end_date):
+        """See `IBug`."""
+        store = Store.of(self)
+        activity_in_range = store.find(
+            BugActivity,
+            BugActivity.bug == self,
+            BugActivity.datechanged >= start_date,
+            BugActivity.datechanged <= end_date)
+        return activity_in_range
 
 @ProxyFactory
 def get_also_notified_subscribers(

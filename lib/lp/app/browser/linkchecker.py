@@ -100,7 +100,8 @@ class LinkCheckerAPI(LaunchpadView):
             for task in bugtasks:
                 valid_links['/bugs/' + str(task.bug.id)] = task.bug.title
                 # Remove valid bugs from the list of all the bugs.
-                bugs_ids.remove(task.bug.id)
+                if task.bug.id in bugs_ids:
+                    bugs_ids.remove(task.bug.id)
             # We should now have only invalid bugs in bugs list
             for bug in bugs_ids:
                 invalid_links['/bugs/%d' % bug] = (

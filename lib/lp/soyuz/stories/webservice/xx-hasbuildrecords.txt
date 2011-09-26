@@ -96,7 +96,7 @@ Distributions, like ubuntu, allow users to call browse builds.
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    i386 build of foobar 1.0 in ubuntu warty RELEASE
+    i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
 
 
 == DistroSeries builds ==

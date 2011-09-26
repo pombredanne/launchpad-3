@@ -13,11 +13,11 @@ import os
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 from lazr.lifecycle.interfaces import IObjectCreatedEvent
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mailnotification import (
     MailWrapper,
@@ -300,7 +300,7 @@ class MaloneHandler:
                     processing_errors.append((error, command))
                     if error.stop_processing:
                         commands = []
-                        rollback()
+                        transaction.abort()
                     else:
                         continue
 
@@ -431,7 +431,7 @@ class MaloneHandler:
                 notify(bugtask_event)
 
     def handleNoAffectsTarget(self):
-        rollback()
+        transaction.abort()
         raise IncomingEmailError(
             get_error_message(
                 'no-affects-target-on-submit.txt',

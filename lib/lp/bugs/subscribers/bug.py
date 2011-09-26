@@ -45,14 +45,6 @@ def notify_bug_modified(bug, event):
     Subscribe the security contacts for a bug when it becomes
     security-related, and add notifications for the changes.
     """
-    if (event.object.security_related and
-        not event.object_before_modification.security_related):
-        # The bug turned out to be security-related, subscribe the security
-        # contact.
-        for pillar in bug.affected_pillars:
-            if pillar.security_contact is not None:
-                bug.subscribe(pillar.security_contact, IPerson(event.user))
-
     bug_delta = get_bug_delta(
         old_bug=event.object_before_modification,
         new_bug=event.object, user=IPerson(event.user))
