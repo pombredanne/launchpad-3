@@ -26,6 +26,7 @@ from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
+    MessagingException,
     MessagingUnavailable,
     )
 
@@ -154,6 +155,7 @@ class RabbitUnreliableSession(RabbitSession):
 
     ignored_errors = (
         amqp.AMQPException,
+        MessagingException,
         )
 
     def finish(self):

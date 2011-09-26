@@ -24,6 +24,7 @@ from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
+    MessagingException,
     MessagingUnavailable,
     )
 from lp.services.messaging.rabbit import (
@@ -195,9 +196,18 @@ class TestRabbitUnreliableSession(RabbitTestCase):
     def raise_AMQPException(self):
         raise amqp.AMQPException(123, "Suffin broke.", "Whut?")
 
-    def test_finish_suppresses_some_errors(self):
+    def test_finish_suppresses_AMQPException(self):
         session = RabbitUnreliableSession()
         session.defer(self.raise_AMQPException)
+        session.finish()
+        # Look, no exceptions!
+
+    def raise_MessagingException(self):
+        raise MessagingException("Arm stuck in combine.")
+
+    def test_finish_suppresses_MessagingException(self):
+        session = RabbitUnreliableSession()
+        session.defer(self.raise_MessagingException)
         session.finish()
         # Look, no exceptions!
 
