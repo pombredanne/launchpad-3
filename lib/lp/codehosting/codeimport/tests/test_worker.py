@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -49,7 +49,14 @@ import subvertpy.client
 import subvertpy.ra
 
 from canonical.config import config
-from canonical.testing.layers import BaseLayer
+from canonical.testing.layers import (
+    BaseLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.code.interfaces.codehosting import (
+    branch_id_alias,
+    compose_public_url,
+    )
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
@@ -67,6 +74,7 @@ from lp.codehosting.codeimport.worker import (
     BzrImportWorker,
     BzrSvnImportWorker,
     CodeImportBranchOpenPolicy,
+    CodeImportSourceDetails,
     CodeImportWorkerExitCode,
     CSCVSImportWorker,
     ForeignTreeStore,
@@ -85,7 +93,11 @@ from lp.codehosting.safe_open import (
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
 from lp.services.log.logger import BufferLogger
-from lp.testing import TestCase
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from zope.security.proxy import removeSecurityProxy
 
 
 class ForeignBranchPluginLayer(BaseLayer):
@@ -1443,9 +1455,80 @@ class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
             CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
 
 
-class CodeImportSourceDetailsTests(TestCase):
+class CodeImportSourceDetailsTests(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
 
     def test_bzr_arguments(self):
         code_import = self.factory.makeCodeImport(
             bzr_branch_url="http://example.com/foo")
-        self.assertEquals([], code_import.asArguments())
+        arguments = CodeImportSourceDetails.fromCodeImport(
+            code_import).asArguments()
+        self.assertEquals([
+            str(code_import.branch.id), 'bzr', 'http://example.com/foo'],
+            arguments)
+
+    def test_hg_arguments(self):
+        code_import = self.factory.makeCodeImport(
+            hg_repo_url="http://example.com/foo")
+        arguments = CodeImportSourceDetails.fromCodeImport(
+            code_import).asArguments()
+        self.assertEquals([
+            str(code_import.branch.id), 'hg', 'http://example.com/foo'],
+            arguments)
+
+    def test_git_arguments(self):
+        code_import = self.factory.makeCodeImport(
+                git_repo_url="git://git.example.com/project.git")
+        arguments = CodeImportSourceDetails.fromCodeImport(
+            code_import).asArguments()
+        self.assertEquals([
+            str(code_import.branch.id), 'git',
+            'git://git.example.com/project.git'],
+            arguments)
+
+    def test_cvs_arguments(self):
+        code_import = self.factory.makeCodeImport(
+            cvs_root=':pserver:foo@example.com/bar', cvs_module='bar')
+        arguments = CodeImportSourceDetails.fromCodeImport(
+            code_import).asArguments()
+        self.assertEquals([
+            str(code_import.branch.id), 'cvs',
+            ':pserver:foo@example.com/bar', 'bar'],
+            arguments)
+
+    def test_svn_arguments(self):
+        code_import = self.factory.makeCodeImport(
+                svn_branch_url='svn://svn.example.com/trunk')
+        arguments = CodeImportSourceDetails.fromCodeImport(
+            code_import).asArguments()
+        self.assertEquals([
+            str(code_import.branch.id), 'svn',
+            'svn://svn.example.com/trunk'],
+            arguments)
+
+    def test_bzr_stacked(self):
+        devfocus = self.factory.makeAnyBranch(private=False)
+        code_import = self.factory.makeCodeImport(
+                bzr_branch_url='bzr://bzr.example.com/foo')
+        removeSecurityProxy(code_import.branch).stacked_on = devfocus
+        details = CodeImportSourceDetails.fromCodeImport(
+            code_import)
+        self.assertEquals([
+            str(code_import.branch.id), 'bzr',
+            'bzr://bzr.example.com/foo',
+            compose_public_url('http', branch_id_alias(devfocus))],
+            details.asArguments())
+
+    def test_bzr_stacked_private(self):
+        # Code imports can't be stacked on private branches.
+        devfocus = self.factory.makeAnyBranch(private=True)
+        code_import = self.factory.makeCodeImport(
+                bzr_branch_url='bzr://bzr.example.com/foo')
+        removeSecurityProxy(code_import.branch).stacked_on = devfocus
+        details = CodeImportSourceDetails.fromCodeImport(
+            code_import)
+        self.assertEquals([
+            str(code_import.branch.id), 'bzr',
+            'bzr://bzr.example.com/foo'],
+            details.asArguments())

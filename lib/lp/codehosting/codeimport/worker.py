@@ -294,7 +294,6 @@ class CodeImportSourceDetails:
     def fromCodeImport(cls, code_import):
         """Convert a `CodeImport` to an instance."""
         branch = code_import.branch
-        branch_id = branch.id
         if branch.stacked_on is not None and not branch.stacked_on.private:
             stacked_path = branch_id_alias(branch.stacked_on)
             stacked_on_url = compose_public_url('http', stacked_path)
@@ -302,24 +301,29 @@ class CodeImportSourceDetails:
             stacked_on_url = None
         if code_import.rcs_type == RevisionControlSystems.SVN:
             return cls(
-                branch_id, 'svn', str(code_import.url), stacked_on_url)
+                branch.id, 'svn', str(code_import.url),
+                stacked_on_url=stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.BZR_SVN:
             return cls(
-                branch_id, 'bzr-svn', str(code_import.url), stacked_on_url)
+                branch.id, 'bzr-svn', str(code_import.url),
+                stacked_on_url=stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             return cls(
-                branch_id, 'cvs',
+                branch.id, 'cvs',
                 cvs_root=str(code_import.cvs_root),
                 cvs_module=str(code_import.cvs_module))
         elif code_import.rcs_type == RevisionControlSystems.GIT:
             return cls(
-                branch_id, 'git', str(code_import.url), stacked_on_url)
+                branch.id, 'git', str(code_import.url),
+                stacked_on_url=stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.HG:
             return cls(
-                branch_id, 'hg', str(code_import.url), stacked_on_url)
+                branch.id, 'hg', str(code_import.url),
+                stacked_on_url=stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.BZR:
             return cls(
-                branch_id, 'bzr', str(code_import.url), stacked_on_url)
+                branch.id, 'bzr', str(code_import.url),
+                stacked_on_url=stacked_on_url)
         else:
             raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
 
