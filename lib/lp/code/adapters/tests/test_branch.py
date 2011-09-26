@@ -64,6 +64,10 @@ class TestBranchMergeProposalDelta(TestCase):
             delta.queue_status)
 
     def test_monitor(self):
+        """\
+        `monitor` observes changes to a given merge proposal and issues
+        `ObjectModifiedEvent` events if there are any.
+        """
         merge_proposal = self.factory.makeBranchMergeProposal()
         with EventRecorder() as event_recorder:
             # No event is issued when nothing is changed.
