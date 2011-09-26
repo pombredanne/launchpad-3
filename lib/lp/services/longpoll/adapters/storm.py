@@ -17,6 +17,7 @@ from storm.base import Storm
 from storm.info import get_obj_info
 from zope.component import adapter
 from zope.interface import implements
+from zope.interface.interfaces import IAttribute
 
 from lp.services.longpoll.adapters.event import (
     generate_event_key,
@@ -68,5 +69,8 @@ def object_modified(model_instance, object_event):
     """Subscription handler for `Storm` modification events."""
     edited_fields = object_event.edited_fields
     if edited_fields is not None and len(edited_fields) != 0:
+        edited_field_names = sorted(
+            (field.__name__ if IAttribute.providedBy(field) else field)
+            for field in edited_fields)
         event = LongPollStormEvent(model_instance, "modified")
-        event.emit({"edited_fields": sorted(edited_fields)})
+        event.emit({"edited_fields": edited_field_names})
