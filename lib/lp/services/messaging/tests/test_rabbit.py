@@ -10,6 +10,7 @@ from itertools import count
 import thread
 
 from amqplib import client_0_8 as amqp
+from testtools.testcase import ExpectedException
 import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.component import getUtility
@@ -23,6 +24,8 @@ from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
+    MessagingException,
+    MessagingUnavailable,
     )
 from lp.services.messaging.rabbit import (
     RabbitMessageBase,
@@ -102,6 +105,13 @@ class TestRabbitSession(RabbitTestCase):
         connection = session.connect()
         self.assertIsNot(None, session.connection)
         self.assertIs(connection, session.connection)
+
+    def test_connect_with_incomplete_configuration(self):
+        self.pushConfig("rabbitmq", host="none")
+        session = RabbitSession()
+        with ExpectedException(
+            MessagingUnavailable, "Incomplete configuration"):
+            session.connect()
 
     def test_disconnect(self):
         session = RabbitSession()
@@ -186,9 +196,18 @@ class TestRabbitUnreliableSession(RabbitTestCase):
     def raise_AMQPException(self):
         raise amqp.AMQPException(123, "Suffin broke.", "Whut?")
 
-    def test_finish_suppresses_some_errors(self):
+    def test_finish_suppresses_AMQPException(self):
         session = RabbitUnreliableSession()
         session.defer(self.raise_AMQPException)
+        session.finish()
+        # Look, no exceptions!
+
+    def raise_MessagingException(self):
+        raise MessagingException("Arm stuck in combine.")
+
+    def test_finish_suppresses_MessagingException(self):
+        session = RabbitUnreliableSession()
+        session.defer(self.raise_MessagingException)
         session.finish()
         # Look, no exceptions!
 
