@@ -19,6 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -110,6 +111,19 @@ class TestMaloneHandler(TestCaseWithFactory):
             'bug new',
             'affects malone',
             ])
+
+    def test_mailToHelpFromNonActiveUser(self):
+        """Mail from people without a preferred email get a help message."""
+        self.factory.makePerson(
+            email='non@eg.dom',
+            email_address_status=EmailAddressStatus.NEW)
+        message = self.factory.makeSignedMessage(email_address='non@eg.dom')
+        handler = MaloneHandler()
+        response = handler.extractAndAuthenticateCommands(
+            message, 'help@bugs.launchpad.net')
+        mail_handled, add_comment_to_bug, commands = response
+        self.assertEquals(mail_handled, True)
+        self.assertEquals([], self.getSentMail())
 
     def test_mailToHelpFromUnknownUser(self):
         """Mail from people of no account to help@ is simply dropped.

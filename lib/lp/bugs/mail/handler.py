@@ -209,10 +209,23 @@ class MaloneHandler:
         commands = self.getCommands(signed_msg)
         to_user, to_host = to_addr.split('@')
         add_comment_to_bug = False
+        from_user = getUtility(ILaunchBag).user
+        if from_user is None:
+            preferredemail = None
+        else:
+            preferredemail = from_user.preferredemail
+        if to_user.lower() == 'help' or preferredemail is None:
+            if from_user is not None:
+                if preferredemail is None:
+                    to_address = signed_msg['From']
+                else:
+                    to_address = str(preferredemail.email)
+                self.sendHelpEmail(to_address)
+            return True, False, None
         # If there are any commands, we must have strong authentication.
         # We send a different failure message for attempts to create a new
         # bug.
-        if to_user.lower() == 'new':
+        elif to_user.lower() == 'new':
             ensure_not_weakly_authenticated(signed_msg, CONTEXT,
                 'unauthenticated-bug-creation.txt',
                 error_templates=error_templates)
@@ -228,14 +241,6 @@ class MaloneHandler:
             # the bug.
             add_comment_to_bug = True
             commands.insert(0, BugEmailCommands.get('bug', [to_user]))
-        elif to_user.lower() == 'help':
-            from_user = getUtility(ILaunchBag).user
-            if from_user is not None:
-                preferredemail = from_user.preferredemail
-                if preferredemail is not None:
-                    to_address = str(preferredemail.email)
-                    self.sendHelpEmail(to_address)
-            return True, False, None
         elif to_user.lower() != 'edit':
             # Indicate that we didn't handle the mail.
             return False, False, None
