@@ -21,6 +21,7 @@ __all__ = [
     'get_msgid',
     'MailController',
     'sendmail',
+    'set_immediate_mail_delivery',
     'simple_sendmail',
     'simple_sendmail_from_person',
     'validate_message',
@@ -46,12 +47,13 @@ import sys
 
 from lazr.restful.utils import get_current_browser_request
 from zope.app import zapi
-from zope.security.proxy import isinstance as zisinstance
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
-from canonical.database.sqlbase import ZopelessTransactionManager
 from lp.app import versioninfo
 from lp.services.encoding import is_ascii_only
 from lp.services.mail.stub import TestMailer
@@ -160,6 +162,20 @@ def format_address_for_person(person):
     """Helper function to call format_address for a person."""
     email_address = removeSecurityProxy(person.preferredemail).email
     return format_address(person.displayname, email_address)
+
+
+_immediate_mail_delivery = False
+
+
+def set_immediate_mail_delivery(enabled):
+    """Enable or disable immediate mail delivery.
+
+    Mail is by default queued until the transaction is committed. But if
+    a script requires that mail violate transactions, immediate mail
+    delivery can be enabled.
+    """
+    global _immediate_mail_delivery
+    _immediate_mail_delivery = enabled
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
@@ -425,11 +441,11 @@ def sendmail(message, to_addrs=None, bulk=True):
 
     raw_message = message.as_string()
     message_detail = message['Subject']
-    if ZopelessTransactionManager._installed is not None:
-        # Zopeless email sending is not unit tested, and won't be.
-        # The zopeless specific stuff is pretty simple though so this
+    if _immediate_mail_delivery:
+        # Immediate email delivery is not unit tested, and won't be.
+        # The immediate-specific stuff is pretty simple though so this
         # should be fine.
-        # TODO: Store a timeline action for zopeless mail.
+        # TODO: Store a timeline action for immediate mail.
 
         if config.isTestRunner():
             # when running in the testing environment, store emails
@@ -439,12 +455,13 @@ def sendmail(message, to_addrs=None, bulk=True):
             # For debugging, from process-one-mail, just print it.
             sys.stdout.write(raw_message)
         else:
-            if config.zopeless.send_email:
+            if config.immediate_mail.send_email:
                 # Note that we simply throw away dud recipients. This is fine,
                 # as it emulates the Z3 API which doesn't report this either
                 # (because actual delivery is done later).
                 smtp = SMTP(
-                    config.zopeless.smtp_host, config.zopeless.smtp_port)
+                    config.immediate_mail.smtp_host,
+                    config.immediate_mail.smtp_port)
 
                 # The "MAIL FROM" is set to the bounce address, to behave in a
                 # way similar to mailing list software.

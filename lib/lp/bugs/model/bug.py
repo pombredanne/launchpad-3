@@ -30,7 +30,6 @@ from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator
-import pytz
 import re
 
 from lazr.lifecycle.event import (
@@ -39,6 +38,7 @@ from lazr.lifecycle.event import (
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from pytz import timezone
 from sqlobject import (
     BoolCol,
@@ -122,9 +122,9 @@ from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
     BugConvertedToQuestion,
+    BugDuplicateChange,
     BugWatchAdded,
     BugWatchRemoved,
-    BugDuplicateChange,
     SeriesNominated,
     UnsubscribedFromBug,
     )
@@ -173,8 +173,8 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
+    get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
@@ -1793,10 +1793,10 @@ BugMessage""" % sqlvalues(self.id))
             recipients = BugNotificationRecipients()
             recipients.addBugSupervisor(subscriber)
             notification_text = ("This bug is no longer private so the bug "
-                "supervisor was unsubscribed. You will no longer be notified "
-                "of changes to this bug for privacy related reasons, but you "
-                "may receive notifications about this bug from other "
-                "subscriptions.")
+                "supervisor was unsubscribed. They will no longer be "
+                "notified of changes to this bug for privacy related "
+                "reasons, but may receive notifications about this bug from "
+                "other subscriptions.")
             self.unsubscribe(
                 subscriber, who, ignore_permissions=True,
                 send_notification=True,
@@ -1806,9 +1806,9 @@ BugMessage""" % sqlvalues(self.id))
             recipients = BugNotificationRecipients()
             recipients.addSecurityContact(subscriber)
             notification_text = ("This bug is no longer security related so "
-                "the security contact was unsubscribed. You will no longer "
-                "be notified of changes to this bug for privacy related "
-                "reasons, but you may receive notifications about this bug "
+                "the security contact was unsubscribed. They will no longer "
+                "be notified of changes to this bug for security related "
+                "reasons, but may receive notifications about this bug "
                 "from other subscriptions.")
             self.unsubscribe(
                 subscriber, who, ignore_permissions=True,

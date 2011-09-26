@@ -19,7 +19,6 @@ import logging
 import _pythonpath
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.librarian import librariangc
@@ -98,4 +97,4 @@ class LibrarianGC(LaunchpadCronScript):
 if __name__ == '__main__':
     script = LibrarianGC('librarian-gc',
                          dbuser=config.librarian_gc.dbuser)
-    script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    script.lock_and_run(isolation='autocommit')
