@@ -13,8 +13,6 @@ def test_suite():
     return unittest.TestSuite([
             LayeredDocFileSuite(
                 'test_multitablecopy.txt',
-                'test_zopelesstransactionmanager.txt',
                 'test_sqlbaseconnect.txt',
                 layer=LaunchpadScriptLayer, stdout_logging=False),
             ])
-

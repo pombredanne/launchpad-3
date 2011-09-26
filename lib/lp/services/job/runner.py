@@ -54,8 +54,10 @@ from twisted.python import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import ZopelessTransactionManager
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
 from lp.services.job.interfaces.job import (
@@ -372,7 +374,7 @@ class JobRunnerProcess(child.AMPChild):
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
-        ZopelessTransactionManager.initZopeless(dbuser=cls.dbuser)
+        dbconfig.override(dbuser=cls.dbuser, isolation_level='read_committed')
         # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
         # Should be removed from callsites verified to not need it.
         set_immediate_mail_delivery(True)

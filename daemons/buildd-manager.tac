@@ -8,8 +8,7 @@ from twisted.application import service
 from twisted.scripts.twistd import ServerOptions
 from twisted.web import server
 
-from canonical.config import config
-from canonical.database.sqlbase import ZopelessTransactionManager
+from canonical.config import dbconfig
 from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from lp.buildmaster.manager import BuilddManager
@@ -17,7 +16,7 @@ from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.twistedsupport.loggingsupport import RotatableFileLogObserver
 
 execute_zcml_for_scripts()
-ZopelessTransactionManager.initZopeless(dbuser='buildd_manager')
+dbconfig.override(dbuser='buildd_manager', isolation_level='read_committed')
 # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
 # Should be removed from callsites verified to not need it.
 set_immediate_mail_delivery(True)
