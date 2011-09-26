@@ -19,6 +19,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.mailnotification import (
     MailWrapper,
     send_process_error_notification,
@@ -215,11 +216,14 @@ class MaloneHandler:
         else:
             preferredemail = from_user.preferredemail
         if to_user.lower() == 'help' or preferredemail is None:
-            if from_user is not None:
-                if preferredemail is None:
-                    to_address = signed_msg['From']
-                else:
-                    to_address = str(preferredemail.email)
+            if preferredemail is not None:
+                to_address = str(preferredemail.email)
+            else:
+                to_address = signed_msg['From']
+                address = getUtility(IEmailAddressSet).getByEmail(to_address)
+                if address is None:
+                    to_address = None
+            if to_address is not None:
                 self.sendHelpEmail(to_address)
             return True, False, None
         # If there are any commands, we must have strong authentication.

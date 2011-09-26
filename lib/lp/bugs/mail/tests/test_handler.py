@@ -123,12 +123,17 @@ class TestMaloneHandler(TestCaseWithFactory):
             message, 'help@bugs.launchpad.net')
         mail_handled, add_comment_to_bug, commands = response
         self.assertEquals(mail_handled, True)
-        self.assertEquals([], self.getSentMail())
+        emails = self.getSentMail()
+        self.assertEquals(1, len(emails))
+        self.assertEquals(['non@eg.dom'], emails[0][1])
+        self.assertTrue(
+            'Subject: Launchpad Bug Tracker Email Interface' in emails[0][2])
 
     def test_mailToHelpFromUnknownUser(self):
         """Mail from people of no account to help@ is simply dropped.
         """
-        message = self.factory.makeSignedMessage()
+        message = self.factory.makeSignedMessage(
+            email_address='unregistered@eg.dom')
         handler = MaloneHandler()
         mail_handled, add_comment_to_bug, commands = \
             handler.extractAndAuthenticateCommands(message,
@@ -138,15 +143,19 @@ class TestMaloneHandler(TestCaseWithFactory):
 
     def test_mailToHelp(self):
         """Mail to help@ generates a help command."""
-        message = self.factory.makeSignedMessage()
+        user = self.factory.makePerson(email='user@dom.eg')
+        message = self.factory.makeSignedMessage(email_address='user@dom.eg')
         handler = MaloneHandler()
-        with person_logged_in(self.factory.makePerson()):
+        with person_logged_in(user):
             mail_handled, add_comment_to_bug, commands = \
                 handler.extractAndAuthenticateCommands(message,
                     'help@bugs.launchpad.net')
         self.assertEquals(mail_handled, True)
-        self.assertEquals(len(self.getSentMail()), 1)
-        # TODO: Check the right mail was sent. -- mbp 20100923
+        emails = self.getSentMail()
+        self.assertEquals(1, len(emails))
+        self.assertEquals([message['From']], emails[0][1])
+        self.assertTrue(
+            'Subject: Launchpad Bug Tracker Email Interface' in emails[0][2])
 
     def getSentMail(self):
         # Sending mail is (unfortunately) a side effect of parsing the
