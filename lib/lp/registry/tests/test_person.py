@@ -1720,8 +1720,8 @@ class TestGetRecipients(TestCaseWithFactory):
                               super_team_member_team]),
                          set(recipients))
 
-    def test_get_recipients_team_with_disabled_account(self):
-        """Mail is not sent to teams containing people with a non-active account.
+    def test_get_recipients_team_with_disabled_owner_account(self):
+        """Mail is not sent to a team owner whose account is disabled.
 
         See <https://bugs.launchpad.net/launchpad/+bug/855150>
         """
@@ -1729,3 +1729,26 @@ class TestGetRecipients(TestCaseWithFactory):
         team = self.factory.makeTeam(owner)
         owner.account.status = AccountStatus.DEACTIVATED
         self.assertContentEqual([], get_recipients(team))
+
+    def test_get_recipients_team_with_disabled_member_account(self):
+        """Mail is not sent to a team member whose account is disabled.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/855150>
+        """
+        person = self.factory.makePerson(email='foo@bar.com')
+        person.account.status = AccountStatus.DEACTIVATED
+        team = self.factory.makeTeam(members=[person])
+        self.assertContentEqual([team.teamowner], get_recipients(team))
+
+    def test_get_recipients_team_with_nested_disabled_member_account(self):
+        """Mail is not sent to transitive team member with disabled account.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/855150>
+        """
+        person = self.factory.makePerson(email='foo@bar.com')
+        person.account.status = AccountStatus.DEACTIVATED
+        team1 = self.factory.makeTeam(members=[person])
+        team2 = self.factory.makeTeam(members=[team1])
+        self.assertContentEqual(
+            [team2.teamowner],
+            get_recipients(team2))
