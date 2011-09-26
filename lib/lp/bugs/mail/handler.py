@@ -211,13 +211,9 @@ class MaloneHandler:
         to_user, to_host = to_addr.split('@')
         add_comment_to_bug = False
         from_user = getUtility(ILaunchBag).user
-        if from_user is None:
-            preferredemail = None
-        else:
-            preferredemail = from_user.preferredemail
-        if to_user.lower() == 'help' or preferredemail is None:
-            if preferredemail is not None:
-                to_address = str(preferredemail.email)
+        if to_user.lower() == 'help' or from_user is None:
+            if from_user is not None and from_user.preferredemail is not None:
+                to_address = str(from_user.preferredemail.email)
             else:
                 to_address = signed_msg['From']
                 address = getUtility(IEmailAddressSet).getByEmail(to_address)
