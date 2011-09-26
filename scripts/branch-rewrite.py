@@ -17,7 +17,6 @@ import _pythonpath
 import os
 import sys
 
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.code.model.branch import Branch
@@ -79,4 +78,4 @@ class BranchRewriteScript(LaunchpadScript):
 
 if __name__ == '__main__':
     BranchRewriteScript("branch-rewrite", dbuser='branch-rewrite').run(
-        isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+        isolation='autocommit')
