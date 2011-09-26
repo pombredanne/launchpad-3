@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -98,7 +98,8 @@ class TestBranchMergeProposalJobDerived(TestCaseWithFactory):
             AttributeError, BranchMergeProposalJobDerived.get, job.id)
         self.assertRaises(SQLObjectNotFound, UpdatePreviewDiffJob.get, job.id)
         self.assertRaises(
-            SQLObjectNotFound, MergeProposalNeedsReviewEmailJob.get, job.id + 1)
+            SQLObjectNotFound, MergeProposalNeedsReviewEmailJob.get,
+            job.id + 1)
         self.assertEqual(job, MergeProposalNeedsReviewEmailJob.get(job.id))
 
 
@@ -107,7 +108,7 @@ class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
-        """MergeProposalNeedsReviewEmailJob provides the expected interfaces."""
+        """MergeProposalNeedsReviewEmailJob provides expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = MergeProposalNeedsReviewEmailJob.create(bmp)
         verifyObject(IMergeProposalNeedsReviewEmailJob, job)
@@ -183,7 +184,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
 
     def test_providesInterface(self):
-        """MergeProposalNeedsReviewEmailJob provides the expected interfaces."""
+        """MergeProposalNeedsReviewEmailJob provides expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = UpdatePreviewDiffJob.create(bmp)
         verifyObject(IUpdatePreviewDiffJob, job)
@@ -204,10 +205,20 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         bmp.source_branch.next_mirror_time = None
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
+        JobRunner([job]).runAll()
+        transaction.commit()
+        self.checkExampleMerge(bmp.preview_diff.text)
+
+    def test_run_object_events(self):
+        self.useBzrBranches(direct_database=True)
+        bmp = create_example_merge(self)[0]
+        job = UpdatePreviewDiffJob.create(bmp)
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        bmp.source_branch.next_mirror_time = None
+        transaction.commit()
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
         with EventRecorder() as event_recorder:
             JobRunner([job]).runAll()
-            transaction.commit()
-        self.checkExampleMerge(bmp.preview_diff.text)
         # A single IObjectModifiedEvent is issued when the preview diff has
         # been calculated.
         bmp_object_events = [
