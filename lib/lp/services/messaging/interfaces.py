@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'EmptyQueueException',
+    'EmptyQueue',
     'IMessageConsumer',
     'IMessageProducer',
     'IMessageSession',
@@ -24,7 +24,7 @@ class MessagingException(Exception):
     """Failure in messaging."""
 
 
-class EmptyQueueException(MessagingException):
+class EmptyQueue(MessagingException):
     """Raised if there are no queued messages on a non-blocking read."""
 
 
@@ -72,7 +72,7 @@ class IMessageConsumer(Interface):
     def receive(blocking=True):
         """Receive data from the queue.
 
-        :raises EmptyQueueException: If non-blocking and the queue is empty.
+        :raises EmptyQueue: If non-blocking and the queue is empty.
         """
 
 
