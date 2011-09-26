@@ -22,7 +22,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.services.messaging.interfaces import (
-    EmptyQueueException,
+    EmptyQueue,
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
@@ -238,14 +238,14 @@ class RabbitQueue(RabbitMessageBase):
 
         :param timeout: Wait a maximum of `timeout` seconds before giving up,
             trying at least once.
-        :raises: EmptyQueueException if the timeout passes.
+        :raises EmptyQueue: if the timeout passes.
         """
         starttime = time.time()
         while True:
             message = self.channel.basic_get(self.name)
             if message is None:
                 if time.time() > (starttime + timeout):
-                    raise EmptyQueueException
+                    raise EmptyQueue()
                 time.sleep(0.1)
             else:
                 data = json.loads(message.body)
