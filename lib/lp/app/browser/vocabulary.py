@@ -273,6 +273,8 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                 picker_entry.description = first_line
                 picker_entry.details.append(second_line)
                 picker_entry.alt_title = target.name
+                picker_entry.alt_title_link = canonical_url(
+                    target, rootsite='mainsite')
                 picker_entry.target_type = self.target_type
                 maintainer = self.getMaintainer(target)
                 if maintainer is not None:
