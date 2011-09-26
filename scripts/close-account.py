@@ -27,9 +27,9 @@ def close_account(con, log, username):
     cur = con.cursor()
     cur.execute("""
         SELECT Person.id, Person.account, name, teamowner
-        FROM Person LEFT OUTER JOIN EmailAddress
-            ON Person.id = EmailAddress.person
-        WHERE name=%(username)s or lower(email)=lower(%(username)s)
+        FROM Person
+        LEFT OUTER JOIN EmailAddress ON Person.id = EmailAddress.person
+        WHERE name = %(username)s OR lower(email) = lower(%(username)s)
         """, vars())
     try:
         person_id, account_id, username, teamowner = cur.fetchone()
@@ -64,12 +64,20 @@ def close_account(con, log, username):
     unknown_rationale = PersonCreationRationale.UNKNOWN.value
     cur.execute("""
         UPDATE Person
-        SET displayname='Removed by request',
-            name=%(new_name)s, language=NULL, account=NULL,
-            homepage_content=NULL, icon=NULL, mugshot=NULL,
-            hide_email_addresses=TRUE, registrant=NULL, logo=NULL,
-            creation_rationale=%(unknown_rationale)s, creation_comment=NULL
-        WHERE id=%(person_id)s
+        SET
+            displayname = 'Removed by request',
+            name=%(new_name)s,
+            language = NULL,
+            account = NULL,
+            homepage_content = NULL,
+            icon = NULL,
+            mugshot = NULL,
+            hide_email_addresses = TRUE,
+            registrant = NULL,
+            logo = NULL,
+            creation_rationale = %(unknown_rationale)s,
+            creation_comment = NULL
+        WHERE id = %(person_id)s
         """, vars())
 
     # Remove the Account. We don't set the status to deactivated,
@@ -87,7 +95,7 @@ def close_account(con, log, username):
     # Reassign their bugs
     table_notification('BugTask')
     cur.execute("""
-        UPDATE BugTask SET assignee=NULL WHERE assignee=%(person_id)s
+        UPDATE BugTask SET assignee = NULL WHERE assignee = %(person_id)s
         """, vars())
 
     # Reassign questions assigned to the user, and close all their questions
@@ -165,6 +173,7 @@ def close_account(con, log, username):
 
     return True
 
+
 def main():
     parser = OptionParser(
             '%prog [options] (username|email) [...]'
@@ -197,6 +206,7 @@ def main():
         if con is not None:
             con.rollback()
         return 1
+
 
 if __name__ == '__main__':
     sys.exit(main())

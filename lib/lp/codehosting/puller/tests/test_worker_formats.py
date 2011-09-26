@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-import lp.codehosting # for bzr plugins
+import lp.codehosting  # For bzr plugins.
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDirMetaFormat1

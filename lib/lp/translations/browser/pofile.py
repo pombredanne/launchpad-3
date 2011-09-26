@@ -343,10 +343,11 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
                 else:
                     groups.append(_(u"%s assigned by %s") % (
                         translator.translator.displayname, group.title))
+
             # There are at most two translation groups, so just using 'and'
             # is fine here.
-            statement = (_(u"This translation is managed by ") +
-                         _(u" and ").join(groups))+"."
+            statement = _(u"This translation is managed by %s.") % (
+                u" and ".join(groups))
         else:
             statement = _(u"No translation group has been assigned.")
         return statement
@@ -395,7 +396,8 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
-            force_start = True # start will be 0, by default
+            # Start will be 0 by default.
+            force_start = True
         else:
             force_start = False
         return POFileBatchNavigator(self._getSelectedPOTMsgSets(),
@@ -793,7 +795,8 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
-            force_start = True # start will be 0, by default
+            # Start will be 0 by default.
+            force_start = True
         else:
             force_start = False
         return POFileBatchNavigator(self._getSelectedPOTMsgSets(),

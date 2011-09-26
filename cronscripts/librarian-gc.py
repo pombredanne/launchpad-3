@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0103,W0403
@@ -14,8 +14,9 @@ rows in the database.
 
 __metaclass__ = type
 
-import _pythonpath
 import logging
+
+import _pythonpath
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
@@ -79,7 +80,8 @@ class LibrarianGC(LaunchpadCronScript):
         if not self.options.skip_expiry:
             librariangc.expire_aliases(conn)
         if not self.options.skip_content:
-            librariangc.delete_unreferenced_content(conn) # first sweep
+            # First sweep.
+            librariangc.delete_unreferenced_content(conn)
         if not self.options.skip_blobs:
             librariangc.delete_expired_blobs(conn)
         if not self.options.skip_duplicates:
@@ -87,7 +89,8 @@ class LibrarianGC(LaunchpadCronScript):
         if not self.options.skip_aliases:
             librariangc.delete_unreferenced_aliases(conn)
         if not self.options.skip_content:
-            librariangc.delete_unreferenced_content(conn) # second sweep
+            # Second sweep.
+            librariangc.delete_unreferenced_content(conn)
         if not self.options.skip_files:
             librariangc.delete_unwanted_files(conn)
 
@@ -96,4 +99,3 @@ if __name__ == '__main__':
     script = LibrarianGC('librarian-gc',
                          dbuser=config.librarian_gc.dbuser)
     script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
-

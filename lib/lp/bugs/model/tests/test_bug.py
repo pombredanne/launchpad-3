@@ -845,7 +845,7 @@ class TestBugActivityMethods(TestCaseWithFactory):
         # that bug that falls within a given date range.
         bug = self.factory.makeBug(
             date_created=self.now - timedelta(days=365))
-        self._makeActivityForBug(bug, activity_ages=[200,100])
+        self._makeActivityForBug(bug, activity_ages=[200, 100])
         start_date = self.now - timedelta(days=250)
         end_date = self.now - timedelta(days=150)
         activity = bug.getActivityForDateRange(
@@ -858,7 +858,7 @@ class TestBugActivityMethods(TestCaseWithFactory):
         # falls on the start_ and end_ dates.
         bug = self.factory.makeBug(
             date_created=self.now - timedelta(days=365))
-        self._makeActivityForBug(bug, activity_ages=[300,200,100])
+        self._makeActivityForBug(bug, activity_ages=[300, 200, 100])
         start_date = self.now - timedelta(days=300)
         end_date = self.now - timedelta(days=100)
         activity = bug.getActivityForDateRange(

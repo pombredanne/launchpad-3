@@ -86,7 +86,8 @@ If we update the submissin, the cache is updated
     ...     """, vars())
     >>> mark_posubmission_id, date_touched = pofiletranslator(
     ...     mark_id, pofile_id)
-    >>> stub_posubmission_id, date_touched = pofiletranslator(stub_id, pofile_id)
+    >>> stub_posubmission_id, date_touched = pofiletranslator(
+    ...     stub_id, pofile_id)
     >>> mark_posubmission_id == stub_posubmission_id
     False
 

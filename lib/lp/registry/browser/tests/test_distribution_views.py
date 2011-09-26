@@ -15,7 +15,6 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import (
     login_celebrity,
-    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import LAUNCHPAD_ADMIN

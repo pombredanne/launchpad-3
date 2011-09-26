@@ -93,7 +93,8 @@ as well.
 
 New security related bugs are sent with a prominent warning:
 
-    >>> changed = bug_four.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    >>> changed = bug_four.setSecurityRelated(
+    ...     True, getUtility(ILaunchBag).user)
 
     >>> subject, body = generate_bug_add_email(bug_four)
     >>> subject
@@ -214,6 +215,9 @@ is wrapped properly:
     + It's also smart enough to preserve whitespace, finally!
     -----------------------------
 
+(Note that there's a blank line in the email that contains whitespace.  You
+may see a lint warning for that.)
+
 Let's make the bug security-related, and private (we need to switch
 logins to a user that is explicitly subscribed to this bug):
 
@@ -221,7 +225,8 @@ logins to a user that is explicitly subscribed to this bug):
 
     >>> edited_bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
-    >>> changed = edited_bug.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    >>> changed = edited_bug.setSecurityRelated(
+    ...     True, getUtility(ILaunchBag).user)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
@@ -247,7 +252,8 @@ e-mail sent changed as well.
 
     >>> edited_bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> changed = edited_bug.setSecurityRelated(False, getUtility(ILaunchBag).user)
+    >>> changed = edited_bug.setSecurityRelated(
+    ...     False, getUtility(ILaunchBag).user)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",

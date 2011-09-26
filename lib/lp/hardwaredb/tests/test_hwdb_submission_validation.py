@@ -140,7 +140,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 '/sys/class/dmi/id/bios_vendor:Dell Inc.'
                 '/sys/class/dmi/id/bios_version:A12'
                 '</dmi>'),
-            where = '<hardware>',
+            where='<hardware>',
             after=True)
         # Add the OopsHandler to the log, because we want to make sure this
         # doesn't create an Oops report.
@@ -345,7 +345,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             self.fail('assertErrorMessage did not fail for a non-existing '
                       'error message.')
 
-        # If the parameter result is not None, assertErrorMessage 
+        # If the parameter result is not None, assertErrorMessage
         # assertErrorMessage raises failureExeception.
         try:
             self.assertErrorMessage(
@@ -379,7 +379,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
-            where = '</system>')
+            where='</system>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -468,7 +468,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # is set for all three tags. In all three tags, the value may also
         # be 'True'.
         for tag in ('live_cd', 'private', 'contactable'):
-            replace_text = '<%s value="False"/>' % tag
             sample_data = self.sample_data.replace(
                 '<%s value="False"/>' % tag,
                 '<%s value="True"/>' % tag)
@@ -660,7 +659,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # The omission of either of the required attributes is detected by
         # by the Relax NG validation
         for only_attribute in ('name', 'version'):
-            tag =  '<plugin %s="some_value"/>' % only_attribute
+            tag = '<plugin %s="some_value"/>' % only_attribute
             sample_data = self.sample_data.replace(
                 '<plugin name="architecture_info" version="1.1"/>', tag)
             result, submission_id = self.runValidator(sample_data)
@@ -843,7 +842,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         # Any other tag than <device> within <hal> is not allowed.
         sample_data = self.sample_data
-        insert_position = sample_data.find('<device')
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
@@ -1095,25 +1093,25 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # invalid.
         if min_value is not None:
             self._testMinMaxIntegerValue(
-                property_type, relax_ng_type, min_value, min_value-1)
+                property_type, relax_ng_type, min_value, min_value - 1)
 
         # A value larger than the maximum allowed value is detected as
         # invalid.
         if max_value is not None:
             self._testMinMaxIntegerValue(
-                property_type, relax_ng_type, max_value, max_value+1)
+                property_type, relax_ng_type, max_value, max_value + 1)
 
     def testIntegerProperties(self):
         """Validation of integer properties."""
         type_info = (('dbus.Byte', 'unsignedByte', 0, 255),
-                     ('dbus.Int16', 'short',  -2**15, 2**15-1),
-                     ('dbus.Int32', 'int',  -2**31, 2**31-1),
-                     ('dbus.Int64', 'long', -2**63, 2**63-1),
-                     ('dbus.UInt16', 'unsignedShort', 0, 2**16-1),
-                     ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
-                     ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
+                     ('dbus.Int16', 'short', -2 ** 15, 2 ** 15 - 1),
+                     ('dbus.Int32', 'int', -2 ** 31, 2 ** 31 - 1),
+                     ('dbus.Int64', 'long', -2 ** 63, 2 ** 63 - 1),
+                     ('dbus.UInt16', 'unsignedShort', 0, 2 ** 16 - 1),
+                     ('dbus.UInt32', 'unsignedInt', 0, 2 ** 32 - 1),
+                     ('dbus.UInt64', 'unsignedLong', 0, 2 ** 64 - 1),
                      ('long', 'integer', None, None),
-                     ('int', 'long', -2**63, 2**63-1))
+                     ('int', 'long', -2 ** 63, 2 ** 63 - 1))
         for property_type, relax_ng_type, min_value, max_value in type_info:
             self._testIntegerProperty(
                 property_type, relax_ng_type, min_value, max_value)
@@ -1440,12 +1438,12 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         int_types = (
             ('dbus.Byte', 'unsignedByte', 0, 255),
             ('dbus.Int16', 'short', -32768, 32767),
-            ('dbus.Int32', 'int', -2**31, 2**31-1),
-            ('dbus.Int64', 'long', -2**63, 2**63-1),
-            ('dbus.UInt16', 'unsignedShort', 0, 2**16-1),
-            ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
-            ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
-            ('int', 'long', -2**63, 2**63-1),
+            ('dbus.Int32', 'int', -2 ** 31, 2 ** 31 - 1),
+            ('dbus.Int64', 'long', -2 ** 63, 2 ** 63 - 1),
+            ('dbus.UInt16', 'unsignedShort', 0, 2 ** 16 - 1),
+            ('dbus.UInt32', 'unsignedInt', 0, 2 ** 32 - 1),
+            ('dbus.UInt64', 'unsignedLong', 0, 2 ** 64 - 1),
+            ('int', 'long', -2 ** 63, 2 ** 63 - 1),
             ('long', 'integer', None, None))
         for value_type, relax_ng_type, min_allowed, max_allowed in int_types:
             self._testIntegerValueTag(property_type, value_type,
@@ -1487,8 +1485,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         tag = template % 'nonsense'
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text = tag,
-            where = '</device>')
+            insert_text=tag,
+            where='</device>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1499,8 +1497,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         tag = template % ''
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text = tag,
-            where = '</device>')
+            insert_text=tag,
+            where='</device>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(
             result, None, 'empty tag <value type="%s">' % value_type)
@@ -1509,8 +1507,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         tag = template % '<nonsense/>'
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text = tag,
-            where = '</device>')
+            insert_text=tag,
+            where='</device>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1523,8 +1521,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             tag = template % '<value type="int" name="baz">1</value>'
             sample_data = self.insertSampledata(
                 data=self.sample_data,
-                insert_text = tag,
-                where = '</device>')
+                insert_text=tag,
+                where='</device>')
             result, submission_id = self.runValidator(sample_data)
             self.assertNotEqual(
                 result, None,
@@ -1533,8 +1531,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             tag = template % '<value type="int">1</value>'
             sample_data = self.insertSampledata(
                 data=self.sample_data,
-                insert_text = tag,
-                where = '</device>')
+                insert_text=tag,
+                where='</device>')
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
@@ -1546,8 +1544,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             tag = template % '<value type="int">1</value>'
             sample_data = self.insertSampledata(
                 data=self.sample_data,
-                insert_text = tag,
-                where = '</device>')
+                insert_text=tag,
+                where='</device>')
             result, submission_id = self.runValidator(sample_data)
             self.assertNotEqual(
                 result, None,
@@ -1556,8 +1554,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             tag = template % '<value type="int" nam="baz">1</value>'
             sample_data = self.insertSampledata(
                 data=self.sample_data,
-                insert_text = tag,
-                where = '</device>')
+                insert_text=tag,
+                where='</device>')
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
@@ -1607,7 +1605,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
-            where = '</processors>')
+            where='</processors>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1677,7 +1675,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
-            where = '</processor>')
+            where='</processor>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1909,7 +1907,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # rejected.
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text = '<nonsense/>',
+            insert_text='<nonsense/>',
             where='</software>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
@@ -2132,7 +2130,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element xorg in interleave',
             'detection of invalid attribute of <xorg>')
-        
+
     def testXorgTagSubTags(self):
         """Test the validation of <xorg> sub-tags."""
         # the only allowed sub-tag is <driver>.
@@ -2145,7 +2143,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element xorg in interleave',
             'detection of invalid sub-tag of <xorg>')
-        
+
         # <xorg> may be empty
         sample_data = self.replaceSampledata(
             data=self.sample_data,
@@ -2176,7 +2174,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             '%s="%s"' % attribute for attribute in attributes]
         attributes = ' '.join(attributes)
         return '<driver %s/>' % attributes
-        
 
     def testXorgDriverTagRequiredAttributes(self):
         """Test the validation of attributes of <driver> within <xorg>.
@@ -2232,7 +2229,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 submission_id, result,
                 'omitted optional attribute %s of <driver> in <xorg> '
                     'treated as invalid' % omit)
-        
+
     def testXorgDriverTagInvalidAttributes(self):
         """Test the validation of attributes of <driver> within <xorg>.
 
@@ -2294,9 +2291,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
     def testQuestionsTagAttributesSubTags(self):
         """Test the validation of the <questions> sub-tags."""
-        # The only allowed sub-tag is <question>
+        # The only allowed sub-tag is <question>.
         sample_data = self.insertSampledata(
-            data = self.sample_data,
+            data=self.sample_data,
             insert_text='<nonsense/>',
             where='</questions>')
         result, submission_id = self.runValidator(sample_data)
@@ -2305,9 +2302,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             'Expecting element question, got nonsense',
             'invalid sub-tag of <questions>')
 
-        # <questions> may be empty
+        # The <questions> tag may be empty.
         sample_data = self.replaceSampledata(
-            data = self.sample_data,
+            data=self.sample_data,
             replace_text='<questions/>',
             from_text='<questions>',
             to_text='</questions>')
@@ -2319,7 +2316,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """Test the validation of CDATA in <questions> tag."""
         # CDATA content is not allowed.
         sample_data = self.insertSampledata(
-            data = self.sample_data,
+            data=self.sample_data,
             insert_text='nonsense',
             where='</questions>')
         result, submission_id = self.runValidator(sample_data)
@@ -2350,7 +2347,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             to_text='>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(
-            result, None, 
+            result, None,
             '<question> tag without attribute "plugin" was treated as '
                 'invalid')
 
@@ -2378,7 +2375,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             to_text='>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(
-            result, None, 
+            result, None,
             'Omitting sub-tag <command> of <question> was treated as invalid')
 
         # The sub-tag <answer> is required; <answer_choices>, which follows
@@ -2608,7 +2605,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Expecting element value, got nonsense',
             'detection of invalid sub-tag of <answer_choices>')
-        
 
     def testTargetTagAttributes(self):
         """Test the validation of <target> tag attributes."""
@@ -2678,7 +2674,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertNotEqual(
             result, None,
             'Valid <driver> sub-tag of <target> treated as invalid')
-        
+
     def testTargetTagInvalidSubtag(self):
         """Test the validation of an invalid <target> sub-tag."""
         sample_data = self.replaceSampledata(
@@ -2697,8 +2693,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # This tag has no attributes.
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text=
-                '<target id="42"><driver bar="baz">foo</driver></target>',
+            replace_text=(
+                '<target id="42"><driver bar="baz">foo</driver></target>'),
             from_text='<target',
             to_text='</target>')
         result, submission_id = self.runValidator(sample_data)
@@ -2710,8 +2706,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # Sub-tags are not allowed.
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text=
-                '<target id="42"><driver>foo<nonsense/></driver></target>',
+            replace_text=(
+                '<target id="42"><driver>foo<nonsense/></driver></target>'),
             from_text='<target',
             to_text='</target>')
         result, submission_id = self.runValidator(sample_data)

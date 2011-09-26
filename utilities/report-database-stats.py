@@ -229,10 +229,10 @@ def main():
     parser.add_option(
         "-i", "--interval", dest="interval", type=str,
         default=None, metavar="INTERVAL",
-        help=
+        help=(
             "Use statistics collected over the last INTERVAL period. "
             "INTERVAL is a string parsable by PostgreSQL "
-            "such as '5 minutes'.")
+            "such as '5 minutes'."))
     parser.add_option(
         "-n", "--limit", dest="limit", type=int,
         default=15, metavar="NUM",

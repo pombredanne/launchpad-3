@@ -335,7 +335,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
             logging.error(
                 "No data in DatabaseReplicationLag for node %d"
                 % slave_node_id)
-            return timedelta(days=999) # A long, long time.
+            return timedelta(days=999)
         return lag[0]
 
 

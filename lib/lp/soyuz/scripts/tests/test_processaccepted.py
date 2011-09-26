@@ -126,5 +126,3 @@ class TestClosingBugs(TestCaseWithFactory):
 
         for bug, bugtask in bugs:
             self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
-
-

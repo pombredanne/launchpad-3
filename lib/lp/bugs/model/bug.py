@@ -2239,6 +2239,7 @@ BugMessage""" % sqlvalues(self.id))
             BugActivity.datechanged <= end_date)
         return activity_in_range
 
+
 @ProxyFactory
 def get_also_notified_subscribers(
     bug_or_bugtask, recipients=None, level=None):

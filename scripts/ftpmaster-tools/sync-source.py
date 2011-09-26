@@ -558,6 +558,17 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
                current_sources, current_binaries)
 
 
+class Percentages:
+    """Helper to compute percentage ratios compared to a fixed total."""
+
+    def __init__(self, total):
+        self.total = total
+
+    def get_ratio(self, number):
+        """Report the ration of `number` to `self.total`, as a percentage."""
+        return (float(number) / self.total) * 100
+
+
 def do_diff(Sources, Suite, origin, arguments, current_binaries):
     stat_us = 0
     stat_cant_update = 0
@@ -622,22 +633,23 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
                         % (pkg, dest_version, source_version))
 
     if Options.all:
+        percentages = Percentages(stat_count)
         print
         print ("Out-of-date BUT modified: %3d (%.2f%%)"
-               % (stat_cant_update, (float(stat_cant_update)/stat_count)*100))
+            % (stat_cant_update, percentages.get_ratio(stat_cant_update)))
         print ("Updated:                  %3d (%.2f%%)"
-               % (stat_updated, (float(stat_updated)/stat_count)*100))
+            % (stat_updated, percentages.get_ratio(stat_updated)))
         print ("Ubuntu Specific:          %3d (%.2f%%)"
-               % (stat_us, (float(stat_us)/stat_count)*100))
+            % (stat_us, percentages.get_ratio(stat_us)))
         print ("Up-to-date [Modified]:    %3d (%.2f%%)"
-               % (stat_uptodate_modified,
-                  (float(stat_uptodate_modified)/stat_count)*100))
+            % (stat_uptodate_modified, percentages.get_ratio(
+                stat_uptodate_modified)))
         print ("Up-to-date:               %3d (%.2f%%)"
-               % (stat_uptodate, (float(stat_uptodate)/stat_count)*100))
+               % (stat_uptodate, percentages.get_ratio(stat_uptodate)))
         print ("Blacklisted:              %3d (%.2f%%)"
-               % (stat_blacklisted, (float(stat_blacklisted)/stat_count)*100))
+               % (stat_blacklisted, percentages.get_ratio(stat_blacklisted)))
         print ("Broken:                   %3d (%.2f%%)"
-               % (stat_broken, (float(stat_broken)/stat_count)*100))
+               % (stat_broken, percentages.get_ratio(stat_broken)))
         print "                          -----------"
         print "Total:                    %s" % (stat_count)
 

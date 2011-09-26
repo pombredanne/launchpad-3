@@ -224,6 +224,7 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             distroarchseries=archseries)
         self.assertEqual("fnord", self.getPickerEntry(dsp).description)
 
+
 class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -328,6 +329,7 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
         self.assertEqual(
             expected_details, entry.details[0])
 
+
 class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -370,9 +372,10 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
             'distribution', self.getPickerEntry(distribution).target_type)
 
     def test_distribution_truncates_summary(self):
-        summary = ("This is a deliberately, overly long summary. It goes on"
-                   "and on and on so as to break things up a good bit.")
-        distribution= self.factory.makeDistribution(summary=summary)
+        summary = (
+            "This is a deliberately, overly long summary. It goes on "
+            "and on and on so as to break things up a good bit.")
+        distribution = self.factory.makeDistribution(summary=summary)
         index = summary.rfind(' ', 0, 45)
         expected_summary = summary[:index + 1]
         expected_details = summary[index:]
@@ -381,6 +384,7 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
             expected_summary, entry.description)
         self.assertEqual(
             expected_details, entry.details[0])
+
 
 class TestPersonVocabulary:
     implements(IHugeVocabulary)

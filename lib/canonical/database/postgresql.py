@@ -85,13 +85,15 @@ def listReferences(cur, table, column, _state=None):
 
     for t in cur.fetchall():
         # t == (src_table, src_column, dest_table, dest_column, upd, del)
-        if t not in _state: # Avoid loops
+        # Avoid loops:
+        if t not in _state:
             _state.append(t)
             # Recurse, Locating references to the reference we just found.
             listReferences(cur, t[0], t[1], _state)
     # Don't sort. This way, we return the columns in order of distance
     # from the original (table, column), making it easier to change keys
     return _state
+
 
 def listUniques(cur, table, column):
     '''Return a list of unique indexes on `table` that include the `column`
@@ -175,6 +177,7 @@ def listUniques(cur, table, column):
             rv.append(tuple(keys))
     return rv
 
+
 def listSequences(cur):
     """Return a list of (schema, sequence, table, column) tuples.
 
@@ -206,7 +209,7 @@ def listSequences(cur):
     for schema, sequence in list(cur.fetchall()):
         match = re.search('^(\w+)_(\w+)_seq$', sequence)
         if match is None:
-            rv.append( (schema, sequence, None, None) )
+            rv.append((schema, sequence, None, None))
         else:
             table = match.group(1)
             column = match.group(2)
@@ -225,10 +228,11 @@ def listSequences(cur):
             cur.execute(sql, dict(schema=schema, table=table, column=column))
             num = cur.fetchone()[0]
             if num == 1:
-                rv.append( (schema, sequence, table, column) )
+                rv.append((schema, sequence, table, column))
             else:
-                rv.append( (schema, sequence, None, None) )
+                rv.append((schema, sequence, None, None))
     return rv
+
 
 def generateResetSequencesSQL(cur):
     """Return SQL that will reset table sequences to match the data in them.
@@ -257,6 +261,7 @@ def generateResetSequencesSQL(cur):
     else:
         return ''
 
+
 def resetSequences(cur):
     """Reset table sequences to match the data in them.
 
@@ -280,6 +285,7 @@ def resetSequences(cur):
 
 # Regular expression used to parse row count estimate from EXPLAIN output
 _rows_re = re.compile("rows=(\d+)\swidth=")
+
 
 def estimateRowCount(cur, query):
     """Ask the PostgreSQL query optimizer for an estimated rowcount.
@@ -422,9 +428,10 @@ def allow_sequential_scans(cur, permission):
 
     cur.execute("SET enable_seqscan=%s" % permission_value)
 
+
 def all_tables_in_schema(cur, schema):
     """Return a set of all tables in the given schema.
-   
+
     :returns: A set of quoted, fully qualified table names.
     """
     cur.execute("""
@@ -574,4 +581,3 @@ if __name__ == '__main__':
 
     for table, column in listReferences(cur, 'person', 'id'):
         print '%32s %32s' % (table, column)
-

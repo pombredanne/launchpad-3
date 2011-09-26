@@ -7,7 +7,7 @@
 
 LPDIR=lib/canonical/launchpad
 REGISTRY="lib/canonical/launchpad/zcml/*.zcml lib/canonical/*.zcml
-          lib/canonical/launchpad/*.zcml *.zcml 
+          lib/canonical/launchpad/*.zcml *.zcml
           lib/zope/app/exception/browser/configure.zcml
           lib/zope/app/debugskin/configure.zcml
           lib/canonical/launchpad/webapp/*.zcml
@@ -15,7 +15,7 @@ REGISTRY="lib/canonical/launchpad/zcml/*.zcml lib/canonical/*.zcml
 
 MASTER_MACRO='metal:use-macro="context/@@main_template/master"'
 
-for f in $LPDIR/templates/*.pt; do 
+for f in $LPDIR/templates/*.pt; do
     base=`basename $f`
     clean=`echo $base | cut -d. -f1 | tr - _`
     if echo $base | grep -qa ^template-; then

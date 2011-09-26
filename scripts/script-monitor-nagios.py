@@ -58,7 +58,8 @@ def main():
         start_date = datetime.now() - timedelta(minutes=minutes_ago)
 
         completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
-        completed_to = strftime("%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
+        completed_to = strftime(
+            "%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
 
         hosts_scripts = []
         for arg in args:
@@ -95,8 +96,8 @@ def main():
             print "All scripts ran as expected"
             return 0
     except Exception, e:
-        # Squeeze the exception type and stringification of the exception value
-        # on to one line.
+        # Squeeze the exception type and stringification of the exception
+        # value on to one line.
         print "Unhandled exception: %s %r" % (e.__class__.__name__, str(e))
         return 3
 

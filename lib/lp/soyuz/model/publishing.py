@@ -688,7 +688,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.distroseries.distribution.getSourcePackageRelease(
             self.supersededby)
 
-    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when
     # self.sourcepackagename is populated.
     @property
     def source_package_name(self):
@@ -961,7 +961,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IBinaryPackagePublishingHistory`"""
         return self.distroarchseries.distroseries
 
-    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when
     # self.binarypackagename is populated.
     @property
     def binary_package_name(self):

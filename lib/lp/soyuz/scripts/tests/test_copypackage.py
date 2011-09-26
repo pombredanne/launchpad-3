@@ -263,7 +263,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # Create a brand new PPA.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
 
         # Make it private if necessary.
         if private:
@@ -307,7 +307,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # files related to it will remain private.
         public_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         public_source = private_source.copyTo(
             private_source.distroseries, private_source.pocket,
             public_archive)
@@ -382,7 +382,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # files related to it will remain private.
         public_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         public_binary = private_binary.copyTo(
             private_source.distroseries, private_source.pocket,
             public_archive)[0]
@@ -419,7 +419,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # Copy The original source and binaries to a private PPA.
         private_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         private_archive.buildd_secret = 'x'
         private_archive.private = True
 
@@ -594,8 +594,8 @@ class CopyCheckerQueries(TestCaseWithFactory,
         sources = []
         for i in xrange(nb_of_sources):
             source = self.test_publisher.getPubSource(
-                version = u'%d' % self.factory.getUniqueInteger(),
-                sourcename = u'name-%d' % self.factory.getUniqueInteger())
+                version=u'%d' % self.factory.getUniqueInteger(),
+                sourcename=u'name-%d' % self.factory.getUniqueInteger())
             sources.append(source)
         return sources
 

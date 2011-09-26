@@ -116,7 +116,8 @@ class LaunchpadFormView(LaunchpadView):
         self.setUpWidgets()
 
         data = {}
-        errors, action = form.handleSubmit(self.actions, data, self._validate)
+        errors, form_action = form.handleSubmit(
+            self.actions, data, self._validate)
 
         # no action selected, so return
         if action is None:
@@ -240,8 +241,8 @@ class LaunchpadFormView(LaunchpadView):
         If False is returned, the view or template probably needs to explain
         why no actions can be performed and offer a cancel link.
         """
-        for action in self.actions:
-            if action.available():
+        for form_action in self.actions:
+            if form_action.available():
                 return True
         return False
 

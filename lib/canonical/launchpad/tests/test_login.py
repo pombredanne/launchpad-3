@@ -44,7 +44,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         # person and account created later don't end up with the same IDs,
         # which could happen since they're both sequential.
         # We need them to be different for one of our tests here.
-        dummy_account = getUtility(IAccountSet).new(
+        getUtility(IAccountSet).new(
             AccountCreationRationale.UNKNOWN, 'Dummy name')
         person = self.factory.makePerson('foo.bar@example.com')
         self.failIfEqual(person.id, person.account.id)

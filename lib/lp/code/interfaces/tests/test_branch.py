@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-import lp.codehosting # For plugins
+import lp.codehosting  # For plugins.
 
 from bzrlib.branch import (
     format_registry as branch_format_registry,

@@ -46,7 +46,8 @@ def main():
         start_date = datetime.now() - timedelta(minutes=minutes_ago)
 
         completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
-        completed_to = strftime("%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
+        completed_to = strftime(
+            "%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
 
         hosts_scripts = []
         for arg in args:
@@ -75,17 +76,19 @@ def main():
                 subj.append("%s:%s" % (hostname, scriptname))
                 error_found = 2
         if error_found:
-            # Construct our email
+            # Construct our email.
             msg = MIMEText('\n'.join(msg))
             msg['Subject'] = "Scripts failed to run: %s" % ", ".join(subj)
             msg['From'] = 'script-failures@launchpad.net'
             msg['Reply-To'] = 'launchpad@lists.canonical.com'
             msg['To'] = 'launchpad@lists.canonical.com'
 
-            # Send out the email
+            # Send out the email.
             smtp = smtplib.SMTP()
             smtp.connect()
-            smtp.sendmail('script-failures@launchpad.net', ['launchpad@lists.canonical.com'], msg.as_string())
+            smtp.sendmail(
+                'script-failures@launchpad.net',
+                ['launchpad@lists.canonical.com'], msg.as_string())
             smtp.close()
             return 2
     except:

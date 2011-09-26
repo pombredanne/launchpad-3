@@ -102,7 +102,8 @@ class TestPgTestSetupTuning(testtools.TestCase, TestWithFixtures):
             cur = con.cursor()
             cur.execute('CREATE TABLE foo (x int)')
             con.commit()
-            ConnectionWrapper.committed = False # Leave the table
+            # Leave the table.
+            ConnectionWrapper.committed = False
         finally:
             fixture.tearDown()
 
@@ -177,7 +178,7 @@ class TestPgTestSetupTuning(testtools.TestCase, TestWithFixtures):
         sequence_values = []
         # Insert a row into it and roll back the changes. Each time, we
         # should end up with the same sequence value
-        for i in range(1,3):
+        for i in range(1, 3):
             fixture.setUp()
             try:
                 con = fixture.connect()

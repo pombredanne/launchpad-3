@@ -124,9 +124,9 @@ class ICodeImport(Interface):
             allowed_schemes=["http", "https", "svn", "git"],
             allow_userinfo=True,
             allow_port=True,
-            allow_query=False,    # Query makes no sense in Subversion.
-            allow_fragment=False, # Fragment makes no sense in Subversion.
-            trailing_slash=False)) # See http://launchpad.net/bugs/56357.
+            allow_query=False,      # Query makes no sense in Subversion.
+            allow_fragment=False,   # Fragment makes no sense in Subversion.
+            trailing_slash=False))  # See http://launchpad.net/bugs/56357.
 
     cvs_root = exported(
         TextLine(title=_("Repository"), required=False, readonly=True,

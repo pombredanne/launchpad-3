@@ -64,6 +64,7 @@ del Charset.CHARSETS['utf-8']
 Charset.add_charset('utf-8', Charset.SHORTEST, Charset.QP, 'utf-8')
 Charset.add_alias('utf8', 'utf-8')
 
+
 def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     """Validate various bits of the email.
 
@@ -330,13 +331,15 @@ def get_addresses_from_header(email_header):
         formataddr((name, address))
         for name, address in getaddresses([email_header])]
 
+
 def validate_message(message):
     """Validate that the supplied message is suitable for sending."""
-    assert isinstance(message, Message), 'Not an email.Message.Message'
-    assert 'to' in message and bool(message['to']), 'No To: header'
-    assert 'from' in message and bool(message['from']), 'No From: header'
-    assert 'subject' in message and bool(message['subject']), \
-            'No Subject: header'
+    assert isinstance(message, Message), "Not an email.Message.Message"
+    assert 'to' in message and bool(message['to']), "No To: header"
+    assert 'from' in message and bool(message['from']), "No From: header"
+    assert 'subject' in message and bool(message['subject']), (
+            "No Subject: header")
+
 
 def sendmail(message, to_addrs=None, bulk=True):
     """Send an email.Message.Message

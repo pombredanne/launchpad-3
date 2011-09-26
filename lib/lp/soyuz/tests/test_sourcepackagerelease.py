@@ -52,7 +52,6 @@ class TestSourcePackageRelease(TestCaseWithFactory):
 
     def test_uploader_recipe(self):
         recipe_build = self.factory.makeSourcePackageRecipeBuild()
-        recipe = recipe_build.recipe
         spr = self.factory.makeSourcePackageRelease(
             source_package_recipe_build=recipe_build)
         self.assertEqual(recipe_build.requester, spr.uploader)
@@ -133,7 +132,7 @@ class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
             das, PackagePublishingPocket.RELEASE, parent_archive,
             status=BuildStatus.FULLYBUILT)
         bpr = self.factory.makeBinaryPackageRelease(build=orig_build)
-        parent_binary_pub = self.factory.makeBinaryPackagePublishingHistory(
+        self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, distroarchseries=das,
             archive=parent_archive)
 

@@ -27,6 +27,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 execute_zcml_for_scripts()
 
+
 def check():
     cur = cursor()
     cur.execute("UPDATE Person SET homepage_content='foo' WHERE name='mark'")
