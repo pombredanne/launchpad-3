@@ -8,7 +8,6 @@ __metaclass__ = type
 from ConfigParser import SafeConfigParser
 from StringIO import StringIO
 
-from canonical.config import config
 from canonical.testing.layers import RabbitMQLayer
 from lp.services.txlongpoll.server import TxLongPollServer
 from lp.testing import TestCase
@@ -25,21 +24,10 @@ class TestTxLongPollServer(TestCase):
             broker_port=123, frontend_port=None))
         service_config = SafeConfigParser()
         service_config.readfp(StringIO(fixture.config['service_config']))
-        self.assertEqual(
-            ["rabbitmq", "txlongpoll"], sorted(service_config.sections()))
+        self.assertEqual(["txlongpoll"], service_config.sections())
         # txlongpoll section
         expected = {
             "frontend_port": "%d" % fixture.config['frontend_port'],
             }
         observed = dict(service_config.items("txlongpoll"))
-        self.assertEqual(expected, observed)
-        # rabbitmq section
-        expected = {
-            "host": "%s" % (
-                config.rabbitmq.host),
-            "password": "guest",
-            "userid": "guest",
-            "virtual_host": "/",
-            }
-        observed = dict(service_config.items("rabbitmq"))
         self.assertEqual(expected, observed)

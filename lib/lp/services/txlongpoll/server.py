@@ -12,8 +12,6 @@ from textwrap import dedent
 
 from txlongpollfixture.server import TxLongPollFixture
 
-from canonical.config import config
-
 
 class TxLongPollServer(TxLongPollFixture):
     """A TxLongPoll server fixture with Launchpad-specific config.
@@ -25,14 +23,7 @@ class TxLongPollServer(TxLongPollFixture):
     def setUp(self):
         super(TxLongPollServer, self).setUp()
         self.config['service_config'] = dedent("""\
-            [rabbitmq]
-            host: %s
-            userid: guest
-            password: guest
-            virtual_host: /
-
             [txlongpoll]
             frontend_port: %d
             """ % (
-                config.rabbitmq.host,
                 self.config['frontend_port']))
