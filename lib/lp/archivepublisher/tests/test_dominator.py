@@ -9,6 +9,7 @@ import datetime
 from operator import attrgetter
 
 import apt_pkg
+from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -25,7 +26,11 @@ from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestDominator(TestNativePublishingBase):
@@ -280,6 +285,19 @@ class TestGeneralizedPublication(TestCaseWithFactory):
             bpph.binarypackagerelease.version,
             GeneralizedPublication(is_source=False).getPackageVersion(bpph))
 
+    def test_load_releases_loads_sourcepackagerelease(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        self.assertContentEqual(
+            [spph.sourcepackagerelease],
+            GeneralizedPublication(is_source=True).load_releases([spph]))
+
+    def test_load_releases_loads_binarypackagerelease(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=self.factory.makeBinaryPackageRelease())
+        self.assertContentEqual(
+            [bpph.binarypackagerelease],
+            GeneralizedPublication(is_source=False).load_releases([bpph]))
+
     def test_compare_sorts_versions(self):
         versions = [
             '1.1v2',
@@ -480,6 +498,16 @@ class TestDominatorMethods(TestCaseWithFactory):
         self.assertEqual(
             [spr, spr, None], [pub.supersededby for pub in pubs])
 
+    def test_dominatePackage_is_efficient(self):
+        # dominatePackage avoids issuing too many queries.
+        versions = ["1.%s" % revision for revision in xrange(5)]
+        pubs = make_spphs_for_versions(self.factory, versions)
+        with StormStatementRecorder() as recorder:
+            self.makeDominator(pubs).dominatePackage(
+                pubs, versions[2:-1],
+                GeneralizedPublication(True))
+        self.assertThat(recorder, HasQueryCount(LessThan(5)))
+
     def test_dominatePackage_advanced_scenario(self):
         # Put dominatePackage through its paces with complex combined
         # data.
@@ -571,13 +599,13 @@ class TestDominatorMethods(TestCaseWithFactory):
             self.assertEqual(
                 expected_supersededby, [pub.supersededby for pub in pubs])
 
-    def test_dominateRemovedSourceVersions_dominates_publications(self):
-        # dominateRemovedSourceVersions finds the publications for a
-        # package and calls dominatePackage on them.
+    def test_dominateSourceVersions_dominates_publications(self):
+        # dominateSourceVersions finds the publications for a package
+        # and calls dominatePackage on them.
         pubs = make_spphs_for_versions(self.factory, ['0.1', '0.2', '0.3'])
         package_name = pubs[0].sourcepackagerelease.sourcepackagename.name
 
-        self.makeDominator(pubs).dominateRemovedSourceVersions(
+        self.makeDominator(pubs).dominateSourceVersions(
             pubs[0].distroseries, pubs[0].pocket, package_name, ['0.2'])
         self.assertEqual([
                 PackagePublishingStatus.SUPERSEDED,
@@ -589,21 +617,21 @@ class TestDominatorMethods(TestCaseWithFactory):
             [pubs[1].sourcepackagerelease, None, None],
             [pub.supersededby for pub in pubs])
 
-    def test_dominateRemovedSourceVersions_ignores_other_pockets(self):
-        # dominateRemovedSourceVersions ignores publications in other
-        # pockets than the one specified.
+    def test_dominateSourceVersions_ignores_other_pockets(self):
+        # dominateSourceVersions ignores publications in other pockets
+        # than the one specified.
         pubs = make_spphs_for_versions(self.factory, ['2.3', '2.4'])
         package_name = pubs[0].sourcepackagerelease.sourcepackagename.name
         removeSecurityProxy(pubs[0]).pocket = PackagePublishingPocket.UPDATES
         removeSecurityProxy(pubs[1]).pocket = PackagePublishingPocket.PROPOSED
-        self.makeDominator(pubs).dominateRemovedSourceVersions(
+        self.makeDominator(pubs).dominateSourceVersions(
             pubs[0].distroseries, pubs[0].pocket, package_name, ['2.3'])
         self.assertEqual(PackagePublishingStatus.PUBLISHED, pubs[1].status)
 
-    def test_dominateRemovedSourceVersions_ignores_other_packages(self):
+    def test_dominateSourceVersions_ignores_other_packages(self):
         pubs = make_spphs_for_versions(self.factory, ['1.0', '1.1'])
         other_package_name = self.factory.makeSourcePackageName().name
-        self.makeDominator(pubs).dominateRemovedSourceVersions(
+        self.makeDominator(pubs).dominateSourceVersions(
             pubs[0].distroseries, pubs[0].pocket, other_package_name, ['1.1'])
         self.assertEqual(PackagePublishingStatus.PUBLISHED, pubs[0].status)
 
@@ -671,9 +699,9 @@ class TestDominatorMethods(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED)
             for counter in xrange(2)]
         dominator = self.makeDominator(spphs)
-        [(name, publications)] = dominator.findPublishedSourcePackageNames(
-            series, pocket)
-        self.assertEqual(len(spphs), publications)
+        self.assertContentEqual(
+            [(spr.sourcepackagename.name, len(spphs))],
+            dominator.findPublishedSourcePackageNames(series, pocket))
 
     def test_findPublishedSourcePackageNames_counts_no_other_state(self):
         series = self.factory.makeDistroSeries()
@@ -685,9 +713,9 @@ class TestDominatorMethods(TestCaseWithFactory):
                 status=status)
             for status in PackagePublishingStatus.items]
         dominator = self.makeDominator(spphs)
-        [(name, publications)] = dominator.findPublishedSourcePackageNames(
-            series, pocket)
-        self.assertEqual(1, publications)
+        self.assertContentEqual(
+            [(spr.sourcepackagename.name, 1)],
+            dominator.findPublishedSourcePackageNames(series, pocket))
 
     def test_findPublishedSPPHs_finds_published_SPPH(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
