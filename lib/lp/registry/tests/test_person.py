@@ -61,6 +61,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import (
     KarmaCategory,
@@ -436,6 +437,88 @@ class TestPerson(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             list(user.getBugSubscriberPackages())
         self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def createCopiedPackage(self, spph, copier, dest_distroseries=None,
+                            dest_archive=None):
+        if dest_distroseries is None:
+            dest_distroseries = self.factory.makeDistroSeries()
+        if dest_archive is None:
+            dest_archive = dest_distroseries.main_archive
+        return spph.copyTo(
+            dest_distroseries, creator=copier,
+            pocket=PackagePublishingPocket.UPDATES,
+            archive=dest_archive)
+
+    def test_getLatestSynchronisedPublishings_most_recent_first(self):
+        # getLatestSynchronisedPublishings returns the latest copies sorted
+        # by most recent first.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        copied_spph1 = self.createCopiedPackage(spph, copier)
+        copied_spph2 = self.createCopiedPackage(spph, copier)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertContentEqual(
+            [copied_spph2, copied_spph1],
+            synchronised_spphs)
+
+    def test_getLatestSynchronisedPublishings_other_creator(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        self.createCopiedPackage(spph, copier)
+        someone_else = self.factory.makePerson()
+        synchronised_spphs = someone_else.getLatestSynchronisedPublishings()
+
+        self.assertEqual(
+            0,
+            synchronised_spphs.count())
+
+    def test_getLatestSynchronisedPublishings_latest(self):
+        # getLatestSynchronisedPublishings returns only the latest copy of
+        # a package in a distroseries
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        self.createCopiedPackage(
+            spph, copier, dest_distroseries)
+        copied_spph2 = self.createCopiedPackage(
+            spph, copier, dest_distroseries)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertContentEqual(
+            [copied_spph2],
+            synchronised_spphs)
+
+    def test_getLatestSynchronisedPublishings_cross_archive_copies(self):
+        # getLatestSynchronisedPublishings returns only the copies copied
+        # cross archive.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        dest_distroseries2 = self.factory.makeDistroSeries(
+            distribution=spph.distroseries.distribution)
+        self.createCopiedPackage(
+            spph, copier, dest_distroseries2)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertEqual(
+            0,
+            synchronised_spphs.count())
+
+    def test_getLatestSynchronisedPublishings_main_archive(self):
+        # getLatestSynchronisedPublishings returns only the copies copied in
+        # a primary archive (as opposed to a ppa).
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        ppa = self.factory.makeArchive(
+            distribution=dest_distroseries.distribution)
+        self.createCopiedPackage(
+            spph, copier, dest_distroseries, ppa)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertEqual(
+            0,
+            synchronised_spphs.count())
 
 
 class TestPersonStates(TestCaseWithFactory):

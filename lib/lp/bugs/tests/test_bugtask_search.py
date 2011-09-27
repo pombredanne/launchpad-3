@@ -54,6 +54,9 @@ from lp.testing import (
     )
 from lp.testing.matchers import HasQueryCount
 
+PRIVATE_BUG_VISIBILITY_FLAG = {
+    'disclosure.private_bug_visibility_rules.enabled': 'on'}
+
 
 class SearchTestBase:
     """A mixin class with tests useful for all targets and search variants."""
@@ -92,20 +95,26 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=None)
         self.assertSearchFinds(params, self.bugtasks)
 
-    def test_private_bug_in_search_result(self):
+    def test_private_bug_in_search_result_anonymous_users(self):
         # Private bugs are not included in search results for anonymous users.
         with person_logged_in(self.owner):
             self.bugtasks[-1].bug.setPrivate(True, self.owner)
         params = self.getBugTaskSearchParams(user=None)
         self.assertSearchFinds(params, self.bugtasks[:-1])
 
+    def test_private_bug_in_search_result_unauthorised_users(self):
         # Private bugs are not included in search results for ordinary users.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         user = self.factory.makePerson()
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks[:-1])
 
+    def test_private_bug_in_search_result_subscribers(self):
         # If the user is subscribed to the bug, it is included in the
         # search result.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         user = self.factory.makePerson()
         admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         with person_logged_in(admin):
@@ -114,17 +123,48 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
+    def test_private_bug_in_search_result_admins(self):
         # Private bugs are included in search results for admins.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
         self.assertSearchFinds(params, self.bugtasks)
 
+    def test_private_bug_in_search_result_assignees(self):
         # Private bugs are included in search results for the assignee.
-        user = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         bugtask = self.bugtasks[-1]
+        user = self.factory.makePerson()
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         with person_logged_in(admin):
             bugtask.transitionToAssignee(user)
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
+
+    def test_private_bug_in_search_result_pillar_owners(self):
+        # Private, non-security bugs are included in search results for the
+        # pillar owners if the correct feature flag is enabled.
+        bugtask = self.bugtasks[-1]
+        pillar_owner = bugtask.pillar.owner
+        with person_logged_in(self.owner):
+            bugtask.bug.setPrivate(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        params = self.getBugTaskSearchParams(user=pillar_owner)
+        # Check the results with the feature flag.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks)
+        # Check the results without the feature flag.
+        self.assertSearchFinds(params, self.bugtasks[:-1])
+
+        # Make the bugtask security related.
+        with person_logged_in(self.owner):
+            bugtask.bug.setSecurityRelated(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        # It should now be excluded from the results.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks[:-1])
 
     def test_search_by_bug_reporter(self):
         # Search results can be limited to bugs filed by a given person.
@@ -415,10 +455,10 @@ class SearchTestBase:
         utc_now = datetime.now(pytz.timezone('UTC'))
         self.assertTrue(utc_now >= self.bugtasks[2].date_closed)
         params = self.getBugTaskSearchParams(
-            user=None, date_closed=greater_than(utc_now-timedelta(days=1)))
+            user=None, date_closed=greater_than(utc_now - timedelta(days=1)))
         self.assertSearchFinds(params, self.bugtasks[2:])
         params = self.getBugTaskSearchParams(
-            user=None, date_closed=greater_than(utc_now+timedelta(days=1)))
+            user=None, date_closed=greater_than(utc_now + timedelta(days=1)))
         self.assertSearchFinds(params, [])
 
     def test_created_since(self):
@@ -561,7 +601,6 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
     def test_deactivated_listings_not_seen(self):
         # Someone without permission to see deactiveated projects does
         # not see bugtasks for deactivated projects.
-        nopriv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         bugtask_set = getUtility(IBugTaskSet)
         param = BugTaskSearchParams(user=None, fast_searchtext='Monkeys')
         results = bugtask_set.search(param, _noprejoins=True)
@@ -607,13 +646,13 @@ class ProjectGroupAndDistributionTests:
 
 class BugTargetTestBase:
     """A base class for the bug target mixin classes.
-    
+
     :ivar searchtarget: A bug context to search within.
     :ivar searchtarget2: A sibling bug context for testing cross-context
         searches. Created on demand when
         getBugTaskSearchParams(multitarget=True) is called.
-    :ivar bugtasks2: Bugtasks created for searchtarget2. Twice as many are made
-        as for searchtarget.
+    :ivar bugtasks2: Bugtasks created for searchtarget2. Twice as many are
+        made as for searchtarget.
     :ivar group_on: The columns to group on when calling countBugs. None
         if the target being testing is not sensible/implemented for counting
         bugs. For instance, grouping by project group may be interesting but
@@ -872,7 +911,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
                 owner=self.owner, project=self.searchtarget)
             bug1 = self.factory.makeBug(product=product1)
             bug1.default_bugtask.updateTargetNameCache()
-            bug2 = self.factory.makeBug(product=product2)
+            self.factory.makeBug(product=product2)
         params = self.getBugTaskSearchParams(user=None, searchtext='uct-fo')
         # With no flag, we find the first bug.
         self.assertSearchFinds(params, [bug1.default_bugtask])

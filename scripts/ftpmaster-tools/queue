@@ -10,115 +10,110 @@ Tool for handling and visualisation of upload queue records.
 
 import _pythonpath
 
-import sys
-from optparse import OptionParser
+import transaction
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.lp import initZopeless
-
-from canonical.launchpad.scripts import logger, logger_options
+from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 from lp.soyuz.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 
 
-def main():
-    parser = OptionParser()
-    logger_options(parser)
+class QueueScript(LaunchpadScript):
 
-    parser.add_option("-Q", "--queue",
-                      dest="queue_name", metavar="QUEUE", default="new",
-                      help="Which queue to consider")
+    usage = 'Usage: %prog [options] <command>'
 
-    parser.add_option("-d", "--distribution",
-                      dest="distribution_name", metavar="DISTRO", default=None,
-                      help="Which distro to look in")
+    def add_my_options(self):
+        self.parser.add_option(
+            "-Q", "--queue",
+            dest="queue_name", metavar="QUEUE", default="new",
+            help="Which queue to consider")
 
-    parser.add_option("-s", "--suite",
-                      dest="suite_name", metavar="DISTRORELEASE",
-                      default=None,
-                      help=("Which distrorelease to look in, defaults "
-                            "to distribution 'currentseries'."))
+        self.parser.add_option(
+            "-d", "--distribution",
+            dest="distribution_name", metavar="DISTRO", default=None,
+            help="Which distro to look in")
 
-    parser.add_option("-N", "--dry-run", action="store_true",
-                      dest="dryrun", metavar="DRY_RUN", default=False,
-                      help="Whether to treat this as a dry-run or not.")
+        self.parser.add_option(
+            "-s", "--suite",
+            dest="suite_name", metavar="DISTRORELEASE", default=None,
+            help=("Which distrorelease to look in, defaults "
+                  "to distribution 'currentseries'."))
 
-    parser.add_option("-M", "--no-mail", action="store_true",
-                      dest="nomail", metavar="NO_MAIL", default=False,
-                      help="Whether to send announce email or not.")
+        self.parser.add_option(
+            "-N", "--dry-run", action="store_true",
+            dest="dryrun", metavar="DRY_RUN", default=False,
+            help="Whether to treat this as a dry-run or not.")
 
-    parser.add_option("-e", "--exact-match", action="store_true",
-                      dest="exact_match", metavar="EXACTMATCH",
-                      default=False,
-                      help="Whether treat filter as a exact match or not.")
+        self.parser.add_option(
+            "-M", "--no-mail", action="store_true",
+            dest="nomail", metavar="NO_MAIL", default=False,
+            help="Whether to send announce email or not.")
 
-    parser.add_option("-i", "--ignore-errors", action="store_true",
-                      dest="ignore_errors", metavar="IGNOREERRORS",
-                      default=False,
-                      help="Ignore errors when performing a list of commands.")
+        self.parser.add_option(
+            "-e", "--exact-match", action="store_true",
+            dest="exact_match", metavar="EXACTMATCH", default=False,
+            help="Whether treat filter as a exact match or not.")
 
-    parser.add_option("-f", "--file", metavar="FILE", default=None,
-                      help="file containing a sequence of command lines.")
+        self.parser.add_option(
+            "-i", "--ignore-errors", action="store_true",
+            dest="ignore_errors", metavar="IGNOREERRORS", default=False,
+            help="Ignore errors when performing a list of commands.")
 
-    parser.add_option("-c", "--component", dest="component_name",
-                      metavar="COMPONENT", default=None,
-                      help="When overriding, move package to COMPONENT")
+        self.parser.add_option(
+            "-f", "--file", metavar="FILE", default=None,
+            help="file containing a sequence of command lines.")
 
-    parser.add_option("-x", "--section", dest="section_name",
-                      metavar="SECTION", default=None,
-                      help="When overriding, move package to SECTION")
+        self.parser.add_option(
+            "-c", "--component", dest="component_name",
+            metavar="COMPONENT", default=None,
+            help="When overriding, move package to COMPONENT")
 
-    parser.add_option("-p", "--priority", dest="priority_name",
-                      metavar="PRIORITY", default=None,
-                      help="When overriding, move package to PRIORITY")
+        self.parser.add_option(
+            "-x", "--section", dest="section_name",
+            metavar="SECTION", default=None,
+            help="When overriding, move package to SECTION")
 
-    options, args = parser.parse_args()
-    log = logger(options, "ftpmaster.queue")
+        self.parser.add_option(
+            "-p", "--priority", dest="priority_name",
+            metavar="PRIORITY", default=None,
+            help="When overriding, move package to PRIORITY")
 
-    if options.queue_name not in name_queue_map:
-        print 'Unable to map queue name "%s"' % options.queue_name
-        return 1
+    def main(self):
+        if self.options.queue_name not in name_queue_map:
+            self.parser.error(
+                'Unable to map queue name "%s"' % self.options.queue_name)
 
-    no_mail = options.dryrun or options.nomail
-    queue = name_queue_map[options.queue_name]
+        no_mail = self.options.dryrun or self.options.nomail
+        queue = name_queue_map[self.options.queue_name]
 
-    if options.file:
-        args_list = [args.strip().split() for args in
-                     open(options.file).readlines()]
-    else:
-        args_list = [args]
-
-    cmd_runner = CommandRunner(
-        queue, options.distribution_name, options.suite_name,
-        no_mail, options.component_name, options.section_name,
-        options.priority_name, log=log)
-
-    print ("Initializing connection to queue %s" % options.queue_name)
-
-    execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser=config.uploadqueue.dbuser,
-                       isolation=ISOLATION_LEVEL_READ_COMMITTED)
-
-    for single_args in args_list:
-        try:
-            cmd_runner.execute(single_args, options.exact_match)
-        except CommandRunnerError, info:
-            print (info)
-            if options.ignore_errors:
-                continue
-            ztm.abort()
-            print 'Aborting current transaction'
-            return 1
+        if self.options.file:
+            args_list = [self.args.strip().split() for args in
+                         open(self.options.file).readlines()]
         else:
-            if not options.dryrun:
-                ztm.commit()
+            args_list = [self.args]
+
+        cmd_runner = CommandRunner(
+            queue, self.options.distribution_name, self.options.suite_name,
+            no_mail, self.options.component_name, self.options.section_name,
+            self.options.priority_name, log=self.logger)
+
+        print "Initializing connection to queue %s" % self.options.queue_name
+
+        for single_args in args_list:
+            try:
+                cmd_runner.execute(single_args, self.options.exact_match)
+            except CommandRunnerError, info:
+                print (info)
+                if self.options.ignore_errors:
+                    continue
+                transaction.abort()
+                raise LaunchpadScriptFailure(
+                    'Error encountered -- aborting current transaction')
             else:
-                print "DRY RUN requested, not committing."
-
-    return 0
-
+                if not self.options.dryrun:
+                    transaction.commit()
+                else:
+                    print "DRY RUN requested, not committing."
 
 if __name__ == '__main__':
-    sys.exit(main())
+    QueueScript('queue', config.uploadqueue.dbuser).run()

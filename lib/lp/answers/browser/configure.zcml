@@ -121,7 +121,7 @@
     classes="QuestionCollectionAnswersMenu QuestionTargetAnswersMenu"
     />
   <browser:menus
-    module="canonical.launchpad.browser"
+    module="lp.answers.browser.faq"
     classes="FAQNavigationMenu"
     />
   <browser:menus
@@ -314,7 +314,7 @@
 
   <browser:page
     for="lp.answers.interfaces.questioncollection.IQuestionSet"
-    class="canonical.launchpad.browser.SearchAllQuestionsView"
+    class="lp.answers.browser.question.SearchAllQuestionsView"
     name="+questions"
     permission="zope.Public"
     />

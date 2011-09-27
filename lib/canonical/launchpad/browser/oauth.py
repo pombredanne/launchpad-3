@@ -173,6 +173,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
     actions, actions_excluding_special_permissions = (
         create_oauth_permission_actions())
     label = "Authorize application to access Launchpad on your behalf"
+    page_title = label
     schema = IOAuthRequestToken
     field_names = []
     token = None

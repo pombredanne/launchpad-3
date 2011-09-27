@@ -105,6 +105,7 @@ def construct_email_notifications(bug_notifications):
         key = get_activity_key(notification)
         if (notification.is_comment or
             key is None or
+            key == 'removed_subscriber' or
             old_values[key] != new_values[key]):
             # We will report this notification.
             filtered_notifications.append(notification)

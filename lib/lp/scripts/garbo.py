@@ -69,6 +69,7 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branch import Branch
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -86,6 +87,10 @@ from lp.services.scripts.base import (
     SilentLaunchpadScriptFailure,
     )
 from lp.services.session.model import SessionData
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.potmsgset import POTMsgSet
@@ -743,6 +748,33 @@ class BranchJobPruner(BulkPruner):
         """
 
 
+class PopulateBranchTransitivelyPrivate(TunableLoop):
+    """Populated the branch column transitively_private values.
+
+    Only needed until they are all set, after that triggers will maintain it.
+    """
+
+    maximum_chunk_size = 10000
+
+    def __init__(self, log, abort_time=None):
+        super_instance = super(PopulateBranchTransitivelyPrivate, self)
+        super_instance.__init__(log, abort_time)
+        self.store = IMasterStore(Branch)
+        self.isDone = IMasterStore(Branch).find(
+            Branch, Branch.transitively_private == None).is_empty
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
+        transaction.begin()
+        updated = self.store.execute("""
+            SELECT update_transitively_private(id) FROM branch
+            WHERE transitively_private IS NULL LIMIT %s
+            """ % int(chunk_size)
+            ).rowcount
+        self.log.debug("Updated %s branches." % updated)
+        transaction.commit()
+
+
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
@@ -948,6 +980,60 @@ class UnusedPOTMsgSetPruner(TunableLoop):
             POTMsgSet, In(POTMsgSet.id, msgset_ids_to_remove)).remove()
         self.offset = self.offset + chunk_size
         transaction.commit()
+
+
+# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
+class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
+    """Populate the new sourcepackagename column of SPPH."""
+
+    done = False
+    maximum_chunk_size = 5000
+
+    def findSPPHs(self):
+        return IMasterStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.sourcepackagename == None
+            ).order_by(SourcePackagePublishingHistory.id)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.done
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        spphs = self.findSPPHs()[:chunk_size]
+        for spph in spphs:
+            spph.sourcepackagename = (
+                spph.sourcepackagerelease.sourcepackagename)
+        transaction.commit()
+        self.done = self.findSPPHs().is_empty()
+
+
+# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
+class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
+    """Populate the new binarypackagename column of BPPH."""
+
+    done = False
+    maximum_chunk_size = 5000
+
+    def findBPPHs(self):
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.binarypackagename == None
+            ).order_by(BinaryPackagePublishingHistory.id)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.done
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        bpphs = self.findBPPHs()[:chunk_size]
+        for bpph in bpphs:
+            bpph.binarypackagename = (
+                bpph.binarypackagerelease.binarypackagename)
+        transaction.commit()
+        self.done = self.findBPPHs().is_empty()
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
@@ -1199,6 +1285,9 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        SourcePackagePublishingHistorySPNPopulator,
+        BinaryPackagePublishingHistoryBPNPopulator,
+        PopulateBranchTransitivelyPrivate,
         ]
     experimental_tunable_loops = []
 

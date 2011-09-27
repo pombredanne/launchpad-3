@@ -60,8 +60,8 @@ BUILDOUT_BIN = \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild \
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
-    bin/run bin/sprite-util bin/start_librarian bin/stxdocs bin/tags \
-    bin/test bin/tracereport bin/twistd bin/update-download-cache
+    bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
+    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -253,7 +253,12 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached,rabbitmq -i $(LPCONFIG)
+
+run-testapp: LPCONFIG=testrunner-appserver
+run-testapp: build inplace stop
+	LPCONFIG=$(LPCONFIG) INTERACTIVE_TESTS=1 bin/run-testapp \
+	-r memcached -i $(LPCONFIG)
 
 run.gdb:
 	echo 'run' > run.gdb
@@ -265,7 +270,7 @@ start-gdb: build inplace stop support_files run.gdb
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq \
 	 -i $(LPCONFIG)
 
 run_codebrowse: build
@@ -460,12 +465,11 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: \
-	apidoc build_eggs buildonce_eggs buildout_bin check check \
-	check_config check_mailman clean clean_buildout clean_js \
-	clean_logs compile css_combine debug default doc ftest_build \
-	ftest_inplace hosted_branches jsbuild jsbuild_widget_css \
-	launchpad.pot pagetests pull_branches pydoctor realclean \
-	reload-apache run scan_branches schema sprite_css sprite_image \
-	start stop sync_branches TAGS tags test_build test_inplace \
-	zcmldocs
+.PHONY: apidoc build_eggs buildonce_eggs buildout_bin check check	\
+	check_config check_mailman clean clean_buildout clean_js	\
+	clean_logs compile css_combine debug default doc ftest_build	\
+	ftest_inplace hosted_branches jsbuild jsbuild_widget_css	\
+	launchpad.pot pagetests pull_branches pydoctor realclean	\
+	reload-apache run run-testapp runner scan_branches schema	\
+	sprite_css sprite_image start stop sync_branches TAGS tags	\
+	test_build test_inplace zcmldocs

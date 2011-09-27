@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0103,W0403
@@ -24,12 +24,10 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.config import config
 from lp.soyuz.scripts.buildd import RetryDepwait
 
 if __name__ == '__main__':
-    script = RetryDepwait(
-        'retry-depwait', dbuser=config.builddmaster.dbuser)
+    script = RetryDepwait('retry-depwait', dbuser='retry_depwait')
     script.lock_or_quit()
     try:
         script.run()

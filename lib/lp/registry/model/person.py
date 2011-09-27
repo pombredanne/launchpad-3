@@ -297,6 +297,7 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -2585,6 +2586,40 @@ class Person(
     def getLatestMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery()
+
+    def getLatestSynchronisedPublishings(self):
+        """See `IPerson`."""
+        query = """
+            SourcePackagePublishingHistory.id IN (
+                SELECT DISTINCT ON (spph.distroseries,
+                                    spr.sourcepackagename)
+                    spph.id
+                FROM
+                    SourcePackagePublishingHistory as spph, archive,
+                    SourcePackagePublishingHistory as ancestor_spph,
+                    SourcePackageRelease as spr
+                WHERE
+                    spph.sourcepackagerelease = spr.id AND
+                    spph.creator = %(creator)s AND
+                    spph.ancestor = ancestor_spph.id AND
+                    spph.archive = archive.id AND
+                    ancestor_spph.archive != spph.archive AND
+                    archive.purpose = %(archive_purpose)s
+                ORDER BY spph.distroseries,
+                    spr.sourcepackagename,
+                    spph.datecreated DESC,
+                    spph.id DESC
+            )
+            """ % dict(
+                   creator=quote(self.id),
+                   archive_purpose=quote(ArchivePurpose.PRIMARY),
+                   )
+
+        return SourcePackagePublishingHistory.select(
+            query,
+            orderBy=['-SourcePackagePublishingHistory.datecreated',
+                     '-SourcePackagePublishingHistory.id'],
+            prejoins=['sourcepackagerelease', 'archive'])
 
     def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""

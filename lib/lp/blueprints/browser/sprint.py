@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'HasSprintsView',
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
@@ -164,6 +165,11 @@ class SprintSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview', ]
 
 
+class HasSprintsView(LaunchpadView):
+
+    page_title = 'Events'
+
+
 class SprintView(HasSpecificationsView):
 
     implements(IMajorHeadingView)
@@ -225,6 +231,7 @@ class SprintView(HasSpecificationsView):
         return dt.strftime('%Y-%m-%d')
 
     _local_timeformat = '%H:%M %Z on %A, %Y-%m-%d'
+
     @property
     def local_start(self):
         """The sprint start time, in the local time zone, as text."""
@@ -376,7 +383,6 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
         self.attendee_ids = set(
             attendance.attendeeID for attendance in self.context.attendances)
 
-
     @cachedproperty
     def spec_filter(self):
         """Return the specification links with PROPOSED status for this
@@ -400,7 +406,7 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
         if 'SUBMIT_CANCEL' in form:
             self.status_message = 'Cancelled'
             self.request.response.redirect(
-                canonical_url(self.context)+'/+specs')
+                canonical_url(self.context) + '/+specs')
             return
 
         if 'SUBMIT_ACCEPT' not in form and 'SUBMIT_DECLINE' not in form:
@@ -439,7 +445,7 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
         if leftover == 0:
             # they are all done, so redirect back to the spec listing page
             self.request.response.redirect(
-                canonical_url(self.context)+'/+specs')
+                canonical_url(self.context) + '/+specs')
 
 
 class SprintMeetingExportView(LaunchpadView):
@@ -477,13 +483,14 @@ class SprintMeetingExportView(LaunchpadView):
                 model_specs, ['specificationID']):
             if subscription.personID not in attendee_set:
                 continue
-            people[subscription.specificationID][subscription.personID] = \
-                subscription.essential
-        # Spec specials - drafter/assignee. Don't need approver for performance
-        # as specifications() above eager loaded the people, and approvers
-        # don't count as a 'required person'.
+            people[subscription.specificationID][
+                subscription.personID] = subscription.essential
+
+        # Spec specials - drafter/assignee.  Don't need approver for
+        # performance, as specifications() above eager-loaded the
+        # people, and approvers don't count as "required persons."
         for spec in model_specs:
-            # get the list of attendees that will attend the sprint
+            # Get the list of attendees that will attend the sprint.
             spec_people = people[spec.id]
             if spec.assigneeID is not None:
                 spec_people[spec.assigneeID] = True
@@ -583,10 +590,10 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  # We used to store phone, organization, city and
                  # country, but this was a lie because users could not
                  # update these fields.
-                 '', # attendance.attendee.phone
-                 '', # attendance.attendee.organization
-                 '', # attendance.attendee.city
-                 '', # country
+                 '',  # attendance.attendee.phone
+                 '',  # attendance.attendee.organization
+                 '',  # attendance.attendee.city
+                 '',  # country
                  time_zone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
                  attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ'),
