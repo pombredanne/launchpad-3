@@ -76,7 +76,7 @@ There are several events which will cause a bug's heat to be updated.
 First, as stated above, heat will be calculated when the bug is created.
 
     >>> bug = factory.makeBug(owner=bug_owner)
-    >>> bug.heatb
+    >>> bug.heat
     6
 
 When the bug is marked private it gains a subscriber - the owner of the
