@@ -664,6 +664,7 @@ class BugSubscriptionPortletView(LaunchpadView,
         LaunchpadView.initialize(self)
         cache = IJSONRequestCache(self.request).objects
         self.extractBugSubscriptionDetails(self.user, self.context, cache)
+        cache['bug_is_private'] = self.context.private
         if self.user:
             cache['notifications_text'] = self.notifications_text
 
