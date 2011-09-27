@@ -333,3 +333,51 @@ class TestSpecificationSubscription(SpecificationWebserviceTestCase):
         result = webservice.named_get(
             subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
         self.assertFalse(result)
+
+
+class TestSpecificationBugLinks(SpecificationWebserviceTestCase):
+
+    layer = AppServerLayer
+
+    def test_bug_linking(self):
+        # Set up a spec, person, and bug.
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeSpecification()
+            db_person = self.factory.makePerson()
+            db_bug = self.factory.makeBug()
+            launchpad = self.factory.makeLaunchpadService()
+
+        # Link the bug to the spec via the web service.
+        with person_logged_in(db_person):
+            spec = ws_object(launchpad, db_spec)
+            bug = ws_object(launchpad, db_bug)
+            # There are no bugs associated with the spec/blueprint yet.
+            self.assertEqual(0, spec.bugs.total_size)
+            spec.linkBug(bug=bug)
+            transaction.commit()
+
+        # The spec now has one bug associated with it and that bug is the one
+        # we linked.
+        self.assertEqual(1, spec.bugs.total_size)
+        self.assertEqual(bug.id, spec.bugs[0].id)
+
+    def test_bug_unlinking(self):
+        # Set up a spec, person, and bug, then link the bug to the spec.
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeBlueprint()
+            db_person = self.factory.makePerson()
+            db_bug = self.factory.makeBug()
+            launchpad = self.factory.makeLaunchpadService(person=db_person)
+
+        spec = ws_object(launchpad, db_spec)
+        bug = ws_object(launchpad, db_bug)
+        spec.linkBug(bug=bug)
+
+        # There is only one bug linked at the moment.
+        self.assertEqual(1, spec.bugs.total_size)
+
+        spec.unlinkBug(bug=bug)
+        transaction.commit()
+
+        # Now that we've unlinked the bug, there are no linked bugs at all.
+        self.assertEqual(0, spec.bugs.total_size)
