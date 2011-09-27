@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for error logging & OOPS reporting."""
@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 import datetime
-import logging
 import httplib
+import logging
 import os
 import shutil
 import stat
@@ -20,6 +20,7 @@ import traceback
 from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
+from lp_sitecustomize import customize_get_converter
 from oops_datedir_repo import DateDirRepo
 import pytz
 import testtools
@@ -35,7 +36,6 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     _filter_session_statement,
@@ -51,12 +51,12 @@ from canonical.launchpad.webapp.interfaces import (
     NoReferrerError,
     )
 from canonical.testing import reset_logging
+from lp.app import versioninfo
 from lp.app.errors import (
     GoneError,
     TranslationUnavailable,
     )
 from lp.services.osutils import remove_tree
-from lp_sitecustomize import customize_get_converter
 
 
 UTC = pytz.utc

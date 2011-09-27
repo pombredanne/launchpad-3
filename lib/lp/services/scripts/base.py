@@ -33,7 +33,10 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config, dbconfig
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.database.postgresql import ConnectionString
 from canonical.launchpad import scripts
 from canonical.launchpad.scripts.logger import OopsHandler

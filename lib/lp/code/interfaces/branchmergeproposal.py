@@ -268,7 +268,8 @@ class IBranchMergeProposal(IPrivacy):
     all_comments = exported(
         CollectionField(
             title=_("All messages discussing this merge proposal"),
-            value_type=Reference(schema=Interface), # ICodeReviewComment
+            # Really ICodeReviewComment.
+            value_type=Reference(schema=Interface),
             readonly=True))
 
     address = exported(
@@ -281,13 +282,15 @@ class IBranchMergeProposal(IPrivacy):
     @operation_parameters(
         id=Int(
             title=_("A CodeReviewComment ID.")))
-    @operation_returns_entry(Interface) # ICodeReviewComment
+    # Really ICodeReviewComment.
+    @operation_returns_entry(Interface)
     @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
 
     @call_with(user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) # IBugTask
+    # Really IBugTask.
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
     @operation_for_version('devel')
     def getRelatedBugTasks(user):
@@ -317,7 +320,8 @@ class IBranchMergeProposal(IPrivacy):
     votes = exported(
         CollectionField(
             title=_('The votes cast or expected for this proposal'),
-            value_type=Reference(schema=Interface), #ICodeReviewVoteReference
+            # Really ICodeReviewVoteReference.
+            value_type=Reference(schema=Interface),
             readonly=True,
             )
         )
@@ -472,7 +476,8 @@ class IBranchMergeProposal(IPrivacy):
             title=_("A reviewer."), schema=IPerson),
         review_type=Text())
     @call_with(registrant=REQUEST_USER)
-    @operation_returns_entry(Interface) # Really ICodeReviewVoteReference
+    # Really ICodeReviewVoteReference.
+    @operation_returns_entry(Interface)
     @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
