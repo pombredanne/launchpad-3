@@ -3,7 +3,9 @@ __metaclass__ = type
 import logging
 
 from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.revision import NULL_REVISION
+from testtools.testcase import ExpectedException
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.bzr import (
@@ -11,7 +13,10 @@ from lp.code.bzr import (
     get_branch_formats,
     RepositoryFormat,
     )
-from lp.codehosting.upgrade import Upgrader
+from lp.codehosting.upgrade import (
+    HasTreeReferences,
+    Upgrader,
+    )
 from lp.testing import (
     temp_dir,
     TestCaseWithFactory,
@@ -75,3 +80,20 @@ class TestUpgrader(TestCaseWithFactory):
         bzr_branch.tags.set_tag('steve', 'rev-id')
         upgraded = self.upgrade_by_pull(bzr_branch, target_dir)
         self.assertEqual('rev-id', upgraded.tags.lookup_tag('steve'))
+
+    def test_upgrade_by_pull_dies_on_tree_references(self):
+        self.useBzrBranches(direct_database=True)
+        target_dir = self.useContext(temp_dir())
+        format = format_registry.make_bzrdir('pack-0.92-subtree')
+        with temp_dir() as subtree_branch_dir:
+            stb = BzrDir.create_branch_convenience(
+                subtree_branch_dir, format=format)
+            stt = stb.bzrdir.open_workingtree()
+            stt.bzrdir.root_transport.mkdir('foo')
+            stt.add('foo', 'foo-id')
+            stt.add_reference(stt.extract('foo-id'))
+            stt.commit('added tree reference')
+            branch, tree = self.create_branch_and_tree(format=format)
+            stt.branch.push(tree.branch)
+        with ExpectedException(HasTreeReferences):
+            upgraded = self.upgrade_by_pull(tree.branch, target_dir)

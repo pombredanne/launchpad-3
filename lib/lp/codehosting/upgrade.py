@@ -10,10 +10,15 @@ from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.transport import get_transport_from_path
 from bzrlib.upgrade import upgrade
 
+from lp.codehosting.bzrutils import read_locked
 from lp.codehosting.vfs import get_rw_server
 
 
 class AlreadyUpgraded(Exception):
+    pass
+
+
+class HasTreeReferences(Exception):
     pass
 
 
@@ -49,19 +54,21 @@ class Upgrader:
         self.logger.info(
             'Upgrading branch %s (%s)', branch.unique_name, branch.id)
         bzr_branch = branch.getBzrBranch()
-        upgrade_dir = mkdtemp(dir=self.target_dir)
-        try:
-            if getattr(bzr_branch.repository._format, 'supports_tree_reference',
-                       False):
-                self.upgrade_by_pull(bzr_branch, upgrade_dir)
+        with read_locked(bzr_branch):
+            upgrade_dir = mkdtemp(dir=self.target_dir)
+            try:
+                if getattr(
+                    bzr_branch.repository._format, 'supports_tree_reference',
+                    False):
+                    self.upgrade_by_pull(bzr_branch, upgrade_dir)
+                else:
+                    self.upgrade_to_dir(bzr_branch, upgrade_dir)
+            except:
+                rmtree(upgrade_dir)
+                raise
             else:
-                self.upgrade_to_dir(bzr_branch, upgrade_dir)
-        except:
-            rmtree(upgrade_dir)
-            raise
-        else:
-            os.rename(upgrade_dir, temp_location)
-            return temp_location
+                os.rename(upgrade_dir, temp_location)
+                return temp_location
 
     def upgrade_dir(self, url):
         exceptions = upgrade(url, self.target_format)
@@ -73,18 +80,30 @@ class Upgrader:
                 return 3
 
     def upgrade_to_dir(self, bzr_branch, upgrade_dir):
+        self.logger.info('Performing standard upgrade.')
         t = get_transport_from_path(upgrade_dir)
         bzr_branch.bzrdir.root_transport.copy_tree_to_transport(t)
         self.upgrade_dir(t.base)
 
     def upgrade_by_pull(self, bzr_branch, upgrade_dir):
+        self.logger.info('Performing upgrade via pull.')
+        self.check_tree_references(bzr_branch.repository)
         branch = BzrDir.create_branch_convenience(
             upgrade_dir, force_new_tree=False)
         branch.repository.fetch(bzr_branch.repository)
         bd = branch.bzrdir
         bd.destroy_branch()
         self.mirror_branch(bzr_branch, bd)
+        self.logger.info('Upgrading the actual branch.')
         self.upgrade_dir(upgrade_dir)
+
+    def check_tree_references(self, repo):
+        with read_locked(repo):
+            revision_ids = repo.all_revision_ids()
+            for tree in repo.revision_trees(revision_ids):
+                for path, entry in tree.iter_entries_by_dir():
+                    if entry.kind == 'tree-reference':
+                        raise HasTreeReferences()
 
     def mirror_branch(self, bzr_branch, target_bd):
         target = target_bd.get_branch_transport(bzr_branch._format)
