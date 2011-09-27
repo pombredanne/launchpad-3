@@ -1,4 +1,5 @@
-= Objects that contains build records =
+Objects that contains build records
+===================================
 
 Build records can be looked up in different contexts, they are:
 
@@ -24,7 +25,8 @@ different contexts.
     ...         print entry['title']
 
 
-== Filtering builds ==
+Filtering builds
+----------------
 
 Celso Providelo PPA builds can be browsed via the API.
 
@@ -83,7 +85,8 @@ Finally, filtering by the target pocket.
     0
 
 
-== Distribution builds ==
+Distribution builds
+-------------------
 
 Distributions, like ubuntu, allow users to call browse builds.
 
@@ -99,7 +102,8 @@ Distributions, like ubuntu, allow users to call browse builds.
     i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
 
 
-== DistroSeries builds ==
+DistroSeries builds
+-------------------
 
 DistroSeries, like ubuntu/hoary, allow users to call browse builds.
 
