@@ -7,16 +7,16 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from canonical.testing.layers import (
-    BaseLayer,
-    LaunchpadFunctionalLayer,
-    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.longpoll.adapters.event import (
     generate_event_key,
     LongPollEvent,
     )
 from lp.services.longpoll.interfaces import ILongPollEvent
-from lp.services.messaging.queue import RabbitMessageBase
+from lp.services.longpoll.testing import (
+    capture_longpoll_emissions,
+    LongPollEventRecord,
+    )
 from lp.testing import TestCase
 from lp.testing.matchers import Contains
 
@@ -27,7 +27,7 @@ class FakeEvent(LongPollEvent):
 
     @property
     def event_key(self):
-        return "event-key-%s-%s" % (self.source, self.event)
+        return "event-key-%s" % self.source
 
 
 class TestLongPollEvent(TestCase):
@@ -35,33 +35,28 @@ class TestLongPollEvent(TestCase):
     layer = LaunchpadFunctionalLayer
 
     def test_interface(self):
-        event = FakeEvent("source", "event")
+        event = FakeEvent("source")
         self.assertProvides(event, ILongPollEvent)
 
     def test_event_key(self):
         # event_key is not implemented in LongPollEvent; subclasses must
         # provide it.
-        event = LongPollEvent("source", "event")
+        event = LongPollEvent("source")
         self.assertRaises(NotImplementedError, getattr, event, "event_key")
 
     def test_emit(self):
         # LongPollEvent.emit() sends the given data to `event_key`.
-        event = FakeEvent("source", "event")
+        event = FakeEvent("source")
         event_data = {"hello": 1234}
-        event.emit(event_data)
-        expected_message = {
-            "event_key": event.event_key,
-            "event_data": event_data,
-            }
-        pending_messages = [
-            message for (call, message) in
-            RabbitMessageBase.class_locals.messages]
-        self.assertThat(pending_messages, Contains(expected_message))
+        with capture_longpoll_emissions() as log:
+            event.emit(**event_data)
+        expected_message = LongPollEventRecord(
+            event_key=event.event_key,
+            data=dict(event_data, event_key=event.event_key))
+        self.assertThat(log, Contains(expected_message))
 
 
 class TestFunctions(TestCase):
-
-    layer = BaseLayer
 
     def test_generate_event_key_no_components(self):
         self.assertRaises(

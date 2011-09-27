@@ -481,6 +481,7 @@
                 critical_bugtasks
                 current_publishing_records
                 currentrelease
+                delete
                 development_version
                 displayname
                 distribution

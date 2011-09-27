@@ -11,4 +11,3 @@
     <allow interface=".interfaces.job.IJob" />
   </class>
 </configure>
-

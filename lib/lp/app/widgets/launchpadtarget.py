@@ -51,6 +51,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     default_option = "package"
     _widgets_set_up = False
 
+    def getDistributionVocabulary(self):
+        return 'Distribution'
+
     def setUpSubWidgets(self):
         if self._widgets_set_up:
             return
@@ -66,7 +69,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 required=True, vocabulary='Product'),
             Choice(
                 __name__='distribution', title=u"Distribution",
-                required=True, vocabulary='Distribution',
+                required=True, vocabulary=self.getDistributionVocabulary(),
                 default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__='package', title=u"Package",

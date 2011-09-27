@@ -3,11 +3,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'alreadyInstalledMsg',
     'block_implicit_flushes',
     'clear_current_connection_cache',
     'commit',
-    'ConflictingTransactionManagerError',
     'connect',
     'convert_storm_clause_to_string',
     'cursor',
@@ -27,13 +25,10 @@ __all__ = [
     'SQLBase',
     'sqlvalues',
     'StupidCache',
-    'ZopelessTransactionManager',
     ]
 
 
 from datetime import datetime
-from textwrap import dedent
-import warnings
 
 from lazr.restful.interfaces import IRepresentationCache
 import psycopg2
@@ -61,10 +56,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import (
-    config,
-    dbconfig,
-    )
+from canonical.config import dbconfig
 from canonical.database.interfaces import ISQLBase
 from lp.services.propertycache import clear_property_cache
 
@@ -267,104 +259,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # tested, but the entire test suite blows up awesomely if it's broken.
         # It's entirely unclear where tests for this should be.
         clear_property_cache(self)
-
-
-alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
-"already installed.  This is probably caused by calling initZopeless twice.")
-
-
-class ConflictingTransactionManagerError(Exception):
-    pass
-
-
-class ZopelessTransactionManager(object):
-    """Compatibility shim for initZopeless()"""
-
-    _installed = None
-    _CONFIG_OVERLAY_NAME = 'initZopeless config overlay'
-
-    def __init__(self):
-        raise AssertionError("ZopelessTransactionManager should not be "
-                             "directly instantiated.")
-
-    @classmethod
-    def initZopeless(cls, dbuser=None, isolation=ISOLATION_LEVEL_DEFAULT):
-        if dbuser is None:
-            raise AssertionError(
-                "dbuser is now required. All scripts must connect as unique "
-                "database users.")
-
-        isolation_level = {
-            ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
-            ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
-            ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
-
-        # Construct a config fragment:
-        overlay = dedent("""\
-            [database]
-            isolation_level: %(isolation_level)s
-
-            [launchpad]
-            dbuser: %(dbuser)s
-            """ % dict(
-                isolation_level=isolation_level,
-                dbuser=dbuser))
-
-        if cls._installed is not None:
-            if cls._config_overlay != overlay:
-                raise ConflictingTransactionManagerError(
-                        "A ZopelessTransactionManager with different "
-                        "settings is already installed")
-            # There's an identical ZopelessTransactionManager already
-            # installed, so return that one, but also emit a warning.
-            warnings.warn(alreadyInstalledMsg, stacklevel=3)
-        else:
-            config.push(cls._CONFIG_OVERLAY_NAME, overlay)
-            cls._config_overlay = overlay
-            cls._dbuser = dbuser
-            cls._isolation = isolation
-            cls._reset_stores()
-            cls._installed = cls
-
-    @staticmethod
-    def _reset_stores():
-        """Reset the active stores.
-
-        This is required for connection setting changes to be made visible.
-        """
-        for name, store in getUtility(IZStorm).iterstores():
-            connection = store._connection
-            if connection._state == storm.database.STATE_CONNECTED:
-                if connection._raw_connection is not None:
-                    connection._raw_connection.close()
-
-                # This method assumes that calling transaction.abort() will
-                # call rollback() on the store, but this is no longer the
-                # case as of jamesh's fix for bug 230977; Stores are not
-                # registered with the transaction manager until they are
-                # used. While storm doesn't provide an API which does what
-                # we want, we'll go under the covers and emit the
-                # register-transaction event ourselves. This method is
-                # only called by the test suite to kill the existing
-                # connections so the Store's reconnect with updated
-                # connection settings.
-                store._event.emit('register-transaction')
-
-                connection._raw_connection = None
-                connection._state = storm.database.STATE_DISCONNECTED
-        transaction.abort()
-
-    @classmethod
-    def uninstall(cls):
-        """Uninstall the ZopelessTransactionManager.
-
-        This entails removing the config overlay and resetting the store.
-        """
-        assert cls._installed is not None, (
-            "ZopelessTransactionManager not installed")
-        config.pop(cls._CONFIG_OVERLAY_NAME)
-        cls._reset_stores()
-        cls._installed = None
 
 
 def clear_current_connection_cache():

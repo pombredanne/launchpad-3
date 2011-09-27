@@ -33,10 +33,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import attrgetter
 import random
 import re
 import subprocess
@@ -301,6 +298,7 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
@@ -2589,6 +2587,40 @@ class Person(
         """See `IPerson`."""
         return self._latestSeriesQuery()
 
+    def getLatestSynchronisedPublishings(self):
+        """See `IPerson`."""
+        query = """
+            SourcePackagePublishingHistory.id IN (
+                SELECT DISTINCT ON (spph.distroseries,
+                                    spr.sourcepackagename)
+                    spph.id
+                FROM
+                    SourcePackagePublishingHistory as spph, archive,
+                    SourcePackagePublishingHistory as ancestor_spph,
+                    SourcePackageRelease as spr
+                WHERE
+                    spph.sourcepackagerelease = spr.id AND
+                    spph.creator = %(creator)s AND
+                    spph.ancestor = ancestor_spph.id AND
+                    spph.archive = archive.id AND
+                    ancestor_spph.archive != spph.archive AND
+                    archive.purpose = %(archive_purpose)s
+                ORDER BY spph.distroseries,
+                    spr.sourcepackagename,
+                    spph.datecreated DESC,
+                    spph.id DESC
+            )
+            """ % dict(
+                   creator=quote(self.id),
+                   archive_purpose=quote(ArchivePurpose.PRIMARY),
+                   )
+
+        return SourcePackagePublishingHistory.select(
+            query,
+            orderBy=['-SourcePackagePublishingHistory.datecreated',
+                     '-SourcePackagePublishingHistory.id'],
+            prejoins=['sourcepackagerelease', 'archive'])
+
     def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery(uploader_only=True)
@@ -2599,24 +2631,23 @@ class Person(
             uploader_only=True, ppa_only=True)
 
     def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
-        """Return the sourcepackagepublishinghistory (SPPHs) related to this
-        person.
+        """Return the sourcepackagereleases (SPRs) related to this person.
 
-        :param uploader_only: controls if we are interested in SPPHs related
-            to SPRs where the person in question is only the uploader
-            (creator) and not the maintainer (debian-syncs) if the `ppa_only`
-            parameter is also False, or, if the flag is False, it returns
-            SPPHs related to SPRs maintained by this person.
+        :param uploader_only: controls if we are interested in SPRs where
+            the person in question is only the uploader (creator) and not the
+            maintainer (debian-syncs) if the `ppa_only` parameter is also
+            False, or, if the flag is False, it returns all SPR maintained
+            by this person.
 
         :param ppa_only: controls if we are interested only in source
-            package publishings targeted to any PPAs or, if False, sources
+            package releases targeted to any PPAs or, if False, sources
             targeted to primary archives.
 
         Active 'ppa_only' flag is usually associated with active
         'uploader_only' because there shouldn't be any sense of maintainership
         for packages uploaded to PPAs by someone else than the user himself.
         """
-        clauses = []
+        clauses = ['sourcepackagerelease.upload_archive = archive.id']
 
         if uploader_only:
             clauses.append(
@@ -2639,69 +2670,30 @@ class Person(
             clauses.append(
                 'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
+        query_clauses = " AND ".join(clauses)
         query = """
-                SELECT DISTINCT ON (distroseries,
+            SourcePackageRelease.id IN (
+                SELECT DISTINCT ON (upload_distroseries,
                                     sourcepackagerelease.sourcepackagename,
-                                    archive)
-                    spph.id
+                                    upload_archive)
+                    sourcepackagerelease.id
                 FROM sourcepackagerelease, archive,
                     sourcepackagepublishinghistory as spph
                 WHERE
                     spph.sourcepackagerelease = sourcepackagerelease.id AND
                     spph.archive = archive.id AND
                     %(more_query_clauses)s
-                ORDER BY distroseries,
+                ORDER BY upload_distroseries,
                     sourcepackagerelease.sourcepackagename,
-                    archive,
-                    spph.datecreated DESC
-              """ % dict(more_query_clauses=" AND ".join(clauses))
+                    upload_archive, dateuploaded DESC
+              )
+              """ % dict(more_query_clauses=query_clauses)
 
-        cur = cursor()
-        cur.execute(query)
-        spph_ids = set(map(itemgetter(0), cur.fetchall()))
-
-        # If uploader_only=True and ppa_only=False, we also want to
-        # fetch the spphs which where copied over cross distro or from
-        # a ppa (so, destination archive != source archive and
-        # destination archive is not a ppa).
-        if uploader_only and not ppa_only:
-            query = """
-                SELECT spph.id
-                FROM
-                    sourcepackagepublishinghistory as spph,
-                    sourcepackagepublishinghistory as ancestor_spph,
-                    archive
-                WHERE
-                    spph.creator = %(creator)s AND
-                    spph.ancestor = ancestor_spph.id AND
-                    spph.archive = archive.id AND
-                    ancestor_spph.archive != spph.archive AND
-                    archive.purpose = %(archive_purpose)s
-                """ % dict(
-                    creator=quote(self.id),
-                    archive_purpose=quote(ArchivePurpose.PRIMARY),
-                    )
-
-            cur = cursor()
-            cur.execute(query)
-            spph_ids = spph_ids.union(
-                set(map(itemgetter(0), cur.fetchall())))
-
-        # is_in(x) does not behave if x is [].
-        if len(spph_ids) == 0:
-            return EmptyResultSet()
-
-        rset = SourcePackagePublishingHistory.select(
-            SourcePackagePublishingHistory.id.is_in(spph_ids),
-            orderBy=[
-                '-datecreated',
-                '-id',
-                ],
-            prejoins=[
-                'sourcepackagerelease.sourcepackagename',
-                'sourcepackagerelease.maintainer',
-                'sourcepackagerelease.upload_archive',
-                ])
+        rset = SourcePackageRelease.select(
+            query,
+            orderBy=['-SourcePackageRelease.dateuploaded',
+                     'SourcePackageRelease.id'],
+            prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
 
         return rset
 

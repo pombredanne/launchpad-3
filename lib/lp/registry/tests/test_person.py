@@ -438,6 +438,88 @@ class TestPerson(TestCaseWithFactory):
             list(user.getBugSubscriberPackages())
         self.assertThat(recorder, HasQueryCount(Equals(1)))
 
+    def createCopiedPackage(self, spph, copier, dest_distroseries=None,
+                            dest_archive=None):
+        if dest_distroseries is None:
+            dest_distroseries = self.factory.makeDistroSeries()
+        if dest_archive is None:
+            dest_archive = dest_distroseries.main_archive
+        return spph.copyTo(
+            dest_distroseries, creator=copier,
+            pocket=PackagePublishingPocket.UPDATES,
+            archive=dest_archive)
+
+    def test_getLatestSynchronisedPublishings_most_recent_first(self):
+        # getLatestSynchronisedPublishings returns the latest copies sorted
+        # by most recent first.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        copied_spph1 = self.createCopiedPackage(spph, copier)
+        copied_spph2 = self.createCopiedPackage(spph, copier)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertContentEqual(
+            [copied_spph2, copied_spph1],
+            synchronised_spphs)
+
+    def test_getLatestSynchronisedPublishings_other_creator(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        self.createCopiedPackage(spph, copier)
+        someone_else = self.factory.makePerson()
+        synchronised_spphs = someone_else.getLatestSynchronisedPublishings()
+
+        self.assertEqual(
+            0,
+            synchronised_spphs.count())
+
+    def test_getLatestSynchronisedPublishings_latest(self):
+        # getLatestSynchronisedPublishings returns only the latest copy of
+        # a package in a distroseries
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        self.createCopiedPackage(
+            spph, copier, dest_distroseries)
+        copied_spph2 = self.createCopiedPackage(
+            spph, copier, dest_distroseries)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertContentEqual(
+            [copied_spph2],
+            synchronised_spphs)
+
+    def test_getLatestSynchronisedPublishings_cross_archive_copies(self):
+        # getLatestSynchronisedPublishings returns only the copies copied
+        # cross archive.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        dest_distroseries2 = self.factory.makeDistroSeries(
+            distribution=spph.distroseries.distribution)
+        self.createCopiedPackage(
+            spph, copier, dest_distroseries2)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertEqual(
+            0,
+            synchronised_spphs.count())
+
+    def test_getLatestSynchronisedPublishings_main_archive(self):
+        # getLatestSynchronisedPublishings returns only the copies copied in
+        # a primary archive (as opposed to a ppa).
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        ppa = self.factory.makeArchive(
+            distribution=dest_distroseries.distribution)
+        self.createCopiedPackage(
+            spph, copier, dest_distroseries, ppa)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertEqual(
+            0,
+            synchronised_spphs.count())
+
 
 class TestPersonStates(TestCaseWithFactory):
 
@@ -1637,108 +1719,3 @@ class TestGetRecipients(TestCaseWithFactory):
                               super_team_member_person,
                               super_team_member_team]),
                          set(recipients))
-
-
-class TestRelatedPackages(TestCaseWithFactory):
-    """Tests for methods returning packages related to a person"""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_getLatestMaintainedPackages(self):
-        maintainer = self.factory.makePerson()
-        self.factory.makeSourcePackagePublishingHistory(
-            maintainer=maintainer)
-        maintained = maintainer.getLatestMaintainedPackages()
-
-        self.assertEqual(1, maintained.count())
-        self.assertEqual(
-            maintainer,
-            maintained[0].sourcepackagerelease.maintainer)
-
-    def test_getLatestUploadedButNotMaintainedPackages(self):
-        uploader = self.factory.makePerson()
-        self.factory.makeSourcePackagePublishingHistory(
-            maintainer=self.factory.makePerson(), creator=uploader)
-        # Create another spph, for which uploader is the maintainer.
-        self.factory.makeSourcePackagePublishingHistory(
-            maintainer=uploader)
-        uploaded = uploader.getLatestUploadedButNotMaintainedPackages()
-
-        self.assertEqual(1, uploaded.count())
-        self.assertEqual(
-            uploader,
-            uploaded[0].sourcepackagerelease.creator)
-
-    def test_getLatestUploadedPPAPackages(self):
-        ppa = self.factory.makeArchive()
-        primary = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        uploader = self.factory.makePerson()
-        self.factory.makeSourcePackagePublishingHistory(
-            archive=ppa, creator=uploader)
-        self.factory.makeSourcePackagePublishingHistory(
-            archive=primary, creator=uploader)
-        uploaded = uploader.getLatestUploadedPPAPackages()
-
-        self.assertEqual(1, uploaded.count())
-        self.assertEqual(
-            uploader,
-            uploaded[0].sourcepackagerelease.creator)
-
-    def test_getLatestUploadedButNotMaintainedPackages_other_person(self):
-        uploader = self.factory.makePerson()
-        source_distroseries = self.factory.makeDistroSeries()
-        source = self.factory.makeSourcePackagePublishingHistory(
-            maintainer=self.factory.makePerson(), creator=uploader,
-            archive=source_distroseries.main_archive)
-        dest_distroseries = self.factory.makeDistroSeries()
-        source.copyTo(
-            dest_distroseries, creator=uploader,
-            pocket=PackagePublishingPocket.UPDATES,
-            archive=dest_distroseries.main_archive)
-        other_person = self.factory.makePerson()
-        uploaded = other_person.getLatestUploadedButNotMaintainedPackages()
-
-        self.assertEqual(0, uploaded.count())
-
-    def test_getLatestUploadedButNotMaintainedPackages_cross_distro(self):
-        # Someone copying a package cross distro should get credit for
-        # it.
-        uploader = self.factory.makePerson()
-        source_distroseries = self.factory.makeDistroSeries()
-        source = self.factory.makeSourcePackagePublishingHistory(
-            maintainer=self.factory.makePerson(), creator=uploader,
-            archive=source_distroseries.main_archive)
-        dest_distroseries = self.factory.makeDistroSeries()
-        copier = self.factory.makePerson()
-        source.copyTo(
-            dest_distroseries, creator=copier,
-            pocket=PackagePublishingPocket.UPDATES,
-            archive=dest_distroseries.main_archive)
-        uploaded = copier.getLatestUploadedButNotMaintainedPackages()
-
-        self.assertEqual(1, uploaded.count())
-        self.assertEqual(
-            uploader,
-            uploaded[0].sourcepackagerelease.creator)
-        self.assertEqual(
-            copier,
-            uploaded[0].creator)
-
-    def test_getLatestUploadedButNotMaintainedPackages_ppa(self):
-        # Someone copying a package in a ppa should not get credit for
-        # it.
-        uploader = self.factory.makePerson()
-        source_distroseries = self.factory.makeDistroSeries()
-        source = self.factory.makeSourcePackagePublishingHistory(
-            maintainer=self.factory.makePerson(), creator=uploader,
-            archive=source_distroseries.main_archive)
-        dest_distroseries = self.factory.makeDistroSeries()
-        dest_archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        copier = self.factory.makePerson()
-        source.copyTo(
-            dest_distroseries, creator=copier,
-            pocket=PackagePublishingPocket.UPDATES,
-            archive=dest_archive)
-        uploaded = copier.getLatestUploadedButNotMaintainedPackages()
-
-        self.assertEqual(0, uploaded.count())

@@ -1,13 +1,10 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-from datetime import datetime
 import doctest
-import re
 
-import pytz
 import soupmatchers
 from storm.expr import LeftJoin
 from storm.store import Store
@@ -28,6 +25,7 @@ from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.testing.pages import extract_text
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
@@ -534,20 +532,31 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
         self.warty = self.ubuntu.getSeries('warty')
         self.view = create_initialized_view(self.user, '+related-software')
 
-    def publishSource(self, archive, maintainer):
+    def publishSources(self, archive, maintainer):
         publisher = SoyuzTestPublisher()
         publisher.person = self.user
         login('foo.bar@canonical.com')
+        spphs = []
         for count in range(0, self.view.max_results_to_display + 3):
             source_name = "foo" + str(count)
-            publisher.getPubSource(
+            spph = publisher.getPubSource(
                 sourcename=source_name,
                 status=PackagePublishingStatus.PUBLISHED,
                 archive=archive,
                 maintainer=maintainer,
                 creator=self.user,
                 distroseries=self.warty)
+            spphs.append(spph)
         login(ANONYMOUS)
+        return spphs
+
+    def copySources(self, spphs, copier, dest_distroseries):
+        self.copier = self.factory.makePerson()
+        for spph in spphs:
+            spph.copyTo(
+                dest_distroseries, creator=copier,
+                pocket=PackagePublishingPocket.UPDATES,
+                archive=dest_distroseries.main_archive)
 
     def test_view_helper_attributes(self):
         # Verify view helper attributes.
@@ -569,22 +578,32 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
     def test_latest_uploaded_ppa_packages_with_stats(self):
         # Verify number of PPA packages to display.
         ppa = self.factory.makeArchive(owner=self.user)
-        self.publishSource(ppa, self.user)
+        self.publishSources(ppa, self.user)
         count = len(self.view.latest_uploaded_ppa_packages_with_stats)
         self.assertEqual(self.view.max_results_to_display, count)
 
     def test_latest_maintained_packages_with_stats(self):
         # Verify number of maintained packages to display.
-        self.publishSource(self.warty.main_archive, self.user)
+        self.publishSources(self.warty.main_archive, self.user)
         count = len(self.view.latest_maintained_packages_with_stats)
         self.assertEqual(self.view.max_results_to_display, count)
 
     def test_latest_uploaded_nonmaintained_packages_with_stats(self):
         # Verify number of non maintained packages to display.
         maintainer = self.factory.makePerson()
-        self.publishSource(self.warty.main_archive, maintainer)
+        self.publishSources(self.warty.main_archive, maintainer)
         count = len(
             self.view.latest_uploaded_but_not_maintained_packages_with_stats)
+        self.assertEqual(self.view.max_results_to_display, count)
+
+    def test_latest_synchronised_publishings_with_stats(self):
+        # Verify number of non synchronised publishings to display.
+        creator = self.factory.makePerson()
+        spphs = self.publishSources(self.warty.main_archive, creator)
+        dest_distroseries = self.factory.makeDistroSeries()
+        self.copySources(spphs, self.user, dest_distroseries)
+        count = len(
+            self.view.latest_synchronised_publishings_with_stats)
         self.assertEqual(self.view.max_results_to_display, count)
 
 
@@ -660,6 +679,55 @@ class TestPersonPPAPackagesView(TestCaseWithFactory):
             self.view.max_results_to_display)
 
 
+class TestPersonSynchronisedPackagesView(TestCaseWithFactory):
+    """Test the synchronised packages view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSynchronisedPackagesView, self).setUp()
+        user = self.factory.makePerson()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spr = self.factory.makeSourcePackageRelease(
+            creator=user, archive=archive)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=archive)
+        self.copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        self.copied_spph = spph.copyTo(
+            dest_distroseries, creator=self.copier,
+            pocket=PackagePublishingPocket.UPDATES,
+            archive=dest_distroseries.main_archive)
+        self.view = create_initialized_view(
+            self.copier, '+synchronised-packages')
+
+    def test_view_helper_attributes(self):
+        # Verify view helper attributes.
+        self.assertEqual('Synchronised packages', self.view.page_title)
+        self.assertEqual('default_batch_size', self.view._max_results_key)
+        self.assertEqual(
+            config.launchpad.default_batch_size,
+            self.view.max_results_to_display)
+
+    def test_verify_bugs_and_answers_links(self):
+        # Verify the links for bugs and answers point to locations that
+        # exist.
+        html = self.view()
+        expected_base = '/%s/+source/%s' % (
+            self.copied_spph.distroseries.distribution.name,
+            self.copied_spph.source_package_name)
+        bug_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Bugs link', 'a',
+                attrs={'href': expected_base + '/+bugs'}))
+        question_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Questions link', 'a',
+                attrs={'href': expected_base + '/+questions'}))
+        self.assertThat(html, bug_matcher)
+        self.assertThat(html, question_matcher)
+
+
 class TestPersonRelatedProjectsView(TestCaseWithFactory):
     """Test the maintained packages view."""
 
@@ -698,83 +766,99 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         ppa = self.factory.makeArchive(owner=self.user)
-        self.src_pub = publisher.getPubSource(
+        src_pub = publisher.getPubSource(
             creator=self.user, maintainer=self.user, archive=ppa)
         binaries = publisher.getPubBinaries(
-            pub_source=self.src_pub)
+            pub_source=src_pub)
         self.build = binaries[0].binarypackagerelease.build
         self.build.status = BuildStatus.FAILEDTOBUILD
         self.build.archive = publisher.distroseries.main_archive
         login(ANONYMOUS)
 
-    def assertFailedBuildLinkInView(self, view, build):
-        link_url = '/ubuntutest/+source/foo/666/+build/%d' % build.id
-        failed_build_link = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Failed build link', 'a', text='i386',
-                attrs=dict(href=link_url)))
-
-        self.assertThat(view(), failed_build_link)
-
     def test_related_software_with_failed_build(self):
         # The link to the failed build is displayed.
-        view = create_view(self.user, name='+related-software')
-        self.assertFailedBuildLinkInView(view, self.build)
+        self.view = create_view(self.user, name='+related-software')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
     def test_related_ppa_packages_with_failed_build(self):
         # The link to the failed build is displayed.
-        view = create_view(self.user, name='+ppa-packages')
-        self.assertFailedBuildLinkInView(view, self.build)
+        self.view = create_view(self.user, name='+ppa-packages')
+        html = self.view()
+        self.assertTrue(
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
-    def test_related_software_copy(self):
-        # If someone has copied over a package cross distro, this
-        # package shows up on the +related-software page.
-        copier = self.factory.makePerson()
+
+class TestPersonRelatedSoftwareSynchronisedPackages(TestCaseWithFactory):
+    """The related software views display links to synchronised packages."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedSoftwareSynchronisedPackages, self).setUp()
+        self.user = self.factory.makePerson()
+        self.spph = self.factory.makeSourcePackagePublishingHistory()
+
+    def createCopiedSource(self, copier, spph):
+        self.copier = self.factory.makePerson()
         dest_distroseries = self.factory.makeDistroSeries()
-        self.src_pub.copyTo(
+        return spph.copyTo(
             dest_distroseries, creator=copier,
             pocket=PackagePublishingPocket.UPDATES,
             archive=dest_distroseries.main_archive)
-        self.view = create_view(copier, name='+related-software')
-        source_link = soupmatchers.HTMLContains(
+
+    def getLinkToSynchronisedMatcher(self):
+        person_url = canonical_url(self.user)
+        return soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Source link', 'a', text='foo',
-                attrs=dict(href='/%s/+source/foo' %
-                    dest_distroseries.distribution.name)))
+                'Synchronised packages link', 'a',
+                attrs={'href': person_url + '/+synchronised-packages'},
+                text='Synchronised packages'))
 
-        self.assertThat(self.view(), source_link)
-
-    def test_related_software_copy_in_distro(self):
-        # If someone has copied over a package inside the same distro
-        # this package won't show up on the +related-software page.
-        copier = self.factory.makePerson()
-        dest_distroseries = self.src_pub.distroseries
-        self.src_pub.copyTo(
-            dest_distroseries, creator=copier,
-            pocket=PackagePublishingPocket.UPDATES,
-            archive=self.src_pub.archive)
-        self.view = create_view(copier, name='+related-software')
-        source_link = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Source link', 'a', text='foo',
-                attrs=dict(href='/%s/+source/foo' %
-                    dest_distroseries.distribution.name)))
-
-        self.assertThat(self.view(), Not(source_link))
-
-    def test_related_software_spph_date(self):
-        # The date displayed for each package is the spph.datecreated.
+    def test_related_software_no_link_synchronised_packages(self):
+        # No link to the synchronised packages page if no synchronised
+        # packages.
         view = create_view(self.user, name='+related-software')
-        self.src_pub.sourcepackagerelease.dateuploaded = datetime(
-            2010, 01, 01, tzinfo=pytz.UTC)
-        self.src_pub.datecreated = datetime(
-            2011, 10, 01, tzinfo=pytz.UTC)
-        date_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Source link', 'td',
-                attrs=dict(title=re.compile('2011-10-01\s*'))))
+        synced_package_link_matcher = self.getLinkToSynchronisedMatcher()
+        self.assertThat(view(), Not(synced_package_link_matcher))
 
-        self.assertThat(view(), date_matcher)
+    def test_related_software_link_synchronised_packages(self):
+        # If this person has synced packages, the link to the synchronised
+        # packages page is present.
+        self.createCopiedSource(self.user, self.spph)
+        view = create_view(self.user, name='+related-software')
+        synced_package_link_matcher = self.getLinkToSynchronisedMatcher()
+        self.assertThat(view(), synced_package_link_matcher)
+
+    def test_related_software_displays_synchronised_packages(self):
+        copied_spph = self.createCopiedSource(self.user, self.spph)
+        view = create_view(self.user, name='+related-software')
+        synced_packages_title = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Synchronised packages title', 'h2',
+                text='Synchronised packages'))
+        expected_base = '/%s/+source/%s' % (
+            copied_spph.distroseries.distribution.name,
+            copied_spph.source_package_name)
+        source_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source package link', 'a',
+                text=copied_spph.sourcepackagerelease.name,
+                attrs={'href': expected_base}))
+        version_url = (expected_base + '/%s' %
+            copied_spph.sourcepackagerelease.version)
+        version_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source package version link', 'a',
+                text=copied_spph.sourcepackagerelease.version,
+                attrs={'href': version_url}))
+
+        self.assertThat(view(), synced_packages_title)
+        self.assertThat(view(), source_link)
+        self.assertThat(view(), version_link)
 
 
 class TestPersonDeactivateAccountView(TestCaseWithFactory):
