@@ -126,7 +126,7 @@ def _authenticateDkim(signed_message):
 
     dkim_log = cStringIO()
     log.info(
-        'Attempting DKIM authentication of message id=%s from=%s sender=%s'
+        'Attempting DKIM authentication of message id=%s from=%r sender=%r'
         % (signed_message['Message-ID'],
             signed_message['From'],
             signed_message['Sender']))
