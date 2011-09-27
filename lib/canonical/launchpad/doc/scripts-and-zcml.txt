@@ -12,11 +12,9 @@ demonstrate this:
    >>> script_file.write("""
    ... from canonical.launchpad.scripts import execute_zcml_for_scripts
    ... from lp.registry.interfaces.person import IPersonSet
-   ... from canonical.lp import initZopeless
    ... from zope.component import getUtility
    ...
    ... execute_zcml_for_scripts()
-   ... initZopeless()
    ... print getUtility(IPersonSet).get(1).displayname
    ... """)
    >>> script_file.flush()

@@ -12,6 +12,7 @@ from iso8601 import (
 import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
 from operator import isSequenceType
+import re
 import simplejson
 from storm import Undef
 from storm.expr import (
@@ -22,8 +23,12 @@ from storm.expr import (
     SQL,
     )
 from storm.properties import PropertyColumn
+from storm.store import EmptyResultSet
 from storm.zope.interfaces import IResultSet
-from zope.component import adapts
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
 from zope.interface.common.sequence import IFiniteSequence
 from zope.security.proxy import (
@@ -33,15 +38,23 @@ from zope.security.proxy import (
     )
 
 from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import (
+    convert_storm_clause_to_string,
+    sqlvalues,
+    )
+
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.webapp.interfaces import (
-    ITableBatchNavigator,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
     StormRangeFactoryError,
+    ITableBatchNavigator,
     )
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.propertycache import cachedproperty
 
 
 class FiniteSequenceAdapter:
@@ -231,6 +244,14 @@ class ShadowedList:
         self.shadow_values.reverse()
 
 
+def plain_expression(expression):
+    """Strip an optional DESC() from an expression."""
+    if isinstance(expression, Desc):
+        return expression.expr
+    else:
+        return expression
+
+
 class StormRangeFactory:
     """A range factory for Storm result sets.
 
@@ -274,11 +295,16 @@ class StormRangeFactory:
         else:
             self.plain_resultset = resultset
         self.error_cb = error_cb
-        self.forward_sort_order = self.getOrderBy()
-        if self.forward_sort_order is Undef:
-            raise StormRangeFactoryError(
-                'StormRangeFactory requires a sorted result set.')
-        self.backward_sort_order = self.reverseSortOrder()
+        if not self.empty_resultset:
+            self.forward_sort_order = self.getOrderBy()
+            if self.forward_sort_order is Undef:
+                raise StormRangeFactoryError(
+                    'StormRangeFactory requires a sorted result set.')
+            self.backward_sort_order = self.reverseSortOrder()
+
+    @property
+    def empty_resultset(self):
+        return zope_isinstance(self.plain_resultset, EmptyResultSet)
 
     def getOrderBy(self):
         """Return the order_by expressions of the result set."""
@@ -292,8 +318,7 @@ class StormRangeFactory:
             row = (row, )
         sort_expressions = self.getOrderBy()
         for expression in sort_expressions:
-            if zope_isinstance(expression, Desc):
-                expression = expression.expr
+            expression = plain_expression(expression)
             if not zope_isinstance(expression, PropertyColumn):
                 raise StormRangeFactoryError(
                     'StormRangeFactory only supports sorting by '
@@ -315,6 +340,8 @@ class StormRangeFactory:
     def getEndpointMemos(self, batch):
         """See `IRangeFactory`."""
         plain_slice = batch.sliced_list.shadow_values
+        if len(plain_slice) == 0:
+            return ('', '')
         lower = self.getOrderValuesFor(plain_slice[0])
         upper = self.getOrderValuesFor(plain_slice[batch.trueSize - 1])
         return (
@@ -360,8 +387,7 @@ class StormRangeFactory:
 
         converted_memo = []
         for expression, value in zip(sort_expressions, parsed_memo):
-            if isinstance(expression, Desc):
-                expression = expression.expr
+            expression = plain_expression(expression)
             try:
                 expression.variable_factory(value=value)
             except TypeError, error:
@@ -440,11 +466,6 @@ class StormRangeFactory:
 
     def equalsExpressionsFromLimits(self, limits):
         """Return a list [expression == memo, ...] for the given limits."""
-        def plain_expression(expression):
-            if isinstance(expression, Desc):
-                return expression.expr
-            else:
-                return expression
 
         result = []
         for expressions, memos in limits:
@@ -536,6 +557,8 @@ class StormRangeFactory:
 
     def getSlice(self, size, endpoint_memo='', forwards=True):
         """See `IRangeFactory`."""
+        if self.empty_resultset:
+            return ShadowedList([], [])
         if forwards:
             self.resultset.order_by(*self.forward_sort_order)
         else:
@@ -558,4 +581,32 @@ class StormRangeFactory:
     def getSliceByIndex(self, start, end):
         """See `IRangeFactory."""
         sliced = self.resultset[start:end]
-        return ShadowedList(list(sliced), list(sliced.get_plain_result_set()))
+        if zope_isinstance(sliced, DecoratedResultSet):
+            return ShadowedList(
+                list(sliced), list(sliced.get_plain_result_set()))
+        sliced = list(sliced)
+        return ShadowedList(sliced, sliced)
+
+    @cachedproperty
+    def rough_length(self):
+        """See `IRangeFactory."""
+        # get_select_expr() requires at least one column as a parameter.
+        # getorderBy() already knows about columns that can appear
+        # in the result set, so let's use them. Moreover, for SELECT
+        # DISTINCT queries, each column used for sorting must appear
+        # in the result.
+        if self.empty_resultset:
+            return 0
+        columns = [plain_expression(column) for column in self.getOrderBy()]
+        select = removeSecurityProxy(self.plain_resultset).get_select_expr(
+            *columns)
+        explain = 'EXPLAIN ' + convert_storm_clause_to_string(select)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        result = store.execute(explain)
+        _rows_re = re.compile("rows=(\d+)\swidth=")
+        first_line = result.get_one()[0]
+        match = _rows_re.search(first_line)
+        if match is None:
+            raise RuntimeError(
+                "Unexpected EXPLAIN output %s" % repr(first_line))
+        return int(match.group(1))

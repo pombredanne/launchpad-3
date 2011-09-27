@@ -34,7 +34,7 @@ create a new poll.
     'http://launchpad.dev/~ubuntu-team/+newpoll'
 
     >>> team_admin_browser.title
-    'New poll for team Ubuntu Team...
+    'New poll : ...'
 
 First we try to create a poll with a invalid name to
 test the name field validator.

@@ -1,3 +1,9 @@
+launchpad-buildd (80) hardy-cat; urgency=low
+
+  * binfmt-support demonstrated umount ordering issues for us.  LP: #851934
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 19 Sep 2011 04:56:58 -0600
+
 launchpad-buildd (79) hardy-cat; urgency=low
 
   * Fix sudoers.d/buildd permissions

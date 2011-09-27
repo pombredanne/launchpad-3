@@ -313,6 +313,8 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
     This view is used only when the dupe account has a single email address.
     """
 
+    page_title = 'Merge request sent'
+
     def initialize(self):
         user = getUtility(ILaunchBag).user
         try:

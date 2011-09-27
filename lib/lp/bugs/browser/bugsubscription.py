@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
@@ -416,15 +416,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self.context.bug.unmute(self.user, self.user)
 
     def _handleUnsubscribeCurrentUser(self):
-        """Handle the special cases for unsubscribing the current user.
-
-        when the bug is private. The user must be unsubscribed from all dupes
-        too, or they would keep getting mail about this bug!
-        """
-        # ** Important ** We call unsubscribeFromDupes() before
-        # unsubscribe(), because if the bug is private, the current user
-        # will be prevented from calling methods on the main bug after
-        # they unsubscribe from it!
+        """Handle the special cases for unsubscribing the current user."""
+        # We call unsubscribeFromDupes() before unsubscribe(), because
+        # if the bug is private, the current user will be prevented from
+        # calling methods on the main bug after they unsubscribe from it.
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(
             self.user, self.user)
         self.context.bug.unsubscribe(self.user, self.user)
@@ -565,7 +560,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         return data
 
     @property
-    def subscriber_data_js(self):
+    def subscriber_data(self):
         """Return subscriber_ids in a form suitable for JavaScript use."""
         bug = IBug(self.context)
         data = self.direct_subscriber_data(bug)
@@ -588,7 +583,11 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 'subscription_level': 'Maybe',
                 }
             data.append(record)
-        return dumps(data)
+        return data
+
+    @property
+    def subscriber_data_js(self):
+        return dumps(self.subscriber_data)
 
     def render(self):
         """Override the default render() to return only JSON."""
@@ -623,6 +622,7 @@ class BugSubscriptionListView(LaunchpadView):
         cache = IJSONRequestCache(self.request).objects
         cache.update(references)
         cache['bug_subscription_info'] = subdata
+        cache['bug_is_private'] = self.context.bug.private
 
     @property
     def label(self):

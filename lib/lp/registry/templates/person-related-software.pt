@@ -99,6 +99,32 @@
   </div>
   </tal:ppa-packages>
 
+  <tal:synchronised-packages
+    define="spphs view/latest_synchronised_publishings_with_stats"
+    condition="spphs">
+
+  <div class="top-portlet">
+  <h2>Synchronised packages</h2>
+
+  <tal:message replace="view/synchronised_packages_header_message"/>
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Uploaded to</th>
+        <th>Version</th>
+        <th>When</th>
+        <th>Failures</th>
+        <th>Bugs</th>
+        <th>Questions</th>
+      </tr>
+    </thead>
+
+    <div metal:use-macro="context/@@+person-macros/spphs-rows" />
+  </table>
+  </div>
+  </tal:synchronised-packages>
+
   </div><!--id packages-->
 
   <div id="projects" class="top-portlet">

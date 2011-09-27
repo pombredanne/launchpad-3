@@ -16,11 +16,15 @@ warnings.filterwarnings(
     'ignore', '.*(md5|sha|sets)', DeprecationWarning,
     )
 
-from canonical.database.sqlbase import cursor, ISOLATION_LEVEL_SERIALIZABLE
+import transaction
+
+from canonical.config import dbconfig
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.lp import initZopeless
+from canonical.testing.layers import disconnect_stores
 
 execute_zcml_for_scripts()
+
 
 def check():
     cur = cursor()
@@ -28,26 +32,18 @@ def check():
     cur.execute("SHOW transaction_isolation")
     print cur.fetchone()[0]
 
-    txn.abort()
-    txn.begin()
+    transaction.abort()
+    transaction.begin()
 
     cur = cursor()
     cur.execute("UPDATE Person SET homepage_content='bar' WHERE name='mark'")
     cur.execute("SHOW transaction_isolation")
     print cur.fetchone()[0]
 
-# First confirm the default isolation level
-txn = initZopeless()
-check()
-txn.uninstall()
-
-# We run the checks twice to ensure that both methods of setting the
-# isolation level stick across transaction boundaries.
-txn = initZopeless(isolation=ISOLATION_LEVEL_SERIALIZABLE)
-check()
-txn.uninstall()
-
-txn = initZopeless()
-txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+dbconfig.override(dbuser='launchpad_main', isolation_level='read_committed')
+disconnect_stores()
 check()
 
+dbconfig.override(isolation_level='serializable')
+disconnect_stores()
+check()

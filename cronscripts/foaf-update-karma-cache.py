@@ -12,7 +12,6 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import (
     cursor,
-    ISOLATION_LEVEL_AUTOCOMMIT,
     flush_database_updates,
     )
 from lp.app.errors import NotFoundError
@@ -295,4 +294,4 @@ if __name__ == '__main__':
     # COMMIT all the time. However, if we interrupt this script mid-run
     # it will need to be re-run as the data will be inconsistent (only
     # part of the caches will have been recalculated).
-    script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    script.lock_and_run(isolation='autocommit')

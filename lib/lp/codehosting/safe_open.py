@@ -27,7 +27,7 @@ __all__ = [
 
 
 # TODO JelmerVernooij 2011-08-06: This module is generic enough to be
-# in bzrlib, and may be of use to others.
+# in bzrlib, and may be of use to others. bug=850843
 
 
 class BadUrl(Exception):

@@ -15,6 +15,7 @@ __all__ = [
     'PollView',
     'PollVoteView',
     'PollBreadcrumb',
+    'TeamPollsView',
     ]
 
 from z3c.ptcompat import ViewPageTemplateFile
@@ -45,6 +46,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.registry.browser.person import PersonView
 from lp.registry.interfaces.poll import (
     IPoll,
     IPollOption,
@@ -261,6 +263,8 @@ class PollVoteView(BasePollView):
     condorcet_template = ViewPageTemplateFile(
         '../templates/poll-vote-condorcet.pt')
 
+    page_title = 'Vote'
+
     @property
     def template(self):
         if self.isCondorcet():
@@ -393,6 +397,8 @@ class PollAddView(LaunchpadFormView):
     field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
                    "datecloses"]
 
+    page_title = 'New poll'
+
     @property
     def cancel_url(self):
         """See `LaunchpadFormView`."""
@@ -416,6 +422,7 @@ class PollEditView(LaunchpadEditFormView):
     implements(IPollEditMenu)
     schema = IPoll
     label = "Edit poll details"
+    page_title = 'Edit'
     field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
                    "datecloses"]
 
@@ -435,6 +442,7 @@ class PollOptionEditView(LaunchpadEditFormView):
 
     schema = IPollOption
     label = "Edit option details"
+    page_title = 'Edit option'
     field_names = ["name", "title"]
     custom_widget("title", TextWidget, width=30)
 
@@ -454,6 +462,7 @@ class PollOptionAddView(LaunchpadFormView):
 
     schema = IPollOption
     label = "Create new poll option"
+    page_title = "New option"
     field_names = ["name", "title"]
     custom_widget("title", TextWidget, width=30)
 
@@ -467,3 +476,8 @@ class PollOptionAddView(LaunchpadFormView):
         polloption = self.context.newOption(data['name'], data['title'])
         self.next_url = canonical_url(self.context)
         notify(ObjectCreatedEvent(polloption))
+
+
+class TeamPollsView(PersonView):
+
+    page_title = 'Polls'

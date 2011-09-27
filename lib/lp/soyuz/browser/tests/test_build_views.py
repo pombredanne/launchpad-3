@@ -8,12 +8,18 @@ from datetime import (
     timedelta,
     )
 import pytz
+from testtools.matchers import (
+    MatchesException,
+    Not,
+    Raises,
+    )
 from zope.component import (
     getMultiAdapter,
     getUtility,
     )
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.interfaces import StormRangeFactoryError
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -291,3 +297,44 @@ class TestBuildViews(TestCaseWithFactory):
         expected_url = canonical_url(build)
         browser = self.getUserBrowser(url)
         self.assertEquals(expected_url, browser.url)
+
+    def test_DistributionBuildRecordsView__range_factory(self):
+        # DistributionBuildRecordsView works with StormRangeFactory:
+        # StormRangeFactory requires result sets where the sort order
+        # is specified by Storm Column objects or by Desc(storm_column).
+        # DistributionBuildRecordsView gets its resultset from
+        # IDistribution.getBuildRecords(); the sort order of the
+        # result set depends on the parameter build_state.
+        # The order expressions for all possible values of build_state
+        # are usable by StormRangeFactory.
+        distroseries = self.factory.makeDistroSeries()
+        distribution = distroseries.distribution
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        for status in BuildStatus.items:
+            build = self.factory.makeBinaryPackageBuild(
+                distroarchseries=das, archive=distroseries.main_archive,
+                status=status)
+            # BPBs in certain states need a bit tweaking to appear in
+            # the result of getBuildRecords().
+            if status == BuildStatus.FULLYBUILT:
+                with person_logged_in(self.admin):
+                    build.date_started = (
+                        datetime.now(pytz.UTC) - timedelta(hours=1))
+                    build.date_finished = datetime.now(pytz.UTC)
+            elif status in (BuildStatus.NEEDSBUILD, BuildStatus.BUILDING):
+                build.queueBuild()
+        for status in ('built', 'failed', 'depwait', 'chrootwait',
+                       'superseded', 'uploadfail', 'all', 'building',
+                       'pending'):
+            view = create_initialized_view(
+                distribution, name="+builds", form={'build_state': status})
+            view.setupBuildList()
+            range_factory = view.batchnav.batch.range_factory
+
+            def test_range_factory():
+                row = range_factory.resultset.get_plain_result_set()[0]
+                range_factory.getOrderValuesFor(row)
+
+            self.assertThat(
+                test_range_factory,
+                Not(Raises(MatchesException(StormRangeFactoryError))))

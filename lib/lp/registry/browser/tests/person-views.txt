@@ -483,7 +483,7 @@ explain exactly who is being contacted.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact this user
 
     >>> print view.recipients.description
@@ -513,7 +513,7 @@ contacted.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact yourself
 
     >>> print view.recipients.description
@@ -541,7 +541,7 @@ owner.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact this team
 
     >>> print view.recipients.description
@@ -571,7 +571,7 @@ The EmailToPersonView can be used by members to contact their team.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact your team
 
     >>> print view.recipients.description
@@ -600,7 +600,7 @@ special message just for him.
     >>> print view.label
     Contact user
 
-    >>> print view.specific_contact_title_text
+    >>> print view.page_title
     Contact your team
 
     >>> print view.recipients.description

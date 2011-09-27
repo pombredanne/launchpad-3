@@ -53,6 +53,7 @@ from lp.testing import (
     temp_dir,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -65,14 +66,8 @@ def run_as_db_user(username):
     def _run_with_different_user(f):
 
         def decorated(*args, **kwargs):
-            current_user = LaunchpadZopelessLayer.txn._dbuser
-            if current_user == username:
+            with dbuser(username):
                 return f(*args, **kwargs)
-            LaunchpadZopelessLayer.switchDbUser(username)
-            try:
-                return f(*args, **kwargs)
-            finally:
-                LaunchpadZopelessLayer.switchDbUser(current_user)
         return mergeFunctionMetadata(f, decorated)
 
     return _run_with_different_user

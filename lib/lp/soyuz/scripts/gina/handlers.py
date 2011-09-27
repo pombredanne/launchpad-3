@@ -165,9 +165,8 @@ class ImporterHandler:
     This class is used to handle the import process.
     """
 
-    def __init__(self, ztm, distro_name, distroseries_name, dry_run,
-                 ktdb, archive_root, keyrings, pocket, component_override):
-        self.dry_run = dry_run
+    def __init__(self, ztm, distro_name, distroseries_name, archive_root,
+                 pocket, component_override):
         self.pocket = pocket
         self.component_override = component_override
         self.ztm = ztm
@@ -179,10 +178,10 @@ class ImporterHandler:
         self.imported_sources = []
         self.imported_bins = {}
 
-        self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings,
-                                              pocket, component_override)
-        self.bphandler = BinaryPackageHandler(self.sphandler, archive_root,
-                                              pocket)
+        self.sphandler = SourcePackageHandler(
+            archive_root, pocket, component_override)
+        self.bphandler = BinaryPackageHandler(
+            self.sphandler, archive_root, pocket)
 
         self.sppublisher = SourcePackagePublisher(
             self.distroseries, pocket, self.component_override)
@@ -191,13 +190,11 @@ class ImporterHandler:
 
     def commit(self):
         """Commit to the database."""
-        if not self.dry_run:
-            self.ztm.commit()
+        self.ztm.commit()
 
     def abort(self):
         """Rollback changes to the database."""
-        if not self.dry_run:
-            self.ztm.abort()
+        self.ztm.abort()
 
     def ensure_archinfo(self, archtag):
         """Append retrived distroarchseries info to a dict."""
@@ -457,12 +454,9 @@ class SourcePackageHandler:
     on the launchpad db a little easier.
     """
 
-    def __init__(self, KTDB, archive_root, keyrings, pocket,
-                 component_override):
+    def __init__(self, archive_root, pocket, component_override):
         self.distro_handler = DistroHandler()
-        self.ktdb = KTDB
         self.archive_root = archive_root
-        self.keyrings = keyrings
         self.pocket = pocket
         self.component_override = component_override
 
@@ -498,8 +492,8 @@ class SourcePackageHandler:
             return None
 
         # Process the package
-        sp_data.process_package(self.ktdb, self.archive_root, self.keyrings)
-        sp_data.ensure_complete(self.ktdb)
+        sp_data.process_package(self.archive_root)
+        sp_data.ensure_complete()
 
         spr = self.createSourcePackageRelease(sp_data, distroseries)
 

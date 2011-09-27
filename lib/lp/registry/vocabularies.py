@@ -2054,7 +2054,12 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
                     obj.__class__.__name__, obj.id)
             obj = obj.pillar
 
-        title = '%s (%s)' % (obj.title, obj.pillar_category)
+        enhanced = bool(getFeatureFlag(
+            'disclosure.target_picker_enhancements.enabled'))
+        if enhanced:
+            title = '%s' % obj.title
+        else:
+            title = '%s (%s)' % (obj.title, obj.pillar_category)
         return SimpleTerm(obj, obj.name, title)
 
     def getTermByToken(self, token):
