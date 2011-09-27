@@ -27,8 +27,8 @@ from canonical.lazr.pidfile import (
 from lp.services.googlesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
-from lp.services.txlongpoll.server import TxLongPollServer
 from lp.services.rabbit.server import RabbitServer
+from lp.services.txlongpoll.server import TxLongPollServer
 
 
 def make_abspath(path):

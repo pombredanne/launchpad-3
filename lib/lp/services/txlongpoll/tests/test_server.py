@@ -8,14 +8,15 @@ __metaclass__ = type
 from ConfigParser import SafeConfigParser
 from StringIO import StringIO
 
-from canonical.testing.layers import BaseLayer
+from canonical.config import config
+from canonical.testing.layers import RabbitMQLayer
 from lp.services.txlongpoll.server import TxLongPollServer
 from lp.testing import TestCase
 
 
 class TestTxLongPollServer(TestCase):
 
-    layer = BaseLayer
+    layer = RabbitMQLayer
 
     def test_service_config(self):
         # TxLongPollServer pokes some .ini configuration into its config.
@@ -34,12 +35,11 @@ class TestTxLongPollServer(TestCase):
         self.assertEqual(expected, observed)
         # rabbitmq section
         expected = {
-            "host": "localhost:%d" % (
-                fixture.rabbitserver.config.port),
+            "host": "%s" % (
+                config.rabbitmq.host),
             "password": "guest",
             "userid": "guest",
             "virtual_host": "/",
             }
         observed = dict(service_config.items("rabbitmq"))
         self.assertEqual(expected, observed)
-

@@ -11,7 +11,8 @@ __all__ = [
 from textwrap import dedent
 
 from txlongpollfixture.server import TxLongPollFixture
-from rabbitfixture.server import RabbitServer
+
+from canonical.config import config
 
 
 class TxLongPollServer(TxLongPollFixture):
@@ -23,11 +24,9 @@ class TxLongPollServer(TxLongPollFixture):
 
     def setUp(self):
         super(TxLongPollServer, self).setUp()
-        self.rabbitserver = RabbitServer()
-        self.useFixture(self.rabbitserver)
         self.config['service_config'] = dedent("""\
             [rabbitmq]
-            host: localhost:%d
+            host: %s
             userid: guest
             password: guest
             virtual_host: /
@@ -35,5 +34,5 @@ class TxLongPollServer(TxLongPollFixture):
             [txlongpoll]
             frontend_port: %d
             """ % (
-                self.rabbitserver.config.port,
+                config.rabbitmq.host,
                 self.config['frontend_port']))
