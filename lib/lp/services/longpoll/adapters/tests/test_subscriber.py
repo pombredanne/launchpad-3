@@ -15,7 +15,6 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.longpoll.adapters.subscriber import (
@@ -102,14 +101,11 @@ class TestLongPollSubscriber(TestCase):
 
     def test_longpoll_uri_config(self):
         # The JSON cache contains config.txlongpoll.uri.
-        config.push('production', """\
-            [txlongpoll]
-            uri: /+longpoll/
-            """)
+        self.pushConfig("txlongpoll", uri="/+longpoll/")
         request = LaunchpadTestRequest()
         cache = IJSONRequestCache(request)
         ILongPollSubscriber(request).subscribe(FakeEvent())
-        self.assertEqual('/+longpoll/', cache.objects["longpoll"]["api"])
+        self.assertEqual('/+longpoll/', cache.objects["longpoll"]["uri"])
 
     def test_json_cache_populated_on_subscribe(self):
         # To aid with debugging the event_key of subscriptions are added to

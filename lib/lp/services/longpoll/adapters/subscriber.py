@@ -48,7 +48,7 @@ class LongPollApplicationRequestSubscriber:
         cache = IJSONRequestCache(self.request)
         if "longpoll" not in cache.objects:
             cache.objects["longpoll"] = {
-                "api": config.txlongpoll.uri,
+                "uri": config.txlongpoll.uri,
                 "key": generate_subscribe_key(),
                 "subscriptions": [],
                 }
