@@ -313,7 +313,6 @@ class IBranchMergeProposal(IPrivacy):
             notified.
         """
 
-
     # Cannot specify value type without creating a circular dependency
     votes = exported(
         CollectionField(
@@ -756,8 +755,8 @@ def notify_modified(proposal, func, *args, **kwargs):
     :param kwargs: Keyword arguments for the method.
     :return: The return value of the method.
     """
-    from lp.code.adapters.branch import BranchMergeProposalDelta
-    snapshot = BranchMergeProposalDelta.snapshot(proposal)
+    from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
+    snapshot = BranchMergeProposalNoPreviewDiffDelta.snapshot(proposal)
     result = func(*args, **kwargs)
     notify(ObjectModifiedEvent(proposal, snapshot, []))
     return result

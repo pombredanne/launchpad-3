@@ -252,6 +252,17 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             distroarchseries=archseries)
         self.assertEqual("fnord", self.getPickerEntry(dsp).description)
 
+    def test_dsp_provides_alt_title_link(self):
+        distro = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distro)
+        self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        dsp = distro.getSourcePackage('snarf')
+        self.assertEqual(
+            'http://launchpad.dev/fnord/+source/snarf',
+            self.getPickerEntry(dsp).alt_title_link)
+
 
 class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
@@ -303,6 +314,12 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
             expected_summary, entry.description)
         self.assertEqual(
             expected_details, entry.details[0])
+
+    def test_product_provides_alt_title_link(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.assertEqual(
+            'http://launchpad.dev/fnord',
+            self.getPickerEntry(product).alt_title_link)
 
 
 class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
@@ -356,6 +373,12 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
             expected_summary, entry.description)
         self.assertEqual(
             expected_details, entry.details[0])
+
+    def test_projectgroup_provides_alt_title_link(self):
+        projectgroup = self.factory.makeProject(name='fnord')
+        self.assertEqual(
+            'http://launchpad.dev/fnord',
+            self.getPickerEntry(projectgroup).alt_title_link)
 
 
 class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
@@ -411,6 +434,12 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
             expected_summary, entry.description)
         self.assertEqual(
             expected_details, entry.details[0])
+
+    def test_distribution_provides_alt_title_link(self):
+        distribution = self.factory.makeDistribution(name='fnord')
+        self.assertEqual(
+            'http://launchpad.dev/fnord',
+            self.getPickerEntry(distribution).alt_title_link)
 
 
 class TestPersonVocabulary:

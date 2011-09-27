@@ -133,6 +133,11 @@ flag_info = sorted([
      'boolean',
      ('Enables the display and use of the enhanced target pickers.'),
      ''),
+    ('disclosure.private_bug_visibility_rules.enabled',
+     'boolean',
+     ('Enables the application of additional privacy filter terms in bug '
+      'queries to allow defined project roles to see private bugs.'),
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '

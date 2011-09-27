@@ -170,6 +170,7 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
+    get_bug_privacy_filter
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
@@ -2602,35 +2603,9 @@ class BugSet:
         if duplicateof:
             where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
 
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user:
-            if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users,
-                # so that they can only see the private bugs that they're
-                # allowed to see.
-                where_clauses.append("""
-                    (Bug.private = FALSE OR
-                      Bug.id in (
-                         -- Users who have a subscription to this bug.
-                         SELECT BugSubscription.bug
-                           FROM BugSubscription, TeamParticipation
-                           WHERE
-                             TeamParticipation.person = %(personid)s AND
-                             BugSubscription.person = TeamParticipation.team
-                         UNION
-                         -- Users who are the assignee for one of the bug's
-                         -- bugtasks.
-                         SELECT BugTask.bug
-                           FROM BugTask, TeamParticipation
-                           WHERE
-                             TeamParticipation.person = %(personid)s AND
-                             TeamParticipation.team = BugTask.assignee
-                      )
-                    )""" % sqlvalues(personid=user.id))
-        else:
-            # Anonymous user; filter to include only public bugs in
-            # the search results.
-            where_clauses.append("Bug.private = FALSE")
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            where_clauses.append(privacy_filter)
 
         other_params = {}
         if orderBy:
