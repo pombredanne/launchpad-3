@@ -19,18 +19,21 @@ from zope.event import notify
 from zope.interface import implements
 
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.mailnotification import (
     MailWrapper,
     send_process_error_notification,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bug import CreatedBugWithNoBugTasksError
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    CreatedBugWithNoBugTasksError,
+    )
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType,
     IBugAttachmentSet,
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
-from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import BugEmailCommands
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
@@ -209,10 +212,22 @@ class MaloneHandler:
         commands = self.getCommands(signed_msg)
         to_user, to_host = to_addr.split('@')
         add_comment_to_bug = False
+        from_user = getUtility(ILaunchBag).user
+        if to_user.lower() == 'help' or from_user is None:
+            if from_user is not None and from_user.preferredemail is not None:
+                to_address = str(from_user.preferredemail.email)
+            else:
+                to_address = signed_msg['From']
+                address = getUtility(IEmailAddressSet).getByEmail(to_address)
+                if address is None:
+                    to_address = None
+            if to_address is not None:
+                self.sendHelpEmail(to_address)
+            return True, False, None
         # If there are any commands, we must have strong authentication.
         # We send a different failure message for attempts to create a new
         # bug.
-        if to_user.lower() == 'new':
+        elif to_user.lower() == 'new':
             ensure_not_weakly_authenticated(signed_msg, CONTEXT,
                 'unauthenticated-bug-creation.txt',
                 error_templates=error_templates)
@@ -228,14 +243,6 @@ class MaloneHandler:
             # the bug.
             add_comment_to_bug = True
             commands.insert(0, BugEmailCommands.get('bug', [to_user]))
-        elif to_user.lower() == 'help':
-            from_user = getUtility(ILaunchBag).user
-            if from_user is not None:
-                preferredemail = from_user.preferredemail
-                if preferredemail is not None:
-                    to_address = str(preferredemail.email)
-                    self.sendHelpEmail(to_address)
-            return True, False, None
         elif to_user.lower() != 'edit':
             # Indicate that we didn't handle the mail.
             return False, False, None
