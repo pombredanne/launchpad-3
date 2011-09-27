@@ -22,20 +22,14 @@ class ILongPollEvent(Interface):
 
     source = Attribute("The event source.")
 
-    event = Attribute("An object indicating the type of event.")
-
     event_key = Attribute(
         "The key with which events will be emitted. Should be predictable "
         "and stable.")
 
-    def emit(data):
+    def emit(**data):
         """Emit the given data to `event_key`.
 
-        The data will be wrapped up into a `dict` with the keys `event_key`
-        and `event_data`, where `event_key` is a copy of `self.event_key` and
-        `event_data` is the `data` argument.
-
-        :param data: Any data structure that can be dumped as JSON.
+        :param data: Any data structures that can be dumped as JSON.
         """
 
 
@@ -53,19 +47,14 @@ class ILongPollSubscriber(Interface):
         """
 
 
-def long_poll_event(source_spec, event_spec=basestring):
+def long_poll_event(source_spec):
     """Class decorator to declare an `ILongPollEvent`.
 
     :param source_spec: An interface or other specification understood by
         `zope.component` (a plain class can be passed too) that defines the
         source of an event. `IJob` or `storm.base.Storm` for example.
-    :param source_event: An interface or other specification understood by
-        `zope.component`. The exact use here is left to implementers. By
-        default it is `basestring` so that terms like "modified" or
-        "lifecycle" can be used when looking up the event, but it could also
-        be `IObjectModifiedEvent`. The dominant use case is evolving.
     """
-    declare_adapter = adapter(source_spec, event_spec)
+    declare_adapter = adapter(source_spec)
 
     def declare_event(cls):
         classImplements(cls, ILongPollEvent)
