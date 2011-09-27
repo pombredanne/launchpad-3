@@ -12,6 +12,7 @@ RewriteLock /var/tmp/rewrite-lock
   ProxyPreserveHost on
 
   ProxyPass / http://localhost:8087/ retry=1
+  ProxyPass /+longpoll/ http://localhost:22435/ retry=1
 </VirtualHost>
 
 <VirtualHost 127.0.0.88:80>

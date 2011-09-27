@@ -80,6 +80,7 @@ setup(
         'storm',
         'testtools',
         'timeline',
+        'txlongpollfixture',
         'transaction',
         'Twisted',
         'wadllib',
