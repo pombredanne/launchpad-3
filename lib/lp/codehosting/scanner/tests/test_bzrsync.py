@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0141
@@ -44,9 +44,7 @@ from lp.codehosting.bzrutils import (
     read_locked,
     write_locked,
     )
-from lp.codehosting.safe_open import (
-    SafeBranchOpener,
-    )
+from lp.codehosting.safe_open import SafeBranchOpener
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
 from lp.testing import (

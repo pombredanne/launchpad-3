@@ -325,7 +325,6 @@ class PreviewDiff(Storm):
     delegates(IDiff, context='diff')
     __storm_table__ = 'PreviewDiff'
 
-
     id = Int(primary=True)
 
     diff_id = Int(name='diff')

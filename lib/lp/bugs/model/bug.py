@@ -30,7 +30,6 @@ from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator
-import pytz
 import re
 
 from lazr.lifecycle.event import (
@@ -39,6 +38,7 @@ from lazr.lifecycle.event import (
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from pytz import timezone
 from sqlobject import (
     BoolCol,
@@ -122,9 +122,9 @@ from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
     BugConvertedToQuestion,
+    BugDuplicateChange,
     BugWatchAdded,
     BugWatchRemoved,
-    BugDuplicateChange,
     SeriesNominated,
     UnsubscribedFromBug,
     )
@@ -170,7 +170,7 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
-    get_bug_privacy_filter
+    get_bug_privacy_filter,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (

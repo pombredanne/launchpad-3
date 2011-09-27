@@ -25,7 +25,8 @@ We current use a feature flag to control who is subscribed when a bug is made
 private.
 
     >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> feature_flag = {
+    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
     >>> flags = FeatureFixture(feature_flag)
     >>> flags.setUp()
 
@@ -35,7 +36,8 @@ anyway, because he is an admin.
     >>> browser.open(
     ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
     ...     "+bug/2/+secrecy")
-    >>> browser.getControl("This bug report should be private").selected = True
+    >>> browser.getControl("This bug report should be private").selected = (
+    ...     True)
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
@@ -75,7 +77,8 @@ redirected to the bug page.
 Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,
 will be subscribed instead.
 
-    >>> browser.getControl(name="field.title", index=0).value = "a private bug"
+    >>> browser.getControl(name="field.title", index=0).value = (
+    ...     "a private bug")
     >>> browser.getControl('Continue').click()
 
     >>> print browser.contents
@@ -131,7 +134,8 @@ subscriptions differ.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
 
-    >>> browser.getControl(name="field.title", index=0).value = "a private bug"
+    >>> browser.getControl(name="field.title", index=0).value = (
+    ...     "a private bug")
     >>> browser.getControl('Continue').click()
 
     >>> print browser.contents
