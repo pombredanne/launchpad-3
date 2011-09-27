@@ -135,7 +135,7 @@ Now lets try to insert a poll with the name of a existing one.
     ...     "The unique name of this poll").value = 'dpl-2080'
     >>> title_control = team_admin_browser.getControl(
     ...     "The title of this poll")
-    ... title_control.value = "Debian Project Leader Election 2080"
+    >>> title_control.value = "Debian Project Leader Election 2080"
     >>> proposition = "The next debian project leader"
     >>> team_admin_browser.getControl(
     ...     "The proposition that is going to be voted").value = proposition
