@@ -267,8 +267,8 @@ class NewCodeImportForm(Interface):
         allowed_schemes=["http", "https"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
-        allow_query=False,    # Query makes no sense in Mercurial
-        allow_fragment=False, # Fragment makes no sense in Mercurial
+        allow_query=False,    # Query makes no sense in Bazaar.
+        allow_fragment=False, # Fragment makes no sense in Bazaar.
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
 
     bzr_branch_url = URIField(
