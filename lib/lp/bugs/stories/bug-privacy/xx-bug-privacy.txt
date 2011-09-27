@@ -32,27 +32,27 @@ private.
 Foo Bar is not Cc'd on this bug, but is able to set the bug private
 anyway, because he is an admin.
 
-  >>> browser.open(
-  ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
-  ...     "+bug/2/+secrecy")
-  >>> browser.getControl("This bug report should be private").selected = True
-  >>> browser.getControl("Change").click()
-  >>> print browser.url
-  http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
+    >>> browser.open(
+    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
+    ...     "+bug/2/+secrecy")
+    >>> browser.getControl("This bug report should be private").selected = True
+    >>> browser.getControl("Change").click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
 
 
 Subscribers have been updated according to the privacy rules.
 
-  >>> browser.open(
-  ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-details")
-  >>> print_direct_subscribers(browser.contents)
-  Mark Shuttleworth (Unsubscribe)
-  Sample Person (Unsubscribe)
-  Steve Alexander (Unsubscribe)
-  Ubuntu Team (Unsubscribe)
+    >>> browser.open(
+    ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-details")
+    >>> print_direct_subscribers(browser.contents)
+    Mark Shuttleworth (Unsubscribe)
+    Sample Person (Unsubscribe)
+    Steve Alexander (Unsubscribe)
+    Ubuntu Team (Unsubscribe)
 
-  >>> print_also_notified(browser.contents)
-  Also notified:
+    >>> print_also_notified(browser.contents)
+    Also notified:
 
 Clean up the feature flag.
 
@@ -60,11 +60,11 @@ Clean up the feature flag.
 
 When we go back to the secrecy form, the previously set value is pre-selected.
 
-  >>> browser.open(
-  ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
-  ...     "+bug/2/+secrecy")
-  >>> browser.getControl("This bug report should be private").selected
-  True
+    >>> browser.open(
+    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
+    ...     "+bug/2/+secrecy")
+    >>> browser.getControl("This bug report should be private").selected
+    True
 
 Foo Bar files a security (private) bug on Ubuntu Linux. He gets
 redirected to the bug page.

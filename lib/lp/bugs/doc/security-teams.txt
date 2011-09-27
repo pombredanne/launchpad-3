@@ -252,7 +252,7 @@ stub to get subscribed:
 
     >>> bug.setSecurityRelated(True, getUtility(ILaunchBag).user)
     True
-    
+
     >>> bug.security_related
     True
 
