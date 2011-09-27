@@ -187,7 +187,7 @@ class SpecificationTargetTests(SpecificationWebserviceTestCase):
 
     def test_get_specification_on_product(self):
         product = self.factory.makeProduct(name="fooix")
-        spec_object = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             product=product, name="some-spec")
         product_on_webservice = self.getPillarOnWebservice(product)
         spec = product_on_webservice.getSpecification(name="some-spec")
@@ -196,7 +196,7 @@ class SpecificationTargetTests(SpecificationWebserviceTestCase):
 
     def test_get_specification_on_distribution(self):
         distribution = self.factory.makeDistribution(name="foobuntu")
-        spec_object = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             distribution=distribution, name="some-spec")
         distro_on_webservice = self.getPillarOnWebservice(distribution)
         spec = distro_on_webservice.getSpecification(name="some-spec")
@@ -207,7 +207,7 @@ class SpecificationTargetTests(SpecificationWebserviceTestCase):
         product = self.factory.makeProduct(name="fooix")
         productseries = self.factory.makeProductSeries(
             product=product, name="fooix-dev")
-        spec_object = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             product=product, name="some-spec", goal=productseries)
         product_on_webservice = self.getPillarOnWebservice(product)
         productseries_on_webservice = product_on_webservice.getSeries(
@@ -220,7 +220,7 @@ class SpecificationTargetTests(SpecificationWebserviceTestCase):
         distribution = self.factory.makeDistribution(name="foobuntu")
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution, name="maudlin")
-        spec_object = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             distribution=distribution, name="some-spec",
             goal=distroseries)
         distro_on_webservice = self.getPillarOnWebservice(distribution)
