@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests confirming that changing isolation levels does what we expect."""
@@ -7,7 +7,11 @@ __metaclass__ = type
 __all__ = []
 
 import os.path
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import sys
 from textwrap import dedent
 import unittest
@@ -16,8 +20,8 @@ import transaction
 
 from canonical.config import dbconfig
 from canonical.database.sqlbase import (
-    cursor,
     connect,
+    cursor,
     ISOLATION_LEVEL_SERIALIZABLE,
     )
 from canonical.testing.layers import (

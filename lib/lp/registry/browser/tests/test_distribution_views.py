@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,7 +15,6 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import (
     login_celebrity,
-    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
