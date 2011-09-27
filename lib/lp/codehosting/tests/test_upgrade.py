@@ -85,15 +85,10 @@ class TestUpgrader(TestCaseWithFactory):
         self.useBzrBranches(direct_database=True)
         target_dir = self.useContext(temp_dir())
         format = format_registry.make_bzrdir('pack-0.92-subtree')
-        with temp_dir() as subtree_branch_dir:
-            stb = BzrDir.create_branch_convenience(
-                subtree_branch_dir, format=format)
-            stt = stb.bzrdir.open_workingtree()
-            stt.bzrdir.root_transport.mkdir('foo')
-            stt.add('foo', 'foo-id')
-            stt.add_reference(stt.extract('foo-id'))
-            stt.commit('added tree reference')
-            branch, tree = self.create_branch_and_tree(format=format)
-            stt.branch.push(tree.branch)
+        branch, tree = self.create_branch_and_tree(format=format)
+        sub_branch = BzrDir.create_branch_convenience(
+            tree.bzrdir.root_transport.clone('sub').base, format=format)
+        tree.add_reference(sub_branch.bzrdir.open_workingtree())
+        tree.commit('added tree reference')
         with ExpectedException(HasTreeReferences):
             upgraded = self.upgrade_by_pull(tree.branch, target_dir)
