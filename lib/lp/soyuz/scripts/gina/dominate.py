@@ -47,7 +47,7 @@ def dominate_imported_source_packages(txn, logger, distro_name, series_name,
         # it, dominating a single Debian series takes hours.
         if pub_count != len(live_versions):
             logger.debug("Dominating %s.", package_name)
-            dominator.dominateRemovedSourceVersions(
+            dominator.dominateSourceVersions(
                 series, pocket, package_name, live_versions)
             txn.commit()
         else:
