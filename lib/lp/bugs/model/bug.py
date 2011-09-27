@@ -199,6 +199,7 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.messages.interfaces.message import (
     IMessage,
@@ -1656,11 +1657,14 @@ BugMessage""" % sqlvalues(self.id))
         security_related_changed = False
         bug_before_modification = Snapshot(self, providing=providedBy(self))
 
-        # Before we update the privacy or security_related status, we need to
-        # reconcile the subscribers to avoid leaking private information.
-        if (self.private != private
-                or self.security_related != security_related):
-            self.reconcileSubscribers(private, security_related, who)
+        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
+        f_flag = bool(getFeatureFlag(f_flag_str))
+        if f_flag:
+            # Before we update the privacy or security_related status, we need to
+            # reconcile the subscribers to avoid leaking private information.
+            if (self.private != private
+                    or self.security_related != security_related):
+                self.reconcileSubscribers(private, security_related, who)
 
         if self.private != private:
             private_changed = True
@@ -1693,6 +1697,14 @@ BugMessage""" % sqlvalues(self.id))
                 changed_fields.append('private')
             if security_related_changed:
                 changed_fields.append('security_related')
+                if not f_flag and security_related:
+                    # The bug turned out to be security-related, subscribe the
+                    # security contact. We do it here only if the feature flag
+                    # is not set, otherwise it's done in
+                    # reconcileSubscribers().
+                    for pillar in self.affected_pillars:
+                        if pillar.security_contact is not None:
+                            self.subscribe(pillar.security_contact, who)
             notify(ObjectModifiedEvent(
                     self, bug_before_modification, changed_fields, user=who))
 

@@ -138,6 +138,11 @@ flag_info = sorted([
      ('Enables the application of additional privacy filter terms in bug '
       'queries to allow defined project roles to see private bugs.'),
      ''),
+    ('disclosure.enhanced_private_bug_subscriptions.enabled',
+     'boolean',
+     ('Enables the auto subscribing and unsubscribing of users as a bug '
+      'transitions between public, private and security related states.'),
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
