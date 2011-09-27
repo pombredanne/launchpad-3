@@ -63,10 +63,8 @@ class Upgrader:
             os.rename(upgrade_dir, temp_location)
             return temp_location
 
-    def upgrade_to_dir(self, bzr_branch, upgrade_dir):
-        t = get_transport_from_path(upgrade_dir)
-        bzr_branch.bzrdir.root_transport.copy_tree_to_transport(t)
-        exceptions = upgrade(t.base, self.target_format)
+    def upgrade_dir(self, url):
+        exceptions = upgrade(url, self.target_format)
         if exceptions:
             if len(exceptions) == 1:
                 # Compatibility with historical behavior
@@ -74,7 +72,21 @@ class Upgrader:
             else:
                 return 3
 
+    def upgrade_to_dir(self, bzr_branch, upgrade_dir):
+        t = get_transport_from_path(upgrade_dir)
+        bzr_branch.bzrdir.root_transport.copy_tree_to_transport(t)
+        self.upgrade_dir(t.base)
+
     def upgrade_by_pull(self, bzr_branch, upgrade_dir):
         branch = BzrDir.create_branch_convenience(
             upgrade_dir, force_new_tree=False)
-        branch.pull(bzr_branch)
+        branch.repository.fetch(bzr_branch.repository)
+        bd = branch.bzrdir
+        bd.destroy_branch()
+        self.mirror_branch(bzr_branch, bd)
+        self.upgrade_dir(upgrade_dir)
+
+    def mirror_branch(self, bzr_branch, target_bd):
+        target = target_bd.get_branch_transport(bzr_branch._format)
+        source = bzr_branch.bzrdir.get_branch_transport(bzr_branch._format)
+        source.copy_tree_to_transport(target)
