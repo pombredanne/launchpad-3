@@ -311,3 +311,8 @@ class OpenIdDiscoveryFailureView(SystemErrorView):
     def isSystemError(self):
         """We don't need to log these errors in the SiteLog."""
         return False
+
+
+class DisconnectionErrorView(SystemErrorView):
+
+    response_code = httplib.SERVICE_UNAVAILABLE

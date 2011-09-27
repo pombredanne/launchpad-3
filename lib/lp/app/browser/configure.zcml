@@ -359,6 +359,15 @@
       class="canonical.launchpad.webapp.error.OpenIdDiscoveryFailureView"
       />
 
+  <!-- DisconnectionError -->
+  <browser:page
+      for="storm.exceptions.DisconnectionError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-databaseunavailable.pt"
+      class="canonical.launchpad.webapp.error.DisconnectionErrorView"
+      />
+
   <!-- UnsafeFormGetSubmissionError -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"
