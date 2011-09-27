@@ -19,6 +19,7 @@ from zope.component import (
 from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
+from canonical.config import config
 from lp.services.longpoll.interfaces import ILongPollSubscriber
 from lp.services.messaging.interfaces import IMessageSession
 
@@ -47,6 +48,7 @@ class LongPollApplicationRequestSubscriber:
         cache = IJSONRequestCache(self.request)
         if "longpoll" not in cache.objects:
             cache.objects["longpoll"] = {
+                "api": config.txlongpoll.uri,
                 "key": generate_subscribe_key(),
                 "subscriptions": [],
                 }
