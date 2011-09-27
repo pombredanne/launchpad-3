@@ -247,9 +247,11 @@ class TxLongPollService(Service):
         return config.txlongpoll.launch
 
     def launch(self):
+        txlongpoll_bin = os.path.join(config.root, 'bin', 'txlongpoll')
         broker_hostname, broker_port = as_host_port(
             config.rabbitmq.host, None, None)
         self.server = TxLongPollServer(
+            txlongpoll_bin = txlongpoll_bin,
             frontend_port = config.txlongpoll.frontend_port,
             broker_user = config.rabbitmq.userid,
             broker_password = config.rabbitmq.password,
