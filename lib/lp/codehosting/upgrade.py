@@ -71,6 +71,7 @@ class Upgrader:
                 return temp_location
 
     def upgrade_dir(self, url):
+        self.logger.info('Performing standard upgrade.')
         exceptions = upgrade(url, self.target_format)
         if exceptions:
             if len(exceptions) == 1:
@@ -80,24 +81,24 @@ class Upgrader:
                 return 3
 
     def upgrade_to_dir(self, bzr_branch, upgrade_dir):
-        self.logger.info('Performing standard upgrade.')
+        self.logger.info('Mirroring branch.')
         t = get_transport_from_path(upgrade_dir)
         bzr_branch.bzrdir.root_transport.copy_tree_to_transport(t)
         self.upgrade_dir(t.base)
 
     def upgrade_by_pull(self, bzr_branch, upgrade_dir):
-        self.logger.info('Performing upgrade via pull.')
         self.check_tree_references(bzr_branch.repository)
+        self.logger.info('Converting repository with fetch.')
         branch = BzrDir.create_branch_convenience(
             upgrade_dir, force_new_tree=False)
         branch.repository.fetch(bzr_branch.repository)
         bd = branch.bzrdir
         bd.destroy_branch()
         self.mirror_branch(bzr_branch, bd)
-        self.logger.info('Upgrading the actual branch.')
         self.upgrade_dir(upgrade_dir)
 
     def check_tree_references(self, repo):
+        self.logger.info('Checking for tree-references.')
         with read_locked(repo):
             revision_ids = repo.all_revision_ids()
             for tree in repo.revision_trees(revision_ids):
