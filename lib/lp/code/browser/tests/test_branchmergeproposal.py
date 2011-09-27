@@ -830,7 +830,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(bmp, '+index', current_request=True)
         cache = IJSONRequestCache(view.request)
         self.assertNotIn("longpoll", cache.objects)
-        self.assertNotIn("new_mp_diff_event", cache.objects)
+        self.assertNotIn("merge_proposal_event_key", cache.objects)
 
     def test_subscribe_to_merge_proposal_events_flag_enabled(self):
         # If the longpoll.merge_proposals.enabled flag is enabled the user is
@@ -841,7 +841,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(bmp, '+index', current_request=True)
         cache = IJSONRequestCache(view.request)
         self.assertIn("longpoll", cache.objects)
-        self.assertIn("new_mp_diff_event", cache.objects)
+        self.assertIn("merge_proposal_event_key", cache.objects)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

@@ -607,13 +607,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                     self.context.source_branch.unique_name),
             })
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
-            cache.objects.update({
-                # XXX: GavinPanella 2011-09-21: Not sure about this name; this
-                # is done to match up with rvb's JavaScript code. The event
-                # subscribed to is actually for all lifecycle events of the
-                # context.
-                'new_mp_diff_event': subscribe(self.context).event_key,
-                })
+            cache.objects['merge_proposal_event_key'] = (
+                subscribe(self.context).event_key)
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
