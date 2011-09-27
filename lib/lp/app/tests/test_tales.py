@@ -312,15 +312,19 @@ class ObjectImageDisplayAPITestCase(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_custom_icon_url_context_is_None(self):
+        # When the context is None, the URL is an empty string.
         display_api = ObjectImageDisplayAPI(None)
         self.assertEqual('', display_api.custom_icon_url())
 
     def test_custom_icon_url_context_has_no_icon(self):
+        # When the context has not set the custom icon, the URL is None.
         product = self.factory.makeProduct()
         display_api = ObjectImageDisplayAPI(product)
         self.assertEqual(None, display_api.custom_icon_url())
 
     def test_custom_icon_url_context_has_an_icon(self):
+        # When the context has a custom icon, the URL is for the
+        # LibraryFileAlias.
         icon = self.factory.makeLibraryFileAlias(
             filename='smurf.png', content_type='image/png')
         product = self.factory.makeProduct(icon=icon)

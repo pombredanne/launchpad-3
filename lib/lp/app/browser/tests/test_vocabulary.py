@@ -57,18 +57,22 @@ class DefaultPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_css_image_entry_without_icon(self):
+        # When the context does not have a custom icon, its sprite is used.
         product = self.factory.makeProduct()
         entry = get_picker_entry(product, object())
         self.assertEqual("sprite product", entry.css)
         self.assertEqual(None, entry.image)
 
     def test_css_image_entry_without_icon_or_sprite(self):
+        # When the context does not have a custom icon, and there is no
+        # sprite adapter rules, the generic sprite is used.
         thing = object()
         entry = get_picker_entry(thing, object())
         self.assertEqual('sprite bullet', entry.css)
         self.assertEqual(None, entry.image)
 
     def test_css_image_entry_with_icon(self):
+        # When the context has a custom icon the URL is used.
         icon = self.factory.makeLibraryFileAlias(
             filename='smurf.png', content_type='image/png')
         product = self.factory.makeProduct(icon=icon)
