@@ -15,8 +15,12 @@ from datetime import (
     )
 from difflib import unified_diff
 
+from lazr.restful.interfaces import IJSONRequestCache
 import pytz
-from soupmatchers import HTMLContains, Tag
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
 from testtools.matchers import (
     MatchesRegex,
     Not,
@@ -26,7 +30,6 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.messages.model.message import MessageSet
 from canonical.launchpad.webapp.interfaces import (
     BrowserNotificationLevel,
     IPrimaryContext,
@@ -59,12 +62,13 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.services.messages.model.message import MessageSet
 from lp.testing import (
     BrowserTestCase,
     feature_flags,
     login_person,
-    set_feature_flag,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     time_counter,
     )
@@ -818,6 +822,26 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         with person_logged_in(bmp.source_branch.owner):
             bmp.source_branch.branchChanged(None, 'rev-1', None, None, None)
         self.assertTrue(view.pending_diff)
+
+    def test_subscribe_to_merge_proposal_events_flag_disabled(self):
+        # If the longpoll.merge_proposals.enabled flag is not enabled the user
+        # is *not* subscribed to events relating to the merge proposal.
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_initialized_view(bmp, '+index', current_request=True)
+        cache = IJSONRequestCache(view.request)
+        self.assertNotIn("longpoll", cache.objects)
+        self.assertNotIn("new_mp_diff_event", cache.objects)
+
+    def test_subscribe_to_merge_proposal_events_flag_enabled(self):
+        # If the longpoll.merge_proposals.enabled flag is enabled the user is
+        # subscribed to events relating to the merge proposal.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.useContext(feature_flags())
+        set_feature_flag(u'longpoll.merge_proposals.enabled', u'enabled')
+        view = create_initialized_view(bmp, '+index', current_request=True)
+        cache = IJSONRequestCache(view.request)
+        self.assertIn("longpoll", cache.objects)
+        self.assertIn("new_mp_diff_event", cache.objects)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
