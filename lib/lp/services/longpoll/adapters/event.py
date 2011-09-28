@@ -9,10 +9,14 @@ __all__ = [
     "LongPollEvent",
     ]
 
-from lp.services.messaging.queue import RabbitRoutingKey
+from zope.component import getUtility
+
+from lp.services.messaging.interfaces import IMessageSession
 
 
-router_factory = RabbitRoutingKey
+def router_factory(event_key):
+    """Get a router for the given `event_key`."""
+    return getUtility(IMessageSession).getProducer(event_key)
 
 
 def generate_event_key(*components):
@@ -27,24 +31,40 @@ def generate_event_key(*components):
 class LongPollEvent:
     """Base-class for event adapters.
 
-    Sub-classes need to declare something along the lines of:
+    Sub-classes need to define the `event_key` property and declare something
+    along the lines of::
 
-        adapts(Interface, Interface)
-        implements(ILongPollEvent)
+        class LongPollAwesomeThingEvent(LongPollEvent):
+            adapts(IAwesomeThing)
+            implements(ILongPollEvent)
+
+    Alternatively, use the `long_poll_event` class decorator::
+
+        @long_poll_event(IAwesomeThing)
+        class LongPollAwesomeThingEvent(LongPollEvent):
+            ...
+
+    In both cases the adapter should be registered in a `configure.zcml`
+    somewhere sensible::
+
+        <adapter factory=".adapters.LongPollAwesomeThingEvent" />
 
     """
 
-    def __init__(self, source, event):
+    def __init__(self, source):
         self.source = source
-        self.event = event
 
     @property
     def event_key(self):
         """See `ILongPollEvent`."""
         raise NotImplementedError(self.__class__.event_key)
 
-    def emit(self, data):
-        """See `ILongPollEvent`."""
-        payload = {"event_key": self.event_key, "event_data": data}
-        router = router_factory(self.event_key)
-        router.send(payload)
+    def emit(self, **data):
+        """See `ILongPollEvent`.
+
+        The data will be updated with `event_key`, a copy of `self.event_key`.
+        """
+        event_key = self.event_key
+        data.update(event_key=event_key)
+        router = router_factory(event_key)
+        router.send(data)

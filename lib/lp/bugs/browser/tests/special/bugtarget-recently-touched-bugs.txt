@@ -1,4 +1,5 @@
-= Recently Touched Bugs for a IBugTarget =
+Recently Touched Bugs for a IBugTarget
+======================================
 
 Every IBugTarget has a portlet for showing the most recently touched
 bugs (i.e bugs that have been recently modified/created).
@@ -44,7 +45,8 @@ will be first in the list.
     Bug C
     Bug A
 
-== Private bugs ==
+Private bugs
+------------
 
 Only bugs that the user is allowed to see will be present in the list.
 
@@ -69,10 +71,11 @@ Only bugs that the user is allowed to see will be present in the list.
     >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:3]:
     ...     print bugtask.bug.title
     Bug B
-    Bug C
     Bug A
+    Bug C
 
-== Duplicate bugs ==
+Duplicate bugs
+--------------
 
 Bugs that are duplicates of other bugs will be omitted from the list as
 well.
@@ -81,10 +84,11 @@ well.
 
     >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:2]:
     ...     print bugtask.bug.title
-    Bug C
     Bug A
+    Bug C
 
-== Limit ==
+Limit
+-----
 
 By default only five bugs will be returned, but it's possible to specify
 a custom limit.

@@ -44,6 +44,7 @@ __all__ = [
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
     'YUITestLayer',
+    'YUIAppServerLayer',
     'ZopelessAppServerLayer',
     'ZopelessDatabaseLayer',
     'ZopelessLayer',
@@ -106,10 +107,7 @@ from canonical.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from canonical.database.sqlbase import (
-    session_store,
-    ZopelessTransactionManager,
-    )
+from canonical.database.sqlbase import session_store
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -139,6 +137,7 @@ from lp.services.mail.mailbox import (
     IMailBox,
     TestMailBox,
     )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
@@ -149,6 +148,7 @@ from lp.testing import (
     login,
     logout,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.pgsql import PgTestSetup
 
 
@@ -485,13 +485,6 @@ class BaseLayer:
                 "Component architecture should not be loaded by tests. "
                 "This should only be loaded by the Layer.")
 
-        # Detect a test that installed the Zopeless database adapter
-        # but failed to unregister it. This could be done automatically,
-        # but it is better for the tear down to be explicit.
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerIsolationError(
-                "Zopeless environment was setup and not torn down.")
-
         # Detect a test that forgot to reset the default socket timeout.
         # This safety belt is cheap and protects us from very nasty
         # intermittent test failures: see bug #140068 for an example.
@@ -759,8 +752,9 @@ class DatabaseLayer(BaseLayer):
         cls.force_dirty_database()
         cls._db_fixture.tearDown()
         cls._db_fixture = None
-        cls._db_template_fixture.tearDown()
-        cls._db_template_fixture = None
+        if os.environ.get('LP_TEST_INSTANCE'):
+            cls._db_template_fixture.tearDown()
+            cls._db_template_fixture = None
 
     @classmethod
     @profiled
@@ -1458,11 +1452,6 @@ class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
     def testTearDown(cls):
         disconnect_stores()
 
-    @classmethod
-    @profiled
-    def switchDbConfig(cls, database_config_section):
-        reconnect_stores(database_config_section=database_config_section)
-
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     """Testing layer for scripts using the main Launchpad database adapter"""
@@ -1496,11 +1485,6 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def testTearDown(cls):
         disconnect_stores()
 
-    @classmethod
-    @profiled
-    def switchDbConfig(cls, database_config_section):
-        reconnect_stores(database_config_section=database_config_section)
-
 
 class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
@@ -1529,10 +1513,11 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerIsolationError(
-                "Last test using Zopeless failed to tearDown correctly")
-        ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
+        dbconfig.override(isolation_level='read_committed')
+        # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+        # Tests that still need it should eventually set this directly,
+        # so the whole layer is not polluted.
+        set_immediate_mail_delivery(True)
 
         # Connect Storm
         reconnect_stores()
@@ -1540,11 +1525,13 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        ZopelessTransactionManager.uninstall()
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerInvariantError(
-                "Failed to uninstall ZopelessTransactionManager")
+        dbconfig.reset()
         # LaunchpadScriptLayer will disconnect the stores for us.
+
+        # XXX wgrant 2011-09-24 bug=29744: uninstall used to do this.
+        # Tests that still need immediate delivery should eventually do
+        # this directly.
+        set_immediate_mail_delivery(False)
 
     @classmethod
     @profiled
@@ -1559,16 +1546,8 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def switchDbUser(cls, dbuser):
-        LaunchpadZopelessLayer._alterConnection(dbuser=dbuser)
-
-    @classmethod
-    @profiled
-    def _alterConnection(cls, **kw):
-        """Reset the connection, and reopen the connection by calling
-        initZopeless with the given keyword arguments.
-        """
-        ZopelessTransactionManager.uninstall()
-        ZopelessTransactionManager.initZopeless(**kw)
+        # DEPRECATED: use switch_dbuser directly.
+        switch_dbuser(dbuser)
 
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
@@ -1749,14 +1728,14 @@ class LayerProcessController:
     smtp_controller = None
 
     @classmethod
-    def _setConfig(cls):
+    def setConfig(cls):
         """Stash a config for use."""
         cls.appserver_config = CanonicalConfig(
             BaseLayer.appserver_config_name, 'runlaunchpad')
 
     @classmethod
     def setUp(cls):
-        cls._setConfig()
+        cls.setConfig()
         cls.startSMTPServer()
         cls.startAppServer()
 
@@ -1782,12 +1761,12 @@ class LayerProcessController:
 
     @classmethod
     @profiled
-    def startAppServer(cls):
+    def startAppServer(cls, run_name='run'):
         """Start the app server if it hasn't already been started."""
         if cls.appserver is not None:
             raise LayerInvariantError('App server already running')
         cls._cleanUpStaleAppServer()
-        cls._runAppServer()
+        cls._runAppServer(run_name)
         cls._waitUntilAppServerIsReady()
 
     @classmethod
@@ -1879,11 +1858,11 @@ class LayerProcessController:
             pidfile.remove_pidfile('launchpad', cls.appserver_config)
 
     @classmethod
-    def _runAppServer(cls):
+    def _runAppServer(cls, run_name):
         """Start the app server using runlaunchpad.py"""
         _config = cls.appserver_config
         cmd = [
-            os.path.join(_config.root, 'bin', 'run'),
+            os.path.join(_config.root, 'bin', run_name),
             '-C', 'configs/%s/launchpad.conf' % _config.instance_name]
         environ = dict(os.environ)
         environ['LPCONFIG'] = _config.instance_name
@@ -1892,10 +1871,14 @@ class LayerProcessController:
             env=environ, cwd=_config.root)
 
     @classmethod
+    def appserver_root_url(cls):
+        return cls.appserver_config.vhost.mainsite.rooturl
+
+    @classmethod
     def _waitUntilAppServerIsReady(cls):
         """Wait until the app server accepts connection."""
         assert cls.appserver is not None, "App server isn't started."
-        root_url = cls.appserver_config.vhost.mainsite.rooturl
+        root_url = cls.appserver_root_url()
         until = datetime.datetime.now() + WAIT_INTERVAL
         while until > datetime.datetime.now():
             try:
@@ -2005,4 +1988,24 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
 
 
 class YUITestLayer(FunctionalLayer):
-    """The base class for all YUITests cases."""
+    """The layer for all YUITests cases."""
+
+
+class YUIAppServerLayer(MemcachedLayer, RabbitMQLayer):
+    """The layer for all YUIAppServer test cases."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        LayerProcessController.setConfig()
+        LayerProcessController.startAppServer('run-testapp')
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        LayerProcessController.stopAppServer()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        LaunchpadLayer.resetSessionDb()

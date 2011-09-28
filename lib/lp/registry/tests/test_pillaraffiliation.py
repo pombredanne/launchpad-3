@@ -271,6 +271,11 @@ class TestBranchPillarAffiliation(_TestBugTaskorBranchMixin,
         adapter = IHasAffiliation(branch)
         self.assertEqual([branch.product], adapter.getPillars())
 
+    def test_personal_branches_have_no_pillars(self):
+        branch = self.factory.makeBranch(product=None)
+        adapter = IHasAffiliation(branch)
+        self.assertEqual([], adapter.getPillars())
+
     def test_getBranch(self):
         # The branch is the context.
         branch = self.factory.makeBranch()

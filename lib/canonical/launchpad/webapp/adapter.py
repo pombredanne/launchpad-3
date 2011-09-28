@@ -10,7 +10,6 @@ from functools import partial
 import logging
 import os
 import re
-import StringIO
 import sys
 import thread
 import threading
@@ -97,7 +96,6 @@ __all__ = [
     'get_store_name',
     'print_queries',
     'soft_timeout_expired',
-    'SQLLogger',
     'start_sql_logging',
     'stop_sql_logging',
     'StoreSelector',
@@ -365,8 +363,10 @@ def start_sql_logging(tracebacks_if=False):
         warnings.warn('SQL logging already started')
         return
     _local.sql_logging_tracebacks_if = tracebacks_if
-    _local.sql_logging = []
+    result = []
+    _local.sql_logging = result
     _local.sql_logging_start = int(time() * 1000)
+    return result
 
 
 def stop_sql_logging():
@@ -378,29 +378,6 @@ def stop_sql_logging():
     if result is None:
         warnings.warn('SQL logging not started')
     return result
-
-
-class SQLLogger:
-
-    def __init__(self, tracebacks_if=False):
-        self.tracebacks_if = tracebacks_if
-
-    queries = None
-
-    def __enter__(self):
-        self.queries = None
-        start_sql_logging(self.tracebacks_if)
-
-    def __exit__(self, exc_type, exc_value, tb):
-        self.queries = stop_sql_logging()
-
-    def __str__(self):
-        if self.queries is None:
-            return '(no queries)'
-        else:
-            out = StringIO.StringIO()
-            print_queries(self.queries, file=out)
-            return out.getvalue()
 
 
 def print_queries(queries, file=None):

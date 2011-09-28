@@ -275,12 +275,11 @@ class TestDKIM(TestCaseWithFactory):
         self.factory.makeEmail(
             person=person,
             address='dkimtest@example.com')
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns            
-        tweaked_message = 'Sender: dkimtest@canonical.com\n' + \
-            plain_content.replace(
-                'From: Foo Bar <foo.bar@canonical.com>',
-                'From: DKIM Test <dkimtest@example.com>')
+        self._dns_responses['example._domainkey.canonical.com.'] = sample_dns
+        tweaked_message = (
+            "Sender: dkimtest@canonical.com\n" + plain_content.replace(
+                "From: Foo Bar <foo.bar@canonical.com>",
+                "From: DKIM Test <dkimtest@example.com>"))
         signed_message = self.fake_signing(tweaked_message)
         principal = authenticateEmail(
             signed_message_from_string(signed_message))

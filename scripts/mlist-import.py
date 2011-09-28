@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import a mailing list (well, parts of it)."""
@@ -16,16 +16,16 @@ __all__ = [
     ]
 
 
+import logging
+import sys
+import textwrap
+
 # pylint: disable-msg=W0403
 import _pythonpath
 
-import sys
-import logging
-import textwrap
-
 from canonical.config import config
-from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.mlistimport import Importer
+from lp.services.scripts.base import LaunchpadScript
 
 
 class MailingListImport(LaunchpadScript):
@@ -71,7 +71,7 @@ class MailingListImport(LaunchpadScript):
         # switch.  Notifications are disabled by default because they can
         # cause huge amounts to be sent to the team owner.
         send_email_config = """
-            [zopeless]
+            [immediate_mail]
             send_email: %s
             """ % self.options.notifications
         config.push('send_email_config', send_email_config)
