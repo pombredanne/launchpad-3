@@ -296,6 +296,8 @@ class IBugTarget(IHasBugs):
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")
 
+    pillar = Attribute("The pillar containing this target.")
+
     bug_reporting_guidelines = exported(
         Text(
             title=(

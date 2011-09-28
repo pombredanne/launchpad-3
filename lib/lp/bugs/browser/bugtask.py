@@ -1570,7 +1570,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         milestone_ignored = False
         missing = object()
         new_target = new_values.pop("target", missing)
-        if new_target is not missing and bugtask.target != new_target:
+        if (new_target is not missing and
+            bugtask.target.pillar != new_target.pillar):
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
