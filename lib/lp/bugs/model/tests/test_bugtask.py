@@ -32,6 +32,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    DB_UNRESOLVED_BUGTASK_STATUSES,
     IBugTaskSet,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -1349,6 +1350,7 @@ class TestBugTaskStatuses(TestCase):
         """
         self.assertNotIn(BugTaskStatus.UNKNOWN, RESOLVED_BUGTASK_STATUSES)
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
+        self.assertNotIn(BugTaskStatus.UNKNOWN, DB_UNRESOLVED_BUGTASK_STATUSES)
 
 
 class TestBugTaskContributor(TestCaseWithFactory):
@@ -1392,26 +1394,35 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         self.owner = self.factory.makePerson()
         self.distro = self.factory.makeDistribution(
             name="eggs", owner=self.owner, bug_supervisor=self.owner)
-        distro_release = self.factory.makeDistroSeries(
+        self.distro_release = self.factory.makeDistroSeries(
             distribution=self.distro, registrant=self.owner)
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename="spam", distroseries=distro_release)
-        bug = self.factory.makeBug(
+        self.source_package = self.factory.makeSourcePackage(
+            sourcepackagename="spam", distroseries=self.distro_release)
+        self.bug = self.factory.makeBug(
             distribution=self.distro,
-            sourcepackagename=source_package.sourcepackagename,
+            sourcepackagename=self.source_package.sourcepackagename,
             owner=self.owner)
         with person_logged_in(self.owner):
-            nomination = bug.addNomination(self.owner, distro_release)
+            nomination = self.bug.addNomination(
+                self.owner, self.distro_release)
             nomination.approve(self.owner)
-            self.generic_task, self.series_task = bug.bugtasks
+            self.generic_task, self.series_task = self.bug.bugtasks
 
     def test_editing_generic_status_reflects_upon_conjoined_master(self):
         # If a change is made to the status of a conjoined slave
         # (generic) task, that change is reflected upon the conjoined
         # master.
         with person_logged_in(self.owner):
+            # Both the generic task and the series task start off with the
+            # status of NEW.
+            self.assertEqual(
+                BugTaskStatus.NEW, self.generic_task.status)
+            self.assertEqual(
+                BugTaskStatus.NEW, self.series_task.status)
+            # Transitioning the generic task to CONFIRMED.
             self.generic_task.transitionToStatus(
                 BugTaskStatus.CONFIRMED, self.owner)
+            # Also transitions the series_task.
             self.assertEqual(
                 BugTaskStatus.CONFIRMED, self.series_task.status)
 
@@ -1448,10 +1459,32 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
             self.assertEqual(
                 source_package_name, self.series_task.sourcepackagename)
 
+    def test_creating_conjoined_task_gets_synced_attributes(self):
+        bug = self.factory.makeBug(
+            distribution=self.distro,
+            sourcepackagename=self.source_package.sourcepackagename,
+            owner=self.owner)
+        generic_task = bug.bugtasks[0]
+        bugtaskset = getUtility(IBugTaskSet)
+        with person_logged_in(self.owner):
+            generic_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.owner)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, generic_task.status)
+            from lp.testing import StormStatementRecorder
+            with StormStatementRecorder(True) as recorder:
+                slave_bugtask = bugtaskset.createTask(
+                    bug, self.owner, generic_task.target.development_version)
+            #print recorder
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, generic_task.status)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, slave_bugtask.status)
+
+
 # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 # When feature flag code is removed, delete these tests (up to "# END
 # TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.")
-
 
 class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
     """Tests for auto-confirming bug tasks."""

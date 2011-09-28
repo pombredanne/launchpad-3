@@ -270,7 +270,7 @@ A bugtask open on the current development series for a distro is kept
 in sync with the "generic" bugtask for that distro, because they
 represent the same piece of work. The same is true for product and
 productseries tasks, when the productseries task is targeted to the
-IProduct.developmentfocus. The following attributes are synched:
+IProduct.developmentfocus. The following attributes are synced:
 
     * status
     * assignee

@@ -543,7 +543,6 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         foo_bug = self.factory.makeBug(product=product_foo)
         bugtask_set = getUtility(IBugTaskSet)
         bugtask_set.createTask(foo_bug, foo_bug.owner, product_bar)
-
         removeSecurityProxy(product_bar).active = False
 
         request = LaunchpadTestRequest()
@@ -682,7 +681,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     def test_status_field_bug_task_in_status_expired(self):
         # If a bugtask has the status Expired, this status is included
         # in the options.
-        removeSecurityProxy(self.bug.default_bugtask).status = (
+        removeSecurityProxy(self.bug.default_bugtask)._status = (
             BugTaskStatus.EXPIRED)
         login(NO_PRIVILEGE_EMAIL)
         view = BugTaskEditView(

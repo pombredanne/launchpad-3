@@ -22,7 +22,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
-    BugTaskStatus,
+    BugTaskStatusSearch,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -62,7 +62,7 @@ class IBugSummary(Interface):
     milestone = Object(IMilestone, readonly=True)
 
     status = Choice(
-        title=_('Status'), vocabulary=BugTaskStatus, readonly=True)
+        title=_('Status'), vocabulary=BugTaskStatusSearch, readonly=True)
     importance = Choice(
         title=_('Importance'), vocabulary=BugTaskImportance, readonly=True)
 
@@ -82,7 +82,7 @@ class IBugSummaryDimension(Interface):
         """Return a storm clause to filter bugsummaries on this context.
 
         This method is intentended for in-appserver use only.
-        
+
         :return: Either a storm clause to filter bugsummaries, or False if
             there cannot be any matching bug summaries.
         """

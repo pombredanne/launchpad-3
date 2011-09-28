@@ -48,6 +48,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    BugTaskStatusSearch,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -123,7 +124,7 @@ class HasBugsBase:
 
     def getBugSummaryContextWhereClause(self):
         """Return a storm clause to filter bugsummaries on this context.
-        
+
         :return: Either a storm clause to filter bugsummaries, or False if
             there cannot be any matching bug summaries.
         """
@@ -223,7 +224,8 @@ class BugTargetBase(HasBugsBase):
     # IDistribution, IDistroSeries, IProjectGroup.
     enable_bugfiling_duplicate_search = True
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
         """See IBugTarget."""
         from lp.bugs.model.bug import get_bug_tags_open_count
         return get_bug_tags_open_count(

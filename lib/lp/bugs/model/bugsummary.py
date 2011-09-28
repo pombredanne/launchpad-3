@@ -28,6 +28,7 @@ from lp.bugs.interfaces.bugsummary import (
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
+    BugTaskStatusSearch,
     )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
@@ -66,7 +67,10 @@ class BugSummary(Storm):
     milestone_id = Int(name='milestone')
     milestone = Reference(milestone_id, Milestone.id)
 
-    status = EnumCol(dbName='status', schema=BugTaskStatus)
+    status = EnumCol(
+        dbName='status',
+        schema=(BugTaskStatus, BugTaskStatusSearch))
+
     importance = EnumCol(dbName='importance', schema=BugTaskImportance)
 
     tag = Unicode()

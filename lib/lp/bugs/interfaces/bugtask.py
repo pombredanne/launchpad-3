@@ -17,6 +17,7 @@ __all__ = [
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
+    'DB_UNRESOLVED_BUGTASK_STATUSES',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
@@ -196,6 +197,11 @@ class BugTaskStatus(DBEnumeratedType):
         this product or source package.
         """)
 
+    # INCOMPLETE is never actually stored now: INCOMPLETE_WITH_RESPONSE and
+    # INCOMPLETE_WITHOUT_RESPONSE are mapped to INCOMPLETE on read, and on
+    # write INCOMPLETE is mapped to INCOMPLETE_WITHOUT_RESPONSE. This permits
+    # An index on the INCOMPLETE_WITH*_RESPONSE queries that the webapp
+    # generates.
     INCOMPLETE = DBItem(15, """
         Incomplete
 
@@ -269,10 +275,6 @@ class BugTaskStatus(DBEnumeratedType):
         affected software.
         """)
 
-    # DBItem values 35 and 40 are used by
-    # BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE and
-    # BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
-
     UNKNOWN = DBItem(999, """
         Unknown
 
@@ -287,19 +289,14 @@ class BugTaskStatusSearch(DBEnumeratedType):
     """
     use_template(BugTaskStatus, exclude=('UNKNOWN'))
 
-    sort_order = (
-        'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'OPINION', 'INVALID', 'WONTFIX', 'EXPIRED',
-        'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
-
-    INCOMPLETE_WITH_RESPONSE = DBItem(35, """
+    INCOMPLETE_WITH_RESPONSE = DBItem(13, """
         Incomplete (with response)
 
         This bug has new information since it was last marked
         as requiring a response.
         """)
 
-    INCOMPLETE_WITHOUT_RESPONSE = DBItem(40, """
+    INCOMPLETE_WITHOUT_RESPONSE = DBItem(14, """
         Incomplete (without response)
 
         This bug requires more information, but no additional
@@ -370,6 +367,12 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.TRIAGED,
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
+
+# Actual values stored in the DB:
+DB_UNRESOLVED_BUGTASK_STATUSES = UNRESOLVED_BUGTASK_STATUSES + (
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+    )
 
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
@@ -481,9 +484,13 @@ class IBugTask(IHasDateCreated, IHasBug):
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
+    # Note that status is a property because the model only exposes INCOMPLETE
+    # but the DB stores INCOMPLETE_WITH_RESPONSE and
+    # INCOMPLETE_WITHOUT_RESPONSE for query efficiency.
     status = exported(
         Choice(title=_('Status'), vocabulary=BugTaskStatus,
                default=BugTaskStatus.NEW, readonly=True))
+    _status = Attribute('The actual status DB column used in queries.')
     importance = exported(
         Choice(title=_('Importance'), vocabulary=BugTaskImportance,
                default=BugTaskImportance.UNDECIDED, readonly=True))

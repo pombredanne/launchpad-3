@@ -845,7 +845,7 @@ class TestBugWatch:
             if bugtask.conjoined_master is not None:
                 continue
             bugtask = removeSecurityProxy(bugtask)
-            bugtask.status = new_malone_status
+            bugtask._status = new_malone_status
         if self.failing:
             cur = cursor()
             cur.execute("""

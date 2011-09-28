@@ -228,6 +228,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
@@ -286,6 +287,8 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
     BugTaskStatus.EXPIRED: False,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE: True,
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE: True,
     }
 
 
@@ -2086,57 +2089,6 @@ def get_buglisting_search_filter_url(
         search_filter_url += "&" + query_string
 
     return search_filter_url
-
-
-def getInitialValuesFromSearchParams(search_params, form_schema):
-    """Build a dictionary that can be given as initial values to
-    setUpWidgets, based on the given search params.
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
-    >>> for status in initial['status']:
-    ...     print status.name
-    NEW
-    INCOMPLETE
-    CONFIRMED
-    TRIAGED
-    INPROGRESS
-    FIXCOMMITTED
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': BugTaskStatus.INVALID}, IBugTaskSearch)
-    >>> [status.name for status in initial['status']]
-    ['INVALID']
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'importance': [BugTaskImportance.CRITICAL,
-    ...                   BugTaskImportance.HIGH]}, IBugTaskSearch)
-    >>> [importance.name for importance in initial['importance']]
-    ['CRITICAL', 'HIGH']
-
-    >>> getInitialValuesFromSearchParams(
-    ...     {'assignee': NULL}, IBugTaskSearch)
-    {'assignee': None}
-    """
-    initial = {}
-    for key, value in search_params.items():
-        if IList.providedBy(form_schema[key]):
-            if isinstance(value, any):
-                value = value.query_values
-            elif isinstance(value, (list, tuple)):
-                value = value
-            else:
-                value = [value]
-        elif value == NULL:
-            value = None
-        else:
-            # Should be safe to pass value as it is to setUpWidgets, no need
-            # to worry
-            pass
-
-        initial[key] = value
-
-    return initial
 
 
 class BugTaskListingItem:
