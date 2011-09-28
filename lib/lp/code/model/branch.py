@@ -182,19 +182,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     @property
     def private(self):
-        return self.explicitly_private or self._isStackedOnPrivate()
-
-    def _isStackedOnPrivate(self, checked_branches=None):
-        # Return True if any of this branch's stacked_on branches is private.
-        is_stacked_on_private = False
-        if self.stacked_on is not None:
-            checked_branches = checked_branches or []
-            checked_branches.append(self)
-            if self.stacked_on not in checked_branches:
-                is_stacked_on_private = (
-                    self.stacked_on.explicitly_private or
-                    self.stacked_on._isStackedOnPrivate(checked_branches))
-        return is_stacked_on_private
+        return self.transitively_private
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
@@ -209,6 +197,12 @@ class Branch(SQLBase, BzrIdentityMixin):
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
         self.explicitly_private = private
+        # If this branch is private, then it is also transitively_private
+        # otherwise we need to reload the value.
+        if private:
+            self.transitively_private = True
+        else:
+            self.transitively_private = AutoReload
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -1423,6 +1417,7 @@ def update_trigger_modified_fields(branch):
     naked_branch.unique_name = AutoReload
     naked_branch.owner_name = AutoReload
     naked_branch.target_suffix = AutoReload
+    naked_branch.transitively_private = AutoReload
 
 
 def branch_modified_subscriber(branch, event):

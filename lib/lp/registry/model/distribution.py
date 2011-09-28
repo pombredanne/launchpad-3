@@ -655,7 +655,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                Branch.last_scanned_id,
                SPBDS.name AS distro_series_name,
                Branch.id,
-               Branch.private,
+               Branch.transitively_private,
                Branch.owner
         FROM Branch
         JOIN DistroSeries
@@ -675,7 +675,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # Now we see just a touch of privacy concerns.
             # If the current user is anonymous, they cannot see any private
             # branches.
-            base_query += ('      AND NOT Branch.private\n')
+            base_query += ('      AND NOT Branch.transitively_private\n')
         # We want to order the results, in part for easier grouping at the
         # end.
         base_query += 'ORDER BY unique_name, last_scanned_id'
@@ -709,7 +709,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                            id,
                            owner
                     FROM all_branches
-                    WHERE private
+                    WHERE transitively_private
                 ), owned_branch_ids AS (
                     SELECT private_branches.id
                     FROM private_branches
@@ -724,7 +724,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
             SELECT unique_name, last_scanned_id, distro_series_name
             FROM all_branches
-            WHERE NOT private OR
+            WHERE NOT transitively_private OR
                   id IN (SELECT id FROM owned_branch_ids) OR
                   id IN (SELECT id FROM subscribed_branch_ids)
             """ % dict(base_query=base_query, user=quote(user.id))
