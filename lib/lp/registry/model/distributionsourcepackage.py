@@ -472,6 +472,11 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IDistributionSourcePackage`."""
         return not self.__eq__(other)
 
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.distribution
+
     def getBugSummaryContextWhereClause(self):
         """See `BugTargetBase`."""
         # Circular fail.

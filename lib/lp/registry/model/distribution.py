@@ -279,6 +279,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             alsoProvides(self, IDerivativeDistribution)
 
     @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self
+
+    @property
     def pillar_category(self):
         """See `IPillar`."""
         return "Distribution"
