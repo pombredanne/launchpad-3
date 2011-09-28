@@ -150,6 +150,11 @@ flag_info = sorted([
       'series).  Use the default domain.  Specify a single '
       'asterisk ("*") to enable for all products.'),
      'None are enabled'),
+    ('longpoll.merge_proposals.enabled',
+     'boolean',
+     ('Enables the longpoll mechanism for merge proposals so that diffs, '
+      'for example, are updated in-page when they are ready.'),
+     ''),
     ])
 
 # The set of all flag names that are documented.
