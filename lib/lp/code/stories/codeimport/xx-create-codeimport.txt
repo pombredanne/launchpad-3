@@ -137,7 +137,8 @@ If the user wants, they can include a username and password in the
 URL.
 
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
-    >>> browser.getControl('Branch Name').value = "with-password"
+    >>> browser.getControl('Subversion').click()
+    >>> browser.getControl('Branch Name').value = "svn-with-password"
     >>> browser.getControl('Branch URL', index=1).value = (
     ...     "http://user:password@svn.example.com/firefox/trunk")
     >>> browser.getControl('Project').value = "firefox"
@@ -284,6 +285,7 @@ If the name would clash, then the user is prompted to enter a different
 one.
 
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Subversion').click()
     >>> browser.getControl('Project').value = "firefox"
     >>> browser.getControl('Branch Name').value = "imported"
     >>> browser.getControl('Branch URL', index=1).value = (
@@ -304,7 +306,7 @@ then an error is shown to the user.
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Project').value = "launchpad"
     >>> browser.getControl('Branch Name').value = "imported"
-    >>> browser.getControl('Branch URL', index=1).value = (
+    >>> browser.getControl('Branch URL', index=0).value = (
     ...     "http://svn.example.com/launchpage/fake")
     >>> browser.getControl('Request Import').click()
     >>> for message in get_feedback_messages(browser.contents):
@@ -322,7 +324,7 @@ existing product, an error is shown to the user.
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Project').value = "no-such-product"
     >>> browser.getControl('Branch Name').value = "imported"
-    >>> browser.getControl('Branch URL', index=1).value = (
+    >>> browser.getControl('Branch URL', index=0).value = (
     ...     "http://svn.example.com/launchpage/fake")
     >>> browser.getControl('Request Import').click()
     >>> for message in get_feedback_messages(browser.contents):
@@ -349,7 +351,7 @@ Change the owner to be a team that sample person is a member of.
     >>> sample_browser.getControl('Owner').value = ['landscape-developers']
     >>> sample_browser.getControl('Owner').displayValue
     ['Landscape Developers (landscape-developers)']
-    >>> sample_browser.getControl('Branch URL', index=1).value = (
+    >>> sample_browser.getControl('Branch URL', index=0).value = (
     ...     "http://svn.example.com/firefox-beta/trunk")
     >>> sample_browser.getControl('Request Import').click()
 
@@ -363,7 +365,7 @@ Admins can specify any owner for a new code import.
     >>> admin_browser = setupBrowser(auth='Basic admin@canonical.com:test')
     >>> admin_browser.open("http://code.launchpad.dev/firefox/+new-import")
     >>> admin_browser.getControl('Owner').value = 'mark'
-    >>> admin_browser.getControl('Branch URL', index=1).value = (
+    >>> admin_browser.getControl('Branch URL', index=0).value = (
     ...     "http://svn.example.com/firefox-theta/trunk")
     >>> admin_browser.getControl('Request Import').click()
 

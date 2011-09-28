@@ -641,9 +641,10 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
                (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
 
     @property
-    def svn_url_is_web(self):
-        """True if an imported branch's SVN URL is HTTP or HTTPS."""
-        # You should only be calling this if it's an SVN code import
+    def url_is_web(self):
+        """True if an imported branch's URL is HTTP or HTTPS."""
+        # You should only be calling this if it's an SVN, BZR, GIT or HG code
+        # import
         assert self.context.code_import
         url = self.context.code_import.url
         assert url

@@ -253,7 +253,7 @@ class NewCodeImportForm(Interface):
             "The URL of the git repository.  The HEAD branch will be "
             "imported."),
         allowed_schemes=["git", "http", "https"],
-        allow_userinfo=False, # Only anonymous access is supported.
+        allow_userinfo=True,
         allow_port=True,
         allow_query=False,
         allow_fragment=False,
@@ -265,7 +265,7 @@ class NewCodeImportForm(Interface):
             "The URL of the Mercurial repository.  The tip branch will be "
             "imported."),
         allowed_schemes=["http", "https"],
-        allow_userinfo=False, # Only anonymous access is supported.
+        allow_userinfo=True,
         allow_port=True,
         allow_query=False,    # Query makes no sense in Bazaar.
         allow_fragment=False, # Fragment makes no sense in Bazaar.
@@ -275,7 +275,7 @@ class NewCodeImportForm(Interface):
         title=_("Branch URL"), required=False,
         description=_("The URL of the Bazaar branch."),
         allowed_schemes=["http", "https", "bzr"],
-        allow_userinfo=False, # Only anonymous access is supported.
+        allow_userinfo=True,
         allow_port=True,
         allow_query=False,    # Query makes no sense in Bazaar
         allow_fragment=False, # Fragment makes no sense in Bazaar
