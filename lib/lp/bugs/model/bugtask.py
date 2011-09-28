@@ -1150,7 +1150,7 @@ class BugTask(SQLBase):
         target_before_change = self.target
 
         if (self.milestone is not None and
-            self.milestone.target != target):
+            self.milestone.target != target.pillar):
             # If the milestone for this bugtask is set, we
             # have to make sure that it's a milestone of the
             # current target, or reset it to None
