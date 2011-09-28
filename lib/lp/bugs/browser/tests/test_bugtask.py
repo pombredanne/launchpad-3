@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import transaction
 
 from datetime import datetime
 
@@ -12,6 +10,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
 from storm.store import Store
 from testtools.matchers import LessThan
+import transaction
 from zope.component import (
     getMultiAdapter,
     getUtility,
@@ -149,7 +148,7 @@ class TestBugTaskView(TestCaseWithFactory):
             f.makeSourcePackage(distroseries=ds, publish=True)
             for i in range(5)]
         for sp in sourcepackages:
-            bugtask = f.makeBugTask(bug=bug, owner=owner, target=sp)
+            f.makeBugTask(bug=bug, owner=owner, target=sp)
         url = canonical_url(bug.default_bugtask)
         recorder = QueryCollector()
         recorder.register()
@@ -1056,7 +1055,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
                         bug.default_bugtask.product.owner, 'status',
                         BugTaskStatus.NEW, BugTaskStatus.TRIAGED)
                     bug.addChange(change)
-            for i in range (number_of_comments):
+            for i in range(number_of_comments):
                 msg = self.factory.makeMessage(
                     owner=bug.owner, content="Message %i." % i)
                 bug.linkMessage(msg, user=bug.owner)
@@ -1084,7 +1083,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         # already shown on the page won't appear twice).
         bug_task = self.factory.makeBugTask()
         view = create_initialized_view(bug_task, '+batched-comments')
-        self.assertEqual(view.visible_initial_comments+1, view.offset)
+        self.assertEqual(view.visible_initial_comments + 1, view.offset)
         view = create_initialized_view(
             bug_task, '+batched-comments', form={'offset': 100})
         self.assertEqual(100, view.offset)

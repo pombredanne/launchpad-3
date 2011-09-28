@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -14,6 +14,7 @@ from datetime import (
     timedelta,
     )
 import logging
+import multiprocessing
 import os
 import threading
 import time
@@ -22,12 +23,9 @@ from contrib.glock import (
     GlobalLock,
     LockAlreadyAcquired,
     )
-import multiprocessing
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import (
-    In,
-    )
+from storm.expr import In
 from storm.locals import (
     Max,
     Min,
@@ -91,8 +89,8 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
