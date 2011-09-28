@@ -1136,7 +1136,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 raise UnexpectedFormData(branch_type)
 
     def _createBzrBranch(self, branch_name, branch_owner, repo_url=None):
-        """Create a new hosted Bazaar branch. 
+        """Create a new hosted Bazaar branch.
 
         Return the branch on success or None.
         """

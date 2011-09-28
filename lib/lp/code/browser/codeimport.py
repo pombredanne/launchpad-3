@@ -272,7 +272,7 @@ class NewCodeImportForm(Interface):
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
 
     bzr_branch_url = URIField(
-        title=_("Bazaar branch URL"), required=False,
+        title=_("Branch URL"), required=False,
         description=_("The URL of the Bazaar branch."),
         allowed_schemes=["http", "https", "bzr"],
         allow_userinfo=False, # Only anonymous access is supported.
@@ -309,7 +309,7 @@ class CodeImportNewView(CodeImportBaseView):
     def initial_values(self):
         return {
             'owner': self.user,
-            'rcs_type': RevisionControlSystems.BZR_SVN,
+            'rcs_type': RevisionControlSystems.BZR,
             'branch_name': 'trunk',
             }
 
