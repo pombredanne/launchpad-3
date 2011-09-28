@@ -180,18 +180,22 @@
     </div>
   </div>
 
-  <div class="yui-g" tal:condition="view/pending_diff">
-    <div class="pending-update" id="diff-pending-update">
-      <h3>Updating diff...</h3>
-      <p>
-        An updated diff will be available in a few minutes.  Reload to see the
-        changes.
-      </p>
+  <div id="diff-area">
+    <div class="yui-g" tal:condition="view/pending_diff">
+      <div class="pending-update" id="diff-pending-update">
+        <h3>Updating diff...</h3>
+        <p>
+          An updated diff will be available in a few minutes. Reload to see the
+          changes.
+        </p>
+      </div>
     </div>
-  </div>
-  <div id="review-diff" tal:condition="view/preview_diff">
-    <h2>Preview Diff</h2>
-    <div tal:replace="structure context/@@++diff"/>
+    <div id="review-diff" tal:condition="view/preview_diff">
+      <h2>Preview Diff</h2>
+      <div class="diff-content">
+        <div tal:replace="structure context/@@++diff"/>
+      </div>
+    </div>
   </div>
 
 <tal:script
@@ -201,7 +205,8 @@
   <!--
   LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
           'lp.code.branchmergeproposal.status', 'lp.app.comment',
-          'lp.app.widgets.expander', 'lp.code.branch.revisionexpander', function(Y) {
+          'lp.code.branchmergeproposal.updater', 'lp.app.widgets.expander',
+          'lp.code.branch.revisionexpander', function(Y) {
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
@@ -219,6 +224,17 @@
         Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
         (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
             ).render();
+
+        if (Y.Lang.isValue(LP.cache.new_mp_diff_event)) {
+            var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
+                {srcNode: Y.one('#diff-area')});
+            Y.on(LP.cache.new_mp_diff_event, updater.update, updater);
+            updater.on(updater.NAME + '.updated', function() {
+                (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
+                    ).render();
+            });
+        }
+
       }, window);
 
     Y.on('domready', function() {

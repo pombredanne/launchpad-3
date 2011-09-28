@@ -17,6 +17,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -276,6 +277,13 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # subscription information resulting from the update to the bug
         # privacy as well as information used to populate the updated
         # subscribers list.
+        feature_flag = {
+            'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'
+            }
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
+
         person = self.factory.makePerson()
         bug = self.factory.makeBug(owner=person)
         with person_logged_in(person):
