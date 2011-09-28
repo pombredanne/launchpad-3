@@ -155,10 +155,10 @@ class AnnouncementAddView(LaunchpadFormView):
     def announce_action(self, action, data):
         """Registers a new announcement."""
         self.context.announce(
-            user = self.user,
-            title = data.get('title'),
-            summary = data.get('summary'),
-            url = data.get('url'),
+            user=self.user,
+            title=data.get('title'),
+            summary=data.get('summary'),
+            url=data.get('url'),
             publication_date = data.get('publication_date')
             )
         self.next_url = canonical_url(self.context)
@@ -193,7 +193,7 @@ class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
         self.context.modify(title=data.get('title'),
                             summary=data.get('summary'),
                             url=data.get('url'))
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class AnnouncementRetargetForm(Interface):
@@ -237,7 +237,7 @@ class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
     def retarget_action(self, action, data):
         target = data.get('target')
         self.context.retarget(target)
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
@@ -253,7 +253,7 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
     def publish_action(self, action, data):
         publication_date = data['publication_date']
         self.context.setPublicationDate(publication_date)
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
@@ -265,7 +265,7 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
     @action(_('Retract'), name='retract')
     def retract_action(self, action, data):
         self.context.retract()
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
@@ -277,7 +277,7 @@ class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
     @action(_("Delete"), name="delete", validator='validate_cancel')
     def action_delete(self, action, data):
         self.context.destroySelf()
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class HasAnnouncementsView(LaunchpadView, FeedsMixin):
@@ -294,7 +294,7 @@ class HasAnnouncementsView(LaunchpadView, FeedsMixin):
         elif RootAnnouncementsFeedLink.usedfor.providedBy(self.context):
             return RootAnnouncementsFeedLink(self.context).href
         else:
-            raise AssertionError, 'Unknown feed source'
+            raise AssertionError("Unknown feed source")
 
     @cachedproperty
     def announcements(self):

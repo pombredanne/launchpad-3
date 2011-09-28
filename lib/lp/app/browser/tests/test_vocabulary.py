@@ -224,6 +224,18 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             distroarchseries=archseries)
         self.assertEqual("fnord", self.getPickerEntry(dsp).description)
 
+    def test_dsp_provides_alt_title_link(self):
+        distro = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distro)
+        self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        dsp = distro.getSourcePackage('snarf')
+        self.assertEqual(
+            'http://launchpad.dev/fnord/+source/snarf',
+            self.getPickerEntry(dsp).alt_title_link)
+
+
 class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -274,6 +286,12 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
             expected_summary, entry.description)
         self.assertEqual(
             expected_details, entry.details[0])
+
+    def test_product_provides_alt_title_link(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.assertEqual(
+            'http://launchpad.dev/fnord',
+            self.getPickerEntry(product).alt_title_link)
 
 
 class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
@@ -328,6 +346,13 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
         self.assertEqual(
             expected_details, entry.details[0])
 
+    def test_projectgroup_provides_alt_title_link(self):
+        projectgroup = self.factory.makeProject(name='fnord')
+        self.assertEqual(
+            'http://launchpad.dev/fnord',
+            self.getPickerEntry(projectgroup).alt_title_link)
+
+
 class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -370,9 +395,10 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
             'distribution', self.getPickerEntry(distribution).target_type)
 
     def test_distribution_truncates_summary(self):
-        summary = ("This is a deliberately, overly long summary. It goes on"
-                   "and on and on so as to break things up a good bit.")
-        distribution= self.factory.makeDistribution(summary=summary)
+        summary = (
+            "This is a deliberately, overly long summary. It goes on "
+            "and on and on so as to break things up a good bit.")
+        distribution = self.factory.makeDistribution(summary=summary)
         index = summary.rfind(' ', 0, 45)
         expected_summary = summary[:index + 1]
         expected_details = summary[index:]
@@ -381,6 +407,13 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
             expected_summary, entry.description)
         self.assertEqual(
             expected_details, entry.details[0])
+
+    def test_distribution_provides_alt_title_link(self):
+        distribution = self.factory.makeDistribution(name='fnord')
+        self.assertEqual(
+            'http://launchpad.dev/fnord',
+            self.getPickerEntry(distribution).alt_title_link)
+
 
 class TestPersonVocabulary:
     implements(IHugeVocabulary)

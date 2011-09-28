@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from lazr.restful.utils import get_current_browser_request
-from zope.component import getMultiAdapter
+from zope.component import getAdapter
 
 from lp.services.longpoll.interfaces import (
     ILongPollEvent,
@@ -18,16 +18,17 @@ from lp.services.longpoll.interfaces import (
     )
 
 
-def subscribe(target, event, request=None):
+def subscribe(target, event_name=u"", request=None):
     """Convenience method to subscribe the current request.
 
     :param target: Something that can be adapted to `ILongPollEvent`.
-    :param event: The name of the event to subscribe to.
+    :param event_name: The name of the event to subscribe to. This is used to
+        look up a named adapter from `target` to `ILongPollEvent`.
     :param request: The request for which to get an `ILongPollSubscriber`. It
         a request is not specified the currently active request is used.
     :return: The `ILongPollEvent` that has been subscribed to.
     """
-    event = getMultiAdapter((target, event), ILongPollEvent)
+    event = getAdapter(target, ILongPollEvent, name=event_name)
     if request is None:
         request = get_current_browser_request()
     subscriber = ILongPollSubscriber(request)
@@ -35,14 +36,15 @@ def subscribe(target, event, request=None):
     return event
 
 
-def emit(source, event, data):
+def emit(source, event_name=u"", **data):
     """Convenience method to emit a message for an event.
 
-    :param source: Something, along with `event`, that can be adapted to
-        `ILongPollEvent`.
-    :param event: A name/key of the event that is emitted.
+    :param source: Something that can be be adapted to `ILongPollEvent`.
+    :param event_name: The name of the event to subscribe to. This is used to
+        look up a named adapter from `target` to `ILongPollEvent`.
+    :param data: See `ILongPollEvent.emit`.
     :return: The `ILongPollEvent` that has been emitted.
     """
-    event = getMultiAdapter((source, event), ILongPollEvent)
-    event.emit(data)
+    event = getAdapter(source, ILongPollEvent, name=event_name)
+    event.emit(**data)
     return event

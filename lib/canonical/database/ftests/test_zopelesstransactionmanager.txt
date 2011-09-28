@@ -1,4 +1,5 @@
-= ZopelessTransactionManager =
+ZopelessTransactionManager
+==========================
 
 The ZopelessTransactionManager used to be an alternative to the Zope
 transaction manager and SQLOS database adapter.
@@ -6,7 +7,9 @@ transaction manager and SQLOS database adapter.
 With the move to Storm, it was converted to a small compatibility shim
 used to configure the database adapter.
 
-== Initialization ==
+
+Initialization
+--------------
 
 The ZopelessTransactionManager is initialized with its initZopeless()
 class method.
@@ -28,8 +31,7 @@ The initZopeless() call defaults to read committed isolation:
     >>> print c.fetchone()[0]
     read committed
 
-The uninstall() method can be used to uninstall the transaction
-manager:
+The uninstall() method can be used to uninstall the transaction manager:
 
     >>> ZopelessTransactionManager.uninstall()
     >>> print ZopelessTransactionManager._installed
@@ -42,16 +44,17 @@ We can log in as alternative users with initZopeless():
     >>> c.execute("SELECT current_user")
     >>> print c.fetchone()[0]
     testadmin
+
     >>> ZopelessTransactionManager.uninstall()
 
 Or we can specify other transaction isolation modes:
 
-    >>> from canonical.database.sqlbase import (
-    ...     ISOLATION_LEVEL_SERIALIZABLE)
+    >>> from canonical.database.sqlbase import ISOLATION_LEVEL_SERIALIZABLE
     >>> ZopelessTransactionManager.initZopeless(
     ...     dbuser='librarian', isolation=ISOLATION_LEVEL_SERIALIZABLE)
     >>> c = cursor()
     >>> c.execute("SHOW transaction_isolation")
     >>> print c.fetchone()[0]
     serializable
+
     >>> ZopelessTransactionManager.uninstall()

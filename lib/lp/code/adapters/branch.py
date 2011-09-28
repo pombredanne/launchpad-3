@@ -1,12 +1,21 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Components related to branches."""
 
 __metaclass__ = type
+__all__ = [
+    "BranchDelta",
+    "BranchMergeProposalDelta",
+    "BranchMergeProposalNoPreviewDiffDelta",
+    ]
+
+from contextlib import contextmanager
 
 from lazr.lifecycle import snapshot
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.objectdelta import ObjectDelta
+from zope.event import notify
 from zope.interface import implements
 
 from lp.code.interfaces.branch import (
@@ -18,6 +27,7 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 # XXX: thumper 2006-12-20: This needs to be extended
 # to cover bugs and specs linked and unlinked, as
 # well as landing target when it is added to the UI
+
 
 class BranchDelta:
     """See IBranchDelta."""
@@ -77,7 +87,12 @@ class BranchMergeProposalDelta:
         'queue_status',
         'queue_position',
         )
-    new_values = ('commit_message', 'whiteboard', 'description')
+    new_values = (
+        'commit_message',
+        'whiteboard',
+        'description',
+        'preview_diff',
+        )
     interface = IBranchMergeProposal
 
     def __init__(self, **kwargs):
@@ -106,3 +121,32 @@ class BranchMergeProposalDelta:
         """
         names = klass.new_values + klass.delta_values
         return snapshot.Snapshot(merge_proposal, names=names)
+
+    @classmethod
+    @contextmanager
+    def monitor(klass, merge_proposal):
+        """Context manager to monitor for changes in a merge proposal.
+
+        If the merge proposal has changed, an `ObjectModifiedEvent` is issued
+        via `zope.event.notify`.
+        """
+        merge_proposal_snapshot = klass.snapshot(merge_proposal)
+        yield
+        merge_proposal_delta = klass.construct(
+            merge_proposal_snapshot, merge_proposal)
+        if merge_proposal_delta is not None:
+            merge_proposal_event = ObjectModifiedEvent(
+                merge_proposal, merge_proposal_snapshot,
+                vars(merge_proposal_delta).keys())
+            notify(merge_proposal_event)
+
+
+class BranchMergeProposalNoPreviewDiffDelta(BranchMergeProposalDelta):
+    """Represent changes made to a BranchMergeProposal.
+
+    *Excludes* changes to the preview diff.
+    """
+
+    new_values = tuple(
+        name for name in BranchMergeProposalDelta.new_values
+        if name != "preview_diff")

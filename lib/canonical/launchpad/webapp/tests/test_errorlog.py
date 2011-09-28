@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for error logging & OOPS reporting."""
@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 import datetime
-import logging
 import httplib
+import logging
 import os
 import shutil
 import stat
@@ -20,6 +20,7 @@ import traceback
 from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
+from lp_sitecustomize import customize_get_converter
 from oops_datedir_repo import DateDirRepo
 import pytz
 import testtools
@@ -35,7 +36,6 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     _filter_session_statement,
@@ -51,12 +51,12 @@ from canonical.launchpad.webapp.interfaces import (
     NoReferrerError,
     )
 from canonical.testing import reset_logging
+from lp.app import versioninfo
 from lp.app.errors import (
     GoneError,
     TranslationUnavailable,
     )
 from lp.services.osutils import remove_tree
-from lp_sitecustomize import customize_get_converter
 
 
 UTC = pytz.utc
@@ -92,13 +92,9 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
         self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
-        self.assertEqual(len(entry.db_statements), 2)
-        self.assertEqual(
-            entry.db_statements[0],
-            (1, 5, 'store_a', 'SELECT 1'))
-        self.assertEqual(
-            entry.db_statements[1],
-            (5, 10, 'store_b', 'SELECT 2'))
+        self.assertEqual(len(entry.timeline), 2)
+        self.assertEqual(entry.timeline[0], (1, 5, 'store_a', 'SELECT 1'))
+        self.assertEqual(entry.timeline[1], (5, 10, 'store_b', 'SELECT 2'))
 
     def test_read(self):
         """Test ErrorReport.read()."""
@@ -138,13 +134,9 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
                                              'http://localhost:9000/'))
         self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
-        self.assertEqual(len(entry.db_statements), 2)
-        self.assertEqual(
-            entry.db_statements[0],
-            (1, 5, 'store_a', 'SELECT 1'))
-        self.assertEqual(
-            entry.db_statements[1],
-            (5, 10, 'store_b', 'SELECT 2'))
+        self.assertEqual(len(entry.timeline), 2)
+        self.assertEqual(entry.timeline[0], (1, 5, 'store_a', 'SELECT 1'))
+        self.assertEqual(entry.timeline[1], (5, 10, 'store_b', 'SELECT 2'))
 
 
 class TestErrorReportingUtility(testtools.TestCase):
@@ -572,7 +564,7 @@ class TestErrorReportingUtility(testtools.TestCase):
             info = sys.exc_info()
             oops = utility._oops_config.create(
                     dict(exc_info=info, timeline=timeline))
-        self.assertEqual("SELECT '%s'", oops['db_statements'][0][3])
+        self.assertEqual("SELECT '%s'", oops['timeline'][0][3])
 
 
 
@@ -632,7 +624,7 @@ class TestOopsLoggingHandler(testtools.TestCase):
         self.assertEqual(None, report.get('username'))
         self.assertEqual(None, report.get('url'))
         self.assertEqual([], report['req_vars'])
-        self.assertEqual([], report['db_statements'])
+        self.assertEqual([], report['timeline'])
 
     def setUp(self):
         super(TestOopsLoggingHandler, self).setUp()

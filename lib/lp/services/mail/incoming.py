@@ -167,12 +167,13 @@ def _authenticateDkim(signed_message):
         try:
             origin_domain = addr.split('@')[1]
         except IndexError:
-            log.warning("couldn't extract domain from address %r" % (
-                    signed_message[origin]))
+            log.warning(
+                "couldn't extract domain from address %r",
+                signed_message[origin])
         if signing_domain == origin_domain:
             log.info(
-                "DKIM signing domain %s matches %s address %r"
-                % (signing_domain, origin, addr))
+                "DKIM signing domain %s matches %s address %r",
+                signing_domain, origin, addr)
             return addr
     else:
         log.info("DKIM signing domain %s doesn't match message origin; "

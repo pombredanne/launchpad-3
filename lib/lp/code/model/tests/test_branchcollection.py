@@ -749,7 +749,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         # way, for_branches=None (the default) has a very different behavior
         # than for_branches=[]: the first is no restriction, while the second
         # excludes everything.
-        mp = self.factory.makeBranchMergeProposal()
+        self.factory.makeBranchMergeProposal()
         proposals = self.all_branches.getMergeProposals(for_branches=[])
         self.assertEqual([], list(proposals))
         self.assertIsInstance(proposals, EmptyResultSet)
@@ -760,7 +760,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         # way, merged_revnos=None (the default) has a very different behavior
         # than merged_revnos=[]: the first is no restriction, while the second
         # excludes everything.
-        mp = self.factory.makeBranchMergeProposal()
+        self.factory.makeBranchMergeProposal()
         proposals = self.all_branches.getMergeProposals(merged_revnos=[])
         self.assertEqual([], list(proposals))
         self.assertIsInstance(proposals, EmptyResultSet)

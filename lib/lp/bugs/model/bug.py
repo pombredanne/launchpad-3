@@ -30,7 +30,6 @@ from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator
-import pytz
 import re
 
 from lazr.lifecycle.event import (
@@ -39,6 +38,7 @@ from lazr.lifecycle.event import (
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from pytz import timezone
 from sqlobject import (
     BoolCol,
@@ -122,9 +122,9 @@ from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
     BugConvertedToQuestion,
+    BugDuplicateChange,
     BugWatchAdded,
     BugWatchRemoved,
-    BugDuplicateChange,
     SeriesNominated,
     UnsubscribedFromBug,
     )
@@ -170,11 +170,12 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
+    get_bug_privacy_filter,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
+    get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
@@ -2239,6 +2240,7 @@ BugMessage""" % sqlvalues(self.id))
             BugActivity.datechanged <= end_date)
         return activity_in_range
 
+
 @ProxyFactory
 def get_also_notified_subscribers(
     bug_or_bugtask, recipients=None, level=None):
@@ -2602,35 +2604,9 @@ class BugSet:
         if duplicateof:
             where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
 
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user:
-            if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users,
-                # so that they can only see the private bugs that they're
-                # allowed to see.
-                where_clauses.append("""
-                    (Bug.private = FALSE OR
-                      Bug.id in (
-                         -- Users who have a subscription to this bug.
-                         SELECT BugSubscription.bug
-                           FROM BugSubscription, TeamParticipation
-                           WHERE
-                             TeamParticipation.person = %(personid)s AND
-                             BugSubscription.person = TeamParticipation.team
-                         UNION
-                         -- Users who are the assignee for one of the bug's
-                         -- bugtasks.
-                         SELECT BugTask.bug
-                           FROM BugTask, TeamParticipation
-                           WHERE
-                             TeamParticipation.person = %(personid)s AND
-                             TeamParticipation.team = BugTask.assignee
-                      )
-                    )""" % sqlvalues(personid=user.id))
-        else:
-            # Anonymous user; filter to include only public bugs in
-            # the search results.
-            where_clauses.append("Bug.private = FALSE")
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            where_clauses.append(privacy_filter)
 
         other_params = {}
         if orderBy:

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad database policies."""
@@ -335,7 +335,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
             logging.error(
                 "No data in DatabaseReplicationLag for node %d"
                 % slave_node_id)
-            return timedelta(days=999) # A long, long time.
+            return timedelta(days=999)
         return lag[0]
 
 
