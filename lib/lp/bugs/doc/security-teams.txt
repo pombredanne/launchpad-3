@@ -232,27 +232,29 @@ thunderbird to see how this works.
     >>> bug_product_changed = ObjectModifiedEvent(
     ...     bug_in_evolution, old_state, ["product"])
 
-First, let's publish the change event with the bug still marked private,
-and notice that the subscription list doesn't change:
+First, let's set the bug to non security related with the bug still marked,
+private and notice that the subscription list doesn't change:
 
     >>> bug.private
     True
 
-    >>> notify(bug_product_changed)
+    >>> bug.setSecurityRelated(False, getUtility(ILaunchBag).user)
+    True
 
     >>> subscriber_names(bug)
     [u'name12', u'name16']
 
-Also verify the same event again, when marked public does cause
+Now the bug is marked as security related, when also marked public does cause
 stub to get subscribed:
 
     >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
 
-    >>> bug.security_related
+    >>> bug.setSecurityRelated(True, getUtility(ILaunchBag).user)
     True
 
-    >>> notify(bug_product_changed)
+    >>> bug.security_related
+    True
 
     >>> subscriber_names(bug)
     [u'name12', u'name16', u'stub']
@@ -278,12 +280,48 @@ subscribed when moving it to the new project.
 
 
 When a bug becomes security-related, the security contacts for the pillars it
-affects are subscribed to it.
+affects are subscribed to it. This happens regardless of whether the feature
+flag is set.
+
+We current use a feature flag to control who is subscribed when a bug is made
+security related.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
 
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bug import IBug
+
+    >>> product = factory.makeProduct()
+    >>> product.security_contact = factory.makePerson(
+    ...     displayname='Product Security Contact')
+    >>> distribution = factory.makeDistribution()
+    >>> distribution.security_contact = factory.makePerson(
+    ...     displayname='Distribution Security Contact')
+    >>> reporter = factory.makePerson(displayname=u'Bug Reporter')
+    >>> bug = factory.makeBug(product=product, owner=reporter)
+    >>> bug.addTask(owner=reporter, target=distribution)
+    <BugTask ...>
+    >>> old_state = Snapshot(bug, providing=IBug)
+    >>> bug.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    True
+    >>> notify(ObjectModifiedEvent(bug, old_state, ['security_related']))
+    >>> for subscriber_name in sorted(
+    ...     s.displayname for s in bug.getDirectSubscribers()):
+    ...         print subscriber_name
+    Bug Reporter
+    Distribution Security Contact
+    Product Security Contact
+
+Clean up the feature flag.
+
+    >>> flags.cleanUp()
+
+And once more without the feature flag.
 
     >>> product = factory.makeProduct()
     >>> product.security_contact = factory.makePerson(

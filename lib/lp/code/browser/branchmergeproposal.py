@@ -94,6 +94,7 @@ from lp.app.browser.lazrjs import (
     vocabulary_to_choice_edit_items,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.longpoll import subscribe
 from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.browser.decorations import DecoratedBranch
@@ -601,10 +602,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         cache = IJSONRequestCache(self.request)
         cache.objects.update({
             'branch_diff_link':
-                'https://%s/+loggerhead/%s/diff/' %
-                (config.launchpad.code_domain,
-                 self.context.source_branch.unique_name)
+                'https://%s/+loggerhead/%s/diff/' % (
+                    config.launchpad.code_domain,
+                    self.context.source_branch.unique_name),
             })
+        if getFeatureFlag("longpoll.merge_proposals.enabled"):
+            cache.objects['merge_proposal_event_key'] = (
+                subscribe(self.context).event_key)
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):

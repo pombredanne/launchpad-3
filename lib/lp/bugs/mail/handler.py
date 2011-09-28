@@ -25,13 +25,15 @@ from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bug import CreatedBugWithNoBugTasksError
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    CreatedBugWithNoBugTasksError,
+    )
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType,
     IBugAttachmentSet,
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
-from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import BugEmailCommands
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,

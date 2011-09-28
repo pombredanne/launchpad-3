@@ -225,7 +225,6 @@ class CodeImportBaseView(LaunchpadFormView):
                     code_import.branch.unique_name))
 
 
-
 class NewCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
@@ -340,8 +339,9 @@ class CodeImportNewView(CodeImportBaseView):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description = _("As an administrator you are able to reassign"
-                                " this branch to any person or team."),
+                description=_(
+                    "As an administrator you are able to reassign this "
+                    "branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
                 any_owner_choice, render_context=self.render_context)
@@ -508,6 +508,7 @@ def _makeEditAction(label, status, text):
             return self._showButtonForStatus(status)
     else:
         condition = None
+
     def success(self, action, data):
         """Make the requested status change."""
         if status is not None:

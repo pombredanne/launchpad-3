@@ -325,6 +325,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
     def test_run_script(self):
         # The script will run stand-alone.
         from canonical.launchpad.scripts.tests import run_script
+        self.layer.force_dirty_database()
         retval, out, err = run_script(
             'cronscripts/generate-contents-files.py', ['-d', 'ubuntu', '-q'])
         self.assertEqual(0, retval)
