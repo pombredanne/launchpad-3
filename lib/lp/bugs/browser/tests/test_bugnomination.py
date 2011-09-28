@@ -91,6 +91,33 @@ class TestBugNominationView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
         self.assertEqual(0, len(view.request.notifications))
+        nomination = bug.addNomination(person, older_series)
+        self.assertTrue(nomination is not None)
+
+    def test_nominate_another_series_source_package(self):
+        person = self.factory.makePerson(
+            name='main-person-test', password='test')
+        distro = self.factory.makeDistribution()
+        owner = distro.owner
+        members = [self.factory.makePerson() for i in range(2)]
+        members.append(person)
+        bug_supervisor = self.factory.makeTeam(members=members, owner=owner)
+        with person_logged_in(owner):
+            distro.setBugSupervisor(bug_supervisor, owner)
+        current_series = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        older_series = self.factory.makeDistroSeries(distribution=distro)
+        package = self.factory.makeDistributionSourcePackage(
+            distribution=distro)
+        bug = self.factory.makeBug(
+            distribution=distro, series=current_series,
+            sourcepackagename=package.name)
+        series_bugtask = bug.bugtasks[1]
+        login_person(person)
+        view = create_initialized_view(series_bugtask, name='+nominate')
+        self.assertEqual(0, len(view.request.notifications))
+        nomination = bug.addNomination(person, older_series)
+        self.assertTrue(nomination is not None)
 
     def test_nominate_another_series_product(self):
         person = self.factory.makePerson(
@@ -109,21 +136,8 @@ class TestBugNominationView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
         self.assertEqual(0, len(view.request.notifications))
-
-    def test_nominate_product(self):
-        person = self.factory.makePerson(
-            name='main-person-test-product', password='test')
-        product = self.factory.makeProduct()
-        owner = product.owner
-        members = [self.factory.makePerson() for i in range(2)]
-        members.append(person)
-        bug_supervisor = self.factory.makeTeam(members=members, owner=owner)
-        with person_logged_in(owner):
-            product.setBugSupervisor(bug_supervisor, owner)
-        bug = self.factory.makeBug(product=product)
-        login_person(person)
-        view = create_initialized_view(bug.default_bugtask, name='+nominate')
-        self.assertEqual(0, len(view.request.notifications))
+        nomination = bug.addNomination(person, older_series)
+        self.assertTrue(nomination is not None)
 
 
 class TestBugNominationEditView(TestCaseWithFactory):
