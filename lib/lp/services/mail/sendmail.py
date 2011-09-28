@@ -47,8 +47,10 @@ import sys
 
 from lazr.restful.utils import get_current_browser_request
 from zope.app import zapi
-from zope.security.proxy import isinstance as zisinstance
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
@@ -345,13 +347,15 @@ def get_addresses_from_header(email_header):
         formataddr((name, address))
         for name, address in getaddresses([email_header])]
 
+
 def validate_message(message):
     """Validate that the supplied message is suitable for sending."""
-    assert isinstance(message, Message), 'Not an email.Message.Message'
-    assert 'to' in message and bool(message['to']), 'No To: header'
-    assert 'from' in message and bool(message['from']), 'No From: header'
-    assert 'subject' in message and bool(message['subject']), \
-            'No Subject: header'
+    assert isinstance(message, Message), "Not an email.Message.Message"
+    assert 'to' in message and bool(message['to']), "No To: header"
+    assert 'from' in message and bool(message['from']), "No From: header"
+    assert 'subject' in message and bool(message['subject']), (
+            "No Subject: header")
+
 
 def sendmail(message, to_addrs=None, bulk=True):
     """Send an email.Message.Message

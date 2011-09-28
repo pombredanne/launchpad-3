@@ -161,16 +161,19 @@ def _authenticateDkim(signed_message):
             % (signing_domain,))
         return None
     for origin in ['From', 'Sender']:
-        if signed_message[origin] is None: continue
+        if signed_message[origin] is None:
+            continue
         name, addr = parseaddr(signed_message[origin])
         try:
             origin_domain = addr.split('@')[1]
         except IndexError:
-            log.warning("couldn't extract domain from address %r" % signed_message[origin])
+            log.warning(
+                "couldn't extract domain from address %r",
+                signed_message[origin])
         if signing_domain == origin_domain:
             log.info(
-                "DKIM signing domain %s matches %s address %r"
-                % (signing_domain, origin, addr))
+                "DKIM signing domain %s matches %s address %r",
+                signing_domain, origin, addr)
             return addr
     else:
         log.info("DKIM signing domain %s doesn't match message origin; "
@@ -203,10 +206,9 @@ def authenticateEmail(mail,
         # authenticator for this mail.
         log.debug('trusted DKIM mail from %s' % dkim_trusted_addr)
         email_addr = dkim_trusted_addr
-    else:    
+    else:
         email_addr = parseaddr(mail['From'])[1]
 
-    signature = mail.signature
     authutil = getUtility(IPlacelessAuthUtility)
     principal = authutil.getPrincipalByLogin(email_addr)
 
@@ -236,11 +238,12 @@ def authenticateEmail(mail,
             signature_timestamp_checker)
 
 
-def _gpgAuthenticateEmail(mail, principal, person, signature_timestamp_checker):
+def _gpgAuthenticateEmail(mail, principal, person,
+                          signature_timestamp_checker):
     """Check GPG signature.
 
-    :param principal: Claimed sender of the mail; to be checked against the actual
-        signature.
+    :param principal: Claimed sender of the mail; to be checked against the
+        actual signature.
     :returns: principal, either strongly or weakly authenticated.
     """
     log = logging.getLogger('process-mail')

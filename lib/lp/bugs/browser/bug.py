@@ -110,10 +110,10 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
+from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -664,6 +664,7 @@ class BugSubscriptionPortletView(LaunchpadView,
         LaunchpadView.initialize(self)
         cache = IJSONRequestCache(self.request).objects
         self.extractBugSubscriptionDetails(self.user, self.context, cache)
+        cache['bug_is_private'] = self.context.private
         if self.user:
             cache['notifications_text'] = self.notifications_text
 

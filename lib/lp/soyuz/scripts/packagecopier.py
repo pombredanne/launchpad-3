@@ -53,8 +53,7 @@ from lp.soyuz.scripts.ftpmasterbase import (
     )
 from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
-# XXX cprov 2009-06-12: This function could be incorporated in ILFA,
-# I just don't see a clear benefit in doing that right now.
+
 def re_upload_file(libraryfile, restricted=False):
     """Re-upload a librarian file to the public server.
 
@@ -63,6 +62,9 @@ def re_upload_file(libraryfile, restricted=False):
 
     :return: A new `LibraryFileAlias`.
     """
+    # XXX cprov 2009-06-12: This function could be incorporated in ILFA.
+    # I just don't see a clear benefit in doing that right now.
+
     # Open the the libraryfile for reading.
     libraryfile.open()
 

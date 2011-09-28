@@ -18,7 +18,7 @@ from lazr.delegates import delegates
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
-)
+    )
 from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory

@@ -395,8 +395,9 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
             'distribution', self.getPickerEntry(distribution).target_type)
 
     def test_distribution_truncates_summary(self):
-        summary = ("This is a deliberately, overly long summary. It goes on"
-                   "and on and on so as to break things up a good bit.")
+        summary = (
+            "This is a deliberately, overly long summary. It goes on "
+            "and on and on so as to break things up a good bit.")
         distribution = self.factory.makeDistribution(summary=summary)
         index = summary.rfind(' ', 0, 45)
         expected_summary = summary[:index + 1]

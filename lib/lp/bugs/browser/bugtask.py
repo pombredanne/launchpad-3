@@ -784,7 +784,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             if offset is None:
                 offset = self.visible_initial_comments
             comments = self._getComments([
-                slice(offset, offset+batch_size)])
+                slice(offset, offset + batch_size)])
         else:
             # the comment function takes 0-offset counts where comment 0 is
             # the initial description, so we need to add one to the limits

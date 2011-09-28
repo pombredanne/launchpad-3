@@ -110,8 +110,8 @@ packages successfully (at least partially):
 And two completely broken packages:
 
    * util-linux, a source package that is missing from the pool. It
-     generates 4 binary packages, all missing. It's correctly listed in Sources
-     and Packages, though.
+     generates 4 binary packages, all missing. It's correctly listed in
+     Sources and Packages, though.
 
    * clearlooks, a source package with no binaries listed, and which has
      a DSC file that refers to an inexistant tar.gz.
@@ -186,7 +186,9 @@ The exit status must be 0, for success:
     >>> transaction.commit()
     >>> fixture.cleanUp()
 
-=== Testing Source Package Results ===
+
+Testing Source Package Results
+..............................
 
 We should have more source packages in the database:
 
@@ -292,8 +294,8 @@ And check that its files actually ended up in the librarian (these sha1sums
 were calculated directly on the files):
 
     >>> from lp.soyuz.model.files import SourcePackageReleaseFile
-    >>> files = SourcePackageReleaseFile.selectBy(sourcepackagereleaseID=cap.id,
-    ...                                           orderBy="libraryfile")
+    >>> files = SourcePackageReleaseFile.selectBy(
+    ...     sourcepackagereleaseID=cap.id, orderBy="libraryfile")
     >>> for f in files:
     ...     print f.libraryfile.content.sha1
     107d5478e72385f714523bad5359efedb5dcc8b2
@@ -321,7 +323,9 @@ Make sure that we only imported one db1-compat source package.
     >>> print db1.section.name
     libs
 
-=== Testing Source Package Publishing ===
+
+Testing Source Package Publishing
+.................................
 
 We check that the source package publishing override facility works:
 
@@ -337,28 +341,31 @@ We should have one entry for each package listed in Sources that was
 successfully processed.
 
     - We had 2 errors (out of 10 Sources stanzas) in hoary: mkvmlinuz and
-      util-linux
+      util-linux.
 
-    - We had 2 errors (out of 10 Sources stanzas) in breezy: python-sqllite and
-      util-linux (again, poor thing)
+    - We had 2 errors (out of 10 Sources stanzas) in breezy: python-sqllite
+      and util-linux (again, poor thing).
 
     >>> print SSPPH.select().count() - orig_sspph_count
     21
 
-    >>> print SSPPH.selectBy(
+    >>> new_count = SSPPH.selectBy(
     ...     componentID=1,
-    ...     pocket=PackagePublishingPocket.RELEASE).count() - \
-    ...     orig_sspph_main_count
+    ...     pocket=PackagePublishingPocket.RELEASE).count()
+    >>> print new_count - orig_sspph_main_count
     21
 
-=== Testing Binary Package Results ===
+
+Testing Binary Package Results
+..............................
 
 We have 26 binary packages in hoary. The 4 packages for util-linux fail, and 1
 package fails for each of python-sqlite and python-pam. We should publish one
 entry for each package listed in Releases.
 
-We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages and
-python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
+We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages
+and python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages
+work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
@@ -456,11 +463,13 @@ We check that the binary package publishing override facility works:
 XXX: test package with invalid source version
 XXX: test package with maintainer with non-ascii name
 
-=== Testing People Created ===
 
-Ensure only one Kamion was created (he's an uploader on multiple packages), and
-that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
-2 being uploaded by mdz and 2 by doko).
+Testing People Created
+......................
+
+Ensure only one Kamion was created (he's an uploader on multiple packages),
+and that we imported exactly 9 people (13 packages with 3 being uploaded by
+Kamion, 2 being uploaded by mdz and 2 by doko).
 
     >>> from sqlobject import LIKE
     >>> p = Person.selectOne(LIKE(Person.q.name, u"cjwatson%"))
@@ -474,7 +483,8 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     13
 
 
-=== Re-run Gina ===
+Re-run Gina
+...........
 
 The second run of gina uses a test archive that is a copy of the first
 one, but with updated Packages and Sources files for breezy that do
@@ -560,9 +570,9 @@ But the overrides do generate extra publishing entries:
     >>> print SSPPH.select().count() - orig_sspph_count
     23
 
-Check that the overrides we did were correctly issued. We can't use selectOneBy
-because, of course, there may be multiple rows published for that package --
-that's what overrides actually do.
+Check that the overrides we did were correctly issued. We can't use
+selectOneBy because, of course, there may be multiple rows published for that
+package -- that's what overrides actually do.
 
     >>> from canonical.database.sqlbase import sqlvalues
     >>> x11_pub = SSPPH.select("""
@@ -597,7 +607,8 @@ that's what overrides actually do.
     universe
 
 
-=== Partner archive import ===
+Partner archive import
+......................
 
 Importing the partner archive requires overriding the component to
 "partner", which also makes the archive on any publishing records the
@@ -654,7 +665,8 @@ partner archive:
     set(['PARTNER'])
 
 
-=== Source-only imports ===
+Source-only imports
+...................
 
 Gina has a 'source-only' configuration option which allows it to
 import only sources from the configured archive.
@@ -743,7 +755,8 @@ hasn't changed.
     True
 
 
-=== Processing multiple suites in the same batch ===
+Processing multiple suites in the same batch
+............................................
 
 Both, 'lenny' and 'hoary' (as partner) will be processed in the same
 batch.
@@ -764,7 +777,8 @@ batch.
     0
 
 
-=== Other tests ===
+Other tests
+...........
 
 For kicks, finally, run gina on a configured but incomplete archive:
 
@@ -777,7 +791,9 @@ For kicks, finally, run gina on a configured but incomplete archive:
     >>> proc.wait()
     1
 
-=== Wrap up ===
+
+Wrap up
+.......
 
 Remove the tmp link to the gina_test_archive
     >>> os.remove('/tmp/gina_test_archive')
