@@ -114,9 +114,8 @@ from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 
-# XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
-
 def makePoolPath(source_name, component_name):
+    # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
     """Return the pool path for a given source name and component name."""
     from lp.archivepublisher.diskpool import poolify
     return os.path.join(
@@ -421,12 +420,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
     implements(ISourcePackagePublishingHistory)
 
-    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
-        dbName='sourcepackagename')
-    sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
-        dbName='sourcepackagerelease')
-    distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distroseries')
+    sourcepackagename = ForeignKey(
+        foreignKey='SourcePackageName', dbName='sourcepackagename')
+    sourcepackagerelease = ForeignKey(
+        foreignKey='SourcePackageRelease', dbName='sourcepackagerelease')
+    distroseries = ForeignKey(
+        foreignKey='DistroSeries', dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -449,6 +448,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     ancestor = ForeignKey(
         dbName="ancestor", foreignKey="SourcePackagePublishingHistory",
         default=None)
+    creator = ForeignKey(
+        dbName='creator', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def package_creator(self):
@@ -685,7 +687,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.distroseries.distribution.getSourcePackageRelease(
             self.supersededby)
 
-    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when
     # self.sourcepackagename is populated.
     @property
     def source_package_name(self):
@@ -795,7 +797,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive=current.archive)
 
     def copyTo(self, distroseries, pocket, archive, override=None,
-               create_dsd_job=True):
+               create_dsd_job=True, creator=None):
         """See `ISourcePackagePublishingHistory`."""
         component = self.component
         section = self.section
@@ -811,8 +813,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component,
             section,
             pocket,
-            ancestor=None,
-            create_dsd_job=create_dsd_job)
+            ancestor=self,
+            create_dsd_job=create_dsd_job,
+            creator=creator)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -908,12 +911,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     implements(IBinaryPackagePublishingHistory)
 
-    binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
-        dbName='binarypackagename')
-    binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
-                                      dbName='binarypackagerelease')
-    distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchseries')
+    binarypackagename = ForeignKey(
+        foreignKey='BinaryPackageName', dbName='binarypackagename')
+    binarypackagerelease = ForeignKey(
+        foreignKey='BinaryPackageRelease', dbName='binarypackagerelease')
+    distroarchseries = ForeignKey(
+        foreignKey='DistroArchSeries', dbName='distroarchseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
@@ -957,7 +960,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IBinaryPackagePublishingHistory`"""
         return self.distroarchseries.distroseries
 
-    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when
     # self.binarypackagename is populated.
     @property
     def binary_package_name(self):
@@ -1487,11 +1490,15 @@ class PublishingSet:
 
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
-                             ancestor=None, create_dsd_job=True):
+                             ancestor=None, create_dsd_job=True,
+                             creator=None):
         """See `IPublishingSet`."""
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage)
+
+        if creator is None:
+            creator = sourcepackagerelease.creator
 
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,
@@ -1503,7 +1510,8 @@ class PublishingSet:
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            ancestor=ancestor)
+            ancestor=ancestor,
+            creator=creator)
         DistributionSourcePackage.ensure(pub)
 
         if create_dsd_job:

@@ -53,8 +53,7 @@ from lp.soyuz.scripts.ftpmasterbase import (
     )
 from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
-# XXX cprov 2009-06-12: This function could be incorporated in ILFA,
-# I just don't see a clear benefit in doing that right now.
+
 def re_upload_file(libraryfile, restricted=False):
     """Re-upload a librarian file to the public server.
 
@@ -63,6 +62,9 @@ def re_upload_file(libraryfile, restricted=False):
 
     :return: A new `LibraryFileAlias`.
     """
+    # XXX cprov 2009-06-12: This function could be incorporated in ILFA.
+    # I just don't see a clear benefit in doing that right now.
+
     # Open the the libraryfile for reading.
     libraryfile.open()
 
@@ -642,7 +644,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 source, archive, destination_series, pocket,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
-                close_bugs_since_version=old_version)
+                close_bugs_since_version=old_version, creator=person)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
@@ -659,7 +661,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
-                    close_bugs_since_version=None):
+                    close_bugs_since_version=None, creator=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -685,6 +687,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     :param close_bugs_since_version: If close_bugs is True,
         then this parameter says which changelog entries to parse looking
         for bugs to close.  See `close_bugs_for_sourcepackagerelease`.
+    :param creator: the requester `IPerson`.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -714,7 +717,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
                 "More than one override encountered, something is wrong.")
             override = overrides[0]
         source_copy = source.copyTo(
-            series, pocket, archive, override, create_dsd_job=create_dsd_job)
+            series, pocket, archive, override, create_dsd_job=create_dsd_job,
+            creator=creator)
         if close_bugs:
             close_bugs_for_sourcepublication(
                 source_copy, close_bugs_since_version)

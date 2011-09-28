@@ -110,10 +110,10 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
+from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -664,6 +664,7 @@ class BugSubscriptionPortletView(LaunchpadView,
         LaunchpadView.initialize(self)
         cache = IJSONRequestCache(self.request).objects
         self.extractBugSubscriptionDetails(self.user, self.context, cache)
+        cache['bug_is_private'] = self.context.private
         if self.user:
             cache['notifications_text'] = self.notifications_text
 
@@ -849,27 +850,19 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         data = dict(data)
 
         # We handle privacy changes by hand instead of leaving it to
-        # the usual machinery because we must use bug.setPrivate() to
-        # ensure auditing information is recorded.
+        # the usual machinery because we must use
+        # bug.setPrivacyAndSecurityRelated() to ensure auditing information is
+        # recorded.
         bug = self.context.bug
-        bug_before_modification = Snapshot(
-            bug, providing=providedBy(bug))
         private = data.pop('private')
         user_will_be_subscribed = (
             private and bug.getSubscribersForPerson(self.user).is_empty())
         security_related = data.pop('security_related')
-        private_changed = bug.setPrivate(
-            private, getUtility(ILaunchBag).user)
-        security_related_changed = bug.setSecurityRelated(security_related)
-        if private_changed or security_related_changed:
-            changed_fields = []
-            if private_changed:
-                changed_fields.append('private')
-                self._handlePrivacyChanged(user_will_be_subscribed)
-            if security_related_changed:
-                changed_fields.append('security_related')
-            notify(ObjectModifiedEvent(
-                    bug, bug_before_modification, changed_fields))
+        user = getUtility(ILaunchBag).user
+        (private_changed, security_related_changed) = (
+            bug.setPrivacyAndSecurityRelated(private, security_related, user))
+        if private_changed:
+            self._handlePrivacyChanged(user_will_be_subscribed)
         if self.request.is_ajax:
             if private_changed or security_related_changed:
                 return self._getSubscriptionDetails()
@@ -889,15 +882,14 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             bug = self.context
         subscribers_portlet = BugPortletSubscribersWithDetails(
             bug, self.request)
-        subscription_data = subscribers_portlet()
-        cache_data = dumps(
-            cache, cls=ResourceJSONEncoder,
+        subscription_data = subscribers_portlet.subscriber_data
+        result_data = dict(
+            cache_data=cache,
+            subscription_data=subscription_data)
+        self.request.response.setHeader('content-type', 'application/json')
+        return dumps(
+            result_data, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
-
-        return """{
-            "cache_data": %s,
-            "subscription_data": %s}
-            """ % (cache_data, subscription_data)
 
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.

@@ -35,10 +35,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import (
-    config,
-    dbconfig,
-    )
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.testing.pages import (
@@ -609,14 +606,13 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         # error_description on the given job. Which is a PITA.
         distroseries = job.distroseries
         transaction.commit()
-        starting_database_config_section = dbconfig.getSectionName()
         reconnect_stores("initializedistroseries")
         job = self.job_source.get(distroseries)
         job.start()
         job.fail()
         job.notifyUserError(error)
         transaction.commit()
-        reconnect_stores(starting_database_config_section)
+        reconnect_stores('launchpad')
 
     def test_initialization_failure_explanation_shown(self):
         # When initialization has failed an explanation of the failure can be

@@ -1,24 +1,23 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0103,W0403
 
 """Script to probe distribution mirrors and check how up-to-date they are."""
 
-import _pythonpath
-
 import os
 
+import _pythonpath
+
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
+from lp.registry.interfaces.distributionmirror import MirrorContent
+from lp.registry.scripts.distributionmirror_prober import DistroMirrorProber
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
-from lp.registry.interfaces.distributionmirror import MirrorContent
-from lp.registry.scripts.distributionmirror_prober import DistroMirrorProber
 
 
 class DistroMirrorProberScript(LaunchpadCronScript):
@@ -67,4 +66,4 @@ if __name__ == '__main__':
     script = DistroMirrorProberScript(
         'distributionmirror-prober',
         dbuser=config.distributionmirrorprober.dbuser)
-    script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    script.lock_and_run(isolation='autocommit')

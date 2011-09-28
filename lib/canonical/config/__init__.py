@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 '''
@@ -31,7 +31,6 @@ from lp.services.osutils import open_for_writing
 
 
 __all__ = [
-    'DatabaseConfig',
     'dbconfig',
     'config',
     ]
@@ -461,25 +460,15 @@ class DatabaseConfig:
     def reset(self):
         self.overrides = DatabaseConfigOverrides()
 
-    def setConfigSection(self, section_name):
-        self._config_section = section_name
-
-    def getSectionName(self):
-        """The name of the config file section this DatabaseConfig references.
-        """
-        return self._config_section
-
     def _getConfigSections(self):
         """Returns a list of sections to search for database configuration.
 
         The first section in the list has highest priority.
         """
-        if self._config_section is None:
-            return [config.database]
-        overlay = config
-        for part in self._config_section.split('.'):
-            overlay = getattr(overlay, part)
-        return [self.overrides, overlay, config.database]
+        # config.launchpad remains here for compatibility -- production
+        # appserver configs customise its dbuser. Eventually they should
+        # be migrated into config.database, and this can be removed.
+        return [self.overrides, config.launchpad, config.database]
 
     def __getattr__(self, name):
         sections = self._getConfigSections()
@@ -497,4 +486,3 @@ class DatabaseConfig:
 
 
 dbconfig = DatabaseConfig()
-dbconfig.setConfigSection('launchpad')

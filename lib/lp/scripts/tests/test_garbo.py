@@ -1024,7 +1024,7 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(0, unreferenced_msgsets.count())
 
     def test_SPPH_and_BPPH_populator(self):
-        # If SPPHs (or BPPHs) do not have sourcepackagename (or 
+        # If SPPHs (or BPPHs) do not have sourcepackagename (or
         # binarypackagename) set, the populator will set it.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         spph = self.factory.makeSourcePackagePublishingHistory()
