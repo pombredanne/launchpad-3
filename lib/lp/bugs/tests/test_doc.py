@@ -40,6 +40,10 @@ from lp.soyuz.tests.test_doc import (
 here = os.path.dirname(os.path.realpath(__file__))
 
 
+class XMLRPCLayer(LaunchpadFunctionalLayer):
+    """Isolate XMLRPC tests."""
+
+
 def lobotomizeSteveASetUp(test):
     """Call lobotomize_stevea() and standard setUp"""
     lobotomize_stevea()
@@ -237,6 +241,14 @@ special = {
         setUp=checkwatchesSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
+        ),
+     # XXX: sinzui 2011-09-28 bug=861510: Remove XMLRPCLayer and this
+     # setup when the bug is fixed
+    'bugtracker-tokens.txt': LayeredDocFileSuite(
+        '../doc/bugtracker-tokens.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=XMLRPCLayer
         ),
     'bugwatch.txt':
         LayeredDocFileSuite(
