@@ -225,7 +225,8 @@ class DistributionSourcePackage(BugTargetBase,
             BugTask.distributionID == self.distribution.id,
             BugTask.sourcepackagenameID == self.sourcepackagename.id,
             Bug.duplicateof == None,
-            BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES)).one()
+            # Change back to _status # DO NOT COMMIT
+            BugTask._xstatus.is_in(DB_UNRESOLVED_BUGTASK_STATUSES)).one()
 
         # Aggregate functions return NULL if zero rows match.
         row = list(row)

@@ -228,6 +228,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
@@ -286,6 +287,8 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
     BugTaskStatus.EXPIRED: False,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE: True,
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE: True,
     }
 
 

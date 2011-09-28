@@ -475,7 +475,7 @@ class BugTask(SQLBase):
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
-    _status = EnumCol(
+    _xstatus = EnumCol(
         dbName='status', notNull=True,
         schema=(BugTaskStatus, BugTaskStatusSearch),
         default=BugTaskStatus.NEW,
@@ -527,10 +527,18 @@ class BugTask(SQLBase):
     targetnamecache = StringCol(
         dbName='targetnamecache', notNull=False, default=None)
 
+    def _get_status(self):
+        return self._xstatus
+    def _set_status(self, val):
+        #import pdb; pdb.set_trace(); # DO NOT COMMIT
+        self._xstatus = val
+    _status = property(_get_status, _set_status)
+
     @property
     def status(self):
-        if (self._status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE or
-            self._status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE):
+        if (self._status in [
+            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE]):
             return BugTaskStatus.INCOMPLETE
         return self._status
 
@@ -598,8 +606,7 @@ class BugTask(SQLBase):
     @property
     def age(self):
         """See `IBugTask`."""
-        UTC = pytz.timezone('UTC')
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(pytz.UTC)
 
         return now - self.datecreated
 
@@ -613,7 +620,7 @@ class BugTask(SQLBase):
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
     completeness_clause = """
-        BugTask.status IN ( %s )
+        BugTask._status IN ( %s )
         """ % ','.join([str(a.value) for a in RESOLVED_BUGTASK_STATUSES])
 
     @property
@@ -623,7 +630,7 @@ class BugTask(SQLBase):
         Note that this should be kept in sync with the completeness_clause
         above.
         """
-        return self.status in RESOLVED_BUGTASK_STATUSES
+        return self._status in RESOLVED_BUGTASK_STATUSES
 
     def findSimilarBugs(self, user, limit=10):
         """See `IBugTask`."""
@@ -924,8 +931,7 @@ class BugTask(SQLBase):
             return
 
         if when is None:
-            UTC = pytz.timezone('UTC')
-            when = datetime.datetime.now(UTC)
+            when = datetime.datetime.now(pytz.UTC)
 
         # Record the date of the particular kinds of transitions into
         # certain states.
@@ -1757,8 +1763,8 @@ class BugTaskSet:
             if with_response or without_response:
                 if with_response:
                     return """(
-                        BugTask.status = %s OR
-                        (BugTask.status = %s
+                        BugTask._status = %s OR
+                        (BugTask._status = %s
                         AND (Bug.date_last_message IS NOT NULL
                              AND BugTask.date_incomplete <=
                                  Bug.date_last_message)))
@@ -1767,8 +1773,8 @@ class BugTaskSet:
                             BugTaskStatus.INCOMPLETE)
                 elif without_response:
                     return """(
-                        BugTask.status = %s OR
-                        (BugTask.status = %s
+                        BugTask._status = %s OR
+                        (BugTask._status = %s
                         AND (Bug.date_last_message IS NULL
                              OR BugTask.date_incomplete >
                                 Bug.date_last_message)))
@@ -1779,12 +1785,12 @@ class BugTaskSet:
             elif incomplete_response:
                 # search for any of INCOMPLETE (being migrated from),
                 # INCOMPLETE_WITH_RESPONSE or INCOMPLETE_WITHOUT_RESPONSE
-                return 'BugTask.status %s' % search_value_to_where_condition(
+                return 'BugTask._status %s' % search_value_to_where_condition(
                     any(BugTaskStatus.INCOMPLETE,
                         BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
                         BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE))
             else:
-                return '(BugTask.status = %s)' % sqlvalues(status)
+                return '(BugTask._status = %s)' % sqlvalues(status)
         else:
             raise AssertionError(
                 'Unrecognized status value: %s' % repr(status))
@@ -2763,7 +2769,17 @@ class BugTaskSet:
         validate_new_target(bug, target)
 
         target_key = bug_target_to_key(target)
+        ## import pdb
+        ## #import pdb; pdb.set_trace(); # DO NOT COMMIT
+        ## def break_on_status(obj, value):
+        ##     try:
+        ##         bugtask0 = bug.bugtasks[0]
+        ##     except IndexError:
+        ##         return False
+        ##     import pdb; pdb.set_trace(); # DO NOT COMMIT
+        ##     return obj.id == bugtask0.id
 
+        ## pdb.break_on_setattr('_status', condition=break_on_status)(BugTask)
         if not bug.private and bug.security_related:
             product = target_key['product']
             distribution = target_key['distribution']
@@ -2781,8 +2797,12 @@ class BugTaskSet:
             milestone=milestone)
         create_params = non_target_create_params.copy()
         create_params.update(target_key)
-        bugtask = BugTask(**create_params)
-
+        from lp.testing import StormStatementRecorder
+        with StormStatementRecorder(True) as rec:
+            bugtask = BugTask(**create_params)
+            Store.of(bug).flush()
+        print rec.count
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if target_key['distribution']:
             # Create tasks for accepted nominations if this is a source
             # package addition.
@@ -2797,15 +2817,17 @@ class BugTaskSet:
                     **non_target_create_params)
                 accepted_series_task.updateTargetNameCache()
 
-        if bugtask.conjoined_slave:
-            bugtask._syncFromConjoinedSlave()
+        ## if bugtask.conjoined_slave:
+        ##     bugtask._syncFromConjoinedSlave()
 
         bugtask.updateTargetNameCache()
         del get_property_cache(bug).bugtasks
         # Because of block_implicit_flushes, it is possible for a new bugtask
         # to be queued in appropriately, which leads to Bug.bugtasks not
         # finding the bugtask.
-        Store.of(bugtask).flush()
+        #import pdb; pdb.set_trace(); # DO NOT COMMIT
+        store = Store.of(bugtask)
+        store.flush()
         return bugtask
 
     def getStatusCountsForProductSeries(self, user, product_series):

@@ -1183,8 +1183,9 @@ BugMessage""" % sqlvalues(self.id))
             self.findCvesInText(message.text_contents, user)
             for bugtask in self.bugtasks:
                 # Check the stored value so we don't write to unaltered tasks.
-                if (bugtask._status == BugTaskStatus.INCOMPLETE or
-                    bugtask._status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE):
+                if (bugtask._status in (
+                    BugTaskStatus.INCOMPLETE,
+                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)):
                     # This is not a semantic change, so we don't update date
                     # records or send email.
                     bugtask._status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
