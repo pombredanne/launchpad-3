@@ -96,7 +96,7 @@ The OOPS has the SQL from the main view.
     >>> from zope.error.interfaces import IErrorReportingUtility
     >>> errors = zope.component.getUtility(IErrorReportingUtility)
     >>> import pprint
-    >>> print errors.getLastOopsReport().db_statements
+    >>> print errors.getLastOopsReport().timeline
     [(0, 0, 'SELECT ... FROM ... WHERE ...'), ...]
 
 All that's left is to clean up after ourselves.

@@ -18,7 +18,7 @@ from lazr.delegates import delegates
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
-)
+    )
 from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
@@ -560,7 +560,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         return data
 
     @property
-    def subscriber_data_js(self):
+    def subscriber_data(self):
         """Return subscriber_ids in a form suitable for JavaScript use."""
         bug = IBug(self.context)
         data = self.direct_subscriber_data(bug)
@@ -583,7 +583,11 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 'subscription_level': 'Maybe',
                 }
             data.append(record)
-        return dumps(data)
+        return data
+
+    @property
+    def subscriber_data_js(self):
+        return dumps(self.subscriber_data)
 
     def render(self):
         """Override the default render() to return only JSON."""

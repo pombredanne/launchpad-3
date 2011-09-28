@@ -18,7 +18,7 @@ news feed.
     ...     """The contents of the latest news portlet."""
     ...     return extract_text(find_portlet(content, 'Announcements'))
     >>> def count_show_links(content):
-    ...     """Determine whether the "Read more announcements" link is shown."""
+    ...     """Is the "Read more announcements" link shown?"""
     ...     return len(find_tags_by_class(
     ...         content, 'menu-link-announcements'))
     >>> def no_announcements(content):
@@ -612,7 +612,8 @@ not be able to move it.
     Move announcement : Kubuntu announcement headline : GuadaLinex
     >>> kamion_browser.getControl('For').value = 'kubuntu'
     >>> kamion_browser.getControl('Retarget').click()
-    >>> "don't have permission" in extract_text(find_main_content(kamion_browser.contents))
+    >>> "don't have permission" in extract_text(
+    ...     find_main_content(kamion_browser.contents))
     True
     >>> print kamion_browser.title
     Move announcement : Kubuntu announcement headline : GuadaLinex
@@ -635,7 +636,8 @@ The feeds are published even when there are no announcements.
     >>> 'NetApplet Announcements' in nopriv_browser.contents
     True
 
-The "self" link should point to the original URL, in the feeds.launchpad.dev domain.
+The "self" link should point to the original URL, in the feeds.launchpad.dev
+domain.
 
     >>> strainer = SoupStrainer('link', rel='self')
     >>> links = parse_links(nopriv_browser.contents, rel='self')
@@ -675,7 +677,8 @@ Retracted items do not show up either.
     tag:launchpad.net,...:/+announcement/28
 
     >>> priv_browser.open('http://launchpad.dev/guadalinex/+announcements')
-    >>> 'Kubuntu announcement headline' in announcements(priv_browser.contents)
+    >>> "Kubuntu announcement headline" in (
+    ...     announcements(priv_browser.contents))
     True
     >>> priv_browser.getLink('Kubuntu announcement headline').click()
     >>> priv_browser.getLink('Delete announcement').click()
@@ -733,9 +736,10 @@ hosted in Launchpad:
 
 It excludes retracted and future announcements too:
 
-    >>> '[guadalinex] Kubuntu announcement headline' in nopriv_browser.contents
+    >>> "[guadalinex] Kubuntu announcement headline" in (
+    ...     nopriv_browser.contents)
     False
-    >>> '[jokosher] Jokosher announcement headline' in nopriv_browser.contents
+    >>> "[jokosher] Jokosher announcement headline" in nopriv_browser.contents
     False
 
 The announcements are stored as plain text, but the text-to-html formatter

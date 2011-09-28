@@ -318,7 +318,62 @@ def process_config_arguments(args):
     return args
 
 
-def start_launchpad(argv=list(sys.argv)):
+def start_testapp(argv=list(sys.argv)):
+    from canonical.testing.layers import (
+        BaseLayer,
+        DatabaseLayer,
+        LayerProcessController,
+        LibrarianLayer,
+        RabbitMQLayer,
+        )
+    from lp.testing.pgsql import (
+        installFakeConnect,
+        uninstallFakeConnect,
+        )
+    assert config.instance_name.startswith('testrunner-appserver'), (
+        '%r does not start with "testrunner-appserver"' %
+        config.instance_name)
+    interactive_tests = 'INTERACTIVE_TESTS' in os.environ
+
+    def setup():
+        # This code needs to be run after other zcml setup happens in
+        # runlaunchpad, so it is passed in as a callable.
+        BaseLayer.setUp()
+        if interactive_tests:
+            # The test suite runs its own RabbitMQ.  We only need this
+            # for interactive tests.  We set it up here rather than by
+            # passing it in as an argument to start_launchpad because
+            # the appserver config does not normally need/have
+            # RabbitMQ config set.
+            RabbitMQLayer.setUp()
+        # We set up the database here even for the test suite because we want
+        # to be able to control the database here in the subprocess.  It is
+        # possible to do that when setting the database up in the parent
+        # process, but it is messier.  This is simple.
+        installFakeConnect()
+        DatabaseLayer.setUp()
+        # The Librarian needs access to the database, so setting it up here
+        # where we are setting up the database makes the most sense.
+        LibrarianLayer.setUp()
+        # Interactive tests always need this.  We let functional tests use
+        # a local one too because of simplicity.
+        LayerProcessController.startSMTPServer()
+    try:
+        start_launchpad(argv, setup)
+    finally:
+        LayerProcessController.stopSMTPServer()
+        LibrarianLayer.tearDown()
+        DatabaseLayer.tearDown()
+        uninstallFakeConnect()
+        if interactive_tests:
+            try:
+                RabbitMQLayer.tearDown()
+            except NotImplementedError:
+                pass
+        BaseLayer.tearDown()
+
+
+def start_launchpad(argv=list(sys.argv), setup=None):
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
@@ -326,21 +381,22 @@ def start_launchpad(argv=list(sys.argv)):
     services = get_services_to_run(services)
     # Create the ZCML override file based on the instance.
     config.generate_overrides()
-
     # Many things rely on a directory called 'logs' existing in the current
     # working directory.
     ensure_directory_exists('logs')
+    if setup is not None:
+        # This is the setup from start_testapp, above.
+        setup()
     with nested(*services):
         # Store our process id somewhere
         make_pidfile('launchpad')
-
         if config.launchpad.launch:
             main(argv)
         else:
             # We just need the foreground process to sit around forever
-            # waiting for the signal to shut everything down.  Normally, Zope
-            # itself would be this master process, but we're not starting that
-            # up, so we need to do something else.
+            # waiting for the signal to shut everything down.  Normally,
+            # Zope itself would be this master process, but we're not
+            # starting that up, so we need to do something else.
             try:
                 signal.pause()
             except KeyboardInterrupt:

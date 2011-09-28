@@ -9,18 +9,15 @@ import _pythonpath
 
 import sys
 
-from zope.component.interfaces import ComponentLookupError
-
 from canonical.config import config
-from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+from lp.services.scripts.base import LaunchpadScript
 from lp.services.mail.incoming import (
     handle_one_mail)
-from canonical.launchpad.interfaces.mailbox import IMailBox
 from lp.services.mail.helpers import (
     save_mail_to_librarian,
     )
-from lp.services.mail.signedmessage import signed_message_from_string    
+from lp.services.mail.signedmessage import signed_message_from_string
+
 
 class ProcessMail(LaunchpadScript):
     usage = """%prog [options] [MAIL_FILE]

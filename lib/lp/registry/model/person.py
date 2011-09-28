@@ -297,6 +297,7 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -2586,6 +2587,40 @@ class Person(
         """See `IPerson`."""
         return self._latestSeriesQuery()
 
+    def getLatestSynchronisedPublishings(self):
+        """See `IPerson`."""
+        query = """
+            SourcePackagePublishingHistory.id IN (
+                SELECT DISTINCT ON (spph.distroseries,
+                                    spr.sourcepackagename)
+                    spph.id
+                FROM
+                    SourcePackagePublishingHistory as spph, archive,
+                    SourcePackagePublishingHistory as ancestor_spph,
+                    SourcePackageRelease as spr
+                WHERE
+                    spph.sourcepackagerelease = spr.id AND
+                    spph.creator = %(creator)s AND
+                    spph.ancestor = ancestor_spph.id AND
+                    spph.archive = archive.id AND
+                    ancestor_spph.archive != spph.archive AND
+                    archive.purpose = %(archive_purpose)s
+                ORDER BY spph.distroseries,
+                    spr.sourcepackagename,
+                    spph.datecreated DESC,
+                    spph.id DESC
+            )
+            """ % dict(
+                   creator=quote(self.id),
+                   archive_purpose=quote(ArchivePurpose.PRIMARY),
+                   )
+
+        return SourcePackagePublishingHistory.select(
+            query,
+            orderBy=['-SourcePackagePublishingHistory.datecreated',
+                     '-SourcePackagePublishingHistory.id'],
+            prejoins=['sourcepackagerelease', 'archive'])
+
     def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery(uploader_only=True)
@@ -4639,7 +4674,8 @@ def get_recipients(person):
     If <person> has a preferred email, the set will contain only that
     person.  If <person> doesn't have a preferred email but is a team,
     the set will contain the preferred email address of each member of
-    <person>, including indirect members.
+    <person>, including indirect members, that has an active account and an
+    preferred (active) address.
 
     Finally, if <person> doesn't have a preferred email and is not a team,
     the set will be empty.
@@ -4647,7 +4683,7 @@ def get_recipients(person):
     if person.preferredemail:
         return [person]
     elif person.is_team:
-        # Get transitive members of team without a preferred email.
+        # Get transitive members of a team that does not itself have a preferred email.
         return _get_recipients_for_team(person)
     else:
         return []
@@ -4666,13 +4702,15 @@ def _get_recipients_for_team(team):
                                   And(
                                       EmailAddress.person == Person.id,
                                       EmailAddress.status ==
-                                        EmailAddressStatus.PREFERRED)))
+                                        EmailAddressStatus.PREFERRED)),
+                         LeftJoin(Account,
+                             Person.accountID == Account.id))
     pending_team_ids = [team.id]
     recipient_ids = set()
     seen = set()
     while pending_team_ids:
-        # Find Persons that have a preferred email address, or are a
-        # team, or both.
+        # Find Persons that have a preferred email address and an active
+        # account, or are a team, or both.
         intermediate_transitive_results = source.find(
             (TeamMembership.personID, EmailAddress.personID),
             In(TeamMembership.status,
@@ -4680,7 +4718,8 @@ def _get_recipients_for_team(team):
                 TeamMembershipStatus.APPROVED.value]),
             In(TeamMembership.teamID, pending_team_ids),
             Or(
-                EmailAddress.personID != None,
+                And(EmailAddress.personID != None,
+                    Account.status == AccountStatus.ACTIVE),
                 Person.teamownerID != None)).config(distinct=True)
         next_ids = []
         for (person_id,
