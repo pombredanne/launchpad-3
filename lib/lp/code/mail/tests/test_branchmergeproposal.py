@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
@@ -402,6 +402,20 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         merge_proposal, person = self.makeProposalWithSubscriber()
         old_merge_proposal = Snapshot(
             merge_proposal, providing=providedBy(merge_proposal))
+        event = ObjectModifiedEvent(
+            merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
+        merge_proposal_modified(merge_proposal, event)
+        self.assertIs(None, self.getProposalUpdatedEmailJob(merge_proposal))
+
+    def test_no_job_created_if_only_preview_diff_changed(self):
+        """Ensure None is returned if only the preview diff has changed."""
+        merge_proposal, person = self.makeProposalWithSubscriber()
+        old_merge_proposal = Snapshot(
+            merge_proposal, providing=providedBy(merge_proposal))
+        merge_proposal.updatePreviewDiff(
+            ''.join(unified_diff('', 'Fake diff')),
+            unicode(self.factory.getUniqueString('revid')),
+            unicode(self.factory.getUniqueString('revid')))
         event = ObjectModifiedEvent(
             merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
         merge_proposal_modified(merge_proposal, event)

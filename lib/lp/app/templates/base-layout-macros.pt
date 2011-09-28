@@ -242,7 +242,7 @@
             tal:condition="view/macro:pagehas/globalsearch"
             tal:attributes="action string:${rooturl}+search">
             <input type="search" id="search-text" name="field.text" />
-            <input type="submit" value="" class="icon-only sprite search-icon" />
+            <input type="image" src="/@@/search" style="vertical-align:5%" alt="Search Launchpad"/>
           </form>
         </div>
         <metal:site-message

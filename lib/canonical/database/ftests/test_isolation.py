@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests confirming that changing isolation levels does what we expect."""
@@ -7,24 +7,32 @@ __metaclass__ = type
 __all__ = []
 
 import os.path
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import sys
 from textwrap import dedent
 import unittest
 
 import transaction
 
+from canonical.config import dbconfig
 from canonical.database.sqlbase import (
-    cursor, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_DEFAULT,
-    ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_SERIALIZABLE,
-    connect, ZopelessTransactionManager)
-from canonical.testing.layers import LaunchpadZopelessLayer
+    connect,
+    cursor,
+    ISOLATION_LEVEL_SERIALIZABLE,
+    )
+from canonical.testing.layers import (
+    disconnect_stores,
+    LaunchpadZopelessLayer,
+    )
 
 
 def set_isolation_level(isolation):
-    user = ZopelessTransactionManager._dbuser
-    ZopelessTransactionManager.uninstall()
-    ZopelessTransactionManager.initZopeless(dbuser=user, isolation=isolation)
+    dbconfig.override(isolation_level=isolation)
+    disconnect_stores()
 
 
 class TestIsolation(unittest.TestCase):
@@ -42,12 +50,8 @@ class TestIsolation(unittest.TestCase):
     def test_default(self):
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
-    def test_default2(self):
-        set_isolation_level(ISOLATION_LEVEL_DEFAULT)
-        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-
     def test_autocommit(self):
-        set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        set_isolation_level('autocommit')
         # There is no actual 'autocommit' mode in PostgreSQL. psycopg
         # implements this feature by using read committed isolation and
         # issuing commit() statements after every query.
@@ -67,17 +71,17 @@ class TestIsolation(unittest.TestCase):
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
     def test_readCommitted(self):
-        set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
+        set_isolation_level('read_committed')
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_serializable(self):
-        set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+        set_isolation_level('serializable')
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_commit(self):
         # Change the isolation level
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-        set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+        set_isolation_level('serializable')
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
         cur = cursor()
@@ -89,7 +93,7 @@ class TestIsolation(unittest.TestCase):
     def test_rollback(self):
         # Change the isolation level
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-        set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+        set_isolation_level('serializable')
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
         cur = cursor()

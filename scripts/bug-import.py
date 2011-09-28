@@ -1,18 +1,17 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=W0403
-import _pythonpath
 
 import logging
 
+# pylint: disable-msg=W0403
+import _pythonpath
 from zope.component import getUtility
-from canonical.config import config
-from lp.registry.interfaces.product import IProductSet
 
+from canonical.config import config
 from lp.bugs.scripts.bugimport import BugImporter
+from lp.registry.interfaces.product import IProductSet
 from lp.services.scripts.base import LaunchpadScript
 
 
@@ -48,7 +47,7 @@ class BugImportScript(LaunchpadScript):
 
         # don't send email
         send_email_data = """
-            [zopeless]
+            [immediate_mail]
             send_email: False
             """
         config.push('send_email_data', send_email_data)
