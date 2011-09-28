@@ -8,9 +8,6 @@ __metaclass__ = type
 import datetime
 import httplib
 import logging
-import os
-import shutil
-import stat
 import StringIO
 import sys
 from textwrap import dedent
@@ -20,7 +17,6 @@ from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
 from lp_sitecustomize import customize_get_converter
-from oops_datedir_repo import DateDirRepo
 import pytz
 import testtools
 from testtools.matchers import StartsWith
@@ -49,13 +45,11 @@ from canonical.launchpad.webapp.interfaces import (
     IUnloggedException,
     NoReferrerError,
     )
-from canonical.testing import reset_logging
 from lp.app import versioninfo
 from lp.app.errors import (
     GoneError,
     TranslationUnavailable,
     )
-from lp.services.osutils import remove_tree
 
 
 UTC = pytz.utc
