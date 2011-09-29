@@ -288,6 +288,15 @@ The Ubuntu Gnome team was subscribed to the bug:
      u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team',
      u'Ubuntu Team']
 
+
+We current use a feature flag to control who is subscribed when a bug is made
+private.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package.
 
@@ -321,6 +330,10 @@ the unallowed subscribers are removed:
     >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
     [u'Foo Bar', u'Mark Shuttleworth', u'Sample Person',
      u'Steve Alexander', u'Ubuntu Team']
+
+Clean up the feature flag.
+
+    >>> flags.cleanUp()
 
 
 Product Bug Supervisors and Bug Tasks

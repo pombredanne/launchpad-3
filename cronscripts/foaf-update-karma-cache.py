@@ -178,7 +178,8 @@ class KarmaCacheUpdater(LaunchpadCronScript):
             INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
-            SELECT person, NULL, SUM(karmavalue), NULL, distribution, NULL, NULL
+            SELECT
+                person, NULL, SUM(karmavalue), NULL, distribution, NULL, NULL
             FROM KarmaCache
             WHERE distribution IS NOT NULL
             GROUP BY person, distribution
@@ -198,7 +199,8 @@ class KarmaCacheUpdater(LaunchpadCronScript):
             GROUP BY person, Product.project
             """)
 
-        # - All actions with a specific category of a person on a given project
+        # - All actions with a specific category of a person on a given
+        # project.
         # IMPORTANT: This has to be the latest step; otherwise the rows
         # inserted here will be included in the calculation of the overall
         # karma of a person on a given project.
@@ -261,7 +263,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         at C_add_summed_totals to see how the summed entries are generated.
         """
         (person_id, category_id, product_id, distribution_id, points) = entry
-        points *= scaling[category_id] # Scaled. wow.
+        points *= scaling[category_id]  # Scaled. wow.
         self.logger.debug("Setting person_id=%d, category_id=%d, points=%d"
                           % (person_id, category_id, points))
 

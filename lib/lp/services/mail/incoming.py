@@ -126,10 +126,10 @@ def _authenticateDkim(signed_message):
 
     dkim_log = cStringIO()
     log.info(
-        'Attempting DKIM authentication of message id=%s from=%s sender=%s'
+        'Attempting DKIM authentication of message id=%r from=%r sender=%r'
         % (signed_message['Message-ID'],
-            signed_message['From'],
-            signed_message['Sender']))
+           signed_message['From'],
+           signed_message['Sender']))
     signing_details = []
     try:
         # NB: if this fails with a keyword argument error, you need the
@@ -242,8 +242,8 @@ def _gpgAuthenticateEmail(mail, principal, person,
                           signature_timestamp_checker):
     """Check GPG signature.
 
-    :param principal: Claimed sender of the mail; to be checked against the
-        actual signature.
+    :param principal: Claimed sender of the mail; to be checked against
+        the actual signature.
     :returns: principal, either strongly or weakly authenticated.
     """
     log = logging.getLogger('process-mail')

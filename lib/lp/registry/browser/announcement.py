@@ -159,8 +159,7 @@ class AnnouncementAddView(LaunchpadFormView):
             title=data.get('title'),
             summary=data.get('summary'),
             url=data.get('url'),
-            publication_date = data.get('publication_date')
-            )
+            publication_date=data.get('publication_date'))
         self.next_url = canonical_url(self.context)
 
     @property

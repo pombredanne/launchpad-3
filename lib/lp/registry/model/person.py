@@ -4683,7 +4683,8 @@ def get_recipients(person):
     if person.preferredemail:
         return [person]
     elif person.is_team:
-        # Get transitive members of a team that does not itself have a preferred email.
+        # Get transitive members of a team that does not itself have a
+        # preferred email.
         return _get_recipients_for_team(person)
     else:
         return []
