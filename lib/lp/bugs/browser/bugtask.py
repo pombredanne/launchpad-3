@@ -3057,8 +3057,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def addquestion_url(self):
         """Return the URL for the +addquestion view for the context."""
         if IQuestionTarget.providedBy(self.context):
-            return canonical_url(
-                self.context, rootsite='answers', view_name='+addquestion')
+            answers_usage = IServiceUsage(self.context).answers_usage
+            if answers_usage == ServiceUsage.LAUNCHPAD:
+                return canonical_url(
+                    self.context, rootsite='answers',
+                    view_name='+addquestion')
         else:
             return None
 
