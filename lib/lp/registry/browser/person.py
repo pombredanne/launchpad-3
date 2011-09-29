@@ -861,7 +861,7 @@ class PersonBugsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'commentedbugs', 'reportedbugs',
+    links = ['affectingbugs', 'assignedbugs', 'commentedbugs', 'reportedbugs',
              'subscribedbugs', 'relatedbugs', 'softwarebugs']
 
     def relatedbugs(self):
@@ -898,6 +898,11 @@ class PersonBugsMenu(NavigationMenu):
         summary = ('Bug reports on which %s has commented.'
                    % self.context.displayname)
         return Link('+commentedbugs', text, site='bugs', summary=summary)
+
+    def affectingbugs(self):
+        text = 'Affecting bugs'
+        summary = ('Bugs affecting %s.' % self.context.displayname)
+        return Link('+affectingbugs', text, site='bugs', summary=summary)
 
 
 class PersonSpecsMenu(NavigationMenu):
