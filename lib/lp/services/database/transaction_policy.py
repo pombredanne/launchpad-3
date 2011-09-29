@@ -59,6 +59,8 @@ class DatabaseTransactionPolicy:
                 update_model(data, more_data)
                 transaction.commit()
 
+            # We've got a bit more work to do here, but it doesn't
+            # affect the database.
             write_logs(data)
             notify_user(more_data)
     """
