@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import re
-import sys
 import thread
 import threading
 import traceback
@@ -19,7 +18,6 @@ from lazr.uri import (
     URI,
     )
 from psycopg2.extensions import TransactionRollbackError
-from storm.database import STATE_DISCONNECTED
 from storm.exceptions import (
     DisconnectionError,
     IntegrityError,
@@ -151,7 +149,7 @@ def maybe_block_offsite_form_post(request):
         # exception was added as a result of bug 597324 (message #10 in
         # particular).
         return
-    referrer = request.getHeader('referer') # match HTTP spec misspelling
+    referrer = request.getHeader('referer')  # Match HTTP spec misspelling.
     if not referrer:
         raise NoReferrerError('No value for REFERER header')
     # XXX: jamesh 2007-04-26 bug=98437:
@@ -533,8 +531,9 @@ class LaunchpadBrowserPublication(
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
         elif txn.isDoomed():
-            txn.abort() # Sends an abort to the database, even though
-            # transaction is still doomed.
+            # Sends an abort to the database, even though transaction
+            # is still doomed.
+            txn.abort()
         else:
             txn.commit()
 
@@ -736,11 +735,11 @@ class LaunchpadBrowserPublication(
             if IBrowserRequest.providedBy(request):
                 OpStats.stats['http requests'] += 1
                 status = request.response.getStatus()
-                if status == 404: # Not Found
+                if status == 404:  # Not Found
                     OpStats.stats['404s'] += 1
-                elif status == 500: # Unhandled exceptions
+                elif status == 500:  # Unhandled exceptions
                     OpStats.stats['500s'] += 1
-                elif status == 503: # Timeouts
+                elif status == 503:  # Timeouts
                     OpStats.stats['503s'] += 1
 
                 # Increment counters for status code groups.

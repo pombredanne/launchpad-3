@@ -16,18 +16,15 @@ from canonical.launchpad.webapp.error import (
     OperationalErrorView,
     SystemErrorView,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    reconnect_stores,
-    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCase
 from lp.testing.fixture import (
     PGBouncerFixture,
     Urllib2Fixture,
     )
 from lp.testing.matchers import Contains
+
 
 class TestSystemErrorView(TestCase):
 
@@ -71,7 +68,8 @@ class TestDatabaseErrorViews(TestCase):
         # Verify things are working initially.
         url = 'http://launchpad.dev/'
         urllib2.urlopen(url)
-        # Now break the database, and we get an exception, along with our view.
+        # Now break the database, and we get an exception, along with
+        # our view.
         bouncer.stop()
         for i in range(2):
             # This should not happen ideally, but Stuart is OK with it
@@ -81,7 +79,7 @@ class TestDatabaseErrorViews(TestCase):
             # master DB is disconnected, and third and subsequent
             # requests, as seen below, correctly generate a
             # DisconnectionError.  Oddly, these are ProgrammingErrors.
-            self.assertEqual(500,self.getHTTPError(url).code)
+            self.assertEqual(500, self.getHTTPError(url).code)
         error = self.getHTTPError(url)
         self.assertEqual(503, error.code)
         self.assertThat(error.read(),

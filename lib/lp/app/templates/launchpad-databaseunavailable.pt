@@ -74,14 +74,14 @@
     }
     .page-center {
         text-align: center;
-	margin: 0px;
-	margin: auto;
+    margin: 0px;
+    margin: auto;
         width: 780px;
     }
     .page-center-content {
         text-align: left;
     }
-    
+
     #header,
     #status-feed,
     #status-subscribe,
@@ -89,60 +89,60 @@
         padding-left: 50px;
         padding-right: 50px;
     }
-    
+
     #header {
         border: 1px solid #d7d3cf;
         padding-top: 20px;
         padding-bottom: 20px;
         margin-top: 15%;
     }
-    
+
     #header .graphic {
         font-size: 110px;
         color: #646464;
         float: right;
         padding: 100px 80px 0 0;
     }
-    
+
     #header .content {
         margin-right: 300px;
     }
-    
+
     #header-shadow {
         height: 2px;
         background-color: #ebe9e7;
     }
-    
+
     #status-feed {
         padding-top: 10px;
         width: 450px;
     }
-    
+
     #status-feed h2 {
         border-bottom: 1px solid #d7d3cf;
         padding-bottom: 0.7em;
         margin-bottom: 0.3em;
     }
-    
+
     /* Hide the twitter feed footer */
     .twtr-ft {
         display: none !important;
     }
-    
+
     #status-subscribe img {
         margin-right: 3px;
     }
-    
+
     #status-subscribe a:last-child {
         margin-left: 20px;
     }
-    
+
     #footer {
         border-top: 1px solid #d7d3cf;
         margin-top: 40px;
         padding-top: 20px;
     }
-    
+
     </style>
 </head>
 <body>
