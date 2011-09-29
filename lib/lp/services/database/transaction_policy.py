@@ -6,8 +6,10 @@
 __metaclass__ = type
 __all__ = [
     'DatabaseTransactionPolicy',
+    'TransactionStillOpen',
     ]
 
+from psycopg2.extensions import TRANSACTION_STATUS_IDLE
 import transaction
 from zope.component import getUtility
 
@@ -17,6 +19,16 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+
+
+class TransactionStillOpen(Exception):
+    """User of a `DatabaseTransactionPolicy` has mis-managed transactions.
+
+    This is raised when trying to enter a `DatabaseTransactionPolicy` while
+    a transaction is still ongoing (which could lead to an inadvertent
+    commit or abort of pending changes in that transaction), or when leaving
+    a read-write policy without committing or aborting first.
+    """
 
 
 class DatabaseTransactionPolicy:
@@ -32,9 +44,9 @@ class DatabaseTransactionPolicy:
             inspect_data()
 
     The simplest way to use this is as a special transaction:
-     * Entering a policy commits the ongoing transaction.
-     * Exiting a policy normally commits its changes.
-     * Exiting by exception aborts its changes.
+     * You must commit/abort before entering the policy.
+     * Exiting the policy through an exception aborts its changes.
+     * Before completing a read-write policy region, you must commit or abort.
 
     You can also have multiple transactions inside one policy, however; the
     policy still applies after a commit or abort.
@@ -49,9 +61,13 @@ class DatabaseTransactionPolicy:
             data = gather_data()
             more_data = figure_stuff_out(data)
 
+            # End the ongoing transaction so we can go into our update.
+            transaction.commit()
+
             # This is the only part where we update the database!
             with DatabaseTransactionPolicy(read_only=False):
                 update_model(data, more_data)
+                transaction.commit()
 
             write_logs(data)
             notify_user(more_data)
@@ -82,7 +98,11 @@ class DatabaseTransactionPolicy:
 
         Commits the ongoing transaction, and sets the selected default
         read-only policy on the database.
+
+        :raise TransactionStillOpen: if a transaction was already ongoing.
         """
+        self._checkNoTransaction(
+            "Entered DatabaseTransactionPolicy while in a transaction.")
         self.previous_policy = self._getCurrentPolicy()
         self._setPolicy(self.policy)
         # Commit should include the policy itself.  If this breaks
@@ -95,19 +115,37 @@ class DatabaseTransactionPolicy:
 
         Commits or aborts, depending on mode of exit, and restores the
         previous default read-only policy.
+
+        :return: True -- any exception will continue to propagate.
+        :raise TransactionStillOpen: if trying to exit normally from a
+            read-write policy without closing its transaction first.
         """
-        if exc_type is None:
-            # Exiting normally.
+        leaving_with_exception = (exc_type is not None)
+        if leaving_with_exception:
+            transaction.abort()
+        elif self.policy == True:
             transaction.commit()
         else:
-            # Exiting with an exception.
-            transaction.abort()
+            self._checkNoTransaction(
+                "Failed to close transaction before leaving read-write "
+                "DatabaseTransactionPolicy.")
 
         self._setPolicy(self.previous_policy)
         transaction.commit()
 
         # Continue processing the exception as normal.
         return False
+
+    def _checkNoTransaction(self, error_msg):
+        """Verify that no transaction is ongoing.
+
+        :param error_msg: The error message to use if the user got this wrong
+            (i.e. if we're in a transaction).
+        :raise TransactionStillOpen: if we're in a transaction.
+        """
+        tx_status = self.store._connection.get_transaction_status()
+        if tx_status != TRANSACTION_STATUS_IDLE:
+            raise TransactionStillOpen(error_msg)
 
     def _getCurrentPolicy(self):
         """Read the database session's default transaction read-only policy.

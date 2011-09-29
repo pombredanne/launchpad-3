@@ -11,7 +11,10 @@ import transaction
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.model.person import Person
-from lp.services.database.transaction_policy import DatabaseTransactionPolicy
+from lp.services.database.transaction_policy import (
+    DatabaseTransactionPolicy,
+    TransactionStillOpen,
+    )
 from lp.testing import TestCaseWithFactory
 
 
@@ -37,11 +40,19 @@ class TestTransactionPolicy(TestCaseWithFactory):
         query = IStore(Person).find(Person, Person.name == test_token)
         return query.one() is not None
 
+    def test_can_be_empty(self):
+        # An empty transaction policy works fine.
+        with DatabaseTransactionPolicy():
+            pass
+        # The test is that we get here without failure.
+        pass
+
     def test_writable_permits_updates(self):
         # Writes to the database work just fine in a non-read-only
         # policy.
         with DatabaseTransactionPolicy(read_only=False):
             self.writeToDatabase()
+            transaction.commit()
         # The test is that we get here without failure.
         pass
 
@@ -50,16 +61,33 @@ class TestTransactionPolicy(TestCaseWithFactory):
         def make_forbidden_update():
             with DatabaseTransactionPolicy(read_only=True):
                 self.writeToDatabase()
+                transaction.commit()
 
         self.assertRaises(InternalError, make_forbidden_update)
 
-    def test_commits_on_success(self):
-        # If the context handler exits normally (which would indicate
-        # successful completion of its contents), it commits.
-        with DatabaseTransactionPolicy(read_only=False):
-            test_token = self.writeToDatabase()
-        transaction.abort()
-        self.assertTrue(self.hasDatabaseBeenWrittenTo(test_token))
+    def test_will_not_start_in_ongoing_transaction(self):
+        # You cannot enter a DatabaseTransactionPolicy while already in
+        # a transaction.
+        def enter_policy():
+            with DatabaseTransactionPolicy():
+                pass
+
+        self.writeToDatabase()
+        self.assertRaises(TransactionStillOpen, enter_policy)
+
+    def test_successful_exit_requires_commit_or_abort(self):
+        # If the context handler exits normally (which would probably
+        # indicate successful completion of its code), it requires that
+        # any ongoing transaction be committed or aborted first.
+        test_token = None
+
+        def leave_transaction_open():
+            with DatabaseTransactionPolicy(read_only=False):
+                self.writeToDatabase()
+
+        self.assertRaises(TransactionStillOpen, leave_transaction_open)
+        # As a side effect of the error, the transaction is rolled back.
+        self.assertFalse(self.hasDatabaseBeenWrittenTo(test_token))
 
     def test_aborts_on_failure(self):
         # If the context handler exits with an exception, it aborts.
@@ -83,6 +111,7 @@ class TestTransactionPolicy(TestCaseWithFactory):
             try:
                 with DatabaseTransactionPolicy(read_only=read_only):
                     self.writeToDatabase()
+                    transaction.commit()
                 return True
             except InternalError:
                 return False
@@ -109,8 +138,9 @@ class TestTransactionPolicy(TestCaseWithFactory):
         # A transaction policy, once exited, restores the previously
         # applicable policy.
         with DatabaseTransactionPolicy(read_only=False):
+            transaction.commit()
             with DatabaseTransactionPolicy(read_only=True):
-                pass
+                transaction.commit()
             self.assertTrue(
                 self.hasDatabaseBeenWrittenTo(self.writeToDatabase()))
         self.assertTrue(
@@ -151,6 +181,8 @@ class TestTransactionPolicy(TestCaseWithFactory):
             transaction.commit()
 
         test_token = self.writeToDatabase()
+        transaction.commit()
+
         with DatabaseTransactionPolicy(read_only=True):
             self.hasDatabaseBeenWrittenTo(test_token)
             transaction.commit()
