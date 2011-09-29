@@ -1023,9 +1023,11 @@ class BugTaskViewsTestBase:
             self.owned_bug = self.factory.makeBug(owner=self.person)
             self.commented_bug = self.factory.makeBug()
             self.commented_bug.newMessage(owner=self.person)
+            self.affecting_bug = self.factory.makeBug()
+            self.affecting_bug.markUserAffected(self.person)
 
         for bug in (self.subscribed_bug, self.assigned_bug, self.owned_bug,
-                    self.commented_bug):
+                    self.commented_bug, self.affecting_bug):
             with person_logged_in(bug.default_bugtask.product.owner):
                 milestone = self.factory.makeMilestone(
                     product=bug.default_bugtask.product)
@@ -1147,4 +1149,5 @@ class TestPersonAffectingBugTaskSearchListingView(
         # the bug we filed is returned.
         self.expected_for_search_unbatched = [
             self.owned_bug.default_bugtask,
+            self.affecting_bug.default_bugtask,
             ]
