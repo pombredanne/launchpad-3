@@ -27,6 +27,7 @@ from lp.testing.fixture import (
     PGBouncerFixture,
     Urllib2Fixture,
     )
+from lp.testing.matchers import Contains
 
 class TestSystemErrorView(TestCase):
 
@@ -72,13 +73,19 @@ class TestDatabaseErrorViews(TestCase):
         urllib2.urlopen(url)
         # Now break the database, and we get an exception, along with our view.
         bouncer.stop()
-        # Right now, we do weird hacks in dbpolicy.py.  We can do this instead.
-        # for i in range(2):
-        #     # This should not happen, but whatever.
-        #     self.assertEqual(500,self.getHTTPError(url).code)
+        for i in range(2):
+            # This should not happen ideally, but Stuart is OK with it
+            # for now.  His explanation is that the first request
+            # makes the PG recognize that the slave DB is
+            # disconnected, the second one makes PG recognize that the
+            # master DB is disconnected, and third and subsequent
+            # requests, as seen below, correctly generate a
+            # DisconnectionError.  Oddly, these are ProgrammingErrors.
+            self.assertEqual(500,self.getHTTPError(url).code)
         error = self.getHTTPError(url)
         self.assertEqual(503, error.code)
-        # error.msg has body. XXX do something with it.
+        self.assertThat(error.read(),
+                        Contains(DisconnectionErrorView.reason))
         # We keep seeing the correct exception on subsequent requests.
         self.assertEqual(503, self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
@@ -102,7 +109,8 @@ class TestDatabaseErrorViews(TestCase):
         url = 'http://launchpad.dev/'
         error = self.getHTTPError(url)
         self.assertEqual(503, error.code)
-        # XXX do something with error.msg.  Distinguish from Disconnection.
+        self.assertThat(error.read(),
+                        Contains(OperationalErrorView.reason))
         # We keep seeing the correct exception on subsequent requests.
         self.assertEqual(503, self.getHTTPError(url).code)
         # When the database is available again, requests succeed.

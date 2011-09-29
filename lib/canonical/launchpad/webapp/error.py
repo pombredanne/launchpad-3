@@ -316,8 +316,10 @@ class OpenIdDiscoveryFailureView(SystemErrorView):
 class DisconnectionErrorView(SystemErrorView):
 
     response_code = httplib.SERVICE_UNAVAILABLE
+    reason = u'our database being temporarily offline'
 
 
 class OperationalErrorView(SystemErrorView):
 
     response_code = httplib.SERVICE_UNAVAILABLE
+    reason = u'our database having temporary operational issues'
