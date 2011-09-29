@@ -15,6 +15,7 @@ import shutil
 from StringIO import StringIO
 import tempfile
 
+from fixtures import MonkeyPatch
 from storm.locals import Store
 import transaction
 from zope.component import (
@@ -1361,28 +1362,27 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.builds = False
         processor = self.getUploadProcessor(self.layer.txn)
 
-        upload_dir = self.queueUpload("foocomm_1.0-1_proposed")
-        bogus_changesfile_data = '''
-        Ubuntu is a community developed, Linux-based operating system that is
-        perfect for laptops, desktops and servers. It contains all the
-        applications you need - a web browser, presentation, document and
-        spreadsheet software, instant messaging and much more.
-        '''
-        file_handle = open(
-            '%s/%s' % (upload_dir, 'bogus.changes'), 'w')
-        file_handle.write(bogus_changesfile_data)
-        file_handle.close()
+        self.queueUpload("foocomm_1.0-1_proposed")
+
+        # Any code that causes an OOPS is a bug that must be fixed, so
+        # let's monkeypatch something in that we know will OOPS.
+        class SomeException(Exception):
+            pass
+
+        def from_changesfile_path(cls, changesfile_path, policy, logger):
+            raise SomeException("I am an explanation.")
+        self.useFixture(
+            MonkeyPatch(
+                'lp.archiveuploader.nascentupload.NascentUpload.'
+                'from_changesfile_path',
+                classmethod(from_changesfile_path)))
 
         processor.processUploadQueue()
 
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
-        self.assertEqual('FatalUploadError', error_report.type)
-        # The upload policy requires a signature but none is present, so
-        # we get gpg verification errors.
-        expected_explanation = (
-            "Verification failed 3 times: ['No data', 'No data', 'No data']")
-        self.assertIn(expected_explanation, error_report.tb_text)
+        self.assertEqual('SomeException', error_report.type)
+        self.assertIn("I am an explanation", error_report.tb_text)
 
     def testLZMADebUpload(self):
         """Make sure that data files compressed with lzma in Debs work.
