@@ -615,36 +615,6 @@ and SHA256) for each index published.
     END
 
 
-Testing archive-cruft-check-ng behaviour:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Defining path to the script:
-
-    >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-    ...                       "archive-cruft-check.py")
-    >>> process = subprocess.Popen([sys.executable, script, "-vn",
-    ...                             "-d", "ubuntutest",
-    ...                             "-s", "breezy-autotest",
-    ...                             "/var/tmp/archive"],
-    ...                            stdout=subprocess.PIPE,
-    ...                            stderr=subprocess.PIPE,)
-    >>> stdout, stderr = process.communicate()
-    >>> process.returncode
-    0
-    >>> print stderr
-    INFO    Creating lockfile: ...
-    DEBUG   Considering Sources:
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/restricted/source/Sources.gz
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/main/source/Sources.gz
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/multiverse/source/Sources.gz
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source/Sources.gz
-    DEBUG   Building not build from source list (NBS):
-    DEBUG   Building all superseded by any list (ASBA):
-    DEBUG   No NBS found
-    DEBUG   Removing lock file: ...
-    <BLANKLINE>
-
-
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
