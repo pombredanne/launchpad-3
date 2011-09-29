@@ -1,15 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests of the branch interface."""
 
 __metaclass__ = type
 
-import lp.codehosting # For plugins
-
-from bzrlib.branch import (
-    format_registry as branch_format_registry,
-    )
+from bzrlib.branch import format_registry as branch_format_registry
 from bzrlib.bzrdir import BzrProber
 from bzrlib.repository import format_registry as repo_format_registry
 
@@ -18,6 +14,7 @@ from lp.code.bzr import (
     ControlFormat,
     RepositoryFormat,
     )
+import lp.codehosting  # For plugins.
 from lp.testing import TestCase
 
 

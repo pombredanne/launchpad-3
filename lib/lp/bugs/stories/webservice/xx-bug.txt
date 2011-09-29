@@ -2108,7 +2108,7 @@ Each bug has a collection of activities that have taken place with it.
     next_collection_link: u'http://.../bugs/1/activity?ws.size=5&memo=5&ws.start=5'
     resource_type_link: u'http://.../#bug_activity-page-resource'
     start: 0
-    total_size: 25
+    total_size: 24
     ...
 
     >>> bug_nine_activity = webservice.get(

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad Form View Classes
@@ -116,28 +116,29 @@ class LaunchpadFormView(LaunchpadView):
         self.setUpWidgets()
 
         data = {}
-        errors, action = form.handleSubmit(self.actions, data, self._validate)
+        errors, form_action = form.handleSubmit(
+            self.actions, data, self._validate)
 
         # no action selected, so return
-        if action is None:
+        if form_action is None:
             return
 
         # Check to see if an attempt was made to submit a non-safe
         # action with a GET query.
-        is_safe = getattr(action, 'is_safe', False)
+        is_safe = getattr(form_action, 'is_safe', False)
         if not is_safe and self.request.method != 'POST':
-            raise UnsafeFormGetSubmissionError(action.__name__)
+            raise UnsafeFormGetSubmissionError(form_action.__name__)
 
         if errors:
-            self.form_result = action.failure(data, errors)
+            self.form_result = form_action.failure(data, errors)
             self._abort()
         else:
-            self.form_result = action.success(data)
+            self.form_result = form_action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
         if self.request.is_ajax:
             self._processNotifications(self.request)
-        self.action_taken = action
+        self.action_taken = form_action
 
     def _processNotifications(self, request):
         """Add any notification messages to the response headers."""
@@ -240,8 +241,8 @@ class LaunchpadFormView(LaunchpadView):
         If False is returned, the view or template probably needs to explain
         why no actions can be performed and offer a cancel link.
         """
-        for action in self.actions:
-            if action.available():
+        for form_action in self.actions:
+            if form_action.available():
                 return True
         return False
 

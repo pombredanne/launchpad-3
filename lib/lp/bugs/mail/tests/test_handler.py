@@ -19,6 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -111,10 +112,28 @@ class TestMaloneHandler(TestCaseWithFactory):
             'affects malone',
             ])
 
+    def test_mailToHelpFromNonActiveUser(self):
+        """Mail from people without a preferred email get a help message."""
+        self.factory.makePerson(
+            email='non@eg.dom',
+            email_address_status=EmailAddressStatus.NEW)
+        message = self.factory.makeSignedMessage(email_address='non@eg.dom')
+        handler = MaloneHandler()
+        response = handler.extractAndAuthenticateCommands(
+            message, 'help@bugs.launchpad.net')
+        mail_handled, add_comment_to_bug, commands = response
+        self.assertEquals(mail_handled, True)
+        emails = self.getSentMail()
+        self.assertEquals(1, len(emails))
+        self.assertEquals(['non@eg.dom'], emails[0][1])
+        self.assertTrue(
+            'Subject: Launchpad Bug Tracker Email Interface' in emails[0][2])
+
     def test_mailToHelpFromUnknownUser(self):
         """Mail from people of no account to help@ is simply dropped.
         """
-        message = self.factory.makeSignedMessage()
+        message = self.factory.makeSignedMessage(
+            email_address='unregistered@eg.dom')
         handler = MaloneHandler()
         mail_handled, add_comment_to_bug, commands = \
             handler.extractAndAuthenticateCommands(message,
@@ -124,15 +143,19 @@ class TestMaloneHandler(TestCaseWithFactory):
 
     def test_mailToHelp(self):
         """Mail to help@ generates a help command."""
-        message = self.factory.makeSignedMessage()
+        user = self.factory.makePerson(email='user@dom.eg')
+        message = self.factory.makeSignedMessage(email_address='user@dom.eg')
         handler = MaloneHandler()
-        with person_logged_in(self.factory.makePerson()):
+        with person_logged_in(user):
             mail_handled, add_comment_to_bug, commands = \
                 handler.extractAndAuthenticateCommands(message,
                     'help@bugs.launchpad.net')
         self.assertEquals(mail_handled, True)
-        self.assertEquals(len(self.getSentMail()), 1)
-        # TODO: Check the right mail was sent. -- mbp 20100923
+        emails = self.getSentMail()
+        self.assertEquals(1, len(emails))
+        self.assertEquals([message['From']], emails[0][1])
+        self.assertTrue(
+            'Subject: Launchpad Bug Tracker Email Interface' in emails[0][2])
 
     def getSentMail(self):
         # Sending mail is (unfortunately) a side effect of parsing the
