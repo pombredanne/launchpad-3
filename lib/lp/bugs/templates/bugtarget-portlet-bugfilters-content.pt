@@ -94,14 +94,14 @@
       </a>
     </td>
   </tr>
-  <tr tal:condition="view/user"
-      tal:define="count view/my_affecting_bugs_count|nothing;
-                  plural string: Bugs affecting me;
-                  singular string: Bug affecting me;">
-    <td class="bugs-count" tal:content="count" />
+  <tr tal:condition="view/user">
+    <tal:comment condition="nothing">
+      No count here, because generating it is expensive.
+    </tal:comment>
+    <td class="bugs-count" />
     <td class="bugs-link">
       <a tal:attributes="href string:${view/my_affecting_bugs_url}">
-      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      Bugs affecting me
       </a>
     </td>
   </tr>
