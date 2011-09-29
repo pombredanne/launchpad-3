@@ -1923,7 +1923,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         self.assertEqual(UploadStatusEnum.REJECTED, result)
         self.assertLogContains(
-            "DEBUG Failed to parse changes file: GPG verification")
+            "INFO Failed to parse changes file")
         self.assertEqual(len(stub.test_emails), 0)
         self.assertNoNewOops(last_oops)
 

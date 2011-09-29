@@ -381,8 +381,10 @@ class UploadHandler:
             # could do better here: if we have a signature then we have
             # somebody to email, even if the rest of the file is
             # corrupt.
-            logger.debug("Failed to parse changes file: %s" % str(e))
-            logger.debug("Nobody to notify.")
+            logger.info(
+                "Failed to parse changes file '%s': %s" % (
+                    os.path.join(self.upload_path, changes_file),
+                    str(e)))
             return UploadStatusEnum.REJECTED
 
         # Reject source upload to buildd upload paths.
