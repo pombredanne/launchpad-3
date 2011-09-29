@@ -52,21 +52,6 @@ pillar must use Launchpad to track bugs.
     >>> bug.canBeAQuestion()
     True
 
-A Firefox bug in Debian cannot be converted to a question because the
-distribution does not use Launchpad to track bugs.
-
-    >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> firefox_bug = getUtility(IBugSet).get(8)
-    >>> firefox = firefox_bug.bugtasks[0].target
-    >>> IQuestionTarget.providedBy(firefox)
-    True
-
-    >>> firefox.distribution.bug_tracking_usage
-    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
-
-    >>> firefox_bug.canBeAQuestion()
-    False
-
 
 convertToQuestion()
 -------------------
