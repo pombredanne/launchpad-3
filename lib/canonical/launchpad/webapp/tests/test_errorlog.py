@@ -8,12 +8,8 @@ __metaclass__ = type
 import datetime
 import httplib
 import logging
-import os
-import shutil
-import stat
 import StringIO
 import sys
-import tempfile
 from textwrap import dedent
 import traceback
 
@@ -21,7 +17,6 @@ from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
 from lp_sitecustomize import customize_get_converter
-from oops_datedir_repo import DateDirRepo
 import pytz
 import testtools
 from testtools.matchers import StartsWith
@@ -50,13 +45,11 @@ from canonical.launchpad.webapp.interfaces import (
     IUnloggedException,
     NoReferrerError,
     )
-from canonical.testing import reset_logging
 from lp.app import versioninfo
 from lp.app.errors import (
     GoneError,
     TranslationUnavailable,
     )
-from lp.services.osutils import remove_tree
 
 
 UTC = pytz.utc
@@ -294,9 +287,11 @@ class TestErrorReportingUtility(testtools.TestCase):
         del utility._oops_config.publishers[:]
 
         req_vars = [
-            ('name2', 'value2'), ('name1', 'value1'),
-            ('name1', 'value3')]
-        url='https://launchpad.net/example'
+            ('name2', 'value2'),
+            ('name1', 'value1'),
+            ('name1', 'value3'),
+            ]
+        url = 'https://launchpad.net/example'
         try:
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
@@ -323,8 +318,8 @@ class TestErrorReportingUtility(testtools.TestCase):
 
         unprintable = '<unprintable UnprintableException object>'
         self.assertEqual(unprintable, report['value'])
-        self.assertIn( 'UnprintableException: ' + unprintable,
-                report['tb_text'])
+        self.assertIn(
+            'UnprintableException: ' + unprintable, report['tb_text'])
 
     def test_raising_unauthorized_without_request(self):
         """Unauthorized exceptions are logged when there's no request."""
@@ -567,7 +562,6 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual("SELECT '%s'", oops['timeline'][0][3])
 
 
-
 class TestSensitiveRequestVariables(testtools.TestCase):
     """Test request variables that should not end up in the stored OOPS.
 
@@ -631,10 +625,12 @@ class TestOopsLoggingHandler(testtools.TestCase):
         self.logger = logging.getLogger(self.getUniqueString())
         self.error_utility = ErrorReportingUtility()
         self.oopses = []
+
         def publish(report):
             report['id'] = str(len(self.oopses))
             self.oopses.append(report)
             return report.get('id')
+
         del self.error_utility._oops_config.publishers[:]
         self.error_utility._oops_config.publishers.append(publish)
         self.logger.addHandler(
