@@ -65,9 +65,6 @@
         facet="specifications"
         permission="zope.Public">
         <browser:page
-            name="+mdz-specs.csv"
-            attribute="mdzCsv"/>
-        <browser:page
             name="+specs"/>
         <browser:page
             name="+portlet-latestspecs"
@@ -609,12 +606,6 @@
         facet="specifications"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
-        permission="zope.Public"
-        name="+mdz-specs.csv"
-        attribute="mdzCsv"/>
 
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
