@@ -1908,10 +1908,13 @@ class BugsInfoMixin:
 
     @property
     def my_affecting_bugs_url(self):
-        """A URL to a list of bugs affecting the user, or None."""
+        """A URL to a list of bugs affecting the current user, or None if
+        there is no current user.
+        """
         if self.user is None:
             return None
-        return get_buglisting_search_filter_url(affecting_me=True,
+        return get_buglisting_search_filter_url(
+            affecting_me=True,
             orderby='-date_last_updated')
 
     @property
