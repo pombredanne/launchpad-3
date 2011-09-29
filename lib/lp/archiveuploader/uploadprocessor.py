@@ -63,7 +63,6 @@ from canonical.launchpad.webapp.errorlog import (
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
-    FatalUploadError,
     NascentUpload,
     UploadError,
     )
@@ -374,7 +373,14 @@ class UploadHandler:
         try:
             upload = NascentUpload.from_changesfile_path(
                 changesfile_path, policy, self.processor.log)
-        except (FatalUploadError, UploadError), e:
+        except UploadError, e:
+            # We failed to parse the changes file, so we have no key or
+            # Changed-By to notify of the rejection. Just log it and
+            # move on.
+            # XXX wgrant 2011-09-29 bug=499438: With some refactoring we
+            # could do better here: if we have a signature then we have
+            # somebody to email, even if the rest of the file is
+            # corrupt.
             logger.debug("Failed to parse changes file: %s" % str(e))
             logger.debug("Nobody to notify.")
             return UploadStatusEnum.REJECTED
@@ -407,10 +413,6 @@ class UploadHandler:
                               "%s " % e)
                 logger.debug(
                     "UploadPolicyError escaped upload.process", exc_info=True)
-            except FatalUploadError, e:
-                upload.reject("UploadError escaped upload.process: %s" % e)
-                logger.debug(
-                    "UploadError escaped upload.process", exc_info=True)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except EarlyReturnUploadError:
