@@ -75,10 +75,9 @@ class DatabaseTransactionPolicy:
 
         :param store: The store to set policy on.  Defaults to the main master
             store.  You don't want to use this on a slave store!
-        :param read_only: Allow database changes for the duration of this
-            policy?
+        :param read_only: Is this policy read-only?
         """
-        self.policy = read_only
+        self.read_only = read_only
         if store is None:
             self.store = getUtility(IStoreSelector).get(
                 MAIN_STORE, MASTER_FLAVOR)
@@ -96,7 +95,7 @@ class DatabaseTransactionPolicy:
         self._checkNoTransaction(
             "Entered DatabaseTransactionPolicy while in a transaction.")
         self.previous_policy = self._getCurrentPolicy()
-        self._setPolicy(self.policy)
+        self._setPolicy(self.read_only)
         # Commit should include the policy itself.  If this breaks
         # because the transaction was already in a failed state before
         # we got here, too bad.
@@ -112,21 +111,30 @@ class DatabaseTransactionPolicy:
         :raise TransactionInProgress: if trying to exit normally from a
             read-write policy without closing its transaction first.
         """
-        leaving_with_exception = (exc_type is not None)
-        if leaving_with_exception:
-            transaction.abort()
-        elif self.policy == True:
-            transaction.commit()
-        else:
-            self._checkNoTransaction(
-                "Failed to close transaction before leaving read-write "
-                "DatabaseTransactionPolicy.")
+        successful_exit = (exc_type is None)
+        if successful_exit:
+            # We're going to abort any ongoing transactions, but flush
+            # first to catch out any writes that we might still be
+            # caching.
+            # Cached writes could hide read-only violations, but also
+            # the start of a transaction that we shouldn't be in.
+            self._flushPendingWrites()
 
+            if not self.read_only:
+                self._checkNoTransaction(
+                    "Failed to close transaction before leaving read-write "
+                    "DatabaseTransactionPolicy.")
+
+        transaction.abort()
         self._setPolicy(self.previous_policy)
         transaction.commit()
-
-        # Continue processing the exception as normal.
         return False
+
+    def _isInTransaction(self):
+        """Is our store currently in a transaction?"""
+        pg_connection = self.store._connection._raw_connection
+        status = pg_connection.get_transaction_status()
+        return status != TRANSACTION_STATUS_IDLE
 
     def _checkNoTransaction(self, error_msg):
         """Verify that no transaction is ongoing.
@@ -135,9 +143,21 @@ class DatabaseTransactionPolicy:
             (i.e. if we're in a transaction).
         :raise TransactionInProgress: if we're in a transaction.
         """
-        pg_connection = self.store._connection._raw_connection
-        if pg_connection.get_transaction_status() != TRANSACTION_STATUS_IDLE:
+        if self._isInTransaction():
             raise TransactionInProgress(error_msg)
+
+    def _flushPendingWrites(self):
+        """Flush any pending object changes to the database.
+
+        If you see an `InternalError` exception during this flush, it probably
+        means one of two things:
+
+        1. Code within a read-only policy made model changes.
+
+        2. Code within a policy exited normally despite an error that left the
+           transaction in an unusable state.
+        """
+        self.store.flush()
 
     def _getCurrentPolicy(self):
         """Read the database session's default transaction read-only policy.

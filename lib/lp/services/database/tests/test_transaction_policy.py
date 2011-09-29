@@ -55,8 +55,8 @@ class TestTransactionPolicy(TestCaseWithFactory):
         # An empty transaction policy works fine.
         with DatabaseTransactionPolicy():
             pass
-        # The test is that we get here without failure.
-        pass
+        # You still end up with a clean slate, transaction-wise.
+        check_no_transaction()
 
     def test_writable_permits_updates(self):
         # Writes to the database work just fine in a non-read-only
@@ -169,7 +169,7 @@ class TestTransactionPolicy(TestCaseWithFactory):
         # applicable policy.
         with DatabaseTransactionPolicy(read_only=False):
             with DatabaseTransactionPolicy(read_only=True):
-                transaction.commit()
+                self.readFromDatabase()
             self.assertTrue(
                 self.hasDatabaseBeenWrittenTo(self.writeToDatabase()))
             transaction.commit()
@@ -227,6 +227,7 @@ class TestTransactionPolicy(TestCaseWithFactory):
             transaction.commit()
 
         with DatabaseTransactionPolicy(read_only=True):
+            self.readFromDatabase()
             transaction.abort()
             self.assertRaises(InternalError, write_and_commit)
             transaction.abort()
