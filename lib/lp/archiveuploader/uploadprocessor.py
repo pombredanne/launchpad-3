@@ -65,6 +65,7 @@ from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
     FatalUploadError,
     NascentUpload,
+    UploadError,
     )
 from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
@@ -370,8 +371,13 @@ class UploadHandler:
         # The path we want for NascentUpload is the path to the folder
         # containing the changes file (and the other files referenced by it).
         changesfile_path = os.path.join(self.upload_path, changes_file)
-        upload = NascentUpload.from_changesfile_path(
-            changesfile_path, policy, self.processor.log)
+        try:
+            upload = NascentUpload.from_changesfile_path(
+                changesfile_path, policy, self.processor.log)
+        except (FatalUploadError, UploadError), e:
+            logger.debug("Failed to parse changes file: %s" % str(e))
+            logger.debug("Nobody to notify.")
+            return UploadStatusEnum.REJECTED
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
