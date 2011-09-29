@@ -1133,3 +1133,18 @@ class TestPersonSubscribedBugTaskSearchListingView(
             self.subscribed_bug.default_bugtask,
             self.owned_bug.default_bugtask,
             ]
+
+
+class TestPersonAffectingBugTaskSearchListingView(
+    BugTaskViewsTestBase, TestCaseWithFactory):
+    """Tests for PersonAffectingBugTaskSearchListingView."""
+
+    view_name = '+affectingbugs'
+
+    def setUp(self):
+        super(TestPersonAffectingBugTaskSearchListingView, self).setUp()
+        # Bugs filed by this user are marked as affecting them by default, so
+        # the bug we filed is returned.
+        self.expected_for_search_unbatched = [
+            self.owned_bug.default_bugtask,
+            ]
