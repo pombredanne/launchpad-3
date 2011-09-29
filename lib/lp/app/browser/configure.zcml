@@ -368,6 +368,15 @@
       class="canonical.launchpad.webapp.error.DisconnectionErrorView"
       />
 
+  <!-- OperationalError -->
+  <browser:page
+      for="storm.exceptions.OperationalError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-databaseunavailable.pt"
+      class="canonical.launchpad.webapp.error.OperationalErrorView"
+      />
+
   <!-- UnsafeFormGetSubmissionError -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"

@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'PGBouncerFixture',
+    'Urllib2Fixture',
     'ZopeAdapterFixture',
     'ZopeEventHandlerFixture',
     'ZopeViewReplacementFixture',
@@ -18,6 +20,14 @@ from fixtures import (
     Fixture,
     )
 import pgbouncer.fixture
+from wsgi_intercept import (
+    add_wsgi_intercept,
+    remove_wsgi_intercept,
+    )
+from wsgi_intercept.urllib2_intercept import (
+    install_opener,
+    uninstall_opener,
+    )
 from zope.component import (
     getGlobalSiteManager,
     provideHandler,
@@ -31,6 +41,7 @@ from zope.security.checker import (
     )
 
 from canonical.config import config
+from canonical.testing.layers import wsgi_application
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -173,3 +184,18 @@ class ZopeViewReplacementFixture(Fixture):
         self.gsm.adapters.register(
             (self.context_interface, self.request_interface), Interface,
              self.name, self.original)
+
+
+class Urllib2Fixture(Fixture):
+    """Let tests use urllib to connect to an in-process Launchpad.
+
+    Initially this only supports connecting to launchpad.dev because
+    that is all that is needed.  Later work could connect all
+    sub-hosts (e.g. bugs.launchpad.dev)."""
+
+    def setUp(self):
+        super(Urllib2Fixture, self).setUp()
+        add_wsgi_intercept('launchpad.dev', 80, lambda: wsgi_application)
+        self.addCleanup(remove_wsgi_intercept, 'launchpad.dev', 80)
+        install_opener()
+        self.addCleanup(uninstall_opener)

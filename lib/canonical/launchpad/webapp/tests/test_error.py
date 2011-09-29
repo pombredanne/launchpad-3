@@ -5,28 +5,28 @@
 
 import urllib2
 
-from storm.exceptions import DisconnectionError
-from wsgi_intercept import (
-    add_wsgi_intercept,
-    remove_wsgi_intercept,
+from storm.exceptions import (
+    DisconnectionError,
+    OperationalError,
     )
-from wsgi_intercept.urllib2_intercept import (
-    install_opener,
-    uninstall_opener,
-    )
+import transaction
 
 from canonical.launchpad.webapp.error import (
     DisconnectionErrorView,
+    OperationalErrorView,
     SystemErrorView,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
-    wsgi_application,
+    reconnect_stores,
     )
 from lp.testing import TestCase
-from lp.testing.fixture import PGBouncerFixture
+from lp.testing.fixture import (
+    PGBouncerFixture,
+    Urllib2Fixture,
+    )
 
 class TestSystemErrorView(TestCase):
 
@@ -50,7 +50,7 @@ class TestSystemErrorView(TestCase):
             request.response.getHeader('X-Lazr-OopsId', literal=True))
 
 
-class TestDisconnectionErrorView(TestCase):
+class TestDatabaseErrorViews(TestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -60,28 +60,56 @@ class TestDisconnectionErrorView(TestCase):
         except urllib2.HTTPError, error:
             return error
         else:
-            self.fail("We should have gotten an HTTP error")            
+            self.fail("We should have gotten an HTTP error")
 
-    def test_error_view_integration(self):
+    def test_disconnectionerror_view_integration(self):
         # Test setup.
-        fixture = PGBouncerFixture()
-        self.useFixture(fixture)
-        # Make urllib2 see our fake in-process appserver.
-        add_wsgi_intercept('launchpad.dev', 80, lambda: wsgi_application)
-        self.addCleanup(remove_wsgi_intercept, 'launchpad.dev', 80)
-        install_opener()
-        self.addCleanup(uninstall_opener)
+        self.useFixture(Urllib2Fixture())
+        bouncer = PGBouncerFixture()
+        self.useFixture(bouncer)
         # Verify things are working initially.
         url = 'http://launchpad.dev/'
-        fixture.start()
         urllib2.urlopen(url)
         # Now break the database, and we get an exception, along with our view.
-        fixture.stop()
+        bouncer.stop()
+        # Right now, we do weird hacks in dbpolicy.py.  We can do this instead.
+        # for i in range(2):
+        #     # This should not happen, but whatever.
+        #     self.assertEqual(500,self.getHTTPError(url).code)
         error = self.getHTTPError(url)
         self.assertEqual(503, error.code)
         # error.msg has body. XXX do something with it.
-        
-    def test_error_view(self):
+        # We keep seeing the correct exception on subsequent requests.
+        self.assertEqual(503, self.getHTTPError(url).code)
+        # When the database is available again, requests succeed.
+        bouncer.start()
+        urllib2.urlopen(url)
+
+    def test_disconnectionerror_view(self):
         request = LaunchpadTestRequest()
         DisconnectionErrorView(DisconnectionError(), request)
+        self.assertEquals(503, request.response.getStatus())
+
+    def test_operationalerror_view_integration(self):
+        # Test setup.
+        self.useFixture(Urllib2Fixture())
+        bouncer = PGBouncerFixture()
+        self.useFixture(bouncer)
+        # This is necessary to avoid confusing PG after the stopped bouncer.
+        transaction.abort()
+        # Database is down initially, causing an OperationalError.
+        bouncer.stop()
+        url = 'http://launchpad.dev/'
+        error = self.getHTTPError(url)
+        self.assertEqual(503, error.code)
+        # XXX do something with error.msg.  Distinguish from Disconnection.
+        # We keep seeing the correct exception on subsequent requests.
+        self.assertEqual(503, self.getHTTPError(url).code)
+        # When the database is available again, requests succeed.
+        bouncer.start()
+        urllib2.urlopen(url)
+
+    def test_operationalerror_view(self):
+        request = LaunchpadTestRequest()
+        OperationalErrorView(OperationalError(), request)
         self.assertEquals(503, request.response.getStatus())

@@ -316,3 +316,8 @@ class OpenIdDiscoveryFailureView(SystemErrorView):
 class DisconnectionErrorView(SystemErrorView):
 
     response_code = httplib.SERVICE_UNAVAILABLE
+
+
+class OperationalErrorView(SystemErrorView):
+
+    response_code = httplib.SERVICE_UNAVAILABLE

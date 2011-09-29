@@ -210,9 +210,9 @@ def _maybe_profile(event):
     assert _profilers.profiler is None
     actions = get_desired_profile_actions(event.request)
     _profilers.actions = actions
-    _profilers.profiling = True
     if config.profiling.profile_all_requests:
         actions['callgrind'] = ''
+        _profilers.profiling = True
     if actions:
         if 'sql' in actions:
             condition = actions['sql']
@@ -222,8 +222,10 @@ def _maybe_profile(event):
         if 'show' in actions or available_profilers.intersection(actions):
             _profilers.profiler = Profiler()
             _profilers.profiler.start()
+        _profilers.profiling = True
     if config.profiling.memory_profile_log:
         _profilers.memory_profile_start = (memory(), resident())
+        _profilers.profiling = True
 
 template = PageTemplateFile(
     os.path.join(os.path.dirname(__file__), 'profile.pt'))
