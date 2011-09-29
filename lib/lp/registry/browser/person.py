@@ -2207,6 +2207,60 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
         return self.getSearchPageHeading()
 
 
+class PersonAffectingBugTaskSearchListingView(RelevantMilestonesMixin,
+                                             BugTaskSearchListingView):
+    """All bugs affecting someone."""
+
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
+    view_name = '+affectingbugs'
+    page_title = 'Bugs affecting'   # The context is added externally.
+
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None, prejoins=[]):
+        """Return the open bugs assigned to a person."""
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['affected_user'] = context
+
+        sup = super(PersonAffectingBugTaskSearchListingView, self)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
+
+    def shouldShowAssigneeWidget(self):
+        """Should the assignee widget be shown on the advanced search page?"""
+        return False
+
+    def shouldShowTeamPortlet(self):
+        """Should the team assigned bugs portlet be shown?"""
+        return True
+
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
+        return False
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs affecting %s" % self.context.displayname
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs affecting %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context, view_name=self.view_name)
+
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
+
+
 class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
                                              BugTaskSearchListingView):
     """All bugs assigned to someone."""
