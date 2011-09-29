@@ -43,6 +43,7 @@ from lp.archiveuploader.uploadprocessor import (
     parse_build_upload_leaf_name,
     UploadHandler,
     UploadProcessor,
+    UploadStatusEnum,
     )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -1918,6 +1919,21 @@ class TestUploadProcessor(TestUploadProcessorBase):
         queue_item.setDone()
         self.PGPSignatureNotPreserved(archive=self.breezy.main_archive)
         self.switchToUploader()
+
+    def test_unsigned_upload_is_silently_rejected(self):
+        """Unsigned uploads are silently rejected without an OOPS."""
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("netapplet_1.0-1")
+
+        last_oops = ErrorReportingUtility().getLastOopsReport()
+
+        [result] = self.processUpload(uploadprocessor, upload_dir)
+
+        self.assertEqual(UploadStatusEnum.REJECTED, result)
+        self.assertLogContains(
+            "DEBUG Failed to parse changes file: GPG verification")
+        self.assertEqual(len(stub.test_emails), 0)
+        self.assertNoNewOops(last_oops)
 
 
 class TestBuildUploadProcessor(TestUploadProcessorBase):
