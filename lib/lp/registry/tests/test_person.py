@@ -1024,7 +1024,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         duplicate, mergee = self._do_merge(duplicate, mergee)
         branches = [b.name for b in mergee.getBranches()]
         self.assertEqual(2, len(branches))
-        self.assertEqual([u'foo', u'foo-1'], branches)
+        self.assertContentEqual([u'foo', u'foo-1'], branches)
 
     def test_merge_moves_recipes(self):
         # When person/teams are merged, recipes owned by the from person are

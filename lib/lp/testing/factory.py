@@ -1125,6 +1125,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             url=url, **optional_branch_args)
         if private:
             removeSecurityProxy(branch).explicitly_private = True
+            removeSecurityProxy(branch).transitively_private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
         if reviewer is not None:
