@@ -246,12 +246,12 @@ just upload number 1.
     >>> process.returncode
     0
 
-Check the four uploads are all where we expect - number 1 in failed,
+Check the four uploads are all where we expect - number 1 in rejected,
 the other three still in incoming.
 
     >>> for i in range(4):
     ...     find_upload_dir_result(i + 1)
-    'failed'
+    'rejected'
     'incoming'
     'incoming'
     'incoming'
@@ -339,7 +339,7 @@ Check the four uploads all ended up where we expected.
 
     >>> for i in range(0, 4):
     ...     find_upload_dir_result(i + 1)
-    'failed'
+    'rejected'
     'failed'
 
 Also check the upload folders contain all the files we uploaded.

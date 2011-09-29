@@ -12,9 +12,7 @@ import unittest
 import pytz
 from storm.expr import Join
 from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    )
+from testtools.matchers import Equals
 from zope.component import getUtility
 
 from canonical.launchpad.searchbuilder import (
@@ -23,8 +21,8 @@ from canonical.launchpad.searchbuilder import (
     greater_than,
     )
 from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
@@ -53,6 +51,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
+
 
 PRIVATE_BUG_VISIBILITY_FLAG = {
     'disclosure.private_bug_visibility_rules.enabled': 'on'}

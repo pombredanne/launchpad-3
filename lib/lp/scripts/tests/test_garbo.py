@@ -16,7 +16,6 @@ import time
 
 from pytz import UTC
 from storm.expr import (
-    And,
     In,
     Min,
     Not,
@@ -80,7 +79,6 @@ from lp.code.bzr import (
     )
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.model.branch import Branch
 from lp.code.model.branchjob import (
     BranchJob,
     BranchUpgradeJob,
@@ -892,39 +890,6 @@ class TestGarbo(TestCaseWithFactory):
                 BugTask.id==without_response.id,
                 BugTask._status==
                 BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE).count())
-
-    def test_populate_transitively_private(self):
-        # Test garbo job to populate the branch transitively_private column.
-
-        # First delete any existing column data and add stacked branches.
-        # Branches 29 and 30 are explicitly private to start with.
-        con = DatabaseLayer._db_fixture.superuser_connection()
-        try:
-            cur = con.cursor()
-            cur.execute("UPDATE branch set stacked_on=29 where id = 5")
-            cur.execute("UPDATE branch set stacked_on=5 where id = 1")
-            cur.execute("UPDATE branch set transitively_private=NULL")
-            con.commit()
-        finally:
-            con.close()
-        store = IMasterStore(Branch)
-        unmigrated = store.find(
-            Branch, Branch.transitively_private == None).count
-        self.assertNotEqual(0, unmigrated())
-        self.runHourly()
-        self.assertEqual(0, unmigrated())
-        # Check the branches that now should be transitively private.
-        self.assertEqual(4, store.find(
-            Branch,
-            And(Branch.transitively_private == True,
-                Branch.id.is_in([1, 5, 29, 30]))
-        ).count())
-        # Check the branches that now should not be transitively private.
-        self.assertEqual(26, store.find(
-            Branch,
-            And(Branch.transitively_private == False,
-                Branch.id < 30)
-        ).count())
 
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.

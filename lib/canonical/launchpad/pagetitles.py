@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """*** PLEASE STOP ADDING TO THIS FILE ***
@@ -118,6 +118,7 @@ branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
 
 branch_index = ContextDisplayName(smartquote('"%s" branch in Launchpad'))
 
+
 def branchmergeproposal_index(context, view):
     return 'Proposal to merge %s' % context.source_branch.bzr_identity
 
@@ -144,9 +145,11 @@ bugbranch_delete = 'Delete bug branch link'
 
 buglinktarget_unlinkbugs = 'Remove links to bug reports'
 
+
 def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
+
 
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
@@ -177,6 +180,7 @@ code_in_branches = 'Projects with active branches'
 codeimport_list = 'Code Imports'
 
 codeimport_machines = ViewLabel()
+
 
 def codeimport_machine_index(context, view):
     return smartquote('Code Import machine "%s"' % context.hostname)

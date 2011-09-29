@@ -571,14 +571,7 @@ class BugTask(SQLBase):
     @property
     def pillar(self):
         """See `IBugTask`."""
-        if self.product is not None:
-            return self.product
-        elif self.productseries is not None:
-            return self.productseries.product
-        elif self.distribution is not None:
-            return self.distribution
-        else:
-            return self.distroseries.distribution
+        return self.target.pillar
 
     @property
     def other_affected_pillars(self):
@@ -1136,10 +1129,8 @@ class BugTask(SQLBase):
             # are product tasks).
             distros = set()
             for potential_target in (target, self.target):
-                if IDistribution.providedBy(potential_target):
-                    distros.add(potential_target)
-                elif IDistributionSourcePackage.providedBy(potential_target):
-                    distros.add(potential_target.distribution)
+                if IDistribution.providedBy(potential_target.pillar):
+                    distros.add(potential_target.pillar)
                 else:
                     distros.add(None)
             if len(distros) > 1:
@@ -1175,7 +1166,7 @@ class BugTask(SQLBase):
         target_before_change = self.target
 
         if (self.milestone is not None and
-            self.milestone.target != target):
+            self.milestone.target != target.pillar):
             # If the milestone for this bugtask is set, we
             # have to make sure that it's a milestone of the
             # current target, or reset it to None

@@ -1024,7 +1024,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         duplicate, mergee = self._do_merge(duplicate, mergee)
         branches = [b.name for b in mergee.getBranches()]
         self.assertEqual(2, len(branches))
-        self.assertEqual([u'foo', u'foo-1'], branches)
+        self.assertContentEqual([u'foo', u'foo-1'], branches)
 
     def test_merge_moves_recipes(self):
         # When person/teams are merged, recipes owned by the from person are
@@ -1719,3 +1719,36 @@ class TestGetRecipients(TestCaseWithFactory):
                               super_team_member_person,
                               super_team_member_team]),
                          set(recipients))
+
+    def test_get_recipients_team_with_disabled_owner_account(self):
+        """Mail is not sent to a team owner whose account is disabled.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/855150>
+        """
+        owner = self.factory.makePerson(email='foo@bar.com')
+        team = self.factory.makeTeam(owner)
+        owner.account.status = AccountStatus.DEACTIVATED
+        self.assertContentEqual([], get_recipients(team))
+
+    def test_get_recipients_team_with_disabled_member_account(self):
+        """Mail is not sent to a team member whose account is disabled.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/855150>
+        """
+        person = self.factory.makePerson(email='foo@bar.com')
+        person.account.status = AccountStatus.DEACTIVATED
+        team = self.factory.makeTeam(members=[person])
+        self.assertContentEqual([team.teamowner], get_recipients(team))
+
+    def test_get_recipients_team_with_nested_disabled_member_account(self):
+        """Mail is not sent to transitive team member with disabled account.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/855150>
+        """
+        person = self.factory.makePerson(email='foo@bar.com')
+        person.account.status = AccountStatus.DEACTIVATED
+        team1 = self.factory.makeTeam(members=[person])
+        team2 = self.factory.makeTeam(members=[team1])
+        self.assertContentEqual(
+            [team2.teamowner],
+            get_recipients(team2))

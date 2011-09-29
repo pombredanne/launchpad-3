@@ -787,7 +787,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             if offset is None:
                 offset = self.visible_initial_comments
             comments = self._getComments([
-                slice(offset, offset+batch_size)])
+                slice(offset, offset + batch_size)])
         else:
             # the comment function takes 0-offset counts where comment 0 is
             # the initial description, so we need to add one to the limits
@@ -1573,7 +1573,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         milestone_ignored = False
         missing = object()
         new_target = new_values.pop("target", missing)
-        if new_target is not missing and bugtask.target != new_target:
+        if (new_target is not missing and
+            bugtask.target.pillar != new_target.pillar):
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This

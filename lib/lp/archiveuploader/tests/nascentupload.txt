@@ -45,14 +45,14 @@ Constructing a NascentUpload object
 Constructing a NascentUpload instance verifies that the changes file
 specified exists and tries to build a ChangesFile (see
 doc/nascentuploadfile.txt) object based on that. If anything goes
-wrong during this process FatalUploadError is raised:
+wrong during this process UploadError is raised:
 
     >>> from lp.services.log.logger import DevNullLogger, FakeLogger
     >>> NascentUpload.from_changesfile_path(
     ...     datadir("DOES-NOT-EXIST"), buildd_policy, FakeLogger())
     Traceback (most recent call last):
     ...
-    FatalUploadError:...
+    UploadError:...
 
 Otherwise a ChangesFile object is ready to use.
 
