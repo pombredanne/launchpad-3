@@ -54,7 +54,7 @@ The bugs that were assigned to Sample Person will no longer have an
 assignee.
 
     >>> browser.open('http://launchpad.dev/debian/+source/'
-    ...     'mozilla-firefox/+bug/3/+viewstatus')
+    ...     'mozilla-firefox/+bug/3')
     >>> print extract_text(find_main_content(browser.contents))
     Debian
     ...

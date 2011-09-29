@@ -680,12 +680,6 @@
             permission="launchpad.Edit"
             template="../templates/bugtask-edit-form.pt" />
         <browser:page
-            name="+viewstatus"
-            for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskStatusView"
-            permission="launchpad.View"
-            template="../templates/bugtask-view.pt"/>
-        <browser:page
             name="+listing-view"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskListingView"
