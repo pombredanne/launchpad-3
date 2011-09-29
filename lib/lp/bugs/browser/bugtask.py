@@ -83,14 +83,10 @@ from zope import (
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
-    IDisplayWidget,
     IInputWidget,
     InputErrors,
     )
-from zope.app.form.utility import (
-    setUpWidget,
-    setUpWidgets,
-    )
+from zope.app.form.utility import setUpWidget
 from zope.component import (
     ComponentLookupError,
     getAdapter,
@@ -3501,7 +3497,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         link = canonical_url(self.context)
         edit_link = link + '/+editstatus'
         can_edit = check_permission('launchpad.Edit', self.context)
-        task_link = edit_link if can_edit
         bugtask_id = self.context.id
         launchbag = getUtility(ILaunchBag)
         is_primary = self.context.id == launchbag.bugtask.id
@@ -3512,7 +3507,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             expandable=(not self.many_bugtasks and self.canSeeTaskDetails()),
             indent_task=ISeriesBugTarget.providedBy(self.context.target),
             is_conjoined_slave=self.is_conjoined_slave,
-            task_link=task_link,
             edit_link=edit_link,
             can_edit=can_edit,
             link=link,
