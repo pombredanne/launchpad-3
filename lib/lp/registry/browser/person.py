@@ -2207,8 +2207,8 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
         return self.getSearchPageHeading()
 
 
-class PersonAffectingBugTaskSearchListingView(RelevantMilestonesMixin,
-                                             BugTaskSearchListingView):
+class PersonAffectingBugTaskSearchListingView(
+    RelevantMilestonesMixin, BugTaskSearchListingView):
     """All bugs affecting someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
