@@ -269,8 +269,8 @@
         r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
-        (<a href="https://code.launchpad.net/~launchpad-pqm/launchpad/stable/"
-             >get the code</a>)
+        (<a href="https://dev.launchpad.net/"
+             >Get the code!</a>)
       </span>
     </div>
   </div>
