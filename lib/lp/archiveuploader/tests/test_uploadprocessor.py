@@ -94,6 +94,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -1354,29 +1355,20 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.checkComponentOverride("bar_1.0-1", "universe")
 
     def testOopsCreation(self):
-        """Test the the creation of an OOPS upon upload processing failure.
-
-        In order to trigger the exception needed a bogus changes file will be
-        used.
-        That exception will then initiate the creation of an OOPS report.
-        """
+        """Test that an unhandled exception generates an OOPS."""
         self.options.builds = False
         processor = self.getUploadProcessor(self.layer.txn)
 
         self.queueUpload("foocomm_1.0-1_proposed")
 
-        # Any code that causes an OOPS is a bug that must be fixed, so
-        # let's monkeypatch something in that we know will OOPS.
+        # Inject an unhandled exception into the upload processor.
         class SomeException(Exception):
             pass
-
-        def from_changesfile_path(cls, changesfile_path, policy, logger):
-            raise SomeException("I am an explanation.")
         self.useFixture(
             MonkeyPatch(
                 'lp.archiveuploader.nascentupload.NascentUpload.'
                 'from_changesfile_path',
-                classmethod(from_changesfile_path)))
+                FakeMethod(failure=SomeException("I am an explanation."))))
 
         processor.processUploadQueue()
 
@@ -1921,7 +1913,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.switchToUploader()
 
     def test_unsigned_upload_is_silently_rejected(self):
-        """Unsigned uploads are silently rejected without an OOPS."""
+        # Unsigned uploads are rejected without OOPS or email.
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("netapplet_1.0-1")
 

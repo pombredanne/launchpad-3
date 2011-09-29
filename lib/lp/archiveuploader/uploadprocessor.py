@@ -373,7 +373,7 @@ class UploadHandler:
         try:
             upload = NascentUpload.from_changesfile_path(
                 changesfile_path, policy, self.processor.log)
-        except UploadError, e:
+        except UploadError as e:
             # We failed to parse the changes file, so we have no key or
             # Changed-By to notify of the rejection. Just log it and
             # move on.
