@@ -232,7 +232,9 @@ class RabbitQueue(RabbitMessageBase):
     def __init__(self, session, name):
         super(RabbitQueue, self).__init__(session)
         self.name = name
-        self.channel.queue_declare(self.name, nowait=False)
+        self.channel.queue_declare(
+            self.name, nowait=False, auto_delete=False,
+            arguments={"x-expires": 300000})  # 5 minutes.
 
     def receive(self, timeout=0.0):
         """Pull a message from the queue.
