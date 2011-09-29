@@ -4,6 +4,7 @@ import logging
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.plugins.loom.branch import loomify
 from bzrlib.revision import NULL_REVISION
 from testtools.testcase import ExpectedException
 
@@ -27,7 +28,7 @@ class TestUpgrader(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def prepare(self, format='knit'):
+    def prepare(self, format='pack-0.92'):
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree(format=format)
         tree.commit('foo', rev_id='prepare-commit')
@@ -42,10 +43,10 @@ class TestUpgrader(TestCaseWithFactory):
             bzr_branch, target_dir)
         return Branch.open(target_dir)
 
-    def check_branch(self, upgraded):
+    def check_branch(self, upgraded, branch_format=BranchFormat.BZR_BRANCH_7):
         control, branch, repository = get_branch_formats(upgraded)
         self.assertEqual(repository, RepositoryFormat.BZR_CHK_2A)
-        self.assertEqual(branch, BranchFormat.BZR_BRANCH_7)
+        self.assertEqual(branch, branch_format)
 
     def test_simple_upgrade(self):
         branch, target_dir = self.prepare()
@@ -56,6 +57,18 @@ class TestUpgrader(TestCaseWithFactory):
         branch, target_dir = self.prepare('pack-0.92-subtree')
         upgraded = Branch.open(self.upgrade(target_dir, branch))
         self.check_branch(upgraded)
+
+    def test_upgrade_loom(self):
+        branch, target_dir = self.prepare()
+        loomify(branch.getBzrBranch())
+        upgraded = Branch.open(self.upgrade(target_dir, branch))
+        self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
+
+    def test_upgrade_subtree_loom(self):
+        branch, target_dir = self.prepare('pack-0.92-subtree')
+        loomify(branch.getBzrBranch())
+        upgraded = Branch.open(self.upgrade(target_dir, branch))
+        self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_upgrade_by_pull_preserves_tip(self):
         branch, target_dir = self.prepare('pack-0.92-subtree')
