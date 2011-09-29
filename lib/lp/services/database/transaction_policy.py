@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'DatabaseTransactionPolicy',
-    'TransactionStillOpen',
     ]
 
 from psycopg2.extensions import TRANSACTION_STATUS_IDLE
@@ -19,16 +18,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-
-
-class TransactionStillOpen(Exception):
-    """User of a `DatabaseTransactionPolicy` has mis-managed transactions.
-
-    This is raised when trying to enter a `DatabaseTransactionPolicy` while
-    a transaction is still ongoing (which could lead to an inadvertent
-    commit or abort of pending changes in that transaction), or when leaving
-    a read-write policy without committing or aborting first.
-    """
+from lp.services.database.isolation import TransactionInProgress
 
 
 class DatabaseTransactionPolicy:
@@ -99,7 +89,7 @@ class DatabaseTransactionPolicy:
         Commits the ongoing transaction, and sets the selected default
         read-only policy on the database.
 
-        :raise TransactionStillOpen: if a transaction was already ongoing.
+        :raise TransactionInProgress: if a transaction was already ongoing.
         """
         self._checkNoTransaction(
             "Entered DatabaseTransactionPolicy while in a transaction.")
@@ -117,7 +107,7 @@ class DatabaseTransactionPolicy:
         previous default read-only policy.
 
         :return: True -- any exception will continue to propagate.
-        :raise TransactionStillOpen: if trying to exit normally from a
+        :raise TransactionInProgress: if trying to exit normally from a
             read-write policy without closing its transaction first.
         """
         leaving_with_exception = (exc_type is not None)
@@ -141,11 +131,11 @@ class DatabaseTransactionPolicy:
 
         :param error_msg: The error message to use if the user got this wrong
             (i.e. if we're in a transaction).
-        :raise TransactionStillOpen: if we're in a transaction.
+        :raise TransactionInProgress: if we're in a transaction.
         """
-        tx_status = self.store._connection.get_transaction_status()
-        if tx_status != TRANSACTION_STATUS_IDLE:
-            raise TransactionStillOpen(error_msg)
+        pg_connection = self.store._connection._raw_connection
+        if pg_connection.get_transaction_status() != TRANSACTION_STATUS_IDLE:
+            raise TransactionInProgress(error_msg)
 
     def _getCurrentPolicy(self):
         """Read the database session's default transaction read-only policy.

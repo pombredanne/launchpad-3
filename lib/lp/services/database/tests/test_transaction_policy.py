@@ -11,15 +11,26 @@ import transaction
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.model.person import Person
-from lp.services.database.transaction_policy import (
-    DatabaseTransactionPolicy,
-    TransactionStillOpen,
+from lp.services.database.isolation import (
+    check_no_transaction,
+    TransactionInProgress,
     )
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.testing import TestCaseWithFactory
 
 
 class TestTransactionPolicy(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestTransactionPolicy, self).setUp()
+        # Start each test with a clean slate: no ongoing transaction
+        # unless the test says so.
+        transaction.abort()
+
+    def readFromDatabase(self):
+        """Perform a database read."""
+        IStore(Person).find(Person, Person.name == "arbitrary").first()
 
     def writeToDatabase(self):
         """Write an object to the database.
@@ -73,10 +84,10 @@ class TestTransactionPolicy(TestCaseWithFactory):
                 pass
 
         self.writeToDatabase()
-        self.assertRaises(TransactionStillOpen, enter_policy)
+        self.assertRaises(TransactionInProgress, enter_policy)
 
     def test_successful_exit_requires_commit_or_abort(self):
-        # If the context handler exits normally (which would probably
+        # If a read-write policy exits normally (which would probably
         # indicate successful completion of its code), it requires that
         # any ongoing transaction be committed or aborted first.
         test_token = None
@@ -85,12 +96,24 @@ class TestTransactionPolicy(TestCaseWithFactory):
             with DatabaseTransactionPolicy(read_only=False):
                 self.writeToDatabase()
 
-        self.assertRaises(TransactionStillOpen, leave_transaction_open)
+        self.assertRaises(TransactionInProgress, leave_transaction_open)
         # As a side effect of the error, the transaction is rolled back.
         self.assertFalse(self.hasDatabaseBeenWrittenTo(test_token))
 
+    def test_successful_read_only_exit_commits_or_aborts_implicitly(self):
+        # When a read-only policy exits normally, there is no need to
+        # complete the transaction.  It aborts or commits implicitly.
+        # (The choice is up to the implementation; the point of
+        # read-only is that you can't tell the difference.)
+        with DatabaseTransactionPolicy(read_only=True):
+            self.readFromDatabase()
+
+        # No transaction ongoing at this point.
+        check_no_transaction()
+
     def test_aborts_on_failure(self):
-        # If the context handler exits with an exception, it aborts.
+        # If the context handler exits with an exception, it aborts the
+        # transaction.
         class CompleteFailure(Exception):
             pass
 
@@ -101,6 +124,9 @@ class TestTransactionPolicy(TestCaseWithFactory):
         except CompleteFailure:
             pass
 
+        # No transaction ongoing at this point.
+        check_no_transaction()
+        # The change has rolled back.
         self.assertFalse(self.hasDatabaseBeenWrittenTo(test_token))
 
     def test_nested_policy_overrides_previous_policy(self):
@@ -116,21 +142,25 @@ class TestTransactionPolicy(TestCaseWithFactory):
             except InternalError:
                 return False
 
-        # Map (previous policy, nested policy) to whether writes to the
-        # database are allowed.
+        # Map (previous policy, nested policy) to whether the
+        # combination makes the store read-only.
         effects = {}
 
         for previous_policy in [False, True]:
             for nested_policy in [False, True]:
                 experiment = (previous_policy, nested_policy)
                 with DatabaseTransactionPolicy(read_only=previous_policy):
-                    effects[experiment] = allows_updates(nested_policy)
+                    is_read_only = not allows_updates(nested_policy)
+                    effects[experiment] = is_read_only
 
+        # Only the nested policy (the second element of the key tuple)
+        # determines whether writes are allowed (the value associated
+        # with the key).
         self.assertEqual({
-            (False, False): True,
-            (False, True): False,
-            (True, False): True,
-            (True, True): False,
+            (False, False): False,
+            (False, True): True,
+            (True, False): False,
+            (True, True): True,
             },
             effects)
 
@@ -138,11 +168,11 @@ class TestTransactionPolicy(TestCaseWithFactory):
         # A transaction policy, once exited, restores the previously
         # applicable policy.
         with DatabaseTransactionPolicy(read_only=False):
-            transaction.commit()
             with DatabaseTransactionPolicy(read_only=True):
                 transaction.commit()
             self.assertTrue(
                 self.hasDatabaseBeenWrittenTo(self.writeToDatabase()))
+            transaction.commit()
         self.assertTrue(
             self.hasDatabaseBeenWrittenTo(self.writeToDatabase()))
 
