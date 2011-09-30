@@ -13,7 +13,6 @@ from bzrlib.plugins.loom.formats import (
     NotALoom,
     require_loom_branch,
     )
-from bzrlib.transport import get_transport_from_path
 from bzrlib.upgrade import upgrade
 from zope.security.proxy import removeSecurityProxy
 
@@ -77,7 +76,7 @@ class Upgrader:
                 try:
                     upgrader.upgrade(branch)
                 except AlreadyUpgraded:
-                    skipped +=1
+                    skipped += 1
             logger.info('Skipped %d already-upgraded branches.', skipped)
         finally:
             server.stop_server()
@@ -129,6 +128,18 @@ class Upgrader:
         :param bzr_branch: The branch to upgrade.
         :param upgrade_dir: The directory to upgrade to.
         """
+        bd = self.create_upgraded_repository(upgrade_dir)
+        self.add_upgraded_branch(bd)
+        return bd
+
+    def add_upgraded_branch(self, bd):
+        self.mirror_branch(self.bzr_branch, bd)
+        try:
+            self.upgrade_at_transport(bd.root_transport)
+        except UpToDateFormat:
+            pass
+
+    def create_upgraded_repository(self, upgrade_dir):
         self.logger.info('Checking for tree-references.')
         if self.has_tree_references():
             raise HasTreeReferences
@@ -138,11 +149,7 @@ class Upgrader:
         branch.repository.fetch(self.bzr_branch.repository)
         bd = branch.bzrdir
         bd.destroy_branch()
-        self.mirror_branch(self.bzr_branch, bd)
-        try:
-            self.upgrade_at_transport(bd.root_transport)
-        except UpToDateFormat:
-            pass
+        return bd
 
     def has_tree_references(self):
         """Determine whether a repository contains tree references.

@@ -5,6 +5,7 @@ import logging
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.plugins.loom.branch import loomify
+from bzrlib.repository import Repository
 from bzrlib.revision import NULL_REVISION
 from testtools.testcase import ExpectedException
 from zope.security.proxy import removeSecurityProxy
@@ -30,16 +31,27 @@ class TestUpgrader(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def prepare(self, format='pack-0.92'):
+    def prepare(self, format='pack-0.92', loomify_branch=False):
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree(format=format)
         tree.commit('foo', rev_id='prepare-commit')
-        target_dir = self.useContext(temp_dir())
-        return branch, target_dir
+        if loomify_branch:
+            loomify(tree.branch)
+            bzr_branch = Branch.open(tree.branch.base)
+        else:
+            bzr_branch = tree.branch
+        return self.getUpgrader(bzr_branch, branch)
 
-    def upgrade(self, target_dir, branch):
-        """Run Upgrader.upgrade on a branch."""
-        return Upgrader(branch, target_dir, logging.getLogger()).upgrade()
+    def getUpgrader(self, bzr_branch, branch=None):
+        target_dir = self.useContext(temp_dir())
+        return Upgrader(
+            branch, target_dir, logging.getLogger(), bzr_branch)
+
+    def addTreeReference(self, tree):
+        sub_branch = BzrDir.create_branch_convenience(
+            tree.bzrdir.root_transport.clone('sub').base)
+        tree.add_reference(sub_branch.bzrdir.open_workingtree())
+        tree.commit('added tree reference')
 
     def upgrade_by_fetch(self, bzr_branch, target_dir):
         """Run Upgrader.upgrade_by_fetch on a branch."""
@@ -57,67 +69,59 @@ class TestUpgrader(TestCaseWithFactory):
 
     def test_simple_upgrade(self):
         """Upgrade a pack-0.92 branch."""
-        branch, target_dir = self.prepare()
-        upgraded = Branch.open(self.upgrade(target_dir, branch))
+        upgrader = self.prepare()
+        upgraded = Branch.open(upgrader.upgrade())
         self.check_branch(upgraded)
 
     def test_subtree_upgrade(self):
         """Upgrade a pack-0.92-subtree branch."""
-        branch, target_dir = self.prepare('pack-0.92-subtree')
-        upgraded = Branch.open(self.upgrade(target_dir, branch))
+        upgrader = self.prepare('pack-0.92-subtree')
+        upgraded = Branch.open(upgrader.upgrade())
         self.check_branch(upgraded)
 
     def test_upgrade_loom(self):
         """Upgrade a loomified pack-0.92 branch."""
-        branch, target_dir = self.prepare()
-        loomify(branch.getBzrBranch())
-        upgraded = Branch.open(self.upgrade(target_dir, branch))
+        upgrader = self.prepare(loomify_branch=True)
+        upgraded = Branch.open(upgrader.upgrade())
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_upgrade_subtree_loom(self):
         """Upgrade a loomified pack-0.92-subtree branch."""
-        branch, target_dir = self.prepare('pack-0.92-subtree')
-        loomify(branch.getBzrBranch())
-        upgraded = Branch.open(self.upgrade(target_dir, branch))
+        upgrader = self.prepare('pack-0.92-subtree', loomify_branch=True)
+        upgraded = Branch.open(upgrader.upgrade())
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
-    def test_upgrade_by_fetch_preserves_tip(self):
+    def test_add_upgraded_branch_preserves_tip(self):
         """Fetch-based upgrade preserves branch tip."""
-        branch, target_dir = self.prepare('pack-0.92-subtree')
-        bzr_branch = branch.getBzrBranch()
-        upgraded = self.upgrade_by_fetch(bzr_branch, target_dir)
+        upgrader = self.prepare('pack-0.92-subtree')
+        upgrade_dir = self.useContext(temp_dir())
+        with read_locked(upgrader.bzr_branch):
+            upgrader.upgrade_by_fetch(upgrade_dir)
+        upgraded = Branch.open(upgrade_dir)
         self.assertEqual('prepare-commit', upgraded.last_revision())
         self.assertEqual(
             'foo', upgraded.repository.get_revision('prepare-commit').message)
 
-    def test_upgrade_by_fetch_preserves_dead_heads(self):
+    def test_create_upgraded_repository_preserves_dead_heads(self):
         """Fetch-based upgrade preserves heads in the repository."""
-        branch, target_dir = self.prepare('pack-0.92-subtree')
-        bzr_branch = branch.getBzrBranch()
-        bzr_branch.set_last_revision_info(0, NULL_REVISION)
-        upgraded = self.upgrade_by_fetch(bzr_branch, target_dir)
-        self.assertEqual(NULL_REVISION, upgraded.last_revision())
+        upgrader = self.prepare('pack-0.92-subtree')
+        upgrader.bzr_branch.set_last_revision_info(0, NULL_REVISION)
+        upgrade_dir = self.useContext(temp_dir())
+        with read_locked(upgrader.bzr_branch):
+            upgrader.create_upgraded_repository(upgrade_dir)
+        upgraded = Repository.open(upgrade_dir)
         self.assertEqual(
-            'foo', upgraded.repository.get_revision('prepare-commit').message)
+            'foo', upgraded.get_revision('prepare-commit').message)
 
     def test_upgrade_by_fetch_preserves_tags(self):
         """Fetch-based upgrade preserves heads in the repository."""
-        branch, target_dir = self.prepare('pack-0.92-subtree')
-        bzr_branch = branch.getBzrBranch()
-        bzr_branch.tags.set_tag('steve', 'rev-id')
-        upgraded = self.upgrade_by_fetch(bzr_branch, target_dir)
+        upgrader = self.prepare('pack-0.92-subtree')
+        upgrader.bzr_branch.tags.set_tag('steve', 'rev-id')
+        upgrade_dir = self.useContext(temp_dir())
+        with read_locked(upgrader.bzr_branch):
+            upgrader.upgrade_by_fetch(upgrade_dir)
+        upgraded = Branch.open(upgrade_dir)
         self.assertEqual('rev-id', upgraded.tags.lookup_tag('steve'))
-
-    def getUpgrader(self, bzr_branch, branch=None):
-        target_dir = self.useContext(temp_dir())
-        return Upgrader(
-            branch, target_dir, logging.getLogger(), bzr_branch)
-
-    def addTreeReference(self, tree):
-        sub_branch = BzrDir.create_branch_convenience(
-            tree.bzrdir.root_transport.clone('sub').base)
-        tree.add_reference(sub_branch.bzrdir.open_workingtree())
-        tree.commit('added tree reference')
 
     def test_has_tree_references(self):
         """Detects whether repo contains actual tree references."""
@@ -142,4 +146,4 @@ class TestUpgrader(TestCaseWithFactory):
         tree.add_reference(sub_branch.bzrdir.open_workingtree())
         tree.commit('added tree reference')
         with ExpectedException(HasTreeReferences):
-            upgraded = self.upgrade_by_fetch(tree.branch, target_dir)
+            self.upgrade_by_fetch(tree.branch, target_dir)
