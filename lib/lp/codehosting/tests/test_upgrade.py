@@ -14,6 +14,7 @@ from lp.code.bzr import (
     get_branch_formats,
     RepositoryFormat,
     )
+from lp.codehosting.bzrutils import read_locked
 from lp.codehosting.upgrade import (
     HasTreeReferences,
     Upgrader,
@@ -41,8 +42,9 @@ class TestUpgrader(TestCaseWithFactory):
 
     def upgrade_by_fetch(self, bzr_branch, target_dir):
         """Run Upgrader.upgrade_by_fetch on a branch."""
-        Upgrader(None, logging.getLogger()).upgrade_by_fetch(
-            bzr_branch, target_dir)
+        with read_locked(bzr_branch):
+            Upgrader(None, logging.getLogger()).upgrade_by_fetch(
+                bzr_branch, target_dir)
         return Branch.open(target_dir)
 
     def check_branch(self, upgraded, branch_format=BranchFormat.BZR_BRANCH_7):

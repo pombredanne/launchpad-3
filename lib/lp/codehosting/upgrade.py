@@ -164,12 +164,11 @@ class Upgrader:
         :raise: HasTreeReferences if the repository contains tree references.
         """
         self.logger.info('Checking for tree-references.')
-        with read_locked(repo):
-            revision_ids = repo.all_revision_ids()
-            for tree in repo.revision_trees(revision_ids):
-                for path, entry in tree.iter_entries_by_dir():
-                    if entry.kind == 'tree-reference':
-                        raise HasTreeReferences()
+        revision_ids = repo.all_revision_ids()
+        for tree in repo.revision_trees(revision_ids):
+            for path, entry in tree.iter_entries_by_dir():
+                if entry.kind == 'tree-reference':
+                    raise HasTreeReferences()
 
     def mirror_branch(self, bzr_branch, target_bd):
         """Mirror the actual branch from a bzr_branch to a target bzrdir."""
