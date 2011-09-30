@@ -282,7 +282,7 @@ def check_dsc(dsc, current_sources, current_binaries):
                         "%s is in main but its source (%s) is not." %
                         (binary, source))
                 else:
-                    dak_utils.warn(
+                    Log.warning(
                         "%s is in main but its source (%s) is not - "
                         "continuing anyway." % (binary, source))
 
@@ -390,7 +390,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
 
         if (valid_component is not None and
             component != valid_component.name):
-            dak_utils.warn(
+            Log.warning(
                 "%s/%s: skipping because it is not in %s component" % (
                 pkg, version, component))
             continue
@@ -399,7 +399,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
             S[pkg] = [version, component]
         else:
             if apt_pkg.VersionCompare(S[pkg][0], version) < 0:
-                dak_utils.warn(
+                Log.warning(
                     "%s: skipping because %s is < %s" % (
                     pkg, version, S[pkg][0]))
                 S[pkg] = [version, component]
@@ -688,7 +688,7 @@ def parseBlacklist(path):
     try:
         blacklist_file = open(path)
     except IOError:
-        dak_utils.warn('Could not find blacklist file on %s' % path)
+        Log.warning('Could not find blacklist file on %s' % path)
         return blacklist
 
     for line in blacklist_file:
