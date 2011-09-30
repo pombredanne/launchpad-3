@@ -345,6 +345,8 @@ def validate_conjoined_attribute(self, attr, value):
 
     # If this bugtask has no bug yet, then we are probably being
     # instantiated.
+    if self._SO_creating:
+        return value
     if self.bug is None:
         return value
 
