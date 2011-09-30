@@ -41,19 +41,6 @@ def warn(msg):
 
 ################################################################################
 
-def prefix_multi_line_string(str, prefix, include_blank_lines=0):
-    out = ""
-    for line in str.split('\n'):
-        line = line.strip()
-        if line or include_blank_lines:
-            out += "%s%s\n" % (prefix, line)
-    # Strip trailing new line
-    if out:
-        out = out[:-1]
-    return out
-
-################################################################################
-
 def temp_filename(directory=None, dotprefix=None, perms=0700):
     """Return a secure and unique filename by pre-creating it.
 If 'directory' is non-null, it will be the directory the file is pre-created in.
