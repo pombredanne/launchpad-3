@@ -343,11 +343,10 @@ def validate_conjoined_attribute(self, attr, value):
     if isinstance(value, PassthroughValue):
         return value.value
 
-    # If this bugtask has no bug yet, then we are probably being
-    # instantiated.
+    # Check to see if the object is being instantiated.  This test is specific
+    # to SQLBase.  Checking for specific attributes (like self.bug) is
+    # insufficient and fragile.
     if self._SO_creating:
-        return value
-    if self.bug is None:
         return value
 
     # If this is a conjoined slave then call setattr on the master.
@@ -608,7 +607,7 @@ class BugTask(SQLBase):
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
     completeness_clause = """
-        BugTask._status IN ( %s )
+        BugTask.status IN ( %s )
         """ % ','.join([str(a.value) for a in RESOLVED_BUGTASK_STATUSES])
 
     @property
@@ -1749,8 +1748,8 @@ class BugTaskSet:
             if with_response or without_response:
                 if with_response:
                     return """(
-                        BugTask._status = %s OR
-                        (BugTask._status = %s
+                        BugTask.status = %s OR
+                        (BugTask.status = %s
                         AND (Bug.date_last_message IS NOT NULL
                              AND BugTask.date_incomplete <=
                                  Bug.date_last_message)))
@@ -1759,8 +1758,8 @@ class BugTaskSet:
                             BugTaskStatus.INCOMPLETE)
                 elif without_response:
                     return """(
-                        BugTask._status = %s OR
-                        (BugTask._status = %s
+                        BugTask.status = %s OR
+                        (BugTask.status = %s
                         AND (Bug.date_last_message IS NULL
                              OR BugTask.date_incomplete >
                                 Bug.date_last_message)))
@@ -1771,12 +1770,12 @@ class BugTaskSet:
             elif incomplete_response:
                 # search for any of INCOMPLETE (being migrated from),
                 # INCOMPLETE_WITH_RESPONSE or INCOMPLETE_WITHOUT_RESPONSE
-                return 'BugTask._status %s' % search_value_to_where_condition(
+                return 'BugTask.status %s' % search_value_to_where_condition(
                     any(BugTaskStatus.INCOMPLETE,
                         BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
                         BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE))
             else:
-                return '(BugTask._status = %s)' % sqlvalues(status)
+                return '(BugTask.status = %s)' % sqlvalues(status)
         else:
             raise AssertionError(
                 'Unrecognized status value: %s' % repr(status))
