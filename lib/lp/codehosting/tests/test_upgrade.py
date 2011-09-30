@@ -53,14 +53,6 @@ class TestUpgrader(TestCaseWithFactory):
         tree.add_reference(sub_branch.bzrdir.open_workingtree())
         tree.commit('added tree reference')
 
-    def upgrade_by_fetch(self, bzr_branch, target_dir):
-        """Run Upgrader.upgrade_by_fetch on a branch."""
-        bzr_branch = removeSecurityProxy(bzr_branch)
-        with read_locked(bzr_branch):
-            Upgrader(None, None, logging.getLogger(),
-                bzr_branch=bzr_branch).upgrade_by_fetch(target_dir)
-        return Branch.open(target_dir)
-
     def check_branch(self, upgraded, branch_format=BranchFormat.BZR_BRANCH_7):
         """Check that a branch matches expected post-upgrade formats."""
         control, branch, repository = get_branch_formats(upgraded)
@@ -96,7 +88,8 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader = self.prepare('pack-0.92-subtree')
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
-            upgrader.upgrade_by_fetch(upgrade_dir)
+            bd = upgrader.create_upgraded_repository(upgrade_dir)
+            upgrader = upgrader.add_upgraded_branch(bd)
         upgraded = Branch.open(upgrade_dir)
         self.assertEqual('prepare-commit', upgraded.last_revision())
         self.assertEqual(
@@ -113,13 +106,14 @@ class TestUpgrader(TestCaseWithFactory):
         self.assertEqual(
             'foo', upgraded.get_revision('prepare-commit').message)
 
-    def test_upgrade_by_fetch_preserves_tags(self):
+    def test_add_upgraded_branch_preserves_tags(self):
         """Fetch-based upgrade preserves heads in the repository."""
         upgrader = self.prepare('pack-0.92-subtree')
         upgrader.bzr_branch.tags.set_tag('steve', 'rev-id')
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
-            upgrader.upgrade_by_fetch(upgrade_dir)
+            bd = upgrader.create_upgraded_repository(upgrade_dir)
+            upgrader.add_upgraded_branch(bd)
         upgraded = Branch.open(upgrade_dir)
         self.assertEqual('rev-id', upgraded.tags.lookup_tag('steve'))
 
@@ -135,7 +129,7 @@ class TestUpgrader(TestCaseWithFactory):
         with read_locked(tree.branch.repository):
             self.assertTrue(upgrader.has_tree_references())
 
-    def test_upgrade_by_fetch_dies_on_tree_references(self):
+    def test_create_upgraded_repository_dies_on_tree_references(self):
         """Subtree references prevent fetch-based upgrade."""
         self.useBzrBranches(direct_database=True)
         target_dir = self.useContext(temp_dir())
@@ -145,5 +139,7 @@ class TestUpgrader(TestCaseWithFactory):
             tree.bzrdir.root_transport.clone('sub').base, format=format)
         tree.add_reference(sub_branch.bzrdir.open_workingtree())
         tree.commit('added tree reference')
+        upgrader = self.getUpgrader(tree.branch, branch)
         with ExpectedException(HasTreeReferences):
-            self.upgrade_by_fetch(tree.branch, target_dir)
+            with read_locked(tree.branch):
+                upgrader.create_upgraded_repository(target_dir)
