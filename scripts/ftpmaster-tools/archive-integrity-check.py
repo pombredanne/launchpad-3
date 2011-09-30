@@ -18,7 +18,7 @@ import apt_pkg
 ################################################################################
 
 Filelist = None
-ArchiveRoot = "/var/tmp/archive/ubuntu"
+ArchiveRoot = "/srv/launchpad.net/ubuntu-archive/ubuntu/"
 Count = 0
 
 ################################################################################
