@@ -225,10 +225,14 @@
         (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
             ).render();
 
-        if (Y.Lang.isValue(LP.cache.new_mp_diff_event)) {
+        if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
             var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
                 {srcNode: Y.one('#diff-area')});
-            Y.on(LP.cache.new_mp_diff_event, updater.update, updater);
+            Y.on(LP.cache.merge_proposal_event_key, function(data) {
+                if (Y.lp.code.branchmergeproposal.updater.is_mp_diff_updated(data)) {
+		    updater.update();
+                }
+            });
             updater.on(updater.NAME + '.updated', function() {
                 (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
                     ).render();

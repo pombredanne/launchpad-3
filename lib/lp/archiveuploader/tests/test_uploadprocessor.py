@@ -15,6 +15,7 @@ import shutil
 from StringIO import StringIO
 import tempfile
 
+from fixtures import MonkeyPatch
 from storm.locals import Store
 import transaction
 from zope.component import (
@@ -42,6 +43,7 @@ from lp.archiveuploader.uploadprocessor import (
     parse_build_upload_leaf_name,
     UploadHandler,
     UploadProcessor,
+    UploadStatusEnum,
     )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -92,6 +94,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -1352,37 +1355,27 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.checkComponentOverride("bar_1.0-1", "universe")
 
     def testOopsCreation(self):
-        """Test the the creation of an OOPS upon upload processing failure.
-
-        In order to trigger the exception needed a bogus changes file will be
-        used.
-        That exception will then initiate the creation of an OOPS report.
-        """
+        """Test that an unhandled exception generates an OOPS."""
         self.options.builds = False
         processor = self.getUploadProcessor(self.layer.txn)
 
-        upload_dir = self.queueUpload("foocomm_1.0-1_proposed")
-        bogus_changesfile_data = '''
-        Ubuntu is a community developed, Linux-based operating system that is
-        perfect for laptops, desktops and servers. It contains all the
-        applications you need - a web browser, presentation, document and
-        spreadsheet software, instant messaging and much more.
-        '''
-        file_handle = open(
-            '%s/%s' % (upload_dir, 'bogus.changes'), 'w')
-        file_handle.write(bogus_changesfile_data)
-        file_handle.close()
+        self.queueUpload("foocomm_1.0-1_proposed")
+
+        # Inject an unhandled exception into the upload processor.
+        class SomeException(Exception):
+            pass
+        self.useFixture(
+            MonkeyPatch(
+                'lp.archiveuploader.nascentupload.NascentUpload.'
+                'from_changesfile_path',
+                FakeMethod(failure=SomeException("I am an explanation."))))
 
         processor.processUploadQueue()
 
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
-        self.assertEqual('FatalUploadError', error_report.type)
-        # The upload policy requires a signature but none is present, so
-        # we get gpg verification errors.
-        expected_explanation = (
-            "Verification failed 3 times: ['No data', 'No data', 'No data']")
-        self.assertIn(expected_explanation, error_report.tb_text)
+        self.assertEqual('SomeException', error_report.type)
+        self.assertIn("I am an explanation", error_report.tb_text)
 
     def testLZMADebUpload(self):
         """Make sure that data files compressed with lzma in Debs work.
@@ -1918,6 +1911,21 @@ class TestUploadProcessor(TestUploadProcessorBase):
         queue_item.setDone()
         self.PGPSignatureNotPreserved(archive=self.breezy.main_archive)
         self.switchToUploader()
+
+    def test_unsigned_upload_is_silently_rejected(self):
+        # Unsigned uploads are rejected without OOPS or email.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("netapplet_1.0-1")
+
+        last_oops = ErrorReportingUtility().getLastOopsReport()
+
+        [result] = self.processUpload(uploadprocessor, upload_dir)
+
+        self.assertEqual(UploadStatusEnum.REJECTED, result)
+        self.assertLogContains(
+            "INFO Failed to parse changes file")
+        self.assertEqual(len(stub.test_emails), 0)
+        self.assertNoNewOops(last_oops)
 
 
 class TestBuildUploadProcessor(TestUploadProcessorBase):

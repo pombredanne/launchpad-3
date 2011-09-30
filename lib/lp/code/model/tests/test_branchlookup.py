@@ -141,6 +141,18 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((None, None), result)
 
+    def test_branch_id_alias_transitive_private(self):
+        # Transitively private branches are not found at all
+        # (this is for anonymous access)
+        owner = self.factory.makePerson()
+        private_branch = self.factory.makeAnyBranch(
+            owner=owner, private=True)
+        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        with person_logged_in(owner):
+            path = branch_id_alias(branch)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((None, None), result)
+
     def test_branch_id_alias_public(self):
         # Public branches can be accessed.
         branch = self.factory.makeAnyBranch()
@@ -539,6 +551,15 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, path)
 
+    def test_transitive_private_branch(self):
+        # If the unique name refers to an invisible branch, getByLPPath raises
+        # NoSuchBranch, just as if the branch weren't there at all.
+        private_branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        path = removeSecurityProxy(branch).unique_name
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, path)
+
     def test_resolve_product_branch_unique_name(self):
         # getByLPPath returns the branch, no trailing path and no series if
         # given the unique name of an existing product branch.
@@ -621,6 +642,17 @@ class TestGetByLPPath(TestCaseWithFactory):
         # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
         # weren't there at all.
         branch = self.factory.makeProductBranch(private=True)
+        product = removeSecurityProxy(branch).product
+        removeSecurityProxy(product).development_focus.branch = branch
+        self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
+
+    def test_transitive_private_linked_branch(self):
+        # If the given path refers to an object with an invisible linked
+        # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
+        # weren't there at all.
+        private_branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(stacked_on=private_branch)
         product = removeSecurityProxy(branch).product
         removeSecurityProxy(product).development_focus.branch = branch
         self.assertRaises(

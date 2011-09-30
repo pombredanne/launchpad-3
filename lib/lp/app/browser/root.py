@@ -14,6 +14,7 @@ import time
 
 import feedparser
 from lazr.batchnavigator.z3batching import batch
+from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import TextLine
@@ -405,7 +406,12 @@ class LaunchpadSearchView(LaunchpadFormView):
         """See `LaunchpadFormView`"""
         errors = list(self.errors)
         for error in errors:
-            if (error.field_name == 'text'
+            if isinstance(error, ConversionError):
+                self.setFieldError(
+                    'text', 'Can not convert your search term.')
+            elif isinstance(error, unicode):
+                continue
+            elif (error.field_name == 'text'
                 and isinstance(error.errors, TooLong)):
                 self.setFieldError(
                     'text', 'The search text cannot exceed 250 characters.')

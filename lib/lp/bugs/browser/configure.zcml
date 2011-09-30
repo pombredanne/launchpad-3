@@ -289,6 +289,13 @@
         permission="zope.Public"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
+        name="+affectingbugs"
+        for="lp.registry.interfaces.person.IPerson"
+        facet="bugs"
+        class="lp.registry.browser.person.PersonAffectingBugTaskSearchListingView"
+        permission="zope.Public"
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
+    <browser:page
         name="+assignedbugs"
         for="lp.registry.interfaces.person.IPerson"
         facet="bugs"
