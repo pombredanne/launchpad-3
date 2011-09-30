@@ -232,12 +232,6 @@ class RabbitQueue(RabbitMessageBase):
     def __init__(self, session, name):
         super(RabbitQueue, self).__init__(session)
         self.name = name
-        # The queue will be auto-deleted 5 minutes after the last
-        # use of the queue.
-        # http://www.rabbitmq.com/extensions.html#queue-leases
-        self.channel.queue_declare(
-            self.name, nowait=False, auto_delete=False,
-            arguments={"x-expires": 300000})  # 5 minutes.
 
     def receive(self, timeout=0.0):
         """Pull a message from the queue.
@@ -246,6 +240,12 @@ class RabbitQueue(RabbitMessageBase):
             trying at least once.
         :raises EmptyQueue: if the timeout passes.
         """
+        # The queue will be auto-deleted 5 minutes after its last use.
+        # http://www.rabbitmq.com/extensions.html#queue-leases
+        self.channel.queue_declare(
+            self.name, nowait=False, auto_delete=False,
+            arguments={"x-expires": 300000})  # 5 minutes.
+
         starttime = time.time()
         while True:
             message = self.channel.basic_get(self.name)

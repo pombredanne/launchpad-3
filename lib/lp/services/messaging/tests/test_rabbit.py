@@ -321,6 +321,11 @@ class TestRabbitRoutingKey(RabbitTestCase):
             received_data = consumer.receive(timeout=2)
             self.assertEqual(data, received_data)
 
+    def test_does_not_connect_session_immediately(self):
+        # RabbitRoutingKey does not connect the session until necessary.
+        RabbitRoutingKey(global_session, next(key_names))
+        self.assertIs(None, global_session.connection)
+
 
 class TestRabbitQueue(RabbitTestCase):
 
@@ -346,6 +351,11 @@ class TestRabbitQueue(RabbitTestCase):
         routing_key = RabbitRoutingKey(global_session, next(key_names))
         routing_key.associateConsumerNow(consumer)
         self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
+
+    def test_does_not_connect_session_immediately(self):
+        # RabbitQueue does not connect the session until necessary.
+        RabbitQueue(global_session, next(queue_names))
+        self.assertIs(None, global_session.connection)
 
 
 class TestRabbit(RabbitTestCase):
