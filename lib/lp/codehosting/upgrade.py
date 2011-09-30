@@ -40,6 +40,10 @@ class Upgrader:
         self.target_dir = target_dir
         self.logger = logger
 
+    @property
+    def target_subdir(self):
+        return os.path.join(self.target_dir, str(self.branch.id))
+
     def get_target_format(self):
         """Return the format to upgrade a branch to.
 
@@ -83,8 +87,7 @@ class Upgrader:
 
         :param branch: The branch to upgrade.
         """
-        temp_location = os.path.join(self.target_dir, str(self.branch.id))
-        if os.path.exists(temp_location):
+        if os.path.exists(self.target_subdir):
             raise AlreadyUpgraded
         self.logger.info(
             'Upgrading branch %s (%s)', self.branch.unique_name,
@@ -102,8 +105,8 @@ class Upgrader:
                 rmtree(upgrade_dir)
                 raise
             else:
-                os.rename(upgrade_dir, temp_location)
-                return temp_location
+                os.rename(upgrade_dir, self.target_subdir)
+                return self.target_subdir
 
     def upgrade_at_transport(self, transport):
         """Upgrade the branch at a specified transport in the standard way.
