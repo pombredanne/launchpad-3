@@ -62,6 +62,7 @@ from canonical.launchpad.readonly import is_read_only
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
+    FinishReadOnlyRequestEvent,
     IDatabasePolicy,
     ILaunchpadRoot,
     INotificationResponse,
@@ -531,7 +532,7 @@ class LaunchpadBrowserPublication(
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
-            self.finishReadOnlyRequest(txn)
+            self.finishReadOnlyRequest(request, ob, txn)
         elif txn.isDoomed():
             txn.abort() # Sends an abort to the database, even though
             # transaction is still doomed.
@@ -552,12 +553,13 @@ class LaunchpadBrowserPublication(
             # calling beforeTraversal or doing proper cleanup.
             pass
 
-    def finishReadOnlyRequest(self, txn):
+    def finishReadOnlyRequest(self, request, ob, txn):
         """Hook called at the end of a read-only request.
 
         By default it abort()s the transaction, but subclasses may need to
         commit it instead, so they must overwrite this.
         """
+        notify(FinishReadOnlyRequestEvent(ob, request))
         txn.abort()
 
     def callTraversalHooks(self, request, ob):

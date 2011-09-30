@@ -887,6 +887,20 @@ except ImportError:
             self.request = request
 
 
+class IFinishReadOnlyRequestEvent(Interface):
+    """An event which gets sent when the publication is ended"""
+
+
+class FinishReadOnlyRequestEvent(object):
+    """An event which gets sent when the publication is ended"""
+
+    implements(IFinishReadOnlyRequestEvent)
+
+    def __init__(self, ob, request):
+        self.object = ob
+        self.request = request
+
+
 class StormRangeFactoryError(Exception):
     """Raised when a Storm result set cannot be used for slicing by a
     StormRangeFactory.

@@ -1206,7 +1206,7 @@ class WebServicePublication(WebServicePublicationMixin,
         else:
             return super(WebServicePublication, self).getResource(request, ob)
 
-    def finishReadOnlyRequest(self, txn):
+    def finishReadOnlyRequest(self, request, ob, txn):
         """Commit the transaction so that created OAuthNonces are stored."""
         # Transaction commits usually need to be aware of the possibility of
         # a doomed transaction.  We do not expect that this code will
