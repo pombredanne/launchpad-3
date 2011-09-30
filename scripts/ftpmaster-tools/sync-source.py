@@ -27,7 +27,6 @@ import urllib
 import _pythonpath
 from _syncorigins import origins
 import apt_pkg
-import dak_utils
 from debian.deb822 import Dsc
 from zope.component import getUtility
 
@@ -61,6 +60,7 @@ from lp.soyuz.scripts.ftpmaster import (
 
 
 reject_message = ""
+re_no_epoch = re.compile(r"^\d+\:")
 re_strip_revision = re.compile(r"-([^-]+)$")
 re_changelog_header = re.compile(
     r"^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*")
@@ -329,7 +329,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     (old_cwd, tmpdir) = extract_source(dsc_filename)
 
     # Get the upstream version
-    upstr_version = dak_utils.re_no_epoch.sub('', dsc["version"])
+    upstr_version = re_no_epoch.sub('', dsc["version"])
     if re_strip_revision.search(upstr_version):
         upstr_version = re_strip_revision.sub('', upstr_version)
 
@@ -354,7 +354,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         origin)
 
     output_filename = "%s_%s_source.changes" % (
-        dsc["source"], dak_utils.re_no_epoch.sub('', dsc["version"]))
+        dsc["source"], re_no_epoch.sub('', dsc["version"]))
 
     filehandle = open(output_filename, 'w')
     try:
