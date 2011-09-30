@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Soyuz buildd slave manager logic."""
@@ -6,11 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'BaseDispatchResult',
     'BuilddManager',
     'BUILDD_MANAGER_LOG_NAME',
-    'FailDispatchResult',
-    'ResetDispatchResult',
     ]
 
 import logging
@@ -26,10 +23,6 @@ from twisted.python import log
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch,
-    )
-from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     BuildSlaveFailure,
@@ -37,6 +30,11 @@ from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
     )
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    BuildBehaviorMismatch,
+    )
+from lp.buildmaster.model.builder import Builder
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
@@ -172,7 +170,7 @@ class SlaveScanner:
                     "job '%s' failure count: %s" % (
                         self.builder_name,
                         builder.failure_count,
-                        build_farm_job.title, 
+                        build_farm_job.title,
                         build_farm_job.failure_count))
             else:
                 self.logger.info(
@@ -261,19 +259,24 @@ class SlaveScanner:
                     self.logger.info(
                         "%s was made unavailable, resetting attached "
                         "job" % self.builder.name)
-                    job.reset()
-                    transaction.commit()
+                    transaction.abort()
+                    with DatabaseTransactionPolicy(read_only=False):
+                        job.reset()
+                        transaction.commit()
                 return
 
             # See if there is a job we can dispatch to the builder slave.
 
             d = self.builder.findAndStartJob()
+
             def job_started(candidate):
                 if self.builder.currentjob is not None:
                     # After a successful dispatch we can reset the
                     # failure_count.
-                    self.builder.resetFailureCount()
-                    transaction.commit()
+                    transaction.abort()
+                    with DatabaseTransactionPolicy(read_only=False):
+                        self.builder.resetFailureCount()
+                        transaction.commit()
                     return self.builder.slave
                 else:
                     return None
@@ -338,6 +341,7 @@ class BuilddManager(service.Service):
         self.logger = self._setupLogger()
         self.new_builders_scanner = NewBuildersScanner(
             manager=self, clock=clock)
+        self.transaction_policy = DatabaseTransactionPolicy(read_only=True)
 
     def _setupLogger(self):
         """Set up a 'slave-scanner' logger that redirects to twisted.
@@ -356,16 +360,28 @@ class BuilddManager(service.Service):
         logger.setLevel(level)
         return logger
 
+    def enterReadOnlyDatabasePolicy(self):
+        """Set the database transaction policy to read-only.
+
+        Any previously pending changes are committed first.
+        """
+        transaction.commit()
+        self.transaction_policy.__enter__()
+
+    def exitReadOnlyDatabasePolicy(self):
+        """Reset database transaction policy to the default read-write."""
+        self.transaction_policy.__exit__(None, None, None)
+
     def startService(self):
         """Service entry point, called when the application starts."""
-
-        # Get a list of builders and set up scanners on each one.
-
         # Avoiding circular imports.
         from lp.buildmaster.interfaces.builder import IBuilderSet
-        builder_set = getUtility(IBuilderSet)
-        builders = [builder.name for builder in builder_set]
-        self.addScanForBuilders(builders)
+
+        self.enterReadOnlyDatabasePolicy()
+
+        # Get a list of builders and set up scanners on each one.
+        self.addScanForBuilders(
+            [builder.name for builder in getUtility(IBuilderSet)])
         self.new_builders_scanner.scheduleScan()
 
         # Events will now fire in the SlaveScanner objects to scan each
@@ -386,6 +402,7 @@ class BuilddManager(service.Service):
         # stopped, so we can wait on them all at once here before
         # exiting.
         d = defer.DeferredList(deferreds, consumeErrors=True)
+        d.addCallback(self.exitReadOnlyDatabasePolicy)
         return d
 
     def addScanForBuilders(self, builders):

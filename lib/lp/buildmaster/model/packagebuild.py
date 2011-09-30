@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,11 +9,11 @@ __all__ = [
     ]
 
 
+from cStringIO import StringIO
 import datetime
 import logging
 import os.path
 
-from cStringIO import StringIO
 from lazr.delegates import delegates
 import pytz
 from storm.expr import Desc
@@ -43,8 +43,8 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.buildmaster.enums import (
-    BuildStatus,
     BuildFarmJobType,
+    BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
@@ -57,9 +57,8 @@ from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJobDerived,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
     )
@@ -181,17 +180,19 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         def got_log(lfa_id):
             # log, builder and date_finished are read-only, so we must
             # currently remove the security proxy to set them.
-            naked_build = removeSecurityProxy(build)
-            naked_build.log = lfa_id
-            naked_build.builder = build.buildqueue_record.builder
-            # XXX cprov 20060615 bug=120584: Currently buildduration includes
-            # the scanner latency, it should really be asking the slave for
-            # the duration spent building locally.
-            naked_build.date_finished = datetime.datetime.now(pytz.UTC)
-            if slave_status.get('dependencies') is not None:
-                build.dependencies = unicode(slave_status.get('dependencies'))
-            else:
-                build.dependencies = None
+            with DatabaseTransactionPolicy(read_only=False):
+                naked_build = removeSecurityProxy(build)
+                naked_build.log = lfa_id
+                naked_build.builder = build.buildqueue_record.builder
+                # XXX cprov 20060615 bug=120584: Currently buildduration
+                # includes the scanner latency.  It should really be asking
+                # the slave for the duration spent building locally.
+                naked_build.date_finished = datetime.datetime.now(pytz.UTC)
+                if slave_status.get('dependencies') is not None:
+                    build.dependencies = unicode(
+                        slave_status.get('dependencies'))
+                else:
+                    build.dependencies = None
 
         d = build.getLogFromSlave(build)
         return d.addCallback(got_log)
