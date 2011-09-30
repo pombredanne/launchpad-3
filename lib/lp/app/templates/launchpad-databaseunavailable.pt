@@ -112,6 +112,7 @@ a img {
 #status-feed {
   padding-top: 10px;
   width: 450px;
+  display: none;
 }
 
 #status-feed h2 {
@@ -177,6 +178,9 @@ LPS.use('node', 'io-xdr', 'json-parse', 'datatype-date', function(Y) {
   }
   Y.on('load', function(e){
     var destination = Y.one('#status-feed');
+    // The feed block starts hidden so that browsers without JS do not
+    // see it.  We have JS, so we can show it.
+    destination.setStyle('display', 'block');
     var _handleSuccess = function(o, get_results) {
       var rawJSON = Y.JSON.parse(o.responseText);
       var oRSS = get_results(rawJSON);
@@ -187,7 +191,7 @@ LPS.use('node', 'io-xdr', 'json-parse', 'datatype-date', function(Y) {
           var entry = oRSS[i];
           l.append(li(entry.text, entry.created_at));
         }
-      }      
+      }
     };
     var handleTwitterSuccess = function(id, o, a){
       _handleSuccess(o, function(json) {return json.results;});
