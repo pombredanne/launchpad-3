@@ -95,12 +95,7 @@ class Upgrader:
         with read_locked(self.bzr_branch):
             upgrade_dir = mkdtemp(dir=self.target_dir)
             try:
-                if getattr(
-                    self.bzr_branch.repository._format,
-                    'supports_tree_reference', False):
-                    self.upgrade_by_fetch(upgrade_dir)
-                else:
-                    self.upgrade_to_dir(upgrade_dir)
+                self.upgrade_by_fetch(upgrade_dir)
             except:
                 rmtree(upgrade_dir)
                 raise
@@ -123,18 +118,6 @@ class Upgrader:
                 raise exceptions[0]
             else:
                 return 3
-
-    def upgrade_to_dir(self, upgrade_dir):
-        """Create an upgraded version of a specified branch.
-
-        The upgrade is performed through the normal Bazaar mechanism.
-        :param bzr_branch: The branch to upgrade.
-        :param upgrade_dir: The directory to copy to.
-        """
-        self.logger.info('Mirroring branch.')
-        t = get_transport_from_path(upgrade_dir)
-        self.bzr_branch.bzrdir.root_transport.copy_tree_to_transport(t)
-        self.upgrade_at_transport(t)
 
     def upgrade_by_fetch(self, upgrade_dir):
         """Create an upgraded version of a specified branch.
