@@ -266,6 +266,8 @@ class TestRabbitRoutingKey(RabbitTestCase):
         consumer = RabbitQueue(global_session, next(queue_names))
         routing_key = RabbitRoutingKey(global_session, next(key_names))
         routing_key.associateConsumer(consumer)
+        # The session is still not connected.
+        self.assertIs(None, global_session.connection)
         routing_key.sendNow('now')
         routing_key.send('later')
         # There is nothing in the queue because the consumer has not yet been

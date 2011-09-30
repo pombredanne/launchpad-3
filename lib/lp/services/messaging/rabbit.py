@@ -207,6 +207,7 @@ class RabbitRoutingKey(RabbitMessageBase):
 
     def associateConsumerNow(self, consumer):
         """Only receive messages for requested routing key."""
+        consumer._declare()
         self.channel.queue_bind(
             queue=consumer.name, exchange=self.session.exchange,
             routing_key=self.key, nowait=False)
@@ -233,6 +234,13 @@ class RabbitQueue(RabbitMessageBase):
         super(RabbitQueue, self).__init__(session)
         self.name = name
 
+    def _declare(self):
+        # The queue will be auto-deleted 5 minutes after its last use.
+        # http://www.rabbitmq.com/extensions.html#queue-leases
+        self.channel.queue_declare(
+            self.name, nowait=False, auto_delete=False,
+            arguments={"x-expires": 300000})  # 5 minutes.
+
     def receive(self, timeout=0.0):
         """Pull a message from the queue.
 
@@ -240,12 +248,7 @@ class RabbitQueue(RabbitMessageBase):
             trying at least once.
         :raises EmptyQueue: if the timeout passes.
         """
-        # The queue will be auto-deleted 5 minutes after its last use.
-        # http://www.rabbitmq.com/extensions.html#queue-leases
-        self.channel.queue_declare(
-            self.name, nowait=False, auto_delete=False,
-            arguments={"x-expires": 300000})  # 5 minutes.
-
+        self._declare()
         starttime = time.time()
         while True:
             message = self.channel.basic_get(self.name)
