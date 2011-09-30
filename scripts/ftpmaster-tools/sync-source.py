@@ -43,7 +43,10 @@ from lp.archiveuploader.utils import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     re_bug_numbers,
@@ -106,7 +109,8 @@ def urgency_from_numeric(n):
 
 def parse_changelog(changelog_filename, previous_version):
     if not os.path.exists(changelog_filename):
-        dak_utils.fubar("debian/changelog not found in extracted source.")
+        raise LaunchpadScriptFailure(
+            "debian/changelog not found in extracted source.")
     urgency = urgency_to_numeric('low')
     changes = ""
     is_debian_changelog = 0
@@ -126,7 +130,7 @@ def parse_changelog(changelog_filename, previous_version):
         changes += line
 
     if not is_debian_changelog:
-        dak_utils.fubar("header not found in debian/changelog")
+        raise LaunchpadScriptFailure("header not found in debian/changelog")
 
     closes = []
     for match in re_closes.finditer(changes):
@@ -185,7 +189,8 @@ def parse_control(control_filename):
     source_description = ""
 
     if not os.path.exists(control_filename):
-        dak_utils.fubar("debian/control not found in extracted source.")
+        raise LaunchpadScriptFailure(
+            "debian/control not found in extracted source.")
     control_filehandle = open(control_filename)
     Control = apt_pkg.ParseTagFile(control_filehandle)
     while Control.Step():
@@ -219,7 +224,7 @@ def extract_source(dsc_filename):
     except DpkgSourceError, e:
         print " * command was '%s'" % (e.command)
         print e.output
-        dak_utils.fubar(
+        raise LaunchpadScriptFailure(
             "'dpkg-source -x' failed for %s [return code: %s]." %
             (dsc_filename, e.result))
 
@@ -231,7 +236,8 @@ def cleanup_source(tmpdir, old_cwd, dsc):
     # Sanity check that'll probably break if people set $TMPDIR, but
     # WTH, shutil.rmtree scares me
     if not tmpdir.startswith("/tmp/"):
-        dak_utils.fubar("%s: tmpdir doesn't start with /tmp" % (tmpdir))
+        raise LaunchpadScriptFailure(
+            "%s: tmpdir doesn't start with /tmp" % (tmpdir))
 
     # Move back and cleanup the temporary tree
     os.chdir(old_cwd)
@@ -239,7 +245,7 @@ def cleanup_source(tmpdir, old_cwd, dsc):
         shutil.rmtree(tmpdir)
     except OSError, e:
         if errno.errorcode[e.errno] != 'EACCES':
-            dak_utils.fubar(
+            raise LaunchpadScriptFailure(
                 "%s: couldn't remove tmp dir for source tree."
                 % (dsc["source"]))
 
@@ -250,10 +256,11 @@ def cleanup_source(tmpdir, old_cwd, dsc):
         cmd = "chmod -R u+rwx %s" % (tmpdir)
         result = os.system(cmd)
         if result != 0:
-            dak_utils.fubar("'%s' failed with result %s." % (cmd, result))
+            raise LaunchpadScriptFailure(
+                "'%s' failed with result %s." % (cmd, result))
         shutil.rmtree(tmpdir)
     except:
-        dak_utils.fubar(
+        raise LaunchpadScriptFailure(
             "%s: couldn't remove tmp dir for source tree." % (dsc["source"]))
 
 
@@ -271,7 +278,7 @@ def check_dsc(dsc, current_sources, current_binaries):
             # override a main binary package
             if current_component == "main" and source_component != "main":
                 if not Options.forcemore:
-                    dak_utils.fubar(
+                    raise LaunchpadScriptFailure(
                         "%s is in main but its source (%s) is not." %
                         (binary, source))
                 else:
@@ -283,7 +290,7 @@ def check_dsc(dsc, current_sources, current_binaries):
             # ubuntu-modified binary package
             ubuntu_bin = current_binaries[binary][0].find("ubuntu")
             if not Options.force and ubuntu_bin != -1:
-                dak_utils.fubar(
+                raise LaunchpadScriptFailure(
                     "%s is trying to override %s_%s without -f/--force." %
                     (source, binary, current_version))
             print "I: %s [%s] -> %s_%s [%s]." % (
@@ -301,13 +308,14 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         dsc_file.seek(0)
         (gpg_pre, payload, gpg_post) = Dsc.split_gpg_and_payload(dsc_file)
         if gpg_pre == [] and gpg_post == []:
-            dak_utils.fubar("signature required for %s but not present"
-                % dsc_filename)
+            raise LaunchpadScriptFailure(
+                "signature required for %s but not present" % dsc_filename)
         if signing_rules == "must be signed and valid":
             if (gpg_pre[0] != "-----BEGIN PGP SIGNED MESSAGE-----" or
                 gpg_post[0] != "-----BEGIN PGP SIGNATURE-----"):
-                dak_utils.fubar("signature for %s invalid %r %r" % (
-                    dsc_filename, gpg_pre, gpg_post))
+                raise LaunchpadScriptFailure(
+                    "signature for %s invalid %r %r" %
+                    (dsc_filename, gpg_pre, gpg_post))
 
     dsc_files = dict((entry['name'], entry) for entry in dsc['files'])
     check_dsc(dsc, current_sources, current_binaries)
@@ -503,7 +511,8 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
 
     # Check it's in the Sources file
     if pkg not in Sources:
-        dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
+        raise LaunchpadScriptFailure(
+            "%s doesn't exist in the Sources file." % (pkg))
 
     syncsource = SyncSource(Sources[pkg]["files"], origin, Log,
         urllib.urlretrieve, Options.todistro)
@@ -512,10 +521,10 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         dsc_filename = syncsource.fetchSyncFiles()
         syncsource.checkDownloadedFiles()
     except SyncSourceError, e:
-        dak_utils.fubar("Fetching files failed: %s" % (str(e),))
+        raise LaunchpadScriptFailure("Fetching files failed: %s" % (str(e),))
 
     if dsc_filename is None:
-        dak_utils.fubar(
+        raise LaunchpadScriptFailure(
             "No dsc filename in %r" % Sources[pkg]["files"].keys())
 
     import_dsc(os.path.abspath(dsc_filename), suite, previous_version,
@@ -555,7 +564,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
 
         if pkg not in Sources:
             if not Options.all:
-                dak_utils.fubar("%s: not found" % (pkg))
+                raise LaunchpadScriptFailure("%s: not found" % (pkg))
             else:
                 print "[Ubuntu Specific] %s_%s" % (pkg, dest_version)
                 stat_us += 1
@@ -638,7 +647,7 @@ def objectize_options():
     if Options.tocomponent is not None:
 
         if Options.tocomponent not in valid_components:
-            dak_utils.fubar(
+            raise LaunchpadScriptFailure(
                 "%s is not a valid component for %s/%s."
                 % (Options.tocomponent, Options.todistro.name,
                    Options.tosuite.name))
@@ -652,8 +661,8 @@ def objectize_options():
     PersonSet = getUtility(IPersonSet)
     person = PersonSet.getByName(Options.requestor)
     if not person:
-        dak_utils.fubar("Unknown LaunchPad user id '%s'."
-                        % (Options.requestor))
+        raise LaunchpadScriptFailure(
+            "Unknown LaunchPad user id '%s'." % (Options.requestor))
     Options.requestor = "%s <%s>" % (person.displayname,
                                      person.preferredemail.email)
     Options.requestor = Options.requestor.encode("ascii", "replace")
@@ -747,7 +756,7 @@ class SyncSourceScript(LaunchpadScript):
 
         # Sanity checks on options
         if not Options.all and not self.args:
-            dak_utils.fubar(
+            raise LaunchpadScriptFailure(
                 "Need -a/--all or at least one package name as an argument.")
 
         apt_pkg.init()
