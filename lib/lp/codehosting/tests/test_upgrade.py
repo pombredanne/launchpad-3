@@ -6,6 +6,8 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.plugins.loom.branch import loomify
 from bzrlib.repository import Repository
+from bzrlib.repofmt.groupcompress_repo import (
+    RepositoryFormat2a, RepositoryFormat2aSubtree)
 from bzrlib.revision import NULL_REVISION
 from testtools.testcase import ExpectedException
 from zope.security.proxy import removeSecurityProxy
@@ -18,7 +20,6 @@ from lp.code.bzr import (
     )
 from lp.codehosting.bzrutils import read_locked
 from lp.codehosting.upgrade import (
-    HasTreeReferences,
     Upgrader,
     )
 from lp.testing import (
@@ -83,6 +84,37 @@ class TestUpgrader(TestCaseWithFactory):
         upgraded = Branch.open(upgrader.upgrade())
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
+    def test_default_repo_format(self):
+        """By default, the 2a repo format is selected."""
+        upgrader = self.prepare()
+        target_format = upgrader.get_target_format()
+        self.assertIs(
+            target_format._repository_format.__class__, RepositoryFormat2a)
+
+    def test_subtree_format_repo_format(self):
+        """Even subtree formats use 2a if they don't have tree references."""
+        self.useBzrBranches(direct_database=True)
+        format = format_registry.make_bzrdir('pack-0.92-subtree')
+        branch, tree = self.create_branch_and_tree(format=format)
+        upgrader = self.getUpgrader(tree.branch, branch)
+        with read_locked(upgrader.bzr_branch):
+            target_format = upgrader.get_target_format()
+        self.assertIs(
+            target_format._repository_format.__class__, RepositoryFormat2a)
+
+    def test_tree_reference_repo_format(self):
+        """Repos with tree references get 2aSubtree."""
+        self.useBzrBranches(direct_database=True)
+        format = format_registry.make_bzrdir('pack-0.92-subtree')
+        branch, tree = self.create_branch_and_tree(format=format)
+        upgrader = self.getUpgrader(tree.branch, branch)
+        self.addTreeReference(tree)
+        with read_locked(upgrader.bzr_branch):
+            target_format = upgrader.get_target_format()
+        self.assertIs(
+            target_format._repository_format.__class__,
+            RepositoryFormat2aSubtree)
+
     def test_add_upgraded_branch_preserves_tip(self):
         """Fetch-based upgrade preserves branch tip."""
         upgrader = self.prepare('pack-0.92-subtree')
@@ -132,7 +164,6 @@ class TestUpgrader(TestCaseWithFactory):
     def test_create_upgraded_repository_dies_on_tree_references(self):
         """Subtree references prevent fetch-based upgrade."""
         self.useBzrBranches(direct_database=True)
-        target_dir = self.useContext(temp_dir())
         format = format_registry.make_bzrdir('pack-0.92-subtree')
         branch, tree = self.create_branch_and_tree(format=format)
         sub_branch = BzrDir.create_branch_convenience(
@@ -140,6 +171,8 @@ class TestUpgrader(TestCaseWithFactory):
         tree.add_reference(sub_branch.bzrdir.open_workingtree())
         tree.commit('added tree reference')
         upgrader = self.getUpgrader(tree.branch, branch)
-        with ExpectedException(HasTreeReferences):
-            with read_locked(tree.branch):
-                upgrader.create_upgraded_repository(target_dir)
+        upgrade_dir = self.useContext(temp_dir())
+        with read_locked(tree.branch):
+            upgrader.create_upgraded_repository(upgrade_dir)
+        upgraded = Repository.open(upgrade_dir)
+        self.assertIs(RepositoryFormat2aSubtree, upgraded._format.__class__)

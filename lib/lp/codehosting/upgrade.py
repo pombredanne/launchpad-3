@@ -13,6 +13,7 @@ from bzrlib.plugins.loom.formats import (
     NotALoom,
     require_loom_branch,
     )
+from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2aSubtree
 from bzrlib.upgrade import upgrade
 from zope.security.proxy import removeSecurityProxy
 
@@ -21,10 +22,6 @@ from lp.codehosting.vfs import get_rw_server
 
 
 class AlreadyUpgraded(Exception):
-    pass
-
-
-class HasTreeReferences(Exception):
     pass
 
 
@@ -58,6 +55,11 @@ class Upgrader:
             pass
         else:
             format._branch_format = self.bzr_branch._format
+        if getattr(
+            self.bzr_branch.repository._format, 'supports_tree_reference',
+            False):
+            if self.has_tree_references():
+                format._repository_format = RepositoryFormat2aSubtree()
         return format
 
     @classmethod
@@ -141,11 +143,9 @@ class Upgrader:
 
     def create_upgraded_repository(self, upgrade_dir):
         self.logger.info('Checking for tree-references.')
-        if self.has_tree_references():
-            raise HasTreeReferences
         self.logger.info('Converting repository with fetch.')
         branch = BzrDir.create_branch_convenience(
-            upgrade_dir, force_new_tree=False)
+            upgrade_dir, force_new_tree=False, format=self.get_target_format())
         branch.repository.fetch(self.bzr_branch.repository)
         bd = branch.bzrdir
         bd.destroy_branch()
