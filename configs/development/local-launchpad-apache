@@ -137,8 +137,8 @@ RewriteLock /var/tmp/rewrite-lock
   SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
 
   ProxyPreserveHost on
-  ProxyPass / http://localhost:8086/ retry=1
   ProxyPass /+longpoll/ http://localhost:22435/ retry=1
+  ProxyPass / http://localhost:8086/ retry=1
 
   <Location />
     # Insert filter
