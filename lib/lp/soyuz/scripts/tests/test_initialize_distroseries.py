@@ -17,6 +17,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
@@ -128,6 +129,10 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         if child is None:
             child = self.factory.makeDistroSeries(
                 distribution=distribution, previous_series=previous_series)
+        publisherconfigset = getUtility(IPublisherConfigSet)
+        pub_config = publisherconfigset.getByDistribution(child.distribution)
+        if pub_config is None:
+            self.factory.makePublisherConfig(distribution=child.distribution)
         ids = InitializeDistroSeries(
             child, [parent.id for parent in parents], arches, packagesets,
             rebuild, overlays, overlay_pockets, overlay_components)
@@ -1147,6 +1152,18 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             InitializationError,
             ("No other series in the distribution is initialised "
              "and a parent was not explicitly specified."),
+            ids.check)
+
+    def test_derive_no_publisher_config(self):
+        # Initializing a series without a publisher config
+        # triggers an error.
+        distribution = self.factory.makeDistribution(no_pubconf=True)
+        child = self.factory.makeDistroSeries(
+            distribution=distribution, name='myseries')
+        ids = InitializeDistroSeries(child, [])
+        self.assertRaisesWithContent(
+            InitializationError,
+            "Series myseries has no publisher config set up.",
             ids.check)
 
     def createDistroSeriesWithPublication(self, distribution=None):
