@@ -3495,7 +3495,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     def initialize(self):
         super(BugTaskTableRowView, self).initialize()
         link = canonical_url(self.context)
-        edit_link = link + '/+editstatus'
+        task_link = edit_link = link + '/+editstatus'
         can_edit = check_permission('launchpad.Edit', self.context)
         bugtask_id = self.context.id
         launchbag = getUtility(ILaunchBag)
@@ -3507,6 +3507,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             expandable=(not self.many_bugtasks and self.canSeeTaskDetails()),
             indent_task=ISeriesBugTarget.providedBy(self.context.target),
             is_conjoined_slave=self.is_conjoined_slave,
+            task_link=task_link,
             edit_link=edit_link,
             can_edit=can_edit,
             link=link,
