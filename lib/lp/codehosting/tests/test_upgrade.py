@@ -7,6 +7,7 @@ from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.plugins.loom.branch import loomify
 from bzrlib.revision import NULL_REVISION
 from testtools.testcase import ExpectedException
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.bzr import (
@@ -38,13 +39,14 @@ class TestUpgrader(TestCaseWithFactory):
 
     def upgrade(self, target_dir, branch):
         """Run Upgrader.upgrade on a branch."""
-        return Upgrader(target_dir, logging.getLogger()).upgrade(branch)
+        return Upgrader(branch, target_dir, logging.getLogger()).upgrade()
 
     def upgrade_by_fetch(self, bzr_branch, target_dir):
         """Run Upgrader.upgrade_by_fetch on a branch."""
+        bzr_branch = removeSecurityProxy(bzr_branch)
         with read_locked(bzr_branch):
-            Upgrader(None, logging.getLogger()).upgrade_by_fetch(
-                bzr_branch, target_dir)
+            Upgrader(None, None, logging.getLogger(),
+                bzr_branch=bzr_branch).upgrade_by_fetch(target_dir)
         return Branch.open(target_dir)
 
     def check_branch(self, upgraded, branch_format=BranchFormat.BZR_BRANCH_7):
@@ -105,6 +107,29 @@ class TestUpgrader(TestCaseWithFactory):
         bzr_branch.tags.set_tag('steve', 'rev-id')
         upgraded = self.upgrade_by_fetch(bzr_branch, target_dir)
         self.assertEqual('rev-id', upgraded.tags.lookup_tag('steve'))
+
+    def getUpgrader(self, bzr_branch, branch=None):
+        target_dir = self.useContext(temp_dir())
+        return Upgrader(
+            branch, target_dir, logging.getLogger(), bzr_branch)
+
+    def addTreeReference(self, tree):
+        sub_branch = BzrDir.create_branch_convenience(
+            tree.bzrdir.root_transport.clone('sub').base)
+        tree.add_reference(sub_branch.bzrdir.open_workingtree())
+        tree.commit('added tree reference')
+
+    def test_has_tree_references(self):
+        """Detects whether repo contains actual tree references."""
+        self.useBzrBranches(direct_database=True)
+        format = format_registry.make_bzrdir('pack-0.92-subtree')
+        branch, tree = self.create_branch_and_tree(format=format)
+        upgrader = self.getUpgrader(tree.branch, branch)
+        with read_locked(tree.branch.repository):
+            self.assertFalse(upgrader.has_tree_references())
+        self.addTreeReference(tree)
+        with read_locked(tree.branch.repository):
+            self.assertTrue(upgrader.has_tree_references())
 
     def test_upgrade_by_fetch_dies_on_tree_references(self):
         """Subtree references prevent fetch-based upgrade."""

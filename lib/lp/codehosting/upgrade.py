@@ -32,11 +32,15 @@ class HasTreeReferences(Exception):
 class Upgrader:
     """Upgrades branches to 2a-based formats if possible."""
 
-    def __init__(self, target_dir, logger):
+    def __init__(self, branch, target_dir, logger, bzr_branch=None):
+        self.branch = branch
+        self.bzr_branch = bzr_branch
+        if self.bzr_branch is None:
+            self.bzr_branch = removeSecurityProxy(self.branch.getBzrBranch())
         self.target_dir = target_dir
         self.logger = logger
 
-    def get_target_format(self, branch):
+    def get_target_format(self):
         """Return the format to upgrade a branch to.
 
         The repository format is always upgraded to a 2a format, but
@@ -46,11 +50,11 @@ class Upgrader:
         """
         format = format_registry.make_bzrdir('2a')
         try:
-            require_loom_branch(branch)
+            require_loom_branch(self.bzr_branch)
         except NotALoom:
             pass
         else:
-            format._branch_format = branch._format
+            format._branch_format = self.bzr_branch._format
         return format
 
     @classmethod
@@ -63,43 +67,37 @@ class Upgrader:
         server = get_rw_server()
         server.start_server()
         try:
-            cls(target_dir, logger).upgrade_branches(branches)
+            skipped = 0
+            for branch in branches:
+                upgrader = cls(branch, target_dir, logger)
+                try:
+                    upgrader.upgrade(branch)
+                except AlreadyUpgraded:
+                    skipped +=1
+            logger.info('Skipped %d already-upgraded branches.', skipped)
         finally:
             server.stop_server()
 
-    def upgrade_branches(self, branches):
-        """Upgrade the specified branches any way possible.
-
-        :param branch: A list of Launchpad Branches.
-        """
-        skipped = 0
-        for branch in branches:
-            try:
-                self.upgrade(branch)
-            except AlreadyUpgraded:
-                skipped +=1
-        self.logger.info('Skipped %d already-upgraded branches.', skipped)
-
-    def upgrade(self, branch):
+    def upgrade(self):
         """Upgrade the specified branch any way possible.
 
         :param branch: The branch to upgrade.
         """
-        temp_location = os.path.join(self.target_dir, str(branch.id))
+        temp_location = os.path.join(self.target_dir, str(self.branch.id))
         if os.path.exists(temp_location):
             raise AlreadyUpgraded
         self.logger.info(
-            'Upgrading branch %s (%s)', branch.unique_name, branch.id)
-        bzr_branch = removeSecurityProxy(branch.getBzrBranch())
-        with read_locked(bzr_branch):
+            'Upgrading branch %s (%s)', self.branch.unique_name,
+            self.branch.id)
+        with read_locked(self.bzr_branch):
             upgrade_dir = mkdtemp(dir=self.target_dir)
             try:
                 if getattr(
-                    bzr_branch.repository._format, 'supports_tree_reference',
-                    False):
-                    self.upgrade_by_fetch(bzr_branch, upgrade_dir)
+                    self.bzr_branch.repository._format,
+                    'supports_tree_reference', False):
+                    self.upgrade_by_fetch(upgrade_dir)
                 else:
-                    self.upgrade_to_dir(bzr_branch, upgrade_dir)
+                    self.upgrade_to_dir(upgrade_dir)
             except:
                 rmtree(upgrade_dir)
                 raise
@@ -115,7 +113,7 @@ class Upgrader:
         """
         branch = Branch.open_from_transport(transport)
         self.logger.info('Performing standard upgrade.')
-        exceptions = upgrade(branch.base, self.get_target_format(branch))
+        exceptions = upgrade(branch.base, self.get_target_format())
         if exceptions:
             if len(exceptions) == 1:
                 # Compatibility with historical behavior
@@ -123,7 +121,7 @@ class Upgrader:
             else:
                 return 3
 
-    def upgrade_to_dir(self, bzr_branch, upgrade_dir):
+    def upgrade_to_dir(self, upgrade_dir):
         """Create an upgraded version of a specified branch.
 
         The upgrade is performed through the normal Bazaar mechanism.
@@ -132,10 +130,10 @@ class Upgrader:
         """
         self.logger.info('Mirroring branch.')
         t = get_transport_from_path(upgrade_dir)
-        bzr_branch.bzrdir.root_transport.copy_tree_to_transport(t)
+        self.bzr_branch.bzrdir.root_transport.copy_tree_to_transport(t)
         self.upgrade_at_transport(t)
 
-    def upgrade_by_fetch(self, bzr_branch, upgrade_dir):
+    def upgrade_by_fetch(self, upgrade_dir):
         """Create an upgraded version of a specified branch.
 
         The upgrade is achieved by creating a new repository, fetching the
@@ -145,30 +143,33 @@ class Upgrader:
         :param bzr_branch: The branch to upgrade.
         :param upgrade_dir: The directory to upgrade to.
         """
-        self.check_tree_references(bzr_branch.repository)
+        self.logger.info('Checking for tree-references.')
+        if self.has_tree_references():
+            raise HasTreeReferences
         self.logger.info('Converting repository with fetch.')
         branch = BzrDir.create_branch_convenience(
             upgrade_dir, force_new_tree=False)
-        branch.repository.fetch(bzr_branch.repository)
+        branch.repository.fetch(self.bzr_branch.repository)
         bd = branch.bzrdir
         bd.destroy_branch()
-        self.mirror_branch(bzr_branch, bd)
+        self.mirror_branch(self.bzr_branch, bd)
         try:
             self.upgrade_at_transport(bd.root_transport)
         except UpToDateFormat:
             pass
 
-    def check_tree_references(self, repo):
-        """Check whether a repository contains tree references.
+    def has_tree_references(self):
+        """Determine whether a repository contains tree references.
 
-        :raise: HasTreeReferences if the repository contains tree references.
+        :return: True if it contains tree references, False otherwise.
         """
-        self.logger.info('Checking for tree-references.')
+        repo = self.bzr_branch.repository
         revision_ids = repo.all_revision_ids()
         for tree in repo.revision_trees(revision_ids):
             for path, entry in tree.iter_entries_by_dir():
                 if entry.kind == 'tree-reference':
-                    raise HasTreeReferences()
+                    return True
+        return False
 
     def mirror_branch(self, bzr_branch, target_bd):
         """Mirror the actual branch from a bzr_branch to a target bzrdir."""
