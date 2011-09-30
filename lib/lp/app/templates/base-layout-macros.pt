@@ -262,6 +262,9 @@
       <a tal:condition="view/user|nothing"
         href="/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
+      <a href="http://blog.launchpad.net/"
+	>Blog</a>
+      &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
       <span id="lp-version">
