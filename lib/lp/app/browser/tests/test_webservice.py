@@ -30,7 +30,8 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
         request = get_current_web_service_request()
         renderer = getMultiAdapter(
             (product, field, request), IFieldHTMLRenderer)
-        # The representation of a person is the same as a tales PersonFormatter.
+        # The representation of a person is the same as a tales
+        # PersonFormatter.
         self.assertEqual(format_link(eric), renderer(eric))
 
     def test_text(self):
@@ -42,10 +43,10 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
         request = get_current_web_service_request()
         renderer = getMultiAdapter(
             (product, field, request), IFieldHTMLRenderer)
-        # The representation is linkified html with hidden email.
+        # The representation is linkified html.
         self.assertEqual(
-            u'<p>\N{SNOWMAN} &lt;email address hidden&gt; '
-            '<a href="/bugs/1">bug 1</a></p>',
+            u'<p>\N{SNOWMAN} snowman@example.com '
+            '<a href="/bugs/1" class="bug-link">bug 1</a></p>',
             renderer(text))
 
 

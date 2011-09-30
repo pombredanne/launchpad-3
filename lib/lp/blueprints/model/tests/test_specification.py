@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from testtools.matchers import Equals
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.validators import LaunchpadValidationError
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.testing import TestCaseWithFactory
 
 
@@ -73,3 +76,59 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         self.assertThat(
             sorted(do_last.all_deps),
             Equals(sorted([do_first, do_next_lhs, do_next_rhs])))
+
+
+class TestSpecificationSubscriptionSort(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_subscribers(self):
+        # Subscriptions are sorted by subscriber's displayname without regard
+        # to case
+        spec = self.factory.makeBlueprint()
+        bob = self.factory.makePerson(name='zbob', displayname='Bob')
+        ced = self.factory.makePerson(name='xed', displayname='ced')
+        dave = self.factory.makePerson(name='wdave', displayname='Dave')
+        spec.subscribe(bob, bob, True)
+        spec.subscribe(ced, bob, True)
+        spec.subscribe(dave, bob, True)
+        sorted_subscriptions = [bob.displayname, ced.displayname,
+            dave.displayname]
+        people = [sub.person.displayname for sub in spec.subscriptions]
+        self.assertEqual(sorted_subscriptions, people)
+
+
+class TestSpecificationValidation(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_specurl_validation_duplicate(self):
+        existing = self.factory.makeSpecification(
+            specurl=u'http://ubuntu.com')
+        spec = self.factory.makeSpecification()
+        url = canonical_url(existing)
+        field = ISpecification['specurl'].bind(spec)
+        e = self.assertRaises(LaunchpadValidationError, field.validate,
+            u'http://ubuntu.com')
+        self.assertEqual(
+            '%s is already registered by <a href="%s">%s</a>.'
+            % (u'http://ubuntu.com', url, existing.title), str(e))
+
+    def test_specurl_validation_valid(self):
+        spec = self.factory.makeSpecification()
+        field = ISpecification['specurl'].bind(spec)
+        field.validate(u'http://example.com/nigelb')
+
+    def test_specurl_validation_escape(self):
+        existing = self.factory.makeSpecification(
+                specurl=u'http://ubuntu.com/foo',
+                title='<script>alert("foo");</script>')
+        cleaned_title = '&lt;script&gt;alert("foo");&lt;/script&gt;'
+        spec = self.factory.makeSpecification()
+        url = canonical_url(existing)
+        field = ISpecification['specurl'].bind(spec)
+        e = self.assertRaises(LaunchpadValidationError, field.validate,
+            u'http://ubuntu.com/foo')
+        self.assertEqual(
+            '%s is already registered by <a href="%s">%s</a>.'
+            % (u'http://ubuntu.com/foo', url, cleaned_title), str(e))

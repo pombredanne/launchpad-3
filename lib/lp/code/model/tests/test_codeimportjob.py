@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeImportJob and CodeImportJobWorkflow."""
@@ -115,7 +115,8 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
 
     def makeJob(self, state, date_due_delta, requesting_user=None):
         """Create a CodeImportJob object from a spec."""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.NEW)
         job = self.factory.makeCodeImportJob(code_import)
         if state == CodeImportJobState.RUNNING:
             getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
@@ -387,11 +388,12 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
     def test_wrongReviewStatus(self):
         # CodeImportJobWorkflow.newJob fails if the CodeImport review_status
         # is different from REVIEWED.
-        new_import = self.factory.makeCodeImport()
+        new_import = self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.SUSPENDED)
         branch_name = new_import.branch.unique_name
         # Testing newJob failure.
         self.assertFailure(
-            "Review status of %s is not REVIEWED: NEW" % (branch_name,),
+            "Review status of %s is not REVIEWED: SUSPENDED" % (branch_name,),
             getUtility(ICodeImportJobWorkflow).newJob, new_import)
 
     def test_existingJob(self):
@@ -417,14 +419,17 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # If there is no CodeImportResult for the CodeImport, then the new
         # CodeImportJob has date_due set to UTC_NOW.
         code_import = self.getCodeImportForDateDueTest()
-        job = getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        self.assertSqlAttributeEqualsDate(job, 'date_due', UTC_NOW)
+        self.assertSqlAttributeEqualsDate(code_import.import_job, 'date_due',
+            UTC_NOW)
 
     def test_dateDueRecentPreviousResult(self):
         # If there is a CodeImportResult for the CodeImport that is more
         # recent than the effective_update_interval, then the new
         # CodeImportJob has date_due set in the future.
         code_import = self.getCodeImportForDateDueTest()
+        # A code import job is automatically started when a reviewed code import
+        # is created. Remove it, so a "clean" one can be created later.
+        removeSecurityProxy(code_import).import_job.destroySelf()
         # Create a CodeImportResult that started a long time ago. This one
         # must be superseded by the more recent one created below.
         machine = self.factory.makeCodeImportMachine()
@@ -469,8 +474,8 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
             date_job_started=datetime(2000, 1, 1, 12, 0, 0, tzinfo=UTC),
             date_created=datetime(2000, 1, 1, 12, 5, 0, tzinfo=UTC))
         # When we create the job, its date due must be set to UTC_NOW.
-        job = getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        self.assertSqlAttributeEqualsDate(job, 'date_due', UTC_NOW)
+        self.assertSqlAttributeEqualsDate(code_import.import_job, 'date_due',
+            UTC_NOW)
 
 
 class TestCodeImportJobWorkflowDeletePendingJob(TestCaseWithFactory,
@@ -500,7 +505,8 @@ class TestCodeImportJobWorkflowDeletePendingJob(TestCaseWithFactory,
     def test_noJob(self):
         # CodeImportJobWorkflow.deletePendingJob fails if the
         # CodeImport is not associated to a CodeImportJob.
-        new_import = self.factory.makeCodeImport()
+        new_import = self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.NEW)
         branch_name = new_import.branch.unique_name
         # Testing deletePendingJob failure.
         self.assertFailure(
@@ -578,7 +584,7 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
         # CodeImportJobWorkflow.requestJob sets requesting_user and
         # date_due if the current date_due is in the future.
         code_import = self.factory.makeCodeImport()
-        pending_job = self.factory.makeCodeImportJob(code_import)
+        pending_job = code_import.import_job
         person = self.factory.makePerson()
         # Set date_due in the future. ICodeImportJob does not allow setting
         # date_due, so we must use removeSecurityProxy.
@@ -646,6 +652,21 @@ class TestCodeImportJobWorkflowStartJob(TestCaseWithFactory,
             getUtility(ICodeImportJobWorkflow).requestJob,
             job, machine)
 
+    def test_startJob(self):
+        # After startJob, the date_started and heartbeat fields are both
+        # updated to the current time, the logtail is the empty string,
+        # machine is set to the supplied import machine and the state is
+        # RUNNING.
+        code_import = self.factory.makeCodeImport()
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        job = self.factory.makeCodeImportJob(code_import)
+        getUtility(ICodeImportJobWorkflow).startJob(job, machine)
+        self.assertSqlAttributeEqualsDate(job, 'date_started', UTC_NOW)
+        self.assertSqlAttributeEqualsDate(job, 'heartbeat', UTC_NOW)
+        self.assertEqual('', job.logtail)
+        self.assertEqual(machine, job.machine)
+        self.assertEqual(CodeImportJobState.RUNNING, job.state)
+
     def test_offlineMachine(self):
         # Calling startJob with a machine which is not ONLINE is an error.
         machine = self.factory.makeCodeImportMachine()
@@ -678,6 +699,19 @@ class TestCodeImportJobWorkflowUpdateHeartbeat(TestCaseWithFactory,
             "PENDING." % code_import.branch.unique_name,
             getUtility(ICodeImportJobWorkflow).updateHeartbeat,
             job, u'')
+
+    def test_updateHeartboat(self):
+        code_import = self.factory.makeCodeImport()
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        job = self.factory.makeCodeImportJob(code_import)
+        workflow = getUtility(ICodeImportJobWorkflow)
+        workflow.startJob(job, machine)
+        # Set heartbeat to something wrong so that we can prove that it was
+        # changed.
+        removeSecurityProxy(job).heartbeat = None
+        workflow.updateHeartbeat(job, u'some interesting log output')
+        self.assertSqlAttributeEqualsDate(job, 'heartbeat', UTC_NOW)
+        self.assertEqual(u'some interesting log output', job.logtail)
 
 
 class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
@@ -849,8 +883,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         unchecked_result_fields.difference_update(['log_file', 'status'])
 
         code_import = self.factory.makeCodeImport()
-        removeSecurityProxy(code_import).review_status = \
-            CodeImportReviewStatus.REVIEWED
+        removeSecurityProxy(code_import).import_job.destroySelf()
         self.assertFinishJobPassesThroughJobField(
             'code_import', 'code_import', code_import)
         unchecked_result_fields.remove('code_import')
@@ -968,6 +1001,71 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             running_job, CodeImportResultStatus.FAILURE, None)
         self.assertEqual(
             CodeImportReviewStatus.FAILING, code_import.review_status)
+
+
+class TestCodeImportJobWorkflowReclaimJob(TestCaseWithFactory,
+        AssertFailureMixin, AssertEventMixin):
+    """Tests for reclaimJob.
+
+    The code import worker is meant to update the heartbeat field of the row
+    of CodeImportJob frequently.  The code import watchdog periodically checks
+    the heartbeats of the running jobs and if it finds that a heartbeat was
+    not updated recently enough, it assumes it has become stuck somehow and
+    'reclaims' the job -- removes the job from the database and creates a
+    pending job for the same import that is due immediately.  This reclaiming
+    is done by the 'reclaimJob' code import job workflow method.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestCodeImportJobWorkflowReclaimJob, self).setUp()
+        login_for_code_imports()
+        self.machine = self.factory.makeCodeImportMachine(set_online=True)
+
+    def makeRunningJob(self, code_import=None):
+        """Make and return a CodeImportJob object with state==RUNNING.
+
+        This is suitable for passing into finishJob().
+        """
+        if code_import is None:
+            code_import = self.factory.makeCodeImport()
+        job = code_import.import_job
+        if job is None:
+            job = self.factory.makeCodeImportJob(code_import)
+        getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        return job
+
+    def test_deletes_job(self):
+        running_job = self.makeRunningJob()
+        job_id = running_job.id
+        getUtility(ICodeImportJobWorkflow).reclaimJob(running_job)
+        matching_job = getUtility(ICodeImportJobSet).getById(job_id)
+        self.assertIs(None, matching_job)
+
+    def test_makes_reclaim_result(self):
+        running_job = self.makeRunningJob()
+        getUtility(ICodeImportJobWorkflow).reclaimJob(running_job)
+        [result] = list(running_job.code_import.results)
+        self.assertEqual(CodeImportResultStatus.RECLAIMED, result.status)
+
+    def test_creates_new_job(self):
+        running_job = self.makeRunningJob()
+        code_import = running_job.code_import
+        getUtility(ICodeImportJobWorkflow).reclaimJob(running_job)
+        self.assertSqlAttributeEqualsDate(
+            code_import.import_job, 'date_due', UTC_NOW)
+
+    def test_logs_reclaim_event(self):
+        running_job = self.makeRunningJob()
+        code_import = running_job.code_import
+        machine = running_job.machine
+        new_events = NewEvents()
+        getUtility(ICodeImportJobWorkflow).reclaimJob(running_job)
+        [reclaim_event] = list(new_events)
+        self.assertEventLike(
+            reclaim_event, CodeImportEventType.RECLAIM,
+            code_import, machine)
 
 
 logged_in_for_code_imports = with_celebrity_logged_in('vcs_imports')

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -8,7 +8,6 @@ __metaclass__ = type
 from datetime import timedelta
 from pprint import pformat
 import re
-import unittest
 
 from lazr.uri import URI
 from storm.expr import (
@@ -28,13 +27,14 @@ from lp.code.browser.branchlisting import (
     BranchListingSort,
     BranchListingView,
     GroupedDistributionSourcePackageBranchesView,
+    PersonProductSubscribedBranchesView,
     SourcePackageBranchesView,
     )
 from lp.code.enums import BranchVisibilityRule
+from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
-from lp.code.model.branch import Branch
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
@@ -200,7 +200,7 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
         sourcepackagename = self.factory.makeSourcePackageName()
         packages = {}
         for version in ("1.0", "2.0", "3.0"):
-            series = self.factory.makeDistroRelease(
+            series = self.factory.makeDistroSeries(
                 distribution=distro, version=version)
             package = self.factory.makeSourcePackage(
                 distroseries=series, sourcepackagename=sourcepackagename)
@@ -238,7 +238,7 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         # source package.
         self.distro = self.factory.makeDistribution()
         for version in ("1.0", "2.0", "3.0"):
-            self.factory.makeDistroRelease(
+            self.factory.makeDistroSeries(
                 distribution=self.distro, version=version)
         self.sourcepackagename = self.factory.makeSourcePackageName()
         self.distro_source_package = (
@@ -341,6 +341,17 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         expected = official[:3] + branches
         self.assertGroupBranchesEqual(expected, series)
 
+    def test_distributionsourcepackage_branch(self):
+        source_package = self.factory.makeSourcePackage()
+        dsp = source_package.distribution.getSourcePackage(
+            source_package.sourcepackagename)
+        branch = self.factory.makeBranch(sourcepackage=source_package)
+        view = create_initialized_view(
+            dsp, name='+code-index', rootsite='code')
+        html = view()
+        self.assertIn(branch.name, html)
+        self.assertIn('a moment ago</span>\n', html)
+
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
     """Make sure that the bzr_identity of the branches are correct."""
@@ -422,6 +433,12 @@ class TestPersonBranchesPage(BrowserTestCase):
         # portlet isn't shown.
         self.assertIs(None, branches)
 
+    def test_branch_listing_last_modified(self):
+        branch = self.factory.makeProductBranch()
+        view = create_initialized_view(
+            branch.product, name="+branches", rootsite='code')
+        self.assertIn('a moment ago', view())
+
 
 class TestProjectGroupBranches(TestCaseWithFactory):
     """Test for the project group branches page."""
@@ -429,7 +446,7 @@ class TestProjectGroupBranches(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestProjectGroupBranches, self).setUp()
         self.project = self.factory.makeProject()
 
     def test_project_with_no_branch_visibility_rule(self):
@@ -511,5 +528,27 @@ class TestProjectGroupBranches(TestCaseWithFactory):
         self.assertIsNot(None, table)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class FauxPageTitleContext:
+
+    displayname = 'DISPLAY-NAME'
+
+    class person:
+        displayname = 'PERSON'
+
+    class product:
+        displayname = 'PRODUCT'
+
+
+class TestPageTitle(TestCase):
+    """The various views should have a page_title attribute/property."""
+
+    def test_branch_listing_view(self):
+        view = BranchListingView(FauxPageTitleContext, None)
+        self.assertEqual(
+            'Bazaar branches for DISPLAY-NAME', view.page_title)
+
+    def test_person_product_subscribed_branches_view(self):
+        view = PersonProductSubscribedBranchesView(FauxPageTitleContext, None)
+        self.assertEqual(
+            'Bazaar Branches of PRODUCT subscribed to by PERSON',
+            view.page_title)

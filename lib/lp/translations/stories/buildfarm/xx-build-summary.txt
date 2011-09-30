@@ -158,4 +158,4 @@ build history.
     1 ... 1 of 1 result
     ...
     Translation template build
-    Build started ... and finished ... taking five minutes
+    Build started ... and finished ... taking 5 minutes

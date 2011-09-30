@@ -129,8 +129,6 @@ Gussie's translation group takes charge of Ubuntu translations.
 This change gives Gussie the ability to download full package
 translations.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(ubuntu)
     >>> can_download_translations(gussie_browser)
     True
 

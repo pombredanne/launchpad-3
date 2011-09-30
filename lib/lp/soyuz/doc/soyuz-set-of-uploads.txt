@@ -161,7 +161,6 @@ And we need a way to process the accepted queue
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import (
     ...     login,
-    ...     syncUpdate,
     ...     )
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 
@@ -174,7 +173,6 @@ And we need a way to process the accepted queue
     ...            status=PackageUploadStatus.ACCEPTED)
     ...         for item in items:
     ...             item.realiseUpload()
-    ...             syncUpdate(item)
 
 
 If an upload of ours ends up in the NEW queue, we need a way to process
@@ -188,12 +186,10 @@ it into the accepted queue
     ...     items = dr.getPackageUploads(status=PackageUploadStatus.NEW)
     ...     for item in items:
     ...         item.setAccepted()
-    ...         syncUpdate(item)
     ...     items = dr.getPackageUploads(
     ...         status=PackageUploadStatus.UNAPPROVED)
     ...     for item in items:
     ...         item.setAccepted()
-    ...         syncUpdate(item)
 
 Finally, as a very simplistic publishing process, we may need to punt any
 given upload into the published state, so here's a very simplistic publisher
@@ -223,12 +219,10 @@ given upload into the published state, so here's a very simplistic publisher
     ...     for src in srcs_to_publish:
     ...         src.status = PPS.PUBLISHED
     ...         src.datepublished = UTC_NOW
-    ...         syncUpdate(src)
     ...         published_one = True
     ...     for bin in bins_to_publish:
     ...         bin.status = PPS.PUBLISHED
     ...         bin.datepublished = UTC_NOW
-    ...         syncUpdate(bin)
     ...         published_one = True
     ...     return published_one
 
@@ -322,7 +316,6 @@ bar_1.0-4, which caused bug # 41102.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> name16.displayname = "Foo B. Bar"
-    >>> syncUpdate(name16)
 
 Check the email recipient for displayname containing special chars,
 '.', must be rfc2047 compliant:
@@ -363,7 +356,6 @@ Check the email recipient for displayname containing special chars,
 Revert changes:
 
     >>> name16.displayname = "Foo Bar"
-    >>> syncUpdate(name16)
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the
@@ -718,11 +710,16 @@ files that are published in the sample data.
     >>> fillLibrarianFile(70)
 
     >>> run_publish_distro(careful=True)
-    DEBUG   Initializing zopeless.
+    DEBUG   Enabled by DEFAULT section
+    INFO    Creating lockfile: ...
     DEBUG   Distribution: ubuntutest
     ...
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb from library
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-1_i386.deb from library
+    DEBUG   Added
+    /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb from
+    library
+    DEBUG   Added
+    /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-1_i386.deb from
+    library
     ...
 
 
@@ -747,10 +744,12 @@ Check that breezy-autotest is skipped, to ensure that changes to what's
 uploaded in the test above don't break the assumptions of this test.
 
     >>> run_publish_distro(careful_publishing=True)
-    DEBUG   Initializing zopeless.
+    DEBUG   Enabled by DEFAULT section
+    INFO    Creating lockfile: ...
     DEBUG   Distribution: ubuntutest
     ...
-    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb is already in pool with the same content.
+    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb
+    is already in pool with the same content.
     ...
     DEBUG   Skipping a-f stanza for breezy-autotest/RELEASE
     ...

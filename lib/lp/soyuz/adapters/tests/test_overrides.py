@@ -4,6 +4,7 @@
 """Test generic override policy classes."""
 
 from operator import attrgetter
+
 from testtools.matchers import Equals
 from zope.component import getUtility
 
@@ -136,7 +137,7 @@ class TestOverrides(TestCaseWithFactory):
         pocket = self.factory.getAnyPocket()
         for i in xrange(10):
             bpph = self.factory.makeBinaryPackagePublishingHistory(
-                distroarchseries=distroarchseries, 
+                distroarchseries=distroarchseries,
                 archive=distroseries.main_archive, pocket=pocket)
             bpns.append((bpph.binarypackagerelease.binarypackagename, None))
         flush_database_caches()
@@ -147,6 +148,31 @@ class TestOverrides(TestCaseWithFactory):
             policy.calculateBinaryOverrides(
                 distroseries.main_archive, distroseries, pocket, bpns)
         self.assertThat(recorder, HasQueryCount(Equals(4)))
+
+    def test_getComponentOverride_default_name(self):
+        # getComponentOverride returns the default component name when an
+        # unknown component name is passed.
+        component_name = UnknownOverridePolicy.getComponentOverride('no-name')
+
+        self.assertEqual('universe', component_name)
+
+    def test_getComponentOverride_default_component(self):
+        # getComponentOverride also accepts a component object (as
+        # opposed to a component's name).
+        component = getUtility(IComponentSet)['universe']
+        component_name = UnknownOverridePolicy.getComponentOverride(component)
+
+        self.assertEqual('universe', component_name)
+
+    def test_getComponentOverride_return_component(self):
+        # Passing return_component=True to getComponentOverride makes it
+        # return the Component object (as opposed to the component's
+        # name).
+        universe_component = getUtility(IComponentSet)['universe']
+        component = UnknownOverridePolicy.getComponentOverride(
+            universe_component, return_component=True)
+
+        self.assertEqual(universe_component, component)
 
     def test_unknown_sources(self):
         # If the unknown policy is used, it does no checks, just returns the
@@ -242,9 +268,26 @@ class TestOverrides(TestCaseWithFactory):
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, pocket, bpns)
         self.assertEqual(5, len(overrides))
-        key=attrgetter("binary_package_name.name",
-            "distro_arch_series.architecturetag", 
+        key = attrgetter("binary_package_name.name",
+            "distro_arch_series.architecturetag",
             "component.name")
         sorted_expected = sorted(expected, key=key)
         sorted_overrides = sorted(overrides, key=key)
         self.assertEqual(sorted_expected, sorted_overrides)
+
+    def test_calculateBinaryOverrides_skips_unknown_arch(self):
+        # If calculateBinaryOverrides is passed with an archtag that
+        # does not correspond to an ArchSeries of the distroseries,
+        # an empty list is returned.
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(
+            architecturetag='amd64',
+            distroseries=distroseries)
+        distroseries.nominatedarchindep = das
+        bpn = self.factory.makeBinaryPackageName()
+        pocket = self.factory.getAnyPocket()
+        policy = FromExistingOverridePolicy()
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries, pocket, ((bpn, 'i386'),))
+
+        self.assertEqual([], overrides)

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0322,F0401
@@ -32,12 +32,13 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
+from functools import wraps
 import operator
 
 from lazr.delegates import delegates
-from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
+    IJSONRequestCache,
     IWebServiceClientRequest,
     )
 import simplejson
@@ -47,7 +48,6 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
-from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import (
     implements,
@@ -66,7 +66,6 @@ from zope.schema.vocabulary import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -80,19 +79,23 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import NavigationMenu, structured
+from canonical.launchpad.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
-   )
+    )
 from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     vocabulary_to_choice_edit_items,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
-from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.app.longpoll import subscribe
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.enums import (
@@ -104,6 +107,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchMergeProposalExists,
     ClaimReviewFailed,
+    InvalidBranchMergeProposal,
     WrongBranchMergeProposal,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
@@ -120,6 +124,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 
 
@@ -165,12 +170,10 @@ class BranchMergeProposalBreadcrumb(Breadcrumb):
 
 def notify(func):
     """Decorate a view method to send a notification."""
-
+    @wraps(func)
     def decorator(view, *args, **kwargs):
-        snapshot = BranchMergeProposalDelta.snapshot(view.context)
-        result = func(view, *args, **kwargs)
-        zope_notify(ObjectModifiedEvent(view.context, snapshot, []))
-        return result
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(view.context):
+            return func(view, *args, **kwargs)
     return decorator
 
 
@@ -531,18 +534,16 @@ class DiffRenderingMixin:
 
     @cachedproperty
     def diff_oversized(self):
-        """Return True if the review_diff is over the configured size limit.
+        """Return True if the preview_diff is over the configured size limit.
 
         The diff can be over the limit in two ways.  If the diff is oversized
         in bytes it will be cut off at the Diff.text method.  If the number of
         lines is over the max_format_lines, then it is cut off at the fmt:diff
         processing.
         """
-        review_diff = self.preview_diff
-        if review_diff is None:
+        preview_diff = self.preview_diff
+        if preview_diff is None:
             return False
-        if review_diff.oversized:
-            return True
         diff_text = self.preview_diff_text
         return diff_text.count('\n') >= config.diff.max_format_lines
 
@@ -595,6 +596,19 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     label = "Proposal to merge branch"
     schema = ClaimButton
+
+    def initialize(self):
+        super(BranchMergeProposalView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects.update({
+            'branch_diff_link':
+                'https://%s/+loggerhead/%s/diff/' % (
+                    config.launchpad.code_domain,
+                    self.context.source_branch.unique_name),
+            })
+        if getFeatureFlag("longpoll.merge_proposals.enabled"):
+            cache.objects['merge_proposal_event_key'] = (
+                subscribe(self.context).event_key)
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
@@ -676,8 +690,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """
         if self.context.preview_diff is not None:
             return self.context.preview_diff
-        if self.context.review_diff is not None:
-            return self.context.review_diff.diff
         return None
 
     @property
@@ -1028,6 +1040,9 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
                 url=canonical_url(e.existing_proposal))
             self.request.response.addErrorNotification(message)
             self.next_url = canonical_url(self.context)
+            return None
+        except InvalidBranchMergeProposal as e:
+            self.addError(str(e))
             return None
         self.next_url = canonical_url(proposal)
         return proposal

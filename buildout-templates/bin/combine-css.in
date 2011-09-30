@@ -8,8 +8,8 @@ import site
 
 import os
 
-from lazr.js.build import ComboFile
-from lazr.js.combo import combine_files
+from lp.scripts.utilities.js.jsbuild import ComboFile
+from lp.scripts.utilities.js.combo import combine_files
 
 # This constant helps us meet maximum line-length goals.
 GALLERY_ACCORDION = 'yui3-gallery/gallery-accordion/assets/'
@@ -25,18 +25,19 @@ target = os.path.join(icing, 'combo.css')
 # list seems like the best option for now.
 names = [
     'style.css',
-    'lazr/build/yui/cssreset/reset.css',
+    'yui/cssreset/reset.css',
     # Use the old cssgrids instead of the new cssgrids.
     #'lazr/build/yui/cssgrids/grids.css',
     'cssgrids/grids.css',
-    'lazr/build/lazr/assets/skins/sam/lazr.css',
-    'lazr/build/inlineedit/assets/skins/sam/editor.css',
-    'lazr/build/autocomplete/assets/skins/sam/autocomplete.css',
-    'lazr/build/overlay/assets/skins/sam/pretty-overlay.css',
-    'lazr/build/formoverlay/assets/formoverlay-core.css',
-    'lazr/build/picker/assets/skins/sam/picker.css',
-    'lazr/build/activator/assets/skins/sam/activator.css',
-    'lazr/build/choiceedit/assets/choiceedit-core.css',
+    'build/lazr/assets/skins/sam/lazr.css',
+    'build/inlineedit/assets/skins/sam/editor.css',
+    'build/autocomplete/assets/skins/sam/autocomplete.css',
+    'build/overlay/assets/skins/sam/pretty-overlay.css',
+    'build/formoverlay/assets/formoverlay-core.css',
+    'build/confirmationoverlay/assets/confirmationoverlay-core.css',
+    'build/picker/assets/skins/sam/picker.css',
+    'build/activator/assets/skins/sam/activator.css',
+    'build/choiceedit/assets/choiceedit-core.css',
     GALLERY_ACCORDION + 'gallery-accordion-core.css',
     GALLERY_ACCORDION + 'skins/sam/gallery-accordion-skin.css',
     'build/sprite.css',

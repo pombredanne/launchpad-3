@@ -585,8 +585,6 @@ the number of products returned.
 Only active products are returned.
 
     >>> evo.active = False
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(firefox)
     >>> for product in productset.getProductsWithBranches():
     ...     print product.name
     firefox

@@ -51,17 +51,35 @@ timestamp.
     >>> ztapi.provideAdapter(
     ...     datetime, IPathAdapter, TestDateTimeFormatterAPI, 'testfmt')
 
-A time that is very close to the present will be displayed in seconds:
+A time that is ten seconds or less will be displayed as an approximate:
 
     >>> t = fixed_time + timedelta(0, 5, 0)
     >>> test_tales('t/testfmt:approximatedate', t=t)
-    'in 5 seconds'
+    'in a moment'
+    >>> t = fixed_time + timedelta(0, 9, 0)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    'in a moment'
     >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
     ...        test_tales('t/testfmt:displaydate', t=t))
     True
-    >>> t = fixed_time_utc - timedelta(0, 5, 0)
+    >>> t = fixed_time_utc - timedelta(0, 10, 0)
     >>> test_tales('t/testfmt:approximatedate', t=t)
-    '5 seconds ago'
+    'a moment ago'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    True
+
+A time that is very close to the present will be displayed in seconds:
+
+    >>> t = fixed_time + timedelta(0, 11, 0)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    'in 11 seconds'
+    >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
+    ...        test_tales('t/testfmt:displaydate', t=t))
+    True
+    >>> t = fixed_time_utc - timedelta(0, 25, 0)
+    >>> test_tales('t/testfmt:approximatedate', t=t)
+    '25 seconds ago'
     >>> print (test_tales('t/testfmt:approximatedate', t=t) ==
     ...        test_tales('t/testfmt:displaydate', t=t))
     True

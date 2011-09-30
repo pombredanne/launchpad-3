@@ -31,9 +31,11 @@
   <script type="text/javascript"
           tal:content="string:
     LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'lp.code.branch.status',
+              'lazr.choiceedit',
+              'lp.code.branch.status',
               'lp.code.branchmergeproposal.diff',
-              'lp.code.branch.subscription', function(Y) {
+              'lp.code.branch.subscription',
+              function(Y) {
 
         Y.on('load', function(e) {
             var logged_in = LP.links['me'] !== undefined;
@@ -48,22 +50,13 @@
         }, window);
     });
   "/>
+
 </metal:block>
 
 <body>
 
 <metal:side fill-slot="side">
-  <tal:public condition="not: context/private">
-    <div id="privacy" class="portlet public">
-      This branch is public
-    </div>
-  </tal:public>
-  <tal:public condition="context/private">
-    <div id="privacy" class="portlet private">
-      This branch is private
-    </div>
-  </tal:public>
-
+  <div tal:replace="structure context/@@+portlet-privacy" />
   <div tal:replace="structure context/@@+global-actions" />
   <tal:subscribers replace="structure context/@@+portlet-subscribers" />
 
@@ -74,7 +67,7 @@
     <tal:registrant replace="structure context/registrant/fmt:link" />
   on
     <tal:created-on replace="structure context/date_created/fmt:date" />
-  and last modified on 
+  and last modified on
     <tal:last-modified replace="structure context/date_last_modified/fmt:date" />
 </tal:registering>
 

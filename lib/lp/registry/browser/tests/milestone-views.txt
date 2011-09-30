@@ -577,7 +577,7 @@ Distroseries driver and milestones
 The driver of a series that belongs to an `IDerivativeDistribution` is a
 release manager and can create milestones.
 
-    >>> distroseries = factory.makeDistroRelease(name='pumpkin')
+    >>> distroseries = factory.makeDistroSeries(name='pumpkin')
     >>> driver = factory.makePerson(name='a-driver')
     >>> login_person(distroseries.distribution.owner)
     >>> distroseries.driver = driver

@@ -216,9 +216,6 @@ been checked.
 For the sake of this test we can set the bug tracker's batch_size to
 None so that it will process all the updates at once:
 
-    >>> from canonical.launchpad.ftests import sync
-    >>> for bug_watch in example_bug_tracker.watches:
-    ...     sync(bug_watch)
     >>> sourceforge.batch_size = None
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)

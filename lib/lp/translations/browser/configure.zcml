@@ -47,18 +47,12 @@
       layer="lp.translations.publisher.TranslationsLayer"
       name="+products-with-translations"
       template="../templates/rosetta-products.pt"/>
-    <browser:pages
+    <browser:page
         for="*"
+        name="+rosetta-status-legend"
+        template="../templates/rosetta-status-legend.pt"
         facet="translations"
-        class="lp.translations.browser.translations.RosettaApplicationView"
-        permission="zope.Public">
-        <browser:page
-            name="+portlet-preflangs"
-            template="../templates/object-portlet-preflangs.pt"/>
-        <browser:page
-            name="+rosetta-status-legend"
-            template="../templates/rosetta-status-legend.pt"/>
-    </browser:pages>
+        permission="zope.Public"/>
     <browser:page
         for="lp.translations.interfaces.rosettastats.IRosettaStats"
         class="lp.translations.browser.translations.RosettaStatsView"
@@ -73,7 +67,8 @@
         facet="translations"
         permission="zope.Public"
         template="../templates/translations-macros.pt"
-        layer="lp.translations.publisher.TranslationsLayer"/>
+        layer="lp.translations.publisher.TranslationsLayer"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         for="lp.translations.interfaces.translationpolicy.ITranslationPolicy"
         facet="translations"
@@ -405,7 +400,7 @@
         <browser:page
             name="+upload"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
-            permission="launchpad.Edit"
+            permission="launchpad.TranslationsAdmin"
             template="../templates/potemplate-upload.pt"
             class="lp.translations.browser.potemplate.POTemplateUploadView"
             layer="lp.translations.publisher.TranslationsLayer"/>
@@ -413,14 +408,14 @@
             name="+edit"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateEditView"
-            permission="launchpad.Edit"
+            permission="launchpad.TranslationsAdmin"
             template="../../app/templates/generic-edit.pt"
             layer="lp.translations.publisher.TranslationsLayer"/>
         <browser:page
             name="+admin"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateAdminView"
-            permission="launchpad.TranslationsAdmin"
+            permission="launchpad.Admin"
             template="../../app/templates/generic-edit.pt"
             layer="lp.translations.publisher.TranslationsLayer"/>
         <browser:page
@@ -503,7 +498,7 @@
             template="../templates/translationgroup-reassignment.pt"
             layer="lp.translations.publisher.TranslationsLayer"/>
         <browser:page
-            for="*"
+            for="lp.translations.interfaces.translationgroup.ITranslationGroup"
             permission="launchpad.Edit"
             name="+object-reassignment"
             template="../../app/templates/object-reassignment.pt"
@@ -771,20 +766,6 @@
             class="lp.translations.browser.person.PersonTranslationReviewView"
             permission="zope.Public"
             template="../templates/person-translations-to-review.pt"
-            layer="lp.translations.publisher.TranslationsLayer"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            name="+translations-to-review-table"
-            class="lp.translations.browser.person.PersonTranslationView"
-            permission="zope.Public"
-            template="../templates/person-translations-to-review-table.pt"
-            layer="lp.translations.publisher.TranslationsLayer"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            name="+translations-to-complete-table"
-            class="lp.translations.browser.person.PersonTranslationView"
-            permission="zope.Public"
-            template="../templates/person-translations-to-complete-table.pt"
             layer="lp.translations.publisher.TranslationsLayer"/>
 
 

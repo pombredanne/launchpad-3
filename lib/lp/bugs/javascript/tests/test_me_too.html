@@ -3,15 +3,15 @@
   <head>
   <title>Status Editor</title>
 
-  <!-- YUI 3.0 Setup -->
-  <script type="text/javascript" src="../../../../canonical/launchpad/icing/yui/yui/yui.js"></script>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/yui/cssreset/reset.css"/>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/yui/cssfonts/fonts.css"/>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/yui/cssbase/base.css"/>
+  <!-- YUI and test setup -->
+  <script type="text/javascript"
+          src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
+  </script>
+  <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+  <script type="text/javascript"
+          src="../../../app/javascript/testing/testrunner.js"></script>
 
   <!-- Dependency -->
-  <script type="text/javascript"
-    src="../../../../canonical/launchpad/icing/lazr/build/lazr.js"></script>
   <script type="text/javascript"
     src="../../../../canonical/launchpad/icing/yui/attribute/attribute.js">
   </script>
@@ -22,14 +22,13 @@
     src="../../../../canonical/launchpad/icing/yui/oop/oop.js">
   </script>
   <script type="text/javascript"
-    src="../../../../canonical/launchpad/icing/lazr/build/overlay/overlay.js">
+    src="../../../app/javascript/overlay/overlay.js">
   </script>
   <script type="text/javascript"
-    src="../../../../canonical/launchpad/icing/lazr/build/choiceedit/choiceedit.js">
+    src="../../../app/javascript/choiceedit/choiceedit.js">
   </script>
   <script type="text/javascript"
     src="../../../app/javascript/client.js"></script>
-  <script type="text/javascript" src="../subscriber.js"></script>
 
   <!-- The module under test -->
   <script type="text/javascript" src="../bugtask_index.js"></script>
@@ -46,6 +45,5 @@
   </style>
 </head>
 <body class="yui3-skin-sam">
-  <div id="log"></div>
 </body>
 </html>

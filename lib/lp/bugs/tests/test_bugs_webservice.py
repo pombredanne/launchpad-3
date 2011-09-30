@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
@@ -108,7 +108,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
         self.assertEqual(
             self.findBugDescription(response),
             u'<p>Useless bugs are useless. '
-            'See <a href="/bugs/%d">Bug %d</a>.</p>' % (
+            'See <a href="/bugs/%d" class="bug-link">Bug %d</a>.</p>' % (
             self.bug_one.id, self.bug_one.id))
 
     def test_PATCH_xhtml_representation(self):
@@ -127,7 +127,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
 
         self.assertEqual(
             self.findBugDescription(response),
-            u'<p>See <a href="/bugs/%d">bug %d</a></p>' % (
+            u'<p>See <a href="/bugs/%d" class="bug-link">bug %d</a></p>' % (
             self.bug_one.id, self.bug_one.id))
 
 
@@ -194,7 +194,6 @@ class TestBugScaling(TestCaseWithFactory):
         store = Store.of(self.bug)
         self.factory.makeBugAttachment(self.bug)
         self.factory.makeBugAttachment(self.bug)
-        person = self.factory.makePerson()
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
         collector = QueryCollector()
@@ -230,7 +229,6 @@ class TestBugScaling(TestCaseWithFactory):
         self.factory.makeBugComment(bug)
         self.factory.makeBugComment(bug)
         self.factory.makeBugComment(bug)
-        person = self.factory.makePerson()
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
         collector = QueryCollector()
@@ -343,9 +341,9 @@ class TestErrorHandling(TestCaseWithFactory):
     def test_add_duplicate_bugtask_for_project_gives_bad_request(self):
         bug = self.factory.makeBug()
         product = self.factory.makeProduct()
-        bugtask = self.factory.makeBugTask(bug=bug, target=product)
+        self.factory.makeBugTask(bug=bug, target=product)
 
         launchpad = launchpadlib_for('test', bug.owner)
         lp_bug = launchpad.load(api_url(bug))
-        exception = self.assertRaises(
+        self.assertRaises(
             BadRequest, lp_bug.addTask, target=api_url(product))

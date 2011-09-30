@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -129,7 +130,7 @@ class MultipleProductReleases(Exception):
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
-    implements(IHasBugs, IMilestone)
+    implements(IHasBugs, IMilestone, IBugSummaryDimension)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
@@ -247,6 +248,12 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             "You cannot delete a milestone which has a product release "
             "associated with it.")
         SQLBase.destroySelf(self)
+
+    def getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.milestone_id == self.id
 
 
 class MilestoneSet:

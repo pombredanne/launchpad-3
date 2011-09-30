@@ -40,6 +40,7 @@ build
 *.egg
 dist
 ./eggs
+./yui
 ./download-cache
 ./_pythonpath.py
 ./production-configs
@@ -70,7 +71,6 @@ lib/canonical/launchpad-buildd_*_source.build
 lib/canonical/launchpad-buildd_*_source.changes
 lib/canonical/buildd/debian/*
 lib/canonical/buildd/launchpad-files/*
-*.pt.py
 .project
 .pydevproject
 librarian.log
@@ -81,4 +81,6 @@ doc/_build
 run.gdb
 lib/canonical/launchpad/icing/icon-sprites
 lib/canonical/launchpad/icing/icon-sprites.positioning
+lib/canonical/launchpad/icing/yui
 .emacs.desktop
+callgrind.out.*

@@ -10,12 +10,13 @@ __all__ = [
 
 __metaclass__ = type
 
+from timeline import Timeline
+
 # XXX RobertCollins 2010-09-01 bug=623199: Undesirable but pragmatic.
 # Because of this bug, rather than using request.annotations we have
 # to work in with the webapp.adapter request model, which is 
 # different to that used by get_current_browser_request.
 from canonical.launchpad import webapp
-from timeline import Timeline
 
 
 def get_request_timeline(request):
@@ -27,7 +28,7 @@ def get_request_timeline(request):
     request annotations.
 
     :param request: A zope/launchpad request object.
-    :return: A lp.services.timeline.timeline.Timeline object for the request.
+    :return: A timeline.timeline.Timeline object for the request.
     """
     try:
         return webapp.adapter._local.request_timeline

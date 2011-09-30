@@ -22,11 +22,10 @@ owner, Launchpad administrators or members of the Bazaar Experts team.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> link = admin_browser.getLink('Change branch details')
 
-    >>> bazaar_expert_browser = setupBrowser(
-    ...     auth='Basic tim@canonical.com:test')
-    >>> bazaar_expert_browser.open(
+    >>> admin_browser = setupBrowser(auth='Basic admin@canonical.com:test')
+    >>> admin_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> link = bazaar_expert_browser.getLink('Change branch details')
+    >>> link = admin_browser.getLink('Change branch details')
 
     >>> nopriv_browser = setupBrowser(
     ...     auth='Basic nopriv@canonical.com:test')

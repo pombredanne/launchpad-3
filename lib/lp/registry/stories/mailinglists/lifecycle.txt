@@ -21,22 +21,22 @@ The owner of Landscape Developers applies for a mailing list.
 He thinks for a second whether his mailing list is for Ubuntu or not.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'ubuntu-notice'))
-    Ubuntu mailing lists should not be created here. Create them
+    Ubuntu does not use Launchpad to host its mailing lists. Create them
     at lists.ubuntu.com instead.
     >>> print browser.getLink('lists.ubuntu.com')
     <Link text='lists.ubuntu.com' url='https://lists.ubuntu.com'>
 
-    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.getControl('Create new Mailing List').click()
     >>> print browser.title
     Landscape Developers in Launchpad
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    Mailing list requested and queued for approval.
+    The mailing list is being created and will be available for use in a few minutes.
 
-Once the mailing list is requested, the button to request its activation is
-not shown anymore.
+Once the mailing list is created, the button to create it is not shown
+anymore.
 
-    >>> browser.getControl('Apply for Mailing List')
+    >>> browser.getControl('Create new Mailing List')
     Traceback (most recent call last):
     ...
     LookupError: ...
@@ -56,7 +56,7 @@ archive link yet.
     >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
     None
 
-Even after the list has been requested, it still cannot be used as the contact
+Even after the list has been created, it still cannot be used as the contact
 address until Mailman has acknowledged successful creation.
 
     >>> browser.reload()
@@ -295,7 +295,7 @@ to delete the archives of an INACTIVE list, this must be done manually.
 The team owner can see that he can purge or reactivate mailing list.
 
     >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> user_browser.getControl('Apply for Mailing List').click()
+    >>> user_browser.getControl('Create new Mailing List').click()
     >>> print user_browser.title
     Aardvarks in Launchpad
     >>> act()
@@ -373,11 +373,11 @@ A purged list acts as if it doesn't even exist.
     >>> print_list_state()
     PURGED
     >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> admin_browser.getControl('Apply for Mailing List')
-    <SubmitControl name='field.actions.request_list_creation' type='submit'>
+    >>> admin_browser.getControl('Create new Mailing List')
+    <SubmitControl name='field.actions.create_list_creation' type='submit'>
     >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> expert_browser.getControl('Apply for Mailing List')
-    <SubmitControl name='field.actions.request_list_creation' type='submit'>
+    >>> expert_browser.getControl('Create new Mailing List')
+    <SubmitControl name='field.actions.create_list_creation' type='submit'>
 
 The team owner can see that an inactive list can be reactivated or purged.
 

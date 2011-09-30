@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
@@ -18,7 +18,7 @@ from lazr.delegates import delegates
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
-)
+    )
 from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
@@ -49,7 +49,6 @@ from lp.bugs.browser.structuralsubscription import (
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
@@ -417,15 +416,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self.context.bug.unmute(self.user, self.user)
 
     def _handleUnsubscribeCurrentUser(self):
-        """Handle the special cases for unsubscribing the current user.
-
-        when the bug is private. The user must be unsubscribed from all dupes
-        too, or they would keep getting mail about this bug!
-        """
-        # ** Important ** We call unsubscribeFromDupes() before
-        # unsubscribe(), because if the bug is private, the current user
-        # will be prevented from calling methods on the main bug after
-        # they unsubscribe from it!
+        """Handle the special cases for unsubscribing the current user."""
+        # We call unsubscribeFromDupes() before unsubscribe(), because
+        # if the bug is private, the current user will be prevented from
+        # calling methods on the main bug after they unsubscribe from it.
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(
             self.user, self.user)
         self.context.bug.unsubscribe(self.user, self.user)
@@ -529,18 +523,20 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 class BugPortletSubscribersWithDetails(LaunchpadView):
     """A view that returns a JSON dump of the subscriber details for a bug."""
 
-    @property
-    def subscriber_data_js(self):
-        """Return subscriber_ids in a form suitable for JavaScript use."""
+    @cachedproperty
+    def api_request(self):
+        return IWebServiceClientRequest(self.request)
+
+    def direct_subscriber_data(self, bug):
+        """Get the direct subscriber data.
+
+        This method is isolated from the subscriber_data_js so that query
+        count testing can be done accurately and robustly.
+        """
         data = []
-        if IBug.providedBy(self.context):
-            bug = self.context
-        elif IBugTask.providedBy(self.context):
-            bug = self.context.bug
         details = list(bug.getDirectSubscribersWithDetails())
-        api_request = IWebServiceClientRequest(self.request)
-        for person, subscription in details:
-            can_edit = self.user is not None and self.user.inTeam(person)
+        for person, subscribed_by, subscription in details:
+            can_edit = subscription.canBeUnsubscribedByUser(self.user)
             if person == self.user or (person.private and not can_edit):
                 # Skip the current user viewing the page,
                 # and private teams user is not a member of.
@@ -550,9 +546,10 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 'name': person.name,
                 'display_name': person.displayname,
                 'web_link': canonical_url(person, rootsite='mainsite'),
-                'self_link': absoluteURL(person, api_request),
+                'self_link': absoluteURL(person, self.api_request),
                 'is_team': person.is_team,
                 'can_edit': can_edit,
+                'display_subscribed_by': subscription.display_subscribed_by,
                 }
             record = {
                 'subscriber': subscriber,
@@ -560,6 +557,13 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                     removeSecurityProxy(subscription.bug_notification_level)),
                 }
             data.append(record)
+        return data
+
+    @property
+    def subscriber_data(self):
+        """Return subscriber_ids in a form suitable for JavaScript use."""
+        bug = IBug(self.context)
+        data = self.direct_subscriber_data(bug)
 
         others = list(bug.getIndirectSubscribers())
         for person in others:
@@ -570,7 +574,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 'name': person.name,
                 'display_name': person.displayname,
                 'web_link': canonical_url(person, rootsite='mainsite'),
-                'self_link': absoluteURL(person, api_request),
+                'self_link': absoluteURL(person, self.api_request),
                 'is_team': person.is_team,
                 'can_edit': False,
                 }
@@ -579,7 +583,11 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 'subscription_level': 'Maybe',
                 }
             data.append(record)
-        return dumps(data)
+        return data
+
+    @property
+    def subscriber_data_js(self):
+        return dumps(self.subscriber_data)
 
     def render(self):
         """Override the default render() to return only JSON."""
@@ -614,6 +622,7 @@ class BugSubscriptionListView(LaunchpadView):
         cache = IJSONRequestCache(self.request).objects
         cache.update(references)
         cache['bug_subscription_info'] = subdata
+        cache['bug_is_private'] = self.context.bug.private
 
     @property
     def label(self):

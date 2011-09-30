@@ -13,10 +13,9 @@ help you test a locally running copy of Launchpad.
 You can add this user to teams by specifying them on the command-line. For
 example:
 
-  make-lp-user fred vcs-imports bazaar-experts
+  make-lp-user fred vcs-imports
 
-will create a user 'fred' and add them to the 'vcs-imports' and
-'bazaar-experts' teams.
+will create a user 'fred' and add them to the 'vcs-imports' team.
 
 In addition, this script will look in your ~/.ssh directory for public keys
 and register them for the created user.

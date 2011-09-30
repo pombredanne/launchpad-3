@@ -12,9 +12,7 @@ import unittest
 import pytz
 from storm.expr import Join
 from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    )
+from testtools.matchers import Equals
 from zope.component import getUtility
 
 from canonical.launchpad.searchbuilder import (
@@ -23,8 +21,8 @@ from canonical.launchpad.searchbuilder import (
     greater_than,
     )
 from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
@@ -35,6 +33,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -52,6 +51,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
+
+
+PRIVATE_BUG_VISIBILITY_FLAG = {
+    'disclosure.private_bug_visibility_rules.enabled': 'on'}
 
 
 class SearchTestBase:
@@ -76,11 +79,13 @@ class SearchTestBase:
         if self.group_on is None:
             # Not a useful/valid permutation.
             return
-        params = self.getBugTaskSearchParams(user=None, multitarget=True)
+        self.getBugTaskSearchParams(user=None, multitarget=True)
         # The test data has 3 bugs for searchtarget and 6 for searchtarget2.
         expected = {(self.targetToGroup(self.searchtarget),): 3,
             (self.targetToGroup(self.searchtarget2),): 6}
-        self.assertEqual(expected, self.bugtask_set.countBugs(params,
+        user = self.factory.makePerson()
+        self.assertEqual(expected, self.bugtask_set.countBugs(user,
+            (self.searchtarget, self.searchtarget2),
             group_on=self.group_on))
 
     def test_search_all_bugtasks_for_target(self):
@@ -89,20 +94,26 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=None)
         self.assertSearchFinds(params, self.bugtasks)
 
-    def test_private_bug_in_search_result(self):
+    def test_private_bug_in_search_result_anonymous_users(self):
         # Private bugs are not included in search results for anonymous users.
         with person_logged_in(self.owner):
             self.bugtasks[-1].bug.setPrivate(True, self.owner)
         params = self.getBugTaskSearchParams(user=None)
         self.assertSearchFinds(params, self.bugtasks[:-1])
 
+    def test_private_bug_in_search_result_unauthorised_users(self):
         # Private bugs are not included in search results for ordinary users.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         user = self.factory.makePerson()
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks[:-1])
 
+    def test_private_bug_in_search_result_subscribers(self):
         # If the user is subscribed to the bug, it is included in the
         # search result.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         user = self.factory.makePerson()
         admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         with person_logged_in(admin):
@@ -111,17 +122,48 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
+    def test_private_bug_in_search_result_admins(self):
         # Private bugs are included in search results for admins.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
         self.assertSearchFinds(params, self.bugtasks)
 
+    def test_private_bug_in_search_result_assignees(self):
         # Private bugs are included in search results for the assignee.
-        user = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         bugtask = self.bugtasks[-1]
+        user = self.factory.makePerson()
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         with person_logged_in(admin):
             bugtask.transitionToAssignee(user)
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
+
+    def test_private_bug_in_search_result_pillar_owners(self):
+        # Private, non-security bugs are included in search results for the
+        # pillar owners if the correct feature flag is enabled.
+        bugtask = self.bugtasks[-1]
+        pillar_owner = bugtask.pillar.owner
+        with person_logged_in(self.owner):
+            bugtask.bug.setPrivate(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        params = self.getBugTaskSearchParams(user=pillar_owner)
+        # Check the results with the feature flag.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks)
+        # Check the results without the feature flag.
+        self.assertSearchFinds(params, self.bugtasks[:-1])
+
+        # Make the bugtask security related.
+        with person_logged_in(self.owner):
+            bugtask.bug.setSecurityRelated(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        # It should now be excluded from the results.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks[:-1])
 
     def test_search_by_bug_reporter(self):
         # Search results can be limited to bugs filed by a given person.
@@ -412,10 +454,10 @@ class SearchTestBase:
         utc_now = datetime.now(pytz.timezone('UTC'))
         self.assertTrue(utc_now >= self.bugtasks[2].date_closed)
         params = self.getBugTaskSearchParams(
-            user=None, date_closed=greater_than(utc_now-timedelta(days=1)))
+            user=None, date_closed=greater_than(utc_now - timedelta(days=1)))
         self.assertSearchFinds(params, self.bugtasks[2:])
         params = self.getBugTaskSearchParams(
-            user=None, date_closed=greater_than(utc_now+timedelta(days=1)))
+            user=None, date_closed=greater_than(utc_now + timedelta(days=1)))
         self.assertSearchFinds(params, [])
 
     def test_created_since(self):
@@ -558,7 +600,6 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
     def test_deactivated_listings_not_seen(self):
         # Someone without permission to see deactiveated projects does
         # not see bugtasks for deactivated projects.
-        nopriv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         bugtask_set = getUtility(IBugTaskSet)
         param = BugTaskSearchParams(user=None, fast_searchtext='Monkeys')
         results = bugtask_set.search(param, _noprejoins=True)
@@ -604,13 +645,13 @@ class ProjectGroupAndDistributionTests:
 
 class BugTargetTestBase:
     """A base class for the bug target mixin classes.
-    
+
     :ivar searchtarget: A bug context to search within.
     :ivar searchtarget2: A sibling bug context for testing cross-context
         searches. Created on demand when
         getBugTaskSearchParams(multitarget=True) is called.
-    :ivar bugtasks2: Bugtasks created for searchtarget2. Twice as many are made
-        as for searchtarget.
+    :ivar bugtasks2: Bugtasks created for searchtarget2. Twice as many are
+        made as for searchtarget.
     :ivar group_on: The columns to group on when calling countBugs. None
         if the target being testing is not sensible/implemented for counting
         bugs. For instance, grouping by project group may be interesting but
@@ -696,7 +737,7 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
 
     def setUp(self):
         super(ProductTarget, self).setUp()
-        self.group_on = (BugTask.productID,)
+        self.group_on = (BugSummary.product_id,)
         self.searchtarget = self.factory.makeProduct()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -727,7 +768,7 @@ class ProductSeriesTarget(BugTargetTestBase):
 
     def setUp(self):
         super(ProductSeriesTarget, self).setUp()
-        self.group_on = (BugTask.productseriesID,)
+        self.group_on = (BugSummary.productseries_id,)
         self.searchtarget = self.factory.makeProductSeries()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -869,7 +910,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
                 owner=self.owner, project=self.searchtarget)
             bug1 = self.factory.makeBug(product=product1)
             bug1.default_bugtask.updateTargetNameCache()
-            bug2 = self.factory.makeBug(product=product2)
+            self.factory.makeBug(product=product2)
         params = self.getBugTaskSearchParams(user=None, searchtext='uct-fo')
         # With no flag, we find the first bug.
         self.assertSearchFinds(params, [bug1.default_bugtask])
@@ -884,7 +925,7 @@ class MilestoneTarget(BugTargetTestBase):
     def setUp(self):
         super(MilestoneTarget, self).setUp()
         self.product = self.factory.makeProduct()
-        self.group_on = (BugTask.milestoneID,)
+        self.group_on = (BugSummary.milestone_id,)
         self.searchtarget = self.factory.makeMilestone(product=self.product)
         self.owner = self.product.owner
         self.makeBugTasks(bugtarget=self.product)
@@ -930,7 +971,7 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
 
     def setUp(self):
         super(DistributionTarget, self).setUp()
-        self.group_on = (BugTask.distributionID,)
+        self.group_on = (BugSummary.distribution_id,)
         self.searchtarget = self.factory.makeDistribution()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -968,7 +1009,7 @@ class DistroseriesTarget(BugTargetTestBase):
 
     def setUp(self):
         super(DistroseriesTarget, self).setUp()
-        self.group_on = (BugTask.distroseriesID,)
+        self.group_on = (BugSummary.distroseries_id,)
         self.searchtarget = self.factory.makeDistroSeries()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -991,7 +1032,7 @@ class SourcePackageTarget(BugTargetTestBase):
 
     def setUp(self):
         super(SourcePackageTarget, self).setUp()
-        self.group_on = (BugTask.sourcepackagenameID,)
+        self.group_on = (BugSummary.sourcepackagename_id,)
         self.searchtarget = self.factory.makeSourcePackage()
         self.owner = self.searchtarget.distroseries.owner
         self.makeBugTasks()
@@ -1028,7 +1069,7 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
 
     def setUp(self):
         super(DistributionSourcePackageTarget, self).setUp()
-        self.group_on = (BugTask.sourcepackagenameID,)
+        self.group_on = (BugSummary.sourcepackagename_id,)
         self.searchtarget = self.factory.makeDistributionSourcePackage()
         self.owner = self.searchtarget.distribution.owner
         self.makeBugTasks()

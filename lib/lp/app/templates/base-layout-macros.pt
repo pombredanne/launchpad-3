@@ -106,15 +106,34 @@
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
+    <tal:if condition="request/features/bugs.private_notification.enabled">
+    <script type="text/javascript">
+      LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
+                'lp.bugs.subscribers',
+                'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
+                function(Y) {
+          Y.on("domready", function () {
+              if (Y.one(document.body).hasClass('private')) {
+                  Y.lp.app.privacy.setup_privacy_notification();
+                  Y.lp.app.privacy.display_privacy_notification();
+              }
+          });
+      });
+    </script>
+    </tal:if>
+
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
-            Y.lp.app.links.check_valid_lp_links();
+	    Y.lp.app.links.check_valid_lp_links();
+            // Longpolling will only start if
+	    // LP.cache.longpoll is populated.
+            Y.lp.app.longpoll.setupLongPollManager();
         }, window);
 
         // Hook up the function that dismisses the help window if we click
@@ -147,7 +166,13 @@
     We can revisit this IE-only optimization if we remove SSL.  Any changes that
     affect IE should be tested using webpagetest.org. (See the dev.launchpad.net
     wiki for details.)
-  </tal:comment>
+    </tal:comment>
+  <link
+        type="text/css"
+        rel="stylesheet"
+        media="screen, print"
+        href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
+
   <link
         type="text/css"
         rel="stylesheet"
@@ -165,15 +190,9 @@
       tal:content="string:LP.links['${key}'] =
                    '${links/?key/fmt:api_url}';">
     </script>
-    <script tal:repeat="key objects"
-      tal:content="string:LP.cache['${key}'] =
-                   ${objects/?key/webservice:json};">
-    </script>
   </tal:cache>
 
-  <script tal:condition="context/webservice:is_entry"
-    tal:content="string:LP.cache['context'] =
-                 ${context/webservice:json/fmt:obfuscate-email};">
+  <script tal:content="string:LP.cache = ${view/getCacheJSON};">
   </script>
 </metal:lp-client-cache>
 
@@ -225,7 +244,7 @@
             tal:condition="view/macro:pagehas/globalsearch"
             tal:attributes="action string:${rooturl}+search">
             <input type="search" id="search-text" name="field.text" />
-            <input type="submit" value="" class="icon-only sprite search-icon" />
+            <input type="image" src="/@@/search" style="vertical-align:5%" alt="Search Launchpad"/>
           </form>
         </div>
         <metal:site-message
@@ -243,6 +262,9 @@
       <a tal:condition="view/user|nothing"
         href="/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
+      <a href="http://blog.launchpad.net/"
+	>Blog</a>
+      &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
       <span id="lp-version">
@@ -250,8 +272,8 @@
         r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
-        (<a href="https://code.launchpad.net/~launchpad-pqm/launchpad/stable/"
-             >get the code</a>)
+        (<a href="https://dev.launchpad.net/"
+             >Get the code!</a>)
       </span>
     </div>
   </div>

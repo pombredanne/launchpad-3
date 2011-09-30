@@ -62,11 +62,14 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugHeat,
+    ISeriesBugTarget,
+    )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -128,7 +131,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IHasBugHeat, IProductSeries, IServiceUsage)
+    implements(
+        IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage,
+        ISeriesBugTarget)
 
     _table = 'ProductSeries'
 
@@ -163,6 +168,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
+
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.product
 
     @property
     def answers_usage(self):
@@ -247,6 +257,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def bugtargetname(self):
         """See IBugTarget."""
         return "%s/%s" % (self.product.name, self.name)
+
+    @property
+    def bugtarget_parent(self):
+        """See `ISeriesBugTarget`."""
+        return self.parent
 
     @property
     def max_bug_heat(self):
@@ -446,21 +461,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
-        """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
-        return get_bug_tags_open_count(
-            BugSummary.productseries_id == self.id, user, tag_limit=tag_limit,
-            include_tags=include_tags)
-
     def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return 'BugTask.productseries = %s' % sqlvalues(self)
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.productseries_id == self.id
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

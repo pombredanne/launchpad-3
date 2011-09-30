@@ -169,10 +169,10 @@ displaying their subscription.
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Mark Shuttleworth
     deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Mark Shuttleworth
 
 This page will include information about the signing key, if the archive
@@ -193,10 +193,10 @@ has a signing key:
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Mark Shuttleworth
     deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Mark Shuttleworth
     This repository is signed ...
 

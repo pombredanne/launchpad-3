@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -11,7 +11,13 @@ __all__ = [
 import simplejson
 from zope.component import getUtility
 
+from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.webapp import LaunchpadView
 from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,
@@ -22,7 +28,7 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.registry.interfaces.product import InvalidProductName
 
 
-class LinkCheckerAPI:
+class LinkCheckerAPI(LaunchpadView):
     """Validates Launchpad shortcut links.
 
     This class provides the endpoint of an Ajax call to .../+check-links.
@@ -47,6 +53,7 @@ class LinkCheckerAPI:
         # Each link type has it's own validation method.
         self.link_checkers = dict(
             branch_links=self.check_branch_links,
+            bug_links=self.check_bug_links,
         )
 
     def __call__(self):
@@ -58,8 +65,8 @@ class LinkCheckerAPI:
 
         for link_type in links_to_check:
             links = links_to_check[link_type]
-            invalid_links = self.link_checkers[link_type](links)
-            result['invalid_'+link_type] = invalid_links
+            link_info = self.link_checkers[link_type](links)
+            result[link_type] = link_info
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(result)
@@ -76,7 +83,30 @@ class LinkCheckerAPI:
                     InvalidProductName, NoLinkedBranch, NoSuchBranch,
                     NotFoundError) as e:
                 invalid_links[link] = self._error_message(e)
-        return invalid_links
+        return {'invalid': invalid_links}
+
+    def check_bug_links(self, links):
+        """Checks links of the form /bugs/100"""
+        invalid_links = {}
+        valid_links = {}
+        user = self.user
+        # List of all the bugs we are checking.
+        bugs_ids = set([int(link[len('/bugs/'):]) for link in links])
+        if bugs_ids:
+            params = BugTaskSearchParams(
+                user=user, status=None,
+                bug=any(*bugs_ids))
+            bugtasks = getUtility(IBugTaskSet).search(params)
+            for task in bugtasks:
+                valid_links['/bugs/' + str(task.bug.id)] = task.bug.title
+                # Remove valid bugs from the list of all the bugs.
+                if task.bug.id in bugs_ids:
+                    bugs_ids.remove(task.bug.id)
+            # We should now have only invalid bugs in bugs list
+            for bug in bugs_ids:
+                invalid_links['/bugs/%d' % bug] = (
+                    "Bug %s cannot be found" % bug)
+        return {'valid': valid_links, 'invalid': invalid_links}
 
     def _error_message(self, ex):
         if hasattr(ex, 'display_message'):

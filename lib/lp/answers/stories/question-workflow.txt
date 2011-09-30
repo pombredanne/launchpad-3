@@ -458,21 +458,9 @@ similar problem so he asks his own question.
     >>> print content.find(id='can-you-help-with-this-problem')
     None
 
-    >>> print content.find(id='ask-your-own-question').h2.renderContents()
-    Got a question of your own?
-
-    >>> user_browser.getLink('ask your own question separately').click()
+    >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about...
-
-The 'Got a question of your own?' section in not relevant to the
-question owner, so Sample person does not see it.
-
-    >>> owner_browser.open('http://launchpad.dev/firefox/+question/2')
-    >>> content = find_tag_by_id(
-    ...     owner_browser.contents, 'ask-your-own-question')
-    >>> content is None
-    True
 
 Clean up the feature flag.
 

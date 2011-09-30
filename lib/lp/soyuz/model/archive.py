@@ -58,8 +58,8 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.components.tokens import (
-    create_unique_token_for_table,
     create_token,
+    create_unique_token_for_table,
     )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
@@ -102,6 +102,8 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load_related
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
     cachedproperty,
@@ -115,6 +117,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     ArchiveSubscriberStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -130,6 +133,7 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     ComponentNotFound,
     default_name_by_purpose,
+    ForbiddenByFeatureFlag,
     FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
@@ -146,8 +150,8 @@ from lp.soyuz.interfaces.archive import (
     NoSuchPPA,
     NoTokensForTeams,
     PocketNotFound,
-    VersionRequiresName,
     validate_external_dependencies,
+    VersionRequiresName,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
@@ -165,6 +169,7 @@ from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
@@ -181,10 +186,6 @@ from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache,
-    )
-from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
@@ -200,6 +201,7 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.scripts.packagecopier import check_copy_permissions
 
 
 def storm_validate_external_dependencies(archive, attr, value):
@@ -493,7 +495,7 @@ class Archive(SQLBase):
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
-                            eager_load=False):
+                            eager_load=False, component_name=None):
         """See `IArchive`."""
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
@@ -533,6 +535,12 @@ class Archive(SQLBase):
         else:
             orderBy.insert(1, Desc(SourcePackageRelease.version))
 
+        if component_name is not None:
+            storm_clauses.extend(
+                [SourcePackagePublishingHistory.componentID == Component.id,
+                 Component.name == component_name,
+                 ])
+
         if status is not None:
             try:
                 status = tuple(status)
@@ -548,8 +556,13 @@ class Archive(SQLBase):
                     distroseries.id)
 
         if pocket is not None:
+            try:
+                pockets = tuple(pocket)
+            except TypeError:
+                pockets = (pocket,)
             storm_clauses.append(
-                SourcePackagePublishingHistory.pocket == pocket)
+                "SourcePackagePublishingHistory.pocket IN %s " %
+                   sqlvalues(pockets))
 
         if created_since_date is not None:
             clauses.append(
@@ -899,6 +912,11 @@ class Archive(SQLBase):
 
     def updateArchiveCache(self):
         """See `IArchive`."""
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
+        from lp.soyuz.model.distroseriespackagecache import (
+            DistroSeriesPackageCache)
         # Compiled regexp to remove puntication.
         clean_text = re.compile('(,|;|:|\.|\?|!)')
 
@@ -1507,19 +1525,102 @@ class Archive(SQLBase):
             sources, to_pocket, to_series, include_binaries,
             person=person)
 
-    def syncSource(self, source_name, version, from_archive, to_pocket,
-                   to_series=None, include_binaries=False, person=None):
-        """See `IArchive`."""
+    def _validateAndFindSource(self, from_archive, source_name, version):
         # Check to see if the source package exists, and raise a useful error
         # if it doesn't.
         getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True).first()
+        return source
+
+    def syncSource(self, source_name, version, from_archive, to_pocket,
+                   to_series=None, include_binaries=False, person=None):
+        """See `IArchive`."""
+        source = self._validateAndFindSource(
+            from_archive, source_name, version)
 
         self._copySources(
             [source], to_pocket, to_series, include_binaries,
             person=person)
+
+    def _checkCopyPackageFeatureFlags(self):
+        """Prevent copyPackage(s) if these conditions are not met."""
+        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
+            raise ForbiddenByFeatureFlag
+        if (self.is_ppa and
+            not getFeatureFlag(u"soyuz.copypackageppa.enabled")):
+            # We have no way of giving feedback about failed jobs yet,
+            # so this is disabled for now.
+            raise ForbiddenByFeatureFlag(
+                "Not enabled for copying to PPAs yet.")
+
+    def copyPackage(self, source_name, version, from_archive, to_pocket,
+                    person, to_series=None, include_binaries=False):
+        """See `IArchive`."""
+        self._checkCopyPackageFeatureFlags()
+
+        # Asynchronously copy a package using the job system.
+        pocket = self._text_to_pocket(to_pocket)
+        series = self._text_to_series(to_series)
+        # Upload permission checks, this will raise CannotCopy as
+        # necessary.
+        sourcepackagename = getUtility(ISourcePackageNameSet)[source_name]
+        check_copy_permissions(
+            person, self, series, pocket, [sourcepackagename])
+
+        self._validateAndFindSource(from_archive, source_name, version)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        job_source.create(
+            package_name=source_name, source_archive=from_archive,
+            target_archive=self, target_distroseries=series,
+            target_pocket=pocket,
+            package_version=version, include_binaries=include_binaries,
+            copy_policy=PackageCopyPolicy.INSECURE, requester=person)
+
+    def copyPackages(self, source_names, from_archive, to_pocket,
+                     person, to_series=None, include_binaries=None):
+        """See `IArchive`."""
+        self._checkCopyPackageFeatureFlags()
+
+        sources = self._collectLatestPublishedSources(
+            from_archive, source_names)
+        if not sources:
+            raise CannotCopy(
+                "None of the supplied package names are published")
+
+        # Bulk-load the sourcepackagereleases so that the list
+        # comprehension doesn't generate additional queries. The
+        # sourcepackagenames themselves will already have been loaded when
+        # generating the list of source publications in "sources".
+        load_related(
+            SourcePackageRelease, sources, ["sourcepackagereleaseID"])
+        sourcepackagenames = [source.sourcepackagerelease.sourcepackagename
+                              for source in sources]
+
+        # Now do a mass check of permissions.
+        pocket = self._text_to_pocket(to_pocket)
+        series = self._text_to_series(to_series)
+        check_copy_permissions(
+            person, self, series, pocket, sourcepackagenames)
+
+        # If we get this far then we can create the PackageCopyJob.
+        copy_tasks = []
+        for source in sources:
+            task = (
+                source.sourcepackagerelease.sourcepackagename.name,
+                source.sourcepackagerelease.version,
+                from_archive,
+                self,
+                PackagePublishingPocket.RELEASE
+                )
+            copy_tasks.append(task)
+
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        job_source.createMultiple(
+            series, copy_tasks, person,
+            copy_policy=PackageCopyPolicy.MASS_SYNC,
+            include_binaries=include_binaries)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an
@@ -1528,6 +1629,9 @@ class Archive(SQLBase):
         :raises NoSuchSourcePackageName: If any of the source_names do not
             exist.
         """
+        # XXX bigjools bug=810421
+        # This code is inefficient.  It should try to bulk load all the
+        # sourcepackagenames and publications instead of iterating.
         sources = []
         for name in source_names:
             # Check to see if the source package exists. This will raise
@@ -1538,11 +1642,33 @@ class Archive(SQLBase):
             # publication.
             published_sources = from_archive.getPublishedSources(
                 name=name, exact_match=True,
-                status=PackagePublishingStatus.PUBLISHED)
+                status=(PackagePublishingStatus.PUBLISHED,
+                        PackagePublishingStatus.PENDING))
             first_source = published_sources.first()
             if first_source is not None:
                 sources.append(first_source)
         return sources
+
+    def _text_to_series(self, to_series):
+        if to_series is not None:
+            result = getUtility(IDistroSeriesSet).queryByName(
+                self.distribution, to_series)
+            if result is None:
+                raise NoSuchDistroSeries(to_series)
+            series = result
+        else:
+            series = None
+
+        return series
+
+    def _text_to_pocket(self, to_pocket):
+        # Convert the to_pocket string to its enum.
+        try:
+            pocket = PackagePublishingPocket.items[to_pocket.upper()]
+        except KeyError:
+            raise PocketNotFound(to_pocket.upper())
+
+        return pocket
 
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False, person=None):
@@ -1553,12 +1679,8 @@ class Archive(SQLBase):
         """
         # Circular imports.
         from lp.soyuz.scripts.packagecopier import do_copy
-        # Convert the to_pocket string to its enum.
-        try:
-            pocket = PackagePublishingPocket.items[to_pocket.upper()]
-        except KeyError:
-            raise PocketNotFound(to_pocket.upper())
 
+        pocket = self._text_to_pocket(to_pocket)
         # Fail immediately if the destination pocket is not Release and
         # this archive is a PPA.
         if self.is_ppa and pocket != PackagePublishingPocket.RELEASE:
@@ -1566,14 +1688,7 @@ class Archive(SQLBase):
                 "Destination pocket must be 'release' for a PPA.")
 
         # Now convert the to_series string to a real distroseries.
-        if to_series is not None:
-            result = getUtility(IDistroSeriesSet).queryByName(
-                self.distribution, to_series)
-            if result is None:
-                raise NoSuchDistroSeries(to_series)
-            series = result
-        else:
-            series = None
+        series = self._text_to_series(to_series)
 
         # Perform the copy, may raise CannotCopy. Don't do any further
         # permission checking: this method is protected by
@@ -1772,10 +1887,7 @@ class Archive(SQLBase):
             "This archive is already deleted.")
 
         # Set all the publications to DELETED.
-        statuses = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED)
-        sources = list(self.getPublishedSources(status=statuses))
+        sources = self.getPublishedSources(status=active_publishing_status)
         getUtility(IPublishingSet).requestDeletion(
             sources, removed_by=deleted_by,
             removal_comment="Removed when deleting archive")
@@ -1804,8 +1916,8 @@ class Archive(SQLBase):
         """Retrieve the restricted architecture families this archive can
         build on."""
         # Main archives are always allowed to build on restricted
-        # architectures.
-        if self.is_main:
+        # architectures if require_virtualized is False.
+        if self.is_main and not self.require_virtualized:
             return getUtility(IProcessorFamilySet).getRestricted()
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedFamilies(self)
@@ -1815,13 +1927,16 @@ class Archive(SQLBase):
     def _setEnabledRestrictedFamilies(self, value):
         """Set the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted
-        # architectures.
-        if self.is_main:
+        # Main archives are not allowed to build on restricted
+        # architectures unless they are set to build on virtualized
+        # builders.
+        if (self.is_main and not self.require_virtualized):
             proc_family_set = getUtility(IProcessorFamilySet)
             if set(value) != set(proc_family_set.getRestricted()):
-                raise CannotRestrictArchitectures("Main archives can not "
-                        "be restricted to certain architectures")
+                raise CannotRestrictArchitectures(
+                    "Main archives can not be restricted to certain "
+                    "architectures unless they are set to build on "
+                    "virtualized builders")
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedFamilies(self)
         for (family, archive_arch) in restricted_families:
@@ -1840,8 +1955,18 @@ class Archive(SQLBase):
         self.enabled_restricted_families = restricted
 
     @classmethod
-    def validatePPA(self, person, proposed_name):
+    def validatePPA(self, person, proposed_name, private=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if private:
+            # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
+            # which says that one needs 'launchpad.Commercial' permission to
+            # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
+            # which determines who is granted launchpad.Commercial
+            # permissions.
+            commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+            admin = getUtility(ILaunchpadCelebrities).admin
+            if not person.inTeam(commercial) and not person.inTeam(admin):
+                return '%s is not allowed to make private PPAs' % person.name
         if person.isTeam() and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
@@ -1965,7 +2090,7 @@ class ArchiveSet:
 
     def new(self, purpose, owner, name=None, displayname=None,
             distribution=None, description=None, enabled=True,
-            require_virtualized=True):
+            require_virtualized=True, private=False):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2039,6 +2164,8 @@ class ArchiveSet:
             new_archive.buildd_secret = create_unique_token_for_table(
                 20, Archive.buildd_secret)
             new_archive.private = True
+        else:
+            new_archive.private = private
 
         return new_archive
 

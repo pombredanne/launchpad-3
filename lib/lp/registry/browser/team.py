@@ -70,6 +70,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.owner import HiddenUserWidget
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
@@ -258,10 +259,9 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         has_mailing_list = (
             mailing_list is not None and
             mailing_list.status != MailingListStatus.PURGED)
-        is_private = self.context.visibility == PersonVisibility.PRIVATE
         has_ppa = self.context.archive is not None
 
-        block_renaming = (has_mailing_list or is_private or has_ppa)
+        block_renaming = (has_mailing_list or has_ppa)
         if block_renaming:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
@@ -272,17 +272,12 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         # read-only mode if necessary.
         if block_renaming:
             # Group the read-only mode reasons in textual form.
-            # Private teams can't be associated with mailing lists
-            # or PPAs yet, so it's a dominant condition.
-            if is_private:
-                reason = 'is private'
-            else:
-                if not has_mailing_list:
-                    reason = 'has a PPA'
-                elif not has_ppa:
-                    reason = 'has a mailing list'
-                else:
-                    reason = 'has a mailing list and a PPA'
+            reasons = []
+            if has_mailing_list:
+                reasons.append('has a mailing list')
+            if has_ppa:
+                reasons.append('has a PPA')
+            reason = ' and '.join(reasons)
             self.widgets['name'].hint = _(
                 'This team cannot be renamed because it %s.' % reason)
 
@@ -548,7 +543,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         already been approved or declined. This can only happen
         through bypassing the UI.
         """
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        getUtility(IMailingListSet).get(self.context.name)
         if self.getListInState(MailingListStatus.REGISTERED) is None:
             self.addError("This application can't be cancelled.")
 
@@ -562,24 +557,25 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             "Mailing list application cancelled.")
         self.next_url = canonical_url(self.context)
 
-    def request_list_creation_validator(self, action, data):
-        """Validator for the `request_list_creation` action.
+    def create_list_creation_validator(self, action, data):
+        """Validator for the `create_list_creation` action.
 
-        Adds an error if someone tries to request a mailing list for a
+        Adds an error if someone tries to create a mailing list for a
         team that already has one. This can only happen through
         bypassing the UI.
         """
-        if not self.list_can_be_requested:
+        if not self.list_can_be_created:
             self.addError(
-                "You cannot request a new mailing list for this team.")
+                "You cannot create a new mailing list for this team.")
 
-    @action('Apply for Mailing List', name='request_list_creation',
-            validator=request_list_creation_validator)
-    def request_list_creation(self, action, data):
+    @action('Create new Mailing List', name='create_list_creation',
+            validator=create_list_creation_validator)
+    def create_list_creation(self, action, data):
         """Creates a new mailing list."""
         getUtility(IMailingListSet).new(self.context)
         self.request.response.addInfoNotification(
-            "Mailing list requested and queued for approval.")
+            "The mailing list is being created and will be available for "
+            "use in a few minutes.")
         self.next_url = canonical_url(self.context)
 
     def deactivate_list_validator(self, action, data):
@@ -713,8 +709,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         return self.getListInState(MailingListStatus.REGISTERED) is not None
 
     @property
-    def list_can_be_requested(self):
-        """Can a mailing list be requested for this team?
+    def list_can_be_created(self):
+        """Can a mailing list be created for this team?
 
         It can only be requested if there's no mailing list associated with
         this team, or the mailing list has been purged.
@@ -983,8 +979,7 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
             failed_names = [person.displayname for person in failed_joins]
             failed_list = ", ".join(failed_names)
 
-            mapping=dict(
-                this_team=target_team.displayname,
+            mapping = dict(this_team=target_team.displayname,
                 failed_list=failed_list)
 
             if len(failed_joins) == 1:
@@ -1034,6 +1029,13 @@ class TeamMemberAddView(LaunchpadFormView):
 
     schema = ITeamMember
     label = "Select the new member"
+    # XXX: jcsackett 5.7.2011 bug=799847 The assignment of 'false' to the vars
+    # below should be changed to the more appropriate False bool when we're
+    # making use of the JSON cache to setup pickers, rather than assembling
+    # javascript in a view macro.
+    custom_widget(
+        'newmember', PersonPickerWidget,
+        show_assign_me_button='false', show_remove_button='false')
 
     @property
     def page_title(self):

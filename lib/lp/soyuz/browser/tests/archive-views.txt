@@ -49,8 +49,7 @@ the string 'PPA' or 'archive' depending on whether the archive is a PPA
     >>> print copy_archive_view.archive_label
     archive
 
-The ArchiveView is provides the html for the inline description
-editing widget.
+The ArchiveView provides the html for the inline description editing widget.
 
     >>> print ppa_archive_view.archive_description_html.title
     PPA description
@@ -1253,7 +1252,7 @@ options making it the default option, 'This PPA' rendered option.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Ubuntu Team (ubuntu-team/ppa)
+    PPA for Ubuntu Team
 
     >>> print archive_widget.getInputValue() == cprov.archive
     True
@@ -1303,8 +1302,8 @@ value is submitted.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Celso Providelo (cprov/ppa)
-    PPA for No Privileges Person (no-priv/ppa)
+    PPA for Celso Providelo
+    PPA for No Privileges Person
 
     >>> print archive_widget.getInputValue()
     Traceback (most recent call last):

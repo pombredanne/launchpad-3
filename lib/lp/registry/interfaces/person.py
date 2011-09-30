@@ -27,7 +27,6 @@ __all__ = [
     'ITeamCreation',
     'ITeamReassignment',
     'ImmutableVisibilityError',
-    'InvalidName',
     'NoSuchPerson',
     'OPEN_TEAM_POLICY',
     'PersonCreationRationale',
@@ -1241,6 +1240,14 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         for each source package name, distribution series combination.
         """
 
+    def getLatestSynchronisedPublishings():
+        """Return `SourcePackagePublishingHistory`s synchronised by this
+        person.
+
+        This method will only include the latest publishings for each source
+        package name, distribution series combination.
+        """
+
     def getLatestUploadedButNotMaintainedPackages():
         """Return `SourcePackageRelease`s created by this person but
         not maintained by him.
@@ -1400,16 +1407,21 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     @operation_parameters(
         name=TextLine(required=True, constraint=name_validator),
         displayname=TextLine(required=False),
-        description=TextLine(required=False))
+        description=TextLine(required=False),
+        private=Bool(required=False),
+        )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None):
+    def createPPA(name=None, displayname=None, description=None,
+                  private=False):
         """Create a PPA.
 
         :param name: A string with the name of the new PPA to create. If
             not specified, defaults to 'ppa'.
         :param displayname: The displayname for the new PPA.
         :param description: The description for the new PPA.
+        :param private: Whether or not to create a private PPA. Defaults to
+            False, which means the PPA will be public.
         :raises: `PPACreationError` if an error is encountered
 
         :return: a PPA `IArchive` record.
@@ -2113,6 +2125,16 @@ class IPersonSet(Interface):
         Return None if there is no person with the given email address.
         """
 
+    def getByEmails(emails, include_hidden=True):
+        """Search for people with the given email addresses.
+
+        :param emails: A list of email addresses.
+        :param include_hidden: Include people who have opted to hide their
+            email. Defaults to True.
+
+        :return: A `ResultSet` of `IEmailAddress`, `IPerson`.
+        """
+
     def getByName(name, ignore_merged=True):
         """Return the person with the given name, ignoring merged persons if
         ignore_merged is True.
@@ -2211,7 +2233,7 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def mergeAsync(from_person, to_person, reviewer=None):
+    def mergeAsync(from_person, to_person, reviewer=None, delete=False):
         """Merge a person/team into another asynchronously.
 
         This schedules a call to `merge()` to happen outside of the current
@@ -2223,7 +2245,23 @@ class IPersonSet(Interface):
         :param from_person: An IPerson or ITeam that is a duplicate.
         :param to_person: An IPerson or ITeam that is a master.
         :param reviewer: An IPerson who approved the ITeam merger.
+        :param delete: The merge is really a deletion.
         :return: A `PersonMergeJob` or None.
+        """
+
+    def delete(from_person, reviewer):
+        """Delete a person/team.
+
+        The old team (from_person) will be left as an atavism.
+
+        Deleting a person is not supported at this time.
+
+        When deleting teams, from_person must have no IMailingLists
+        associated with and no active members. Any active team members will be
+        deactivated.
+
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param reviewer: An IPerson who approved the ITeam merger.
         """
 
     def merge(from_person, to_person, reviewer=None):
@@ -2235,10 +2273,8 @@ class IPersonSet(Interface):
         addresses associated with.
 
         When merging teams, from_person must have no IMailingLists
-        associated with and no active members. If it has active members,
-        though, it's possible to have them deactivated before the merge by
-        passing deactivate_members=True. In that case the user who's
-        performing the merge must be provided as well.
+        associated with it. If it has active members they will be deactivated
+        - and reviewer must be supplied.
 
         :param from_person: An IPerson or ITeam that is a duplicate.
         :param to_person: An IPerson or ITeam that is a master.
@@ -2427,10 +2463,6 @@ class ISoftwareCenterAgentApplication(ILaunchpadApplication):
 
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
-
-
-class InvalidName(Exception):
-    """The name given for a person is not valid."""
 
 
 class NoSuchPerson(NameLookupFailed):

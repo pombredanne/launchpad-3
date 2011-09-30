@@ -100,7 +100,8 @@
                     can_confirm_answer can_reopen
                     subscriptions isSubscribed getRecipients
                     direct_recipients indirect_recipients
-                    getDirectSubscribers getIndirectSubscribers"
+                    getDirectSubscribers getIndirectSubscribers
+                    getDirectSubscribersWithDetails"
       />
     <require
       permission="launchpad.Owner"
@@ -180,6 +181,14 @@
     for="lp.registry.interfaces.sourcepackage.ISourcePackage"
     factory=".adapters.sourcepackage_to_faqtarget"
     />
+
+  <securedutility
+    name="UsesAnswersDistribution"
+    component=".vocabulary.UsesAnswersDistributionVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
   <!-- QuestionSet -->
   <class class=".model.question.QuestionSet">

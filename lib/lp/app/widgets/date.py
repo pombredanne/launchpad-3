@@ -117,8 +117,6 @@ class DateTimeWidget(TextWidget):
     """
 
     timeformat = '%Y-%m-%d %H:%M:%S'
-    
-
     required_time_zone = None
     display_zone = True
     from_date = None
@@ -150,7 +148,7 @@ class DateTimeWidget(TextWidget):
             ]
         outputs = []
         for fmt in time_formats:
-           outputs.extend(['%s %s' % (d, fmt) for d in date_formats])
+            outputs.extend(['%s %s' % (d, fmt) for d in date_formats])
 
         return [o.strip() for o in outputs]
 
@@ -343,7 +341,7 @@ class DateTimeWidget(TextWidget):
             try:
                 datetime.strptime(input.strip(), fmt)
             except (ValueError), e:
-                if 'unconverted data remains' in e.message:
+                if 'unconverted data remains' in str(e):
                     return
                 else:
                     failure = e

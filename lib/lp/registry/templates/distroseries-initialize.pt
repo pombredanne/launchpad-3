@@ -26,9 +26,6 @@
         please use the <code>initDerivedDistroSeries</code> API call via the
         web service.
       </p>
-      <script
-        tal:content="string:LP.cache['rebuilding_allowed'] = ('${view/rebuilding_allowed}' === 'True');">
-      </script>
       <div class="unseen" id="initseries-form-container">
         <metal:form use-macro="context/@@launchpad_form/form" />
       </div>
@@ -52,6 +49,14 @@
         page</a>.
       </p>
       </tal:disabled>
+
+      <tal:previous_series_none
+        condition="view/show_previous_series_empty_message">
+      <p class="error message">
+        Unable to initialize series: the distribution already has
+        initialized series and this distroseries has no previous series.
+      </p>
+      </tal:previous_series_none>
 
       <tal:already-initialized condition="view/show_already_initialized_message">
       <p class="error message">

@@ -98,7 +98,6 @@ later.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from StringIO import StringIO
     >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from lp.soyuz.enums import PackageDiffStatus
 
@@ -108,7 +107,6 @@ later.
     ...     naked_diff.status = PackageDiffStatus.COMPLETED
     ...     naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
     ...         filename, 3, StringIO('Foo'), 'application/gzipped-patch')
-    ...     syncUpdate(diff)
 
     >>> perform_fake_diff(diff_one, 'biscuit_1.0-1_1.0-2.diff.gz')
 

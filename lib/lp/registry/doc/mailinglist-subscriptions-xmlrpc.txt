@@ -301,8 +301,6 @@ Teams with mailing lists cannot change visibility, so the team must be made
 private before its mailing list is created.
 
     >>> team_three.visibility = PersonVisibility.PRIVATE
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(team_three)
     >>> queryAdapter(team_three, IObjectPrivacy).is_private
     True
 

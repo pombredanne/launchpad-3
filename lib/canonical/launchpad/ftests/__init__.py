@@ -14,20 +14,10 @@ __all__ = [
     'login',
     'login_person',
     'logout',
-    'print_date_attribute',
-    'set_so_attr',
-    'sync',
-    'syncUpdate',
     ]
 
 from canonical.launchpad.ftests._launchpadformharness import (
     LaunchpadFormHarness,
-    )
-from canonical.launchpad.ftests._sqlobject import (
-    print_date_attribute,
-    set_so_attr,
-    sync,
-    syncUpdate,
     )
 from canonical.launchpad.ftests.keys_for_tests import (
     decrypt_content,

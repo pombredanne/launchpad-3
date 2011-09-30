@@ -10,7 +10,13 @@ __all__ = [
     ]
 
 
+import apt_pkg
 import datetime
+from debian.changelog import (
+    Changelog,
+    ChangelogCreateError,
+    ChangelogParseError,
+    )
 import operator
 import re
 from StringIO import StringIO
@@ -47,7 +53,6 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.helpers import shortlist
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
@@ -61,10 +66,7 @@ from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    MAIN_ARCHIVE_PURPOSES,
-    )
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
@@ -574,7 +576,7 @@ class SourcePackageRelease(SQLBase):
 
         queue = getUtility(ITranslationImportQueue)
 
-        only_templates=self.sourcepackage.has_sharing_translation_templates
+        only_templates = self.sourcepackage.has_sharing_translation_templates
         queue.addOrUpdateEntriesFromTarball(
             tarball, by_maintainer, importer,
             sourcepackagename=self.sourcepackagename,
@@ -607,3 +609,40 @@ class SourcePackageRelease(SQLBase):
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
+
+    def aggregate_changelog(self, since_version):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.changelog is None:
+            return None
+
+        apt_pkg.InitSystem()
+        chunks = []
+        changelog = self.changelog
+        # The python-debian API for parsing changelogs is pretty awful. The
+        # only useful way of extracting info is to use the iterator on
+        # Changelog and then compare versions.
+        try:
+            for block in Changelog(changelog.read()):
+                version = block._raw_version
+                if (since_version and
+                    apt_pkg.VersionCompare(version, since_version) <= 0):
+                    break
+                # Poking in private attributes is not nice but again the
+                # API is terrible.  We want to ensure that the name/date
+                # line is omitted from these composite changelogs.
+                block._no_trailer = True
+                try:
+                    # python-debian adds an extra blank line to the chunks
+                    # so we'll have to sort this out.
+                    chunks.append(str(block).rstrip())
+                except ChangelogCreateError:
+                    continue
+                if not since_version:
+                    # If a particular version was not requested we just
+                    # return the most recent changelog entry.
+                    break
+        except ChangelogParseError:
+            return None
+
+        output = "\n\n".join(chunks)
+        return output.decode("utf-8", "replace")

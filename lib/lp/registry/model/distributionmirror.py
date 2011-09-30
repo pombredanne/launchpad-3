@@ -51,10 +51,6 @@ from canonical.launchpad.helpers import (
     shortlist,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import (
     canonical_url,
     urlappend,
@@ -94,6 +90,10 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
@@ -169,7 +169,7 @@ class DistributionMirror(SQLBase):
     def last_probe_record(self):
         """See IDistributionMirror"""
         return MirrorProbeRecord.selectFirst(
-            MirrorProbeRecord.q.distribution_mirrorID==self.id,
+            MirrorProbeRecord.q.distribution_mirrorID == self.id,
             orderBy='-date_created')
 
     @property
@@ -313,7 +313,6 @@ class DistributionMirror(SQLBase):
             if (arch_mirror_freshness is None and
                 source_mirror_freshness is None):
                 return MirrorFreshness.UNKNOWN
-
 
             # Return arch_mirror freshness if we have no source mirror.
             if  (arch_mirror_freshness is not None and
@@ -605,7 +604,7 @@ class DistributionMirrorSet:
         order_by = [Func('random')]
         mirrors = shortlist(
             DistributionMirror.select(query, orderBy=order_by),
-            longest_expected=50)
+            longest_expected=200)
 
         if not mirrors and country is not None:
             continent = country.continent

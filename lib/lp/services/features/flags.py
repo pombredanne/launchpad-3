@@ -26,6 +26,8 @@ value_domain_info = sorted([
      'The flag value is set to the given floating point number.'),
     ('int',
      "An integer."),
+    ('space delimited',
+     'Space-delimited strings.')
     ])
 
 # Data for generating web-visible feature flag documentation.
@@ -41,6 +43,10 @@ flag_info = sorted([
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
+     ''),
+    ('code.ajax_revision_diffs.enabled',
+     'boolean',
+     ("Offer expandable inline diffs for branch revisions."),
      ''),
     ('code.branchmergequeue',
      'boolean',
@@ -82,6 +88,10 @@ flag_info = sorted([
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
      ''),
+    ('soyuz.derived_series_upgrade.enabled',
+     'boolean',
+     'Enables mass-upgrade of packages on derivative distributions pages.',
+     ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',
      "Compute package differences for derived distributions.",
@@ -98,13 +108,57 @@ flag_info = sorted([
      'boolean',
      'Changes the appearance of notifications on private bugs.',
      ''),
+    ('disclosure.dsp_picker.enabled',
+     'boolean',
+     'Enables the use of the new DistributionSourcePackage vocabulary for '
+     'the source and binary package name pickers.',
+     ''),
     ('disclosure.picker_enhancements.enabled',
      'boolean',
      ('Enables the display of extra details in the person picker.'),
      ''),
+    ('disclosure.picker_expander.enabled',
+     'boolean',
+     ('Enables the expanding of extra details in the person picker.'),
+     ''),
+    ('disclosure.personpicker_affiliation.enabled',
+     'boolean',
+     ('Enables display of affiliation details in the person picker.'),
+     ''),
     ('disclosure.person_affiliation_rank.enabled',
      'boolean',
      ('Enables ranking by pillar affiliation in the person picker.'),
+     ''),
+    ('disclosure.target_picker_enhancements.enabled',
+     'boolean',
+     ('Enables the display and use of the enhanced target pickers.'),
+     ''),
+    ('disclosure.private_bug_visibility_rules.enabled',
+     'boolean',
+     ('Enables the application of additional privacy filter terms in bug '
+      'queries to allow defined project roles to see private bugs.'),
+     ''),
+    ('disclosure.enhanced_private_bug_subscriptions.enabled',
+     'boolean',
+     ('Enables the auto subscribing and unsubscribing of users as a bug '
+      'transitions between public, private and security related states.'),
+     ''),
+    ('bugs.autoconfirm.enabled_distribution_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for distributions (and their '
+      'series and packages).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all distributions.'),
+     'None are enabled'),
+    ('bugs.autoconfirm.enabled_product_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for products (and their '
+      'series).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all products.'),
+     'None are enabled'),
+    ('longpoll.merge_proposals.enabled',
+     'boolean',
+     ('Enables the longpoll mechanism for merge proposals so that diffs, '
+      'for example, are updated in-page when they are ready.'),
      ''),
     ])
 

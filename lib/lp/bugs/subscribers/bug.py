@@ -19,10 +19,6 @@ import datetime
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import get_contact_email_addresses
-from canonical.launchpad.mail import (
-    format_address,
-    sendmail,
-    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
@@ -36,6 +32,10 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.bugs.model.bug import get_also_notified_subscribers
 from lp.registry.interfaces.person import IPerson
+from lp.services.mail.sendmail import (
+    format_address,
+    sendmail,
+    )
 
 
 @block_implicit_flushes
@@ -45,14 +45,6 @@ def notify_bug_modified(bug, event):
     Subscribe the security contacts for a bug when it becomes
     security-related, and add notifications for the changes.
     """
-    if (event.object.security_related and
-        not event.object_before_modification.security_related):
-        # The bug turned out to be security-related, subscribe the security
-        # contact.
-        for pillar in bug.affected_pillars:
-            if pillar.security_contact is not None:
-                bug.subscribe(pillar.security_contact, IPerson(event.user))
-
     bug_delta = get_bug_delta(
         old_bug=event.object_before_modification,
         new_bug=event.object, user=IPerson(event.user))

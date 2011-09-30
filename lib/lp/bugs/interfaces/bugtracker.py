@@ -308,7 +308,7 @@ class IBugTracker(Interface):
         "The set of bug watches that need updating.")
 
     def getBugFilingAndSearchLinks(remote_product, summary=None,
-                                   description=None):
+                                   description=None, remote_component=None):
         """Return the bug filing and search links for the tracker.
 
         :param remote_product: The name of the product on which the bug
@@ -317,6 +317,8 @@ class IBugTracker(Interface):
             field of the upstream bug tracker's search and bug filing forms.
         :param description: The string with which to pre-filly the description
             field of the upstream bug tracker's bug filing form.
+        :param remote_component: The name of the component on which the bug
+            is to be filed or search for.
         :return: A dict of the absolute URL of the bug filing form and
             the search form for `remote_product` on the remote tracker,
             in the form {'bug_filing_url': foo, 'search_url': bar}. If

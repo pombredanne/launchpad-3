@@ -54,8 +54,6 @@ from lp.soyuz.scripts.ftpmasterbase import (
 from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
 
-# XXX cprov 2009-06-12: This function could be incorporated in ILFA,
-# I just don't see a clear benefit in doing that right now.
 def re_upload_file(libraryfile, restricted=False):
     """Re-upload a librarian file to the public server.
 
@@ -64,6 +62,9 @@ def re_upload_file(libraryfile, restricted=False):
 
     :return: A new `LibraryFileAlias`.
     """
+    # XXX cprov 2009-06-12: This function could be incorporated in ILFA.
+    # I just don't see a clear benefit in doing that right now.
+
     # Open the the libraryfile for reading.
     libraryfile.open()
 
@@ -525,7 +526,8 @@ class CopyChecker:
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
-            overrides=None, send_email=False, strict_binaries=True):
+            overrides=None, send_email=False, strict_binaries=True,
+            close_bugs=True, create_dsd_job=True, announce_from_person=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -557,8 +559,17 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         override must be for the corresponding source in the sources list.
         Overrides will be ignored for delayed copies.
     :param send_email: Should we notify for the copy performed?
+        NOTE: If running in zopeless mode, the email is sent even if the
+        transaction is later aborted. (See bug 29744)
+    :param announce_from_person: If send_email is True,
+        then send announcement emails with this person as the From:
     :param strict_binaries: If 'include_binaries' is True then setting this
         to True will make the copy fail if binaries cannot be also copied.
+    :param close_bugs: A boolean indicating whether or not bugs on the
+        copied publications should be closed.
+    :param create_dsd_job: A boolean indicating whether or not a dsd job
+         should be created for the new source publication.
+
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -586,7 +597,23 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             continue
 
     if len(errors) != 0:
-        raise CannotCopy("\n".join(errors))
+        error_text = "\n".join(errors)
+        if send_email:
+            source = sources[0]
+            # Although the interface allows multiple sources to be copied
+            # at once, we can only send rejection email if a single source
+            # is specified for now.  This is only relied on by packagecopyjob
+            # which will only process one package at a time.  We need to
+            # make the notification code handle atomic rejections such that
+            # it notifies about multiple packages.
+            if series is None:
+                series = source.distroseries
+            # In zopeless mode this email will be sent immediately.
+            notify(
+                person, source.sourcepackagerelease, [], [], archive,
+                series, pocket, summary_text=error_text,
+                action='rejected')
+        raise CannotCopy(error_text)
 
     overrides_index = 0
     for source in copy_checker.getCheckedCopies():
@@ -603,14 +630,28 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             override = None
             if overrides:
                 override = overrides[overrides_index]
+            # Make a note of the destination source's version for use
+            # in sending the email notification and closing bugs.
+            existing = archive.getPublishedSources(
+                name=source.sourcepackagerelease.name, exact_match=True,
+                status=active_publishing_status,
+                distroseries=series, pocket=pocket).first()
+            if existing:
+                old_version = existing.sourcepackagerelease.version
+            else:
+                old_version = None
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
-                include_binaries, override)
+                include_binaries, override, close_bugs=close_bugs,
+                create_dsd_job=create_dsd_job,
+                close_bugs_since_version=old_version, creator=person)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
                     destination_series, pocket, changes=None,
-                    action='accepted')
+                    action='accepted',
+                    announce_from_person=announce_from_person,
+                    previous_version=old_version)
 
         overrides_index += 1
         copies.extend(sub_copies)
@@ -619,7 +660,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 
 
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
-                    override=None):
+                    override=None, close_bugs=True, create_dsd_job=True,
+                    close_bugs_since_version=None, creator=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -638,6 +680,14 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         not the published binaries for each given source should be also
         copied along with the source.
     :param override: An `IOverride` as per do_copy().
+    :param close_bugs: A boolean indicating whether or not bugs on the
+        copied publication should be closed.
+    :param create_dsd_job: A boolean indicating whether or not a dsd job
+         should be created for the new source publication.
+    :param close_bugs_since_version: If close_bugs is True,
+        then this parameter says which changelog entries to parse looking
+        for bugs to close.  See `close_bugs_for_sourcepackagerelease`.
+    :param creator: the requester `IPerson`.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -666,8 +716,12 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             assert len(overrides) == 1, (
                 "More than one override encountered, something is wrong.")
             override = overrides[0]
-        source_copy = source.copyTo(series, pocket, archive, override)
-        close_bugs_for_sourcepublication(source_copy)
+        source_copy = source.copyTo(
+            series, pocket, archive, override, create_dsd_job=create_dsd_job,
+            creator=creator)
+        if close_bugs:
+            close_bugs_for_sourcepublication(
+                source_copy, close_bugs_since_version)
         copies.append(source_copy)
     else:
         source_copy = source_in_destination.first()

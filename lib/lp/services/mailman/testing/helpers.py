@@ -107,7 +107,7 @@ def create_list(team_name):
     browser.getControl('Create').click()
     # Create the mailing list.
     browser.getLink('Create a mailing list').click()
-    browser.getControl('Apply for Mailing List').click()
+    browser.getControl('Create new Mailing List').click()
     mailing_list = review_list(team_name)
     # pylint: disable-msg=F0401
     assert team_name in list_names(), (

@@ -45,6 +45,7 @@ from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
@@ -167,7 +168,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
             self.assertTrue(check_permission('launchpad.View', build))
-        removeSecurityProxy(branch).private = True
+        removeSecurityProxy(branch).explicitly_private = True
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
         login(ANONYMOUS)
@@ -409,6 +410,21 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         actual_title = [b.title for b in daily_builds]
         self.assertEquals([build.title], actual_title)
 
+    def test_makeDailyBuilds_with_disallowed_series(self):
+        # If a recipe is set to build into a disallowed series,
+        # makeDailyBuilds won't OOPS.
+        recipe = self.factory.makeSourcePackageRecipe(
+            build_daily=True, is_stale=True)
+        self.factory.makeArchive(owner=recipe.owner)
+        logger = BufferLogger()
+        distroseries = list(recipe.distroseries)[0]
+        removeSecurityProxy(distroseries).status = SeriesStatus.OBSOLETE
+        SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEquals([], self.oopses)
+        self.assertIn(
+            "DEBUG  - cannot build against Warty (4.10).",
+            logger.getLogBuffer())
+
     def test_getRecentBuilds(self):
         """Recent builds match the same person, series and receipe.
 
@@ -589,7 +605,7 @@ class TestBuildNotifications(TrialTestCase):
 
     def test_handleStatus_OK(self):
         """Building the source package does _not_ immediately send mail.
-        
+
         (The archive uploader mail send one later.
         """
         return self.assertDeferredNotifyCount(

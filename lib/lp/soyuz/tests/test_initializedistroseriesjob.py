@@ -15,6 +15,7 @@ from canonical.testing import (
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
     InitializationCompleted,
@@ -22,6 +23,9 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -57,6 +61,43 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         """Return the number of InitializeDistroSeriesJobs in the
         queue."""
         return len(self._getJobs())
+
+    def test___repr__(self):
+        parent1 = self.factory.makeDistroSeries()
+        parent2 = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        packageset1 = self.factory.makePackageset()
+        packageset2 = self.factory.makePackageset()
+
+        overlays = (True, False)
+        overlay_pockets = (u'Updates', u'Release')
+        overlay_components = (u"main", u"universe")
+        arches = (u'i386', u'amd64')
+        packagesets = (packageset1.id, packageset2.id)
+        rebuild = False
+
+        job = self.job_source.create(
+            distroseries, [parent1.id, parent2.id], arches, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
+
+        expected = ("<InitializeDistroSeriesJob for "
+            "distribution: {distroseries.distribution.name}, "
+            "distroseries: {distroseries.name}, "
+            "parent[overlay?/pockets/components]: "
+            "{parent1.name}[True/Updates/main],"
+            "{parent2.name}[False/Release/universe], "
+            "architectures: (u'i386', u'amd64'), "
+            "packagesets: [u'{packageset1.name}', u'{packageset2.name}'], "
+            "rebuild: False>".format(
+                distroseries=distroseries,
+                parent1=parent1,
+                parent2=parent2,
+                packageset1=packageset1,
+                packageset2=packageset2))
+        self.assertEqual(
+            expected,
+            repr(job)
+        )
 
     def test_create_with_existing_pending_job(self):
         parent = self.factory.makeDistroSeries()
@@ -105,7 +146,7 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
 
         job = self.job_source.create(distroseries, [parent.id])
         expected_message = (
-            "DistroSeries {child.name} has already been initialized"
+            "Series {child.name} has already been initialised"
             ".").format(child=distroseries)
         self.assertRaisesWithContent(
             InitializationError, expected_message, job.run)
@@ -142,17 +183,35 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         naked_job = removeSecurityProxy(job)
         self.assertEqual((parent.id, ), naked_job.parents)
 
-    def test_getPendingJobsForDistroseries(self):
-        # Pending initialization jobs can be retrieved per distroseries.
+    def test_get(self):
+        # InitializeDistroSeriesJob.get() returns the initialization job for
+        # the given distroseries. There should only ever be one.
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         another_distroseries = self.factory.makeDistroSeries()
+        self.assertIs(None, self.job_source.get(distroseries))
         self.job_source.create(distroseries, [parent.id])
         self.job_source.create(another_distroseries, [parent.id])
-        initialize_utility = getUtility(IInitializeDistroSeriesJobSource)
-        [job] = list(initialize_utility.getPendingJobsForDistroseries(
-            distroseries))
+        job = self.job_source.get(distroseries)
+        self.assertIsInstance(job, InitializeDistroSeriesJob)
         self.assertEqual(job.distroseries, distroseries)
+
+    def test_error_description_when_no_error(self):
+        # The InitializeDistroSeriesJob.error_description property returns
+        # None when no error description is recorded.
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        job = self.job_source.create(distroseries, [parent.id])
+        self.assertIs(None, removeSecurityProxy(job).error_description)
+
+    def test_error_description_set_when_notifying_about_user_errors(self):
+        # error_description is set by notifyUserError().
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        job = self.job_source.create(distroseries, [parent.id])
+        message = "This is an example message."
+        job.notifyUserError(InitializationError(message))
+        self.assertEqual(message, removeSecurityProxy(job).error_description)
 
 
 class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
@@ -191,6 +250,8 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         test1.addSources('udev')
         parent.updatePackageCount()
         child = self.factory.makeDistroSeries()
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            child, SourcePackageFormat.FORMAT_1_0)
         # Make sure everything hits the database, switching db users aborts.
         transaction.commit()
         return parent, child

@@ -399,10 +399,7 @@ can't know if the user is subscribed or not.
     a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
     is presented with the "Edit subscription" link.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-
     >>> bug_two.markAsDuplicate(bug_three)
-    >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
     'Edit subscription'
@@ -413,7 +410,6 @@ can't know if the user is subscribed or not.
     Subscribe link initially.
 
     >>> bug_two.markAsDuplicate(None)
-    >>> syncUpdate(bug_two)
 
     >>> login("foo.bar@canonical.com")
 
@@ -428,7 +424,6 @@ can't know if the user is subscribed or not.
         <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> bug_two.markAsDuplicate(bug_three)
-    >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
     'Subscribe'
@@ -531,10 +526,7 @@ Let's add another affected package in Ubuntu to the bug.
 
     >>> current_user = getUtility(ILaunchBag).user
 
-    >>> bugtaskset.createTask(
-    ...     owner=current_user, bug=bug_one,
-    ...     distribution=evolution.distribution,
-    ...     sourcepackagename=evolution.sourcepackagename)
+    >>> bugtaskset.createTask(bug_one, current_user, evolution)
     <BugTask ...>
 
 A nomination row will be included for evolution now too.

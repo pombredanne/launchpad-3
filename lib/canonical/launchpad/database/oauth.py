@@ -23,6 +23,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import And
+from storm.locals import Int, Reference
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -58,6 +59,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.database.stormbase import StormBase
 
 # How many hours should a request token be valid for?
 REQUEST_TOKEN_VALIDITY = 2
@@ -78,7 +80,8 @@ TIMESTAMP_ACCEPTANCE_WINDOW = 60 # seconds
 # amount.
 TIMESTAMP_SKEW_WINDOW = 60*60 # seconds, +/-
 
-class OAuthBase(SQLBase):
+
+class OAuthBase:
     """Base class for all OAuth database classes."""
 
     @staticmethod
@@ -95,7 +98,7 @@ class OAuthBase(SQLBase):
     getStore = _get_store
 
 
-class OAuthConsumer(OAuthBase):
+class OAuthConsumer(OAuthBase, SQLBase):
     """See `IOAuthConsumer`."""
     implements(IOAuthConsumer)
 
@@ -191,7 +194,7 @@ class OAuthConsumerSet:
         return OAuthConsumer.selectOneBy(key=key)
 
 
-class OAuthAccessToken(OAuthBase):
+class OAuthAccessToken(OAuthBase, SQLBase):
     """See `IOAuthAccessToken`."""
     implements(IOAuthAccessToken)
 
@@ -268,11 +271,13 @@ class OAuthAccessToken(OAuthBase):
             raise TimestampOrderingError(
                 'Timestamp too old compared to most recent request')
         # Looks OK.  Give a Nonce object back.
-        return OAuthNonce(
+        nonce = OAuthNonce(
             access_token=self, nonce=nonce, request_timestamp=date)
+        store.add(nonce)
+        return nonce
 
 
-class OAuthRequestToken(OAuthBase):
+class OAuthRequestToken(OAuthBase, SQLBase):
     """See `IOAuthRequestToken`."""
     implements(IOAuthRequestToken)
 
@@ -387,14 +392,23 @@ class OAuthRequestTokenSet:
         return OAuthRequestToken.selectOneBy(key=key)
 
 
-class OAuthNonce(OAuthBase):
+class OAuthNonce(OAuthBase, StormBase):
     """See `IOAuthNonce`."""
     implements(IOAuthNonce)
 
-    access_token = ForeignKey(
-        dbName='access_token', foreignKey='OAuthAccessToken', notNull=True)
+    __storm_table__ = 'OAuthNonce'
+    __storm_primary__ = 'access_token_id', 'request_timestamp', 'nonce'
+
+    access_token_id = Int(name='access_token')
+    access_token = Reference(access_token_id, OAuthAccessToken.id)
     request_timestamp = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     nonce = StringCol(notNull=True)
+
+    def __init__(self, access_token, request_timestamp, nonce):
+        super(OAuthNonce, self).__init__()
+        self.access_token = access_token
+        self.request_timestamp = request_timestamp
+        self.nonce = nonce
 
 
 def create_token_key_and_secret(table):

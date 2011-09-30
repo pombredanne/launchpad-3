@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Distribution series difference messages."""
@@ -20,6 +20,7 @@ from zope.schema import (
     Datetime,
     Int,
     Text,
+    TextLine,
     )
 
 from canonical.launchpad import _
@@ -56,6 +57,11 @@ class IDistroSeriesDifferenceComment(Interface):
     comment_date = exported(Datetime(
         title=_('Comment date.'), readonly=True))
 
+    source_package_name = exported(TextLine(
+        title=_("Source package name"), required=True, readonly=True,
+        description=_(
+            "Name of the source package that this comment is for.")))
+
 
 class IDistroSeriesDifferenceCommentSource(Interface):
     """A utility of this interface can be used to create comments."""
@@ -72,3 +78,13 @@ class IDistroSeriesDifferenceCommentSource(Interface):
 
     def getForDifference(distro_series_difference, id):
         """Return the `IDistroSeriesDifferenceComment` with the given id."""
+
+    def getForDistroSeries(distroseries, since=None):
+        """Get comments for `distroseries` (since `since` if given).
+
+        :param distroseries: The `DistroSeries` to find comments for.
+        :param since: A timestamp.  No comments older than this will be
+            returned.
+        :return: A result set of `DistroSeriesDifferenceComment`s, ordered
+            from oldest to newest.
+        """

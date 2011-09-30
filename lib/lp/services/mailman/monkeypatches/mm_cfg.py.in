@@ -26,6 +26,7 @@ SMTPPORT = %(smtp_port)d
 # Configuration options for the XMLRPCRunner.
 XMLRPC_URL = '%(xmlrpc_url)s'
 XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
+XMLRPC_TIMEOUT = %(xmlrpc_timeout)s
 XMLRPC_SUBSCRIPTION_BATCH_SIZE = %(xmlrpc_subscription_batch_size)s
 LAUNCHPAD_SHARED_SECRET = '%(shared_secret)s'
 

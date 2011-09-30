@@ -68,3 +68,10 @@ class BugNotificationStatus(DBEnumeratedType):
 
         The notification has been sent.
         """)
+
+    DEFERRED = DBItem(40, """
+        Deferred
+
+        The notification is deferred.  The recipient list was not calculated
+        at creation time but is done when processed.
+        """)

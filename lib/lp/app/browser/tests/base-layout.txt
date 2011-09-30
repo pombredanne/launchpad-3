@@ -173,8 +173,9 @@ Page Footers
     Canonical&nbsp;Ltd. http://canonical.com/
     Terms of use http://launchpad.dev/legal
     Contact Launchpad Support /feedback
+    Blog http://blog.launchpad.net/
     System status http://identi.ca/launchpadstatus
-    get the code https://code.launchpad.net/~launchpad-pqm/launchpad/stable/
+    Get the code! https://dev.launchpad.net/
 
 
 Page registering
@@ -236,7 +237,7 @@ When the context is public, the 'public' class is in the class attribute.
 Notifications
 -------------
 
-Notifications are diplayed between the breadcrumbs and the page content.
+Notifications are displayed between the breadcrumbs and the page content.
 
     >>> request.response.addInfoNotification('I cannot do that Dave.')
     >>> view = MainOnlyView(user, request)
@@ -249,3 +250,25 @@ Notifications are diplayed between the breadcrumbs and the page content.
       </div>
       <div class="top-portlet">
       ...
+
+For ajax requests to form views, notifications are added to the response
+headers.
+
+    >>> from lp.app.browser.launchpadform import action, LaunchpadFormView
+    >>> from zope.interface import Interface
+    >>> class FormView(LaunchpadFormView):
+    ...     """A simple view to test notifications."""
+    ...     class schema(Interface):
+    ...         """A default schema."""
+    ...     @action('Test', name='test')
+    ...     def test_action(self, action, data):
+    ...         pass
+
+    >>> extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={'field.actions.test': 'Test'}, **extra)
+    >>> request.response.addInfoNotification('I cannot do that Dave.')
+    >>> view = FormView(user, request)
+    >>> view.initialize()
+    >>> print request.response.getHeader('X-Lazr-Notifications')
+    [[20, "I cannot do that Dave."]]

@@ -25,7 +25,11 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.helpers import ensure_unicode
 from lp.app.errors import NotFoundError
-from lp.registry.errors import NoSuchSourcePackageName
+from lp.app.validators.name import valid_name
+from lp.registry.errors import (
+    InvalidName,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
     ISourcePackageNameSet,
@@ -90,6 +94,9 @@ class SourcePackageNameSet:
         return SourcePackageName.selectOneBy(name=name)
 
     def new(self, name):
+        if not valid_name(name):
+            raise InvalidName(
+                "%s is not a valid name for a source package." % name)
         return SourcePackageName(name=name)
 
     def getOrCreateByName(self, name):

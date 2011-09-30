@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from storm.exceptions import DataError
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -681,7 +679,3 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
                 singular_text=trunk_potmsgset.singular_text,
                 plural_text=trunk_potmsgset.plural_text)
         self.assertEqual(trunk_potmsgset, hoary_potmsgset)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

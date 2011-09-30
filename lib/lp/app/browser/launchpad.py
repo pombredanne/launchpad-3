@@ -15,6 +15,7 @@ __all__ = [
     'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
+    'Macro',
     'MaintenanceMessage',
     'NavigationMenuTabs',
     'SoftTimeoutView',
@@ -24,7 +25,6 @@ __all__ = [
 
 import cgi
 from datetime import (
-    datetime,
     timedelta,
     )
 import operator
@@ -43,7 +43,6 @@ from zope.component import (
 from zope.datetime import (
     DateTimeError,
     parseDatetimetz,
-    tzinfo,
     )
 from zope.i18nmessageid import Message
 from zope.interface import implements
@@ -51,6 +50,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
+from zope.traversing.interfaces import ITraversable
 
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
@@ -143,11 +143,15 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.propertycache import cachedproperty
+from lp.services.utils import utc_now
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import (
+    IProcessorFamilySet,
+    IProcessorSet,
+    )
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
@@ -340,6 +344,65 @@ class Hierarchy(LaunchpadView):
         return len(self.items) > 1 and not has_major_heading
 
 
+class Macro:
+    """Keeps templates that are registered as pages from being URL accessable.
+
+    The standard pattern in LP is to register templates that contain macros as
+    views on all objects:
+
+    <browser:page
+        for="*"
+        name="+main-template-macros"
+        template="../templates/base-layout-macros.pt"
+        permission="zope.Public"
+        />
+
+    Without this class, that pattern would make the template URL traversable
+    from any object.  Therefore requests like these would all "work":
+
+        http://launchpad.net/+main-template-macros
+        http://launchpad.net/ubuntu/+main-template-macros
+        http://launchpad.net/ubuntu/+main-template-macros
+        https://blueprints.launchpad.dev/ubuntu/hoary/+main-template-macros
+
+    Obviously, those requests wouldn't do anything useful and would instead
+    generate an OOPS.
+
+    It would be nice to use a different pattern for macros instead, but we've
+    grown dependent on some of the peculiatrities of registering macro
+    templates in this way.
+
+    This class was created in order to prevent macro templates from being
+    accessable via URL without having to make nontrivial changes to the many,
+    many templates that use macros.  To use the class add a "class" parameter
+    to macro template registrations:
+
+    <browser:page
+        for="*"
+        name="+main-template-macros"
+        template="../templates/base-layout-macros.pt"
+        class="lp.app.browser.launchpad.Macro"
+        permission="zope.Public"
+        />
+    """
+    implements(IBrowserPublisher, ITraversable)
+
+    def __init__(self, context, request):
+        self.context = context
+
+    def traverse(self, name, furtherPath):
+        return self.index.macros[name]
+
+    def browserDefault(self, request):
+        return self, ()
+
+    def publishTraverse(self, request, name):
+        raise NotFound(self.context, self.__name__)
+
+    def __call__(self):
+        raise NotFound(self.context, self.__name__)
+
+
 class MaintenanceMessage:
     """Display a maintenance message if the control file is present and
     it contains a valid iso format time.
@@ -374,8 +437,7 @@ class MaintenanceMessage:
             except DateTimeError:
                 # XXX SteveAlexander 2005-09-22: log a warning here.
                 return ''
-            nowtz = datetime.utcnow().replace(tzinfo=tzinfo(0))
-            timeleft = maintenancetime - nowtz
+            timeleft = maintenancetime - utc_now()
             if timeleft > self.toomuchtime:
                 return ''
             elif timeleft < self.notmuchtime:
@@ -619,6 +681,7 @@ class LaunchpadRootNavigation(Navigation):
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         '+processor-families': IProcessorFamilySet,
+        '+processors': IProcessorSet,
         'projects': IProductSet,
         'projectgroups': IProjectGroupSet,
         'sourcepackagenames': ISourcePackageNameSet,
@@ -647,10 +710,20 @@ class LaunchpadRootNavigation(Navigation):
         if name in self.stepto_utilities:
             return getUtility(self.stepto_utilities[name])
 
-        # Allow traversal to ~foo for People
-        if name.startswith('~'):
-            # account for common typing mistakes
+        if name == '~':
+            person = getUtility(ILaunchBag).user
+            if person is None:
+                raise Unauthorized()
+            # Keep the context and the subtree so that
+            # bugs.l.n/~/+assignedbugs goes to the person's canonical
+            # assigned list.
+            return self.redirectSubTree(
+                canonical_url(self.context) + "~"
+                + canonical_name(person.name),
+                status=302)
+        elif name.startswith('~'):  # Allow traversal to ~foo for People
             if canonical_name(name) != name:
+                # (for instance, uppercase username?)
                 if self.request.method == 'POST':
                     raise POSTToNonCanonicalURL
                 return self.redirectSubTree(

@@ -19,18 +19,25 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.mail import sendmail
+from lp.services.mail.sendmail import sendmail
 from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
-from lp.bugs.scripts.bugnotification import get_email_notifications
+from lp.bugs.scripts.bugnotification import (
+    get_email_notifications,
+    process_deferred_notifications,
+    )
 from lp.services.scripts.base import LaunchpadCronScript
 
 
 class SendBugNotifications(LaunchpadCronScript):
     def main(self):
         notifications_sent = False
-        pending_notifications = get_email_notifications(getUtility(
-            IBugNotificationSet).getNotificationsToSend())
+        bug_notification_set = getUtility(IBugNotificationSet)
+        deferred_notifications = \
+            bug_notification_set.getDeferredNotifications()
+        process_deferred_notifications(deferred_notifications)
+        pending_notifications = get_email_notifications(
+            bug_notification_set.getNotificationsToSend())
         for (bug_notifications,
              omitted_notifications,
              messages) in pending_notifications:
@@ -59,4 +66,3 @@ if __name__ == '__main__':
     script = SendBugNotifications('send-bug-notifications',
         dbuser=config.malone.bugnotification_dbuser)
     script.lock_and_run()
-

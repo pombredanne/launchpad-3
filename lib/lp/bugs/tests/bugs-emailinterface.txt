@@ -87,7 +87,6 @@ bug got submitted correctly:
     >>> process_email(submit_mail)
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.ftests import sync
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
@@ -397,7 +396,7 @@ associated with the authenticated Person in Launchpad, the principal
 will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
 principal with that.
 
-    >>> from canonical.launchpad.interfaces.mail import (
+    >>> from lp.services.mail.interfaces import (
     ...     IWeaklyAuthenticatedPrincipal,
     ...     )
     >>> from zope.interface import directlyProvides, directlyProvidedBy
@@ -537,7 +536,6 @@ to edit bug 4:
     ...         msg, msg['To'],
     ...         )
     ...     commit()
-    ...     sync(bug)
 
     >>> def submit_commands(bug, *commands):
     ...     msg = construct_command_email(bug, *commands)
@@ -1131,11 +1129,9 @@ A milestone can be assigned to the current task.
     >>> print firefox_task.milestone
     None
     >>> submit_commands(bug_four, 'milestone 1.0')
-    >>> sync(firefox_task)
     >>> print firefox_task.milestone.name
     1.0
     >>> submit_commands(bug_four, 'milestone -')
-    >>> sync(firefox_task)
     >>> print firefox_task.milestone
     None
 
@@ -1170,7 +1166,6 @@ permissions also elicits an error message:
     >>> print bug.bugtasks[0].milestone
     None
     >>> submit_commands(bug, 'milestone 1.0')
-    >>> sync(bug.bugtasks[0])
     >>> print bug.bugtasks[0].milestone
     None
     >>> print_latest_email()
@@ -1208,7 +1203,6 @@ Like the web UI, we can assign a bug to nobody.
     >>> submit_commands(
     ...     bug_four, 'affects debian',
     ...     'assignee nobody')
-    >>> sync(debian_task)
     >>> debian_task.assignee is None
     True
 
@@ -1298,7 +1292,6 @@ bugs directly to series.
     ...         sampledata.USER_EMAIL)
 
     >>> login(sampledata.USER_EMAIL)
-    >>> sync(bug)
 
 Now a new bugtask for the series will be created directly.
 
@@ -1449,16 +1442,13 @@ Bug supervisors can set some restricted statuses:
     ...     login('foo.bar@canonical.com')
     ...     upstream_task.pillar.setBugSupervisor(email_user, email_user)
 
-    >>> sync(bug_four)
     >>> login_person(email_user)
 
     >>> submit_commands(bug_four, 'status wontfix')
-    >>> sync(upstream_task)
     >>> print upstream_task.status.title
     Won't Fix
 
     >>> submit_commands(bug_four, 'status expired')
-    >>> sync(upstream_task)
     >>> print upstream_task.status.title
     Expired
 
@@ -1821,7 +1811,7 @@ signing the mail:
     >>> login(sampledata.USER_EMAIL)
     >>> simulate_receiving_untrusted_mail()
 
-    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> msg = signed_message_from_string(submit_mail)
     >>> import email.Utils
     >>> msg['Message-Id'] = email.Utils.make_msgid()
@@ -2357,7 +2347,7 @@ Only mail coming from verified Launchpad users is answered.
 The help text is taken from the Launchpad help wiki as raw text, and
 transformed to be a bit more readable as a plain text document.
 
-    >>> from canonical.launchpad.mail.helpers import reformat_wiki_text
+    >>> from lp.services.mail.helpers import reformat_wiki_text
     >>> wiki_text = """
     ... = Sample Wiki Text =
     ... # A comment line

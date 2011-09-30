@@ -79,6 +79,8 @@ The view accepts the basic fields to register a distribution.
     ...     'field.description': 'description',
     ...     'field.domainname': 'youbuntu.me',
     ...     'field.members': 'landscape-developers',
+    ...     'field.require_virtualized': 'on',
+    ...     'field.enabled_restricted_families': [],
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(distributionset, '+add', form=form)
@@ -127,7 +129,8 @@ The view accepts most of the distribution fields.
 
     >>> view.field_names
     ['displayname', 'title', 'summary', 'description',
-     'bug_reporting_guidelines', 'bug_reported_acknowledgement', 'icon',
+     'bug_reporting_guidelines', 'bug_reported_acknowledgement',
+     'package_derivatives_email', 'icon',
      'logo', 'mugshot', 'official_malone', 'enable_bug_expiration',
      'blueprints_usage', 'official_rosetta', 'answers_usage',
      'translation_focus']

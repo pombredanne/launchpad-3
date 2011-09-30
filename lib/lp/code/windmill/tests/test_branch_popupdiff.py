@@ -4,9 +4,6 @@
 """Test for the popup diff."""
 
 __metaclass__ = type
-__all__ = []
-
-import unittest
 
 import transaction
 import windmill
@@ -42,6 +39,7 @@ BRANCH_SEARCCH_RESULT = (
     u'//ul[@class="yui3-picker-results"]//span[@class="yui3-picker-result-title"]')
 
 
+#XXX: Should be re-enabled for Selenium2.
 #class TestPopupOnBranchPage(WindmillTestCase):
 #    """Test the popup diff."""
 #
@@ -135,7 +133,3 @@ class TestPopupOnBugPage(WindmillTestCase):
         client.waits.forElement(xpath=BRANCH_SEARCCH_RESULT)
         client.click(xpath=BRANCH_SEARCCH_RESULT)
         client.waits.forElement(xpath=POPUP_DIFF)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

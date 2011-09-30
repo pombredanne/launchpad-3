@@ -13,7 +13,7 @@ duplicates.
     ...         label_class = label['class']
     ...         text_lines = [line.strip() for line in
     ...                       extract_text(node).splitlines()]
-    ...         summary = ' '.join(text_lines[:2])
+    ...         summary = ' '.join(text_lines[:2]).replace('&#8203;','')
     ...         status = ' '.join(text_lines[2:])
     ...         # All this trouble is worth it when you see ndiff output
     ...         # from a failing test, and it *makes sense* :)

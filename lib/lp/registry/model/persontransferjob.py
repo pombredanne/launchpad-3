@@ -39,17 +39,15 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enum import PersonTransferJobType
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJob,
@@ -64,7 +62,11 @@ from lp.registry.model.person import Person
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.mail.sendmail import format_address_for_person
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    simple_sendmail,
+    )
 
 
 class PersonTransferJob(StormBase):
@@ -296,7 +298,11 @@ class MembershipNotificationJob(PersonTransferJobDerived):
             # Use the default template and subject.
             pass
 
-        if len(admin_emails) != 0:
+        # Must have someone to mail, and be a non-open team (because open
+        # teams are unrestricted, notifications on join/ leave do not help the
+        # admins.
+        if (len(admin_emails) != 0 and
+            self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN):
             admin_template = get_email_template(
                 "%s-bulk.txt" % template_name, app='registry')
             for address in admin_emails:
@@ -340,14 +346,20 @@ class PersonMergeJob(PersonTransferJobDerived):
     class_job_type = PersonTransferJobType.MERGE
 
     @classmethod
-    def create(cls, from_person, to_person, reviewer=None):
+    def create(cls, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonMergeJobSource`."""
-        if from_person.is_merge_pending or to_person.is_merge_pending:
+        if (from_person.is_merge_pending or
+            (not delete and to_person.is_merge_pending)):
             return None
         if from_person.is_team:
             metadata = {'reviewer': reviewer.id}
         else:
             metadata = {}
+        metadata['delete'] = bool(delete)
+        if metadata['delete']:
+            # Ideally not needed, but the DB column is not-null at the moment
+            # and this minor bit of friction isn't worth changing that over.
+            to_person = getUtility(ILaunchpadCelebrities).registry_experts
         return super(PersonMergeJob, cls).create(
             minor_person=from_person, major_person=to_person,
             metadata=metadata)
@@ -407,16 +419,27 @@ class PersonMergeJob(PersonTransferJobDerived):
         to_person_name = self.to_person.name
 
         from canonical.launchpad.scripts import log
-        log.debug(
-            "%s is about to merge ~%s into ~%s", self.log_name,
-            from_person_name, to_person_name)
-        getUtility(IPersonSet).merge(
-            from_person=self.from_person, to_person=self.to_person,
-            reviewer=self.reviewer)
-
-        log.debug(
-            "%s has merged ~%s into ~%s", self.log_name,
-            from_person_name, to_person_name)
+        personset = getUtility(IPersonSet)
+        if self.metadata.get('delete', False):
+            log.debug(
+                "%s is about to delete ~%s", self.log_name,
+                from_person_name)
+            personset.delete(
+                from_person=self.from_person,
+                reviewer=self.reviewer)
+            log.debug(
+                "%s has deleted ~%s", self.log_name,
+                from_person_name)
+        else:
+            log.debug(
+                "%s is about to merge ~%s into ~%s", self.log_name,
+                from_person_name, to_person_name)
+            personset.merge(
+                from_person=self.from_person, to_person=self.to_person,
+                reviewer=self.reviewer)
+            log.debug(
+                "%s has merged ~%s into ~%s", self.log_name,
+                from_person_name, to_person_name)
 
     def __repr__(self):
         return (

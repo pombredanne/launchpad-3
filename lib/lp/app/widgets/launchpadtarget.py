@@ -39,6 +39,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.product import IProduct
+from lp.services.features import getFeatureFlag
 
 
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):
@@ -48,29 +49,38 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     template = ViewPageTemplateFile('templates/launchpad-target.pt')
     default_option = "package"
+    _widgets_set_up = False
 
-    def __init__(self, field, request):
-        # Shut off the pylint warning about not calling __init__()
-        # on a Mixin class.
-        # pylint: disable-msg=W0231
-        BrowserWidget.__init__(self, field, request)
+    def getDistributionVocabulary(self):
+        return 'Distribution'
+
+    def setUpSubWidgets(self):
+        if self._widgets_set_up:
+            return
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            package_vocab = 'DistributionSourcePackage'
+        else:
+            package_vocab = 'BinaryAndSourcePackageName'
         fields = [
             Choice(
                 __name__='product', title=u'Project',
                 required=True, vocabulary='Product'),
             Choice(
                 __name__='distribution', title=u"Distribution",
-                required=True, vocabulary='Distribution',
+                required=True, vocabulary=self.getDistributionVocabulary(),
                 default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__='package', title=u"Package",
-                required=False, vocabulary='BinaryAndSourcePackageName'),
+                required=False, vocabulary=package_vocab),
             ]
         self.distribution_widget = CustomWidgetFactory(
             LaunchpadDropdownWidget)
         for field in fields:
             setUpWidget(
                 self, field.__name__, field, IInputWidget, prefix=self.name)
+        self._widgets_set_up = True
 
     def setUpOptions(self):
         """Set up options to be rendered."""
@@ -101,6 +111,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def getInputValue(self):
         """See zope.app.form.interfaces.IInputWidget."""
+        self.setUpSubWidgets()
         form_value = self.request.form_ng.getOne(self.name)
         if form_value == 'product':
             try:
@@ -135,14 +146,20 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 if package_name is None:
                     return distribution
                 try:
-                    source_name = (
-                        distribution.guessPublishedSourcePackageName(
-                            package_name.name))
+                    if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                        vocab = self.package_widget.context.vocabulary
+                        name = package_name.name
+                        dsp = vocab.getTermByToken(name).value
+                    else:
+                        source_name = (
+                            distribution.guessPublishedSourcePackageName(
+                                package_name.name))
+                        dsp = distribution.getSourcePackage(source_name)
                 except NotFoundError:
                     raise LaunchpadValidationError(
                         "There is no package name '%s' published in %s"
                         % (package_name.name, distribution.displayname))
-                return distribution.getSourcePackage(source_name)
+                return dsp
             else:
                 return distribution
         else:
@@ -150,6 +167,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def setRenderedValue(self, value):
         """See IWidget."""
+        self.setUpSubWidgets()
         if IProduct.providedBy(value):
             self.default_option = 'product'
             self.product_widget.setRenderedValue(value)
@@ -174,5 +192,6 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def __call__(self):
         """See zope.app.form.interfaces.IBrowserWidget."""
+        self.setUpSubWidgets()
         self.setUpOptions()
         return self.template()

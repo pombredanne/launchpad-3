@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -82,6 +82,7 @@ class PoolFileOverwriteError(Exception):
     file in pool and print a warning in the publisher log. It probably
     requires manual intervention in the archive.
     """
+
 
 class MissingSymlinkInPool(Exception):
     """Raised when there is a missing symlink in pool.
@@ -193,9 +194,6 @@ class IPublishingView(Interface):
         The fields and values ae mapped into a dictionary, where the key is
         the field name and value is the value string.
         """
-
-    def supersede():
-        """Supersede this publication."""
 
     def requestObsolescence():
         """Make this publication obsolete.
@@ -328,12 +326,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    sourcepackagereleaseID = Attribute(
-        "The DB id for the sourcepackagerelease.")
-    sourcepackagerelease = Int(
-            title=_('The source package release being published'),
-            required=False, readonly=False,
-            )
+    sourcepackagenameID = Int(
+        title=_('The DB id for the sourcepackagename.'),
+        required=False, readonly=False)
+    sourcepackagename = Attribute('The source package name being published')
+    sourcepackagereleaseID = Int(
+        title=_('The DB id for the sourcepackagerelease.'),
+        required=False, readonly=False)
+    sourcepackagerelease = Attribute(
+        'The source package release being published')
     status = exported(
         Choice(
             title=_('Package Publishing Status'),
@@ -380,7 +381,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             ))
     archive = exported(
         Reference(
-            Interface, # Really IArchive, see below.
+            # Really IArchive (fixed in _schema_circular_imports.py).
+            Interface,
             title=_('Archive ID'), required=True, readonly=True,
             ))
     supersededby = Int(
@@ -477,10 +479,20 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         "if one exists, or None.")
 
     ancestor = Reference(
-        Interface, # Really ISourcePackagePublishingHistory
+         # Really ISourcePackagePublishingHistory (fixed in
+         # _schema_circular_imports.py).
+        Interface,
         title=_('Ancestor'),
         description=_('The previous release of this source package.'),
         required=False, readonly=True)
+
+    creator = exported(
+        Reference(
+            IPerson,
+            title=_('Publication Creator'),
+            description=_('The IPerson who created this publication.'),
+            required=False, readonly=True
+        ))
 
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
@@ -510,7 +522,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             `IBinaryPackagePublishingHistory`.
         """
 
-    @operation_returns_collection_of(Interface) # Really IBuild, see below.
+    # Really IBuild (fixed in _schema_circular_imports.py)
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getBuilds():
         """Return a list of `IBuild` objects in this publishing context.
@@ -589,7 +602,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive, overrides=None):
+    def copyTo(distroseries, pocket, archive, overrides=None, creator=None):
         """Copy this publication to another location.
 
         :param distroseries: The `IDistroSeries` to copy the source
@@ -597,7 +610,9 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :param pocket: The `PackagePublishingPocket` to copy into.
         :param archive: The `IArchive` to copy the source publication into.
         :param overrides: A tuple of override data as returned from a
-            `IOverridePolicy`
+            `IOverridePolicy`.
+        :param creator: the `IPerson` to use as the creator for the copied
+            publication.
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
@@ -671,16 +686,22 @@ class IBinaryPackageFilePublishing(IFilePublishing):
 
 class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     """A binary package publishing record."""
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
-    binarypackagerelease = Int(
-            title=_('The binary package being published'), required=False,
-            readonly=False,
-            )
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    binarypackagenameID = Int(
+        title=_('The DB id for the binarypackagename.'),
+        required=False, readonly=False)
+    binarypackagename = Attribute('The binary package name being published')
+    binarypackagereleaseID = Int(
+        title=_('The DB id for the binarypackagerelease.'),
+        required=False, readonly=False)
+    binarypackagerelease = Attribute(
+        "The binary package release being published")
     distroarchseries = exported(
         Reference(
-            Interface, #Really IDistroArchSeries, circular import fixed below.
+            # Really IDistroArchSeries (fixed in
+            #_schema_circular_imports.py).
+            Interface,
             title=_("Distro Arch Series"),
             description=_('The distroarchseries being published into'),
             required=False, readonly=False,
@@ -766,7 +787,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         exported_as="date_removed")
     archive = exported(
         Reference(
-            Interface, # Really IArchive, see below.
+            # Really IArchive (fixed in _schema_circular_imports.py).
+            Interface,
             title=_('Archive'),
             description=_("The context archive for this publication."),
             required=True, readonly=True,
@@ -948,7 +970,8 @@ class IPublishingSet(Interface):
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,
-                             component, section, pocket, ancestor):
+                             component, section, pocket, ancestor,
+                             create_dsd_job=True):
         """Create a new `SourcePackagePublishingHistory`.
 
         :param archive: An `IArchive`
@@ -959,6 +982,10 @@ class IPublishingSet(Interface):
         :param pocket: A `PackagePublishingPocket`
         :param ancestor: A `ISourcePackagePublishingHistory` for the previous
             version of this publishing record
+        :param create_dsd_job: A boolean indicating whether or not a dsd job
+             should be created for the new source publication.
+        :param creator: An optional `IPerson`. If this is None, the
+            sourcepackagerelease's creator will be used.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING
@@ -1143,6 +1170,13 @@ class IPublishingSet(Interface):
             changes file `LibraryFileAlias`.
 
         :return: a `LibraryFileAlias` instance or None
+        """
+
+    def setMultipleDeleted(publication_class, ds, removed_by,
+                           removal_comment=None):
+        """Mark publications as deleted.
+
+        This is a supporting operation for a deletion request.
         """
 
     def requestDeletion(sources, removed_by, removal_comment=None):

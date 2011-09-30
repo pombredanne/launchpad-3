@@ -66,17 +66,16 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     OfficialBugTag,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -119,8 +118,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    TranslationPolicyMixin):
     """A ProjectGroup"""
 
-    implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner)
+    implements(
+        IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasBugHeat,
+        IHasIcon, IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -168,6 +168,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
     max_bug_heat = Int()
+
+    @property
+    def pillar_category(self):
+        """See `IPillar`."""
+        return "Project Group"
 
     @property
     def products(self):
@@ -343,20 +348,14 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return get_bug_tags(
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
-        """See IBugTarget."""
+    def getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
         product_ids = [product.id for product in self.products]
         if not product_ids:
-            return {}
-        return get_bug_tags_open_count(
-            BugSummary.product_id.is_in(product_ids),
-            user, tag_limit=tag_limit, include_tags=include_tags)
-
-    def _getBugTaskContextClause(self):
-        """See `HasBugsBase`."""
-        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+            return False
+        return BugSummary.product_id.is_in(product_ids)
 
     # IQuestionCollection
     def searchQuestions(self, search_text=None,

@@ -56,7 +56,7 @@ already included in the sample data.
     >>> browser.getLink('Next')
     <Link
       text='Next'
-      url='http://.../+imports/+index?start=5&batch=5'>
+      url='http://.../+imports/+index?batch=5&memo=5&start=5'>
 
 
 == Target filter ==

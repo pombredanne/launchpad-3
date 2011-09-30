@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -58,12 +58,13 @@ class JSONTokenMixin:
             if include_secret:
                 structure['oauth_token_secret'] = token.secret
         access_levels = [{
-                'value' : permission.name,
-                'title' : permission.title
+                'value': permission.name,
+                'title': permission.title,
                 }
                 for permission in permissions]
         structure['access_levels'] = access_levels
-        self.request.response.setHeader('Content-Type', HTTPResource.JSON_TYPE)
+        self.request.response.setHeader(
+            'Content-Type', HTTPResource.JSON_TYPE)
         return simplejson.dumps(structure)
 
 
@@ -105,6 +106,7 @@ class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
         return u'oauth_token=%s&oauth_token_secret=%s' % (
             token.key, token.secret)
 
+
 def token_exists_and_is_not_reviewed(form, action):
     return form.token is not None and not form.token.is_reviewed
 
@@ -122,14 +124,14 @@ class TemporaryIntegrations:
     WEEK = "Week"
 
     DURATION = {
-        HOUR : 60 * 60,
-        DAY : 60 * 60 * 24,
-        WEEK : 60 * 60 * 24 * 7
+        HOUR: 60 * 60,
+        DAY: 60 * 60 * 24,
+        WEEK: 60 * 60 * 24 * 7,
         }
 
 
 def create_oauth_permission_actions():
-    """Return two `Actions` objects containing each possible `OAuthPermission`.
+    """Make two `Actions` objects containing each possible `OAuthPermission`.
 
     The first `Actions` object contains every action supported by the
     OAuthAuthorizeTokenView. The second list contains a good default
@@ -173,6 +175,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
     actions, actions_excluding_special_permissions = (
         create_oauth_permission_actions())
     label = "Authorize application to access Launchpad on your behalf"
+    page_title = label
     schema = IOAuthRequestToken
     field_names = []
     token = None
@@ -421,7 +424,8 @@ class OAuthAccessTokenView(LaunchpadView):
 
         if not token.is_reviewed:
             self.request.unauthorized(OAUTH_CHALLENGE)
-            return u'Request token has not yet been reviewed. Try again later.'
+            return (
+                u"Request token has not yet been reviewed. Try again later.")
 
         if token.permission == OAuthPermission.UNAUTHORIZED:
             # The end-user explicitly refused to authorize this

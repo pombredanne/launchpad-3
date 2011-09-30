@@ -26,6 +26,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     Coalesce,
+    Desc,
     Exists,
     Join,
     LeftJoin,
@@ -548,6 +549,9 @@ class POFile(SQLBase, POFileMixIn):
 
         Call-site will have to have appropriate clauseTables.
         """
+        # When all the code that uses this method is moved to Storm,
+        # we can replace it with _getStormClausesForPOFileMessages
+        # and then remove it.
         clauses = [
             'TranslationTemplateItem.potemplate = %s' % sqlvalues(
                 self.potemplate),
@@ -559,17 +563,33 @@ class POFile(SQLBase, POFileMixIn):
 
         return clauses
 
+    def _getStormClausesForPOFileMessages(self, current=True):
+        """Get TranslationMessages for the POFile via TranslationTemplateItem.
+        """
+        clauses = [
+            TranslationTemplateItem.potemplate == self.potemplate,
+            (TranslationTemplateItem.potmsgsetID ==
+             TranslationMessage.potmsgsetID),
+            TranslationMessage.language == self.language,
+            ]
+        if current:
+            clauses.append(TranslationTemplateItem.sequence > 0)
+
+        return clauses
+
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""
         assert person is not None, "You must provide a person to filter by."
-        clauses = self._getClausesForPOFileMessages(current=False)
+        clauses = self._getStormClausesForPOFileMessages(current=False)
         clauses.append(
-            'TranslationMessage.submitter = %s' % sqlvalues(person))
+            TranslationMessage.submitter == person)
 
-        return TranslationMessage.select(
-            " AND ".join(clauses),
-            clauseTables=['TranslationTemplateItem'],
-            orderBy=['sequence', '-date_created'])
+        results = Store.of(self).find(
+            TranslationMessage,
+            *clauses)
+        return results.order_by(
+            TranslationTemplateItem.sequence,
+            Desc(TranslationMessage.date_created))
 
     def _getTranslatedMessagesQuery(self):
         """Get query data for fetching all POTMsgSets with translations.

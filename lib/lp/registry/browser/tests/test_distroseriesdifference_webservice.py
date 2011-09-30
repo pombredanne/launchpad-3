@@ -44,7 +44,7 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         ws_diff = ws_object(self.factory.makeLaunchpadService(
             archive_admin), ds_diff)
 
-        result = ws_diff.blacklist()
+        ws_diff.blacklist()
         transaction.commit()
 
         utility = getUtility(IDistroSeriesDifferenceSource)
@@ -64,7 +64,7 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         ws_diff = ws_object(self.factory.makeLaunchpadService(
             archive_admin), ds_diff)
 
-        result = ws_diff.unblacklist()
+        ws_diff.unblacklist()
         transaction.commit()
 
         utility = getUtility(IDistroSeriesDifferenceSource)
@@ -94,7 +94,7 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
             versions=['1.0', '1.2'])
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str='foo', versions={
                 'derived': '1.2',
@@ -107,7 +107,7 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         ws_diff = ws_object(self.factory.makeLaunchpadService(
             self.factory.makePerson()), ds_diff)
 
-        result = ws_diff.requestPackageDiffs()
+        ws_diff.requestPackageDiffs()
         transaction.commit()
 
         # Reload and check that the package diffs are there.
@@ -173,3 +173,48 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
 
         self.assertIs(None, ws_diff.package_diff_url)
         self.assertIsNot(None, ws_diff.parent_package_diff_url)
+
+    def test_exported_status(self):
+        # The difference's status is exposed.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            self.factory.makePerson()), ds_diff)
+
+        self.assertEqual(u'Blacklisted always', ws_diff.status)
+
+    def test_exported_sourcepackagename(self):
+        # The difference's sourcepackagename is exposed.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str=u'package')
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            self.factory.makePerson()), ds_diff)
+
+        self.assertEqual(u'package', ws_diff.sourcepackagename)
+
+    def test_exported_parent_source_version(self):
+        # The difference's parent_source_version is exposed.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={'parent': u'1.1'})
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            self.factory.makePerson()), ds_diff)
+
+        self.assertEqual(u'1.1', ws_diff.parent_source_version)
+
+    def test_exported_source_version(self):
+        # The difference's source_version is exposed.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={'derived': u'1.3'})
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            self.factory.makePerson()), ds_diff)
+
+        self.assertEqual(u'1.3', ws_diff.source_version)
+
+    def test_exported_base_version(self):
+        # The difference's base_version is exposed.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={'base': u'0.5'}, set_base_version=True)
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            self.factory.makePerson()), ds_diff)
+
+        self.assertEqual(u'0.5', ws_diff.base_version)

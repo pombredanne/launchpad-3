@@ -56,7 +56,7 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.assertEqual(self.from_person, self.job.minor_person)
         self.assertEqual(self.to_person, self.job.to_person)
         self.assertEqual(self.to_person, self.job.major_person)
-        self.assertEqual({}, self.job.metadata)
+        self.assertEqual({'delete': False}, self.job.metadata)
 
     def test_getErrorRecipients_user(self):
         # The to_person is the recipient.

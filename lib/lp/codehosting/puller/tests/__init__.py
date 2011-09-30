@@ -25,75 +25,20 @@ from bzrlib.tests.http_server import (
 from canonical.config import config
 from lp.codehosting.puller.worker import (
     BranchMirrorer,
+    BranchMirrorerPolicy,
     PullerWorker,
     PullerWorkerProtocol,
     )
 from lp.codehosting.tests.helpers import LoomTestMixin
+from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.codehosting.vfs import branch_id_to_path
-from lp.codehosting.vfs.branchfs import (
-    BadUrl,
-    BranchPolicy,
-    )
 from lp.testing import TestCaseWithFactory
 
 
-class BlacklistPolicy(BranchPolicy):
-    """Branch policy that forbids certain URLs."""
+class AcceptAnythingBranchMirrorerPolicy(AcceptAnythingPolicy,
+                                         BranchMirrorerPolicy):
+    """A branch mirror policy that supports mirrorring from anywhere."""
 
-    def __init__(self, should_follow_references, unsafe_urls=None):
-        if unsafe_urls is None:
-            unsafe_urls = set()
-        self._unsafe_urls = unsafe_urls
-        self._should_follow_references = should_follow_references
-
-    def shouldFollowReferences(self):
-        return self._should_follow_references
-
-    def checkOneURL(self, url):
-        if url in self._unsafe_urls:
-            raise BadUrl(url)
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        This class is not used for testing our smarter stacking features so we
-        just do the simplest thing: return the URL that would be used anyway
-        and don't check it.
-        """
-        return urlutils.join(branch.base, url), False
-
-
-class AcceptAnythingPolicy(BlacklistPolicy):
-    """Accept anything, to make testing easier."""
-
-    def __init__(self):
-        super(AcceptAnythingPolicy, self).__init__(True, set())
-
-
-class WhitelistPolicy(BranchPolicy):
-    """Branch policy that only allows certain URLs."""
-
-    def __init__(self, should_follow_references, allowed_urls=None,
-                 check=False):
-        if allowed_urls is None:
-            allowed_urls = []
-        self.allowed_urls = set(url.rstrip('/') for url in allowed_urls)
-        self.check = check
-
-    def shouldFollowReferences(self):
-        return self._should_follow_references
-
-    def checkOneURL(self, url):
-        if url.rstrip('/') not in self.allowed_urls:
-            raise BadUrl(url)
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        Here we return the URL that would be used anyway and optionally check
-        it.
-        """
-        return urlutils.join(branch.base, url), self.check
 
 
 class PullerWorkerMixin:
@@ -114,7 +59,7 @@ class PullerWorkerMixin:
             oops_prefix = ''
         if branch_type is None:
             if policy is None:
-                policy = AcceptAnythingPolicy()
+                policy = AcceptAnythingBranchMirrorerPolicy()
             opener = BranchMirrorer(policy, protocol)
         else:
             opener = None

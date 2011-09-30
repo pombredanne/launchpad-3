@@ -230,7 +230,6 @@ aggregations. The code_name and series attributes are always none.
 A project milestone is active, if at least one product milestone with
 the same name is active.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> print applets_1_1.active, evolution_1_1.active
     True True
 
@@ -238,12 +237,10 @@ the same name is active.
     True
 
     >>> applets_1_1.active = False
-    >>> syncUpdate(applets_1_1)
     >>> print gnome.getMilestone('1.1').active
     True
 
     >>> evolution_1_1.active = False
-    >>> syncUpdate(evolution_1_1)
     >>> print gnome.getMilestone('1.1').active
     False
 
@@ -258,14 +255,12 @@ products.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(netapplet)
     >>> netapplet.active = False
-    >>> syncUpdate(netapplet)
     >>> print [milestone.name for milestone in gnome.milestones]
     []
 
     # Reset the product back to original status so future tests pass.
 
     >>> netapplet.active = True
-    >>> syncUpdate(netapplet)
 
 The dateexpected attribute is set to the minimum of the dateexpected
 values of the product milestones.
@@ -278,12 +273,10 @@ values of the product milestones.
 
     >>> from datetime import datetime
     >>> applets_1_1.dateexpected = datetime(2007, 4, 2)
-    >>> syncUpdate(applets_1_1)
     >>> print gnome.getMilestone('1.1').dateexpected
     2007-04-02 00:00:00
 
     >>> evolution_1_1.dateexpected = datetime(2007, 4, 1)
-    >>> syncUpdate(evolution_1_1)
     >>> print gnome.getMilestone('1.1').dateexpected
     2007-04-01 00:00:00
 

@@ -108,6 +108,7 @@ class ServerAvailableResource(resource.Resource):
         else:
             request.setResponseCode(503)
         request.setHeader('Content-Type', 'text/plain')
+        return service_available
 
     def render_GET(self, request):
         """Handler for GET requests.  See resource.Resource.render."""

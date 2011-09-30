@@ -52,6 +52,7 @@ from lp.answers.enums import (
     )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import PublicPersonChoice
 from lp.services.worlddata.interfaces.language import ILanguage
@@ -156,8 +157,9 @@ class IQuestion(IHasOwner):
         description=_('Up-to-date notes on the status of the question.'))
     # other attributes
     target = exported(Reference(
-        title=_('Project'), required=True, schema=IQuestionTarget,
-        description=_('The distribution, source package, or product the '
+        title=_('This question is about'), required=True,
+        schema=IQuestionTarget,
+        description=_('The distribution, source package, or project the '
                       'question pertains to.')),
         as_of="devel")
     faq = Object(
@@ -434,19 +436,46 @@ class IQuestion(IHasOwner):
         """
 
     # subscription-related methods
-    def subscribe(person):
-        """Subscribe this person to the question."""
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def subscribe(person, subscribed_by=None):
+        """Subscribe `person` to the question.
+
+        :param person: the subscriber.
+        :param subscribed_by: the person who created the subscription.
+        :return: an `IQuestionSubscription`.
+        """
 
     def isSubscribed(person):
         """Return a boolean indicating whether the person is subscribed."""
 
-    def unsubscribe(person):
-        """Remove the person's subscription to this question."""
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def unsubscribe(person, unsubscribed_by):
+        """Unsubscribe `person` from the question.
+
+        :param person: the subscriber.
+        :param unsubscribed_by: the person who removed the subscription.
+        """
 
     def getDirectSubscribers():
         """Return the persons who are subscribed to this question.
 
         :return: A list of persons sorted by displayname.
+        """
+
+    def getDirectSubscribersWithDetails():
+        """Get direct subscribers and their subscriptions for the question.
+
+        :returns: A ResultSet of tuples (Person, QuestionSubscription)
+            representing a subscriber and their question subscription.
         """
 
     def getIndirectSubscribers():

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """cronscripts/buildd-* tests."""
@@ -9,7 +9,7 @@ import logging
 import os
 import subprocess
 import sys
-import unittest
+from unittest import TestCase
 
 from zope.component import getUtility
 
@@ -21,7 +21,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.testing.layers import (
     DatabaseLayer,
-    LaunchpadLayer,
     LaunchpadZopelessLayer,
     )
 from lp.buildmaster.enums import BuildStatus
@@ -39,7 +38,7 @@ from lp.soyuz.scripts.buildd import (
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 
-class TestCronscriptBase(unittest.TestCase):
+class TestCronscriptBase(TestCase):
     """Buildd cronscripts test classes."""
 
     def runCronscript(self, name, extra_args):
@@ -47,6 +46,10 @@ class TestCronscriptBase(unittest.TestCase):
 
         Always set verbosity level.
         """
+        # Scripts will write to the database.  The test runner won't see
+        # this and not know that the database needs restoring.
+        DatabaseLayer.force_dirty_database()
+
         script = os.path.join(config.root, "cronscripts", name)
         args = [sys.executable, script, "-v"]
         args.extend(extra_args)
@@ -73,10 +76,6 @@ class TestCronscriptBase(unittest.TestCase):
         """
         rc, out, err = runner()
         self.assertEqual(0, rc, "Err:\n%s" % err)
-
-        # 'runners' commit to the test database in subprocesses, so we need to
-        # tell the layer to fully tear down and restore the database.
-        DatabaseLayer.force_dirty_database()
 
         return rc, out, err
 

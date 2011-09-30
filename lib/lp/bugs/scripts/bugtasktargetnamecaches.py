@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from lp.bugs.model.bugtask import (
     BugTask,
-    determine_target,
+    bug_target_from_key,
     )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
@@ -104,7 +104,7 @@ class BugTaskTargetNameCachesTunableLoop(object):
             target_objects = (
                 (store.get(cls, id) if id is not None else None)
                 for cls, id in zip(target_classes, target_bits))
-            target = determine_target(*target_objects)
+            target = bug_target_from_key(*target_objects)
             new_name = target.bugtargetdisplayname
             cached_names.discard(new_name)
             # If there are any outdated names cached, update them all in

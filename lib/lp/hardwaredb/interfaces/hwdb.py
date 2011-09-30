@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -288,7 +288,9 @@ class IHWSubmissionSet(Interface):
         """
 
     def search(user=None, device=None, driver=None, distribution=None,
-               distroseries=None, architecture=None, owner=None):
+               distroseries=None, architecture=None, owner=None,
+               created_before=None, created_after=None,
+               submitted_before=None, submitted_after=None):
         """Return the submissions matiching the given parmeters.
 
         :param user: The `IPerson` running the query. Private submissions
@@ -305,6 +307,14 @@ class IHWSubmissionSet(Interface):
         :param architecture: Limit results to submissions made for
             a specific architecture.
         :param owner: Limit results to submissions from this person.
+        :param created_before: Exclude results created after this
+            date.
+        :param created_after: Exclude results created before or on
+            this date.
+        :param submitted_before: Exclude results submitted after this
+            date.
+        :param submitted_after: Exclude results submitted before or on
+            this date.
 
         Only one of :distribution: or :distroseries: may be supplied.
         """
@@ -954,7 +964,7 @@ class IHWDeviceSet(Interface):
         matches.
         """
 
-    def getByID(self, id):
+    def getByID(id):
         """Return an IHWDevice record with the given database ID.
 
         :param id: The database ID.
@@ -1241,6 +1251,105 @@ class IHWDBApplication(ILaunchpadApplication):
                 'HWDriver.'),
             value_type=Reference(schema=IHWDriverPackageName),
             readonly=True))
+
+    @operation_parameters(
+        device=Reference(
+            IHWDevice,
+            title=u'A Device',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'containing this device.'),
+            required=False),
+        driver=Reference(
+            IHWDriver,
+            title=u'A Driver',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'containing devices that use this driver.'),
+            required=False),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for this distribution.'),
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distribution series.'),
+            required=False),
+        architecture=TextLine(
+            title=u'A processor architecture',
+            description=(
+                u'If specified, the result set is limited to sumbissions '
+                'made for a specific architecture.'),
+            required=False),
+        owner=Reference(
+            IPerson,
+            title=u'Person',
+            description=(
+                u'If specified, the result set is limited to sumbissions '
+                'from this person.'),
+            required=False),
+        created_before=Datetime(
+            title=u'Created Before',
+            description=(
+                u'If specified, exclude results created after this date.'),
+            required=False),
+        created_after=Datetime(
+            title=u'Created After',
+            description=(
+                u'If specified, exclude results created before or on '
+                'this date.'),
+            required=False),
+        submitted_before=Datetime(
+            title=u'Created Before',
+            description=(
+                u'If specified, exclude results submitted after this date.'),
+            required=False),
+        submitted_after=Datetime(
+            title=u'Created After',
+            description=(
+                u'If specified, Exclude results submitted before or on '
+                'this date.'),
+            required=False))
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(IHWSubmission)
+    @export_read_operation()
+    def search(user=None, device=None, driver=None, distribution=None,
+               distroseries=None, architecture=None, owner=None,
+               created_before=None, created_after=None,
+               submitted_before=None, submitted_after=None):
+        """Return the submissions matiching the given parmeters.
+
+        :param user: The `IPerson` running the query. Private submissions
+            are returned only if the person running the query is the
+            owner or an admin.
+        :param device: Limit results to submissions containing this
+            `IHWDevice`.
+        :param driver: Limit results to submissions containing devices
+            that use this `IHWDriver`.
+        :param distribution: Limit results to submissions made for
+            this `IDistribution`.
+        :param distroseries: Limit results to submissions made for
+            this `IDistroSeries`.
+        :param architecture: Limit results to submissions made for
+            a specific architecture.
+        :param owner: Limit results to submissions from this person.
+        :param created_before: Exclude results created after this
+            date.
+        :param created_after: Exclude results created before or on
+            this date.
+        :param submitted_before: Exclude results submitted after this
+            date.
+        :param submitted_after: Exclude results submitted before or on
+            this date.
+
+        Only one of :distribution: or :distroseries: may be supplied.
+        """
 
     @operation_parameters(
         bus=Choice(

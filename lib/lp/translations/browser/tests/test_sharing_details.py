@@ -26,6 +26,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     EventRecorder,
+    extract_lp_cache,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -250,7 +251,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # If the packaging link is set and if an upstream series
         # uses Launchpad translations but if the other conditions
         # are not fulfilled, is_configuration_complete is False.
-        self.configureSharing(translations_usage=ServiceUsage.LAUNCHPAD)
+        self.configureSharing(translations_usage = ServiceUsage.LAUNCHPAD)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__no_auto_sync(self):
@@ -261,8 +262,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # but if the upstream series does not synchronize translations
         # then is_configuration_complete is False.
         self.configureSharing(
-            set_upstream_branch=True,
-            translations_usage=ServiceUsage.LAUNCHPAD)
+            set_upstream_branch = True,
+            translations_usage = ServiceUsage.LAUNCHPAD)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__all_conditions_fulfilled(self):
@@ -273,9 +274,9 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         #   - the upstream series synchronizes translations
         # then is_configuration_complete is True.
         self.configureSharing(
-            set_upstream_branch=True,
-            translations_usage=ServiceUsage.LAUNCHPAD,
-            translation_import_mode=
+            set_upstream_branch = True,
+            translations_usage = ServiceUsage.LAUNCHPAD,
+            translation_import_mode =
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         self.assertTrue(self.view.is_configuration_complete)
 
@@ -938,10 +939,12 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         sourcepackage = self.makeFullyConfiguredSharing()[0]
         anon_browser = self._getSharingDetailsViewBrowser(sourcepackage)
         # Anonymous users don't get cached objects due to bug #740208
-        self.assertNotIn("LP.cache['productseries'] =", anon_browser.contents)
+        self.assertNotIn(
+            'productseries', extract_lp_cache(anon_browser.contents))
         browser = self._getSharingDetailsViewBrowser(
             sourcepackage, user=self.user)
-        self.assertIn("LP.cache['productseries'] =", browser.contents)
+        self.assertIn(
+            'productseries', extract_lp_cache(browser.contents))
 
     def test_potlist_only_ubuntu(self):
         # Without a packaging link, only Ubuntu templates are listed.
@@ -952,8 +955,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  only in Ubuntu  0  \d+ second(s)? ago""",
+        self.assertEqual(
+            "foo-template\nonly in Ubuntu\n0\na moment ago",
             extract_text(tbody))
 
     def test_potlist_sharing(self):
@@ -968,10 +971,9 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  shared
-            0  \d+ second(s)? ago  0  \d+ second(s)? ago""",
-            extract_text(tbody))
+        self.assertEqual(
+            "foo-template\nshared\n0\na moment ago\n0\na moment ago\n"
+            "View upstream", extract_text(tbody))
 
     def test_potlist_only_upstream(self):
         # A template that is only present in upstream is called
@@ -984,8 +986,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  only in upstream  0  \d+ second(s)? ago""",
+        self.assertEqual(
+            "foo-template\nonly in upstream\n0\na moment ago\nView upstream",
             extract_text(tbody))
 
     def test_potlist_linking(self):

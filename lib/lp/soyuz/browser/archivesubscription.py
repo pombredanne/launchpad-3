@@ -47,12 +47,8 @@ from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries,
-    SourcesListEntriesView,
-    )
+from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet,
     IPersonalArchiveSubscription,
@@ -156,7 +152,7 @@ class ArchiveSubscribersView(LaunchpadFormView):
     def subscriptions(self):
         """Return all the subscriptions for this archive."""
         result = list(getUtility(IArchiveSubscriberSet
-            ).getByArchive( self.context))
+            ).getByArchive(self.context))
         ids = set(map(attrgetter('subscriber_id'), result))
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
             need_validity=True))
@@ -337,7 +333,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         return personal_subscription_tokens
 
 
-class PersonArchiveSubscriptionView(LaunchpadView):
+class PersonArchiveSubscriptionView(LaunchpadView, SourcesListEntriesWidget):
     """Display a user's archive subscription and relevant info.
 
     This includes the current sources.list entries (if the subscription
@@ -353,9 +349,12 @@ class PersonArchiveSubscriptionView(LaunchpadView):
     def initialize(self):
         """Process any posted actions."""
         super(PersonArchiveSubscriptionView, self).initialize()
+        # Set the archive attribute so SourcesListEntriesWidget can be built
+        # correctly.
+        self.archive = self.context.archive
 
         # If an activation was requested and there isn't a currently
-        # active token, then create a token, provided a notification
+        # active token, then create a token, provide a notification
         # and redirect.
         if self.request.form.get('activate') and not self.active_token:
             self.context.archive.newAuthToken(self.context.subscriber)
@@ -377,27 +376,3 @@ class PersonArchiveSubscriptionView(LaunchpadView):
                 "\"sources.list\"." % self.context.archive.displayname)
 
             self.request.response.redirect(self.request.getURL())
-
-    @cachedproperty
-    def sources_list_entries(self):
-        """Setup and return the sources list entries widget."""
-        if self.active_token is None:
-            return None
-
-        comment = "Personal access of %s to %s" % (
-            self.context.subscriber.displayname,
-            self.context.archive.displayname)
-
-        entries = SourcesListEntries(
-            self.context.archive.distribution,
-            self.active_token.archive_url,
-            self.context.archive.series_with_sources)
-
-        return SourcesListEntriesView(entries, self.request, comment=comment)
-
-    @cachedproperty
-    def active_token(self):
-        """Returns the corresponding current token for this subscription."""
-        token_set = getUtility(IArchiveAuthTokenSet)
-        return token_set.getActiveTokenForArchiveAndPerson(
-            self.context.archive, self.context.subscriber)

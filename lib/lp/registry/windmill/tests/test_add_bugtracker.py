@@ -47,6 +47,7 @@ class TestAddBugTracker(WindmillTestCase):
         client.click(id=u'formoverlay-add-bugtracker')
 
         # Verify that the bugtracker name was entered in the text box.
+        # XXX: pushed down to YUI tests, if we care.
         client.waits.sleep(milliseconds='1000')
         client.asserts.assertProperty(
             id="field.bugtracker.bugtracker",
@@ -55,6 +56,7 @@ class TestAddBugTracker(WindmillTestCase):
 
         # Verify error message when trying to create a bugtracker with a
         # conflicting name.
+        # XXX: no error checking in browser tests.
         client.click(id=u'create-bugtracker-link')
         client.waits.forElement(id=u'field.name')
         client.type(id='field.name', text=bugtracker_name)

@@ -118,7 +118,7 @@ class QuickVerifier(Verifier):
     def getPOFilesBatch(self, chunk_size):
         """Return a batch of POFiles to work with."""
         pofiles = self.touched_pofiles[
-            self.total_checked : self.total_checked+int(chunk_size)]
+            self.total_checked: self.total_checked + int(chunk_size)]
         return pofiles
 
 
@@ -137,6 +137,14 @@ class VerifyPOFileStatsProcess:
             % self.start_at_id)
         loop = Verifier(self.transaction, self.logger, self.start_at_id)
 
+        # Since the script can run for a long time, our deployment
+        # process might remove the Launchpad tree the script was run
+        # from, thus the script failing to find the email template
+        # if it was attempted after DBLoopTuner run is completed.
+        # See bug #811447 for OOPS we used to get then.
+        template = helpers.get_email_template(
+            'pofile-stats.txt', 'translations')
+
         # Each iteration of our loop collects all statistics first, before
         # modifying any rows in the database.  With any locks on the database
         # acquired only at the very end of the iteration, we can afford to
@@ -149,12 +157,10 @@ class VerifyPOFileStatsProcess:
         if loop.total_incorrect > 0 or loop.total_exceptions > 0:
             # Not all statistics were correct, or there were failures while
             # checking them.  Email the admins.
-            template = helpers.get_email_template(
-                'pofile-stats.txt', 'translations')
             message = template % {
-                'exceptions' : loop.total_exceptions,
-                'errors' : loop.total_incorrect,
-                'total' : loop.total_checked}
+                'exceptions': loop.total_exceptions,
+                'errors': loop.total_incorrect,
+                'total': loop.total_checked}
             simple_sendmail(
                 from_addr=config.rosetta.admin_email,
                 to_addrs=[config.rosetta.admin_email],
@@ -189,9 +195,9 @@ class VerifyRecentPOFileStatsProcess:
             template = helpers.get_email_template(
                 'pofile-stats.txt', 'translations')
             message = template % {
-                'exceptions' : loop.total_exceptions,
-                'errors' : loop.total_incorrect,
-                'total' : loop.total_checked}
+                'exceptions': loop.total_exceptions,
+                'errors': loop.total_incorrect,
+                'total': loop.total_checked}
             simple_sendmail(
                 from_addr=config.rosetta.admin_email,
                 to_addrs=[config.rosetta.admin_email],
@@ -200,4 +206,3 @@ class VerifyRecentPOFileStatsProcess:
             self.transaction.commit()
 
         self.logger.info("Done.")
-

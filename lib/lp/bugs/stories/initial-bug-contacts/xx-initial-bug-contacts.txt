@@ -1,0 +1,244 @@
+To set a bug supervisor for a distribution, we need to go to the Bug page
+of that distribution:
+
+  >>> browser.open('http://launchpad.dev/ubuntu/+bugs')
+
+But the link is not available if you are not logged in with permission
+to change the bug supervisor.
+
+  >>> browser.getLink("Change bug supervisor")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+Collin is an an Ubuntu owner and can set the bug supervisor role.
+
+  >>> colin_browser = setupBrowser(
+  ...     auth='Basic colin.watson@ubuntulinux.com:test')
+  >>> colin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs')
+
+...and he can see that the link on Ubuntu's bugs page.
+
+  >>> bug_supervisor_link = colin_browser.getLink("Change bug supervisor")
+  >>> bug_supervisor_link.url
+  'http://bugs.launchpad.dev/ubuntu/+bugsupervisor'
+
+Anyone with launchpad.Edit permission can edit the distribution bug
+supervisor, but most users can select only themselves and the teams they
+administer. In this example, Colin will set himself as the distribution
+bug supervisor.
+
+  >>> bug_supervisor_link.click()
+  >>> colin_browser.url
+  'http://bugs.launchpad.dev/ubuntu/+bugsupervisor'
+
+The bug supervisor page takes just one simple value: the bug supervisor email
+or nickname. Let's set colin.watson@ubuntulinux.com as the bug supervisor for
+Ubuntu.
+
+  >>> colin_browser.getControl("Bug Supervisor").value = (
+  ...     ' colin.watson@ubuntulinux.com ')
+  >>> colin_browser.getControl("Change").click()
+
+And then collin is redirected to the distribution bugs page.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     colin_browser.contents, 'bug-supervisor'))
+    Bug supervisor: Colin Watson
+
+== Setting Upstream Bug Supervisor ==
+
+Setting the bug supervisor for an upstream requires launchpad.Edit
+permission on the product. But regular users can only appoint
+themselves as bug supervisors and teams they administer.
+
+    >>> sample_browser = setupBrowser()
+    >>> sample_browser.addHeader("Authorization",
+    ...                          "Basic test@canonical.com:test")
+
+    >>> sample_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bugsupervisor")
+    >>> sample_browser.getControl(name="field.bug_supervisor").value = (
+    ...                           "test@canonical.com")
+    >>> sample_browser.getControl("Change").click()
+
+He is now redirected to the main product page, and he sees a confirmation
+message.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'bug-supervisor'))
+    Bug supervisor: Sample Person
+
+Another example, this time with a team that has no "preferred email" set.
+
+    >>> sample_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bugsupervisor")
+    >>> sample_browser.getControl(name="field.bug_supervisor").value = (
+    ...     "landscape-developers")
+    >>> sample_browser.getControl("Change").click()
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'bug-supervisor'))
+    Bug supervisor: Landscape Developers
+
+Launchpad administrators can appoint anybody.
+
+    >>> admin_browser = setupBrowser()
+    >>> admin_browser.addHeader("Authorization",
+    ...                          "Basic foo.bar@canonical.com:test")
+
+    >>> admin_browser.open("http://bugs.launchpad.dev/firefox/+bugsupervisor")
+    >>> admin_browser.getControl(name="field.bug_supervisor").value = (
+    ...                           "robertc@robertcollins.net")
+    >>> admin_browser.getControl("Change").click()
+    >>> print extract_text(find_tag_by_id(
+    ...     admin_browser.contents, 'bug-supervisor'))
+    Bug supervisor: Robert Collins
+
+Filing a public bug on an upstream will subscribe the bug supervisor, as
+well.
+
+    >>> browser.addHeader("Authorization", "Basic mark@example.com:test")
+
+    >>> browser.open("http://launchpad.dev/firefox/+filebug")
+
+    >>> browser.getControl(name="field.title", index=0).value = "bug supervisor test"
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.getControl(name="field.comment").value = "a public bug"
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/firefox/+bug/BUG-ID
+
+Now mark (because he's the bug reporter), Sample Person (a former bug
+supervisor), Landscape Developers (another former bug supervisor) and
+Robert Collins (the current bug supervisor) are subscribed to this bug:
+
+    >>> from itertools import chain
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+
+    >>> def subscriber_names(bug):
+    ...     subscribers = chain(
+    ...         bug.getDirectSubscribers(),
+    ...         bug.getIndirectSubscribers())
+    ...     return sorted(subscriber.displayname for subscriber in subscribers)
+
+    >>> login(ANONYMOUS)
+    >>> bugset = getUtility(IBugSet)
+    >>> subscriber_names(bugset.get(bug_id))
+    [u'Landscape Developers', u'Mark Shuttleworth', u'Robert Collins',
+    u'Sample Person']
+    >>> logout()
+
+For a security bug, only the reporter and the registrant gets
+subscribed, because Firefox does not have a security contact.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+
+    >>> login(ANONYMOUS)
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox.security_contact is None
+    True
+    >>> logout()
+
+    >>> browser.open("http://launchpad.dev/firefox/+filebug")
+
+    >>> browser.getControl(name="field.title", index=0).value = "bug supervisor test"
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> other_bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(other_bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/firefox/+bug/BUG-ID
+
+    >>> logout()
+    >>> login("mark@example.com")
+
+    >>> subscriber_names(bugset.get(other_bug_id))
+    [u'Mark Shuttleworth', u'Sample Person']
+
+    >>> logout()
+
+Filing a public bug on a distribution source package subscribes the bug
+reporter, the distribution bug supervisor, if there is one, and all the
+package subscribers, if there are any.
+
+    >>> browser.addHeader("Authorization", "Basic mark@example.com:test")
+
+    >>> browser.open(
+    ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
+    ...     "+filebug")
+
+    >>> browser.getControl(name="field.title", index=0).value = "a public bug"
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.getControl(name="field.comment").value = (
+    ...     "anyone can see this")
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/BUG-ID
+
+We should have three subscribers now. The bug reporter (also a package
+subscriber), mark, the distro bug supervisor kamion, and foobar, who is
+subscribed to the distribution.
+
+    >>> from itertools import chain
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+
+    >>> def subscriber_names(bug):
+    ...     subscribers = chain(
+    ...         bug.getDirectSubscribers(),
+    ...         bug.getIndirectSubscribers())
+    ...     return sorted(subscriber.name for subscriber in subscribers)
+
+    >>> login(ANONYMOUS)
+
+    >>> bugset = getUtility(IBugSet)
+    >>> subscriber_names(bugset.get(bug_id))
+    [u'kamion', u'mark', u'name16']
+
+    >>> logout()
+
+When filing a security bug, only the bug reporter and registrant are explicitly
+Cc'd, because the Ubuntu distribution does not have a security contact.
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
+    >>> login(ANONYMOUS)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu.security_contact is None
+    True
+    >>> logout()
+
+    >>> browser.open(
+    ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
+    ...     "+filebug")
+    >>> browser.getControl(name="field.title", index=0).value = "a PRIVATE bug"
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.getControl(name="field.comment").value = "top sekrit"
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> other_bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(other_bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/BUG-ID
+
+    >>> login("mark@example.com")
+
+    >>> subscriber_names(bugset.get(other_bug_id))
+    [u'mark', u'ubuntu-team']
+
+    >>> logout()

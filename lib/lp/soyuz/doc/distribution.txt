@@ -167,8 +167,6 @@ Records in NEW do not make cprov PPA pending-acceptance:
 Neither in UNAPPROVED:
 
     >>> queue.setUnapproved()
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(queue)
     >>> queue.status.name
     'UNAPPROVED'
 
@@ -178,7 +176,6 @@ Neither in UNAPPROVED:
 Only records in ACCEPTED does:
 
     >>> queue.setAccepted()
-    >>> syncUpdate(queue)
     >>> queue.status.name
     'ACCEPTED'
 
@@ -190,7 +187,6 @@ Only records in ACCEPTED does:
 Records in DONE also do not trigger pending-acceptance state in PPAs:
 
     >>> queue.setDone()
-    >>> syncUpdate(queue)
     >>> queue.status.name
     'DONE'
 

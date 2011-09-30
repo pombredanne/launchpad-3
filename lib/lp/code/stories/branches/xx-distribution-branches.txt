@@ -5,8 +5,8 @@ hence a distribution.
 
     >>> login('admin@canonical.com')
     >>> mint = factory.makeDistribution(name='mint')
-    >>> old = factory.makeDistroRelease(mint, name='old')
-    >>> stable = factory.makeDistroRelease(mint, name='stable')
+    >>> old = factory.makeDistroSeries(mint, name='old')
+    >>> stable = factory.makeDistroSeries(mint, name='stable')
     >>> eric = factory.makePerson(name='eric')
     >>> twisted = factory.makeSourcePackageName('twisted')
     >>> branch = factory.makePackageBranch(

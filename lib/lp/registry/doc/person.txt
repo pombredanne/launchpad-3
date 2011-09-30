@@ -339,8 +339,6 @@ reason for the change.
     >>> from lp.registry.interfaces.person import PersonalStanding
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> lifeless.personal_standing_reason = 'Such a cool guy!'
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(lifeless)
 
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...
@@ -531,7 +529,7 @@ account_status is NOACCOUNT, though.
     >>> not_a_person.convertToTeam(team_owner=landscape_devs)
     Traceback (most recent call last):
     ...
-    AssertionError: Can't convert a team to a team.
+    AlreadyConvertedException: foo-v has already been converted to a team.
 
 
 Team members

@@ -149,14 +149,14 @@ class TestReadOnlyModeSwitches(TestCase):
 
     def test_no_mode_changes(self):
         # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         self.publication.beforeTraversal(self.request)
 
         # Since the mode didn't change, the stores were left in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         # With the store's connection being the same as before.
         master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
@@ -171,8 +171,8 @@ class TestReadOnlyModeSwitches(TestCase):
 
     def test_changing_modes(self):
         # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         try:
             touch_read_only_file()
@@ -185,8 +185,8 @@ class TestReadOnlyModeSwitches(TestCase):
 
         # Here the mode has changed to read-only, so the stores were removed
         # from zstorm.
-        self.assertNotIn('launchpad-main-master', self.zstorm_stores)
-        self.assertNotIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertNotIn('main-master', self.zstorm_stores)
+        self.assertNotIn('main-slave', self.zstorm_stores)
 
         # If they're needed again, they'll be re-created by ZStorm, and when
         # that happens they will point to the read-only databases.
@@ -293,9 +293,6 @@ class TestWebServicePublication(TestCaseWithFactory):
         self.assertTrue(repr(next_oops).find("DisconnectionError") != -1,
             "next_oops was %r" % next_oops)
 
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
-
         # Ensure that it is different to the last logged OOPS.
         self.assertNotEqual(repr(last_oops), repr(next_oops))
 
@@ -325,9 +322,6 @@ class TestWebServicePublication(TestCaseWithFactory):
 
         # Ensure the OOPS mentions the correct exception
         self.assertNotEqual(repr(next_oops).find("Bug #504291"), -1)
-
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
 
         # Ensure the store has been rolled back and in a usable state.
         self.assertEqual(store._connection._state, STATE_RECONNECT)

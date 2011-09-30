@@ -73,12 +73,17 @@
       </div>
 
       <div id="show-hide-configs"
-         tal:attributes="class
-           python: 'collapsible collapsed'
-             if view.registration_done
-             else 'collapsible'">
-        <div class="config-options"
-             style="margin-bottom: 0.5em">Configuration options</div>
+           class="collapsible">
+        <legend>
+          <div class="config-options" style="margin-bottom: 0.5em;">
+            Configuration options
+          </div>
+        </legend>
+        <div
+          tal:attributes="class
+            python: 'expanded'
+              if not view.registration_done
+              else ''">
         <table
           tal:condition="view/configuration_links"
           style="width: 100%; padding-top: 1em"
@@ -96,6 +101,7 @@
             </tr>
           </tal:item>
         </table>
+        </div>
       </div>
     </tal:show-registration>
 

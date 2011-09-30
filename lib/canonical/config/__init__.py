@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 '''
@@ -13,24 +13,24 @@ XXX: Robert Collins 2010-10-20 bug=663454 this is in the wrong namespace.
 __metaclass__ = type
 
 
-import os
 import logging
+import os
 import sys
-from urlparse import urlparse, urlunparse
-
-import pkg_resources
-import ZConfig
+from urlparse import (
+    urlparse,
+    urlunparse,
+    )
 
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
+import pkg_resources
+import ZConfig
 
 from canonical.launchpad.readonly import is_read_only
-
 from lp.services.osutils import open_for_writing
 
 
 __all__ = [
-    'DatabaseConfig',
     'dbconfig',
     'config',
     ]
@@ -259,7 +259,7 @@ class CanonicalConfig:
         if not ensureSlash:
             return root_url.rstrip('/')
         if not root_url.endswith('/'):
-            return root_url+'/'
+            return root_url + '/'
         return root_url
 
     def __getattr__(self, name):
@@ -277,6 +277,19 @@ class CanonicalConfig:
     def __getitem__(self, key):
         self._getConfig()
         return self._config[key]
+
+    def __dir__(self):
+        """List section names in addition to methods and variables."""
+        self._getConfig()
+        names = dir(self.__class__)
+        names.extend(self.__dict__)
+        names.extend(section.name for section in self._config)
+        return names
+
+    def __iter__(self):
+        """Iterate through configuration sections."""
+        self._getConfig()
+        return iter(self._config)
 
 
 config = CanonicalConfig()
@@ -342,11 +355,11 @@ def urlbase(value):
     value = url(value)
     scheme, location, path, parameters, query, fragment = urlparse(value)
     if parameters:
-        raise ValueError, 'URL parameters not allowed'
+        raise ValueError('URL parameters not allowed')
     if query:
-        raise ValueError, 'URL query not allowed'
+        raise ValueError('URL query not allowed')
     if fragment:
-        raise ValueError, 'URL fragments not allowed'
+        raise ValueError('URL fragments not allowed')
     if not value.endswith('/'):
         value = value + '/'
     return value
@@ -388,8 +401,11 @@ def loglevel(value):
         raise ValueError(
                 "Invalid log level %s. "
                 "Should be DEBUG, CRITICAL, ERROR, FATAL, INFO, WARNING "
-                "as per logging module." % value
-                )
+                "as per logging module." % value)
+
+
+class DatabaseConfigOverrides(object):
+    pass
 
 
 class DatabaseConfig:
@@ -405,6 +421,9 @@ class DatabaseConfig:
     _db_config_required_attrs = frozenset([
         'dbuser', 'rw_main_master', 'rw_main_slave', 'ro_main_master',
         'ro_main_slave'])
+
+    def __init__(self):
+        self.reset()
 
     @property
     def main_master(self):
@@ -424,25 +443,32 @@ class DatabaseConfig:
         else:
             return self.rw_main_slave
 
-    def setConfigSection(self, section_name):
-        self._config_section = section_name
+    def override(self, **kwargs):
+        """Override one or more config attributes.
 
-    def getSectionName(self):
-        """The name of the config file section this DatabaseConfig references.
+        Overriding a value to None removes the override.
         """
-        return self._config_section
+        for attr, value in kwargs.iteritems():
+            assert attr in self._db_config_attrs, (
+                "%s cannot be overriden" % attr)
+            if value is None:
+                if hasattr(self.overrides, attr):
+                    delattr(self.overrides, attr)
+            else:
+                setattr(self.overrides, attr, value)
+
+    def reset(self):
+        self.overrides = DatabaseConfigOverrides()
 
     def _getConfigSections(self):
         """Returns a list of sections to search for database configuration.
 
         The first section in the list has highest priority.
         """
-        if self._config_section is None:
-            return [config.database]
-        overlay = config
-        for part in self._config_section.split('.'):
-            overlay = getattr(overlay, part)
-        return [overlay, config.database]
+        # config.launchpad remains here for compatibility -- production
+        # appserver configs customise its dbuser. Eventually they should
+        # be migrated into config.database, and this can be removed.
+        return [self.overrides, config.launchpad, config.database]
 
     def __getattr__(self, name):
         sections = self._getConfigSections()
@@ -460,4 +486,3 @@ class DatabaseConfig:
 
 
 dbconfig = DatabaseConfig()
-dbconfig.setConfigSection('launchpad')

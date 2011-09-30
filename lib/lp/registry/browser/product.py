@@ -26,6 +26,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductPackagesView',
     'ProductPackagesPortletView',
+    'ProductPurchaseSubscriptionView',
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSeriesSetView',
@@ -90,10 +91,6 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -198,6 +195,10 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
@@ -1028,6 +1029,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, self.request, self.user)
 
     @property
+    def page_title(self):
+        return '%s in Launchpad' % self.context.displayname
+
+    @property
     def show_license_status(self):
         return self.context.license_status != LicenseStatus.OPEN_SOURCE
 
@@ -1182,6 +1187,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             false_text='Unapproved',
             true_text='Approved',
             header='Does the license qualifiy the project for free hosting?')
+
+
+class ProductPurchaseSubscriptionView(ProductView):
+    """View the instructions to purchase a commercial subscription."""
+    page_title = 'Purchase subscription'
 
 
 class ProductPackagesView(LaunchpadView):

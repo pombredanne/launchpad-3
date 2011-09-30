@@ -80,7 +80,7 @@ class TestChangeLogView(TestCaseWithFactory):
         self.assertEqual('change', batch._singular_heading)
         self.assertEqual('changes', batch._plural_heading)
         self.assertEqual(10, batch.default_size)
-        self.assertEqual(2, len(batch.getBatches()))
+        self.assertEqual(None, batch.currentBatch().nextBatch().nextBatch())
 
     def test_page_batched_changes(self):
         self.makeFeatureFlagChanges()

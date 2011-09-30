@@ -180,18 +180,22 @@
     </div>
   </div>
 
-  <div class="yui-g" tal:condition="view/pending_diff">
-    <div class="pending-update" id="diff-pending-update">
-      <h3>Updating diff...</h3>
-      <p>
-        An updated diff will be available in a few minutes.  Reload to see the
-        changes.
-      </p>
+  <div id="diff-area">
+    <div class="yui-g" tal:condition="view/pending_diff">
+      <div class="pending-update" id="diff-pending-update">
+        <h3>Updating diff...</h3>
+        <p>
+          An updated diff will be available in a few minutes. Reload to see the
+          changes.
+        </p>
+      </div>
     </div>
-  </div>
-  <div id="review-diff" tal:condition="view/preview_diff">
-    <h2>Preview Diff</h2>
-    <div tal:replace="structure context/@@++diff"/>
+    <div id="review-diff" tal:condition="view/preview_diff">
+      <h2>Preview Diff</h2>
+      <div class="diff-content">
+        <div tal:replace="structure context/@@++diff"/>
+      </div>
+    </div>
   </div>
 
 <tal:script
@@ -200,7 +204,9 @@
   conf = <tal:status-config replace="view/status_config" />
   <!--
   LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
-          'lp.code.branchmergeproposal.status', 'lp.app.comment', function(Y) {
+          'lp.code.branchmergeproposal.status', 'lp.app.comment',
+          'lp.code.branchmergeproposal.updater', 'lp.app.widgets.expander',
+          'lp.code.branch.revisionexpander', function(Y) {
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
@@ -218,7 +224,31 @@
         Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
         (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
             ).render();
+
+        if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
+            var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
+                {srcNode: Y.one('#diff-area')});
+            Y.on(LP.cache.merge_proposal_event_key, function(data) {
+                if (Y.lp.code.branchmergeproposal.updater.is_mp_diff_updated(data)) {
+		    updater.update();
+                }
+            });
+            updater.on(updater.NAME + '.updated', function() {
+                (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
+                    ).render();
+            });
+        }
+
       }, window);
+
+    Y.on('domready', function() {
+        Y.lp.app.widgets.expander.createByCSS(
+            '.revision-group-diff',
+            '.expander-icon',
+            '.expander-content',
+            false,
+            Y.lp.code.branch.revisionexpander.bmp_diff_loader);
+    });
   });
   -->
 <tal:script replace="structure string:&lt;/script&gt;" />

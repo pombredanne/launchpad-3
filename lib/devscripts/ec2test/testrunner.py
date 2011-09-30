@@ -320,16 +320,7 @@ class EC2TestRunner:
         if self.timeout is not None:
             # Activate a fail-safe shutdown just in case something goes
             # really wrong with the server or suite.
-            #
-            # We need to use a call to /usr/bin/at here instead of a call to
-            # /sbin/shutdown because the test suite already uses the shutdown
-            # command after the suite finishes. If we called shutdown
-            # here, it would prevent the end-of-suite shutdown from executing,
-            # leaving the server running until the failsafe finally activates.
-            # See bug 617598 for the details.
-            user_connection.perform(
-                "echo sudo shutdown -h now | at today + %d minutes"
-                % self.timeout)
+            user_connection.perform("sudo shutdown -P +%d &" % self.timeout)
         as_user = user_connection.perform
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
@@ -385,6 +376,7 @@ class EC2TestRunner:
         p('mkdir /var/launchpad/tmp')
         p('mv /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
         p('mkdir /var/launchpad/tmp/eggs')
+        p('mkdir /var/launchpad/tmp/yui')
         user_connection.run_with_ssh_agent(
             'bzr pull lp:lp-source-dependencies '
             '-d /var/launchpad/download-cache')

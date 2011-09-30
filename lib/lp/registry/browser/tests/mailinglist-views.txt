@@ -158,7 +158,7 @@ but not re-activated.
 
     >>> list_one.purge()
     >>> view = create_view(the_owner)
-    >>> view.list_can_be_requested
+    >>> view.list_can_be_created
     True
     >>> view.list_can_be_deactivated
     False

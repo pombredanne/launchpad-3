@@ -145,15 +145,6 @@
         <allow
             interface="lp.bugs.interfaces.bugtrackerperson.IBugTrackerPerson"/>
     </class>
-    <class
-        class="lp.bugs.model.packagebugsupervisor.PackageBugSupervisor">
-        <allow
-            attributes="
-                id
-                distribution
-                sourcepackagename
-                bug_supervisor"/>
-    </class>
 
     <!-- CveReference -->
 
@@ -206,6 +197,7 @@
                     canTransitionToStatus
                     isSubscribed
                     getPackageComponent
+                    maybeConfirm
                     userCanEditImportance
                     userCanEditMilestone
                     userCanSetAnyAssignee
@@ -222,7 +214,6 @@
                     distroseries
                     milestone
                     status
-                    statusexplanation
                     importance
                     assignee
                     bugwatch
@@ -253,7 +244,9 @@
                     transitionToStatus
                     transitionToAssignee
                     transitionToMilestone
-                    transitionToTarget"/>
+                    transitionToTarget
+                    validateTransitionToTarget
+                    "/>
 
             <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
                  The permission checking for milestone and importance
@@ -266,20 +259,14 @@
                     age
                     bugwatch
                     datecreated
-                    distribution
-                    distroseries
                     importance
                     milestone
                     owner
-                    product
-                    productseries
                     related_tasks
                     setImportanceFromDebbugs
                     setStatusFromDebbugs
-                    sourcepackagename
                     statusdisplayhtml
                     statuselsewhere
-                    statusexplanation
                     targetname
                     title
                     "/>
@@ -742,12 +729,14 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getActivityForDateRange
                     getBugTask
                     getDirectSubscribers
                     getDirectSubscribersWithDetails
                     getDirectSubscriptions
                     getIndirectSubscribers
                     is_complete
+                    maybeConfirmBugtasks
                     official_tags
                     who_made_private
                     date_made_private
@@ -755,6 +744,7 @@
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
+                    shouldConfirmBugtasks
                     heat
                     heat_last_updated
                     has_patches
@@ -780,6 +770,7 @@
                     activity
                     initial_message
                     linked_branches
+                    getVisibleLinkedBranches
                     watches
                     has_cves
                     cves
@@ -854,6 +845,7 @@
                     removeWatch
                     setPrivate
                     setSecurityRelated
+                    setPrivacyAndSecurityRelated
                     setStatus
                     subscribe
                     unlinkBranch
@@ -1105,6 +1097,9 @@
         <require
             permission="launchpad.AnyPerson"
             set_schema="lp.bugs.interfaces.bugnotification.IBugNotification"/>
+	<require
+	    permission="launchpad.Edit"
+            attributes="destroySelf" />
     </class>
     <class
         class="lp.bugs.model.bugnotification.BugNotificationRecipient">
@@ -1194,4 +1189,11 @@
   <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
+  <securedutility
+    name="UsesBugsDistribution"
+    component="lp.bugs.vocabulary.UsesBugsDistributionVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 </configure>

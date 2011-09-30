@@ -95,7 +95,8 @@ status. Earlier it was not even displayed as an option.
 
 And a regular user can change other aspects of the bug:
 
-    >>> package_control = user_browser.getControl('Package')
+    >>> package_control = user_browser.getControl(
+    ...     name='ubuntu_mozilla-firefox.target.package')
     >>> print package_control.value
     mozilla-firefox
 

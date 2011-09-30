@@ -411,7 +411,8 @@ class IPackagesetSet(IPackagesetSetEdit):
         :param distroseries: the distroseries to which the new packageset
             is related. Defaults to the current Ubuntu series.
 
-        :return: An `IPackageset` instance or None.
+        :return: An `IPackageset` instance.
+        :raise NoSuchPackageSet: if no package set is found.
         """
 
     @collection_default_content()

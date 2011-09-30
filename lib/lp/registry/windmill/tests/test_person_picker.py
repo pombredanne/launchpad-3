@@ -25,6 +25,7 @@ class TesPersonPickerWidget(WindmillTestCase):
     suite_name = 'PersonPickerWidget'
 
     def test_person_picker_widget(self):
+        """XXX: this should all move to test_picker.js"""
 
         client, start_url = self.getClientFor(
             '/people/+requestmerge', user=lpuser.SAMPLE_PERSON)

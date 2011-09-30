@@ -7,17 +7,16 @@ __metaclass__ = type
 
 import logging
 from StringIO import StringIO
-import unittest
 
 import dkim
 import dns.resolver
 
-from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from canonical.launchpad.mail import signed_message_from_string
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.services.mail import incoming
 from lp.services.mail.incoming import authenticateEmail
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.testing import TestCaseWithFactory
 
 # sample private key made with 'openssl genrsa' and public key using 'openssl
@@ -263,6 +262,25 @@ class TestDKIM(TestCaseWithFactory):
             'foo.bar@canonical.com')
         self.assertDkimLogContains('body hash mismatch')
 
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_dkim_signed_by_other_address(self):
+        # If the message is From one of a person's addresses, and the Sender
+        # corresponds to another, and there is a DKIM signature for the Sender
+        # domain, this is valid - see bug 643223.  For this to be a worthwhile
+        # test  we need the two addresses to be in different domains.   It
+        # will be signed by canonical.com, so make that the sender.
+        person = self.factory.makePerson(
+            email='dkimtest@canonical.com',
+            name='dkimtest',
+            displayname='DKIM Test')
+        self.factory.makeEmail(
+            person=person,
+            address='dkimtest@example.com')
+        self._dns_responses['example._domainkey.canonical.com.'] = sample_dns
+        tweaked_message = (
+            "Sender: dkimtest@canonical.com\n" + plain_content.replace(
+                "From: Foo Bar <foo.bar@canonical.com>",
+                "From: DKIM Test <dkimtest@example.com>"))
+        signed_message = self.fake_signing(tweaked_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
+        self.assertStronglyAuthenticated(principal, signed_message)

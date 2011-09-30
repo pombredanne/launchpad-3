@@ -128,7 +128,6 @@ class LaunchpadCelebrities:
     implements(ILaunchpadCelebrities)
 
     admin = PersonCelebrityDescriptor('admins')
-    bazaar_experts = PersonCelebrityDescriptor('bazaar-experts')
     software_center_agent = PersonCelebrityDescriptor(
         'software-center-agent')
     bug_importer = PersonCelebrityDescriptor('bug-importer')
@@ -143,8 +142,6 @@ class LaunchpadCelebrities:
     janitor = PersonCelebrityDescriptor('janitor')
     katie = PersonCelebrityDescriptor('katie')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
-    launchpad_beta_testers = PersonCelebrityDescriptor(
-        'launchpad-beta-testers')
     launchpad_developers = PersonCelebrityDescriptor('launchpad')
     obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
     ppa_key_guard = PersonCelebrityDescriptor('ppa-key-guard')

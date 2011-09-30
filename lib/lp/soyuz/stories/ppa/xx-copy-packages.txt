@@ -202,7 +202,7 @@ default form value for 'Destination PPA'.
 
     >>> print jblack_browser.getControl(
     ...     'Destination PPA').displayOptions
-    ['PPA for James Blackwell (jblack/ppa)']
+    ['PPA for James Blackwell']
 
     >>> print jblack_browser.getControl(
     ...     'Destination PPA').value
@@ -699,7 +699,7 @@ allows him to select one of them.
 
     >>> print jblack_browser.getControl(
     ...     'Destination PPA').displayOptions
-    ['PPA for James Blackwell (jblack/ppa)', 'PPA for James Blackwell Friends (jblack-friends/ppa)']
+    ['PPA for James Blackwell', 'PPA for James Blackwell Friends']
 
 James wants to populate the PPA for James Blackwell Friends, he
 selects that.

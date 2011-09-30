@@ -225,7 +225,6 @@ class CodeImportBaseView(LaunchpadFormView):
                     code_import.branch.unique_name))
 
 
-
 class NewCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
@@ -253,7 +252,7 @@ class NewCodeImportForm(Interface):
             "The URL of the git repository.  The HEAD branch will be "
             "imported."),
         allowed_schemes=["git", "http", "https"],
-        allow_userinfo=False, # Only anonymous access is supported.
+        allow_userinfo=False,  # Only anonymous access is supported.
         allow_port=True,
         allow_query=False,
         allow_fragment=False,
@@ -265,11 +264,11 @@ class NewCodeImportForm(Interface):
             "The URL of the Mercurial repository.  The tip branch will be "
             "imported."),
         allowed_schemes=["http", "https"],
-        allow_userinfo=False, # Only anonymous access is supported.
+        allow_userinfo=False,  # Only anonymous access is supported.
         allow_port=True,
-        allow_query=False,    # Query makes no sense in Mercurial
-        allow_fragment=False, # Fragment makes no sense in Mercurial
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
+        allow_query=False,     # Query makes no sense in Mercurial.
+        allow_fragment=False,  # Fragment makes no sense in Mercurial.
+        trailing_slash=False)  # See http://launchpad.net/bugs/56357.
 
     branch_name = copy_field(
         IBranch['name'],
@@ -330,8 +329,9 @@ class CodeImportNewView(CodeImportBaseView):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description = _("As an administrator you are able to reassign"
-                                " this branch to any person or team."),
+                description=_(
+                    "As an administrator you are able to reassign this "
+                    "branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
                 any_owner_choice, render_context=self.render_context)
@@ -424,29 +424,7 @@ class CodeImportNewView(CodeImportBaseView):
         self.next_url = canonical_url(code_import.branch)
 
         self.request.response.addNotification("""
-            New code import created. The code import operators
-            have been notified and the request will be reviewed shortly.""")
-
-    def _showApprove(self, ignored):
-        """Is the user an admin or member of vcs-imports?"""
-        return self._super_user
-
-    @action(_('Create Approved Import'), name='approve',
-            condition=_showApprove)
-    def approve_action(self, action, data):
-        """Create the code_import, and subscribe the user to the branch."""
-        try:
-            code_import = self._create_import(
-                data, CodeImportReviewStatus.REVIEWED)
-        except BranchExists, e:
-            self._setBranchExists(e.existing_branch)
-            return
-
-        # Don't subscribe the requester as they are an import operator.
-        self.next_url = canonical_url(code_import.branch)
-
-        self.request.response.addNotification(
-            "New reviewed code import created.")
+            New code import created. The code import will start shortly.""")
 
     def getProduct(self, data):
         """If the context is a product, use that, otherwise get from data."""
@@ -514,6 +492,7 @@ def _makeEditAction(label, status, text):
             return self._showButtonForStatus(status)
     else:
         condition = None
+
     def success(self, action, data):
         """Make the requested status change."""
         if status is not None:

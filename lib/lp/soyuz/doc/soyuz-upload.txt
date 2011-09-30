@@ -3,10 +3,7 @@ Soyuz Upload Test
 
 This test will:
 
-  * Turn the poppy FTP server on
   * Upload packages
-  * Check result
-  * Kill the FTP server
   * Import gpg key for katie
   * Register gpg key for katie
   * Register the katie user in the right team
@@ -28,6 +25,7 @@ First, let's create a temporary directory where we'll put
 uploaded files in.
 
     >>> import os
+    >>> import shutil
     >>> import tempfile
     >>> temp_dir = tempfile.mkdtemp()
     >>> incoming_dir = os.path.join(temp_dir, "incoming")
@@ -37,36 +35,8 @@ uploaded files in.
     >>> os.mkdir(incoming_dir)
 
 
-Now, let's create a subprocess running the poppy FTP server. It won't
-call the upload processing tool. We'll do that ourselves in our test,
-so that we can control what's going on.
-
-    >>> from lp.poppy.tests.helpers import PoppyTestSetup, SoyuzUploadError
-    >>> poppy = PoppyTestSetup(incoming_dir)
-    >>> poppy.startPoppy()
-
-Connect to the server and login. We'll keep trying to connect until
-the server dies or the connection succeeds.
-
-    >>> import ftplib, socket
-    >>> ftp = ftplib.FTP()
-    >>> while True:
-    ...    try:
-    ...        reply = ftp.connect("localhost", 3421)
-    ...    except socket.error:
-    ...        if not poppy.alive:
-    ...            raise SoyuzUploadError('Server can not start.')
-    ...    else:
-    ...        break
-    >>> ftp.login("anonymous", "")
-    '230 Login Successful.'
-    >>> ftp.cwd("/")
-    '250 CWD command successful.'
-
-
-Good.. let's send all packages we have in the test directory to
-the poppy server. We send each package set on a different ftp
-session.
+Now let's copy the files into separate upload directories, as if they'd
+been uploaded over FTP.
 
     >>> from canonical.config import config
     >>> from lp.archiveuploader.tagfiles import parse_tagfile
@@ -80,17 +50,8 @@ session.
     >>> uploads = []
     >>> package_names = []
 
-# XXX cprov 2006-01-25 bug=29645: poppy still having a weird behaviour
-# during the file transfer, it suddenly closes the connection due
-# inactivity. That's why we keep polling the 'ftp.sock' attribute and
-# reconnect if it is gone.
-
+    >>> seq = 1
     >>> for changes_filepath in changes:
-    ...
-    ...     if not ftp.sock:
-    ...         assert ftp.connect("localhost", 3421).startswith("220 ")
-    ...         assert ftp.login("anonymous", "") == '230 Login Successful.'
-    ...
     ...     tf = parse_tagfile(changes_filepath)
     ...
     ...     if tf.has_key("Source"):
@@ -105,16 +66,17 @@ session.
     ...     sent_filenames.extend(
     ...         os.path.basename(filepath) for filepath in send_filepaths)
     ...
-    ...     ignore = ftp.cwd("ubuntutest")
+    ...     upload_dir = os.path.join(
+    ...         incoming_dir, 'upload-%06d' % seq, 'ubuntutest')
+    ...     os.makedirs(upload_dir)
     ...
     ...     for filepath in send_filepaths:
-    ...         reply = ftp.storbinary(
-    ...              "STOR %s" % os.path.basename(filepath), open(filepath))
-    ...         assert reply == '226 Transfer successful.'
+    ...         shutil.copyfile(
+    ...             filepath,
+    ...             os.path.join(upload_dir, os.path.basename(filepath)))
     ...
     ...     uploads.append(send_filepaths)
-    ...
-    ...     assert ftp.quit() == '221 Goodbye.'
+    ...     seq += 1
 
 Check that what we've just uploaded (everything in test_files_dir) is
 what we were expecting to have uploaded.
@@ -122,22 +84,10 @@ what we were expecting to have uploaded.
     >>> package_names
     ['drdsl', 'etherwake']
 
-We create a set of the filenames we expect to see in the FTP server
-process output, and wait until all of them have been shown.
-
-This is a little bit tricky because we won't simply try to read
-the process output in a blocking way, since any failure in the
-FTP process would block automated tests. Instead, we define a
-timeout between output data. If the process doesn't provide new
-data in the given number seconds, we report a failure.
-
-    >>> poppy.verify_output(
-    ...     ['ubuntutest', 'ubuntutest', 'ubuntutest'])
-
-At that point we must have a bunch of directories in the upload
-base directory named <TIMESTAMP>-XXXXXX, each one as a result of
-each FTP session. Below we ensure that, and also that the content
-of these files match the uploaded ones.
+At that point we must have a bunch of directories in the upload base
+directory named upload-XXXXXX, as would result from several FTP
+sessions.  Below we ensure that, and also that the content of these
+files match the uploaded ones.
 
     >>> import hashlib
     >>> def get_md5(filename):
@@ -177,12 +127,6 @@ of these files match the uploaded ones.
     ...                                        os.path.basename(filename))
     ...         assert os.path.isfile(upload_filename)
     ...         assert get_md5(filename) == get_md5(upload_filename)
-
-
-Right, that's all we need from the FTP server. We don't need it anymore,
-so we'll just kill the process.
-
-    >>> status = poppy.killPoppy()
 
 Finally, we'll just create an entirely empty upload folder. We rely for
 our tests on a poppy-like naming system, ie. that the upload folder
@@ -302,12 +246,12 @@ just upload number 1.
     >>> process.returncode
     0
 
-Check the four uploads are all where we expect - number 1 in failed,
+Check the four uploads are all where we expect - number 1 in rejected,
 the other three still in incoming.
 
     >>> for i in range(4):
     ...     find_upload_dir_result(i + 1)
-    'failed'
+    'rejected'
     'incoming'
     'incoming'
     'incoming'
@@ -395,7 +339,7 @@ Check the four uploads all ended up where we expected.
 
     >>> for i in range(0, 4):
     ...     find_upload_dir_result(i + 1)
-    'failed'
+    'rejected'
     'failed'
 
 Also check the upload folders contain all the files we uploaded.
@@ -471,18 +415,9 @@ We use getPackageUploads to inspect the current NEW queue and accept items.
     drdsl ACCEPTED
     etherwake ACCEPTED
 
-# XXX cprov 2006-04-12 bug=3989:
-# We must flush these changes so that it gets out of
-# the cache and  into the database. Without this process-accepted.py
-# wouldn't see the changes. Reported in
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> transaction.commit()
-
-
 Now we process the accepted queue items, one more time.
 
+    >>> transaction.commit()
     >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
     >>> process = subprocess.Popen(
     ...     [sys.executable, script, "ubuntutest", "-q"])
@@ -517,7 +452,8 @@ Invoke Publisher script against the 'ubuntutest' distribution:
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    DEBUG   Initializing zopeless.
+    DEBUG Enabled by DEFAULT section
+    INFO  Creating lockfile: ...
     DEBUG     Distribution: ubuntutest
     ...
     DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
@@ -525,13 +461,7 @@ Invoke Publisher script against the 'ubuntutest' distribution:
     DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc from library
     ...
 
-
-# XXX cprov 2006-04-12 bug=3989
-
-    >>> flush_database_updates()
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import clear_current_connection_cache
-    >>> clear_current_connection_cache()
 
 Check if the 'etherwake' source package was correctly published and is
 in the filesystem archive, we are looking for the DSC, the gzipped
@@ -555,7 +485,7 @@ required entry for 'etherwake':
     Binary: etherwake
     Version: 1.08-1
     Section: universe/net
-    Maintainer: Alain Schroeder <alain@debian.org>
+    Maintainer: Alain Schroeder <...@...org>
     Build-Depends: debhelper (>> 2.0)
     Architecture: any
     Standards-Version: 3.5.10.0
@@ -594,8 +524,6 @@ Check if we have new pending publishing record as expected
 
 Force database changes, so they can be used by the external script properly.
 
-# XXX cprov 2006-04-12 bug=3989:
-    >>> flush_database_updates()
     >>> transaction.commit()
 
 Invoke Publisher script again to land our changes in the archive
@@ -615,17 +543,14 @@ already marked as published in the database and, if the files are
 already on disk, verify the contents are as expected.
 
     >>> print stderr
-    DEBUG   Initializing zopeless.
+    DEBUG Enabled by DEFAULT section
+    INFO  Creating lockfile: ...
     DEBUG     Distribution: ubuntutest
     ...
     DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
     DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
     DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content.
     ...
-
-Invalidates SQLObject cache to cope with publisher.
-
-    >>> clear_current_connection_cache()
 
 Check the publishing history again
 
@@ -688,36 +613,6 @@ and SHA256) for each index published.
      297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d8d106a6338              114 main/source/Release
     ...
     END
-
-
-Testing archive-cruft-check-ng behaviour:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Defining path to the script:
-
-    >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-    ...                       "archive-cruft-check.py")
-    >>> process = subprocess.Popen([sys.executable, script, "-vn",
-    ...                             "-d", "ubuntutest",
-    ...                             "-s", "breezy-autotest",
-    ...                             "/var/tmp/archive"],
-    ...                            stdout=subprocess.PIPE,
-    ...                            stderr=subprocess.PIPE,)
-    >>> stdout, stderr = process.communicate()
-    >>> process.returncode
-    0
-    >>> print stderr
-    DEBUG   Acquiring lock
-    DEBUG   Initializing connection.
-    DEBUG   Considering Sources:
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/restricted/source/Sources.gz
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/main/source/Sources.gz
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/multiverse/source/Sources.gz
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source/Sources.gz
-    DEBUG   Building not build from source list (NBS):
-    DEBUG   Building all superseded by any list (ASBA):
-    DEBUG   No NBS found
-    <BLANKLINE>
 
 
 Nice! That's enough for now.. let's kill the process and clean

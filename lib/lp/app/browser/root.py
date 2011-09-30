@@ -14,6 +14,7 @@ import time
 
 import feedparser
 from lazr.batchnavigator.z3batching import batch
+from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import TextLine
@@ -60,6 +61,7 @@ shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
 
+    page_title = 'Launchpad'
     featured_projects = []
     featured_projects_top = None
 
@@ -404,7 +406,12 @@ class LaunchpadSearchView(LaunchpadFormView):
         """See `LaunchpadFormView`"""
         errors = list(self.errors)
         for error in errors:
-            if (error.field_name == 'text'
+            if isinstance(error, ConversionError):
+                self.setFieldError(
+                    'text', 'Can not convert your search term.')
+            elif isinstance(error, unicode):
+                continue
+            elif (error.field_name == 'text'
                 and isinstance(error.errors, TooLong)):
                 self.setFieldError(
                     'text', 'The search text cannot exceed 250 characters.')
@@ -566,6 +573,7 @@ class WindowedListBatch(batch._Batch):
 class GoogleBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
+    _batch_factory = WindowedListBatch
     # Searches generally don't show the 'Last' link when there is a
     # good chance of getting over 100,000 results.
     show_last_link = False
@@ -573,7 +581,9 @@ class GoogleBatchNavigator(BatchNavigator):
     singular_heading = 'page'
     plural_heading = 'pages'
 
-    def __init__(self, results, request, start=0, size=20, callback=None):
+    def __init__(self, results, request, start=0, size=20, callback=None,
+                 transient_parameters=None, force_start=False,
+                 range_factory=None):
         """See `BatchNavigator`.
 
         :param results: A `PageMatches` object that contains the matching
@@ -584,25 +594,13 @@ class GoogleBatchNavigator(BatchNavigator):
         :param size: The batch size is fixed to 20, The param is not used.
         :param callback: Not used.
         """
-        # We do not want to call super() because it will use the batch
-        # size from the URL.
-        # pylint: disable-msg=W0231
         results = WindowedList(results, start, results.total)
-        self.request = request
-        request_start = request.get(self.start_variable_name, None)
-        if request_start is None:
-            self.start = start
-        else:
-            try:
-                self.start = int(request_start)
-            except (ValueError, TypeError):
-                self.start = start
+        super(GoogleBatchNavigator, self).__init__(results, request,
+            start=start, size=size, callback=callback,
+            transient_parameters=transient_parameters,
+            force_start=force_start, range_factory=range_factory)
 
+    def determineSize(self, size, batch_params_source):
+        # Force the default and users requested sizes to 20.
         self.default_size = 20
-
-        self.transient_parameters = [self.start_variable_name]
-
-        self.batch = WindowedListBatch(
-            results, start=self.start, size=self.default_size)
-        self.setHeadings(
-            self.default_singular_heading, self.default_plural_heading)
+        return 20

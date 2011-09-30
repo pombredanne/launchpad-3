@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -25,14 +25,10 @@ __all__ = [
     'IBugTaskSearch',
     'IBugTaskSet',
     'ICreateQuestionFromBugTaskForm',
-    'IDistroBugTask',
-    'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
     'INominationsReviewTableBatchNavigator',
     'IPersonBugTaskSearch',
-    'IProductSeriesBugTask',
     'IRemoveQuestionFromBugTaskForm',
-    'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'IllegalRelatedBugTasksParams',
     'IllegalTarget',
@@ -480,7 +476,6 @@ class IBugTask(IHasDateCreated, IHasBug):
         schema=Interface))  # IMilestone
     milestoneID = Attribute('The id of the milestone.')
 
-    # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
@@ -492,8 +487,6 @@ class IBugTask(IHasDateCreated, IHasBug):
     importance = exported(
         Choice(title=_('Importance'), vocabulary=BugTaskImportance,
                default=BugTaskImportance.UNDECIDED, readonly=True))
-    statusexplanation = Text(
-        title=_("Status notes (optional)"), required=False)
     assignee = exported(
         PersonChoice(
             title=_('Assigned to'), required=False,
@@ -799,6 +792,12 @@ class IBugTask(IHasDateCreated, IHasBug):
         value is set to None, date_assigned is also set to None.
         """
 
+    def validateTransitionToTarget(target):
+        """Check whether a transition to this target is legal.
+
+        :raises IllegalTarget: if the new target is not allowed.
+        """
+
     @mutator_for(target)
     @operation_parameters(
         target=copy_field(target))
@@ -831,9 +830,6 @@ class IBugTask(IHasDateCreated, IHasBug):
 
     def getDelta(old_task):
         """Compute the delta from old_task to this task.
-
-        old_task and this task are either both IDistroBugTask's or both
-        IUpstreamBugTask's, otherwise a TypeError is raised.
 
         Returns an IBugTaskDelta or None if there were no changes between
         old_task and this task.
@@ -922,8 +918,6 @@ class IBugTaskSearchBase(Interface):
     omit_targeted = Bool(
         title=_('Omit bugs targeted to a series'), required=False,
         default=True)
-    statusexplanation = TextLine(
-        title=_("Status notes"), required=False)
     has_patch = Bool(
         title=_('Show only bugs with patches available.'), required=False,
         default=False)
@@ -1073,44 +1067,8 @@ class IBugTaskDelta(Interface):
         The value is a dict like {'old' : IPerson, 'new' : IPerson}, or None,
         if no change was made to the assignee.
         """)
-    statusexplanation = Attribute("The new value of the status notes.")
     bugwatch = Attribute("The bugwatch which governs this task.")
     milestone = Attribute("The milestone for which this task is scheduled.")
-
-
-class IUpstreamBugTask(IBugTask):
-    """A bug needing fixing in a product."""
-    # XXX Brad Bollenbach 2006-08-03 bugs=55089:
-    # This interface should be renamed.
-    product = Choice(title=_('Project'), required=True, vocabulary='Product')
-
-
-class IDistroBugTask(IBugTask):
-    """A bug needing fixing in a distribution, possibly a specific package."""
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False,
-        description=_("The source package in which the bug occurs. "
-        "Leave blank if you are not sure."),
-        vocabulary='SourcePackageName')
-    distribution = Choice(
-        title=_("Distribution"), required=True, vocabulary='Distribution')
-
-
-class IDistroSeriesBugTask(IBugTask):
-    """A bug needing fixing in a distrorelease, or a specific package."""
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=True,
-        vocabulary='SourcePackageName')
-    distroseries = Choice(
-        title=_("Series"), required=True,
-        vocabulary='DistroSeries')
-
-
-class IProductSeriesBugTask(IBugTask):
-    """A bug needing fixing a productseries."""
-    productseries = Choice(
-        title=_("Series"), required=True,
-        vocabulary='ProductSeries')
 
 
 class BugTaskSearchParams:
@@ -1520,12 +1478,17 @@ class IBugTaskSet(Interface):
         :param params: the BugTaskSearchParams to search on.
         """
 
-    def countBugs(params, group_on):
-        """Count bugs that match params, grouping by group_on.
+    def countBugs(user, contexts, group_on):
+        """Count open bugs that match params, grouping by group_on.
 
-        :param param: A BugTaskSearchParams object.
+        This serves results from the bugsummary fact table: it is fast but not
+        completely precise. See the bug summary documentation for more detail.
+
+        :param user: The user to query on behalf of.
+        :param contexts: A list of contexts to search. Contexts must support
+            the IBugSummaryDimension interface.
         :param group_on: The column(s) group on - .e.g (
-            Bugtask.distroseriesID, BugTask.milestoneID) will cause
+            BugSummary.distroseries_id, BugSummary.milestone_id) will cause
             grouping by distro series and then milestone.
         :return: A dict {group_instance: count, ...}
         """
@@ -1540,10 +1503,8 @@ class IBugTaskSet(Interface):
         :return: A list of tuples containing (status_id, count).
         """
 
-    def createTask(bug, product=None, productseries=None, distribution=None,
-                   distroseries=None, sourcepackagename=None, status=None,
-                   importance=None, assignee=None, owner=None,
-                   milestone=None):
+    def createTask(bug, owner, target, status=None, importance=None,
+                   assignee=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug supervisors will be automatically
@@ -1551,8 +1512,6 @@ class IBugTaskSet(Interface):
 
         If the bug has any accepted series nominations for a supplied
         distribution, series tasks will be created for them.
-
-        Exactly one of product, distribution or distroseries must be provided.
         """
 
     def findExpirableBugTasks(min_days_old, user, bug=None, target=None,
@@ -1633,7 +1592,7 @@ class IBugTaskSet(Interface):
         The assignee and the assignee's validity are precached.
         """
 
-    def getBugTaskTargetMilestones(self, bugtasks, eager=False):
+    def getBugTaskTargetMilestones(bugtasks):
         """Get all the milestones for the selected bugtasks' targets."""
 
     open_bugtask_search = Attribute("A search returning open bugTasks.")

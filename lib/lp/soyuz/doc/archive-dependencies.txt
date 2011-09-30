@@ -90,7 +90,6 @@ published in 'universe' is allowed to depend on binaries published in
 A proper name for this "model" would be 'cross-component-dependency'.
 
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> ubuntu_components = [
@@ -108,7 +107,6 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...     for component in ubuntu_components:
     ...         component = getUtility(IComponentSet)[component]
     ...         ogre_pub.component = component
-    ...         syncUpdate(ogre_pub)
     ...         flush_database_caches()
     ...         components_term = " ".join(
     ...             get_components_for_context(
@@ -137,7 +135,6 @@ released series.
 
     >>> naked_build = removeSecurityProxy(ogre_build)
     >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
-    >>> syncUpdate(ogre_build)
 
 Ultimately, it means that a build targeted to the BACKPORTS pocket
 will behave as if it were published in the multiverse component,

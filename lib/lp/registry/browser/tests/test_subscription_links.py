@@ -69,7 +69,7 @@ class _TestResultsMixin:
             None, self.new_edit_link,
             "Expected edit_bug_mail link missing")
         # Ensure the LP.cache has been populated.
-        self.assertTrue("LP.cache['administratedTeams']" in self.contents)
+        self.assertIn('LP.cache = {"administratedTeams": [', self.contents)
         # Ensure the call to setup the subscription is in the HTML.
         # Only check for the presence of setup's configuration step; more
         # detailed checking is needlessly brittle.

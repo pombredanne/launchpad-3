@@ -151,9 +151,7 @@
           <a class="expander"
              tal:attributes="id string:pub${pubid}-expander;
                              href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra">
-            <img style="padding-right:0.5em;" src="/@@/treeCollapsed"
-                 alt="Show details" title="Show details"
-                 tal:attributes="id string:pub${pubid}-arrow"/>
+            &nbsp;
           </a>
           <a tal:attributes="href row/version">
             <img src="/@@/package-source" />
@@ -174,7 +172,7 @@
                content="string:(not published)"/>
         </td>
       </tr>
-      <tr tal:attributes="id string:pub${pubid}" style="display: none">
+      <tr tal:attributes="id string:pub${pubid}">
         <td colspan="3">
           <div class="package-details"
                tal:attributes="id string:pub${pubid}-container"></div>
@@ -190,8 +188,6 @@
 
       </tal:rows>
     </table>
-    <script
-       tal:content="string:LP.cache['archive_context_url'] = '${archive/fmt:url}';"></script>
     <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
 
   </div>
@@ -240,34 +236,17 @@
       </p>
     </div>
 <script type="text/javascript">
-    LPS.use('node', 'event', 'lazr.effects', function(Y) {
+LPS.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
 
     // XXX Michael Nelson 20090702 bug=340497 This slider
     // needs an integration test.
-    // Collapse the body of the slider widget initially.
-    Y.one('#related-ppa-versions .widget-bd').addClass('lazr-closed');
 
-    // Ensure that the widget header uses the correct sprite icon
-    // and gets the styling for javascript actions applied.
-    var widget_header = Y.one('#related-ppa-versions .widget-hd');
-    widget_header.addClass('sprite');
-    widget_header.addClass('treeCollapsed');
-    widget_header.addClass('js-action');
-
-    var slide;
-    Y.on('click', function(e) {
-        if (!slide) {
-            slide = Y.lazr.effects.slide_out('#related-ppa-versions .widget-bd');
-            widget_header.replaceClass('treeCollapsed', 'treeExpanded');
-        } else {
-            slide.set('reverse', !slide.get('reverse'));
-            widget_header.toggleClass('treeExpanded');
-            widget_header.toggleClass('treeCollapsed');
-        }
-        slide.stop();
-        slide.run();
-
-    }, '#slide-trigger');
+    var related_ppas = Y.one('#related-ppa-versions');
+    var widget_header = related_ppas.one('.widget-hd');
+    var widget_body = related_ppas.one('.widget-bd');
+    var expander = new Y.lp.app.widgets.expander.Expander(
+        widget_header, widget_body);
+    expander.setUp(true);
 });
 </script>
 

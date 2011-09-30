@@ -138,7 +138,7 @@ comment' link.
     >>> eric_browser.getControl('Save Comment').click()
 
     >>> print_comments('boardCommentDetails', eric_browser, index=2)
-    Eric the Viking ...second...ago
+    Eric the Viking ... a moment ago
     >>> print_comments('boardCommentFooter', eric_browser, index=0)
     review: Abstain (timeless)
     >>> print_comments('boardCommentBody', eric_browser, index=2)
@@ -154,7 +154,7 @@ in a table at the top of the page.
     ...     eric_browser.contents, 'code-review-votes'))
     Reviewer                     Review Type    Date Requested    Status
     Eric the Viking (community)  timeless       ...               Abstain...
-    second...ago
+    a moment ago
     Review via email: mp+1@code.launchpad.dev
 
 

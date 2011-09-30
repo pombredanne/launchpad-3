@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'TranslationMergeJob',
     'TranslationSplitJob',
+    'TranslationTemplateChangeJob',
     ]
 
 import logging
@@ -17,6 +18,7 @@ import logging
 from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent,
     IObjectDeletedEvent,
+    IObjectModifiedEvent,
     )
 import transaction
 from zope.interface import (
@@ -31,19 +33,22 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationpackagingjob import (
     ITranslationPackagingJobSource,
     )
-from lp.registry.model.packagingjob import (
-    PackagingJob,
-    PackagingJobDerived,
-    PackagingJobType,
+from lp.translations.model.translationsharingjob import (
+    TranslationSharingJob,
+    TranslationSharingJobDerived,
+    TranslationSharingJobType,
     )
 from lp.translations.translationmerger import (
     TransactionManager,
     TranslationMerger,
     )
-from lp.translations.utilities.translationsplitter import TranslationSplitter
+from lp.translations.utilities.translationsplitter import (
+    TranslationSplitter,
+    TranslationTemplateSplitter,
+    )
 
 
-class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
+class TranslationPackagingJob(TranslationSharingJobDerived, BaseRunnableJob):
     """Iterate through all Translation job types."""
 
     classProvides(ITranslationPackagingJobSource)
@@ -52,8 +57,7 @@ class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
 
     @staticmethod
     def _register_subclass(cls):
-        # Why not a classmethod?  See RegisteredSubclass.__init__.
-        PackagingJobDerived._register_subclass(cls)
+        TranslationSharingJobDerived._register_subclass(cls)
         job_type = getattr(cls, 'class_job_type', None)
         if job_type is not None:
             cls._translation_packaging_job_types.append(job_type)
@@ -72,7 +76,7 @@ class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """See `IJobSource`."""
-        clause = PackagingJob.job_type.is_in(
+        clause = TranslationSharingJob.job_type.is_in(
             cls._translation_packaging_job_types)
         return super(TranslationPackagingJob, cls).iterReady([clause])
 
@@ -82,7 +86,7 @@ class TranslationMergeJob(TranslationPackagingJob):
 
     implements(IRunnableJob)
 
-    class_job_type = PackagingJobType.TRANSLATION_MERGE
+    class_job_type = TranslationSharingJobType.PACKAGING_MERGE
 
     create_on_event = IObjectCreatedEvent
 
@@ -103,11 +107,11 @@ class TranslationMergeJob(TranslationPackagingJob):
 
 
 class TranslationSplitJob(TranslationPackagingJob):
-    """Job for merging translations between a product and sourcepackage."""
+    """Job for splitting translations between a product and sourcepackage."""
 
     implements(IRunnableJob)
 
-    class_job_type = PackagingJobType.TRANSLATION_SPLIT
+    class_job_type = TranslationSharingJobType.PACKAGING_SPLIT
 
     create_on_event = IObjectDeletedEvent
 
@@ -118,3 +122,31 @@ class TranslationSplitJob(TranslationPackagingJob):
             'Splitting %s and %s', self.productseries.displayname,
             self.sourcepackage.displayname)
         TranslationSplitter(self.productseries, self.sourcepackage).split()
+
+
+class TranslationTemplateChangeJob(TranslationPackagingJob):
+    """Job for merging/splitting translations when template is changed."""
+
+    implements(IRunnableJob)
+
+    class_job_type = TranslationSharingJobType.TEMPLATE_CHANGE
+
+    create_on_event = IObjectModifiedEvent
+
+    @classmethod
+    def forPOTemplate(cls, potemplate):
+        """Create a TranslationTemplateChangeJob for a POTemplate.
+
+        :param potemplate: The `POTemplate` to create the job for.
+        :return: A `TranslationTemplateChangeJob`.
+        """
+        return cls.create(potemplate=potemplate)
+
+    def run(self):
+        """See `IRunnableJob`."""
+        logger = logging.getLogger()
+        logger.info("Sanitizing translations for '%s'" % (
+                self.potemplate.displayname))
+        TranslationTemplateSplitter(self.potemplate).split()
+        tm = TransactionManager(transaction.manager, False)
+        TranslationMerger.mergeModifiedTemplates(self.potemplate, tm)

@@ -11,7 +11,10 @@ uploaded into the system.
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.registry.interfaces.distroseries import (
+    ...     IDistroSeries,
+    ...     IDistroSeriesSet,
+    ...     )
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.enums import (
@@ -363,10 +366,16 @@ different interpretations of "importer" in attachTranslationFiles.
     ...       def __init__(self, purpose):
     ...           self.purpose = purpose
 
+    >>> class MockDistroSeries:
+    ...     implements(IDistroSeries)
+    ...     def __init__(self, version):
+    ...         self.version = version
+
     >>> class MockSourcePackageRelease:
     ...       implements(ISourcePackageRelease)
-    ...       def __init__(self, component, creator):
+    ...       def __init__(self, component, creator, upload_distroseries):
     ...           self.component = getUtility(IComponentSet)[component]
+    ...           self.upload_distroseries = upload_distroseries
     ...           self.creator = creator
     ...           self.packageupload = 1
     ...
@@ -405,7 +414,9 @@ For translations from auto-synced packages we consider the importer to be
     >>> release_pocket = PackagePublishingPocket.RELEASE
     >>> archive = MockArchive(ArchivePurpose.PRIMARY)
 
-    >>> katie_sourcepackagerelease = MockSourcePackageRelease('main', katie)
+    >>> distro_series = MockDistroSeries(u'9.04')
+    >>> katie_sourcepackagerelease = MockSourcePackageRelease(
+    ...     'main', katie, distro_series)
     >>> sync_package_upload = MockPackageUpload(
     ...     release_pocket, True, katie_sourcepackagerelease, archive)
     >>> sync_package_upload.isAutoSyncUpload()
@@ -429,7 +440,8 @@ Uploads by anyone else are treated as if importer is the packager.
 
     >>> person_set = getUtility(IPersonSet)
     >>> carlos = person_set.getByName('carlos')
-    >>> carlos_sourcepackagerelease = MockSourcePackageRelease('main', carlos)
+    >>> carlos_sourcepackagerelease = MockSourcePackageRelease(
+    ...     'main', carlos, distro_series)
     >>> carlos_package_upload = MockPackageUpload(
     ...     release_pocket, False, carlos_sourcepackagerelease, archive)
     >>> carlos_package_upload.isAutoSyncUpload()
@@ -437,6 +449,42 @@ Uploads by anyone else are treated as if importer is the packager.
     >>> translations_upload.packageupload = carlos_package_upload
     >>> translations_upload.publishRosettaTranslations()
     Imported by: carlos
+
+Uploads for distroseries before Oneiric or later may not be targeted
+to any component but 'main' and 'restricted'.  The upload attempt is ignored.
+
+    >>> katie_sourcepackagerelease = MockSourcePackageRelease(
+    ...     'universe', katie, distro_series)
+    >>> sync_package_upload = MockPackageUpload(
+    ...     release_pocket, True, katie_sourcepackagerelease, archive)
+    >>> translations_upload = MockPackageUploadCustom()
+    >>> translations_upload.packageupload = sync_package_upload
+    >>> translations_upload.publishRosettaTranslations()
+
+For Oneiric the import succeeds for 'universe'.
+
+    >>> distro_series = MockDistroSeries(u'11.10')
+    >>> katie_sourcepackagerelease = MockSourcePackageRelease(
+    ...     'universe', katie, distro_series)
+    >>> sync_package_upload = MockPackageUpload(
+    ...     release_pocket, True, katie_sourcepackagerelease, archive)
+    >>> translations_upload = MockPackageUploadCustom()
+    >>> translations_upload.packageupload = sync_package_upload
+    >>> translations_upload.publishRosettaTranslations()
+    Imported by: katie
+
+And for the 12.04 release the import succeeds for 'universe'.
+
+    >>> distro_series = MockDistroSeries(u'12.04')
+    >>> katie_sourcepackagerelease = MockSourcePackageRelease(
+    ...     'universe', katie, distro_series)
+    >>> sync_package_upload = MockPackageUpload(
+    ...     release_pocket, True, katie_sourcepackagerelease, archive)
+    >>> translations_upload = MockPackageUploadCustom()
+    >>> translations_upload.packageupload = sync_package_upload
+    >>> translations_upload.publishRosettaTranslations()
+    Imported by: katie
+
 
 
 Translations tarball

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A comment/message for a difference between two distribution series."""
@@ -12,6 +12,7 @@ __all__ = [
 from email.Utils import make_msgid
 
 from storm.locals import (
+    Desc,
     Int,
     Reference,
     Storm,
@@ -30,6 +31,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.model.sourcepackagename import SourcePackageName
 
 
 class DistroSeriesDifferenceComment(Storm):
@@ -63,6 +65,11 @@ class DistroSeriesDifferenceComment(Storm):
         """See `IDistroSeriesDifferenceComment`."""
         return self.message.datecreated
 
+    @property
+    def source_package_name(self):
+        """See `IDistroSeriesDifferenceCommentSource`."""
+        return self.distro_series_difference.source_package_name.name
+
     @staticmethod
     def new(distro_series_difference, owner, comment):
         """See `IDistroSeriesDifferenceCommentSource`."""
@@ -90,3 +97,36 @@ class DistroSeriesDifferenceComment(Storm):
             DSDComment,
             DSDComment.distro_series_difference == distro_series_difference,
             DSDComment.id == id).one()
+
+    @staticmethod
+    def getForDistroSeries(distroseries, since=None,
+                           source_package_name=None):
+        """See `IDistroSeriesDifferenceCommentSource`."""
+        # Avoid circular imports.
+        from lp.registry.model.distroseriesdifference import (
+            DistroSeriesDifference,
+            )
+        store = IStore(DistroSeriesDifferenceComment)
+        DSD = DistroSeriesDifference
+        DSDComment = DistroSeriesDifferenceComment
+        conditions = [
+            DSDComment.distro_series_difference_id == DSD.id,
+            DSD.derived_series_id == distroseries.id,
+            ]
+
+        if source_package_name is not None:
+            conditions += [
+                SourcePackageName.id == DSD.source_package_name_id,
+                SourcePackageName.name == source_package_name,
+                ]
+
+        if since is not None:
+            older_messages = store.find(
+                Message.id, Message.datecreated < since).order_by(
+                    Desc(Message.datecreated))
+            preceding_message = older_messages.first()
+            if preceding_message is not None:
+                conditions.append(DSDComment.message_id > preceding_message)
+
+        return store.find(DSDComment, *conditions).order_by(
+            DSDComment.message_id)

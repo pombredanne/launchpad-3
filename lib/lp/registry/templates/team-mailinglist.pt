@@ -34,7 +34,7 @@
 
     <metal:widgets fill-slot="widgets">
       <div id="no_mailing_list"
-         tal:condition="view/list_can_be_requested">
+         tal:condition="view/list_can_be_created">
         <p>
           You can create a mailing list for this team. Team members
           can subscribe and post to the team mailing list.
@@ -49,17 +49,21 @@
             <strong id="mailing-list-archive"
               tal:content="context/visibility/title/fmt:lower" /> archive
           </li>
+          <li>
+            Launchpad will silently discard email sent from addresses that are
+            not associated with a Launchpad account.
+          </li>
         </ul>
 
-        <p id="ubuntu-notice"><strong>Ubuntu mailing lists should not be
-          created here.  Create them
-          at <a href="https://lists.ubuntu.com">lists.ubuntu.com</a> instead.
+        <p id="ubuntu-notice"><strong>Ubuntu does not use Launchpad to host
+          its mailing lists. Create them at
+          <a href="https://lists.ubuntu.com">lists.ubuntu.com</a> instead.
         </strong></p>
 
         <p>
-          &#187; <a href="https://help.launchpad.net/ListHelp">Help for mailing lists</a>
+          &#187; <a href="https://help.launchpad.net/Teams/MailingLists">Help for mailing lists</a>
         </p>
-        <input tal:replace="structure view/request_list_creation/render" />
+        <input tal:replace="structure view/create_list_creation/render" />
       </div>
 
       <div id="mailing_list_purge"

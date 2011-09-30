@@ -1,11 +1,11 @@
 <fieldset id="related-branches"
               xmlns:tal="http://xml.zope.org/namespaces/tal"
-              class="collapsible collapsed" style="width: 60em"
+              class="collapsible" style="width: 60em"
               tal:define="seriesBranches view/related_series_branch_info;
                           packageBranches view/related_package_branch_info"
               tal:condition="python: seriesBranches or packageBranches">
-  <legend>Related Branches</legend>
-  <div class="extra-options">
+  <legend>Related branches</legend>
+  <div class="extra-options unseen">
 
     <div tal:condition="packageBranches" id="related-package-branches">
       <h2>Source package branches</h2>
@@ -46,7 +46,7 @@
         <thead>
           <tr>
             <th>Branch URL</th>
-            <th>Product series</th>
+            <th>Project series</th>
           </tr>
         </thead>
         <tbody>
@@ -57,14 +57,14 @@
               <a href="#"
                  tal:content="branch/displayname"
                  tal:attributes="href branch/fmt:url">
-                product series branch
+                project series branch
               </a>
             </td>
             <td>
               <a href="#"
                  tal:content="product_series/name"
                  tal:attributes="href product_series/fmt:url">
-                product series
+                project series
               </a>
             </td>
             </tal:defines>

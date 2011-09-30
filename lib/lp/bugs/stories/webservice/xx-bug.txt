@@ -448,8 +448,15 @@ unchanged value.
     http://.../debian/+milestone/3.1
 
 We can change the task's target. Here we change the task's target from
-the mozilla-firefox package to alsa-utils.
+the mozilla-firefox package to alsa-utils. Only published packages can
+have tasks, so we first add a publication.
 
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('admin@canonical.com')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> ignored = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=debian.currentseries, sourcepackagename='evolution')
+    >>> logout()
     >>> print webservice.named_post(
     ...     task['self_link'], 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/debian/+source/evolution'))
@@ -477,27 +484,6 @@ now an alsa-utils task.
     >>> print task['target_link']
     http://api.../debian/+source/alsa-utils
 
-Just like in the web UI, we can't change a distribution task
-into an upstream task.
-
-    >>> print webservice.named_post(
-    ...     task['self_link'], 'transitionToTarget',
-    ...     target=webservice.getAbsoluteUrl('/bzr'))
-    HTTP/1.1 400 Bad Request
-    ...
-    Distribution bug tasks may only be re-targeted to
-    a package in the same distribution.
-
-We can't move a task from one distribution to another.
-
-    >>> print webservice.named_post(
-    ...     task['self_link'], 'transitionToTarget',
-    ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
-    HTTP/1.1 400 Bad Request
-    ...
-    Distribution bug tasks may only be re-targeted to
-    a package in the same distribution.
-
 We can change an upstream task to target a different project.
 
     >>> product_bugtask = webservice.get(
@@ -507,16 +493,6 @@ We can change an upstream task to target a different project.
     ...     target=webservice.getAbsoluteUrl('/bzr'))
     HTTP/1.1 200 Ok
     ...
-
-But we can't make it into a distro task.
-
-    >>> print webservice.named_post(
-    ...     product_bugtask['self_link'].replace('jokosher', 'bzr'),
-    ...     'transitionToTarget',
-    ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
-    HTTP/1.1 400 Bad Request
-    ...
-    Upstream bug tasks may only be re-targeted to another project.
 
 If the milestone of a task is on a target other than the new
 target, we reset it in order to avoid data inconsistencies.
@@ -557,7 +533,6 @@ target, we reset it in order to avoid data inconsistencies.
 We can change a distribution task to a task with a package from the same
 distribution.
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('foo.bar@canonical.com')
     >>> distro_bugtask = factory.makeBugTask(
     ...     target=getUtility(IDistributionSet).getByName('ubuntu'))
@@ -1841,7 +1816,7 @@ The collection of all CVEs is available at the top level.
 
     >>> cves = webservice.get("/bugs/cve").jsonBody()
     >>> pprint_collection(cves)
-    next_collection_link: u'http://.../bugs/cve?ws.start=5&ws.size=5'
+    next_collection_link: u'http://.../bugs/cve?ws.size=5&memo=5&ws.start=5'
     resource_type_link: u'http://.../#cves'
     start: 0
     total_size: 10
@@ -2130,10 +2105,10 @@ Each bug has a collection of activities that have taken place with it.
     >>> activity = webservice.get(
     ...     bug_one['activity_collection_link']).jsonBody()
     >>> pprint_collection(activity)
-    next_collection_link: u'http://.../bugs/1/activity?ws.start=5&ws.size=5'
+    next_collection_link: u'http://.../bugs/1/activity?ws.size=5&memo=5&ws.start=5'
     resource_type_link: u'http://.../#bug_activity-page-resource'
     start: 0
-    total_size: 25
+    total_size: 24
     ...
 
     >>> bug_nine_activity = webservice.get(

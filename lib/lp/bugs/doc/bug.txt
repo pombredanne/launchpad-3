@@ -448,28 +448,29 @@ passing both a comment /and/ a msg would have raised an AssertionError:
     >>> params.setBugTarget(product=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     Traceback (most recent call last):
-      ...
+    ...
     AssertionError: Expected either a comment or a msg, but got both.
 
 
 So, let's continue:
 
-    >>> [subscription.person.name for subscription in public_bug.subscriptions]
-    [u'name16']
+    >>> for subscription in public_bug.subscriptions:
+    ...     print subscription.person.name
+    name16
 
 The first comment made (this is submitted in the bug report) is set to
 the description of the bug:
 
-    >>> public_bug.description
-    u'blah blah blah'
+    >>> print public_bug.description
+    blah blah blah
 
 The bug description can also be accessed through the task:
 
-    >>> public_bug.bugtasks[0].bug.description
-    u'blah blah blah'
+    >>> print public_bug.bugtasks[0].bug.description
+    blah blah blah
     >>> public_bug.description = 'a new description'
-    >>> public_bug.bugtasks[0].bug.description
-    u'a new description'
+    >>> print public_bug.bugtasks[0].bug.description
+    a new description
 
 When a private bug is filed:
 
@@ -601,7 +602,7 @@ Changing the description.
 Modifying a bugtask will update IBug.date_last_updated.
 
     >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskImportance, BugTaskStatus, IUpstreamBugTask)
+    ...     BugTaskImportance, BugTaskStatus, IBugTask)
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 
@@ -614,7 +615,7 @@ Modifying a bugtask will update IBug.date_last_updated.
     New
 
     >>> bugtask_before_modification = Snapshot(
-    ...     firefox_task, providing=IUpstreamBugTask)
+    ...     firefox_task, providing=IBugTask)
 
     >>> firefox_task.transitionToImportance(
     ...     BugTaskImportance.CRITICAL, current_user())
@@ -642,7 +643,7 @@ Adding a new task.
     thunderbird
 
     >>> thunderbird_task = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_bug, owner=foobar, product=thunderbird)
+    ...     firefox_bug, foobar, thunderbird)
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
@@ -750,7 +751,8 @@ Changing bug security.
 
     >>> firefox_bug.security_related
     False
-    >>> changed = firefox_bug.setSecurityRelated(True)
+    >>> changed = firefox_bug.setSecurityRelated(True,
+    ...     getUtility(ILaunchBag).user)
 
     >>> bug_security_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["security_related"])
@@ -954,8 +956,7 @@ has been marked invalid or a fix has been released.
 
 Let's add a new task to b8 to see if that affects the completeness.
 
-    >>> newtask = getUtility(IBugTaskSet).createTask(
-    ...     bug=b8, product=firefox, owner=b8.owner)
+    >>> newtask = getUtility(IBugTaskSet).createTask(b8, b8.owner, firefox)
     >>> newtask.status.name
     'NEW'
     >>> b8.is_complete
@@ -1057,11 +1058,9 @@ Incomplete, unattended bug reports cannot ever expire for this project.
     >>> # expiration, so long as the pillar object has enabled bug expiration.
     >>> # Every change to a bug or bugtask must be synced back to the
     >>> # database to test can_expire.
-    >>> from lp.bugs.tests.bug import (
-    ...     create_old_bug, sync_bugtasks)
+    >>> from lp.bugs.tests.bug import create_old_bug
 
     >>> upstream_bugtask = create_old_bug('bug a', 1, thunderbird)
-    >>> sync_bugtasks(upstream_bugtask)
     >>> upstream_bugtask.status.name
     'INCOMPLETE'
     >>> upstream_bugtask.pillar.enable_bug_expiration
@@ -1076,7 +1075,6 @@ expire.
 
     >>> expirable_bugtask = create_old_bug(
     ...     'bug c', 61, ubuntu, with_message=False)
-    >>> sync_bugtasks(expirable_bugtask)
 
     >>> expirable_bugtask.status.name
     'INCOMPLETE'
@@ -1092,7 +1090,6 @@ expirable state, thus the bug cannot expire even though bug permits
 expiration.
 
     >>> expirable_bugtask.transitionToAssignee(sample_person)
-    >>> sync_bugtasks(expirable_bugtask)
     >>> expirable_bugtask.bug.permits_expiration
     True
     >>> expirable_bugtask.bug.can_expire
@@ -1103,7 +1100,6 @@ than Incomplete, will cause the bug to not permit expiration.
 
     >>> expirable_bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, sample_person)
-    >>> sync_bugtasks(expirable_bugtask)
     >>> expirable_bugtask.bug.permits_expiration
     False
     >>> expirable_bugtask.bug.can_expire
@@ -1135,9 +1131,10 @@ show messages in the bugtask index template in one shot.
 It's done in a way that we only issue two queries to fetch all this
 information, too:
 
-XXX: bug=https://bugs.launchpad.net/storm/+bug/619017 means that this sometimes
-does 3 queries, depending on the precise state of the storm cache. To avoid
-spurious failures it has been changed to tolerate this additional query.
+XXX RobertCollins <unknown date> bug=619017: Storm bug 619017 means that this
+sometimes does 3 queries, depending on the precise state of the storm cache.
+To avoid spurious failures it has been changed to tolerate this additional
+query.
 
     >>> len(CursorWrapper.last_executed_sql) - queries <= 3
     True
@@ -1170,9 +1167,12 @@ exported using the webservice API.
     ...     print '%s\t%s\t%s' % (
     ...         indexed_message.index, indexed_message.subject,
     ...         indexed_message.inside.title)
-    0 PEBCAK                                      Bug #2 in Tomcat: "Blackhole Trash folder"
-    1 Fantastic idea, I'd really like to see this Bug #2 in Tomcat: "Blackhole Trash folder"
-    2 Strange bug with duplicate messages.        Bug #2 in Tomcat: "Blackhole Trash folder"
+    0 PEBCAK
+    Bug #2 in Tomcat: "Blackhole Trash folder"
+    1 Fantastic idea, I'd really like to see this
+    Bug #2 in Tomcat: "Blackhole Trash folder"
+    2 Strange bug with duplicate messages.
+    Bug #2 in Tomcat: "Blackhole Trash folder"
 
 
 Affected users

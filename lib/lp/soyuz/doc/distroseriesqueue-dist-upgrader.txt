@@ -281,17 +281,11 @@ Dist Upgrader to PPA
 Custom uploads for PPAs should works as expected, i.e, publish its
 files in the respective PPA location.
 
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
-    >>> beta_testers = getUtility(ILaunchpadCelebrities
-    ...     ).launchpad_beta_testers
-    >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> name16 = getUtility(IPersonSet).getByName("name16")
-    >>> ignored = beta_testers.addMember(name16, admin)
-
     >>> foobar_archive = getUtility(IArchiveSet).new(
     ...     distribution=ubuntutest, purpose=ArchivePurpose.PPA,
     ...     owner=name16)

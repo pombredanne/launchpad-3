@@ -13,7 +13,6 @@ from zope.component import (
 from zope.interface.verify import verifyObject
 
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import sync
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
@@ -98,7 +97,6 @@ class XPIPOExporterTestCase(unittest.TestCase):
         (subject, body) = self.firefox_template.importFromQueue(entry)
 
         # The status is now IMPORTED:
-        sync(entry)
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
 
     def test_Interface(self):

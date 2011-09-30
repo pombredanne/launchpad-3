@@ -9,6 +9,24 @@
 
 <body>
 
+<div metal:fill-slot="head_epilogue">
+  <script type="text/javascript">
+    LPS.use('node', 'lp.app.widgets.expander', function(Y) {
+      Y.on('domready', function() {
+        var all_expanders = Y.all('.expander-icon');
+        all_expanders.each(function(icon) {
+          var base_id = icon.get('id').replace('-expander', '');
+          var content_node = Y.one('#' + base_id);
+          var animate_node = content_node.one('ul');
+          var expander = new Y.lp.app.widgets.expander.Expander(
+            icon, content_node, { animate_node: animate_node });
+          expander.setUp();
+        });
+      });
+    });
+  </script>
+</div>
+
 <div metal:fill-slot="main">
 
   <div class="top-portlet">

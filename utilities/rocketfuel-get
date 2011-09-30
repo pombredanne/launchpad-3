@@ -30,6 +30,7 @@ fi
 
 LP_DOWNLOAD_CACHE_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache"
 LP_EGGS_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs"
+YUI_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/yui"
 LP_DOWNLOAD_CACHE_PATH="$(eval echo ${LP_DOWNLOAD_CACHE_PATH})"
 LP_EGGS_PATH="$(eval echo ${LP_EGGS_PATH})"
 
@@ -39,7 +40,7 @@ bzr pull -d "$LP_TRUNK_PATH"
 FINAL_REV=$(bzr revno "$LP_TRUNK_PATH")
 
 # Make sure our directories are around.
-mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH"
+mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH" "$YUI_PATH"
 
 # Get/update the download cache.
 if [ -d "$LP_DOWNLOAD_CACHE_PATH" ]
@@ -65,12 +66,35 @@ run-child \
 
 # Update the current trees in the repo.
 echo "Updating sourcecode dependencies in current local branches:"
-find "$LP_PROJECT_PATH" -mindepth 2 -maxdepth 2 \
-    -type d -name sourcecode -printf '%h\0' | \
+
+# Find directories among local branches containing "sourcecode" directories.
+# Prints each as a null-terminated record (since Unix filenames may contain
+# newlines).
+find_branches_to_relink() {
+    find "$LP_PROJECT_PATH" \
+        -mindepth 2 -maxdepth 2 -type d -name sourcecode -printf '%h\0'
+}
+
+# Some old setups (notably dogfood) may have lp-sourcedeps mixed in with the
+# local branches.  Echo stdin to stdout, with these filenames filtered out.
+# Filenames must be null-terminated on input, and remain null-terminated on
+# output.
+filter_branches_to_relink() {
+    grep -vz '/lp-sourcedeps$'
+}
+
+# Re-link the sourcecode directories for local branches.  Takes the branch
+# paths from stdin, as null-terminated records.
+relink_branches() {
     run-child xargs --no-run-if-empty \
         --max-procs="${CPU_COUNT}" --max-args=1 --null \
         "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
             --parent "$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" --target
+}
+
+# Actually do it:
+find_branches_to_relink | filter_branches_to_relink | relink_branches
+
 
 # Build launchpad if there were changes.
 if [ $FINAL_REV != $INITIAL_REV ];

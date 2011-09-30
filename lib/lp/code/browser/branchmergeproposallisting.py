@@ -47,6 +47,7 @@ from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     )
 from lp.code.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     IBranchMergeProposalListingBatchNavigator,
@@ -282,7 +283,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         collection = collection.visibleByUser(self.user)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW,])
+             BranchMergeProposalStatus.NEEDS_REVIEW, ])
         return proposals
 
     def _getReviewGroup(self, proposal, votes, reviewer):
@@ -330,8 +331,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
                     else:
                         return self.ARE_DOING
                 # Since team reviews are always pending, and we've eliminated
-                # the case where the reviewer is ther person, then if the reviewer
-                # is in the reviewer team, it is a can do.
+                # the case where the reviewer is ther person, then if
+                # the reviewer is in the reviewer team, it is a can do.
                 if reviewer.inTeam(vote.reviewer):
                     result = self.CAN_DO
         return result
@@ -419,7 +420,11 @@ class BranchActiveReviewsView(ActiveReviewsView):
 
     def getProposals(self):
         """See `ActiveReviewsView`."""
-        candidates = self.context.landing_candidates
+        non_final = tuple(
+            set(BranchMergeProposalStatus.items) -
+            set(BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        candidates = self.context.getMergeProposals(
+            status=non_final, eager_load=True, visible_by_user=self.user)
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 

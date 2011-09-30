@@ -13,12 +13,14 @@
         name="+base-layout-macros"
         template="../templates/base-layout-macros.pt"
         permission="zope.Public"
+        class="lp.app.browser.launchpad.Macro"
         />
     <browser:page
         for="*"
         name="+main-template-macros"
         template="../templates/base-layout-macros.pt"
         permission="zope.Public"
+        class="lp.app.browser.launchpad.Macro"
         />
     <browser:page
         for="*"
@@ -26,6 +28,7 @@
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-form.pt"
+        class="lp.app.browser.launchpad.Macro"
         />
     <browser:page
         for="*"
@@ -33,6 +36,7 @@
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-widget-macros.pt"
+        class="lp.app.browser.launchpad.Macro"
         />
     <browser:page
         for="*"
@@ -100,14 +104,14 @@
         permission="zope.Public" />
 
     <browser:page
-        for="*"
+        for="lp.app.browser.root.LaunchpadSearchView"
         name="+search-form"
         class="lp.app.browser.root.LaunchpadSearchFormView"
         template="../templates/launchpad-search-form.pt"
         permission="zope.Public" />
 
     <browser:page
-        for="*"
+        for="lp.app.browser.root.LaunchpadSearchView"
         name="+primary-search-form"
         class="lp.app.browser.root.LaunchpadPrimarySearchFormView"
         template="../templates/launchpad-search-form.pt"
@@ -197,7 +201,7 @@
           for="*"
           name="+maintenancemessage"
           template="../templates/launchpad-maintenance.pt"
-          class="canonical.launchpad.browser.MaintenanceMessage"
+          class="lp.app.browser.launchpad.MaintenanceMessage"
           permission="zope.Public"
           />
 
@@ -208,6 +212,7 @@
           name="+forbidden-page-macros"
           template="../templates/launchpad-forbidden-macros.pt"
           permission="zope.Public"
+          class="lp.app.browser.launchpad.Macro"
           />
 
 
@@ -258,7 +263,7 @@
           for="*"
           name="login_status"
           template="../templates/launchpad-loginstatus.pt"
-          class="canonical.launchpad.browser.LoginStatus"
+          class="lp.app.browser.launchpad.LoginStatus"
           permission="zope.Public"
           />
     </facet>
@@ -324,7 +329,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- OffsiteFormPostError -->
@@ -333,7 +338,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- NoReferrerError -->
@@ -360,7 +365,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- InvalidBatchSizeError -->
@@ -399,19 +404,39 @@
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.DefaultPickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.DefaultPickerEntrySourceAdapter"
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.PersonPickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.PersonPickerEntrySourceAdapter"
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.BranchPickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.BranchPickerEntrySourceAdapter"
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.SourcePackageNamePickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.SourcePackageNamePickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.DistributionSourcePackagePickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.ProductPickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.ProjectGroupPickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.DistributionPickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.ArchivePickerEntrySourceAdapter"
     />
 
   <!-- TALES namespaces. -->

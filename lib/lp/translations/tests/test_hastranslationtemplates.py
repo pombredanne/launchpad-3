@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -102,7 +102,7 @@ class HasTranslationTemplatesTestMixin:
         # If template is not current, nothing is returned even if
         # there are POFiles attached to it.
         template1.iscurrent = False
-        pofile = self.factory.makePOFile('sr', potemplate=template1)
+        self.factory.makePOFile('sr', potemplate=template1)
         current_translations = list(
             self.container.getCurrentTranslationFiles())
         self.assertEquals([], current_translations)
@@ -155,7 +155,7 @@ class HasTranslationTemplatesTestMixin:
 
     def test_has_current_translation_templates__current_template(self):
         # A series with a current template has current templates.
-        template = self.createTranslationTemplate()
+        self.createTranslationTemplate()
         self.assertTrue(self.container.has_current_translation_templates)
 
     def test_has_current_translation_templates__noncurrent_template(self):
@@ -367,7 +367,7 @@ class TestDistroSeriesHasTranslationTemplates(
 
     def setUp(self):
         super(TestDistroSeriesHasTranslationTemplates, self).setUp()
-        self.container = self.factory.makeDistroRelease()
+        self.container = self.factory.makeDistroSeries()
 
     def test_has_sharing_translation_templates__templates(self):
         # This attribute is always False for DistroSeries

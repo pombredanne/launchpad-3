@@ -201,7 +201,7 @@ class TestPOExportQueueStatusDescriptions(TestCaseWithFactory):
 
         backlog = timedelta(hours=2)
         self.assertEqual(
-            "The backlog is approximately two hours.",
+            "The backlog is approximately 2 hours.",
             self.view.describeBacklog(backlog).strip())
 
     def test_export_queue_status(self):

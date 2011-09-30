@@ -23,7 +23,10 @@ from bzrlib.plugins.builder.recipe import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interface import use_template
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IWebServiceClientRequest,
@@ -81,6 +84,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     InlineEditPickerWidget,
+    InlinePersonEditPickerWidget,
     TextAreaEditorWidget,
     TextLineEditorWidget,
     )
@@ -95,6 +99,7 @@ from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
     PrivateBranchRecipe,
+    TooManyBuilds,
     TooNewRecipeFormat,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -106,7 +111,10 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
+from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import Archive
 
 
@@ -129,7 +137,7 @@ class RecipesForPersonBreadcrumb(Breadcrumb):
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):
-    """"Hierarchy for Source Package Recipe."""
+    """Hierarchy for Source Package Recipe."""
 
     vhost_breadcrumb = False
 
@@ -189,14 +197,14 @@ class SourcePackageRecipeContextMenu(ContextMenu):
         """Provide a link for requesting a daily build of a recipe."""
         recipe = self.context
         ppa = recipe.daily_build_archive
-        if (ppa is None or not recipe.build_daily or not recipe.is_stale
-                or not recipe.distroseries):
+        if (ppa is None or not ppa.enabled or not recipe.build_daily or not
+            recipe.is_stale or not recipe.distroseries):
             show_request_build = False
         else:
             has_upload = ppa.checkArchivePermission(recipe.owner)
             show_request_build = has_upload
 
-        show_request_build= (show_request_build and
+        show_request_build = (show_request_build and
             check_permission('launchpad.Edit', recipe))
         return Link(
                 '+request-daily-build', 'Build now',
@@ -250,8 +258,20 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def person_picker(self):
-        return InlineEditPickerWidget(
-            self.context, ISourcePackageRecipe['owner'],
+        # If we are using the enhanced picker, we need to ensure the vocab
+        # gives us terms showing just the displyname rather than displayname
+        # plus Luanchpad id since the enhanced picker provides this extra
+        # information itself.
+        enhanced_picker_enabled = bool(
+                    getFeatureFlag('disclosure.picker_enhancements.enabled'))
+        if enhanced_picker_enabled:
+            vocabulary = 'UserTeamsParticipationPlusSelfSimpleDisplay'
+        else:
+            vocabulary = 'UserTeamsParticipationPlusSelf'
+        field = copy_field(
+            ISourcePackageRecipe['owner'], vocabularyName=vocabulary)
+        return InlinePersonEditPickerWidget(
+            self.context, field,
             format_link(self.context.owner),
             header='Change owner',
             step_title='Select a new owner')
@@ -461,7 +481,7 @@ class SourcePackageRecipeRequestBuildsAjaxView(
     def _process_error(self, data=None, builds=None, informational=None,
                        errors=None, reason="Validation"):
         """Set up the response and json data to return to the caller."""
-        self.request.response.setStatus(400, reason)
+        self.request.response.setStatus(200, reason)
         self.request.response.setHeader('Content-type', 'application/json')
         return_data = dict(builds=builds, errors=errors)
         if informational:
@@ -523,7 +543,13 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
     @action('Build now', name='build')
     def build_action(self, action, data):
         recipe = self.context
-        builds = recipe.performDailyBuild()
+        try:
+            builds = recipe.performDailyBuild()
+        except (TooManyBuilds, ArchiveDisabled) as e:
+            self.request.response.addErrorNotification(str(e))
+            self.next_url = canonical_url(recipe)
+            return
+
         if self.request.is_ajax:
             template = ViewPageTemplateFile(
                     "../templates/sourcepackagerecipe-builds.pt")
@@ -837,7 +863,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
             self.form_fields = self.form_fields.omit('daily_build_archive')
 
             owner_field = self.schema['owner']
-            any_owner_choice = Choice(
+            any_owner_choice = PersonChoice(
                 __name__='owner', title=owner_field.title,
                 description=(u"As an administrator you are able to reassign"
                              u" this branch to any person or team."),

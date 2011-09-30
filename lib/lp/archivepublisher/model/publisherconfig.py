@@ -20,6 +20,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
+    IStore,
     )
 from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfig,
@@ -62,7 +63,6 @@ class PublisherConfigSet:
 
     def getByDistribution(self, distribution):
         """See `IArchiveAuthTokenSet`."""
-        store = IMasterStore(PublisherConfig)
-        return store.find(
+        return IStore(PublisherConfig).find(
             PublisherConfig,
             PublisherConfig.distribution_id == distribution.id).one()

@@ -15,10 +15,10 @@ __all__ = [
     'ProductReleaseView',
     ]
 
-import cgi
 import mimetypes
 
 from lazr.restful.interface import copy_field
+from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import (
     TextAreaWidget,
@@ -43,7 +43,6 @@ from canonical.launchpad.webapp import (
     Navigation,
     stepthrough,
     )
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -135,8 +134,6 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
         # should not be targeted to a milestone in the past.
         if data.get('keep_milestone_active') is False:
             milestone.active = False
-            milestone_link = '<a href="%s">%s milestone</a>' % (
-                canonical_url(milestone), cgi.escape(milestone.name))
         self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 

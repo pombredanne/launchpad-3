@@ -1409,9 +1409,6 @@ approximate durations.
     '2 days, 0 hours, 0 minutes, 0.0 seconds'
 
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
-    'two days'
-
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '2 days'
 
     >>> delta = timedelta(days=12, hours=6, minutes=30)
@@ -1421,17 +1418,11 @@ approximate durations.
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
     '12 days'
 
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
-    '12 days'
-
     >>> delta = timedelta(days=0, minutes=62)
     >>> test_tales('delta/fmt:exactduration', delta=delta)
     '1 hour, 2 minutes, 0.0 seconds'
 
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
-    'an hour'
-
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '1 hour'
 
     >>> delta = timedelta(days=0, minutes=82)
@@ -1441,17 +1432,11 @@ approximate durations.
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
     '1 hour 20 minutes'
 
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
-    '1 hour 20 minutes'
-
     >>> delta = timedelta(days=0, seconds=62)
     >>> test_tales('delta/fmt:exactduration', delta=delta)
     '1 minute, 2.0 seconds'
 
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
-    'a minute'
-
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '1 minute'
 
     >>> delta = timedelta(days=0, seconds=90)
@@ -1459,9 +1444,6 @@ approximate durations.
     '1 minute, 30.0 seconds'
 
     >>> test_tales('delta/fmt:approximateduration', delta=delta)
-    'two minutes'
-
-    >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '2 minutes'
 
 

@@ -131,13 +131,11 @@ upload, even though it gets changed in the publishing record.
     >>> from lp.soyuz.model.component import Component
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
-    >>> from canonical.launchpad.ftests import syncUpdate
 
     >>> latest_publishing = SourcePackagePublishingHistory.get(
     ...     publishing_history[-1].id)
     >>> universe = Component.byName('universe')
     >>> latest_publishing.component = universe
-    >>> syncUpdate(latest_publishing)
     >>> flush_database_caches()
 
     >>> for release in firefox_warty.distinctreleases:
@@ -153,7 +151,6 @@ component. If there are no PUBLISHED records, None is returned.
     >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> latest_publishing.status = PackagePublishingStatus.SUPERSEDED
-    >>> syncUpdate(latest_publishing)
     >>> print firefox_warty.latest_published_component
     None
 
@@ -191,7 +188,6 @@ See bug #179028 for further information.
 
     >>> from datetime import timedelta
     >>> pub.dateremoved = pub.datesuperseded + timedelta(days=1)
-    >>> syncUpdate(pub)
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name

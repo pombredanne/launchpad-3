@@ -84,13 +84,12 @@ from lp.soyuz.scripts.packagecopier import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    person_logged_in,
+    ExpectedException,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
-from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class ReUploadFileTestCase(TestCaseWithFactory):
@@ -264,7 +263,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # Create a brand new PPA.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
 
         # Make it private if necessary.
         if private:
@@ -308,7 +307,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # files related to it will remain private.
         public_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         public_source = private_source.copyTo(
             private_source.distroseries, private_source.pocket,
             public_archive)
@@ -383,7 +382,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # files related to it will remain private.
         public_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         public_binary = private_binary.copyTo(
             private_source.distroseries, private_source.pocket,
             public_archive)[0]
@@ -420,7 +419,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # Copy The original source and binaries to a private PPA.
         private_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         private_archive.buildd_secret = 'x'
         private_archive.private = True
 
@@ -595,8 +594,8 @@ class CopyCheckerQueries(TestCaseWithFactory,
         sources = []
         for i in xrange(nb_of_sources):
             source = self.test_publisher.getPubSource(
-                version = u'%d' % self.factory.getUniqueInteger(),
-                sourcename = u'name-%d' % self.factory.getUniqueInteger())
+                version=u'%d' % self.factory.getUniqueInteger(),
+                sourcename=u'name-%d' % self.factory.getUniqueInteger())
             sources.append(source)
         return sources
 
@@ -1348,7 +1347,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             bin_i386.component, bin_i386, copied_bin_i386)
         self.assertComponentSectionAndPriority(
             bin_hppa.component, bin_hppa, copied_bin_hppa)
-        
+
     def test_existing_publication_no_overrides(self):
         # When we copy source/binaries into a PPA, we don't respect their
         # component and section.
@@ -1404,9 +1403,9 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             [source], target_archive, dsp.derived_series, source.pocket,
             check_permissions=False, overrides=[override])
 
-        matcher = MatchesStructure(
-            component=Equals(override.component),
-            section=Equals(override.section))
+        matcher = MatchesStructure.byEquality(
+            component=override.component,
+            section=override.section)
         self.assertThat(copied_source, matcher)
 
     def test_copy_ppa_generates_notification(self):
@@ -1414,7 +1413,9 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         archive = self.test_publisher.ubuntutest.main_archive
         source = self.test_publisher.getPubSource(
             archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
+        source.sourcepackagerelease.changelog = changelog
+        transaction.commit()  # Librarian.
         nobby = self.createNobby(('i386', 'hppa'))
         getUtility(ISourcePackageFormatSelectionSet).add(
             nobby, SourcePackageFormat.FORMAT_1_0)
@@ -1428,9 +1429,22 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertEquals(
             get_ppa_reference(target_archive),
             notification['X-Launchpad-PPA'])
-        self.assertIn(
-            source.sourcepackagerelease.changelog_entry,
-            notification.as_string())
+        body = notification.get_payload()[0].get_payload()
+        expected = dedent("""\
+            Accepted:
+             OK: foo_1.0-2.dsc
+                 -> Component: main Section: base
+
+            foo (1.0-2) unstable; urgency=3Dlow
+
+              * 1.0-2.
+
+            -- =
+
+            You are receiving this email because you are the uploader of the above
+            PPA package.
+            """)
+        self.assertEqual(expected, body)
 
     def test_copy_generates_notification(self):
         # When a copy into a primary archive is performed, a notification is
@@ -1438,13 +1452,13 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         archive = self.test_publisher.ubuntutest.main_archive
         source = self.test_publisher.getPubSource(
             archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
+        source.sourcepackagerelease.changelog = changelog
         # Copying to a primary archive reads the changes to close bugs.
         transaction.commit()
         nobby = self.createNobby(('i386', 'hppa'))
         getUtility(ISourcePackageFormatSelectionSet).add(
             nobby, SourcePackageFormat.FORMAT_1_0)
-        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         nobby.changeslist = 'nobby-changes@example.com'
         [copied_source] = do_copy(
             [source], archive, nobby, source.pocket, False,
@@ -1457,15 +1471,96 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         for mail in (notification, announcement):
             self.assertEquals(
                 '[ubuntutest/nobby] foo 1.0-2 (Accepted)', mail['Subject'])
-        expected_text = dedent("""
-            * Foo!
+        expected_text = dedent("""\
+            foo (1.0-2) unstable; urgency=3Dlow
+
+              * 1.0-2.
 
             Date: %s
             Changed-By: Foo Bar <foo.bar@canonical.com>
-            http://launchpad.dev/ubuntutest/breezy-autotest/+source/foo/1.0-2
+            http://launchpad.dev/ubuntutest/nobby/+source/foo/1.0-2
             """ % source.sourcepackagerelease.dateuploaded)
+        # Spurious newlines are a pain and don't really affect the end
+        # results so stripping is the easiest route here.
+        expected_text.strip()
+        body = mail.get_payload()[0].get_payload()
+        self.assertEqual(expected_text, body)
+        self.assertEqual(expected_text, body)
+
+    def test_copy_notification_contains_aggregate_change_log(self):
+        # When copying a package that generates a notification,
+        # the changelog should contain all of the changelog_entry texts for
+        # all the sourcepackagereleases between the last published version
+        # and the new version.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source3 = self.test_publisher.getPubSource(
+            sourcename="foo", archive=archive, version='1.2',
+            architecturehintlist='any')
+        changelog = self.factory.makeChangelog(
+            spn="foo", versions=["1.2",  "1.1",  "1.0"])
+        source3.sourcepackagerelease.changelog = changelog
+        transaction.commit()
+
+        # Now make a new series, nobby, and publish foo 1.0 in it.
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby.changeslist = 'nobby-changes@example.com'
+        source1 = self.factory.makeSourcePackageRelease(
+            sourcepackagename="foo", version="1.0")
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=source1, distroseries=nobby,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=source3.pocket)
+
+        # Now copy foo 1.3 from ubuntutest.
+        [copied_source] = do_copy(
+            [source3], nobby.main_archive, nobby, source3.pocket, False,
+            person=source3.sourcepackagerelease.creator,
+            check_permissions=False, send_email=True)
+
+        [notification, announcement] = pop_notifications()
+        for mail in (notification, announcement):
+            mailtext = mail.as_string()
+            self.assertIn("foo (1.1)", mailtext)
+            self.assertIn("foo (1.2)", mailtext)
+
+    def test_copy_generates_rejection_email(self):
+        # When a copy into a primary archive fails, we expect a rejection
+        # email if the send_email parameter is True.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        transaction.commit()  # Librarian.
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        # Ensure the same source is already in the destination so that we
+        # get a rejection.
+        self.test_publisher.getPubSource(
+            sourcename=source.source_package_name,
+            archive=nobby.main_archive, version="1.0-2",
+            architecturehintlist='any')
+        with ExpectedException(CannotCopy, '.'):
+            do_copy(
+                [source], archive, nobby, source.pocket, False,
+                person=source.sourcepackagerelease.creator,
+                check_permissions=False, send_email=True)
+
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        [notification] = notifications
+        self.assertEquals(
+            'Foo Bar <foo.bar@canonical.com>', notification['To'])
+        self.assertEquals(
+            '[ubuntutest/nobby] foo 1.0-2 (Rejected)',
+            notification['Subject'])
+        expected_text = (
+            "Rejected:\n"
+            "foo 1.0-2 in breezy-autotest (a different source with the same "
+                "version is p=\nublished in the destination archive)\n")
         self.assertIn(expected_text, notification.as_string())
-        self.assertIn(expected_text, announcement.as_string())
 
     def test_copy_does_not_generate_notification(self):
         # When notify = False is passed to do_copy, no notification is
@@ -1484,6 +1579,50 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=target_archive.owner, check_permissions=False,
             send_email=False)
         self.assertEquals([], pop_notifications())
+
+    def test_copying_unsupported_arch_with_override(self):
+        # When the copier is passed an unsupported arch with an override
+        # on the destination series, no binary is copied.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        source = self.test_publisher.getPubSource(
+            archive=archive, architecturehintlist='all')
+        self.test_publisher.getPubBinaries(pub_source=source)
+
+        # Now make a new distroseries with only one architecture:
+        # 'hppa'.
+        nobby = self.createNobby(('hppa', ))
+
+        # Copy the package with binaries.
+        target_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PRIMARY,
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        copies = _do_direct_copy(source, target_archive, nobby, source.pocket,
+            include_binaries=True, close_bugs=False, create_dsd_job=False)
+
+        # Only the source package has been copied.
+        self.assertEqual(1, len(copies))
+
+    def test_copy_sets_creator(self):
+        # The creator for the copied SPPH is the person passed
+        # to do_copy.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        [copied_source] = do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=False)
+
+        self.assertEqual(
+            target_archive.owner,
+            copied_source.creator)
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
@@ -1644,7 +1783,7 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
             'foocomm', '0.9', component='multiverse',
             archive=self.copy_archive,
             status=PackagePublishingStatus.PUBLISHED)
-        ancestor_bins = self.test_publisher.getPubBinaries(
+        self.test_publisher.getPubBinaries(
             binaryname='foo-bin', archive=self.copy_archive,
             status=PackagePublishingStatus.PUBLISHED, pub_source=ancestor)
         self.layer.txn.commit()
@@ -1969,7 +2108,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED)
 
-        noise_source = test_publisher.getPubSource(
+        test_publisher.getPubSource(
             sourcename='firefox-3.0', version='1.2',
             archive=ubuntu.main_archive, distroseries=hoary,
             pocket=PackagePublishingPocket.UPDATES,
@@ -2127,7 +2266,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         ppa_source = test_publisher.getPubSource(
             archive=cprov.archive, version='1.0', distroseries=hoary,
             status=PackagePublishingStatus.PUBLISHED)
-        ppa_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=hoary,
             status=PackagePublishingStatus.PUBLISHED)
         # Commit to ensure librarian files are written.
@@ -2168,7 +2307,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             sourcename='boing', version='1.0',
             archive=cprov.archive, distroseries=hoary,
             status=PackagePublishingStatus.PENDING)
-        ppa_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=hoary,
             status=PackagePublishingStatus.PENDING)
         # Commit to ensure librarian files are written.
@@ -2222,7 +2361,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             sourcename='boing', version='1.0', distroseries=warty,
             architecturehintlist=architecturehintlist,
             status=PackagePublishingStatus.PUBLISHED)
-        ppa_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
         # Commit to ensure librarian files are written.
@@ -2246,7 +2385,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # end up in the new architecture.
         amd64_family = ProcessorFamily.selectOneBy(name='amd64')
         hoary = ubuntu.getSeries('hoary')
-        hoary_amd64 = hoary.newArch('amd64', amd64_family, True, hoary.owner)
+        hoary.newArch('amd64', amd64_family, True, hoary.owner)
 
         # Copy the source and binaries from warty to hoary.
         copy_helper = self.getCopier(
@@ -2804,7 +2943,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         ancestry_source = test_publisher.getPubSource(
             version='1.0', distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
-        ancestry_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=ancestry_source, distroseries=warty,
             status=PackagePublishingStatus.SUPERSEDED)
 
@@ -2917,7 +3056,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED)
             source.sourcepackagerelease.changelog_entry = (
                 "Required for close_bugs_for_sourcepublication")
-            binaries = test_publisher.getPubBinaries(
+            test_publisher.getPubBinaries(
                 pub_source=source, distroseries=warty, archive=archive,
                 pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
             self.layer.txn.commit()
@@ -2941,14 +3080,14 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         # Create a dummy first package version so we can file bugs on it.
         dummy_changesfile = "Format: 1.7\n"
-        proposed_source = create_source(
+        create_source(
             '666', warty.main_archive, PackagePublishingPocket.PROPOSED,
             dummy_changesfile)
 
         # Copies to -updates close bugs when they exist.
         updates_bug_id = create_bug('bug in -proposed')
         closing_bug_changesfile = changes_template % updates_bug_id
-        proposed_source = create_source(
+        create_source(
             '667', warty.main_archive, PackagePublishingPocket.PROPOSED,
             closing_bug_changesfile)
 
@@ -2968,7 +3107,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Copies to the development distroseries close bugs.
         dev_bug_id = create_bug('bug in development')
         closing_bug_changesfile = changes_template % dev_bug_id
-        dev_source = create_source(
+        create_source(
             '668', warty.main_archive, PackagePublishingPocket.UPDATES,
             closing_bug_changesfile)
 
@@ -2988,7 +3127,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Copies to -proposed do not close bugs
         ppa_bug_id = create_bug('bug in PPA')
         closing_bug_changesfile = changes_template % ppa_bug_id
-        ppa_source = create_source(
+        create_source(
             '669', cprov.archive, PackagePublishingPocket.RELEASE,
             closing_bug_changesfile)
 
@@ -3008,7 +3147,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Copies to PPA do not close bugs.
         proposed_bug_id = create_bug('bug in PPA')
         closing_bug_changesfile = changes_template % proposed_bug_id
-        release_source = create_source(
+        create_source(
             '670', warty.main_archive, PackagePublishingPocket.RELEASE,
             closing_bug_changesfile)
 
@@ -3034,14 +3173,13 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
 
-        orig_tarball = 'test-source_1.0.orig.tar.gz'
         proposed_source = test_publisher.getPubSource(
             sourcename='test-source', version='1.0-2',
             distroseries=warty, archive=warty.main_archive,
             pocket=PackagePublishingPocket.PROPOSED,
             status=PackagePublishingStatus.PUBLISHED,
             section='net')
-        updates_source = test_publisher.getPubSource(
+        test_publisher.getPubSource(
             sourcename='test-source', version='1.0-1',
             distroseries=warty, archive=warty.main_archive,
             pocket=PackagePublishingPocket.UPDATES,

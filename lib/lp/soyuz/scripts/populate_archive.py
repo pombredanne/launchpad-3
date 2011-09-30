@@ -110,7 +110,7 @@ class ArchivePopulator(SoyuzScript):
             """Associate the archive with the processor families."""
             aa_set = getUtility(IArchiveArchSet)
             for proc_family in proc_families:
-                ignore_this = aa_set.new(archive, proc_family)
+                aa_set.new(archive, proc_family)
 
         def build_location(distro, suite, component, packageset_names=None):
             """Build and return package location."""
@@ -279,7 +279,7 @@ class ArchivePopulator(SoyuzScript):
         changed.
         """
         pkg_cloner = getUtility(IPackageCloner)
-        ignore_result = pkg_cloner.packageSetDiff(
+        pkg_cloner.packageSetDiff(
             origin, destination, self.logger)
 
     def mainTask(self):

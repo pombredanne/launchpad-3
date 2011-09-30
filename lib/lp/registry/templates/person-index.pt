@@ -50,34 +50,6 @@
   <metal:contact use-macro="context/@@+person-macros/contact">
     Contact this person
   </metal:contact>
-
-  <div id="involvement" class="portlet involvement"
-    tal:condition="context/is_valid_person">
-    <h2>Participation</h2>
-
-    <ul>
-      <li>
-        <a class="sprite bugs"
-          tal:attributes="href context/fmt:url:bugs">Bugs</a>
-      </li>
-      <li>
-        <a class="sprite answers"
-          tal:attributes="href context/fmt:url:answers">Answers</a>
-      </li>
-      <li>
-        <a class="sprite translations"
-          tal:attributes="href context/fmt:url:translations">Translations</a>
-      </li>
-      <li>
-        <a class="sprite code"
-          tal:attributes="href context/fmt:url:code">Code</a>
-      </li>
-      <li>
-        <a class="sprite blueprints"
-          tal:attributes="href context/fmt:url:blueprints">Blueprints</a>
-      </li>
-    </ul>
-  </div>
 </div>
 
 <div metal:fill-slot="main"

@@ -262,10 +262,7 @@ bug #1 affects more than one Ubuntu package.
     ...     distroseries=ubuntu.currentseries,
     ...     sourcepackagename=ubuntu_tbird.sourcepackagename)
 
-    >>> getUtility(IBugTaskSet).createTask(
-    ...     bug=bug_one, owner=no_privs,
-    ...     distribution=ubuntu,
-    ...     sourcepackagename=ubuntu_tbird.sourcepackagename)
+    >>> getUtility(IBugTaskSet).createTask(bug_one, no_privs, ubuntu_tbird)
     <BugTask ...>
 
     >>> tasks = sorted(
@@ -409,9 +406,7 @@ automatically.
 
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> getUtility(IBugTaskSet).createTask(
-    ...     bug=bug_one, owner=no_privs,
-    ...     distribution=ubuntu,
-    ...     sourcepackagename=ubuntu_evolution.sourcepackagename)
+    ...     bug_one, no_privs, ubuntu_evolution)
     <BugTask ...>
 
     >>> tasks = sorted(
@@ -445,8 +440,8 @@ be acceptable.
     >>> thunderbird_grumpy.bugtargetname
     u'thunderbird (Ubuntu Grumpy)'
 
-    >>> ubuntu_pmount = ubuntu.getSourcePackage('pmount')
-    >>> thunderbird_grumpy.sourcepackagename = ubuntu_pmount.sourcepackagename
+    >>> thunderbird_grumpy.transitionToTarget(
+    ...     ubuntu.getSeries('grumpy').getSourcePackage('pmount'))
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
@@ -473,7 +468,7 @@ The same is done if the distribution task's source package is changed.
     u'pmount (Ubuntu)'
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
-    >>> pmount_ubuntu.sourcepackagename = ubuntu_thunderbird.sourcepackagename
+    >>> pmount_ubuntu.transitionToTarget(ubuntu_thunderbird)
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
@@ -536,7 +531,7 @@ to demonstrate.
     >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu_edgy = factory.makeDistroRelease(
+    >>> ubuntu_edgy = factory.makeDistroSeries(
     ...     distribution=ubuntu, version='6.10',
     ...     status=SeriesStatus.OBSOLETE)
     >>> login("no-priv@canonical.com")

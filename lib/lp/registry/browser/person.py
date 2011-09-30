@@ -99,6 +99,7 @@ from lazr.config import as_timedelta
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 from storm.expr import Join
@@ -193,7 +194,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -309,7 +309,6 @@ from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
     )
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
-from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -327,6 +326,7 @@ from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
@@ -861,43 +861,48 @@ class PersonBugsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'commentedbugs', 'reportedbugs',
+    links = ['affectingbugs', 'assignedbugs', 'commentedbugs', 'reportedbugs',
              'subscribedbugs', 'relatedbugs', 'softwarebugs']
 
     def relatedbugs(self):
-        text = 'List all related bugs'
-        summary = ('Lists all bug reports which %s reported, is assigned to, '
+        text = 'All related bugs'
+        summary = ('All bug reports which %s reported, is assigned to, '
                    'or is subscribed to.' % self.context.displayname)
         return Link('', text, site='bugs', summary=summary)
 
     def assignedbugs(self):
-        text = 'List assigned bugs'
-        summary = 'Lists bugs assigned to %s.' % self.context.displayname
+        text = 'Assigned bugs'
+        summary = 'Bugs assigned to %s.' % self.context.displayname
         return Link('+assignedbugs', text, site='bugs', summary=summary)
 
     def softwarebugs(self):
-        text = 'List subscribed packages'
+        text = 'Subscribed packages'
         summary = (
             'A summary report for packages where %s is a bug supervisor.'
             % self.context.displayname)
         return Link('+packagebugs', text, site='bugs', summary=summary)
 
     def reportedbugs(self):
-        text = 'List reported bugs'
-        summary = 'Lists bugs reported by %s.' % self.context.displayname
+        text = 'Reported bugs'
+        summary = 'Bugs reported by %s.' % self.context.displayname
         return Link('+reportedbugs', text, site='bugs', summary=summary)
 
     def subscribedbugs(self):
-        text = 'List subscribed bugs'
-        summary = ('Lists bug reports %s is subscribed to.'
+        text = 'Subscribed bugs'
+        summary = ('Bug reports %s is subscribed to.'
                    % self.context.displayname)
         return Link('+subscribedbugs', text, site='bugs', summary=summary)
 
     def commentedbugs(self):
-        text = 'List commented bugs'
-        summary = ('Lists bug reports on which %s has commented.'
+        text = 'Commented bugs'
+        summary = ('Bug reports on which %s has commented.'
                    % self.context.displayname)
         return Link('+commentedbugs', text, site='bugs', summary=summary)
+
+    def affectingbugs(self):
+        text = 'Affecting bugs'
+        summary = ('Bugs affecting %s.' % self.context.displayname)
+        return Link('+affectingbugs', text, site='bugs', summary=summary)
 
 
 class PersonSpecsMenu(NavigationMenu):
@@ -991,6 +996,13 @@ class CommonMenuLinks:
         enabled = bool(self.person.getLatestUploadedPPAPackages())
         return Link(target, text, enabled=enabled, icon='info')
 
+    def synchronised(self):
+        target = '+synchronised-packages'
+        text = 'Synchronised packages'
+        enabled = bool(
+            self.person.getLatestSynchronisedPublishings())
+        return Link(target, text, enabled=enabled, icon='info')
+
     def projects(self):
         target = '+related-projects'
         text = 'Related projects'
@@ -1059,6 +1071,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'projects',
         'activate_ppa',
         'maintained',
+        'synchronised',
         'view_ppa_subscriptions',
         'ppa',
         'oauth_tokens',
@@ -1194,7 +1207,7 @@ class PersonRelatedSoftwareNavigationMenu(NavigationMenu, CommonMenuLinks):
     usedfor = IPersonRelatedSoftwareMenu
     facet = 'overview'
     links = ('related_software_summary', 'maintained', 'uploaded', 'ppa',
-             'projects')
+             'synchronised', 'projects')
 
     @property
     def person(self):
@@ -1869,6 +1882,8 @@ class PersonSpecWorkloadTableView(LaunchpadView):
     in a single table.
     """
 
+    page_title = 'Blueprint workload'
+
     class PersonSpec:
         """One record from the workload list."""
 
@@ -2192,6 +2207,60 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
         return self.getSearchPageHeading()
 
 
+class PersonAffectingBugTaskSearchListingView(
+    RelevantMilestonesMixin, BugTaskSearchListingView):
+    """All bugs affecting someone."""
+
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
+    view_name = '+affectingbugs'
+    page_title = 'Bugs affecting'   # The context is added externally.
+
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None, prejoins=[]):
+        """Return the open bugs assigned to a person."""
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['affected_user'] = context
+
+        sup = super(PersonAffectingBugTaskSearchListingView, self)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
+
+    def shouldShowAssigneeWidget(self):
+        """Should the assignee widget be shown on the advanced search page?"""
+        return False
+
+    def shouldShowTeamPortlet(self):
+        """Should the team assigned bugs portlet be shown?"""
+        return True
+
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
+        return False
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs affecting %s" % self.context.displayname
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs affecting %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context, view_name=self.view_name)
+
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
+
+
 class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
                                              BugTaskSearchListingView):
     """All bugs assigned to someone."""
@@ -2199,6 +2268,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
     page_title = 'Assigned bugs'
+    view_name = '+assignedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
@@ -2220,7 +2290,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the assignee widget be shown on the advanced search page?"""
         return False
 
-    def shouldShowAssignedToTeamPortlet(self):
+    def shouldShowTeamPortlet(self):
         """Should the team assigned bugs portlet be shown?"""
         return True
 
@@ -2345,6 +2415,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
     page_title = 'Subscribed bugs'
+    view_name = '+subscribedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
@@ -2361,6 +2432,10 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         sup = super(PersonSubscribedBugTaskSearchListingView, self)
         return sup.searchUnbatched(
             searchtext, context, extra_params, prejoins)
+
+    def shouldShowTeamPortlet(self):
+        """Should the team subscribed bugs portlet be shown?"""
+        return True
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -3202,6 +3277,12 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
 
         return False
 
+    @property
+    def time_zone_offset(self):
+        """Return a string with offset from UTC"""
+        return datetime.now(
+            pytz.timezone(self.context.time_zone)).strftime("%z")
+
 
 class PersonParticipationView(LaunchpadView):
     """View for the ~person/+participation page."""
@@ -3990,9 +4071,7 @@ class PersonEditView(BasePersonEditView):
         new_name = data.get('name')
         bypass_check = self.request.form_ng.getOne(
             'i_know_this_is_an_openid_security_issue', 0)
-        if (new_name and new_name != self.context.name and
-            len(self.unknown_trust_roots_user_logged_in) > 0
-            and not bypass_check):
+        if (new_name and new_name != self.context.name and not bypass_check):
             # Warn the user that they might shoot themselves in the foot.
             self.setFieldError('name', structured(dedent('''
             <div class="inline-warning">
@@ -4005,34 +4084,15 @@ class PersonEditView(BasePersonEditView):
                     >https://help.launchpad.net/OpenID#rename-account</a>
                   for more information.
               </p>
-              <p> You may have used your identifier on the following
-                  sites:<br> %s.
-              </p>
               <p>If you click 'Save' again, we will rename your account
                  anyway.
               </p>
-            </div>'''),
-             ", ".join(self.unknown_trust_roots_user_logged_in)))
+            </div>'''),))
             self.i_know_this_is_an_openid_security_issue_input = dedent("""\
                 <input type="hidden"
                        id="i_know_this_is_an_openid_security_issue"
                        name="i_know_this_is_an_openid_security_issue"
                        value="1">""")
-
-    @cachedproperty
-    def unknown_trust_roots_user_logged_in(self):
-        """The unknown trust roots the user has logged in using OpenID.
-
-        We assume that they logged in using their delegated profile OpenID,
-        since that's the one we advertise.
-        """
-        identifier = IOpenIDPersistentIdentity(self.context)
-        unknown_trust_root_login_records = list(
-            getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                identifier.openid_identity_url, True))
-        return sorted([
-            record.trust_root
-            for record in unknown_trust_root_login_records])
 
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
@@ -5095,6 +5155,8 @@ class PersonAnswerContactForView(LaunchpadView):
         return 'Projects for which %s is an answer contact' % (
             self.context.displayname)
 
+    page_title = label
+
     @cachedproperty
     def direct_question_targets(self):
         """List of targets that the IPerson is a direct answer contact.
@@ -5166,21 +5228,36 @@ class PersonAnswersMenu(NavigationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class SourcePackageReleaseWithStats:
-    """An ISourcePackageRelease, with extra stats added."""
+class BaseWithStats:
+    """An ISourcePackageRelease or a ISourcePackagePublishingHistory,
+    with extra stats added.
 
-    implements(ISourcePackageRelease)
-    delegates(ISourcePackageRelease)
+    """
+
     failed_builds = None
     needs_building = None
 
-    def __init__(self, sourcepackage_release, open_bugs, open_questions,
+    def __init__(self, object, open_bugs, open_questions,
                  failed_builds, needs_building):
-        self.context = sourcepackage_release
+        self.context = object
         self.open_bugs = open_bugs
         self.open_questions = open_questions
         self.failed_builds = failed_builds
         self.needs_building = needs_building
+
+
+class SourcePackageReleaseWithStats(BaseWithStats):
+    """An ISourcePackageRelease, with extra stats added."""
+
+    implements(ISourcePackageRelease)
+    delegates(ISourcePackageRelease)
+
+
+class SourcePackagePublishingHistoryWithStats(BaseWithStats):
+    """An ISourcePackagePublishingHistory, with extra stats added."""
+
+    implements(ISourcePackagePublishingHistory)
+    delegates(ISourcePackagePublishingHistory)
 
 
 class PersonRelatedSoftwareView(LaunchpadView):
@@ -5308,6 +5385,23 @@ class PersonRelatedSoftwareView(LaunchpadView):
         header_message = self._tableHeaderMessage(packages.count())
         return results, header_message
 
+    def _getDecoratedPublishingsSummary(self, publishings):
+        """Helper returning decorated publishings for the summary page.
+
+        :param publishings: A SelectResults that contains the query
+        :return: A tuple of (publishings, header_message).
+
+        The publishings returned are limited to self.max_results_to_display
+        and decorated with the stats required in the page template.
+        The header_message is the text to be displayed at the top of the
+        results table in the template.
+        """
+        # This code causes two SQL queries to be generated.
+        results = self._addStatsToPublishings(
+            publishings[:self.max_results_to_display])
+        header_message = self._tableHeaderMessage(publishings.count())
+        return results, header_message
+
     @property
     def latest_uploaded_ppa_packages_with_stats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
@@ -5337,6 +5431,17 @@ class PersonRelatedSoftwareView(LaunchpadView):
         packages = self.context.getLatestUploadedButNotMaintainedPackages()
         results, header_message = self._getDecoratedPackagesSummary(packages)
         self.uploaded_packages_header_message = header_message
+        return results
+
+    @property
+    def latest_synchronised_publishings_with_stats(self):
+        """Return the latest synchronised publishings, including stats.
+
+        """
+        publishings = self.context.getLatestSynchronisedPublishings()
+        results, header_message = self._getDecoratedPublishingsSummary(
+            publishings)
+        self.synchronised_packages_header_message = header_message
         return results
 
     def _calculateBuildStats(self, package_releases):
@@ -5400,6 +5505,38 @@ class PersonRelatedSoftwareView(LaunchpadView):
                 needs_build_by_package[package])
             for package in package_releases]
 
+    def _addStatsToPublishings(self, publishings):
+        """Add stats to the given publishings, and return them."""
+        filtered_spphs = [
+            spph for spph in publishings if
+            check_permission('launchpad.View', spph)]
+        distro_packages = [
+            spph.meta_sourcepackage.distribution_sourcepackage
+            for spph in filtered_spphs]
+        package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
+            self.user, distro_packages)
+        open_bugs = {}
+        for bug_count in package_bug_counts:
+            distro_package = bug_count['package']
+            open_bugs[distro_package] = bug_count['open']
+
+        question_set = getUtility(IQuestionSet)
+        package_question_counts = question_set.getOpenQuestionCountByPackages(
+            distro_packages)
+
+        builds_by_package, needs_build_by_package = self._calculateBuildStats(
+            [spph.sourcepackagerelease for spph in filtered_spphs])
+
+        return [
+            SourcePackagePublishingHistoryWithStats(
+                spph,
+                open_bugs[spph.meta_sourcepackage.distribution_sourcepackage],
+                package_question_counts[
+                    spph.meta_sourcepackage.distribution_sourcepackage],
+                builds_by_package[spph.sourcepackagerelease],
+                needs_build_by_package[spph.sourcepackagerelease])
+            for spph in filtered_spphs]
+
     def setUpBatch(self, packages):
         """Set up the batch navigation for the page being viewed.
 
@@ -5458,6 +5595,30 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
     @property
     def page_title(self):
         return "PPA packages"
+
+
+class PersonSynchronisedPackagesView(PersonRelatedSoftwareView):
+    """View for +synchronised-packages."""
+    _max_results_key = 'default_batch_size'
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        publishings = self.context.getLatestSynchronisedPublishings()
+        self.setUpBatch(publishings)
+
+    def setUpBatch(self, publishings):
+        """Set up the batch navigation for the page being viewed.
+
+        This method creates the BatchNavigator and converts its
+        results batch into a list of decorated sourcepackagepublishinghistory.
+        """
+        self.batchnav = BatchNavigator(publishings, self.request)
+        publishings_batch = list(self.batchnav.currentBatch())
+        self.batch = self._addStatsToPublishings(publishings_batch)
+
+    @property
+    def page_title(self):
+        return "Synchronised packages"
 
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
@@ -5930,7 +6091,7 @@ class EmailToPersonView(LaunchpadFormView):
         return throttle_date + interval
 
     @property
-    def specific_contact_title_text(self):
+    def page_title(self):
         """Return the appropriate pagetitle."""
         if self.context.is_team:
             if self.user.inTeam(self.context):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -9,17 +9,18 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionSourcePackage',
+    'DistributionSourcePackageInDatabase',
     ]
 
 import itertools
 import operator
 
+from lazr.restful.utils import smartquote
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
     Count,
     Desc,
-    Join,
     Max,
     Sum,
     )
@@ -31,19 +32,16 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from storm.store import EmptyResultSet
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.lazr.utils import smartquote
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.bugs.model.bug import (
     Bug,
     BugSet,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -64,7 +62,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.packaging import Packaging
-from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (
     SourcePackage,
     SourcePackageQuestionTargetMixin,
@@ -139,7 +136,8 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes)
+        IBugSummaryDimension, IDistributionSourcePackage, IHasBugHeat,
+        IHasCustomLanguageCodes)
 
     bug_reporting_guidelines = DistributionSourcePackageProperty(
         'bug_reporting_guidelines')
@@ -209,6 +207,16 @@ class DistributionSourcePackage(BugTargetBase,
         # in the database.
         return self._get(self.distribution, self.sourcepackagename)
 
+    def delete(self):
+        """See `DistributionSourcePackage`."""
+        dsp_in_db = self._self_in_database
+        no_spph = self.publishing_history.count() == 0
+        if dsp_in_db is not None and no_spph:
+            store = IStore(dsp_in_db)
+            store.remove(dsp_in_db)
+            return True
+        return False
+
     def recalculateBugHeatCache(self):
         """See `IHasBugHeat`."""
         row = IStore(Bug).find(
@@ -259,14 +267,6 @@ class DistributionSourcePackage(BugTargetBase,
                         "to_number(DistroSeries.version, '99.99') DESC"),
                      "-pocket"])
         return spph
-
-    @property
-    def latest_overall_component(self):
-        """See `IDistributionSourcePackage`."""
-        spph = self.latest_overall_publication
-        if spph:
-            return spph.component
-        return None
 
     def getVersion(self, version):
         """See `IDistributionSourcePackage`."""
@@ -472,11 +472,18 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IDistributionSourcePackage`."""
         return not self.__eq__(other)
 
-    def _getBugTaskContextWhereClause(self):
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.distribution
+
+    def getBugSummaryContextWhereClause(self):
         """See `BugTargetBase`."""
-        return (
-            "BugTask.distribution = %d AND BugTask.sourcepackagename = %d" % (
-            self.distribution.id, self.sourcepackagename.id))
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+            BugSummary.distribution == self.distribution,
+            BugSummary.sourcepackagename == self.sourcepackagename),
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution source package."""
@@ -485,15 +492,6 @@ class DistributionSourcePackage(BugTargetBase,
     def getUsedBugTags(self):
         """See `IBugTarget`."""
         return self.distribution.getUsedBugTags()
-
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
-        """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
-        return get_bug_tags_open_count(
-            And(BugSummary.distribution == self.distribution,
-                BugSummary.sourcepackagename == self.sourcepackagename),
-            user, tag_limit=tag_limit, include_tags=include_tags)
 
     def _getOfficialTagClause(self):
         return self.distribution._getOfficialTagClause()
@@ -510,12 +508,6 @@ class DistributionSourcePackage(BugTargetBase,
             sourcepackagename=self.sourcepackagename)
         return BugSet().createBug(bug_params)
 
-    def _getBugTaskContextClause(self):
-        """See `BugTargetBase`."""
-        return (
-            'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
-                sqlvalues(self.distribution, self.sourcepackagename))
-
     def composeCustomLanguageCodeMatch(self):
         """See `HasCustomLanguageCodesMixin`."""
         return And(
@@ -528,23 +520,6 @@ class DistributionSourcePackage(BugTargetBase,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             language_code=language_code, language=language)
-
-    @staticmethod
-    def getPersonsByEmail(email_addresses):
-        """[(EmailAddress,Person), ..] iterable for given email addresses."""
-        if email_addresses is None or len(email_addresses) < 1:
-            return EmptyResultSet()
-        # Perform basic sanitization of email addresses.
-        email_addresses = [
-            address.lower().strip() for address in email_addresses]
-        store = IStore(Person)
-        origin = [
-            Person, Join(EmailAddress, EmailAddress.personID == Person.id)]
-        # Get all persons whose email addresses are in the list.
-        result_set = store.using(*origin).find(
-            (EmailAddress, Person),
-            EmailAddress.email.lower().is_in(email_addresses))
-        return result_set
 
     @classmethod
     def _get(cls, distribution, sourcepackagename):
@@ -567,16 +542,30 @@ class DistributionSourcePackage(BugTargetBase,
         return dsp
 
     @classmethod
-    def ensure(cls, spph):
+    def ensure(cls, spph=None, sourcepackage=None):
         """Create DistributionSourcePackage record, if necessary.
 
-        Only create a record for primary archives (i.e. not for PPAs).
-        """
-        if spph.archive.purpose != ArchivePurpose.PRIMARY:
-            return
+        Only create a record for primary archives (i.e. not for PPAs) or
+        for official package branches. Requires either a SourcePackage
+        or a SourcePackagePublishingHistory.
 
-        distribution = spph.distroseries.distribution
-        sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+        :param spph: A SourcePackagePublishingHistory to create a DSP
+            to represent an official uploaded/published package.
+        :param sourcepackage: A SourcePackage to create a DSP to represent an
+            official package branch.
+        """
+        if spph is None and sourcepackage is None:
+            raise ValueError(
+                'ensure() must be called with either a SPPH '
+                'or a SourcePackage.')
+        if spph is not None:
+            if spph.archive.purpose != ArchivePurpose.PRIMARY:
+                return
+            distribution = spph.distroseries.distribution
+            sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+        else:
+            distribution = sourcepackage.distribution
+            sourcepackagename = sourcepackage.sourcepackagename
         dsp = cls._get(distribution, sourcepackagename)
         if dsp is None:
             upstream_link_allowed = is_upstream_link_allowed(spph)
@@ -612,3 +601,10 @@ class DistributionSourcePackageInDatabase(Storm):
     po_message_count = Int()
     is_upstream_link_allowed = Bool()
     enable_bugfiling_duplicate_search = Bool()
+
+    @property
+    def currentrelease(self):
+        """See `IDistributionSourcePackage`."""
+        releases = self.distribution.getCurrentSourceReleases(
+            [self.sourcepackagename])
+        return releases.get(self)

@@ -18,7 +18,6 @@ from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -62,6 +61,7 @@ from lp.soyuz.scripts.queue import (
     CommandRunnerError,
     name_queue_map,
     QueueAction,
+    QueueActionOverride
     )
 from lp.testing import (
     celebrity_logged_in,
@@ -77,9 +77,7 @@ class TestQueueBase:
     def setUp(self):
         # Switch database user and set isolation level to READ COMMIITTED
         # to avoid SERIALIZATION exceptions with the Librarian.
-        LaunchpadZopelessLayer.alterConnection(
-                dbuser=self.dbuser,
-                isolation=ISOLATION_LEVEL_READ_COMMITTED)
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
@@ -364,8 +362,7 @@ class TestQueueTool(TestQueueBase, TestCase):
         ubuntu_bar = ubuntu.getSourcePackage('bar')
         the_bug = getUtility(IBugSet).get(the_bug_id)
         bugtask = getUtility(IBugTaskSet).createTask(
-            bug=the_bug, owner=bugtask_owner, distribution=ubuntu,
-            sourcepackagename=ubuntu_bar.sourcepackagename)
+            the_bug, bugtask_owner, ubuntu_bar)
 
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(self.dbuser)
@@ -406,6 +403,10 @@ class TestQueueTool(TestQueueBase, TestCase):
         self.assertEqual(
             bug_status, 'FIXRELEASED',
             'Bug status is %s, expected FIXRELEASED')
+
+        # Clean up.
+        upload_data = datadir('suite/bar_1.0-2')
+        os.remove(os.path.join(upload_data, 'bar_1.0.orig.tar.gz'))
 
     def testAcceptActionWithMultipleIDs(self):
         """Check if accepting multiple items at once works.
@@ -938,28 +939,38 @@ class TestQueueActionLite(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeQueueAction(self, package_upload, distroseries=None):
+    def makeQueueAction(self, package_upload, distroseries=None,
+                        component=None, section=None,
+                        action_type=QueueAction):
         """Create a `QueueAction` for use with a `PackageUpload`.
 
         The action's `display` method is set to a `FakeMethod`.
         """
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries(
-                status=SeriesStatus.CURRENT)
+                status=SeriesStatus.CURRENT,
+                name="distroseriestestingpcjs")
         distro = distroseries.distribution
         if package_upload is None:
             package_upload = self.factory.makePackageUpload(
                 distroseries=distroseries, archive=distro.main_archive)
-        component = self.factory.makeComponent()
-        section = self.factory.makeSection()
-        suite = "%s-%s" % (distroseries.name, "release")
-        queue = None
+        if component is None:
+            component = self.factory.makeComponent()
+        if section is None:
+            section = self.factory.makeSection()
+        queue = PackageUploadStatus.NEW
         priority_name = "STANDARD"
         display = FakeMethod()
         terms = ['*']
-        return QueueAction(
-            distro.name, suite, queue, terms, component.name,
+        return action_type(
+            distro.name, distroseries.name, queue, terms, component.name,
             section.name, priority_name, display)
+
+    def makeQueueActionOverride(self, package_upload, component, section,
+                                distroseries=None):
+        return self.makeQueueAction(
+            package_upload, distroseries, component, section,
+            action_type=QueueActionOverride)
 
     def parseUploadSummaryLine(self, output_line):
         """Parse an output line from `QueueAction.displayItem`.
@@ -1028,6 +1039,31 @@ class TestQueueActionLite(TestCaseWithFactory):
         self.assertEqual("X-", tag)
         self.assertThat(upload.displayname, StartsWith(name))
         self.assertThat(upload.package_version, StartsWith(version))
+
+    def test_override_works_with_PackageCopyJob(self):
+        # "Sync" PackageUploads can be overridden just like sources,
+        # test that here.
+        new_component = self.factory.makeComponent()
+        new_section = self.factory.makeSection()
+        pocket = PackagePublishingPocket.RELEASE
+        upload = self.factory.makeCopyJobPackageUpload(target_pocket=pocket)
+        action = self.makeQueueActionOverride(
+            upload, new_component, new_section,
+            distroseries=upload.distroseries)
+        # Patch this out because it uses data we don't have in the test;
+        # it's unnecessary anyway.
+        self.patch(action, "displayTitle", FakeMethod)
+        action.terms = ["source", str(upload.id)]
+        self.layer.txn.commit()
+        self.layer.switchDbUser(config.uploadqueue.dbuser)
+        action.initialize()
+        action.run()
+
+        # Overriding a sync means putting the overrides in the job itself.
+        self.assertEqual(
+            new_component.name, upload.package_copy_job.component_name)
+        self.assertEqual(
+            new_section.name, upload.package_copy_job.section_name)
 
     def test_makeTag_returns_S_for_source_upload(self):
         upload = self.factory.makeSourcePackageUpload()

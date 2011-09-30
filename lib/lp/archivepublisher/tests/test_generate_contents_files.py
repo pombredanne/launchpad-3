@@ -6,10 +6,11 @@
 __metaclass__ = type
 
 from optparse import OptionValueError
-import os.path
+import os
 from textwrap import dedent
 
-from canonical.config import config
+from testtools.matchers import StartsWith
+
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -25,6 +26,7 @@ from lp.services.log.logger import DevNullLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
 from lp.testing import TestCaseWithFactory
+from lp.testing.faketransaction import FakeTransaction
 
 
 def write_file(filename, content=""):
@@ -127,16 +129,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeContentArchive(self):
-        """Prepare a "content archive" directory for script tests."""
-        content_archive = self.makeTemporaryDirectory()
-        config.push("content-archive", dedent("""\
-            [archivepublisher]
-            content_archive_root: %s
-            """ % content_archive))
-        self.addCleanup(config.pop, "content-archive")
-        return content_archive
-
     def makeDistro(self):
         """Create a distribution for testing.
 
@@ -146,14 +138,35 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         return self.factory.makeDistribution(
             publish_root_dir=unicode(self.makeTemporaryDirectory()))
 
-    def makeScript(self, distribution=None):
+    def makeScript(self, distribution=None, run_setup=True):
         """Create a script for testing."""
         if distribution is None:
             distribution = self.makeDistro()
         script = GenerateContentsFiles(test_args=['-d', distribution.name])
         script.logger = DevNullLogger()
-        script.setUp()
+        script.txn = FakeTransaction()
+        if run_setup:
+            script.setUp()
+        else:
+            script.distribution = distribution
         return script
+
+    def writeMarkerFile(self, file_path):
+        """Create a marker file at location `file_path`.
+
+        An arbitrary string is written to the file, and flushed to the
+        filesystem.  Any surrounding directories are created as needed.
+
+        :param file_path: Full path to a file: optional directory prefix
+            followed by required file name.
+        :return: The arbitrary string that is also in the file.
+        """
+        marker_contents = self.factory.getUniqueString()
+        dir_name = os.path.dirname(file_path)
+        if not file_exists(dir_name):
+            os.makedirs(dir_name)
+        write_file(file_path, marker_contents)
+        return marker_contents
 
     def test_name_is_consistent(self):
         # Script instances for the same distro get the same name.
@@ -185,20 +198,23 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
     def test_looks_up_distro(self):
         # The script looks up and keeps the distribution named on the
         # command line.
-        distro = self.factory.makeDistribution()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         self.assertEqual(distro, script.distribution)
 
     def test_queryDistro(self):
         # queryDistro is a helper that invokes LpQueryDistro.
-        distroseries = self.factory.makeDistroSeries()
-        script = self.makeScript(distroseries.distribution)
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distro)
+        script = self.makeScript(distro)
         script.processOptions()
         self.assertEqual(distroseries.name, script.queryDistro('supported'))
 
     def test_getArchs(self):
         # getArchs returns a list of architectures in the distribution.
-        das = self.factory.makeDistroArchSeries()
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         script = self.makeScript(das.distroseries.distribution)
         self.assertEqual([das.architecturetag], script.getArchs())
 
@@ -220,7 +236,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
         self.assertEqual([package.suite], script.getPockets())
 
-    def test_getPocket_includes_release_pocket(self):
+    def test_getPockets_includes_release_pocket(self):
         # getPockets also includes the release pocket, which is named
         # after the distroseries without a suffix.
         distro = self.makeDistro()
@@ -235,7 +251,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         # writeAptContentsConf writes apt-contents.conf.  At a minimum
         # this will include a header based on apt_conf_header.template,
         # with the right distribution name interpolated.
-        self.makeContentArchive()
         distro = self.makeDistro()
         script = self.makeScript(distro)
         script.writeAptContentsConf([], [])
@@ -249,9 +264,9 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         # writeAptContentsConf adds sections based on
         # apt_conf_dist.template for every suite, with certain
         # parameters interpolated.
-        content_archive = self.makeContentArchive()
         distro = self.makeDistro()
         script = self.makeScript(distro)
+        content_archive = script.content_archive
         suite = self.factory.getUniqueString('suite')
         arch = self.factory.getUniqueString('arch')
         script.writeAptContentsConf([suite], [arch])
@@ -260,27 +275,32 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             % (script.content_archive, distro.name)).read()
         self.assertIn('tree "dists/%s"\n' % suite, apt_contents_conf)
         overrides_path = os.path.join(
-            content_archive, distro.name + "-contents",
-            distro.name + "-overrides")
+            content_archive, distro.name + "-overrides")
         self.assertIn('FileList "%s' % overrides_path, apt_contents_conf)
         self.assertIn('Architectures "%s source";' % arch, apt_contents_conf)
 
     def test_writeContentsTop(self):
         # writeContentsTop writes a Contents.top file based on a
         # standard template, with the distribution's title interpolated.
-        content_archive = self.makeContentArchive()
         distro = self.makeDistro()
         script = self.makeScript(distro)
-        script.writeContentsTop()
+        content_archive = script.content_archive
+        script.writeContentsTop(distro.name, distro.title)
+
         contents_top = file(
-            "%s/%s-contents/%s-misc/Contents.top"
-            % (content_archive, distro.name, distro.name)).read()
+            "%s/%s-misc/Contents.top" % (content_archive, distro.name)).read()
+
         self.assertIn("This file maps", contents_top)
         self.assertIn(distro.title, contents_top)
 
+    def test_setUp_places_content_archive_in_distroroot(self):
+        # The contents files are kept in subdirectories of distroroot.
+        script = self.makeScript()
+        self.assertThat(
+            script.content_archive, StartsWith(script.config.distroroot))
+
     def test_main(self):
         # If run end-to-end, the script generates Contents.gz files.
-        self.makeContentArchive()
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         processor = self.factory.makeProcessor()
@@ -297,7 +317,15 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
         self.assertNotEqual([], script.getPockets())
         fake_overrides(script, distroseries)
-        script.main()
+        script.process()
         self.assertTrue(file_exists(os.path.join(
             script.config.distsroot, suite,
             "Contents-%s.gz" % das.architecturetag)))
+
+    def test_run_script(self):
+        # The script will run stand-alone.
+        from canonical.launchpad.scripts.tests import run_script
+        self.layer.force_dirty_database()
+        retval, out, err = run_script(
+            'cronscripts/generate-contents-files.py', ['-d', 'ubuntu', '-q'])
+        self.assertEqual(0, retval)

@@ -12,13 +12,9 @@ __all__ = [
 
 
 from cStringIO import StringIO
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import timedelta
 import uuid
 
-from pytz import utc
 from sqlobject import (
     ForeignKey,
     SQLObjectNotFound,
@@ -31,15 +27,14 @@ from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     BlobTooLarge,
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.utils import utc_now
 
 
 class TemporaryBlobStorage(SQLBase):
@@ -104,8 +99,7 @@ class TemporaryStorageManager:
             # A week might be quite a long time, but it shouldn't hurt,
             # and it gives people enough time to create an account
             # before accessing the uploaded blob.
-            expires = (
-                datetime.utcnow().replace(tzinfo=utc) + timedelta(weeks=1))
+            expires = utc_now() + timedelta(weeks=1)
 
         # At this stage we could do some sort of throttling if we were
         # concerned about abuse of the temporary storage facility. For

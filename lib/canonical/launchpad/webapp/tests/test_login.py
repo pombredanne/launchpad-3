@@ -699,6 +699,8 @@ class TestOpenIDLogin(TestCaseWithFactory):
         self.assertIsInstance(sreg_extension, sreg.SRegRequest)
         self.assertEquals(['email', 'fullname'],
                           sorted(sreg_extension.allRequestedFields()))
+        self.assertEquals(sorted(sreg_extension.required),
+                          sorted(sreg_extension.allRequestedFields()))
 
     def test_logs_to_timeline(self):
         # Beginning an OpenID association makes an HTTP request to the

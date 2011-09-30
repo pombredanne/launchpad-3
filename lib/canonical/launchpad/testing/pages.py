@@ -3,10 +3,6 @@
 
 """Testing infrastructure for page tests."""
 
-# Stop lint warning about not initializing TestCase parent on
-# PageStoryTestCase, see the comment bellow.
-# pylint: disable-msg=W0231
-
 __metaclass__ = type
 
 import doctest
@@ -838,64 +834,6 @@ def setUpGlobs(test):
     test.globs['ws_uncache'] = ws_uncache
 
 
-class PageStoryTestCase(unittest.TestCase):
-    """A test case that represents a pagetest story
-
-    This is achieved by holding a testsuite for the story, and
-    delegating responsiblity for most methods to it.
-    We want this to be a TestCase instance and not a TestSuite
-    instance to be compatible with various test runners that
-    filter tests - they generally ignore test suites and may
-    select individual tests - but stories cannot be split up.
-    """
-
-    layer = PageTestLayer
-
-    def __init__(self, name, storysuite):
-        """Create a PageTest story from the given suite.
-
-        :param name: an identifier for the story, such as the directory
-            containing the tests.
-        :param storysuite: a test suite containing the tests to be run
-            as a story.
-        """
-        # we do not run the super __init__ because we are not using any of
-        # the base classes functionality, and we'd just have to give it a
-        # meaningless method.
-        self._description = name
-        self._suite = storysuite
-
-    def countTestCases(self):
-        return self._suite.countTestCases()
-
-    def shortDescription(self):
-        return self._description
-
-    def id(self):
-        return self.shortDescription()
-
-    def __str__(self):
-        return self.shortDescription()
-
-    def __repr__(self):
-        return "<%s name=%s>" % (self.__class__.__name__, self._description)
-
-    def run(self, result=None):
-        if result is None:
-            result = self.defaultTestResult()
-        PageTestLayer.startStory()
-        try:
-            # XXX Robert Collins 2006-01-17: we can hook in pre and post
-            # story actions here much more tidily (and in self.debug too)
-            # - probably via self.setUp and self.tearDown
-            self._suite.run(result)
-        finally:
-            PageTestLayer.endStory()
-
-    def debug(self):
-        self._suite.debug()
-
-
 # This function name doesn't follow our standard naming conventions,
 # but does follow the convention of the other doctest related *Suite()
 # functions.
@@ -907,8 +845,7 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     :param package: the package to resolve storydir relative to.  Defaults
         to the caller's package.
 
-    The unnumbered page tests will be added to the suite individually,
-    while the numbered tests will be run together as a story.
+    Each file is added as a separate DocFileTest.
     """
     # we need to normalise the package name here, because it
     # involves checking the parent stack frame.  Otherwise the
@@ -920,38 +857,14 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     filenames = set(filename
                     for filename in os.listdir(abs_storydir)
                     if filename.lower().endswith('.txt'))
-    numberedfilenames = set(filename for filename in filenames
-                            if len(filename) > 4
-                            and filename[:2].isdigit()
-                            and filename[2] == '-')
-    unnumberedfilenames = filenames - numberedfilenames
-
-    # A predictable order is important, even if it remains officially
-    # undefined for un-numbered filenames.
-    numberedfilenames = sorted(numberedfilenames)
-    unnumberedfilenames = sorted(unnumberedfilenames)
 
     suite = unittest.TestSuite()
-    checker = doctest.OutputChecker()
-    # Add unnumbered tests to the suite individually.
-    if unnumberedfilenames:
+    # Add tests to the suite individually.
+    if filenames:
+        checker = doctest.OutputChecker()
         suite.addTest(LayeredDocFileSuite(
             package=package, checker=checker, stdout_logging=False,
             layer=PageTestLayer, setUp=setUp,
             *[os.path.join(storydir, filename)
-              for filename in unnumberedfilenames]))
-
-    # Add numbered tests to the suite as a single story.
-    if numberedfilenames:
-        storysuite = LayeredDocFileSuite(
-            package=package, checker=checker, stdout_logging=False,
-            setUp=setUp,
-            *[os.path.join(storydir, filename)
-              for filename in numberedfilenames])
-        story_test_id = "story-%s" % stripped_storydir
-        get_id = lambda: story_test_id
-        for test in storysuite:
-            test.id = get_id
-        suite.addTest(PageStoryTestCase(story_test_id, storysuite))
-
+              for filename in filenames]))
     return suite

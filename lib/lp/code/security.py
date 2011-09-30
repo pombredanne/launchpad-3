@@ -22,14 +22,15 @@ class BranchSubscriptionEdit(AuthorizationBase):
 
         Any team member can edit a branch subscription for their team.
         Launchpad Admins can also edit any branch subscription.
+        The owner of the subscribed branch can edit the subscription. If the
+        branch owner is a team, then members of the team can edit the
+        subscription.
         """
-        return (user.inTeam(self.obj.person) or
+        return (user.inTeam(self.obj.branch.owner) or
+                user.inTeam(self.obj.person) or
                 user.inTeam(self.obj.subscribed_by) or
-                user.in_admin or
-                user.in_bazaar_experts)
+                user.in_admin)
 
 
 class BranchSubscriptionView(BranchSubscriptionEdit):
     permission = 'launchpad.View'
-
-

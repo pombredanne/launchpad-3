@@ -14,6 +14,8 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
+from lazr.restful.utils import get_current_browser_request
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
@@ -27,9 +29,8 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     )
 from canonical.launchpad.webapp.url import urlappend
-from canonical.lazr.utils import get_current_browser_request
 from canonical.librarian.client import url_path_quote
-from lazr.restful.interfaces import IWebBrowserOriginatingRequest
+from lp.app.errors import GoneError
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -45,13 +46,9 @@ class LibraryFileAliasView(LaunchpadView):
         # Refuse to serve restricted files. We're not sure that no
         # restricted files are being leaked in the traversal hierarchy.
         assert not self.context.restricted
-        # Perhaps we should give a 404 at this point rather than asserting?
-        # If someone has a page open with an attachment link, then someone
-        # else deletes the attachment, this is a normal situation, not an
-        # error. -- RBC 20100726.
-        assert not self.context.deleted, (
-            "LibraryFileAliasView can not operate on deleted librarian files,"
-            " since their URL is undefined.")
+        # If the LFA is deleted, throw a 410.
+        if self.context.deleted:
+            raise GoneError("File deleted.")
         # Redirect based on the scheme of the request, as set by
         # Apache in the 'X-SCHEME' environment variable, which is
         # mapped to 'HTTP_X_SCHEME.  Note that only some requests

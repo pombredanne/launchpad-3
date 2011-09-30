@@ -31,7 +31,6 @@ Let's reopen it and close it again, to ensure that the date closed isn't
 in the future.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_eight = getUtility(IBugSet).get(8)
     >>> len(bug_eight.bugtasks)
@@ -42,7 +41,6 @@ in the future.
     ...     bugtask = getUtility(IBugSet).get(bug_id).bugtasks[bugtask_index]
     ...     bugtask.transitionToStatus(
     ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    ...     syncUpdate(bugtask)
     >>> fix_bug(8)
 
 If we fix a few other bugs, these will turn up first in the list. It
@@ -79,7 +77,6 @@ he's not subscribed to it.
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_two.setPrivate(True, getUtility(ILaunchBag).user)
     True
-    >>> syncUpdate(bug_two)
 
     >>> login('no-priv@canonical.com')
     >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
@@ -120,7 +117,6 @@ Only five bugs are returned by default:
     ...         comment='Test bug #%s.' % index))
     ...     bug.bugtasks[0].transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    ...     syncUpdate(bug.bugtasks[0])
 
     >>> len(bugs_view.getMostRecentlyFixedBugs())
     5

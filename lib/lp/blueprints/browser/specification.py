@@ -99,7 +99,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     EnumChoiceWidget,
-    InlineEditPickerWidget,
+    InlinePersonEditPickerWidget,
     TextAreaEditorWidget,
     TextLineEditorWidget,
     )
@@ -576,7 +576,7 @@ class SpecificationView(SpecificationSimpleView):
 
     @property
     def approver_widget(self):
-        return InlineEditPickerWidget(
+        return InlinePersonEditPickerWidget(
             self.context, ISpecification['approver'],
             format_link(self.context.approver),
             header='Change approver', edit_view='+people',
@@ -584,7 +584,7 @@ class SpecificationView(SpecificationSimpleView):
 
     @property
     def drafter_widget(self):
-        return InlineEditPickerWidget(
+        return InlinePersonEditPickerWidget(
             self.context, ISpecification['drafter'],
             format_link(self.context.drafter),
             header='Change drafter', edit_view='+people',
@@ -592,7 +592,7 @@ class SpecificationView(SpecificationSimpleView):
 
     @property
     def assignee_widget(self):
-        return InlineEditPickerWidget(
+        return InlinePersonEditPickerWidget(
             self.context, ISpecification['assignee'],
             format_link(self.context.assignee),
             header='Change assignee', edit_view='+people',

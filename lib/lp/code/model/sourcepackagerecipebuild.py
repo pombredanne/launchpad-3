@@ -51,7 +51,10 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
     )
-from lp.code.errors import BuildAlreadyPending
+from lp.code.errors import (
+    BuildAlreadyPending,
+    BuildNotAllowedForDistro,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildJob,
@@ -226,6 +229,9 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     logger.debug(
                         ' - daily build failed for %s: %s',
                         series_name, str(e))
+                except BuildNotAllowedForDistro:
+                    logger.debug(
+                        ' - cannot build against %s.' % series_name)
                 except ProgrammingError:
                     raise
                 except:

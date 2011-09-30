@@ -10,6 +10,7 @@ __all__ = [
     "BugTaskAssigneeWidget",
     "BugTaskBugWatchWidget",
     "BugTaskSourcePackageNameWidget",
+    "BugTaskTargetWidget",
     "BugWatchEditForm",
     "DBItemDisplayWidget",
     "NewLineToSpacesWidget",
@@ -58,17 +59,23 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
-from lp.app.widgets.popup import VocabularyPickerWidget
+from lp.app.widgets.popup import (
+    PersonPickerWidget,
+    VocabularyPickerWidget,
+    )
 from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
     )
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet,
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
+from lp.bugs.vocabulary import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 
 
@@ -90,7 +97,7 @@ class BugTaskAssigneeWidget(Widget):
         #
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
-        self.assignee_chooser_widget = VocabularyPickerWidget(
+        self.assignee_chooser_widget = PersonPickerWidget(
             context, context.vocabulary, request)
         self.setUpNames()
 
@@ -469,6 +476,14 @@ class BugTaskBugWatchWidget(RadioWidget):
             contents='\n'.join(rendered_items))
 
 
+class BugTaskTargetWidget(LaunchpadTargetWidget):
+
+    def getDistributionVocabulary(self):
+        distro = self.context.context.distribution
+        vocabulary = UsesBugsDistributionVocabulary(distro)
+        return vocabulary
+
+
 class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
     """A widget for associating a bugtask with a SourcePackageName.
 
@@ -495,6 +510,17 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
 
         distribution = self.getDistribution()
 
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            try:
+                source = self.context.vocabulary.getTermByToken(input).value
+            except NotFoundError:
+                raise ConversionError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s." % (input, distribution.displayname))
+            else:
+                return source
+        # Else the untrusted SPN vocab was used so it needs seconday
+        # verification.
         try:
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:

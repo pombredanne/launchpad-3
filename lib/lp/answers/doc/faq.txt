@@ -281,9 +281,6 @@ answered by the FAQ:
 
     # Flush the faq attribute change.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(fnord_question)
-
     >>> for question in firefox_faq.related_questions:
     ...     print question.title
     Are there Fnords on the web?
@@ -301,7 +298,6 @@ A FAQ can be linked to multiple question:
     >>> print other_question.status.title
     Answered
 
-    >>> syncUpdate(other_question)
     >>> for question in firefox_faq.related_questions:
     ...     print question.title
     Firefox loses focus and gets stuck
@@ -317,7 +313,6 @@ again:
 
 After this, only the original question will remain linked to the FAQ.
 
-    >>> syncUpdate(other_question)
     >>> for question in firefox_faq.related_questions:
     ...     print question.title
     Are there Fnords on the web?

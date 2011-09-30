@@ -18,6 +18,7 @@ __all__ = [
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
     'IOfficialBugTagTargetRestricted',
+    'ISeriesBugTarget',
     ]
 
 
@@ -271,15 +272,6 @@ class IHasBugs(Interface):
         hardware_is_linked_to_bug to True.
         """
 
-    def getBugCounts(user, statuses=None):
-        """Return a dict with the number of bugs in each possible status.
-
-            :user: Only bugs the user has permission to view will be
-                   counted.
-            :statuses: Only bugs with these statuses will be counted. If
-                       None, all statuses will be included.
-        """
-
     def getBugTaskWeightFunction():
         """Return a function that is used to weight the bug tasks.
 
@@ -303,6 +295,8 @@ class IBugTarget(IHasBugs):
     # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")
+
+    pillar = Attribute("The pillar containing this target.")
 
     bug_reporting_guidelines = exported(
         Text(
@@ -464,3 +458,10 @@ class IOfficialBugTag(Interface):
         schema=IOfficialBugTagTarget,
         description=
             u'The distribution or product having this official bug tag.')
+
+
+class ISeriesBugTarget(Interface):
+    """An `IBugTarget` which is a series."""
+
+    bugtarget_parent = Attribute(
+        "Non-series parent of this series bug target.")

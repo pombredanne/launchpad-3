@@ -11,6 +11,7 @@
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+    <authorizations module=".security" />
 
     <!-- PackageCloner -->
 
@@ -180,6 +181,7 @@
                 is_delayed_copy
                 isPPA
                 package_copy_job
+                package_copy_job_id
                 package_name
                 package_version
                 section_name
@@ -375,6 +377,12 @@
         <allow
             interface="lp.soyuz.interfaces.processor.IProcessorFamilySet"/>
     </securedutility>
+    <securedutility
+        class="lp.soyuz.model.processor.ProcessorSet"
+        provides="lp.soyuz.interfaces.processor.IProcessorSet">
+        <allow
+            interface="lp.soyuz.interfaces.processor.IProcessorSet"/>
+    </securedutility>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -398,6 +406,12 @@
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
             set_attributes="description displayname publish status"/>
+        <!--
+           NOTE: The 'private' permission controls who can turn a public
+           archive into a private one, and vice versa. The logic that says this
+           requires launchpad.Commercial permissions is duplicated in
+           IArchive.validatePPA.
+          -->
         <require
             permission="launchpad.Commercial"
 	    interface="lp.soyuz.interfaces.archive.IArchiveCommercial"
@@ -457,31 +471,7 @@
         class="lp.soyuz.model.archivepermission.ArchivePermissionSet"
         provides="lp.soyuz.interfaces.archivepermission.IArchivePermissionSet">
         <allow
-            attributes="
-                checkAuthenticated
-                componentsForUploader
-                uploadersForComponent
-                packagesForUploader
-                uploadersForPackage
-                queueAdminsForComponent
-                componentsForQueueAdmin
-                permissionsForPerson
-                uploadersForPackageset
-                packagesetsForUploader
-                packagesetsForSource
-                packagesetsForSourceUploader
-                isSourceUploadAllowed
-                newPackageUploader
-                newComponentUploader
-                newQueueAdmin
-                deletePackageUploader
-                deleteComponentUploader
-                deleteQueueAdmin"/>
-        <require
-            permission="launchpad.Edit"
-            attributes="
-                newPackagesetUploader
-                deletePackagesetUploader"/>
+            interface="lp.soyuz.interfaces.archivepermission.IArchivePermissionSet"/>
     </securedutility>
 
     <!-- BinaryPackageBuild -->
@@ -928,15 +918,21 @@
 
     <!-- PackageCopyJob -->
     <class class=".model.packagecopyjob.PackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob"/>
-      <require permission="launchpad.Edit" set_schema=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PlainPackageCopyJob -->
     <class class=".model.packagecopyjob.PlainPackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic" />
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PackageCopyPolicy -->
@@ -990,6 +986,40 @@
    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
         <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
    </class>
+
+    <!-- BinaryPackagePath -->
+
+    <class
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePath"/>
+    </class>
+
+    <!-- BinaryPackagePathSet -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath"
+        provides="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet"/>
+    </securedutility>
+
+    <!-- BinaryPackageReleaseContents -->
+
+    <class
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContents"/>
+    </class>
+
+    <!-- BinaryPackageReleaseContentsSet -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents"
+        provides="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet"/>
+    </securedutility>
 
    <webservice:register module="lp.soyuz.interfaces.webservice" />
 

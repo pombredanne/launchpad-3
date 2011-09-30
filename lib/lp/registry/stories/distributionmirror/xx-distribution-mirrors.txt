@@ -12,13 +12,13 @@ on their status and content.
     ...     country = extract_text(header.find('th'))
     ...     mirrors = []
     ...     for tr in header.findNextSiblings('tr'):
-    ...         if 'highlight' in str(tr.attrs):
+    ...         if 'head' in str(tr.attrs):
     ...             print "%s: %s" % (country, mirrors)
     ...             country = extract_text(tr.find('th'))
     ...             if country == 'Total':
     ...                 break
     ...             mirrors = []
-    ...         elif 'lesser' in str(tr.attrs):
+    ...         elif 'section-break' in str(tr.attrs):
     ...             # This is an empty row to visually separate the mirrors
     ...             # from different countries, so we'll just skip it.
     ...             pass
@@ -40,7 +40,7 @@ The archive mirrors display the "freshness", how far behind they are.
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Archive mirrors').click()
     >>> print browser.title
-    Mirrors of Ubuntu Linux...
+    Mirrors :...
     >>> print_mirrors_by_countries(browser.contents)
     Antarctica: [(u'Archive-mirror2', u'http', u'128 Kbps',
       u'Six hours behind')]

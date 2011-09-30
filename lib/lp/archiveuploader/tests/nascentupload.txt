@@ -45,14 +45,14 @@ Constructing a NascentUpload object
 Constructing a NascentUpload instance verifies that the changes file
 specified exists and tries to build a ChangesFile (see
 doc/nascentuploadfile.txt) object based on that. If anything goes
-wrong during this process FatalUploadError is raised:
+wrong during this process UploadError is raised:
 
     >>> from lp.services.log.logger import DevNullLogger, FakeLogger
     >>> NascentUpload.from_changesfile_path(
     ...     datadir("DOES-NOT-EXIST"), buildd_policy, FakeLogger())
     Traceback (most recent call last):
     ...
-    FatalUploadError:...
+    UploadError:...
 
 Otherwise a ChangesFile object is ready to use.
 
@@ -387,8 +387,6 @@ with encoding.guess()).
 The ed source would be in NEW, so punt it into accepted.
 
     >>> ed_src.queue_root.setAccepted()
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(ed_src.queue_root)
 
 
 Allow uploads missing debian/copyright file
@@ -434,7 +432,6 @@ Nothing is stored in the SPR.copyright field.
 Let's reject the upload to avoid confusion during the next tests:
 
     >>> nocopyright_queue.setRejected()
-    >>> syncUpdate(nocopyright_queue)
 
 
 Refuse to ACCEPT duplicated sources
@@ -546,7 +543,6 @@ Upload new source 'multibar', step 1:
 Once we have a new queue entry we are able to accept it, step 2:
 
     >>> multibar_src_queue.setAccepted()
-    >>> syncUpdate(multibar_src_queue)
     >>> multibar_src_queue.status.name
     'ACCEPTED'
 

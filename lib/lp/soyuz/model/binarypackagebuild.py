@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -29,9 +29,9 @@ from storm.store import (
     EmptyResultSet,
     Store,
     )
+from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import (
@@ -56,10 +56,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -83,6 +79,10 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuildDerived,
     )
 from lp.services.job.model.job import Job
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
@@ -570,7 +570,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 # Analysis of previous build data shows that a build rate
                 # of 6 KB/second is realistic. Furthermore we have to add
                 # another minute for generic build overhead.
-                estimate = int(package_size/6.0/60 + 1)
+                estimate = int(package_size / 6.0 / 60 + 1)
             else:
                 # No historic build times and no package size available,
                 # assume a build time of 5 minutes.
@@ -862,10 +862,11 @@ class BinaryPackageBuildSet:
         :param tables: container to which to add joined tables.
         :param status: optional build state for which to add a query clause if
             present.
-        :param name: optional source package release name for which to add a
-            query clause if present.
-        :param pocket: optional pocket for which to add a query clause if
+        :param name: optional source package release name (or list of source
+            package release names) for which to add a query clause if
             present.
+        :param pocket: optional pocket (or list of pockets) for which to add a
+            query clause if present.
         :param arch_tag: optional architecture tag for which to add a
             query clause if present.
         """
@@ -883,7 +884,10 @@ class BinaryPackageBuildSet:
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            queries.append('PackageBuild.pocket=%s' % sqlvalues(pocket))
+            if not isinstance(pocket, (list, tuple)):
+                pocket = (pocket,)
+
+            queries.append('PackageBuild.pocket IN %s' % sqlvalues(pocket))
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
@@ -896,12 +900,22 @@ class BinaryPackageBuildSet:
         # Add query clause that filters on source package release name if the
         # latter is provided.
         if name is not None:
-            queries.append('''
-                BinaryPackageBuild.source_package_release =
-                    SourcePackageRelease.id AND
-                SourcePackageRelease.sourcepackagename = SourcePackageName.id
-                AND SourcepackageName.name LIKE '%%' || %s || '%%'
-            ''' % quote_like(name))
+            if not isinstance(name, (list, tuple)):
+                queries.append('''
+                    BinaryPackageBuild.source_package_release =
+                        SourcePackageRelease.id AND
+                    SourcePackageRelease.sourcepackagename =
+                        SourcePackageName.id
+                    AND SourcepackageName.name LIKE '%%' || %s || '%%'
+                ''' % quote_like(name))
+            else:
+                queries.append('''
+                    BinaryPackageBuild.source_package_release =
+                        SourcePackageRelease.id AND
+                    SourcePackageRelease.sourcepackagename =
+                        SourcePackageName.id
+                    AND SourcepackageName.name IN %s
+                ''' % sqlvalues(name))
             tables.extend(['SourcePackageRelease', 'SourcePackageName'])
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
@@ -1000,23 +1014,29 @@ class BinaryPackageBuildSet:
 
         # Ordering according status
         # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
-        # * SUPERSEDED & All by -datecreated
+        # * SUPERSEDED & All by -PackageBuild.build_farm_job
+        #   (nearly equivalent to -datecreated, but much more
+        #   efficient.)
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status in [
             BuildStatus.NEEDSBUILD,
             BuildStatus.BUILDING,
             BuildStatus.UPLOADING]:
-            orderBy = ["-BuildQueue.lastscore", "BinaryPackageBuild.id"]
+            order_by = [Desc(BuildQueue.lastscore), BinaryPackageBuild.id]
+            order_by_table = BuildQueue
             clauseTables.append('BuildQueue')
             clauseTables.append('BuildPackageJob')
             condition_clauses.append(
                 'BuildPackageJob.build = BinaryPackageBuild.id')
             condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
         elif status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-BuildFarmJob.date_created"]
+            order_by = [Desc(PackageBuild.build_farm_job_id)]
+            order_by_table = PackageBuild
         else:
-            orderBy = ["-BuildFarmJob.date_finished"]
+            order_by = [Desc(BuildFarmJob.date_finished),
+                        BinaryPackageBuild.id]
+            order_by_table = BuildFarmJob
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
@@ -1029,14 +1049,22 @@ class BinaryPackageBuildSet:
             "PackageBuild.archive IN %s" %
             sqlvalues(list(distribution.all_distro_archive_ids)))
 
+        store = Store.of(distribution)
+        clauseTables = [BinaryPackageBuild] + clauseTables
+        result_set = store.using(*clauseTables).find(
+            (BinaryPackageBuild, order_by_table), *condition_clauses)
+        result_set.order_by(*order_by)
+
+        def get_bpp(result_row):
+            return result_row[0]
+
         return self._decorate_with_prejoins(
-            BinaryPackageBuild.select(' AND '.join(condition_clauses),
-            clauseTables=clauseTables, orderBy=orderBy))
+            DecoratedResultSet(result_set, result_decorator=get_bpp))
 
     def _decorate_with_prejoins(self, result_set):
         """Decorate build records with related data prefetch functionality."""
         # Grab the native storm result set.
-        result_set = removeSecurityProxy(result_set)._result_set
+        result_set = IResultSet(result_set)
         decorated_results = DecoratedResultSet(
             result_set, pre_iter_hook=self._prefetchBuildData)
         return decorated_results

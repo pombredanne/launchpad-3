@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -25,6 +25,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     reconnect_stores,
+    ZopelessDatabaseLayer,
     )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
@@ -36,6 +37,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.enums import (
@@ -43,9 +45,7 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
@@ -56,6 +56,11 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    find_waiting_jobs,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -65,8 +70,8 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import HasQueryCount
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.matchers import HasQueryCount
 
 
 class SoyuzTestPublisher:
@@ -91,7 +96,7 @@ class SoyuzTestPublisher:
         :return: The `IDistroSeries` that got set as default.
         """
         if distroseries is None:
-            distroseries = self.factory.makeDistroRelease()
+            distroseries = self.factory.makeDistroSeries()
         self.distroseries = distroseries
         # Set up a person that has a GPG key.
         self.person = getUtility(IPersonSet).getByName('name16')
@@ -161,7 +166,7 @@ class SoyuzTestPublisher:
         signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, archive, changes_file_name, changes_file_content,
-            signing_key)
+            signing_key=signing_key)
 
         status_to_method = {
             PackageUploadStatus.DONE: 'setDone',
@@ -277,7 +282,8 @@ class SoyuzTestPublisher:
             datepublished=datepublished,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            archive=archive)
+            archive=archive,
+            creator=creator)
 
         return spph
 
@@ -516,11 +522,11 @@ class SoyuzTestPublisher:
         if source_pub is None:
             distribution = self.factory.makeDistribution(
                 name='youbuntu', displayname='Youbuntu')
-            distroseries = self.factory.makeDistroRelease(name='busy',
-                distribution=distribution)
+            distroseries = self.factory.makeDistroSeries(
+                name='busy', distribution=distribution)
             source_package_name = self.factory.makeSourcePackageName(
                 name='bonkers')
-            source_package = self.factory.makeSourcePackage(
+            self.factory.makeSourcePackage(
                 sourcepackagename=source_package_name,
                 distroseries=distroseries)
             component = self.factory.makeComponent('multiverse')
@@ -542,7 +548,7 @@ class SoyuzTestPublisher:
                 binarypackagename=binary_package_name,
                 summary='summary for %s' % name,
                 build=build, component=source_pub.component)
-            bpph = self.factory.makeBinaryPackagePublishingHistory(
+            self.factory.makeBinaryPackagePublishingHistory(
                 binarypackagerelease=bpr, distroarchseries=das)
         return dict(
             distroseries=source_pub.distroseries,
@@ -558,7 +564,8 @@ class SoyuzTestPublisher:
         reconnect_stores(config.statistician.dbuser)
         distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
 
-        distroseries.updateCompletePackageCache(
+        DistroSeriesPackageCache.updateAll(
+            distroseries,
             archive=distroseries.distribution.main_archive,
             ztm=transaction,
             log=DevNullLogger())
@@ -696,10 +703,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # And an oops should be filed for the error.
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        self.assertTrue("PoolFileOverwriteError" in error_text)
+        self.assertTrue("PoolFileOverwriteError" in str(error_report))
 
         self.layer.commit()
         self.assertEqual(
@@ -863,7 +867,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         """
         test_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         source = self.test_publisher.getPubSource(archive=test_archive)
         self.test_publisher.getPubBinaries(pub_source=source)
         return source
@@ -891,7 +895,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
             self.assertEquals(copy.component.name, 'universe')
 
     def test_overrideFromAncestry_fallback_to_source_component(self):
-        # overrideFromancestry on the lack of ancestry, falls back to the
+        # overrideFromAncestry on the lack of ancestry, falls back to the
         # component the source was originally uploaded to.
         source = self.makeSource()
 
@@ -975,7 +979,8 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         # Test a PPA publication with ancestry
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         spr = self.factory.makeSourcePackageRelease()
-        spph = self.factory.makeSourcePackagePublishingHistory(
+        # We don't reference the first spph so it doesn't get a name.
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=ppa)
         spph2 = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=ppa)
@@ -1006,6 +1011,15 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         self.assertEqual('universe', copy.component.name)
         # Section has no default so it comes from the old publication.
         self.assertEqual(spph.section, copy.section)
+
+    def test_copyTo_sets_ancestor(self):
+        # SPPH's ancestor get's populated when a spph is copied over.
+        target_archive = self.factory.makeArchive()
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copy = spph.copyTo(
+            spph.distroseries, spph.pocket, target_archive)
+
+        self.assertEqual(spph, copy.ancestor)
 
 
 class BuildRecordCreationTests(TestNativePublishingBase):
@@ -1162,6 +1176,62 @@ class PublishingSetTests(TestCaseWithFactory):
         record = self.publishing_set.getByIdAndArchive(
             binary_publishing.id, wrong_archive, source=False)
         self.assertEqual(None, record)
+
+
+class TestPublishingSetLite(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def enableDistroDerivation(self):
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+
+    def test_requestDeletion_marks_SPPHs_deleted(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
+
+    def test_requestDeletion_leaves_other_SPPHs_alone(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        other_spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [other_spph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
+
+    def test_requestDeletion_marks_attached_BPPHs_deleted(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
+
+    def test_requestDeletion_leaves_other_BPPHs_alone(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        unrelated_spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [unrelated_spph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
+
+    def test_requestDeletion_accepts_empty_sources_list(self):
+        person = self.factory.makePerson()
+        getUtility(IPublishingSet).requestDeletion([], person)
+        # The test is that this does not fail.
+        Store.of(person).flush()
+
+    def test_requestDeletion_creates_DistroSeriesDifferenceJobs(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        series = dsp.derived_series
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            series, pocket=PackagePublishingPocket.RELEASE)
+        spn = spph.sourcepackagerelease.sourcepackagename
+
+        self.enableDistroDerivation()
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+
+        self.assertEqual(
+            1, len(find_waiting_jobs(
+                dsp.derived_series, spn, dsp.parent_series)))
 
 
 class TestSourceDomination(TestNativePublishingBase):
@@ -1380,12 +1450,13 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         """Publications in other series shouldn't be found."""
         bins = self.getPubBinaries(architecturespecific=False)
         series = self.factory.makeDistroSeries()
-        arch = self.factory.makeDistroArchSeries(
+        self.factory.makeDistroArchSeries(
             distroseries=series, architecturetag='i386')
         foreign_bins = bins[0].copyTo(
             series, bins[0].pocket, bins[0].archive)
         self.checkOtherPublications(bins[0], bins)
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
+
 
 class TestSPPHModel(TestCaseWithFactory):
     """Test parts of the SourcePackagePublishingHistory model."""
@@ -1486,7 +1557,8 @@ class TestPublishBinaries(TestCaseWithFactory):
         target_das_a = self.factory.makeDistroArchSeries()
         target_das_b = self.factory.makeDistroArchSeries(
             distroseries=target_das_a.distroseries)
-        target_das_c = self.factory.makeDistroArchSeries(
+        # We don't reference target_das_c so it doesn't get a name.
+        self.factory.makeDistroArchSeries(
             distroseries=target_das_a.distroseries, enabled=False)
         args = self.makeArgs([bpr], target_das_a.distroseries)
         bpphs = getUtility(IPublishingSet).publishBinaries(
@@ -1502,7 +1574,8 @@ class TestPublishBinaries(TestCaseWithFactory):
         target_das = self.factory.makeDistroArchSeries()
         args = self.makeArgs([bpr], target_das.distroseries)
         [new_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
-        [] = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertContentEqual(
+            [], getUtility(IPublishingSet).publishBinaries(**args))
 
         # But changing the target (eg. to RELEASE instead of BACKPORTS)
         # causes a new publication to be created.
@@ -1541,4 +1614,5 @@ class TestPublishBinaries(TestCaseWithFactory):
 
         # A second copy does nothing, because it checks in the debug
         # archive too.
-        [] = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertContentEqual(
+            [], getUtility(IPublishingSet).publishBinaries(**args))

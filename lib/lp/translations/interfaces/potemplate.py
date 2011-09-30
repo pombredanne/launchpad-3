@@ -33,6 +33,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
@@ -112,7 +113,7 @@ class IPOTemplate(IRosettaStats):
             "unique name in its package. It's important to get this "
             "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
-        required=True))
+        constraint=valid_name, required=True))
 
     translation_domain = exported(TextLine(
         title=_("Translation domain"),
@@ -329,6 +330,13 @@ class IPOTemplate(IRosettaStats):
         translations one `POFile` at a time, you can drop any cached
         data about a `POFile` as soon as you're done with it.  Use this
         method to do that.
+        """
+
+    def setActive(active):
+        """Toggle the iscurrent flag.
+
+        Takes care of updating the suggestive potempalte cache when the
+        template is disabled.
         """
 
     def getHeader():
@@ -600,16 +608,13 @@ class IPOTemplateSubset(Interface):
         The `IPOTemplate` is restricted to this concrete `IPOTemplateSubset`.
         """
 
-    def getPOTemplateByTranslationDomain(translation_domain):
-        """Return the `IPOTemplate` with the given translation_domain.
+    def getPOTemplatesByTranslationDomain(translation_domain):
+        """Return the `IPOTemplate`s with the given translation_domain.
 
-        The `IPOTemplate` is restricted to this concrete
-        `IPOTemplateSubset`.  If multiple templates in the subset match,
-        a warning is logged.
+        The search is restricted to this concrete `IPOTemplateSubset`.
 
-        :return: The single template in this `IPOTemplateSubset` with
-            the given translation_domain, if there is exactly one match.
-            None otherwise.
+        :return: An ORM result set containing the templates in the given
+            `IPOTemplateSubset` with the given translation_domain.
         """
 
     def getPOTemplateByPath(path):
@@ -689,6 +694,12 @@ class IPOTemplateSet(Interface):
         """Erase suggestive-templates cache.
 
         :return: Number of rows deleted.
+        """
+
+    def removeFromSuggestivePOTemplatesCache(potemplate):
+        """Remove the given potemplate from the suggestive-templates cache.
+
+        :return: True if the template was in the cache.
         """
 
     def populateSuggestivePOTemplatesCache():
@@ -792,3 +803,9 @@ class ITranslationTemplatesCollection(Interface):
 
     def select(*args):
         """Return a ResultSet for this collection with values set to args."""
+
+    def joinInner(cls, *conditions):
+        """Inner-join `cls` into the query."""
+
+    def joinOuter(cls, *conditions):
+        """Outer-join `cls` into the query."""

@@ -67,7 +67,7 @@ The subscribers portlet now contains the new subscriber's name.
     ...     'http://bugs.launchpad.dev/bugs/1/'
     ...     '+bug-portlet-subscribers-details')
     >>> print_direct_subscribers(user_browser.contents)
-    David Allouche
+    David Allouche (Unsubscribe)
     Sample Person
     Steve Alexander
 
@@ -110,8 +110,8 @@ The subscribers portlet displays the new subscribed team.
     ...     'http://bugs.launchpad.dev/bugs/1/'
     ...     '+bug-portlet-subscribers-details')
     >>> print_direct_subscribers(user_browser.contents)
-    David Allouche
-    Landscape Developers
+    David Allouche (Unsubscribe)
+    Landscape Developers (Unsubscribe)
     Sample Person
     Steve Alexander
 
@@ -144,11 +144,11 @@ private team.
     ...     'http://bugs.launchpad.dev/bugs/1/'
     ...     '+bug-portlet-subscribers-details')
     >>> print_direct_subscribers(foobar_browser.contents)
-    David Allouche
-    Landscape Developers
+    David Allouche (Unsubscribe)
+    Landscape Developers (Unsubscribe)
     Private Team (Unsubscribe)
-    Sample Person
-    Steve Alexander
+    Sample Person (Unsubscribe)
+    Steve Alexander (Unsubscribe)
 
 Someone not in the team will not see the private team in the
 subscribers list.
@@ -157,8 +157,8 @@ subscribers list.
     ...     'http://bugs.launchpad.dev/bugs/1/'
     ...     '+bug-portlet-subscribers-details')
     >>> print_direct_subscribers(user_browser.contents)
-    David Allouche
-    Landscape Developers
+    David Allouche (Unsubscribe)
+    Landscape Developers (Unsubscribe)
     Sample Person
     Steve Alexander
 

@@ -9,9 +9,6 @@ people, a team and its team mailing list.
     # and change their mailing list auto-subscription settings.
     >>> login('foo.bar@canonical.com')
 
-    # We'll need this throughout the test script.
-    >>> from canonical.launchpad.ftests import syncUpdate
-
     >>> from lp.registry.tests.mailinglists_helper import (
     ...     get_alternative_email, print_addresses)
     >>> anne = factory.makePersonByName('Anne')
@@ -158,7 +155,6 @@ Once Anne validates her new address, she can post from it.
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
-    >>> syncUpdate(alternative)
 
 
 MailingListSubscription objects
@@ -1420,17 +1416,14 @@ DEACTIVATED state.
     # the security context in order to set it.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.MODIFIED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     >>> list_seven.unsubscribe(teri)
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.UPDATING
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     >>> list_seven.unsubscribe(teri)
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.MOD_FAILED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     >>> list_seven.unsubscribe(teri)
 
@@ -1439,35 +1432,30 @@ to.
 
     # We don't need to test the INACTIVE state, as that's represented above.
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.REGISTERED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not usable: Team 7
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.APPROVED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not usable: Team 7
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.DECLINED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not usable: Team 7
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.CONSTRUCTING
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not usable: Team 7
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.FAILED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
@@ -1475,7 +1463,6 @@ to.
 
     >>> removeSecurityProxy(list_seven).status = (
     ...     MailingListStatus.DEACTIVATING)
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...

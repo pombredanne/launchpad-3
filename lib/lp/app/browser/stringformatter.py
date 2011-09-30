@@ -4,6 +4,7 @@
 """TALES formatter for strings."""
 from base64 import urlsafe_b64encode
 
+
 __metaclass__ = type
 __all__ = [
     'add_word_breaks',
@@ -34,6 +35,10 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.utils import (
+    re_email_address,
+    obfuscate_email,
+    )
 
 
 def escape(text, quote=True):
@@ -237,7 +242,7 @@ def linkify_bug_numbers(text):
 
 def extract_email_addresses(text):
     '''Unique email addresses in the text.'''
-    matches = re.finditer(FormattersAPI._re_email, text)
+    matches = re.finditer(re_email_address, text)
     return list(set([match.group() for match in matches]))
 
 
@@ -279,7 +284,8 @@ class FormattersAPI:
         # linkify to the general bug url.
         url = '/bugs/%s' % bugnum
         # The text will have already been cgi escaped.
-        return '<a href="%s">%s</a>%s' % (url, text, trailers)
+        return '<a href="%s" class="bug-link">%s</a>%s' % (
+            url, text, trailers)
 
     @staticmethod
     def _handle_parens_in_trailers(url, trailers):
@@ -361,12 +367,13 @@ class FormattersAPI:
             # devaluing the return on effort for spammers that consider
             # using Launchpad.
             if not FormattersAPI._linkify_url_should_be_ignored(url):
-                link_string = ('<a rel="nofollow" '
-                               'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
-                                    'url': cgi.escape(url, quote=True),
-                                    'linked_text': add_word_breaks(cgi.escape(url)),
-                                    'trailers': cgi.escape(trailers)
-                                    })
+                link_string = (
+                    '<a rel="nofollow" '
+                    'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
+                        'url': cgi.escape(url, quote=True),
+                        'linked_text': add_word_breaks(cgi.escape(url)),
+                        'trailers': cgi.escape(trailers)
+                        })
                 return link_string
             else:
                 return full_url
@@ -776,25 +783,6 @@ class FormattersAPI:
             output.append(line)
         return '\n'.join(output)
 
-    # This is a regular expression that matches email address embedded in
-    # text. It is not RFC 2821 compliant, nor does it need to be. This
-    # expression strives to identify probable email addresses so that they
-    # can be obfuscated when viewed by unauthenticated users. See
-    # http://www.email-unlimited.com/stuff/email_address_validator.htm
-
-    # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
-    # (regardless of RFC 2821) because they conflict with other systems.
-    # See https://lists.ubuntu.com
-    #     /mailman/private/launchpad-reviews/2007-June/006081.html
-
-    # This verson of the re is more than 5x faster that the orginal
-    # version used in ftest/test_tales.testObfuscateEmail.
-    _re_email = re.compile(r"""
-        \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
-        [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
-        \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
-        """, re.VERBOSE)              # ' <- font-lock turd
-
     def obfuscate_email(self):
         """Obfuscate an email address if there's no authenticated user.
 
@@ -813,11 +801,7 @@ class FormattersAPI:
         """
         if getUtility(ILaunchBag).user is not None:
             return self._stringtoformat
-        text = self._re_email.sub(
-            r'<email address hidden>', self._stringtoformat)
-        text = text.replace(
-            "<<email address hidden>>", "<email address hidden>")
-        return text
+        return obfuscate_email(self._stringtoformat)
 
     def linkify_email(self, preloaded_person_data=None):
         """Linkify any email address recognised in Launchpad.
@@ -831,7 +815,7 @@ class FormattersAPI:
         """
         text = self._stringtoformat
 
-        matches = re.finditer(self._re_email, text)
+        matches = re.finditer(re_email_address, text)
         for match in matches:
             address = match.group()
             person = None

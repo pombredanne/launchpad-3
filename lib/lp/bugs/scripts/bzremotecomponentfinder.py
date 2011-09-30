@@ -51,9 +51,11 @@ class BugzillaRemoteComponentScraper:
         self.products = {}
 
     def getPage(self):
+        """Download and return content from the Bugzilla page"""
         return urlopen(self.url).read()
 
     def parsePage(self, page_text):
+        """Builds self.product using HTML content in page_text"""
         soup = BeautifulSoup(page_text)
         if soup is None:
             return None
@@ -102,21 +104,23 @@ class BugzillaRemoteComponentFinder:
         u"mozilla.org",
         ]
 
-    def __init__(self, logger=None, static_bugzilla_text=None):
+    def __init__(self, logger=None, static_bugzilla_scraper=None):
         """Instantiates object, without performing any parsing.
 
         :param logger: A logger object
-        :param static_bugzilla_text: Instead of retrieving the remote
-         web page for a bug tracker, act as if this static text was
-         returned.  This is intended for testing purposes to avoid
-         needing to make remote web connections.
+        :param static_bugzilla_scraper: Substitute this custom bugzilla
+         scraper object instead of constructing a new
+         BugzillaRemoteComponentScraper for each bugtracker's URL.  This
+         is intended for testing purposes to avoid needing to make remote
+         web connections.
         """
         self.logger = logger
         if logger is None:
             self.logger = default_log
-        self.static_bugzilla_text = static_bugzilla_text
+        self.static_bugzilla_scraper = static_bugzilla_scraper
 
     def getRemoteProductsAndComponents(self, bugtracker_name=None):
+        """Retrieves, parses, and stores component data for each bugtracker"""
         lp_bugtrackers = getUtility(IBugTrackerSet)
         if bugtracker_name is not None:
             lp_bugtrackers = [
@@ -134,21 +138,24 @@ class BugzillaRemoteComponentFinder:
 
             self.logger.info("%s: %s" % (
                 lp_bugtracker.name, lp_bugtracker.baseurl))
-            bz_bugtracker = BugzillaRemoteComponentScraper(
-                base_url=lp_bugtracker.baseurl)
 
-            if self.static_bugzilla_text is not None:
-                self.logger.debug("Using static bugzilla text")
-                page_text = self.static_bugzilla_text
-
+            if self.static_bugzilla_scraper is not None:
+                bz_bugtracker = self.static_bugzilla_scraper
             else:
-                try:
-                    self.logger.debug("...Fetching page")
-                    page_text = bz_bugtracker.getPage()
-                except HTTPError, error:
-                    self.logger.error("Error fetching %s: %s" % (
-                        lp_bugtracker.baseurl, error))
-                    continue
+                bz_bugtracker = BugzillaRemoteComponentScraper(
+                    base_url=lp_bugtracker.baseurl)
+
+            try:
+                self.logger.debug("...Fetching page")
+                page_text = bz_bugtracker.getPage()
+            except HTTPError, error:
+                self.logger.warning("Could not fetch %s: %s" % (
+                    lp_bugtracker.baseurl, error))
+                continue
+            except:
+                self.logger.warning("Failed to access %s" % (
+                    lp_bugtracker.baseurl))
+                continue
 
             self.logger.debug("...Parsing html")
             bz_bugtracker.parsePage(page_text)
@@ -158,6 +165,7 @@ class BugzillaRemoteComponentFinder:
                 bz_bugtracker, lp_bugtracker)
 
     def storeRemoteProductsAndComponents(self, bz_bugtracker, lp_bugtracker):
+        """Stores parsed product/component data from bz_bugtracker"""
         components_to_add = []
         for product in bz_bugtracker.products.itervalues():
             # Look up the component group id from Launchpad for the product
@@ -181,7 +189,11 @@ class BugzillaRemoteComponentFinder:
                     else:
                         # Component is now missing from Bugzilla,
                         # so drop it here too
-                        component.remove()
+                        store = IStore(BugTrackerComponent)
+                        store.find(
+                            BugTrackerComponent,
+                            BugTrackerComponent.id == component.id,
+                            ).remove()
 
             # The remaining components in the collection will need to be
             # added to launchpad.  Record them for now.

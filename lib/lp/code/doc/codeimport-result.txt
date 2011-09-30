@@ -78,17 +78,6 @@ for the Librarian to save the file.
     log data
     >>> print new_result.status.name
     SUCCESS
-    >>> from canonical.launchpad.ftests import print_date_attribute
-    >>> print_date_attribute(new_result, 'date_job_started')
-    2008-01-01  00:00:00+00:00
-
-The code import result date_job_finished does not exist in the DB but
-instead is an alias to date_created.
-
-    >>> print_date_attribute(new_result, 'date_created')
-    2008-01-01  04:00:00+00:00
-    >>> print new_result.date_job_finished
-    2008-01-01  04:00:00+00:00
 
 A helper property exists to give the duration of the job run.
 

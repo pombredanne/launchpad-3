@@ -128,11 +128,6 @@ Make the uploaded orig file available to librarian lookups
     >>> import transaction
     >>> transaction.commit()
 
-Ensure the previous transaction is *really* in the database before the next
-test:
-
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(bar_src.queue_root)
 
 Uploading the same package again will result in a rejection email:
 
@@ -454,6 +449,11 @@ the upload is waiting for approval:
     >>> notification['Subject']
     '[ubuntu/hoary-updates] bar 1.0-2 (Waiting for approval)'
 
+And clean up.
+
+    >>> import os
+    >>> upload_data = datadir('suite/bar_1.0-2')
+    >>> os.remove(os.path.join(upload_data, 'bar_1.0.orig.tar.gz'))
 
 UNAPPROVED upload to BACKPORTS via insecure policy will send a notification
 saying they are waiting for approval:
@@ -542,7 +542,6 @@ There is one email generated:
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
 
-    >>> import os
     >>> upload_data = datadir('suite/bar_1.0-4')
     >>> os.remove(os.path.join(upload_data, 'bar_1.0.orig.tar.gz'))
 

@@ -542,6 +542,16 @@ class LaunchpadBrowserRequestMixin:
         """See `IBasicLaunchpadRequest`."""
         return 'XMLHttpRequest' == self.getHeader('HTTP_X_REQUESTED_WITH')
 
+    def getURL(self, level=0, path_only=False, include_query=False):
+        """See `IBasicLaunchpadRequest`."""
+        sup = super(LaunchpadBrowserRequestMixin, self)
+        url = sup.getURL(level, path_only)
+        if include_query:
+            query_string = self.get('QUERY_STRING')
+            if query_string is not None and len(query_string) > 0:
+                url = "%s?%s" % (url, query_string)
+        return url
+
 
 class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     """Mixin request class to provide stepstogo."""
@@ -693,12 +703,15 @@ class BrowserFormNG:
 def web_service_request_to_browser_request(webservice_request):
     """Convert a given webservice request into a webapp one.
 
-    Simply overrides 'SERVER_URL' to the 'mainsite', preserving headers and
-    body.
+    Overrides 'SERVER_URL' to the 'mainsite', preserving headers and
+    body.  Encodes PATH_INFO because it is unconditionally decoded by
+    zope.publisher.http.sane_environment.
     """
     body = webservice_request.bodyStream.getCacheStream().read()
     environ = dict(webservice_request.environment)
     environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
+    if 'PATH_INFO' in environ:
+        environ['PATH_INFO'] = environ['PATH_INFO'].encode('utf-8')
     return LaunchpadBrowserRequest(body, environ)
 
 
@@ -798,8 +811,8 @@ def adaptRequestToResponse(request):
     return request.response
 
 
-class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
-                           LaunchpadBrowserRequestMixin):
+class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
+                           TestRequest, ErrorReportRequest):
     """Mock request for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
@@ -1167,7 +1180,7 @@ class WebServicePublication(WebServicePublicationMixin,
                 pageid += ':' + collection_identifier
         op = (view.request.get('ws.op')
             or view.request.query_string_params.get('ws.op'))
-        if op:
+        if op and isinstance(op, basestring):
             pageid += ':' + op
         return pageid
 
