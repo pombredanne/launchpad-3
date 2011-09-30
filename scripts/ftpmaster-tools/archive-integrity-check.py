@@ -11,10 +11,9 @@ import commands
 import os
 import stat
 import sys
+from tempfile import NamedTemporaryFile
 
 import apt_pkg
-
-import dak_utils
 
 ################################################################################
 
@@ -68,14 +67,14 @@ def validate_sources(sources_filename, suite, component):
     sys.stdout.write("Checking %s/%s/source: " % (suite, component))
     sys.stdout.flush()
     # apt_pkg.ParseTagFile needs a real file handle and can't handle a GzipFile instance...
-    temp_filename = dak_utils.temp_filename()
+    sources = NamedTemporaryFile()
     (result, output) = commands.getstatusoutput("gunzip -c %s > %s" \
                                                 % (sources_filename,
-                                                   temp_filename))
+                                                   sources.name))
     if (result != 0):
         sys.stderr.write("Gunzip invocation failed!\n%s\n" % (output))
         sys.exit(result)
-    sources = open(temp_filename)
+    sources.seek(0)
     Sources = apt_pkg.ParseTagFile(sources)
     while Sources.Step():
         directory = Sources.Section.Find('Directory')
@@ -87,7 +86,6 @@ def validate_sources(sources_filename, suite, component):
     sys.stdout.write("done.\n")
     sys.stdout.flush()
     sources.close()
-    os.unlink(temp_filename)
 
 ################################################################################
 
@@ -98,14 +96,14 @@ def validate_packages(packages_filename, suite, component, architecture):
     sys.stdout.write("Checking %s/%s/%s: " % (suite, component, architecture))
     sys.stdout.flush()
     # apt_pkg.ParseTagFile needs a real file handle and can't handle a GzipFile instance...
-    temp_filename = dak_utils.temp_filename()
+    packages = NamedTemporaryFile()
     (result, output) = commands.getstatusoutput("gunzip -c %s > %s"
                                                 % (packages_filename,
-                                                   temp_filename))
+                                                   packages.name))
     if (result != 0):
         sys.stderr.write("Gunzip invocation failed!\n%s\n" % (output))
         sys.exit(result)
-    packages = open(temp_filename)
+    packages.seek(0)
     Packages = apt_pkg.ParseTagFile(packages)
     while Packages.Step():
         md5sum_expected = Packages.Section.Find('MD5sum')
@@ -117,7 +115,6 @@ def validate_packages(packages_filename, suite, component, architecture):
     sys.stdout.write("done.\n")
     sys.stdout.flush()
     packages.close()
-    os.unlink(temp_filename)
 
 ################################################################################
 
