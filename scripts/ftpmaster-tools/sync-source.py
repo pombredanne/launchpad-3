@@ -15,7 +15,6 @@ will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
 
-import commands
 import errno
 import os
 import re
@@ -103,37 +102,6 @@ def urgency_from_numeric(n):
         4: 'critical',
         }
     return urgency_map.get(n, 'low')
-
-
-def sign_changes(changes, dsc):
-    # XXX cprov 2007-07-06: hardcoded file locations and parameters for
-    # production.
-    temp_filename = "unsigned-changes"
-    keyid = "0C12BDD7"
-    secret_keyring = "/srv/launchpad.net/dot-gnupg/secring.gpg"
-    pub_keyring = "/srv/launchpad.net/dot-gnupg/pubring.gpg"
-
-    filehandle = open(temp_filename, 'w')
-    filehandle.write(changes)
-    filehandle.close()
-
-    output_filename = "%s_%s_source.changes" % (
-        dsc["source"], dak_utils.re_no_epoch.sub('', dsc["version"]))
-
-    cmd = ("gpg --no-options --batch --no-tty --secret-keyring=%s "
-           "--keyring=%s --default-key=0x%s --output=%s --clearsign %s" %
-           (secret_keyring, pub_keyring, keyid, output_filename,
-            temp_filename))
-    result, output = commands.getstatusoutput(cmd)
-
-    if (result != 0):
-        print " * command was '%s'" % (cmd)
-        print (dak_utils.prefix_multi_line_string(
-                output, " [gpg output:] "), "")
-        dak_utils.fubar("%s: signing .changes failed [return code: %s]." %
-                        (output_filename, result))
-
-    os.unlink(temp_filename)
 
 
 def parse_changelog(changelog_filename, previous_version):
@@ -377,8 +345,6 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         section, priority, description, files_from_librarian, requested_by,
         origin)
 
-    # XXX cprov 2007-07-03: Soyuz wants an unsigned changes
-    #sign_changes(changes, dsc)
     output_filename = "%s_%s_source.changes" % (
         dsc["source"], dak_utils.re_no_epoch.sub('', dsc["version"]))
 
