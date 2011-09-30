@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 import re
+import sys
 import thread
 import threading
 import traceback
@@ -18,6 +19,7 @@ from lazr.uri import (
     URI,
     )
 from psycopg2.extensions import TransactionRollbackError
+from storm.database import STATE_DISCONNECTED
 from storm.exceptions import (
     DisconnectionError,
     IntegrityError,
@@ -149,7 +151,7 @@ def maybe_block_offsite_form_post(request):
         # exception was added as a result of bug 597324 (message #10 in
         # particular).
         return
-    referrer = request.getHeader('referer')  # Match HTTP spec misspelling.
+    referrer = request.getHeader('referer') # match HTTP spec misspelling
     if not referrer:
         raise NoReferrerError('No value for REFERER header')
     # XXX: jamesh 2007-04-26 bug=98437:
@@ -531,9 +533,8 @@ class LaunchpadBrowserPublication(
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
         elif txn.isDoomed():
-            # Sends an abort to the database, even though transaction
-            # is still doomed.
-            txn.abort()
+            txn.abort() # Sends an abort to the database, even though
+            # transaction is still doomed.
         else:
             txn.commit()
 
@@ -735,11 +736,11 @@ class LaunchpadBrowserPublication(
             if IBrowserRequest.providedBy(request):
                 OpStats.stats['http requests'] += 1
                 status = request.response.getStatus()
-                if status == 404:  # Not Found
+                if status == 404: # Not Found
                     OpStats.stats['404s'] += 1
-                elif status == 500:  # Unhandled exceptions
+                elif status == 500: # Unhandled exceptions
                     OpStats.stats['500s'] += 1
-                elif status == 503:  # Timeouts
+                elif status == 503: # Timeouts
                     OpStats.stats['503s'] += 1
 
                 # Increment counters for status code groups.
@@ -749,6 +750,29 @@ class LaunchpadBrowserPublication(
                 # Increment counter for 5XXs_b.
                 if is_browser(request) and status_group == '5XXs':
                     OpStats.stats['5XXs_b'] += 1
+
+        # Make sure our databases are in a sane state for the next request.
+        thread_name = threading.currentThread().getName()
+        for name, store in getUtility(IZStorm).iterstores():
+            try:
+                assert store._connection._state != STATE_DISCONNECTED, (
+                    "Bug #504291: Store left in a disconnected state.")
+            except AssertionError:
+                # The Store is in a disconnected state. This should
+                # not happen, as store.rollback() should have been called
+                # by now. Log an OOPS so we know about this. This
+                # is Bug #504291 happening.
+                getUtility(IErrorReportingUtility).raising(
+                    sys.exc_info(), request)
+                # Repair things so the server can remain operational.
+                store.rollback()
+            # Reset all Storm stores when not running the test suite.
+            # We could reset them when running the test suite but
+            # that'd make writing tests a much more painful task. We
+            # still reset the slave stores though to minimize stale
+            # cache issues.
+            if thread_name != 'MainThread' or name.endswith('-slave'):
+                store.reset()
 
 
 class InvalidThreadsConfiguration(Exception):
