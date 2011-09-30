@@ -22,8 +22,10 @@ class TxLongPollServer(TxLongPollFixture):
 
     def setUp(self):
         super(TxLongPollServer, self).setUp()
-        self.config['service_config'] = dedent("""\
-            [txlongpoll]
-            frontend_port: %d
-            """ % (
-                self.config['frontend_port']))
+        setattr(
+            self, 'service_config',
+            dedent("""\
+                [txlongpoll]
+                frontend_port: %d
+                """ % (
+                    self.config.frontend_port)))
