@@ -41,7 +41,6 @@ from zope.security.checker import (
     )
 
 from canonical.config import config
-from canonical.testing.layers import wsgi_application
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -194,6 +193,8 @@ class Urllib2Fixture(Fixture):
     sub-hosts (e.g. bugs.launchpad.dev)."""
 
     def setUp(self):
+        # Work around circular import.
+        from canonical.testing.layers import wsgi_application
         super(Urllib2Fixture, self).setUp()
         add_wsgi_intercept('launchpad.dev', 80, lambda: wsgi_application)
         self.addCleanup(remove_wsgi_intercept, 'launchpad.dev', 80)

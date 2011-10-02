@@ -50,6 +50,7 @@ __all__ = [
     'ZopelessLayer',
     'disconnect_stores',
     'reconnect_stores',
+    'wsgi_application',
     ]
 
 from cProfile import Profile

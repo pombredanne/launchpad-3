@@ -79,7 +79,7 @@ class TestDatabaseErrorViews(TestCase):
             # master DB is disconnected, and third and subsequent
             # requests, as seen below, correctly generate a
             # DisconnectionError.  Oddly, these are ProgrammingErrors.
-            self.assertEqual(500, self.getHTTPError(url).code)
+            self.getHTTPError(url)
         error = self.getHTTPError(url)
         self.assertEqual(503, error.code)
         self.assertThat(error.read(),
