@@ -1,0 +1,293 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xml:lang="en"
+  lang="en"
+>
+  <head>
+    <title>Error: database unavailable</title>
+
+    <style type="text/css">
+
+html {
+  background: #fff;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'UbuntuBeta Regular', Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+  font-size: 0.75em;
+  line-height: 1.3em;
+  color: #000;
+  margin: 0 0 40px 0;
+}
+
+a {
+  color: #03a;
+  text-decoration: none;
+}
+
+h1 {
+  font-size: 3.7em;
+}
+
+h2,
+h3,
+h4 {
+  font-weight: normal;
+}
+
+h2 {
+  margin: 1.3em 0 1em 0;
+  font-size: 1.8em;
+  line-height: 26px;
+}
+
+h3, h4{
+  margin: 0;
+}
+
+h4 {
+  font-size: 1.4em;
+  color: #333;
+}
+
+p.sub {
+  color: #333;
+}
+
+p.large {
+  font-size: 1.2em;
+}
+
+a img {
+  vertical-align: middle;
+}
+
+.page-center-wrap {
+  text-align: left;
+}
+.page-center {
+  text-align: center;
+  margin: 0px;
+  margin: auto;
+  width: 780px;
+}
+.page-center-content {
+  text-align: left;
+}
+
+#header,
+#status-feed,
+#status-subscribe,
+#footer {
+  padding-left: 50px;
+  padding-right: 50px;
+}
+
+#header {
+  border: 1px solid #d7d3cf;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  margin-top: 15%;
+}
+
+#header .graphic {
+  font-size: 110px;
+  color: #646464;
+  float: right;
+  padding: 100px 80px 0 0;
+}
+
+#header .content {
+  margin-right: 300px;
+}
+
+#header-shadow {
+  height: 2px;
+  background-color: #ebe9e7;
+}
+
+#status-feed {
+  padding-top: 10px;
+  width: 450px;
+  display: none;
+}
+
+#status-feed h2 {
+  border-bottom: 1px solid #d7d3cf;
+  padding-bottom: 0.7em;
+  margin-bottom: 0.3em;
+}
+
+#status-feed span.datetime {
+  color: gray;
+  font-size: smaller;
+}
+
+#status-feed div {
+  text-align: center;
+}
+
+#status-subscribe img {
+  margin-right: 3px;
+}
+
+#status-subscribe a:last-child {
+  margin-left: 20px;
+}
+
+#footer {
+  border-top: 1px solid #d7d3cf;
+  margin-top: 40px;
+  padding-top: 20px;
+}
+
+</style>
+
+  <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript"
+/>
+  <script tal:define="
+    revno modules/lp.app.versioninfo/revno | string:unknown;
+    icingroot string:/+icing/rev${revno};
+    yui string:${icingroot}/yui;"
+  tal:content="
+string:var lp_yui_root = '${yui}';
+lp_status_flash_feed = '${view/flash_feed}';
+lp_status_cors_feed = '${view/cors_feed}';
+"
+></script>
+    <script id="load-status" type="text/javascript">
+LPS.use('node', 'io-xdr', 'json-parse', 'datatype-date', function(Y) {
+  var tag = function(name) {
+    return Y.Node.create('<'+name+'/>');
+  }
+  var li = function(text, created_at) {
+    var datetime = Y.DataType.Date.parse(created_at);
+    return tag('li')
+      .append(
+        tag('span')
+          .addClass('datetime')
+          .set('text', Y.DataType.Date.format(datetime, {format: "%F %X %Z"})))
+      .append(tag('br'))
+      .append(
+        tag('span')
+          .addClass('text')
+          .set('text', text));
+  }
+  Y.on('load', function(e){
+    var destination = Y.one('#status-feed');
+    // The feed block starts hidden so that browsers without JS do not
+    // see it.  We have JS, so we can show it.
+    destination.setStyle('display', 'block');
+    var _handleSuccess = function(o, get_results) {
+      var rawJSON = Y.JSON.parse(o.responseText);
+      var oRSS = get_results(rawJSON);
+      if (oRSS && oRSS.length) {
+        destination.one('div').setStyle('display', 'none');
+        var l = destination.one('ul');
+        for (var i=0; i<Math.min(oRSS.length, 5); i++) {
+          var entry = oRSS[i];
+          l.append(li(entry.text, entry.created_at));
+        }
+      }
+    };
+    var handleTwitterSuccess = function(id, o, a){
+      _handleSuccess(o, function(json) {return json.results;});
+    };
+    var handleIdenticaSuccess = function(id, o, a){
+      _handleSuccess(o, function(json) {return json;});
+    }
+    var loadStatusWithFlash = function(){
+      var obj = Y.io(
+        lp_status_flash_feed,
+        {
+          method: 'GET',
+          xdr: {use: 'flash'},
+          on: {
+            success: handleTwitterSuccess,
+            failure: function (id, o, a){
+              Y.log("ERROR " + id + " " + a, "info", "example");
+              Y.one('#status-feed div').set(
+                'text', '[Sorry, the feed could not load.]');
+            }
+          }
+        });
+    };
+    var loadStatusWithCORS = function() {
+      // CORS: http://www.w3.org/TR/cors/
+      // Identi.ca supports it; Twitter does not at this time.
+      var obj = Y.io(
+        lp_status_cors_feed,
+        {
+          // This is important for Chromium.  Otherwise, the XHR will fail.
+          headers: { 'X-Requested-With': 'disable'},
+          on: {
+            success: handleIdenticaSuccess,
+            failure: function(id, o, a){
+              Y.log("ERROR " + id + " " + a, "info", "example");
+              Y.io.transport({id: 'flash', src: lp_yui_root + '/io/io.swf'});
+              Y.on('io:xdrReady', loadStatusWithFlash);
+            }
+          }
+        });
+    };
+    loadStatusWithCORS();
+  }, window);
+});
+    </script>
+</head>
+<body>
+  <div class="page-center-wrap">
+    <div class="page-center">
+      <div class="page-center-content">
+        <div id="header">
+          <div class="graphic">
+            :(
+          </div>
+          <div class="content">
+            <h1>Uh oh!</h1>
+            <h4>Something has gone wrong. We're sorry!</h4>
+            <p>If we are in the middle of an update, Launchpad will be
+            back in less than five minutes.  Otherwise, we are working
+            to fix the unexpected problems.</p>
+            <p class="sub">Technically, this is a 503 error and has
+              been caused by
+              <span tal:replace="view/reason">our database
+                being temporarily offline</span>.
+            </p>
+            <p><a href="javascript:window.location.reload()">Reload</a>
+              this page or try again in a few minutes</p>
+          </div>
+        </div>
+        <div id="header-shadow"></div>
+        <div id="status-feed">
+          <h2>Recent status updates</h2>
+          <div><img src="/@@/spinner.gif" /></div>
+          <ul></ul>
+        </div>
+        <div id="status-subscribe">
+          <h2>Subscribe to updates</h2>
+          <a href="http://identi.ca/launchpadstatus">
+            <img src="/@@/identica_logo.png" alt="Identi.ca" />
+            @launchpadstatus
+          </a>
+          on Identi.ca
+          <a href="http://twitter.com/launchpadstatus">
+            <img src="/@@/twitter_logo.png" alt="Twitter" />
+            @launchpadstatus
+          </a>
+          on Twitter
+        </div>
+        <div id="footer">
+          <a href="http://launchpad.net/">
+            <img src="/@@/launchpad-logo-and-name-hierarchy.png"
+            alt="Launchpad" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
