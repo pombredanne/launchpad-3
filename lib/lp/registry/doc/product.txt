@@ -158,8 +158,8 @@ default the latest five are returned.
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
+    Bazaar
     Derby
-    Launchpad Translations
     Mega Money Maker
     Obsolete Junk
     Redfish
@@ -171,7 +171,7 @@ returned.
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
-    Launchpad Translations
+    Derby
     Mega Money Maker
     Obsolete Junk
 

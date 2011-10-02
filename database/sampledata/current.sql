@@ -4109,7 +4109,6 @@ INSERT INTO pillarname (id, name, product, project, distribution, active, alias_
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (37, 'redfish', 22, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (38, 'derby', 23, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (39, 'mega-money-maker', 24, NULL, NULL, true, NULL);
-INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (40, 'rosetta', 25, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (41, 'obsolete-junk', 26, NULL, NULL, true, NULL);
 
 
