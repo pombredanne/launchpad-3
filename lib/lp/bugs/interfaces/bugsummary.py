@@ -81,7 +81,7 @@ class IBugSummaryDimension(Interface):
     def getBugSummaryContextWhereClause():
         """Return a storm clause to filter bugsummaries on this context.
 
-        This method is intentended for in-appserver use only.
+        This method is intended for in-appserver use only.
 
         :return: Either a storm clause to filter bugsummaries, or False if
             there cannot be any matching bug summaries.
