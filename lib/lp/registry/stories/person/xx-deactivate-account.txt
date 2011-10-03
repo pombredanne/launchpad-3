@@ -56,10 +56,14 @@ assignee.
     >>> browser.open('http://launchpad.dev/debian/+source/'
     ...     'mozilla-firefox/+bug/3')
     >>> print extract_text(find_main_content(browser.contents))
+    Bug Title Test
     Debian
-    ...
+    “mozilla-firefox” package
     Bug #3
-    ...Assigned to unknown...
+    ...
+    Assigned to
+    Milestone
+    ...
 
 Although teams have NOACCOUNT as their account_status, they are teams and so
 it makes no sense to say they don't use Launchpad.
