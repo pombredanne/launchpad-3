@@ -589,6 +589,8 @@ class LoggingTransaction:
 
 
 class TestFinishReadOnlyRequest(TestCase):
+    # Publications that have a finishReadOnlyRequest() method are obliged to
+    # fire an IFinishReadOnlyRequestEvent.
 
     def _test_publication(self, publication, expected_transaction_log):
         # publication.finishReadOnlyRequest() issues an
