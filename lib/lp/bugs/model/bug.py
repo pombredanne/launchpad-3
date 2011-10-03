@@ -30,7 +30,6 @@ from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator
-import pytz
 import re
 
 from lazr.lifecycle.event import (
@@ -39,6 +38,7 @@ from lazr.lifecycle.event import (
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from pytz import timezone
 from sqlobject import (
     BoolCol,
@@ -122,9 +122,9 @@ from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
     BugConvertedToQuestion,
+    BugDuplicateChange,
     BugWatchAdded,
     BugWatchRemoved,
-    BugDuplicateChange,
     SeriesNominated,
     UnsubscribedFromBug,
     )
@@ -170,7 +170,7 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
-    get_bug_privacy_filter
+    get_bug_privacy_filter,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
@@ -199,6 +199,7 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.messages.interfaces.message import (
     IMessage,
@@ -1386,7 +1387,9 @@ BugMessage""" % sqlvalues(self.id))
         if len(non_invalid_bugtasks) != 1:
             return None
         [valid_bugtask] = non_invalid_bugtasks
-        if valid_bugtask.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+        pillar = valid_bugtask.pillar
+        if (pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD
+            and pillar.answers_usage == ServiceUsage.LAUNCHPAD):
             return valid_bugtask
         else:
             return None
@@ -1656,11 +1659,15 @@ BugMessage""" % sqlvalues(self.id))
         security_related_changed = False
         bug_before_modification = Snapshot(self, providing=providedBy(self))
 
-        # Before we update the privacy or security_related status, we need to
-        # reconcile the subscribers to avoid leaking private information.
-        if (self.private != private
-                or self.security_related != security_related):
-            self.reconcileSubscribers(private, security_related, who)
+        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
+        f_flag = bool(getFeatureFlag(f_flag_str))
+        if f_flag:
+            # Before we update the privacy or security_related status, we
+            # need to reconcile the subscribers to avoid leaking private
+            # information.
+            if (self.private != private
+                    or self.security_related != security_related):
+                self.reconcileSubscribers(private, security_related, who)
 
         if self.private != private:
             private_changed = True
@@ -1693,6 +1700,14 @@ BugMessage""" % sqlvalues(self.id))
                 changed_fields.append('private')
             if security_related_changed:
                 changed_fields.append('security_related')
+                if not f_flag and security_related:
+                    # The bug turned out to be security-related, subscribe the
+                    # security contact. We do it here only if the feature flag
+                    # is not set, otherwise it's done in
+                    # reconcileSubscribers().
+                    for pillar in self.affected_pillars:
+                        if pillar.security_contact is not None:
+                            self.subscribe(pillar.security_contact, who)
             notify(ObjectModifiedEvent(
                     self, bug_before_modification, changed_fields, user=who))
 
@@ -2239,6 +2254,7 @@ BugMessage""" % sqlvalues(self.id))
             BugActivity.datechanged >= start_date,
             BugActivity.datechanged <= end_date)
         return activity_in_range
+
 
 @ProxyFactory
 def get_also_notified_subscribers(

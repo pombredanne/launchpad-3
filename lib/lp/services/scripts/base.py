@@ -33,7 +33,10 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config, dbconfig
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.database.postgresql import ConnectionString
 from canonical.launchpad import scripts
 from canonical.launchpad.scripts.logger import OopsHandler
@@ -318,7 +321,6 @@ class LaunchpadScript:
             isolation = 'read_committed'
         self._init_zca(use_web_security=use_web_security)
         self._init_db(isolation=isolation)
-        self._init_logging()
 
         # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
         # Should be called directly by scripts that actually need it.
@@ -364,10 +366,6 @@ class LaunchpadScript:
             dbuser = connstr.user or dbconfig.dbuser
         dbconfig.override(dbuser=dbuser, isolation_level=isolation)
         self.txn = transaction
-
-    def _init_logging(self):
-        # Suppress debug messages from amqplib.
-        logging.getLogger("amqplib").setLevel(logging.INFO)
 
     def record_activity(self, date_started, date_completed):
         """Hook to record script activity."""

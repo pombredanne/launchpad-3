@@ -1643,6 +1643,7 @@ class TestBugChanges(TestCaseWithFactory):
         # that to be added to the activity log and sent out as e-mail
         # notification. After that another item is added to the activity
         # log saying that the bug was converted to a question.
+        self.product.official_answers = True
         self.bug.convertToQuestion(self.user)
         converted_question = self.bug.getQuestionCreatedFromBug()
 

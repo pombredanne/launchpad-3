@@ -36,6 +36,7 @@ from lp.code.interfaces.codeimportscheduler import (
     )
 from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
+from lp.services.features.xmlrpc import IFeatureFlagApplication
 
 
 # NOTE: If you add a traversal here, you should update
@@ -72,6 +73,11 @@ class PrivateApplication:
     def softwarecenteragent(self):
         """See `IPrivateApplication`."""
         return getUtility(ISoftwareCenterAgentApplication)
+
+    @property
+    def featureflags(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IFeatureFlagApplication)
 
 
 class ISelfTest(Interface):
@@ -127,4 +133,3 @@ class RosettaSelfTest(LaunchpadXMLRPCView):
 
     def run_test(self):
         return "OK"
-

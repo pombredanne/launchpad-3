@@ -16,23 +16,24 @@ from lazr.lifecycle.interfaces import (
 from storm.base import Storm
 from storm.info import get_obj_info
 from zope.component import adapter
-from zope.interface import implements
 from zope.interface.interfaces import IAttribute
 
 from lp.services.longpoll.adapters.event import (
     generate_event_key,
     LongPollEvent,
     )
-from lp.services.longpoll.interfaces import ILongPollEvent
+from lp.services.longpoll.interfaces import (
+    ILongPollEvent,
+    long_poll_event,
+    )
 
 
+@long_poll_event(Storm)
 class LongPollStormEvent(LongPollEvent):
     """A `ILongPollEvent` for events of `Storm` objects.
 
     This class knows how to construct a stable event key given a Storm object.
     """
-
-    implements(ILongPollEvent)
 
     @property
     def event_key(self):
@@ -42,26 +43,24 @@ class LongPollStormEvent(LongPollEvent):
         Storm model object.
         """
         cls_info = get_obj_info(self.source).cls_info
-        key_parts = [cls_info.table.name.lower()]
-        key_parts.extend(
-            primary_key_column.__get__(self.source)
-            for primary_key_column in cls_info.primary_key)
-        key_parts.append(self.event)
-        return generate_event_key(*key_parts)
+        return generate_event_key(
+            cls_info.table.name.lower(), *(
+                primary_key_column.__get__(self.source)
+                for primary_key_column in cls_info.primary_key))
 
 
 @adapter(Storm, IObjectCreatedEvent)
 def object_created(model_instance, object_event):
     """Subscription handler for `Storm` creation events."""
-    event = LongPollStormEvent(model_instance, "created")
-    event.emit({})
+    event = ILongPollEvent(model_instance)
+    event.emit(what="created")
 
 
 @adapter(Storm, IObjectDeletedEvent)
 def object_deleted(model_instance, object_event):
     """Subscription handler for `Storm` deletion events."""
-    event = LongPollStormEvent(model_instance, "deleted")
-    event.emit({})
+    event = ILongPollEvent(model_instance)
+    event.emit(what="deleted")
 
 
 @adapter(Storm, IObjectModifiedEvent)
@@ -72,5 +71,5 @@ def object_modified(model_instance, object_event):
         edited_field_names = sorted(
             (field.__name__ if IAttribute.providedBy(field) else field)
             for field in edited_fields)
-        event = LongPollStormEvent(model_instance, "modified")
-        event.emit({"edited_fields": edited_field_names})
+        event = ILongPollEvent(model_instance)
+        event.emit(what="modified", edited_fields=edited_field_names)

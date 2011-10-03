@@ -16,11 +16,13 @@ from zope.event import notify
 from zope.interface import Attribute
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.longpoll.interfaces import ILongPollEvent
 from lp.services.longpoll.testing import (
     capture_longpoll_emissions,
     LongPollEventRecord,
     )
 from lp.testing import TestCase
+from lp.testing.matchers import Provides
 
 
 class FakeStormClass(Storm):
@@ -34,45 +36,53 @@ class TestStormLifecycle(TestCase):
 
     layer = LaunchpadFunctionalLayer
 
+    def test_storm_event_adapter(self):
+        storm_object = FakeStormClass()
+        storm_object.id = 1234
+        event = ILongPollEvent(storm_object)
+        self.assertThat(event, Provides(ILongPollEvent))
+        self.assertEqual(
+            "longpoll.event.faketable.1234",
+            event.event_key)
+
     def test_storm_object_created(self):
         storm_object = FakeStormClass()
         storm_object.id = 1234
         with capture_longpoll_emissions() as log:
             notify(ObjectCreatedEvent(storm_object))
-        expected = [
-            LongPollEventRecord(
-                "longpoll.event.faketable.1234.created",
-                {"event_key": "longpoll.event.faketable.1234.created",
-                 "event_data": {}}),
-            ]
-        self.assertEqual(expected, log)
+        expected = LongPollEventRecord(
+            "longpoll.event.faketable.1234", {
+                "event_key": "longpoll.event.faketable.1234",
+                "what": "created",
+                })
+        self.assertEqual([expected], log)
 
     def test_storm_object_deleted(self):
         storm_object = FakeStormClass()
         storm_object.id = 1234
         with capture_longpoll_emissions() as log:
             notify(ObjectDeletedEvent(storm_object))
-        expected = [
-            LongPollEventRecord(
-                "longpoll.event.faketable.1234.deleted",
-                {"event_key": "longpoll.event.faketable.1234.deleted",
-                 "event_data": {}}),
-            ]
-        self.assertEqual(expected, log)
+        expected = LongPollEventRecord(
+            "longpoll.event.faketable.1234", {
+                "event_key": "longpoll.event.faketable.1234",
+                "what": "deleted",
+                })
+        self.assertEqual([expected], log)
 
     def test_storm_object_modified(self):
         storm_object = FakeStormClass()
         storm_object.id = 1234
         with capture_longpoll_emissions() as log:
-            notify(ObjectModifiedEvent(
-                    storm_object, storm_object, ("itchy", "scratchy")))
-        expected = [
-            LongPollEventRecord(
-                "longpoll.event.faketable.1234.modified",
-                {"event_key": "longpoll.event.faketable.1234.modified",
-                 "event_data": {"edited_fields": ["itchy", "scratchy"]}}),
-            ]
-        self.assertEqual(expected, log)
+            object_event = ObjectModifiedEvent(
+                storm_object, storm_object, ("itchy", "scratchy"))
+            notify(object_event)
+        expected = LongPollEventRecord(
+            "longpoll.event.faketable.1234", {
+                "event_key": "longpoll.event.faketable.1234",
+                "what": "modified",
+                "edited_fields": ["itchy", "scratchy"],
+                })
+        self.assertEqual([expected], log)
 
     def test_storm_object_modified_no_edited_fields(self):
         # A longpoll event is not emitted unless edited_fields is populated.
@@ -91,13 +101,13 @@ class TestStormLifecycle(TestCase):
         storm_object = FakeStormClass()
         storm_object.id = 1234
         with capture_longpoll_emissions() as log:
-            event = ObjectModifiedEvent(
+            object_event = ObjectModifiedEvent(
                 storm_object, storm_object, ("foo", Attribute("bar")))
-            notify(event)
-        expected = [
-            LongPollEventRecord(
-                "longpoll.event.faketable.1234.modified",
-                {"event_key": "longpoll.event.faketable.1234.modified",
-                 "event_data": {"edited_fields": ["bar", "foo"]}}),
-            ]
-        self.assertEqual(expected, log)
+            notify(object_event)
+        expected = LongPollEventRecord(
+            "longpoll.event.faketable.1234", {
+                "event_key": "longpoll.event.faketable.1234",
+                "what": "modified",
+                "edited_fields": ["bar", "foo"],
+                })
+        self.assertEqual([expected], log)
