@@ -136,8 +136,8 @@
             // We use Y.later to work around a Safari/Chrome 'feature':
             // The mouse cursor stays 'busy' until all the requests started during
             // page load are finished.  Hence we want the long poll request to start
-            // right *after* the page as loaded.
-            Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager, false);
+            // right *after* the page has loaded.
+            Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
         }, window);
 
         // Hook up the function that dismisses the help window if we click
