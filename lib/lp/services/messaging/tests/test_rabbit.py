@@ -14,7 +14,9 @@ from testtools.testcase import ExpectedException
 import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.component import getUtility
+from zope.event import notify
 
+from canonical.launchpad.webapp.interfaces import FinishReadOnlyRequestEvent
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     RabbitMQLayer,
@@ -175,6 +177,18 @@ class TestRabbitSession(RabbitTestCase):
         self.assertEqual(["task"], log)
         self.assertEqual([], list(session._deferred))
         self.assertIs(None, session.connection)
+
+    def test_finish_read_only_request(self):
+        # When a read-only request ends the queue is flushed.
+        log = []
+        task = lambda: log.append("task")
+        session = RabbitSession()
+        session.defer(task)
+        session.connect()
+        notify(FinishReadOnlyRequestEvent(None, None))
+        self.assertEqual(["task"], log)
+        self.assertEqual([], list(session._deferred))
+        self.assertIsNot(None, session.connection)
 
     def test_getProducer(self):
         session = RabbitSession()

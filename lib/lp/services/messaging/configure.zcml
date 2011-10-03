@@ -9,4 +9,8 @@
   <utility
       provides=".interfaces.IMessageSession"
       component=".rabbit.unreliable_session" />
+  <subscriber
+      handler=".rabbit.session_finish_ro_request_handler" />
+  <subscriber
+      handler=".rabbit.unreliable_session_finish_ro_request_handler" />
 </configure>
