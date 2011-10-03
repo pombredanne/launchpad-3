@@ -543,10 +543,10 @@ It is possible to get a batched list of all the projects.
     >>> project_collection['resource_type_link']
     u'http://.../#projects'
 
-The entire collection has 25 entries.
+The entire collection has 24 entries.
 
     >>> project_collection['total_size']
-    25
+    24
 
 But the batch has only 5.  (The batch size is 5 for testing but larger
 in production.)
@@ -563,7 +563,7 @@ The batch size can be changed through the ws.size argument.
     ...     project_collection['entries'],
     ...     key=itemgetter('display_name', 'name'))
     >>> len(project_entries)
-    25
+    24
 
     >>> project_entries[0]['self_link']
     u'http://.../aptoncd'
@@ -613,9 +613,9 @@ The latest projects registered can be retrieved.
     >>> for project in entries:
     ...     print project['display_name']
     Derby
-    Launchpad Translations
     Mega Money Maker
     Obsolete Junk
+    Redfish
     Test-project
 
 There is a method for doing a query about attributes related to project
@@ -642,7 +642,6 @@ Or those that are reviewed.
     ...    reviewed['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    Launchpad Translations
     Obsolete Junk
     alsa-utils
     python gnome2 dev
