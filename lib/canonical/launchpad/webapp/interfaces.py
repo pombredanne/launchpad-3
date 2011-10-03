@@ -890,6 +890,10 @@ except ImportError:
 class IFinishReadOnlyRequestEvent(Interface):
     """An event which gets sent when the publication is ended"""
 
+    object = Attribute("The object to which this request pertains.")
+
+    request = Attribute("The active request.")
+
 
 class FinishReadOnlyRequestEvent:
     """An event which gets sent when the publication is ended"""
