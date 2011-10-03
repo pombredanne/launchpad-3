@@ -101,12 +101,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         """
         registrant = self.factory.makePerson()
         return dict(
-            registrant = registrant,
-            owner = self.factory.makeTeam(owner=registrant),
-            distroseries = [self.factory.makeDistroSeries()],
-            name = self.factory.getUniqueString(u'recipe-name'),
-            description = self.factory.getUniqueString(u'recipe-description'),
-            recipe = self.factory.makeRecipeText(*branches))
+            registrant=registrant,
+            owner=self.factory.makeTeam(owner=registrant),
+            distroseries=[self.factory.makeDistroSeries()],
+            name=self.factory.getUniqueString(u'recipe-name'),
+            description=self.factory.getUniqueString(u'recipe-description'),
+            recipe=self.factory.makeRecipeText(*branches))
 
     def test_creation(self):
         # The metadata supplied when a SourcePackageRecipe is created is

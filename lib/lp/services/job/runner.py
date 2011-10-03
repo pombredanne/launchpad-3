@@ -39,9 +39,7 @@ from ampoule import (
     )
 from lazr.delegates import delegates
 import transaction
-from twisted.internet import (
-    reactor,
-    )
+from twisted.internet import reactor
 from twisted.internet.defer import (
     inlineCallbacks,
     succeed,

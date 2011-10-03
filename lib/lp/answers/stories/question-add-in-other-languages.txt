@@ -41,7 +41,7 @@ At this point we'll present any similar questions (in any language)
 understood by any member of the support community.
 
     >>> similar_questions = find_tag_by_id(browser.contents, 'similar-questions')
-    
+
     XXX: Making search fast has a significant impact on this tests' use case,
     because there are 9 terms - the query has to ignore 7 of the terms to
     permit a hit under the new & based logic (which is needed for scaling).

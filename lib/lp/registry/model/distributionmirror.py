@@ -604,7 +604,7 @@ class DistributionMirrorSet:
         order_by = [Func('random')]
         mirrors = shortlist(
             DistributionMirror.select(query, orderBy=order_by),
-            longest_expected=50)
+            longest_expected=200)
 
         if not mirrors and country is not None:
             continent = country.continent
