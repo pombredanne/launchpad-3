@@ -459,6 +459,7 @@
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <allow interface="lp.bugs.interfaces.bugtarget.IBugTarget"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
@@ -470,22 +471,15 @@
                 __getitem__
                 __ne__
                 _getOfficialTagClause
-                all_bugtasks
                 bug_count
-                bug_reported_acknowledgement
-                bug_reporting_guidelines
-                bugtargetdisplayname
-                bugtargetname
                 bugtasks
-                closed_bugtasks
-                critical_bugtasks
                 current_publishing_records
                 currentrelease
+                delete
                 development_version
                 displayname
                 distribution
                 distro
-                enable_bugfiling_duplicate_search
                 findRelatedArchivePublications
                 findRelatedArchives
                 getMergeProposals
@@ -494,27 +488,17 @@
                 getUsedBugTagsWithOpenCounts
                 getVersion
                 get_distroseries_packages
-                has_bugtasks
-                high_bugtasks
-                inprogress_bugtasks
                 latest_overall_publication
                 name
-                new_bugtasks
                 official_bug_tags
-                open_bugtasks
                 publishing_history
                 releases
-                searchTasks
                 sourcepackagename
                 subscribers
                 summary
                 title
                 total_bug_heat
-                unassigned_bugtasks
                 upstream_product"/>
-        <require
-            permission="launchpad.AnyPerson"
-            attributes="createBug"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
@@ -552,6 +536,11 @@
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
+    <adapter
+        provides="lp.registry.interfaces.sourcepackagename.ISourcePackageName"
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        factory="lp.registry.adapters.package_to_sourcepackagename"
         permission="zope.Public"/>
     <adapter
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
@@ -865,12 +854,12 @@
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.registry.interfaces.person.ITeam"
-            factory="canonical.launchpad.browser.TeamPrivacyAdapter"
+            factory="lp.registry.browser.team.TeamPrivacyAdapter"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.badge.IHasBadges"
             for="lp.registry.interfaces.person.ITeam"
-            factory="canonical.launchpad.browser.TeamBadges"
+            factory="lp.registry.browser.team.TeamBadges"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -1478,6 +1467,11 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
+        provides="lp.registry.interfaces.product.IProduct"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        factory="lp.registry.adapters.productseries_to_product"
+        permission="zope.Public"/>
+    <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
@@ -1669,6 +1663,11 @@
         permission="zope.Public"/>
     <adapter
         factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"/>
+    <adapter
+        provides="lp.registry.interfaces.sourcepackagename.ISourcePackageName"
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        factory="lp.registry.adapters.package_to_sourcepackagename"
+        permission="zope.Public"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

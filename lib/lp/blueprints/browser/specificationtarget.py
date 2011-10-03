@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ISpecificationTarget browser views."""
@@ -15,6 +15,10 @@ __all__ = [
 
 from operator import itemgetter
 
+from lazr.restful.utils import (
+    safe_hasattr,
+    smartquote,
+    )
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import (
     getMultiAdapter,
@@ -34,10 +38,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     enabled_with_permission,
     Link,
-    )
-from canonical.lazr.utils import (
-    safe_hasattr,
-    smartquote,
     )
 from lp.app.enums import service_uses_launchpad
 from lp.app.interfaces.launchpad import IServiceUsage
@@ -253,63 +253,6 @@ class HasSpecificationsView(LaunchpadView):
             return _('Blueprints for $name', mapping=mapping)
 
     page_title = 'Blueprints'
-
-    def mdzCsv(self):
-        """Quick hack for mdz, to get csv dump of specs."""
-        import csv
-        from StringIO import StringIO
-        output = StringIO()
-        writer = csv.writer(output)
-        headings = [
-            'name',
-            'title',
-            'url',
-            'specurl',
-            'status',
-            'priority',
-            'assignee',
-            'drafter',
-            'approver',
-            'owner',
-            'distroseries',
-            'direction_approved',
-            'man_days',
-            'delivery',
-            ]
-
-        def dbschema(item):
-            """Format a dbschema sortably for a spreadsheet."""
-            return '%s-%s' % (item.value, item.title)
-
-        def fperson(person):
-            """Format a person as 'name (full name)', or 'none'"""
-            if person is None:
-                return 'none'
-            else:
-                return '%s (%s)' % (person.name, person.displayname)
-        writer.writerow(headings)
-        for spec in self.context.all_specifications:
-            row = []
-            row.append(spec.name)
-            row.append(spec.title)
-            row.append(canonical_url(spec))
-            row.append(spec.specurl)
-            row.append(dbschema(spec.definition_status))
-            row.append(dbschema(spec.priority))
-            row.append(fperson(spec.assignee))
-            row.append(fperson(spec.drafter))
-            row.append(fperson(spec.approver))
-            row.append(fperson(spec.owner))
-            if spec.distroseries is None:
-                row.append('none')
-            else:
-                row.append(spec.distroseries.name)
-            row.append(spec.direction_approved)
-            row.append(spec.man_days)
-            row.append(dbschema(spec.implementation_status))
-            writer.writerow([unicode(item).encode('utf8') for item in row])
-        self.request.response.setHeader('Content-Type', 'text/plain')
-        return output.getvalue()
 
     @cachedproperty
     def has_any_specifications(self):

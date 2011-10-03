@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import simplejson
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from BeautifulSoup import BeautifulSoup
 
@@ -16,6 +17,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -216,7 +218,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def createInitializedSecrecyView(self, person=None, bug=None,
-                                     request=None):
+                                     request=None, security_related=False):
         """Create and return an initialized BugSecrecyView."""
         if person is None:
             person = self.factory.makePerson()
@@ -226,7 +228,8 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             view = create_initialized_view(
                 bug.default_bugtask, name='+secrecy', form={
                     'field.private': 'on',
-                    'field.security_related': '',
+                    'field.security_related':
+                        'on' if security_related else 'off',
                     'field.actions.change': 'Change',
                     },
                 request=request)
@@ -272,9 +275,17 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # When the bug secrecy view is called from an ajax request, it should
         # provide a json encoded dict when rendered. The dict contains bug
         # subscription information resulting from the update to the bug
-        # privacy.
+        # privacy as well as information used to populate the updated
+        # subscribers list.
+        feature_flag = {
+            'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'
+            }
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
+
         person = self.factory.makePerson()
-        bug = self.factory.makeBug()
+        bug = self.factory.makeBug(owner=person)
         with person_logged_in(person):
             bug.subscribe(person, person)
 
@@ -283,10 +294,12 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             method='POST', form={
                 'field.actions.change': 'Change',
                 'field.private': 'on',
-                'field.security_related': 'ff'},
+                'field.security_related': 'off'},
             **extra)
         view = self.createInitializedSecrecyView(person, bug, request)
-        cache_data = simplejson.loads(view.render())
+        result_data = simplejson.loads(view.render())
+
+        cache_data = result_data['cache_data']
         self.assertFalse(cache_data['other_subscription_notifications'])
         subscription_data = cache_data['subscription']
         self.assertEqual(
@@ -297,3 +310,18 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             subscription_data['person_link'])
         self.assertEqual(
             'Discussion', subscription_data['bug_notification_level'])
+
+        [subscriber_data] = result_data['subscription_data']
+        subscriber = removeSecurityProxy(bug.default_bugtask).pillar.owner
+        self.assertEqual(
+            subscriber.name, subscriber_data['subscriber']['name'])
+        self.assertEqual('Discussion', subscriber_data['subscription_level'])
+
+    def test_set_security_related(self):
+        # Test that the bug attribute 'security_related' can be updated
+        # using the view.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=owner)
+        self.createInitializedSecrecyView(bug=bug, security_related=True)
+        with person_logged_in(owner):
+            self.assertTrue(bug.security_related)

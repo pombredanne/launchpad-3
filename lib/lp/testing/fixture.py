@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'RabbitServer',
     'ZopeAdapterFixture',
     'ZopeEventHandlerFixture',
     'ZopeViewReplacementFixture',
@@ -13,14 +12,12 @@ __all__ = [
 
 from ConfigParser import SafeConfigParser
 import os.path
-from textwrap import dedent
 
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
 import pgbouncer.fixture
-import rabbitfixture.server
 from zope.component import (
     getGlobalSiteManager,
     provideHandler,
@@ -34,24 +31,6 @@ from zope.security.checker import (
     )
 
 from canonical.config import config
-
-
-class RabbitServer(rabbitfixture.server.RabbitServer):
-    """A RabbitMQ server fixture with Launchpad-specific config.
-
-    :ivar service_config: A snippet of .ini that describes the `rabbitmq`
-        configuration.
-    """
-
-    def setUp(self):
-        super(RabbitServer, self).setUp()
-        self.config.service_config = dedent("""\
-            [rabbitmq]
-            host: localhost:%d
-            userid: guest
-            password: guest
-            virtual_host: /
-            """ % self.config.port)
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -85,6 +64,10 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
             self.users[section_name] = 'trusted'
             self.users[section_name + '_ro'] = 'trusted'
         self.users[os.environ['USER']] = 'trusted'
+        self.users['pgbouncer'] = 'trusted'
+
+        # Administrative access is useful for debugging.
+        self.admin_users = ['launchpad', 'pgbouncer', os.environ['USER']]
 
     def setUp(self):
         super(PGBouncerFixture, self).setUp()

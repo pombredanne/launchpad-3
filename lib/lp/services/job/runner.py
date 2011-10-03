@@ -39,32 +39,37 @@ from ampoule import (
     )
 from lazr.delegates import delegates
 import transaction
-from twisted.internet import (
-    defer,
-    reactor,
+from twisted.internet import reactor
+from twisted.internet.defer import (
+    inlineCallbacks,
+    succeed,
     )
 from twisted.protocols import amp
-from twisted.python import log
+from twisted.python import (
+    failure,
+    log,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
-from canonical.lp import initZopeless
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
     LeaseHeld,
     SuspendJobException,
     )
-from lp.services.mail.sendmail import MailController
+from lp.services.mail.sendmail import (
+    MailController,
+    set_immediate_mail_delivery,
+    )
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.twistedsupport import run_reactor
-from lp.services.twistedsupport.task import (
-    ParallelLimitedTaskConsumer,
-    PollingTaskSource,
-    )
 
 
 class BaseRunnableJobSource:
@@ -178,15 +183,32 @@ class BaseJobRunner(object):
         if self.error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
 
+    def acquireLease(self, job):
+        self.logger.debug(
+            'Trying to acquire lease for job in state %s' % (
+                job.status.title,))
+        try:
+            job.acquireLease()
+        except LeaseHeld:
+            self.logger.info(
+                'Could not acquire lease for %s' % self.job_str(job))
+            self.incomplete_jobs.append(job)
+            return False
+        return True
+
+    @staticmethod
+    def job_str(job):
+        class_name = job.__class__.__name__
+        ijob_id = removeSecurityProxy(job).job.id
+        return '%s (ID %d)' % (class_name, ijob_id)
+
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
         job = IRunnableJob(job)
 
-        class_name = job.__class__.__name__
-        job_id = removeSecurityProxy(job).job.id
         self.logger.info(
-            'Running %s (ID %d) in status %s' % (
-                class_name, job_id, job.status.title,))
+            'Running %s in status %s' % (
+                self.job_str(job), job.status.title))
         job.start()
         transaction.commit()
         do_retry = False
@@ -296,14 +318,7 @@ class JobRunner(BaseJobRunner):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
             job = IRunnableJob(job)
-            self.logger.debug(
-                'Trying to acquire lease for job in state %s' % (
-                    job.status.title,))
-            try:
-                job.acquireLease()
-            except LeaseHeld:
-                self.logger.debug('Could not acquire lease for job')
-                self.incomplete_jobs.append(job)
+            if not self.acquireLease(job):
                 continue
             # Commit transaction to clear the row lock.
             transaction.commit()
@@ -357,7 +372,10 @@ class JobRunnerProcess(child.AMPChild):
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
-        initZopeless(dbuser=cls.dbuser)
+        dbconfig.override(dbuser=cls.dbuser, isolation_level='read_committed')
+        # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+        # Should be removed from callsites verified to not need it.
+        set_immediate_mail_delivery(True)
 
     @staticmethod
     def __exit__(exc_type, exc_val, exc_tb):
@@ -398,11 +416,10 @@ class TwistedJobRunner(BaseJobRunner):
 
     def __init__(self, job_source, dbuser, logger=None, error_utility=None):
         env = {'PATH': os.environ['PATH']}
-        for name in ('PYTHONPATH', 'LPCONFIG'):
-            if name in os.environ:
-                env[name] = os.environ[name]
-        starter = main.ProcessStarter(
-            packages=('_pythonpath', 'twisted', 'ampoule'), env=env)
+        if 'LPCONFIG' in os.environ:
+            env['LPCONFIG'] = os.environ['LPCONFIG']
+        env['PYTHONPATH'] = os.pathsep.join(sys.path)
+        starter = main.ProcessStarter(env=env)
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
         self.import_name = '%s.%s' % (
@@ -417,27 +434,26 @@ class TwistedJobRunner(BaseJobRunner):
         :return: a Deferred that fires when the job has completed.
         """
         job = IRunnableJob(job)
-        try:
-            job.acquireLease()
-        except LeaseHeld:
-            self.incomplete_jobs.append(job)
-            return
+        if not self.acquireLease(job):
+            return succeed(None)
         # Commit transaction to clear the row lock.
         transaction.commit()
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
 
         # Log the job class and database ID for debugging purposes.
-        class_name = job.__class__.__name__
-        ijob_id = removeSecurityProxy(job).job.id
         self.logger.info(
-            'Running %s (ID %d).' % (class_name, ijob_id))
+            'Running %s.' % self.job_str(job))
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id=job_id, _deadline=deadline)
 
         def update(response):
+            if response is None:
+                self.incomplete_jobs.append(job)
+                self.logger.debug('No response for %r', job)
+                return
             if response['success']:
                 self.completed_jobs.append(job)
                 self.logger.debug('Finished %r', job)
@@ -472,36 +488,23 @@ class TwistedJobRunner(BaseJobRunner):
             oops = self._doOops(job, sys.exc_info())
             self._logOopsId(oops['id'])
 
-    def getTaskSource(self):
-        """Return a task source for all jobs in job_source."""
-
-        def producer():
-            while True:
-                # XXX: JonathanLange bug=741204: If we're getting all of the
-                # jobs at the start anyway, we can use a DeferredSemaphore,
-                # instead of the more complex PollingTaskSource, which is
-                # better suited to cases where we don't know how much work
-                # there will be.
-                jobs = list(self.job_source.iterReady())
-                if len(jobs) == 0:
-                    yield None
-                for job in jobs:
-                    yield lambda: self.runJobInSubprocess(job)
-        return PollingTaskSource(5, producer().next)
-
-    def doConsumer(self):
-        """Create a ParallelLimitedTaskConsumer for this job type."""
-        # 1 is hard-coded for now until we're sure we'd get gains by running
-        # more than one at a time.  Note that several tests, including
-        # test_timeout, rely on this being 1.
-        consumer = ParallelLimitedTaskConsumer(1, logger=None)
-        return consumer.consume(self.getTaskSource())
-
+    @inlineCallbacks
     def runAll(self):
-        """Run all ready jobs, and any that become ready while running."""
+        """Run all ready jobs."""
         self.pool.start()
-        d = defer.maybeDeferred(self.doConsumer)
-        d.addCallbacks(self.terminated, self.failed)
+        try:
+            try:
+                job = None
+                for job in self.job_source.iterReady():
+                    yield self.runJobInSubprocess(job)
+                if job is None:
+                    self.logger.info('No jobs to run.')
+                self.terminated()
+            except:
+                self.failed(failure.Failure())
+        except:
+            self.terminated()
+            raise
 
     def terminated(self, ignored=None):
         """Callback to stop the processpool and reactor."""

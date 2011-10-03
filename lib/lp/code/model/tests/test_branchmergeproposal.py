@@ -1043,9 +1043,11 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             product = self.factory.makeProduct(name=product_name)
+        stacked_on_branch = self.factory.makeProductBranch(
+            product=product, owner=owner, registrant=registrant)
         branch = self.factory.makeProductBranch(
             product=product, owner=owner, registrant=registrant,
-            name=branch_name)
+            name=branch_name, stacked_on=stacked_on_branch)
         if registrant is None:
             registrant = owner
         bmp = branch.addLandingTarget(
@@ -1202,8 +1204,10 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 
         proposal = self._make_merge_proposal(
             'xray', 'november', 'work', registrant=albert)
-        # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).explicitly_private = True
+        # Mark the source branch private by making it's stacked on branch
+        # private.
+        removeSecurityProxy(
+            proposal.source_branch.stacked_on).explicitly_private = True
 
         november = getUtility(IProductSet).getByName('november')
         # The proposal is visible to charles.

@@ -18,7 +18,7 @@ news feed.
     ...     """The contents of the latest news portlet."""
     ...     return extract_text(find_portlet(content, 'Announcements'))
     >>> def count_show_links(content):
-    ...     """Determine whether the "Read more announcements" link is shown."""
+    ...     """Is the "Read more announcements" link shown?"""
     ...     return len(find_tags_by_class(
     ...         content, 'menu-link-announcements'))
     >>> def no_announcements(content):
@@ -186,7 +186,7 @@ announcement immediately:
     ...     'Derby announcement summary')
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.title
-    Derby - Java Database in Launchpad
+    Derby in Launchpad
     >>> 'Derby announcement' in latest_news(priv_browser.contents)
     True
 
@@ -206,7 +206,7 @@ date in the future when the announcement will be made:
     ...          '2021-12-24 09:00:00')
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.title
-    Jokosher Audio Editor in Launchpad
+    Jokosher in Launchpad
     >>> 'Jokosher announcement' in latest_news(priv_browser.contents)
     True
 
@@ -222,7 +222,7 @@ a date for the announcement at all:
     >>> priv_browser.getControl('some time in the future').click()
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.title
-    Kubuntu - Free KDE-based Linux in Launchpad
+    Kubuntu in Launchpad
     >>> "Kubuntu announcement" in latest_news(priv_browser.contents)
     True
 
@@ -236,7 +236,7 @@ And finally for RedHat, an IDistribution, with immediate announcement:
     ...     'RedHat announcement summary')
     >>> priv_browser.getControl('Make announcement').click()
     >>> print priv_browser.title
-    Redhat Advanced Server in Launchpad
+    Red Hat in Launchpad
     >>> "RedHat announcement" in latest_news(priv_browser.contents)
     True
 
@@ -279,7 +279,7 @@ page that any user can navigate.
 
     >>> anon_browser.getLink("Read all announcements").click()
     >>> print anon_browser.title
-    Derby news and announcements...
+    News and announcements...
 
 
 Listings
@@ -377,7 +377,7 @@ We can publish this announcement immediately.
 Doing so takes us back to the list of announcements.
 
     >>> print priv_browser.title
-    Kubuntu news and announcements...
+    News and announcements...
 
 And since the announcement has been made, the everybody can now see
 it too:
@@ -507,7 +507,7 @@ available on the individual announcement pages.
     ...     'http://apache.org/modified/url/')
     >>> priv_browser.getControl('Modify').click()
     >>> print priv_browser.title
-    Apache news and announcements...
+    News and announcements...
     >>> priv_browser.open('http://launchpad.dev/tomcat/+announcements')
     >>> 'Modified headline' in announcements(priv_browser.contents)
     True
@@ -538,7 +538,7 @@ is shown as having been retracted if you are a privileged user.
 
     >>> priv_browser.getControl('Retract').click()
     >>> print priv_browser.title
-    Kubuntu news and announcements...
+    News and announcements...
     >>> 'Kubuntu announcement ' in announcements(priv_browser.contents)
     True
     >>> 'Retracted' in announcements(priv_browser.contents)
@@ -570,7 +570,7 @@ Once something has been retracted, it can be published again.
     ...     name="field.publication_date.announcement_date").value = ''
     >>> priv_browser.getControl('Publish').click()
     >>> print priv_browser.title
-    Kubuntu news and announcements...
+    News and announcements...
 
 And once again it is visible to unprivileged users:
 
@@ -596,7 +596,7 @@ it.
     >>> priv_browser.getControl('For').value = 'guadalinex'
     >>> priv_browser.getControl('Retarget').click()
     >>> print priv_browser.title
-    GuadaLinex news and announcements...
+    News and announcements...
     >>> 'Kubuntu announcement' in announcements(priv_browser.contents)
     True
 
@@ -612,7 +612,8 @@ not be able to move it.
     Move announcement : Kubuntu announcement headline : GuadaLinex
     >>> kamion_browser.getControl('For').value = 'kubuntu'
     >>> kamion_browser.getControl('Retarget').click()
-    >>> "don't have permission" in extract_text(find_main_content(kamion_browser.contents))
+    >>> "don't have permission" in extract_text(
+    ...     find_main_content(kamion_browser.contents))
     True
     >>> print kamion_browser.title
     Move announcement : Kubuntu announcement headline : GuadaLinex
@@ -635,7 +636,8 @@ The feeds are published even when there are no announcements.
     >>> 'NetApplet Announcements' in nopriv_browser.contents
     True
 
-The "self" link should point to the original URL, in the feeds.launchpad.dev domain.
+The "self" link should point to the original URL, in the feeds.launchpad.dev
+domain.
 
     >>> strainer = SoupStrainer('link', rel='self')
     >>> links = parse_links(nopriv_browser.contents, rel='self')
@@ -675,7 +677,8 @@ Retracted items do not show up either.
     tag:launchpad.net,...:/+announcement/28
 
     >>> priv_browser.open('http://launchpad.dev/guadalinex/+announcements')
-    >>> 'Kubuntu announcement headline' in announcements(priv_browser.contents)
+    >>> "Kubuntu announcement headline" in (
+    ...     announcements(priv_browser.contents))
     True
     >>> priv_browser.getLink('Kubuntu announcement headline').click()
     >>> priv_browser.getLink('Delete announcement').click()
@@ -733,9 +736,10 @@ hosted in Launchpad:
 
 It excludes retracted and future announcements too:
 
-    >>> '[guadalinex] Kubuntu announcement headline' in nopriv_browser.contents
+    >>> "[guadalinex] Kubuntu announcement headline" in (
+    ...     nopriv_browser.contents)
     False
-    >>> '[jokosher] Jokosher announcement headline' in nopriv_browser.contents
+    >>> "[jokosher] Jokosher announcement headline" in nopriv_browser.contents
     False
 
 The announcements are stored as plain text, but the text-to-html formatter
@@ -777,6 +781,6 @@ An owner can permanently delete an announcement.
     Delete announcement : Kubuntu announcement headline : GuadaLinex
     >>> kamion_browser.getControl('Delete').click()
     >>> print priv_browser.title
-    GuadaLinex news and announcements...
+    News and announcements...
     >>> no_announcements(kamion_browser.contents)
     True

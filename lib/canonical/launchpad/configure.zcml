@@ -12,7 +12,6 @@
 
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
-  <include file="links.zcml" />
   <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
@@ -78,12 +77,12 @@
   <i18n:registerTranslations directory="locales" />
 
   <browser:navigation
-      module="canonical.launchpad.browser"
+      module="lp.app.browser.launchpad"
       classes="LaunchpadRootNavigation"
       />
 
   <browser:navigation
-      module="canonical.launchpad.browser"
+      module="lp.app.browser.launchpad"
       classes="LaunchpadRootNavigation"
       layer="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
       />

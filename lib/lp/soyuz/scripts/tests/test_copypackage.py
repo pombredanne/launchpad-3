@@ -263,7 +263,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # Create a brand new PPA.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
 
         # Make it private if necessary.
         if private:
@@ -307,7 +307,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # files related to it will remain private.
         public_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         public_source = private_source.copyTo(
             private_source.distroseries, private_source.pocket,
             public_archive)
@@ -382,7 +382,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # files related to it will remain private.
         public_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         public_binary = private_binary.copyTo(
             private_source.distroseries, private_source.pocket,
             public_archive)[0]
@@ -419,7 +419,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # Copy The original source and binaries to a private PPA.
         private_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         private_archive.buildd_secret = 'x'
         private_archive.private = True
 
@@ -594,8 +594,8 @@ class CopyCheckerQueries(TestCaseWithFactory,
         sources = []
         for i in xrange(nb_of_sources):
             source = self.test_publisher.getPubSource(
-                version = u'%d' % self.factory.getUniqueInteger(),
-                sourcename = u'name-%d' % self.factory.getUniqueInteger())
+                version=u'%d' % self.factory.getUniqueInteger(),
+                sourcename=u'name-%d' % self.factory.getUniqueInteger())
             sources.append(source)
         return sources
 
@@ -1602,6 +1602,27 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         # Only the source package has been copied.
         self.assertEqual(1, len(copies))
+
+    def test_copy_sets_creator(self):
+        # The creator for the copied SPPH is the person passed
+        # to do_copy.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        [copied_source] = do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=False)
+
+        self.assertEqual(
+            target_archive.owner,
+            copied_source.creator)
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):

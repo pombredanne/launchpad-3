@@ -14,6 +14,8 @@ import subprocess
 import sys
 
 import fixtures
+from lazr.config import as_host_port
+from rabbitfixture.server import RabbitServerResources
 from zope.app.server.main import main
 
 from canonical.config import config
@@ -22,9 +24,11 @@ from canonical.lazr.pidfile import (
     make_pidfile,
     pidfile_path,
     )
+from lp.services.googlesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
-from lp.services.googlesearch import googletestservice
+from lp.services.rabbit.server import RabbitServer
+from lp.services.txlongpoll.server import TxLongPollServer
 
 
 def make_abspath(path):
@@ -221,6 +225,42 @@ class ForkingSessionService(Service):
         process.stdin.close()
 
 
+class RabbitService(Service):
+    """A RabbitMQ service."""
+
+    @property
+    def should_launch(self):
+        return config.rabbitmq.launch
+
+    def launch(self):
+        hostname, port = as_host_port(config.rabbitmq.host, None, None)
+        self.server = RabbitServer(
+            RabbitServerResources(hostname=hostname, port=port))
+        self.useFixture(self.server)
+
+
+class TxLongPollService(Service):
+    """A TxLongPoll service."""
+
+    @property
+    def should_launch(self):
+        return config.txlongpoll.launch
+
+    def launch(self):
+        txlongpoll_bin = os.path.join(config.root, 'bin', 'txlongpoll')
+        broker_hostname, broker_port = as_host_port(
+            config.rabbitmq.host, None, None)
+        self.server = TxLongPollServer(
+            txlongpoll_bin = txlongpoll_bin,
+            frontend_port = config.txlongpoll.frontend_port,
+            broker_user = config.rabbitmq.userid,
+            broker_password = config.rabbitmq.password,
+            broker_vhost = config.rabbitmq.virtual_host,
+            broker_host = broker_hostname,
+            broker_port = broker_port)
+        self.useFixture(self.server)
+
+
 def stop_process(process):
     """kill process and BLOCK until process dies.
 
@@ -245,6 +285,8 @@ SERVICES = {
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),
     'memcached': MemcachedService(),
+    'rabbitmq': RabbitService(),
+    'txlongpoll': TxLongPollService(),
     }
 
 
@@ -287,8 +329,8 @@ def process_config_arguments(args):
     """
     if '-i' in args:
         index = args.index('-i')
-        config.setInstance(args[index+1])
-        del args[index:index+2]
+        config.setInstance(args[index + 1])
+        del args[index:index + 2]
 
     if '-C' not in args:
         zope_config_file = config.zope_config_file
@@ -300,7 +342,62 @@ def process_config_arguments(args):
     return args
 
 
-def start_launchpad(argv=list(sys.argv)):
+def start_testapp(argv=list(sys.argv)):
+    from canonical.testing.layers import (
+        BaseLayer,
+        DatabaseLayer,
+        LayerProcessController,
+        LibrarianLayer,
+        RabbitMQLayer,
+        )
+    from lp.testing.pgsql import (
+        installFakeConnect,
+        uninstallFakeConnect,
+        )
+    assert config.instance_name.startswith('testrunner-appserver'), (
+        '%r does not start with "testrunner-appserver"' %
+        config.instance_name)
+    interactive_tests = 'INTERACTIVE_TESTS' in os.environ
+
+    def setup():
+        # This code needs to be run after other zcml setup happens in
+        # runlaunchpad, so it is passed in as a callable.
+        BaseLayer.setUp()
+        if interactive_tests:
+            # The test suite runs its own RabbitMQ.  We only need this
+            # for interactive tests.  We set it up here rather than by
+            # passing it in as an argument to start_launchpad because
+            # the appserver config does not normally need/have
+            # RabbitMQ config set.
+            RabbitMQLayer.setUp()
+        # We set up the database here even for the test suite because we want
+        # to be able to control the database here in the subprocess.  It is
+        # possible to do that when setting the database up in the parent
+        # process, but it is messier.  This is simple.
+        installFakeConnect()
+        DatabaseLayer.setUp()
+        # The Librarian needs access to the database, so setting it up here
+        # where we are setting up the database makes the most sense.
+        LibrarianLayer.setUp()
+        # Interactive tests always need this.  We let functional tests use
+        # a local one too because of simplicity.
+        LayerProcessController.startSMTPServer()
+    try:
+        start_launchpad(argv, setup)
+    finally:
+        LayerProcessController.stopSMTPServer()
+        LibrarianLayer.tearDown()
+        DatabaseLayer.tearDown()
+        uninstallFakeConnect()
+        if interactive_tests:
+            try:
+                RabbitMQLayer.tearDown()
+            except NotImplementedError:
+                pass
+        BaseLayer.tearDown()
+
+
+def start_launchpad(argv=list(sys.argv), setup=None):
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
@@ -308,21 +405,22 @@ def start_launchpad(argv=list(sys.argv)):
     services = get_services_to_run(services)
     # Create the ZCML override file based on the instance.
     config.generate_overrides()
-
     # Many things rely on a directory called 'logs' existing in the current
     # working directory.
     ensure_directory_exists('logs')
+    if setup is not None:
+        # This is the setup from start_testapp, above.
+        setup()
     with nested(*services):
         # Store our process id somewhere
         make_pidfile('launchpad')
-
         if config.launchpad.launch:
             main(argv)
         else:
-            # We just need the foreground process to sit around forever waiting
-            # for the signal to shut everything down.  Normally, Zope itself would
-            # be this master process, but we're not starting that up, so we need
-            # to do something else.
+            # We just need the foreground process to sit around forever
+            # waiting for the signal to shut everything down.  Normally,
+            # Zope itself would be this master process, but we're not
+            # starting that up, so we need to do something else.
             try:
                 signal.pause()
             except KeyboardInterrupt:

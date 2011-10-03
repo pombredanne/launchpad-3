@@ -173,8 +173,9 @@ Page Footers
     Canonical&nbsp;Ltd. http://canonical.com/
     Terms of use http://launchpad.dev/legal
     Contact Launchpad Support /feedback
+    Blog http://blog.launchpad.net/
     System status http://identi.ca/launchpadstatus
-    get the code https://code.launchpad.net/~launchpad-pqm/launchpad/stable/
+    Get the code! https://dev.launchpad.net/
 
 
 Page registering

@@ -244,7 +244,7 @@
             tal:condition="view/macro:pagehas/globalsearch"
             tal:attributes="action string:${rooturl}+search">
             <input type="search" id="search-text" name="field.text" />
-            <input type="submit" value="" class="icon-only sprite search-icon" />
+            <input type="image" src="/@@/search" style="vertical-align:5%" alt="Search Launchpad"/>
           </form>
         </div>
         <metal:site-message
@@ -262,6 +262,9 @@
       <a tal:condition="view/user|nothing"
         href="/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
+      <a href="http://blog.launchpad.net/"
+	>Blog</a>
+      &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
       <span id="lp-version">
@@ -269,8 +272,8 @@
         r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
-        (<a href="https://code.launchpad.net/~launchpad-pqm/launchpad/stable/"
-             >get the code</a>)
+        (<a href="https://dev.launchpad.net/"
+             >Get the code!</a>)
       </span>
     </div>
   </div>

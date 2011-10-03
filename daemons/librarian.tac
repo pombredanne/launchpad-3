@@ -25,7 +25,9 @@ from canonical.librarian import web as fatweb
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 # Connect to database
-dbconfig.setConfigSection('librarian')
+dbconfig.override(
+    dbuser=config.librarian.dbuser,
+    isolation_level=config.librarian.isolation_level)
 execute_zcml_for_scripts()
 
 if os.environ.get('LP_TEST_INSTANCE'):

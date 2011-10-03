@@ -92,6 +92,7 @@ Run gina without a powerpc processor for the powerpc family:
     ...              'dapper', 'dapper-updates']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
+    WARNING ...
     ERROR   Database setup required for run on powerpc
     -> http://... (Unable to find a processor...dapper/powerpc)
     <BLANKLINE>
@@ -113,6 +114,7 @@ just warn it and move right ahead.
     ...              'dapper', 'dapper-updates']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
+    WARNING ...
     WARNING No source package bdftopcf (0.99.0-1) listed for bdftopcf (0.99.0-1), scrubbing archive...
     WARNING The archive for dapper-updates/universe doesn't contain a directory for powerpc, skipping
     <BLANKLINE>
