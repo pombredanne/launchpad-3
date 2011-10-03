@@ -912,7 +912,6 @@ class TestBugTaskEditView(TestCaseWithFactory):
         notifications = view.request.response.notifications
         self.assertEqual(0, len(notifications))
 
-
     def test_retarget_private_bug(self):
         # If a private bug is re-targetted such that the bug is no longer
         # visible to the user, they are redirected to the pillar's bug index
