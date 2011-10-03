@@ -34,7 +34,6 @@ from zope.schema import (
     List,
     TextLine,
     )
-from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -78,6 +77,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
