@@ -256,14 +256,3 @@ class RabbitQueue(RabbitMessageBase):
                     raise QueueNotFound()
                 else:
                     raise
-
-        # XXX The code below will be useful when we can implement this
-        # properly.
-        result = []
-
-        def callback(msg):
-            result.append(json.loads(msg.body))
-
-        self.channel.basic_consume(self.name, callback=callback)
-        self.channel.wait()
-        return result[0]
