@@ -115,6 +115,16 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         dsp = sp.distribution_sourcepackage
         self.assertTrue(dsp.delete())
 
+    def test_is_official_with_db_true(self):
+        # A DSP is official when it is represented in the database.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertTrue(dsp.is_official)
+
+    def test_is_official_without_db_false(self):
+        # A DSP is not official if it is virtual.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=False)
+        self.assertFalse(dsp.is_official)
+
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
 

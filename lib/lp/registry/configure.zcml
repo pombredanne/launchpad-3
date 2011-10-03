@@ -488,6 +488,7 @@
                 getUsedBugTagsWithOpenCounts
                 getVersion
                 get_distroseries_packages
+                is_official
                 latest_overall_publication
                 name
                 official_bug_tags
