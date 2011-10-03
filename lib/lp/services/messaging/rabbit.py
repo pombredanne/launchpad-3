@@ -29,7 +29,6 @@ from lp.services.messaging.interfaces import (
     MessagingException,
     MessagingUnavailable,
     )
-from lp.services.messaging.utils import make_finish_ro_request_handler
 
 
 LAUNCHPAD_EXCHANGE = "launchpad-exchange"
@@ -137,8 +136,8 @@ class RabbitSession(threading.local):
 
 # Per-thread sessions.
 session = RabbitSession()
-session_finish_ro_request_handler = (
-    make_finish_ro_request_handler(session))
+session_finish_handler = (
+    lambda event: session.finish())
 
 
 class RabbitUnreliableSession(RabbitSession):
@@ -169,8 +168,8 @@ class RabbitUnreliableSession(RabbitSession):
 
 # Per-thread "unreliable" sessions.
 unreliable_session = RabbitUnreliableSession()
-unreliable_session_finish_ro_request_handler = (
-    make_finish_ro_request_handler(unreliable_session))
+unreliable_session_finish_handler = (
+    lambda event: unreliable_session.finish())
 
 
 class RabbitMessageBase:
