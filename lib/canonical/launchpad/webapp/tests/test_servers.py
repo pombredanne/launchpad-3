@@ -32,19 +32,24 @@ from zope.interface import (
     Interface,
     )
 
+from canonical.launchpad.webapp.interfaces import IFinishReadOnlyRequestEvent
+from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
     ApplicationServerSettingRequestFactory,
     LaunchpadBrowserRequest,
     LaunchpadTestRequest,
     VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory,
+    web_service_request_to_browser_request,
     WebServiceClientRequest,
     WebServicePublication,
     WebServiceRequestPublicationFactory,
     WebServiceTestRequest,
-    web_service_request_to_browser_request,
     )
-from lp.testing import TestCase
+from lp.testing import (
+    EventRecorder,
+    TestCase,
+    )
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):
@@ -569,6 +574,73 @@ class TestWebServiceRequestToBrowserRequest(WebServiceTestCase):
         self.assertEqual(
             web_service_request.get('PATH_INFO'),
             browser_request.get('PATH_INFO'))
+
+
+class FakeTransaction:
+
+    def __init__(self):
+        self.log = []
+
+    def commit(self):
+        self.log.append("COMMIT")
+
+    def abort(self):
+        self.log.append("ABORT")
+
+
+class TestFinishReadOnlyRequest(TestCase):
+
+    def test_WebServicePub_fires_FinishReadOnlyRequestEvent(self):
+        # WebServicePublication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and commits the transaction.
+        fake_request = object()
+        fake_object = object()
+        fake_transaction = FakeTransaction()
+
+        publication = WebServicePublication(None)
+        with EventRecorder() as event_recorder:
+            publication.finishReadOnlyRequest(
+                fake_request, fake_object, fake_transaction)
+        self.assertEqual(["COMMIT"], fake_transaction.log)
+
+        finish_events = [
+            event for event in event_recorder.events
+            if IFinishReadOnlyRequestEvent.providedBy(event)]
+
+        self.assertEqual(
+            1, len(finish_events), (
+                "Expected only one IFinishReadOnlyRequestEvent, but "
+                "got: %r" % finish_events))
+
+        [finish_event] = finish_events
+        self.assertIs(fake_request, finish_event.request)
+        self.assertIs(fake_object, finish_event.object)
+
+    def test_LaunchpadBrowserPub_fires_FinishReadOnlyRequestEvent(self):
+        # LaunchpadBrowserPublication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and aborts the transaction.
+        fake_request = object()
+        fake_object = object()
+        fake_transaction = FakeTransaction()
+
+        publication = LaunchpadBrowserPublication(None)
+        with EventRecorder() as event_recorder:
+            publication.finishReadOnlyRequest(
+                fake_request, fake_object, fake_transaction)
+        self.assertEqual(["ABORT"], fake_transaction.log)
+
+        finish_events = [
+            event for event in event_recorder.events
+            if IFinishReadOnlyRequestEvent.providedBy(event)]
+
+        self.assertEqual(
+            1, len(finish_events), (
+                "Expected only one IFinishReadOnlyRequestEvent, but "
+                "got: %r" % finish_events))
+
+        [finish_event] = finish_events
+        self.assertIs(fake_request, finish_event.request)
+        self.assertIs(fake_object, finish_event.object)
 
 
 def test_suite():

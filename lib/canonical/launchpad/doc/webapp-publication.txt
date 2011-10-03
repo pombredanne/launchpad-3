@@ -902,33 +902,6 @@ some string in its finishReadOnlyRequest().
     >>> publication.afterCall(request, None)
     booo!
 
-LaunchpadBrowserPublication.finishReadOnlyRequest() issues an
-IFinishReadOnlyRequestEvent and aborts the transaction.
-
-    >>> from lp.testing import EventRecorder
-    >>> from lp.testing.faketransaction import FakeTransaction
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     IFinishReadOnlyRequestEvent)
-
-    >>> fake_request = object()
-    >>> fake_object = object()
-    >>> fake_transaction = FakeTransaction(log_calls=True)
-
-    >>> publication = LaunchpadBrowserPublication(None)
-    >>> with EventRecorder() as event_recorder:
-    ...     publication.finishReadOnlyRequest(
-    ...         fake_request, fake_object, fake_transaction)
-    ABORT
-
-    >>> for event in event_recorder.events:
-    ...     print type(event).__name__
-    ...     if IFinishReadOnlyRequestEvent.providedBy(event):
-    ...         print "- Request matches:", event.request is fake_request
-    ...         print "- Object matches:", event.object is fake_object
-    FinishReadOnlyRequestEvent
-    - Request matches: True
-    - Object matches: True
-
 In the default implementation, the following database modification will
 be automatically reverted in a GET request.
 

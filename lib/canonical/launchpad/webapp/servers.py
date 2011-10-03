@@ -34,6 +34,7 @@ from zope.app.publication.requestpublicationregistry import (
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import (
     alsoProvides,
     implements,
@@ -81,6 +82,7 @@ from canonical.launchpad.webapp.authorization import (
     )
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.interfaces import (
+    FinishReadOnlyRequestEvent,
     IAPIDocRoot,
     IBasicLaunchpadRequest,
     IBrowserFormNG,
@@ -1208,6 +1210,7 @@ class WebServicePublication(WebServicePublicationMixin,
 
     def finishReadOnlyRequest(self, request, ob, txn):
         """Commit the transaction so that created OAuthNonces are stored."""
+        notify(FinishReadOnlyRequestEvent(ob, request))
         # Transaction commits usually need to be aware of the possibility of
         # a doomed transaction.  We do not expect that this code will
         # encounter doomed transactions.  If it does, this will need to be
