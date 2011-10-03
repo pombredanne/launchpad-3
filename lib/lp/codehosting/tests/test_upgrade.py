@@ -9,6 +9,7 @@ from bzrlib.repofmt.groupcompress_repo import (
     RepositoryFormat2a, RepositoryFormat2aSubtree)
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.bzr import (
@@ -63,28 +64,31 @@ class TestUpgrader(TestCaseWithFactory):
         """Upgrade a pack-0.92 branch."""
         upgrader = self.prepare()
         upgrader.start_upgrade()
-        upgraded = upgrader.finish_upgrade().open_branch()
-        self.check_branch(upgraded)
+        upgrader.finish_upgrade()
+        self.check_branch(
+            upgrader.branch.getBzrBranch())
 
     def test_subtree_upgrade(self):
         """Upgrade a pack-0.92-subtree branch."""
         upgrader = self.prepare('pack-0.92-subtree')
         upgrader.start_upgrade()
-        upgraded = upgrader.finish_upgrade().open_branch()
-        self.check_branch(upgraded)
+        upgrader.finish_upgrade()
+        self.check_branch(upgrader.branch.getBzrBranch())
 
     def test_upgrade_loom(self):
         """Upgrade a loomified pack-0.92 branch."""
         upgrader = self.prepare(loomify_branch=True)
         upgrader.start_upgrade()
-        upgraded = upgrader.finish_upgrade().open_branch()
+        upgrader.finish_upgrade()
+        upgraded = removeSecurityProxy(upgrader.branch.getBzrBranch())
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_upgrade_subtree_loom(self):
         """Upgrade a loomified pack-0.92-subtree branch."""
         upgrader = self.prepare('pack-0.92-subtree', loomify_branch=True)
         upgrader.start_upgrade()
-        upgraded = upgrader.finish_upgrade().open_branch()
+        upgrader.finish_upgrade()
+        upgraded = removeSecurityProxy(upgrader.branch.getBzrBranch())
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_default_repo_format(self):

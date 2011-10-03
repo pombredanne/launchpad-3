@@ -93,7 +93,7 @@ class Upgrader:
             self.branch.id)
         with read_locked(self.bzr_branch):
             bd = self.add_upgraded_branch()
-        return bd
+        self.swap_in()
 
     def add_upgraded_branch(self):
         """Add an upgraded branch to the target_subdir.
