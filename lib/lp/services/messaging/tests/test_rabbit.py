@@ -415,7 +415,7 @@ class TestRabbitWithLaunchpad(RabbitTestCase):
             getUtility(IMessageSession))
 
     def _test_session_finish_read_only_request(self, session):
-        # When a read-only request ends the session's queue is flushed.
+        # When a read-only request ends the session is also finished.
         log = []
         task = lambda: log.append("task")
         session.defer(task)
@@ -423,13 +423,13 @@ class TestRabbitWithLaunchpad(RabbitTestCase):
         notify(FinishReadOnlyRequestEvent(None, None))
         self.assertEqual(["task"], log)
         self.assertEqual([], list(session._deferred))
-        self.assertTrue(session.is_connected)
+        self.assertFalse(session.is_connected)
 
     def test_global_session_finish_read_only_request(self):
-        # When a read-only request ends, global_session's queue is flushed.
+        # When a read-only request ends the global_session is finished too.
         self._test_session_finish_read_only_request(global_session)
 
     def test_global_unreliable_session_finish_read_only_request(self):
-        # When a read-only request ends, global_unreliable_session's queue is
-        # flushed.
+        # When a read-only request ends the global_unreliable_session is
+        # finished too.
         self._test_session_finish_read_only_request(global_unreliable_session)

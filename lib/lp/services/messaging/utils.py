@@ -16,6 +16,6 @@ from canonical.launchpad.webapp.interfaces import IFinishReadOnlyRequestEvent
 
 def make_finish_ro_request_handler(session):
     @adapter(IFinishReadOnlyRequestEvent)
-    def session_flush_handler(event):
-        session.flush()
-    return session_flush_handler
+    def session_finish_handler(event):
+        session.finish()
+    return session_finish_handler
