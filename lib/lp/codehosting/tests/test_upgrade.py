@@ -62,25 +62,29 @@ class TestUpgrader(TestCaseWithFactory):
     def test_simple_upgrade(self):
         """Upgrade a pack-0.92 branch."""
         upgrader = self.prepare()
-        upgraded = upgrader.upgrade().open_branch()
+        upgrader.start_upgrade()
+        upgraded = upgrader.finish_upgrade().open_branch()
         self.check_branch(upgraded)
 
     def test_subtree_upgrade(self):
         """Upgrade a pack-0.92-subtree branch."""
         upgrader = self.prepare('pack-0.92-subtree')
-        upgraded = upgrader.upgrade().open_branch()
+        upgrader.start_upgrade()
+        upgraded = upgrader.finish_upgrade().open_branch()
         self.check_branch(upgraded)
 
     def test_upgrade_loom(self):
         """Upgrade a loomified pack-0.92 branch."""
         upgrader = self.prepare(loomify_branch=True)
-        upgraded = upgrader.upgrade().open_branch()
+        upgrader.start_upgrade()
+        upgraded = upgrader.finish_upgrade().open_branch()
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_upgrade_subtree_loom(self):
         """Upgrade a loomified pack-0.92-subtree branch."""
         upgrader = self.prepare('pack-0.92-subtree', loomify_branch=True)
-        upgraded = upgrader.upgrade().open_branch()
+        upgrader.start_upgrade()
+        upgraded = upgrader.finish_upgrade().open_branch()
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_default_repo_format(self):
@@ -119,7 +123,7 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader = self.prepare('pack-0.92-subtree')
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
-            upgrader.create_upgraded_repository()
+            upgrader.start_upgrade()
             upgraded = upgrader.add_upgraded_branch().open_branch()
         self.assertEqual('prepare-commit', upgraded.last_revision())
 
@@ -146,7 +150,7 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader.bzr_branch.tags.set_tag('steve', 'rev-id')
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
-            upgrader.create_upgraded_repository()
+            upgrader.start_upgrade()
             upgraded = upgrader.add_upgraded_branch().open_branch()
         self.assertEqual('rev-id', upgraded.tags.lookup_tag('steve'))
 
@@ -180,17 +184,18 @@ class TestUpgrader(TestCaseWithFactory):
 
     def test_swap_in(self):
         upgrader = self.prepare()
-        upgrader.upgrade()
+        upgrader.start_upgrade()
+        upgrader.add_upgraded_branch()
         upgrader.swap_in()
         self.check_branch(upgrader.branch.getBzrBranch())
 
     def test_swap_in_retains_original(self):
         upgrader = self.prepare()
-        upgrader.upgrade()
+        upgrader.start_upgrade()
+        upgrader.add_upgraded_branch()
         upgrader.swap_in()
         t = get_transport(upgrader.branch.getInternalBzrUrl())
         t = t.clone('backup.bzr')
         branch = Branch.open_from_transport(t)
         self.check_branch(branch, BranchFormat.BZR_BRANCH_6,
                           RepositoryFormat.BZR_KNITPACK_1)
-

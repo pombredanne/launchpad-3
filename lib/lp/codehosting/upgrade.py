@@ -86,15 +86,12 @@ class Upgrader:
         finally:
             server.stop_server()
 
-    def upgrade(self):
+    def finish_upgrade(self):
         """Create an upgraded version of self.branch in self.target_dir."""
-        if os.path.exists(self.target_subdir):
-            raise AlreadyUpgraded
         self.logger.info(
             'Upgrading branch %s (%s)', self.branch.unique_name,
             self.branch.id)
         with read_locked(self.bzr_branch):
-            self.create_upgraded_repository()
             bd = self.add_upgraded_branch()
         return bd
 
@@ -118,6 +115,12 @@ class Upgrader:
         except UpToDateFormat:
             pass
         return bd
+
+    def start_upgrade(self):
+        if os.path.exists(self.target_subdir):
+            raise AlreadyUpgraded
+        with read_locked(self.bzr_branch):
+            self.create_upgraded_repository()
 
     def create_upgraded_repository(self):
         """Create a repository in an upgraded format.
