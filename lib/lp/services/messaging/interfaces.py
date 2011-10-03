@@ -28,7 +28,7 @@ class MessagingUnavailable(MessagingException):
 
 
 class QueueNotFound(MessagingException):
-    """Raised if there the queue was not found."""
+    """Raised if the queue was not found."""
 
 
 class QueueEmpty(MessagingException):
