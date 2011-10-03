@@ -14,10 +14,8 @@ __all__ = [
     ]
 
 
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Interface
+from zope.schema import Bool
 
 
 class MessagingException(Exception):
@@ -34,7 +32,8 @@ class MessagingUnavailable(MessagingException):
 
 class IMessageSession(Interface):
 
-    connection = Attribute("A connection to the messaging system.")
+    is_connected = Bool(
+        u"Whether the session is connected to the messaging system.")
 
     def connect():
         """Connect to the messaging system.

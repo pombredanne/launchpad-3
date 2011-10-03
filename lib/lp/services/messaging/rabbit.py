@@ -71,17 +71,11 @@ class RabbitSession(threading.local):
         transaction.manager.registerSynch(self._sync)
 
     @property
-    def connection(self):
-        """See `IMessageSession`.
-
-        Don't return closed connection.
-        """
-        if self._connection is None:
-            return None
-        elif self._connection.transport is None:
-            return None
-        else:
-            return self._connection
+    def is_connected(self):
+        """See `IMessageSession`."""
+        return (
+            self._connection is not None and
+            self._connection.transport is not None)
 
     def connect(self):
         """See `IMessageSession`.
