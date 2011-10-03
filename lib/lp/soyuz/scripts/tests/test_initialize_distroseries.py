@@ -1157,13 +1157,13 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
     def test_derive_no_publisher_config(self):
         # Initializing a series without a publisher config
         # triggers an error.
-        distribution = self.factory.makeDistribution(no_pubconf=True)
-        child = self.factory.makeDistroSeries(
-            distribution=distribution, name='myseries')
+        distribution = self.factory.makeDistribution(
+            no_pubconf=True, name="distro")
+        child = self.factory.makeDistroSeries(distribution=distribution)
         ids = InitializeDistroSeries(child, [])
         self.assertRaisesWithContent(
             InitializationError,
-            "Series myseries has no publisher config set up.",
+            "Distribution distro has no publisher config set up.",
             ids.check)
 
     def createDistroSeriesWithPublication(self, distribution=None):

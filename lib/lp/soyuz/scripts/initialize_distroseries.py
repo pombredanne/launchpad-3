@@ -171,9 +171,9 @@ class InitializeDistroSeries:
             self.distroseries.distribution)
         if config is None:
             raise InitializationError(
-                ("Series {child.name} has no publisher config set up"
+                ("Distribution {child.name} has no publisher config set up"
                  ".").format(
-                    child=self.distroseries))
+                    child=self.distroseries.distribution))
 
     def _checkParents(self):
         """If self.first_derivation, the parents list cannot be empty."""
