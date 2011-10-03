@@ -209,10 +209,10 @@ def _maybe_profile(event):
     # still running.
     assert _profilers.profiler is None
     actions = get_desired_profile_actions(event.request)
-    _profilers.actions = actions
     if config.profiling.profile_all_requests:
         actions['callgrind'] = ''
-        _profilers.profiling = True
+    if config.profiling.memory_profile_log:
+        actions['memory_profile_start'] = (memory(), resident())
     if actions:
         if 'sql' in actions:
             condition = actions['sql']
@@ -223,9 +223,7 @@ def _maybe_profile(event):
             _profilers.profiler = Profiler()
             _profilers.profiler.start()
         _profilers.profiling = True
-    if config.profiling.memory_profile_log:
-        _profilers.memory_profile_start = (memory(), resident())
-        _profilers.profiling = True
+        _profilers.actions = actions
 
 template = PageTemplateFile(
     os.path.join(os.path.dirname(__file__), 'profile.pt'))
@@ -354,6 +352,17 @@ def end_request(event):
         template_context['multiple_profiles'] = prof_stats.count > 1
         # Try to free some more memory.
         del prof_stats
+    # Dump memory profiling info.
+    if 'memory_profile_start' in actions:
+        log = file(config.profiling.memory_profile_log, 'a')
+        vss_start, rss_start = actions.pop('memory_profile_start')
+        vss_end, rss_end = memory(), resident()
+        if oopsid is None:
+            oopsid = '-'
+        log.write('%s %s %s %f %d %d %d %d\n' % (
+            timestamp, pageid, oopsid, da.get_request_duration(),
+            vss_start, rss_start, vss_end, rss_end))
+        log.close()
     trace = None
     if 'sql' in actions:
         trace = da.stop_sql_logging() or ()
@@ -485,18 +494,6 @@ def end_request(event):
         new_html = ''.join(
             (e_start, added_html, e_close_body, e_end))
         request.response.setResult(new_html)
-    # Dump memory profiling info.
-    if _profilers.memory_profile_start is not None:
-        log = file(config.profiling.memory_profile_log, 'a')
-        vss_start, rss_start = _profilers.memory_profile_start
-        _profilers.memory_profile_start = None
-        vss_end, rss_end = memory(), resident()
-        if oopsid is None:
-            oopsid = '-'
-        log.write('%s %s %s %f %d %d %d %d\n' % (
-            timestamp, pageid, oopsid, da.get_request_duration(),
-            vss_start, rss_start, vss_end, rss_end))
-        log.close()
 
 
 def get_desired_profile_actions(request):
