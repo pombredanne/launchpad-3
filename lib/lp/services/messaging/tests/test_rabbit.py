@@ -105,10 +105,10 @@ class TestRabbitSession(RabbitTestCase):
 
     def test_connect(self):
         session = self.session_factory()
-        self.assertIs(None, session.connection)
+        self.assertFalse(session.is_connected)
         connection = session.connect()
-        self.assertIsNot(None, session.connection)
-        self.assertIs(connection, session.connection)
+        self.assertTrue(session.is_connected)
+        self.assertIs(connection, session._connection)
 
     def test_connect_with_incomplete_configuration(self):
         self.pushConfig("rabbitmq", host="none")
@@ -121,15 +121,15 @@ class TestRabbitSession(RabbitTestCase):
         session = self.session_factory()
         session.connect()
         session.disconnect()
-        self.assertIs(None, session.connection)
+        self.assertFalse(session.is_connected)
 
-    def test_connection(self):
-        # The connection property is None once a connection has been closed.
+    def test_is_connected(self):
+        # is_connected is False once a connection has been closed.
         session = self.session_factory()
         session.connect()
         # Close the connection without using disconnect().
-        session.connection.close()
-        self.assertIs(None, session.connection)
+        session._connection.close()
+        self.assertFalse(session.is_connected)
 
     def test_defer(self):
         task = lambda foo, bar: None
@@ -152,7 +152,7 @@ class TestRabbitSession(RabbitTestCase):
         session.flush()
         self.assertEqual(["task"], log)
         self.assertEqual([], list(session._deferred))
-        self.assertIsNot(None, session.connection)
+        self.assertTrue(session.is_connected)
 
     def test_reset(self):
         # RabbitSession.reset() resets session variables and does not run
@@ -165,7 +165,7 @@ class TestRabbitSession(RabbitTestCase):
         session.reset()
         self.assertEqual([], log)
         self.assertEqual([], list(session._deferred))
-        self.assertIs(None, session.connection)
+        self.assertFalse(session.is_connected)
 
     def test_finish(self):
         # RabbitSession.finish() resets session variables after running
@@ -178,7 +178,7 @@ class TestRabbitSession(RabbitTestCase):
         session.finish()
         self.assertEqual(["task"], log)
         self.assertEqual([], list(session._deferred))
-        self.assertIs(None, session.connection)
+        self.assertFalse(session.is_connected)
 
     def test_getProducer(self):
         session = self.session_factory()
@@ -244,9 +244,9 @@ class TestRabbitMessageBase(RabbitTestCase):
     def test_channel(self):
         # Referencing the channel property causes the session to connect.
         base = RabbitMessageBase(global_session)
-        self.assertIs(None, base.session.connection)
+        self.assertFalse(base.session.is_connected)
         channel = base.channel
-        self.assertIsNot(None, base.session.connection)
+        self.assertTrue(base.session.is_connected)
         self.assertIsNot(None, channel)
         # The same channel is returned every time.
         self.assertIs(channel, base.channel)
@@ -273,7 +273,7 @@ class TestRabbitRoutingKey(RabbitTestCase):
         routing_key = RabbitRoutingKey(global_session, next(key_names))
         routing_key.associateConsumer(consumer)
         # The session is still not connected.
-        self.assertIs(None, global_session.connection)
+        self.assertFalse(global_session.is_connected)
         routing_key.sendNow('now')
         routing_key.send('later')
         # There is nothing in the queue because the consumer has not yet been
@@ -332,7 +332,7 @@ class TestRabbitRoutingKey(RabbitTestCase):
     def test_does_not_connect_session_immediately(self):
         # RabbitRoutingKey does not connect the session until necessary.
         RabbitRoutingKey(global_session, next(key_names))
-        self.assertIs(None, global_session.connection)
+        self.assertFalse(global_session.is_connected)
 
 
 class TestRabbitQueue(RabbitTestCase):
@@ -363,7 +363,7 @@ class TestRabbitQueue(RabbitTestCase):
     def test_does_not_connect_session_immediately(self):
         # RabbitQueue does not connect the session until necessary.
         RabbitQueue(global_session, next(queue_names))
-        self.assertIs(None, global_session.connection)
+        self.assertFalse(global_session.is_connected)
 
 
 class TestRabbit(RabbitTestCase):
@@ -423,7 +423,7 @@ class TestRabbitWithLaunchpad(RabbitTestCase):
         notify(FinishReadOnlyRequestEvent(None, None))
         self.assertEqual(["task"], log)
         self.assertEqual([], list(session._deferred))
-        self.assertIsNot(None, session.connection)
+        self.assertTrue(session.is_connected)
 
     def test_global_session_finish_read_only_request(self):
         # When a read-only request ends, global_session's queue is flushed.
