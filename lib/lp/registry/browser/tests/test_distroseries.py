@@ -906,6 +906,26 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                     u'already has initialized series and this distroseries '
                     u'has no previous series.'))
 
+    def test_form_hidden_when_no_publisher_config_set_up(self):
+        # If the distribution has no publisher config set up:
+        # the form is hidden and the page contains an error message.
+        distribution = self.factory.makeDistribution(
+            no_pubconf=True, name="distro")
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution)
+        view = create_initialized_view(distroseries, "+initseries")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertThat(
+                message.text, EqualsIgnoringWhitespace(
+                    u"The series' distribution has no publisher config "
+                    u"set up."))
+
 
 class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):
     """Test access to IDS.+initseries."""
