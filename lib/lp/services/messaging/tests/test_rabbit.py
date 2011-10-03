@@ -271,8 +271,8 @@ class TestRabbitRoutingKey(RabbitTestCase):
         self.assertFalse(global_session.is_connected)
         routing_key.sendNow('now')
         routing_key.send('later')
-        # The queue is not even found the consumer has not yet been associated
-        # with the routing key and the queue declared.
+        # The queue is not found because the consumer has not yet been
+        # associated with the routing key and the queue declared.
         self.assertRaises(QueueNotFound, consumer.receive, timeout=2)
         transaction.commit()
         # Now that the transaction has been committed, the consumer is
