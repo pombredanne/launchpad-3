@@ -87,7 +87,10 @@ class TestBugNominationView(TestCaseWithFactory):
             distro.setBugSupervisor(bug_supervisor, owner)
         current_series = self.factory.makeDistroSeries(
             distribution=distro, status=SeriesStatus.CURRENT)
-        older_series = self.factory.makeDistroSeries(distribution=distro)
+        # Ensure we have some older series so test data better reflects
+        # actual usage.
+        for index in range(3):
+            self.factory.makeDistroSeries(distribution=distro)
         bug = self.factory.makeBug(distribution=distro, series=current_series)
         series_bugtask = bug.bugtasks[1]
         login_person(person)
@@ -108,7 +111,10 @@ class TestBugNominationView(TestCaseWithFactory):
             distro.setBugSupervisor(bug_supervisor, owner)
         current_series = self.factory.makeDistroSeries(
             distribution=distro, status=SeriesStatus.CURRENT)
-        older_series = self.factory.makeDistroSeries(distribution=distro)
+        # Ensure we have some older series so test data better reflects
+        # actual usage.
+        for index in range(3):
+            self.factory.makeDistroSeries(distribution=distro)
         package = self.factory.makeDistributionSourcePackage(
             distribution=distro)
         bug = self.factory.makeBug(
@@ -132,7 +138,10 @@ class TestBugNominationView(TestCaseWithFactory):
         with person_logged_in(owner):
             product.setBugSupervisor(bug_supervisor, owner)
         current_series = self.factory.makeProductSeries(product=product)
-        older_series = self.factory.makeProductSeries(product=product)
+        # Ensure we have some older series so test data better reflects
+        # actual usage.
+        for index in range(3):
+            self.factory.makeProductSeries(product=product)
         bug = self.factory.makeBug(product=product, series=current_series)
         series_bugtask = bug.bugtasks[1]
         login_person(person)
