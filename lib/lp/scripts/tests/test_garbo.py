@@ -43,12 +43,14 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthNonce,
     )
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
@@ -96,6 +98,7 @@ from lp.scripts.garbo import (
     DuplicateSessionPruner,
     FrequentDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
+    LoginTokenPruner,
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
@@ -1075,3 +1078,43 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertEqual(spn, spph.sourcepackagename)
         self.assertEqual(bpn, bpph.binarypackagename)
+
+
+class TestGarboTasks(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def test_LoginTokenPruner(self):
+        store = IMasterStore(LoginToken)
+        now = datetime.now(UTC)
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # It is configured as a daily task.
+        self.assertTrue(
+            LoginTokenPruner in DailyDatabaseGarbageCollector.tunable_loops)
+
+        # Create a token that will be pruned.
+        old_token = LoginToken(
+            email='whatever', tokentype=LoginTokenType.NEWACCOUNT)
+        old_token.date_created = now - timedelta(days=666)
+        old_token_id = old_token.id
+        store.add(old_token)
+
+        # Create a token that will not be pruned.
+        current_token = LoginToken(
+            email='whatever', tokentype=LoginTokenType.NEWACCOUNT)
+        current_token_id = current_token.id
+        store.add(current_token)
+
+        # Run the pruner. Batching is tested by the BulkPruner tests so
+        # no need to repeat here.
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        pruner = LoginTokenPruner(logging.getLogger('garbo'))
+        while not pruner.isDone():
+            pruner(10)
+        pruner.cleanUp()
+
+        # Only the old LoginToken is gone.
+        self.assertEqual(
+            store.find(LoginToken, id=old_token_id).count(), 0)
+        self.assertEqual(
+            store.find(LoginToken, id=current_token_id).count(), 1)

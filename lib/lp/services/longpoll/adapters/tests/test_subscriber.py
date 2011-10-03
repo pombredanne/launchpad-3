@@ -99,6 +99,14 @@ class TestLongPollSubscriber(TestCase):
         ILongPollSubscriber(request)
         self.assertThat(cache.objects, Not(Contains("longpoll")))
 
+    def test_longpoll_uri_config(self):
+        # The JSON cache contains config.txlongpoll.uri.
+        self.pushConfig("txlongpoll", uri="/+longpoll/")
+        request = LaunchpadTestRequest()
+        cache = IJSONRequestCache(request)
+        ILongPollSubscriber(request).subscribe(FakeEvent())
+        self.assertEqual('/+longpoll/', cache.objects["longpoll"]["uri"])
+
     def test_json_cache_populated_on_subscribe(self):
         # To aid with debugging the event_key of subscriptions are added to
         # the JSON cache.

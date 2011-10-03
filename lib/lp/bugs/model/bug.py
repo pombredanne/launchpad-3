@@ -1396,7 +1396,9 @@ BugMessage""" % sqlvalues(self.id))
         if len(non_invalid_bugtasks) != 1:
             return None
         [valid_bugtask] = non_invalid_bugtasks
-        if valid_bugtask.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+        pillar = valid_bugtask.pillar
+        if (pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD
+            and pillar.answers_usage == ServiceUsage.LAUNCHPAD):
             return valid_bugtask
         else:
             return None
@@ -1669,8 +1671,9 @@ BugMessage""" % sqlvalues(self.id))
         f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
         f_flag = bool(getFeatureFlag(f_flag_str))
         if f_flag:
-            # Before we update the privacy or security_related status, we need to
-            # reconcile the subscribers to avoid leaking private information.
+            # Before we update the privacy or security_related status, we
+            # need to reconcile the subscribers to avoid leaking private
+            # information.
             if (self.private != private
                     or self.security_related != security_related):
                 self.reconcileSubscribers(private, security_related, who)

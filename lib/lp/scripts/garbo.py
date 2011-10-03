@@ -45,6 +45,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -195,6 +196,18 @@ class BulkPruner(TunableLoop):
     def cleanUp(self):
         """See `ITunableLoop`."""
         self.store.execute("CLOSE %s" % self.cursor_name)
+
+
+class LoginTokenPruner(BulkPruner):
+    """Remove old LoginToken rows.
+
+    After 1 year, they are useless even for archaeology.
+    """
+    target_table_class = LoginToken
+    ids_to_prune_query = """
+        SELECT id FROM LoginToken WHERE
+        created < CURRENT_TIMESTAMP - CAST('1 year' AS interval)
+        """
 
 
 class POTranslationPruner(BulkPruner):
@@ -1323,6 +1336,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         HWSubmissionEmailLinker,
+        LoginTokenPruner,
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
