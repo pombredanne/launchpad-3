@@ -206,7 +206,7 @@ A correct URL is accepted.
     ...     'field.actions.update': 'Update',
     ...     }
     >>> view = create_initialized_view(
-     ...    series, name='+setbranch', principal=product.owner, form=form)
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> transaction.commit()
     >>> for error in view.errors:
     ...     print error
