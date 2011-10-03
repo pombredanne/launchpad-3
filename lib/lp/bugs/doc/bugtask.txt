@@ -91,7 +91,6 @@ Next, we need to grab some values to provide for importance and status.
 == Bug Task Targets ==
 
     >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
-    >>> from lp.registry.model.distributionsourcepackage import DistributionSourcePackage
 
 The "target" of an IBugTask can be one of the items in the following
 list.
@@ -125,11 +124,8 @@ list.
   * a distribution sourcepackage
 
     >>> def get_expected_target(distro_sp_task):
-    ...      expected_target = DistributionSourcePackage(
-    ...         distro_sp_task.distribution,
-    ...         distro_sp_task.sourcepackagename)
     ...      return distro_sp_task.target
-    ...
+
     >>> debian_ff_task = bugtaskset.get(4)
     >>> IDistributionSourcePackage.providedBy(debian_ff_task.target)
     True

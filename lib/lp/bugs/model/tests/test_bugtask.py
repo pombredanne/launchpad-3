@@ -1350,7 +1350,8 @@ class TestBugTaskStatuses(TestCase):
         """
         self.assertNotIn(BugTaskStatus.UNKNOWN, RESOLVED_BUGTASK_STATUSES)
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
-        self.assertNotIn(BugTaskStatus.UNKNOWN, DB_UNRESOLVED_BUGTASK_STATUSES)
+        self.assertNotIn(
+            BugTaskStatus.UNKNOWN, DB_UNRESOLVED_BUGTASK_STATUSES)
 
 
 class TestBugTaskContributor(TestCaseWithFactory):
@@ -1471,11 +1472,8 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
                 BugTaskStatus.CONFIRMED, self.owner)
             self.assertEqual(
                 BugTaskStatus.CONFIRMED, generic_task.status)
-            from lp.testing import StormStatementRecorder
-            with StormStatementRecorder(True) as recorder:
-                slave_bugtask = bugtaskset.createTask(
-                    bug, self.owner, generic_task.target.development_version)
-            #print recorder
+            slave_bugtask = bugtaskset.createTask(
+                bug, self.owner, generic_task.target.development_version)
             self.assertEqual(
                 BugTaskStatus.CONFIRMED, generic_task.status)
             self.assertEqual(

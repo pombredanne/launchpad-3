@@ -1189,7 +1189,8 @@ BugMessage""" % sqlvalues(self.id))
                     BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)):
                     # This is not a semantic change, so we don't update date
                     # records or send email.
-                    bugtask._status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
+                    bugtask._status = (
+                        BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             # XXX 2008-05-27 jamesh:
             # Ensure that BugMessages get flushed in same order as
             # they are created.

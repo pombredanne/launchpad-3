@@ -68,8 +68,7 @@ class BugSummary(Storm):
     milestone = Reference(milestone_id, Milestone.id)
 
     status = EnumCol(
-        dbName='status',
-        schema=(BugTaskStatus, BugTaskStatusSearch))
+        dbName='status', schema=(BugTaskStatus, BugTaskStatusSearch))
 
     importance = EnumCol(dbName='importance', schema=BugTaskImportance)
 
@@ -94,7 +93,8 @@ class CombineBugSummaryConstraint:
 
     def __init__(self, *dimensions):
         self.dimensions = map(
-            lambda x:removeSecurityProxy(x.getBugSummaryContextWhereClause()),
+            lambda x:
+            removeSecurityProxy(x.getBugSummaryContextWhereClause()),
             dimensions)
 
     def getBugSummaryContextWhereClause(self):

@@ -104,7 +104,6 @@ from zope.interface import (
 from zope.schema import Choice
 from zope.schema.interfaces import (
     IContextSourceBinder,
-    IList,
     )
 from zope.schema.vocabulary import (
     getVocabularyRegistry,

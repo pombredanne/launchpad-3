@@ -48,14 +48,12 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
-    BugTaskStatusSearch,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
 from lp.bugs.model.bugtask import (
     BugTaskSet,
-    get_bug_privacy_filter,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -369,7 +367,7 @@ class OfficialBugTagTargetMixin:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         target_clause = self._getOfficialTagClause()
         return store.find(
-            OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
+            OfficialBugTag, OfficialBugTag.tag == tag, target_clause).one()
 
     def addOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""

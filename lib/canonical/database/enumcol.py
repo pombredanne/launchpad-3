@@ -77,12 +77,9 @@ class DBSchemaEnumCol(sqlobject.PropertyAdapter, DBEnum):
             enum = kw.pop('schema')
         check_type(enum)
         self._kwargs = {
-            'enum': enum
+            'enum': enum,
             }
         super(DBSchemaEnumCol, self).__init__(**kw)
 
 
 EnumCol = DBSchemaEnumCol
-
-
-

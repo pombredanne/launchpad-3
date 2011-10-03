@@ -827,8 +827,8 @@ class BugTaskIncompleteMigrator(TunableLoop):
         self.offset = 0
         self.store = IMasterStore(BugTask)
         self.query = self.store.find((BugTask, Bug),
-            BugTask._status==BugTaskStatus.INCOMPLETE,
-            BugTask.bugID==Bug.id)
+            BugTask._status == BugTaskStatus.INCOMPLETE,
+            BugTask.bugID == Bug.id)
 
     def isDone(self):
         """See `ITunableLoop`."""
