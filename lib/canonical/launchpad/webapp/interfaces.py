@@ -891,7 +891,7 @@ class IFinishReadOnlyRequestEvent(Interface):
     """An event which gets sent when the publication is ended"""
 
 
-class FinishReadOnlyRequestEvent(object):
+class FinishReadOnlyRequestEvent:
     """An event which gets sent when the publication is ended"""
 
     implements(IFinishReadOnlyRequestEvent)

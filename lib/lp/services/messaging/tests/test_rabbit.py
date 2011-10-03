@@ -178,18 +178,6 @@ class TestRabbitSession(RabbitTestCase):
         self.assertEqual([], list(session._deferred))
         self.assertIs(None, session.connection)
 
-    def test_finish_read_only_request(self):
-        # When a read-only request ends the queue is flushed.
-        log = []
-        task = lambda: log.append("task")
-        session = RabbitSession()
-        session.defer(task)
-        session.connect()
-        notify(FinishReadOnlyRequestEvent(None, None))
-        self.assertEqual(["task"], log)
-        self.assertEqual([], list(session._deferred))
-        self.assertIsNot(None, session.connection)
-
     def test_getProducer(self):
         session = RabbitSession()
         producer = session.getProducer("foo")
@@ -421,3 +409,23 @@ class TestRabbitWithLaunchpad(RabbitTestCase):
         self.assertIs(
             global_unreliable_session,
             getUtility(IMessageSession))
+
+    def _test_session_finish_read_only_request(self, session):
+        # When a read-only request ends the session's queue is flushed.
+        log = []
+        task = lambda: log.append("task")
+        session.defer(task)
+        session.connect()
+        notify(FinishReadOnlyRequestEvent(None, None))
+        self.assertEqual(["task"], log)
+        self.assertEqual([], list(session._deferred))
+        self.assertIsNot(None, session.connection)
+
+    def test_global_session_finish_read_only_request(self):
+        # When a read-only request ends, global_session's queue is flushed.
+        self._test_session_finish_read_only_request(global_session)
+
+    def test_global_unreliable_session_finish_read_only_request(self):
+        # When a read-only request ends, global_unreliable_session's queue is
+        # flushed.
+        self._test_session_finish_read_only_request(global_unreliable_session)
