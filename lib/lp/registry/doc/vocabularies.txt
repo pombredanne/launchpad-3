@@ -616,7 +616,7 @@ because teams are not part of this vocabulary.
 A search using part of the email address of a team will also return an
 empty list.
 
-    >>> list(vocab.search('rosetta'))
+    >>> list(vocab.search('admins'))
     []
 
 Searching for a person without a preferred email will return that
