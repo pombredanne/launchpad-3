@@ -44,6 +44,14 @@ class TestBugNominationView(TestCaseWithFactory):
         launchbag.add(self.distribution)
         launchbag.add(self.bug_task)
 
+    def _makeBugSupervisorTeam(self, person, owner, target):
+        """Create a bug supervisor team which includes the person argument."""
+        members = [self.factory.makePerson() for i in range(2)]
+        members.append(person)
+        bug_supervisor = self.factory.makeTeam(members=members, owner=owner)
+        with person_logged_in(owner):
+            target.setBugSupervisor(bug_supervisor, owner)
+
     def test_submit_action_bug_supervisor(self):
         # A bug supervisor sees the Nominate action label.
         login_person(self.bug_worker)
@@ -80,11 +88,7 @@ class TestBugNominationView(TestCaseWithFactory):
             name='main-person-test', password='test')
         distro = self.factory.makeDistribution()
         owner = distro.owner
-        members = [self.factory.makePerson() for i in range(2)]
-        members.append(person)
-        bug_supervisor = self.factory.makeTeam(members=members, owner=owner)
-        with person_logged_in(owner):
-            distro.setBugSupervisor(bug_supervisor, owner)
+        self._makeBugSupervisorTeam(person, owner, distro)
         current_series = self.factory.makeDistroSeries(
             distribution=distro, status=SeriesStatus.CURRENT)
         # Ensure we have some older series so test data better reflects
@@ -104,11 +108,7 @@ class TestBugNominationView(TestCaseWithFactory):
             name='main-person-test', password='test')
         distro = self.factory.makeDistribution()
         owner = distro.owner
-        members = [self.factory.makePerson() for i in range(2)]
-        members.append(person)
-        bug_supervisor = self.factory.makeTeam(members=members, owner=owner)
-        with person_logged_in(owner):
-            distro.setBugSupervisor(bug_supervisor, owner)
+        self._makeBugSupervisorTeam(person, owner, distro)
         current_series = self.factory.makeDistroSeries(
             distribution=distro, status=SeriesStatus.CURRENT)
         # Ensure we have some older series so test data better reflects
@@ -132,11 +132,7 @@ class TestBugNominationView(TestCaseWithFactory):
             name='main-person-test-product', password='test')
         product = self.factory.makeProduct()
         owner = product.owner
-        members = [self.factory.makePerson() for i in range(2)]
-        members.append(person)
-        bug_supervisor = self.factory.makeTeam(members=members, owner=owner)
-        with person_logged_in(owner):
-            product.setBugSupervisor(bug_supervisor, owner)
+        self._makeBugSupervisorTeam(person, owner, product)
         current_series = self.factory.makeProductSeries(product=product)
         # Ensure we have some older series so test data better reflects
         # actual usage.
