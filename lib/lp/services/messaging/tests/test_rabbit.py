@@ -22,12 +22,13 @@ from canonical.testing.layers import (
     RabbitMQLayer,
     )
 from lp.services.messaging.interfaces import (
-    EmptyQueue,
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
     MessagingException,
     MessagingUnavailable,
+    QueueEmpty,
+    QueueNotFound,
     )
 from lp.services.messaging.rabbit import (
     RabbitMessageBase,
@@ -276,9 +277,9 @@ class TestRabbitRoutingKey(RabbitTestCase):
         self.assertFalse(global_session.is_connected)
         routing_key.sendNow('now')
         routing_key.send('later')
-        # There is nothing in the queue because the consumer has not yet been
-        # associated with the routing key.
-        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
+        # The queue is not even found the consumer has not yet been associated
+        # with the routing key and the queue declared.
+        self.assertRaises(QueueNotFound, consumer.receive, timeout=2)
         transaction.commit()
         # Now that the transaction has been committed, the consumer is
         # associated, and receives the deferred message.
@@ -351,14 +352,14 @@ class TestRabbitQueue(RabbitTestCase):
             self.assertEqual(data, consumer.receive(timeout=2))
 
         # All the messages received were consumed.
-        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
+        self.assertRaises(QueueEmpty, consumer.receive, timeout=2)
 
         # New connections to the queue see an empty queue too.
         consumer.session.disconnect()
         consumer = RabbitQueue(global_session, next(queue_names))
         routing_key = RabbitRoutingKey(global_session, next(key_names))
         routing_key.associateConsumerNow(consumer)
-        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
+        self.assertRaises(QueueEmpty, consumer.receive, timeout=2)
 
     def test_does_not_connect_session_immediately(self):
         # RabbitQueue does not connect the session until necessary.
@@ -399,7 +400,7 @@ class TestRabbit(RabbitTestCase):
 
         # Messages sent using send() are forgotten on abort.
         transaction.abort()
-        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
+        self.assertRaises(QueueEmpty, consumer.receive, timeout=2)
 
 
 class TestRabbitWithLaunchpad(RabbitTestCase):
