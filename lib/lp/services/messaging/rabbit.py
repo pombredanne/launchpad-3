@@ -22,12 +22,13 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.services.messaging.interfaces import (
-    EmptyQueue,
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
     MessagingException,
     MessagingUnavailable,
+    QueueEmpty,
+    QueueNotFound,
     )
 
 
@@ -201,7 +202,11 @@ class RabbitRoutingKey(RabbitMessageBase):
 
     def associateConsumerNow(self, consumer):
         """Only receive messages for requested routing key."""
-        consumer._declare()
+        # The queue will be auto-deleted 5 minutes after its last use.
+        # http://www.rabbitmq.com/extensions.html#queue-leases
+        self.channel.queue_declare(
+            consumer.name, nowait=False, auto_delete=False,
+            arguments={"x-expires": 300000})  # 5 minutes.
         self.channel.queue_bind(
             queue=consumer.name, exchange=self.session.exchange,
             routing_key=self.key, nowait=False)
@@ -228,32 +233,29 @@ class RabbitQueue(RabbitMessageBase):
         super(RabbitQueue, self).__init__(session)
         self.name = name
 
-    def _declare(self):
-        # The queue will be auto-deleted 5 minutes after its last use.
-        # http://www.rabbitmq.com/extensions.html#queue-leases
-        self.channel.queue_declare(
-            self.name, nowait=False, auto_delete=False,
-            arguments={"x-expires": 300000})  # 5 minutes.
-
     def receive(self, timeout=0.0):
         """Pull a message from the queue.
 
         :param timeout: Wait a maximum of `timeout` seconds before giving up,
             trying at least once.
-        :raises EmptyQueue: if the timeout passes.
+        :raises QueueEmpty: if the timeout passes.
         """
-        self._declare()
-        starttime = time.time()
+        endtime = time.time() + timeout
         while True:
-            message = self.channel.basic_get(self.name)
-            if message is None:
-                if time.time() > (starttime + timeout):
-                    raise EmptyQueue()
-                time.sleep(0.1)
-            else:
-                data = json.loads(message.body)
-                self.channel.basic_ack(message.delivery_tag)
-                return data
+            try:
+                message = self.channel.basic_get(self.name)
+                if message is None:
+                    if time.time() > endtime:
+                        raise QueueEmpty()
+                    time.sleep(0.1)
+                else:
+                    self.channel.basic_ack(message.delivery_tag)
+                    return json.loads(message.body)
+            except amqp.AMQPChannelException, error:
+                if error.amqp_reply_code == 404:
+                    raise QueueNotFound()
+                else:
+                    raise
 
         # XXX The code below will be useful when we can implement this
         # properly.

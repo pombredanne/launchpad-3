@@ -5,12 +5,13 @@
 
 __metaclass__ = type
 __all__ = [
-    'EmptyQueue',
     'IMessageConsumer',
     'IMessageProducer',
     'IMessageSession',
     'MessagingException',
-    'MessagingUnavailable'
+    'MessagingUnavailable',
+    'QueueEmpty',
+    'QueueNotFound',
     ]
 
 
@@ -22,12 +23,16 @@ class MessagingException(Exception):
     """Failure in messaging."""
 
 
-class EmptyQueue(MessagingException):
-    """Raised if there are no queued messages on a non-blocking read."""
-
-
 class MessagingUnavailable(MessagingException):
     """Messaging systems are not available."""
+
+
+class QueueNotFound(MessagingException):
+    """Raised if there the queue was not found."""
+
+
+class QueueEmpty(MessagingException):
+    """Raised if there are no queued messages on a non-blocking read."""
 
 
 class IMessageSession(Interface):
