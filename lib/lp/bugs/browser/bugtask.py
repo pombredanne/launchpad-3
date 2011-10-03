@@ -270,7 +270,10 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -1273,6 +1276,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
 
+    def __init__(self, context, request):
+        super(BugTaskEditView, self).__init__(context, request)
+        self.next_url = canonical_url(self.context)
+
     def initialize(self):
         # Initialize user_is_subscribed, if it hasn't already been set.
         if self.user_is_subscribed is None:
@@ -1355,11 +1362,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         Bugtasks cannot be edited if the bug was converted into a question.
         """
         return self.context.bug.getQuestionCreatedFromBug() is not None
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
 
     @property
     def initial_values(self):
@@ -1705,6 +1707,19 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
+
+            # We clear the known views cache because the bug may not be
+            # viewable anymore by the current user. If the bug is not
+            # viewable, then we redirect to the current bugtask's pillar's
+            # bug index page with a message.
+            get_property_cache(bugtask.bug)._known_viewers = set()
+            if not bugtask.bug.userCanView(self.user):
+                self.request.response.addWarningNotification(
+                    "The bug you have just updated is now a private bug for "
+                    "%s. You do not have permission to view such bugs."
+                    % bugtask.pillar.displayname)
+                self.next_url = canonical_url(
+                    new_target.pillar, rootsite='bugs')
 
         if (bugtask.sourcepackagename and (
             self.widgets.get('target') or
