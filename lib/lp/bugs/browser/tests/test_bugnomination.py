@@ -73,7 +73,9 @@ class TestBugNominationView(TestCaseWithFactory):
             "You do not have permission to nominate this bug.",
             notifications[0].message)
 
-    def test_nominate_another_series_distribution(self):
+    def test_bug_supevisor_nominate_distribution_does_not_error(self):
+        # A bug supervisor should not receive error notifications
+        # from the BugNominationView for a distro series.
         person = self.factory.makePerson(
             name='main-person-test', password='test')
         distro = self.factory.makeDistribution()
@@ -91,10 +93,10 @@ class TestBugNominationView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
         self.assertEqual(0, len(view.request.notifications))
-        nomination = bug.addNomination(person, older_series)
-        self.assertTrue(nomination is not None)
 
-    def test_nominate_another_series_source_package(self):
+    def test_bug_supervisor_nominate_source_package_does_not_error(self):
+        # A bug supervisor should not receive error notifications
+        # from the BugNominationView for a source package distro series.
         person = self.factory.makePerson(
             name='main-person-test', password='test')
         distro = self.factory.makeDistribution()
@@ -116,10 +118,10 @@ class TestBugNominationView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
         self.assertEqual(0, len(view.request.notifications))
-        nomination = bug.addNomination(person, older_series)
-        self.assertTrue(nomination is not None)
 
-    def test_nominate_another_series_product(self):
+    def test_bug_supevisor_nominate_product_does_not_error(self):
+        # A bug supervisor should not receive error notifications
+        # from the BugNominationView for a product series.
         person = self.factory.makePerson(
             name='main-person-test-product', password='test')
         product = self.factory.makeProduct()
@@ -136,8 +138,6 @@ class TestBugNominationView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
         self.assertEqual(0, len(view.request.notifications))
-        nomination = bug.addNomination(person, older_series)
-        self.assertTrue(nomination is not None)
 
 
 class TestBugNominationEditView(TestCaseWithFactory):
