@@ -97,12 +97,14 @@ class RabbitTestCase(TestCase):
 
 class TestRabbitSession(RabbitTestCase):
 
+    session_factory = RabbitSession
+
     def test_interface(self):
-        session = RabbitSession()
+        session = self.session_factory()
         self.assertThat(session, Provides(IMessageSession))
 
     def test_connect(self):
-        session = RabbitSession()
+        session = self.session_factory()
         self.assertIs(None, session.connection)
         connection = session.connect()
         self.assertIsNot(None, session.connection)
@@ -110,20 +112,20 @@ class TestRabbitSession(RabbitTestCase):
 
     def test_connect_with_incomplete_configuration(self):
         self.pushConfig("rabbitmq", host="none")
-        session = RabbitSession()
+        session = self.session_factory()
         with ExpectedException(
             MessagingUnavailable, "Incomplete configuration"):
             session.connect()
 
     def test_disconnect(self):
-        session = RabbitSession()
+        session = self.session_factory()
         session.connect()
         session.disconnect()
         self.assertIs(None, session.connection)
 
     def test_connection(self):
         # The connection property is None once a connection has been closed.
-        session = RabbitSession()
+        session = self.session_factory()
         session.connect()
         # Close the connection without using disconnect().
         session.connection.close()
@@ -131,7 +133,7 @@ class TestRabbitSession(RabbitTestCase):
 
     def test_defer(self):
         task = lambda foo, bar: None
-        session = RabbitSession()
+        session = self.session_factory()
         session.defer(task, "foo", bar="baz")
         self.assertEqual(1, len(session._deferred))
         [deferred_task] = session._deferred
@@ -144,7 +146,7 @@ class TestRabbitSession(RabbitTestCase):
         # RabbitSession.flush() runs deferred tasks.
         log = []
         task = lambda: log.append("task")
-        session = RabbitSession()
+        session = self.session_factory()
         session.defer(task)
         session.connect()
         session.flush()
@@ -157,7 +159,7 @@ class TestRabbitSession(RabbitTestCase):
         # deferred tasks.
         log = []
         task = lambda: log.append("task")
-        session = RabbitSession()
+        session = self.session_factory()
         session.defer(task)
         session.connect()
         session.reset()
@@ -170,7 +172,7 @@ class TestRabbitSession(RabbitTestCase):
         # deferred tasks.
         log = []
         task = lambda: log.append("task")
-        session = RabbitSession()
+        session = self.session_factory()
         session.defer(task)
         session.connect()
         session.finish()
@@ -179,27 +181,29 @@ class TestRabbitSession(RabbitTestCase):
         self.assertIs(None, session.connection)
 
     def test_getProducer(self):
-        session = RabbitSession()
+        session = self.session_factory()
         producer = session.getProducer("foo")
         self.assertIsInstance(producer, RabbitRoutingKey)
         self.assertIs(session, producer.session)
         self.assertEqual("foo", producer.key)
 
     def test_getConsumer(self):
-        session = RabbitSession()
+        session = self.session_factory()
         consumer = session.getConsumer("foo")
         self.assertIsInstance(consumer, RabbitQueue)
         self.assertIs(session, consumer.session)
         self.assertEqual("foo", consumer.name)
 
 
-class TestRabbitUnreliableSession(RabbitTestCase):
+class TestRabbitUnreliableSession(TestRabbitSession):
+
+    session_factory = RabbitUnreliableSession
 
     def raise_AMQPException(self):
         raise amqp.AMQPException(123, "Suffin broke.", "Whut?")
 
     def test_finish_suppresses_AMQPException(self):
-        session = RabbitUnreliableSession()
+        session = self.session_factory()
         session.defer(self.raise_AMQPException)
         session.finish()
         # Look, no exceptions!
@@ -208,7 +212,7 @@ class TestRabbitUnreliableSession(RabbitTestCase):
         raise MessagingException("Arm stuck in combine.")
 
     def test_finish_suppresses_MessagingException(self):
-        session = RabbitUnreliableSession()
+        session = self.session_factory()
         session.defer(self.raise_MessagingException)
         session.finish()
         # Look, no exceptions!
@@ -217,7 +221,7 @@ class TestRabbitUnreliableSession(RabbitTestCase):
         raise IOError("Leg eaten by cow.")
 
     def test_finish_suppresses_IOError(self):
-        session = RabbitUnreliableSession()
+        session = self.session_factory()
         session.defer(self.raise_IOError)
         session.finish()
         # Look, no exceptions!
@@ -226,7 +230,7 @@ class TestRabbitUnreliableSession(RabbitTestCase):
         raise Exception("That hent worked.")
 
     def test_finish_does_not_suppress_other_errors(self):
-        session = RabbitUnreliableSession()
+        session = self.session_factory()
         session.defer(self.raise_Exception)
         self.assertRaises(Exception, session.finish)
 
