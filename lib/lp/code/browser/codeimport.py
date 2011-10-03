@@ -266,9 +266,9 @@ class NewCodeImportForm(Interface):
         allowed_schemes=["http", "https"],
         allow_userinfo=True,
         allow_port=True,
-        allow_query=False,    # Query makes no sense in Bazaar.
-        allow_fragment=False, # Fragment makes no sense in Bazaar.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
+        allow_query=False,     # Query makes no sense in Bazaar.
+        allow_fragment=False,  # Fragment makes no sense in Bazaar.
+        trailing_slash=False)  # See http://launchpad.net/bugs/56357.
 
     bzr_branch_url = URIField(
         title=_("Branch URL"), required=False,
@@ -276,8 +276,8 @@ class NewCodeImportForm(Interface):
         allowed_schemes=["http", "https", "bzr"],
         allow_userinfo=True,
         allow_port=True,
-        allow_query=False,    # Query makes no sense in Bazaar
-        allow_fragment=False, # Fragment makes no sense in Bazaar
+        allow_query=False,     # Query makes no sense in Bazaar
+        allow_fragment=False,  # Fragment makes no sense in Bazaar
         trailing_slash=False)
 
     branch_name = copy_field(
@@ -357,8 +357,10 @@ class CodeImportNewView(CodeImportBaseView):
         soup = BeautifulSoup(self.widgets['rcs_type']())
         fields = soup.findAll('input')
         [cvs_button, svn_button, git_button, hg_button, bzr_button,
-            empty_marker] = [field for field in fields
-            if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG', 'BZR', '1']]
+            empty_marker] = [
+                field for field in fields
+                if field.get('value') in [
+                     'CVS', 'BZR_SVN', 'GIT', 'HG', 'BZR', '1']]
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         git_button['onclick'] = 'updateWidgets()'

@@ -30,8 +30,8 @@ branches.
     Nearby
     Other branches owned by Eric
 
-Junk branches do not support merge proposals, so the "Branch Merges" section of
-the page should not be shown.
+Junk branches do not support merge proposals, so the "Branch Merges" section
+of the page should not be shown.
 
     >>> print find_tag_by_id(browser.contents, 'branch-merges')
     None
