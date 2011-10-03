@@ -1163,7 +1163,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(child, [])
         self.assertRaisesWithContent(
             InitializationError,
-            ("Distribution distro has no publisher configuration set up. "
+            ("Distribution distro has no publisher configuration. "
              "Please ask an administrator to set this up."),
             ids.check)
 
