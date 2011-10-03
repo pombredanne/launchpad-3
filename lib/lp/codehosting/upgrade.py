@@ -84,10 +84,7 @@ class Upgrader:
             server.stop_server()
 
     def upgrade(self):
-        """Upgrade the specified branch any way possible.
-
-        :param branch: The branch to upgrade.
-        """
+        """Create an upgraded version of self.branch in self.target_dir."""
         if os.path.exists(self.target_subdir):
             raise AlreadyUpgraded
         self.logger.info(
@@ -96,7 +93,8 @@ class Upgrader:
         with read_locked(self.bzr_branch):
             upgrade_dir = mkdtemp(dir=self.target_dir)
             try:
-                self.upgrade_by_fetch(upgrade_dir)
+                repository = self.create_upgraded_repository(upgrade_dir)
+                self.add_upgraded_branch(repository.bzrdir)
             except:
                 rmtree(upgrade_dir)
                 raise
@@ -104,52 +102,40 @@ class Upgrader:
                 os.rename(upgrade_dir, self.target_subdir)
                 return self.target_subdir
 
-    def upgrade_at_transport(self, transport):
-        """Upgrade the branch at a specified transport in the standard way.
-
-        The upgrade is performed through the normal Bazaar machinery.
-        :param transport: A transport that is the base of the branch.
-        """
-        branch = Branch.open_from_transport(transport)
-        self.logger.info('Performing standard upgrade.')
-        exceptions = upgrade(branch.base, self.get_target_format())
-        if exceptions:
-            if len(exceptions) == 1:
-                # Compatibility with historical behavior
-                raise exceptions[0]
-            else:
-                return 3
-
-    def upgrade_by_fetch(self, upgrade_dir):
-        """Create an upgraded version of a specified branch.
-
-        The upgrade is achieved by creating a new repository, fetching the
-        branch's repository into it, copying the branch into it, and finally
-        upgrading the entire branch using the normal Bazaar mechanism.
-
-        :param bzr_branch: The branch to upgrade.
-        :param upgrade_dir: The directory to upgrade to.
-        """
-        bd = self.create_upgraded_repository(upgrade_dir)
-        self.add_upgraded_branch(bd)
-        return bd
-
     def add_upgraded_branch(self, bd):
+        """Add an upgraded branch to the specified BzrDir.
+
+        self.branch's branch (but not repository) is mirrored to the BzrDir
+        and then the bzrdir is upgraded in the normal way.
+
+        :param bd: The bzrdir to add a branch to.
+        """
         self.mirror_branch(self.bzr_branch, bd)
         try:
-            self.upgrade_at_transport(bd.root_transport)
+            exceptions = upgrade(
+                bd.root_transport.base, self.get_target_format())
+            if exceptions:
+                if len(exceptions) == 1:
+                    # Compatibility with historical behavior
+                    raise exceptions[0]
+                else:
+                    return 3
         except UpToDateFormat:
             pass
 
     def create_upgraded_repository(self, upgrade_dir):
-        self.logger.info('Checking for tree-references.')
+        """Create a repository in an upgraded format.
+
+        :param upgrade_dir: The directory to create the repository in.
+        :return: The created repository.
+        """
         self.logger.info('Converting repository with fetch.')
         branch = BzrDir.create_branch_convenience(
             upgrade_dir, force_new_tree=False, format=self.get_target_format())
-        branch.repository.fetch(self.bzr_branch.repository)
-        bd = branch.bzrdir
-        bd.destroy_branch()
-        return bd
+        repository = branch.repository
+        repository.bzrdir.destroy_branch()
+        repository.fetch(self.bzr_branch.repository)
+        return repository
 
     def has_tree_references(self):
         """Determine whether a repository contains tree references.

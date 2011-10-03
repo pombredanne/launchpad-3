@@ -5,12 +5,9 @@ import logging
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.plugins.loom.branch import loomify
-from bzrlib.repository import Repository
 from bzrlib.repofmt.groupcompress_repo import (
     RepositoryFormat2a, RepositoryFormat2aSubtree)
 from bzrlib.revision import NULL_REVISION
-from testtools.testcase import ExpectedException
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.bzr import (
@@ -38,12 +35,12 @@ class TestUpgrader(TestCaseWithFactory):
         tree.commit('foo', rev_id='prepare-commit')
         if loomify_branch:
             loomify(tree.branch)
-            bzr_branch = Branch.open(tree.branch.base)
+            bzr_branch = tree.bzrdir.open_branch()
         else:
             bzr_branch = tree.branch
         return self.getUpgrader(bzr_branch, branch)
 
-    def getUpgrader(self, bzr_branch, branch=None):
+    def getUpgrader(self, bzr_branch, branch):
         target_dir = self.useContext(temp_dir())
         return Upgrader(
             branch, target_dir, logging.getLogger(), bzr_branch)
@@ -120,12 +117,10 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader = self.prepare('pack-0.92-subtree')
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
-            bd = upgrader.create_upgraded_repository(upgrade_dir)
-            upgrader = upgrader.add_upgraded_branch(bd)
-        upgraded = Branch.open(upgrade_dir)
+            repository = upgrader.create_upgraded_repository(upgrade_dir)
+            upgrader = upgrader.add_upgraded_branch(repository.bzrdir)
+        upgraded = repository.bzrdir.open_branch()
         self.assertEqual('prepare-commit', upgraded.last_revision())
-        self.assertEqual(
-            'foo', upgraded.repository.get_revision('prepare-commit').message)
 
     def test_create_upgraded_repository_preserves_dead_heads(self):
         """Fetch-based upgrade preserves heads in the repository."""
@@ -133,8 +128,7 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader.bzr_branch.set_last_revision_info(0, NULL_REVISION)
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
-            upgrader.create_upgraded_repository(upgrade_dir)
-        upgraded = Repository.open(upgrade_dir)
+            upgraded = upgrader.create_upgraded_repository(upgrade_dir)
         self.assertEqual(
             'foo', upgraded.get_revision('prepare-commit').message)
 
@@ -144,9 +138,9 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader.bzr_branch.tags.set_tag('steve', 'rev-id')
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
-            bd = upgrader.create_upgraded_repository(upgrade_dir)
-            upgrader.add_upgraded_branch(bd)
-        upgraded = Branch.open(upgrade_dir)
+            repository = upgrader.create_upgraded_repository(upgrade_dir)
+            upgrader.add_upgraded_branch(repository.bzrdir)
+        upgraded = repository.bzrdir.open_branch()
         self.assertEqual('rev-id', upgraded.tags.lookup_tag('steve'))
 
     def test_has_tree_references(self):
@@ -161,8 +155,8 @@ class TestUpgrader(TestCaseWithFactory):
         with read_locked(tree.branch.repository):
             self.assertTrue(upgrader.has_tree_references())
 
-    def test_create_upgraded_repository_dies_on_tree_references(self):
-        """Subtree references prevent fetch-based upgrade."""
+    def test_use_subtree_format_for_tree_references(self):
+        """Subtree references cause RepositoryFormat2aSubtree to be used."""
         self.useBzrBranches(direct_database=True)
         format = format_registry.make_bzrdir('pack-0.92-subtree')
         branch, tree = self.create_branch_and_tree(format=format)
@@ -173,6 +167,5 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader = self.getUpgrader(tree.branch, branch)
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(tree.branch):
-            upgrader.create_upgraded_repository(upgrade_dir)
-        upgraded = Repository.open(upgrade_dir)
+            upgraded = upgrader.create_upgraded_repository(upgrade_dir)
         self.assertIs(RepositoryFormat2aSubtree, upgraded._format.__class__)
