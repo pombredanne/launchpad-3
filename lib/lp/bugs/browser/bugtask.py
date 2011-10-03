@@ -29,7 +29,6 @@ __all__ = [
     'BugTasksAndNominationsView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
-    'BugTaskStatusView',
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
@@ -84,14 +83,10 @@ from zope import (
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
-    IDisplayWidget,
     IInputWidget,
     InputErrors,
     )
-from zope.app.form.utility import (
-    setUpWidget,
-    setUpWidgets,
-    )
+from zope.app.form.utility import setUpWidget
 from zope.component import (
     ComponentLookupError,
     getAdapter,
@@ -1735,36 +1730,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     def save_action(self, action, data):
         """Update the bugtask with the form data."""
         self.updateContextFromData(data)
-
-
-class BugTaskStatusView(LaunchpadView):
-    """Viewing the status of a bug task."""
-
-    page_title = 'View status'
-
-    def initialize(self):
-        """Set up the appropriate widgets.
-
-        Different widgets are shown depending on if it's a remote bug
-        task or not.
-        """
-        field_names = [
-            'status', 'importance', 'assignee']
-        if not self.context.target_uses_malone:
-            field_names += ['bugwatch']
-            self.milestone_widget = None
-        else:
-            field_names += ['milestone']
-            self.bugwatch_widget = None
-
-        if self.context.distroseries or self.context.distribution:
-            field_names += ['sourcepackagename']
-
-        self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
-        self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-        self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
-
-        setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
 
 
 class BugTaskListingView(LaunchpadView):
@@ -3559,10 +3524,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     def initialize(self):
         super(BugTaskTableRowView, self).initialize()
         link = canonical_url(self.context)
-        edit_link = link + '/+editstatus'
-        view_link = link + '/+viewstatus'
+        task_link = edit_link = link + '/+editstatus'
         can_edit = check_permission('launchpad.Edit', self.context)
-        task_link = edit_link if can_edit else view_link
         bugtask_id = self.context.id
         launchbag = getUtility(ILaunchBag)
         is_primary = self.context.id == launchbag.bugtask.id
@@ -3575,7 +3538,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             is_conjoined_slave=self.is_conjoined_slave,
             task_link=task_link,
             edit_link=edit_link,
-            view_link=view_link,
             can_edit=can_edit,
             link=link,
             id=bugtask_id,
