@@ -17,7 +17,10 @@ from bzrlib.upgrade import upgrade
 from zope.security.proxy import removeSecurityProxy
 
 from lp.codehosting.bzrutils import read_locked
-from lp.codehosting.vfs import get_rw_server
+from lp.codehosting.vfs.branchfs import (
+    get_real_branch_path,
+    get_rw_server,
+    )
 
 
 class AlreadyUpgraded(Exception):
@@ -133,6 +136,13 @@ class Upgrader:
             raise
         else:
             os.rename(upgrade_dir, self.target_subdir)
+
+    def swap_in(self):
+        """Swap the upgraded branch into place."""
+        real_location = get_real_branch_path(self.branch.id)
+        backup_dir = os.path.join(self.target_subdir, 'backup.bzr')
+        os.rename(real_location, backup_dir)
+        os.rename(self.target_subdir, real_location)
 
     def has_tree_references(self):
         """Determine whether a repository contains tree references.

@@ -49,12 +49,14 @@ __all__ = [
     'branch_id_to_path',
     'DirectDatabaseLaunchpadServer',
     'get_lp_server',
+    'get_real_branch_path',
     'get_ro_server',
     'get_rw_server',
     'LaunchpadInternalServer',
     'LaunchpadServer',
     ]
 
+import os.path
 import sys
 import xmlrpclib
 
@@ -202,6 +204,17 @@ def get_rw_server(direct_database=False):
         codehosting_endpoint = DeferredBlockingProxy(proxy)
         return LaunchpadInternalServer(
             'lp-internal:///', codehosting_endpoint, transport)
+
+
+def get_real_branch_path(branch_id):
+    """Return the on-disk location of a branch.
+
+    This should be used only when local filesystem operations are required.
+    For branch access, get_rw_server should be used.
+    :param branch_id: The integer id of the branch in the database.
+    """
+    root = config.codehosting.mirrored_branches_root
+    return os.path.join(root, branch_id_to_path(branch_id))
 
 
 class ITransportDispatch(Interface):

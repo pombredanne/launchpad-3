@@ -48,6 +48,7 @@ from testtools.deferredruntest import (
 
 from twisted.internet import defer
 
+from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import (
     ZopelessDatabaseLayer,
@@ -69,6 +70,7 @@ from lp.codehosting.vfs.branchfs import (
     BranchTransportDispatch,
     DirectDatabaseLaunchpadServer,
     get_lp_server,
+    get_real_branch_path,
     LaunchpadInternalServer,
     LaunchpadServer,
     TransportDispatch,
@@ -1198,3 +1200,13 @@ class TestGetLPServer(TestCase):
         lp_server = get_lp_server(1, 'http://xmlrpc.example.invalid', '')
         transport = lp_server._transport_dispatch._rw_dispatch.base_transport
         self.assertIsInstance(transport, ChrootTransport)
+
+
+class TestRealBranchLocation(TestCase):
+
+    def test_get_real_branch_path(self):
+        path = get_real_branch_path(0x00abcdef)
+        self.assertTrue(path.startswith(
+            config.codehosting.mirrored_branches_root))
+        tail = path[len(config.codehosting.mirrored_branches_root):]
+        self.assertEqual('/00/ab/cd/ef', tail)

@@ -2,11 +2,13 @@ __metaclass__ = type
 
 import logging
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.plugins.loom.branch import loomify
 from bzrlib.repofmt.groupcompress_repo import (
     RepositoryFormat2a, RepositoryFormat2aSubtree)
 from bzrlib.revision import NULL_REVISION
+from bzrlib.transport import get_transport
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.bzr import (
@@ -50,10 +52,11 @@ class TestUpgrader(TestCaseWithFactory):
         tree.add_reference(sub_branch.bzrdir.open_workingtree())
         tree.commit('added tree reference')
 
-    def check_branch(self, upgraded, branch_format=BranchFormat.BZR_BRANCH_7):
+    def check_branch(self, upgraded, branch_format=BranchFormat.BZR_BRANCH_7,
+                     repository_format=RepositoryFormat.BZR_CHK_2A):
         """Check that a branch matches expected post-upgrade formats."""
         control, branch, repository = get_branch_formats(upgraded)
-        self.assertEqual(repository, RepositoryFormat.BZR_CHK_2A)
+        self.assertEqual(repository, repository_format)
         self.assertEqual(branch, branch_format)
 
     def test_simple_upgrade(self):
@@ -174,3 +177,20 @@ class TestUpgrader(TestCaseWithFactory):
             upgrader.create_upgraded_repository()
         upgraded = upgrader.get_bzrdir().open_repository()
         self.assertIs(RepositoryFormat2aSubtree, upgraded._format.__class__)
+
+    def test_swap_in(self):
+        upgrader = self.prepare()
+        upgrader.upgrade()
+        upgrader.swap_in()
+        self.check_branch(upgrader.branch.getBzrBranch())
+
+    def test_swap_in_retains_original(self):
+        upgrader = self.prepare()
+        upgrader.upgrade()
+        upgrader.swap_in()
+        t = get_transport(upgrader.branch.getInternalBzrUrl())
+        t = t.clone('backup.bzr')
+        branch = Branch.open_from_transport(t)
+        self.check_branch(branch, BranchFormat.BZR_BRANCH_6,
+                          RepositoryFormat.BZR_KNITPACK_1)
+
