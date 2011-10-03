@@ -2256,8 +2256,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
             summary = '%s (%s)' % (token, dsp.name)
 
-            if dsp != self.dsp:
-                if dsp._self_in_database is None:
+            if dsp != self.dsp and not dsp.is_official:
                     # The dsp is not a historic value nor is it one of the
                     # current official packages.
                     raise LookupError(distribution, spn_or_dsp)
@@ -2291,7 +2290,6 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         # Construct the searchable text that could live in the DSP table.
         # Limit the results to ensure the user could see all the batches.
         # Only rank what will be returned.
-        #import pdb; pdb.set_trace()
         searchable_dsp = SQL(u"""
             SELECT dsp.id, dsps.name, dsps.binpkgnames, rank
             FROM DistributionSourcePackage dsp
