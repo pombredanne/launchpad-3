@@ -928,8 +928,9 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             [message] = root.cssselect("p.error.message")
             self.assertThat(
                 message.text, EqualsIgnoringWhitespace(
-                    u"The series' distribution has no publisher config "
-                    u"set up."))
+                    u"The series' distribution has no publisher "
+                    u"configuration. Please ask an administrator to set "
+                    "this up."))
 
 
 class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):

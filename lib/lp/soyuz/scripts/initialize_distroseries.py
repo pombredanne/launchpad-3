@@ -171,7 +171,8 @@ class InitializeDistroSeries:
             self.distroseries.distribution)
         if config is None:
             raise InitializationError(
-                ("Distribution {child.name} has no publisher config set up"
+                ("Distribution {child.name} has no publisher configuration. "
+                 "Please ask an administrator to set this up."
                  ".").format(
                     child=self.distroseries.distribution))
 
