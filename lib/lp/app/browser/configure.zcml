@@ -201,7 +201,7 @@
           for="*"
           name="+maintenancemessage"
           template="../templates/launchpad-maintenance.pt"
-          class="canonical.launchpad.browser.MaintenanceMessage"
+          class="lp.app.browser.launchpad.MaintenanceMessage"
           permission="zope.Public"
           />
 
@@ -263,7 +263,7 @@
           for="*"
           name="login_status"
           template="../templates/launchpad-loginstatus.pt"
-          class="canonical.launchpad.browser.LoginStatus"
+          class="lp.app.browser.launchpad.LoginStatus"
           permission="zope.Public"
           />
     </facet>
@@ -329,7 +329,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- OffsiteFormPostError -->
@@ -338,7 +338,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- NoReferrerError -->
@@ -365,7 +365,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- InvalidBatchSizeError -->
@@ -425,6 +425,10 @@
 
   <adapter
     factory="lp.app.browser.vocabulary.ProductPickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.ProjectGroupPickerEntrySourceAdapter"
     />
 
   <adapter

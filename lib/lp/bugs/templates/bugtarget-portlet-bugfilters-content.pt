@@ -94,6 +94,20 @@
       </a>
     </td>
   </tr>
+  <tr tal:condition="view/user">
+    <tal:comment condition="nothing">
+      No count here, because generating it is expensive.
+    </tal:comment>
+    <td class="bugs-count" />
+    <td class="bugs-link">
+      <a tal:attributes="href string:${view/my_affecting_bugs_url}">
+      Bugs affecting me
+      </a>
+    </td>
+  </tr>
+
+  <tr><td colspan="2"><br /></td></tr>
+
   <tr tal:define="count view/bugs_with_patches_count|nothing;
                   plural string: Bugs with patches;
                   singular string: Bug with a patch;">

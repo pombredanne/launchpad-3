@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -12,7 +12,6 @@ import testtools
 from canonical.config import dbconfig
 from canonical.config.fixture import ConfigUseFixture
 from canonical.testing.layers import BaseLayer
-
 from lp.testing.pgsql import (
     ConnectionWrapper,
     PgTestSetup,
@@ -102,7 +101,8 @@ class TestPgTestSetupTuning(testtools.TestCase, TestWithFixtures):
             cur = con.cursor()
             cur.execute('CREATE TABLE foo (x int)')
             con.commit()
-            ConnectionWrapper.committed = False # Leave the table
+            # Leave the table.
+            ConnectionWrapper.committed = False
         finally:
             fixture.tearDown()
 
@@ -177,7 +177,7 @@ class TestPgTestSetupTuning(testtools.TestCase, TestWithFixtures):
         sequence_values = []
         # Insert a row into it and roll back the changes. Each time, we
         # should end up with the same sequence value
-        for i in range(1,3):
+        for i in range(1, 3):
             fixture.setUp()
             try:
                 con = fixture.connect()

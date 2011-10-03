@@ -10,7 +10,6 @@ from functools import partial
 import logging
 import os
 import re
-import StringIO
 import sys
 import thread
 import threading
@@ -18,6 +17,7 @@ from time import time
 import traceback
 import warnings
 
+from lazr.restful.utils import get_current_browser_request, safe_hasattr
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT,
@@ -52,7 +52,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import (
     config,
-    DatabaseConfig,
+    dbconfig,
     )
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.postgresql import ConnectionString
@@ -72,7 +72,6 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
 from lp.services.log.loglevels import DEBUG2
@@ -97,7 +96,6 @@ __all__ = [
     'get_store_name',
     'print_queries',
     'soft_timeout_expired',
-    'SQLLogger',
     'start_sql_logging',
     'stop_sql_logging',
     'StoreSelector',
@@ -365,8 +363,10 @@ def start_sql_logging(tracebacks_if=False):
         warnings.warn('SQL logging already started')
         return
     _local.sql_logging_tracebacks_if = tracebacks_if
-    _local.sql_logging = []
+    result = []
+    _local.sql_logging = result
     _local.sql_logging_start = int(time() * 1000)
+    return result
 
 
 def stop_sql_logging():
@@ -378,29 +378,6 @@ def stop_sql_logging():
     if result is None:
         warnings.warn('SQL logging not started')
     return result
-
-
-class SQLLogger:
-
-    def __init__(self, tracebacks_if=False):
-        self.tracebacks_if = tracebacks_if
-
-    queries = None
-
-    def __enter__(self):
-        self.queries = None
-        start_sql_logging(self.tracebacks_if)
-
-    def __exit__(self, exc_type, exc_value, tb):
-        self.queries = stop_sql_logging()
-
-    def __str__(self):
-        if self.queries is None:
-            return '(no queries)'
-        else:
-            out = StringIO.StringIO()
-            print_queries(self.queries, file=out)
-            return out.getvalue()
 
 
 def print_queries(queries, file=None):
@@ -524,38 +501,35 @@ class LaunchpadDatabase(Postgres):
             raise StormAccessFromMainThread()
 
         try:
-            config_section, realm, flavor = self._uri.database.split('-')
+            realm, flavor = self._uri.database.split('-')
         except ValueError:
             raise AssertionError(
-                'Connection uri %s does not match section-realm-flavor format'
+                'Connection uri %s does not match realm-flavor format'
                 % repr(self._uri.database))
 
         assert realm == 'main', 'Unknown realm %s' % realm
         assert flavor in ('master', 'slave'), 'Unknown flavor %s' % flavor
 
-        my_dbconfig = DatabaseConfig()
-        my_dbconfig.setConfigSection(config_section)
-
         # We set self._dsn here rather than in __init__ so when the Store
         # is reconnected it pays attention to any config changes.
         config_entry = '%s_%s' % (realm, flavor)
-        connection_string = getattr(my_dbconfig, config_entry)
+        connection_string = getattr(dbconfig, config_entry)
         assert 'user=' not in connection_string, (
                 "Database username should not be specified in "
                 "connection string (%s)." % connection_string)
 
         # Try to lookup dbuser using the $realm_dbuser key. If this fails,
         # fallback to the dbuser key.
-        dbuser = getattr(my_dbconfig, '%s_dbuser' % realm, my_dbconfig.dbuser)
+        dbuser = getattr(dbconfig, '%s_dbuser' % realm, dbconfig.dbuser)
 
         self._dsn = "%s user=%s" % (connection_string, dbuser)
 
         flags = _get_dirty_commit_flags()
 
-        if my_dbconfig.isolation_level is None:
+        if dbconfig.isolation_level is None:
             self._isolation = ISOLATION_LEVEL_SERIALIZABLE
         else:
-            self._isolation = isolation_level_map[my_dbconfig.isolation_level]
+            self._isolation = isolation_level_map[dbconfig.isolation_level]
 
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
 

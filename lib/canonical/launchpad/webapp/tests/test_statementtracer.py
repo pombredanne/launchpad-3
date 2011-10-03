@@ -9,16 +9,18 @@ from contextlib import contextmanager
 import StringIO
 import sys
 
+from lazr.restful.utils import get_current_browser_request
+
+from canonical.launchpad.webapp import adapter as da
+from canonical.testing import DatabaseFunctionalLayer
+from lp.services.osutils import override_environ
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.services.osutils import override_environ
-from lp.services.timeline.requesttimeline import get_request_timeline
-from canonical.launchpad.webapp import adapter as da
-from canonical.lazr.utils import get_current_browser_request
-from canonical.testing import DatabaseFunctionalLayer
 
 
 @contextmanager
@@ -216,16 +218,23 @@ class TestLoggingOutsideOfRequest(TestCase):
                 "-" * 70 + "\n")
 
     def test_context_manager(self):
-        logger = da.SQLLogger()
-        with logger:
+        with StormStatementRecorder() as logger:
             self.execute()
-        self.assertEqual(1, len(logger.queries))
-        self.assertIs(None, logger.queries[0]['stack'])
-        self.assertIs(None, logger.queries[0]['exception'])
+        self.assertEqual(1, len(logger.query_data))
+        self.assertIs(None, logger.query_data[0]['stack'])
+        self.assertIs(None, logger.query_data[0]['exception'])
         self.assertEqual(
             (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42'),
-            logger.queries[0]['sql'])
+            logger.query_data[0]['sql'])
+        self.assertEqual(
+            (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 42'),
+            logger.queries[0])
+        self.assertEqual(
+            'SELECT * FROM bar WHERE bing = 42',
+            logger.statements[0])
+        self.assertEqual(1, logger.count)
         with stdout() as file:
+            # Show that calling str does not actually print (bugfix).
             result = str(logger)
             self.assertEqual('', file.getvalue())
         self.assertEqual(
@@ -234,20 +243,18 @@ class TestLoggingOutsideOfRequest(TestCase):
             result)
 
     def test_context_manager_with_stacktrace(self):
-        logger = da.SQLLogger(tracebacks_if=True)
-        with logger:
+        with StormStatementRecorder(tracebacks_if=True) as logger:
             self.execute()
-        self.assertEqual(1, len(logger.queries))
-        self.assertIsNot(None, logger.queries[0]['stack'])
+        self.assertEqual(1, len(logger.query_data))
+        self.assertIsNot(None, logger.query_data[0]['stack'])
 
     def test_sql_parameters(self):
-        logger = da.SQLLogger()
-        with logger:
+        with StormStatementRecorder() as logger:
             self.execute(statement='SELECT * FROM bar WHERE bing = %s',
                          params=(142,))
         self.assertEqual(
             (1, 2, 'SQL-stub-database', 'SELECT * FROM bar WHERE bing = 142'),
-            logger.queries[0]['sql'])
+            logger.query_data[0]['sql'])
 
 
 class TestLoggingWithinRequest(TestCaseWithFactory):
@@ -265,9 +272,8 @@ class TestLoggingWithinRequest(TestCaseWithFactory):
 
     def test_logger(self):
         tracer = da.LaunchpadStatementTracer()
-        logger = da.SQLLogger()
         with person_logged_in(self.person):
-            with logger:
+            with StormStatementRecorder() as logger:
                 tracer.connection_raw_execute(
                     self.connection, None,
                     'SELECT * FROM bar WHERE bing = 42', ())
@@ -286,7 +292,7 @@ class TestLoggingWithinRequest(TestCaseWithFactory):
                     'SELECT * FROM bar WHERE bing = 42', ())
                 self.assertIsNot(None, action.duration)
         self.assertEqual(
-            'SELECT * FROM surprise', logger.queries[0]['sql'][3])
+            'SELECT * FROM surprise', logger.query_data[0]['sql'][3])
 
     def test_stderr(self):
         with override_environ(LP_DEBUG_SQL='1'):

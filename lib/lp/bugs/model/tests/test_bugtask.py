@@ -1597,24 +1597,35 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_auto_confirm(self):
-        # A typical new bugtask auto-confirms.
+        # A typical new bugtask auto-confirms.  Doing so changes the status of
+        # the bug task, creates a status event, and creates a new comment
+        # indicating the reason the Janitor auto-confirmed.
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
             set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             bug_task = self.factory.makeBugTask()
+            bug = bug_task.bug
             self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            original_comment_count = bug.messages.count()
             with EventRecorder() as recorder:
                 bug_task.maybeConfirm()
                 self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
-                self.assertEqual(1, len(recorder.events))
-                event = recorder.events[0]
+                self.assertEqual(2, len(recorder.events))
+                msg_event, mod_event = recorder.events
                 self.assertEqual(getUtility(ILaunchpadCelebrities).janitor,
-                                 event.user)
-                self.assertEqual(['status'], event.edited_fields)
+                                 mod_event.user)
+                self.assertEqual(['status'], mod_event.edited_fields)
                 self.assertEqual(BugTaskStatus.NEW,
-                                 event.object_before_modification.status)
-                self.assertEqual(bug_task, event.object)
+                                 mod_event.object_before_modification.status)
+                self.assertEqual(bug_task, mod_event.object)
+                # A new comment is recorded.
+                self.assertEqual(
+                    original_comment_count + 1, bug.messages.count())
+                self.assertEqual(
+                    u"Status changed to 'Confirmed' because the bug affects "
+                    "multiple users.",
+                    bug.messages[-1].text_contents)
 
     def test_do_not_confirm_bugwatch_tasks(self):
         # A bugwatch bugtask does not auto-confirm.
@@ -1900,6 +1911,18 @@ class TestTransitionToTarget(TestCaseWithFactory):
             self.assertRaises(
                 IllegalTarget,
                 task.transitionToTarget, self.factory.makeSourcePackage())
+        self.assertEqual(milestone, task.milestone)
+
+    def test_milestone_preserved_within_a_pillar(self):
+        # Milestones are pillar-global, so transitions between packages
+        # don't unset them.
+        sp = self.factory.makeSourcePackage(publish=True)
+        dsp = sp.distribution_sourcepackage
+        task = self.factory.makeBugTask(target=dsp.distribution)
+        with person_logged_in(task.owner):
+            task.milestone = milestone = self.factory.makeMilestone(
+                distribution=dsp.distribution)
+            task.transitionToTarget(dsp)
         self.assertEqual(milestone, task.milestone)
 
     def test_targetnamecache_updated(self):

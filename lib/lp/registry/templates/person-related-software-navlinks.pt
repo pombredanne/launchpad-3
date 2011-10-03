@@ -22,6 +22,10 @@
         tal:condition="link/enabled"
         tal:content="structure link/fmt:link" />
       <li
+        tal:define="link view/menu:navigation/synchronised"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+       <li
         tal:define="link view/menu:navigation/projects"
         tal:condition="link/enabled"
         tal:content="structure link/fmt:link" />

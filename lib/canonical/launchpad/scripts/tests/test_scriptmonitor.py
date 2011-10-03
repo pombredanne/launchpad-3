@@ -1,14 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test scriptmonitor.py."""
 
 __metaclass__ = type
 
-import logging
 from unittest import TestCase
 
-from canonical import lp
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.scripts.scriptmonitor import check_script
@@ -27,7 +25,7 @@ class CheckScriptTestCase(TestCase):
             log_file = '/dev/null'
             loglevel = 1000
             verbose = False
-        self.con = connect(lp.dbuser)
+        self.con = connect()
         self.log = logger(FakeOptions())
 
     def tearDown(self):

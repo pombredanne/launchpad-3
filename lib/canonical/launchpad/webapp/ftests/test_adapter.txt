@@ -338,7 +338,7 @@ The request time limit was exceeded before the statement was issued to
 the database.
 
     >>> get_request_statements()
-    [(0, 0, 'SQL-launchpad-main-master', 'SELECT 2')]
+    [(0, 0, 'SQL-main-master', 'SELECT 2')]
 
 
 When a RequestExpired exception is raised, the current
@@ -414,7 +414,8 @@ If no timeout has been set, then requests will not time out:
     >>> clear_request_started()
 
 
-== Switching Database Users ==
+Switching Database Users
+========================
 
 The Launchpad store uses canonical.config to configure its
 connection.  This can be adjusted by choosing a different database
@@ -423,10 +424,8 @@ config section.  By default we connect as "launchpad"
     >>> print store.execute("select current_user").get_one()[0]
     launchpad_main
 
-    >>> from canonical.config import config, dbconfig
-    >>> config.statistician.dbuser
-    'statistician'
-    >>> dbconfig.setConfigSection('statistician')
+    >>> from canonical.config import dbconfig
+    >>> dbconfig.override(dbuser='statistician')
     >>> reset_store()
     >>> print store.execute("select current_user").get_one()[0]
     statistician
@@ -452,9 +451,9 @@ This is not reset at the end of the transaction:
     <BLANKLINE>
     >>> transaction.abort()
 
-So you need to explicitly set the user back:
+So you need to explicitly set the user back to the default:
 
-    >>> dbconfig.setConfigSection('launchpad')
+    >>> dbconfig.override(dbuser=None)
     >>> reset_store()
     >>> print store.execute("select current_user").get_one()[0]
     launchpad_main

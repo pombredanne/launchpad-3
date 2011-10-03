@@ -4,11 +4,9 @@
 """Storm/memcached implementation of lazr.restful's representation cache."""
 
 from lazr.restful.simple import BaseRepresentationCache
-from lazr.restful.utils import get_current_web_service_request
 import storm
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from zope.traversing.browser import absoluteURL
 
 from canonical.config import config
 from lp.services.memcache.interfaces import IMemcacheClient
@@ -32,11 +30,11 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
         obj = removeSecurityProxy(obj)
         try:
             storm_info = storm.info.get_obj_info(obj)
-        except storm.exceptions.ClassInfoError, e:
+        except storm.exceptions.ClassInfoError:
             # There's no Storm data for this object. Don't cache it,
             # since we don't know how to invalidate the cache.
             return self.DO_NOT_CACHE
-        table_name = storm_info.cls_info.table
+        table_name = storm_info.cls_info.table.name
         primary_key = tuple(var.get() for var in storm_info.primary_vars)
         identifier = table_name + repr(primary_key)
 

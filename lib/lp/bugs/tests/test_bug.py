@@ -287,3 +287,14 @@ class TestBugCreation(TestCaseWithFactory):
             self.assertRaises(
                 UserCannotEditBugTaskMilestone,
                 getUtility(IBugSet).createBug, params)
+
+    def test_createBugWithoutTarget_cve(self):
+        cve = self.factory.makeCVE('1999-1717')
+        target = self.factory.makeProduct()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="bad thing.", cve=cve)
+        params.setBugTarget(product=target)
+        bug = getUtility(IBugSet).createBug(params)
+        self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])

@@ -265,6 +265,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         intermediateTable='SectionSelection')
 
     @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.distribution
+
+    @property
     def named_version(self):
         return '%s (%s)' % (self.displayname, self.version)
 

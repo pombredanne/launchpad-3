@@ -72,6 +72,7 @@ from lazr.restful.interfaces import (
     IReference,
     IWebServiceClientRequest,
     )
+from lazr.restful.utils import smartquote
 from lazr.uri import URI
 from pytz import utc
 from simplejson import dumps
@@ -154,7 +155,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.lazr.utils import smartquote
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpadform import (
     action,
@@ -182,7 +182,6 @@ from lp.app.interfaces.launchpad import (
     IServiceUsage,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
@@ -203,6 +202,7 @@ from lp.bugs.browser.widgets.bugtask import (
     BugTaskAssigneeWidget,
     BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget,
+    BugTaskTargetWidget,
     DBItemDisplayWidget,
     NewLineToSpacesWidget,
     NominationReviewActionWidget,
@@ -679,7 +679,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         cache.objects['total_comments_and_activity'] = (
             self.total_comments + self.total_activity)
         cache.objects['initial_comment_batch_offset'] = (
-            self.visible_initial_comments)
+            self.visible_initial_comments + 1)
         cache.objects['first visible_recent_comment'] = (
             self.total_comments - self.visible_recent_comments)
 
@@ -726,14 +726,31 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def comments(self):
         """Return the bugtask's comments."""
+        return self._getComments()
+
+    def _getComments(self, slice_info=None):
         show_spam_controls = check_permission(
             'launchpad.Admin', self.context.bug)
-        return get_comments_for_bugtask(self.context, truncate=True,
+        return get_comments_for_bugtask(
+            self.context, truncate=True, slice_info=slice_info,
             for_display=True, show_spam_controls=show_spam_controls)
 
     @cachedproperty
     def interesting_activity(self):
+        return self._getInterestingActivity()
+
+    def _getInterestingActivity(self, earliest_activity_date=None,
+                                latest_activity_date=None):
         """A sequence of interesting bug activity."""
+        if (earliest_activity_date is not None and
+            latest_activity_date is not None):
+            # Only get the activity for the date range that we're
+            # interested in to save us from processing too much.
+            activity = self.context.bug.getActivityForDateRange(
+                start_date=earliest_activity_date,
+                end_date=latest_activity_date)
+        else:
+            activity = self.context.bug.activity
         bug_change_re = (
             'affects|description|security vulnerability|'
             'summary|tags|visibility')
@@ -742,10 +759,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             '(assignee|importance|milestone|status)')
         interesting_match = re.compile(
             "^(%s|%s)$" % (bug_change_re, bugtask_change_re)).match
-        return tuple(
+        interesting_activity = tuple(
             BugActivityItem(activity)
-            for activity in self.context.bug.activity
+            for activity in activity
             if interesting_match(activity.whatchanged) is not None)
+        # This is a bit kludgy but it means that interesting_activity is
+        # populated correctly for all subsequent calls.
+        self._interesting_activity_cached_value = interesting_activity
+        return interesting_activity
 
     def _getEventGroups(self, batch_size=None, offset=None):
         # Ensure truncation results in < max_length comments as expected
@@ -753,29 +774,44 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                + config.malone.comments_list_truncate_newest_to
                < config.malone.comments_list_max_length)
 
-        if not self.visible_comments_truncated_for_display:
+        if (not self.visible_comments_truncated_for_display and
+            batch_size is None):
             comments = self.comments
+        elif batch_size is not None:
+            # If we're limiting to a given set of comments, we work on
+            # just that subset of comments from hereon in, which saves
+            # on processing time a bit.
+            if offset is None:
+                offset = self.visible_initial_comments
+            comments = self._getComments([
+                slice(offset, offset + batch_size)])
         else:
             # the comment function takes 0-offset counts where comment 0 is
             # the initial description, so we need to add one to the limits
             # to adjust.
             oldest_count = 1 + self.visible_initial_comments
             new_count = 1 + self.total_comments - self.visible_recent_comments
-            show_spam_controls = check_permission(
-                'launchpad.Admin', self.context.bug)
-            comments = get_comments_for_bugtask(
-                self.context, truncate=True, for_display=True,
-                slice_info=[
-                    slice(None, oldest_count), slice(new_count, None)],
-                show_spam_controls=show_spam_controls)
+            slice_info = [
+                slice(None, oldest_count),
+                slice(new_count, None),
+                ]
+            comments = self._getComments(slice_info)
 
         visible_comments = get_visible_comments(
             comments, user=self.user)
+        if len(visible_comments) > 0 and batch_size is not None:
+            first_comment = visible_comments[0]
+            last_comment = visible_comments[-1]
+            interesting_activity = (
+                self._getInterestingActivity(
+                    earliest_activity_date=first_comment.datecreated,
+                    latest_activity_date=last_comment.datecreated))
+        else:
+            interesting_activity = self.interesting_activity
 
         event_groups = group_comments_with_activity(
             comments=visible_comments,
-            activities=self.interesting_activity,
-            batch_size=batch_size, offset=offset)
+            activities=interesting_activity)
         return event_groups
 
     @cachedproperty
@@ -900,7 +936,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def total_activity(self):
         """Return the count of all activity items for the bug."""
-        return self.context.bug.activity.count()
+        # Ignore the first activity item, since it relates to the bug's
+        # creation.
+        return self.context.bug.activity.count() - 1
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
@@ -1063,10 +1101,12 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
         try:
             return int(self.request.form_ng.getOne('offset'))
         except TypeError:
-            # We return visible_initial_comments, since otherwise we'd
+            # We return visible_initial_comments + 1, since otherwise we'd
             # end up repeating comments that are already visible on the
-            # page.
-            return self.visible_initial_comments
+            # page. The +1 accounts for the fact that bug comments are
+            # essentially indexed from 1 due to comment 0 being the
+            # initial bug description.
+            return self.visible_initial_comments + 1
 
     @property
     def batch_size(self):
@@ -1085,18 +1125,31 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
     def next_offset(self):
         return self.offset + self.batch_size
 
-    @cachedproperty
+    @property
     def _event_groups(self):
         """See `BugTaskView`."""
+        batch_size = self.batch_size
+        if (batch_size > (self.total_comments) or
+            not self.has_more_comments_and_activity):
+            # If the batch size is big enough to encompass all the
+            # remaining comments and activity, trim it so that we don't
+            # re-show things.
+            if self.offset == self.visible_initial_comments + 1:
+                offset_to_remove = self.visible_initial_comments
+            else:
+                offset_to_remove = self.offset
+            batch_size = (
+                self.total_comments - self.visible_recent_comments -
+                # This last bit is to make sure that _getEventGroups()
+                # doesn't accidentally inflate the batch size later on.
+                offset_to_remove)
         return self._getEventGroups(
-            batch_size=self.batch_size,
-            offset=self.offset)
+            batch_size=batch_size, offset=self.offset)
 
     @cachedproperty
     def has_more_comments_and_activity(self):
         """Return True if there are more camments and activity to load."""
         return (
-            len(self.activity_and_comments) > 0 and
             self.next_offset < (self.total_comments + self.total_activity))
 
 
@@ -1215,7 +1268,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     # the form.
     default_field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                            'status']
-    custom_widget('target', LaunchpadTargetWidget)
+    custom_widget('target', BugTaskTargetWidget)
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
@@ -1517,7 +1570,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         milestone_ignored = False
         missing = object()
         new_target = new_values.pop("target", missing)
-        if new_target is not missing and bugtask.target != new_target:
+        if (new_target is not missing and
+            bugtask.target.pillar != new_target.pillar):
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
@@ -1854,6 +1908,17 @@ class BugsInfoMixin:
             return get_buglisting_search_filter_url(assignee=self.user.name)
 
     @property
+    def my_affecting_bugs_url(self):
+        """A URL to a list of bugs affecting the current user, or None if
+        there is no current user.
+        """
+        if self.user is None:
+            return None
+        return get_buglisting_search_filter_url(
+            affecting_me=True,
+            orderby='-date_last_updated')
+
+    @property
     def my_reported_bugs_url(self):
         """A URL to a list of bugs reported by the user, or None."""
         if self.user is None:
@@ -1994,6 +2059,15 @@ class BugsStatsMixin(BugsInfoMixin):
         return self.context.searchTasks(params).count()
 
     @property
+    def my_affecting_bugs_count(self):
+        """A count of bugs affecting the user, or None."""
+        if self.user is None:
+            return None
+        params = get_default_search_params(self.user)
+        params.affects_me = True
+        return self.context.searchTasks(params).count()
+
+    @property
     def bugs_with_patches_count(self):
         """A count of unresolved bugs with patches."""
         return self._bug_stats['with_patch']
@@ -2009,7 +2083,9 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 def get_buglisting_search_filter_url(
         assignee=None, importance=None, status=None, status_upstream=None,
-        has_patches=None, bug_reporter=None):
+        has_patches=None, bug_reporter=None,
+        affecting_me=None,
+        orderby=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -2025,6 +2101,10 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.has_patch', 'on'))
     if bug_reporter is not None:
         search_params.append(('field.bug_reporter', bug_reporter))
+    if affecting_me is not None:
+        search_params.append(('field.affects_me', 'on'))
+    if orderby is not None:
+        search_params.append(('orderby', orderby))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
@@ -3003,8 +3083,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def addquestion_url(self):
         """Return the URL for the +addquestion view for the context."""
         if IQuestionTarget.providedBy(self.context):
-            return canonical_url(
-                self.context, rootsite='answers', view_name='+addquestion')
+            answers_usage = IServiceUsage(self.context).answers_usage
+            if answers_usage == ServiceUsage.LAUNCHPAD:
+                return canonical_url(
+                    self.context, rootsite='answers',
+                    view_name='+addquestion')
         else:
             return None
 

@@ -13,8 +13,8 @@ import re
 import time
 
 import feedparser
-from lazr.batchnavigator import ListRangeFactory
 from lazr.batchnavigator.z3batching import batch
+from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import TextLine
@@ -61,6 +61,7 @@ shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
 
+    page_title = 'Launchpad'
     featured_projects = []
     featured_projects_top = None
 
@@ -405,7 +406,12 @@ class LaunchpadSearchView(LaunchpadFormView):
         """See `LaunchpadFormView`"""
         errors = list(self.errors)
         for error in errors:
-            if (error.field_name == 'text'
+            if isinstance(error, ConversionError):
+                self.setFieldError(
+                    'text', 'Can not convert your search term.')
+            elif isinstance(error, unicode):
+                continue
+            elif (error.field_name == 'text'
                 and isinstance(error.errors, TooLong)):
                 self.setFieldError(
                     'text', 'The search text cannot exceed 250 characters.')
@@ -591,8 +597,8 @@ class GoogleBatchNavigator(BatchNavigator):
         results = WindowedList(results, start, results.total)
         super(GoogleBatchNavigator, self).__init__(results, request,
             start=start, size=size, callback=callback,
-            transient_parameters=transient_parameters, force_start=force_start,
-            range_factory=range_factory)
+            transient_parameters=transient_parameters,
+            force_start=force_start, range_factory=range_factory)
 
     def determineSize(self, size, batch_params_source):
         # Force the default and users requested sizes to 20.

@@ -61,11 +61,6 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from lp.services.messages.model.message import (
-    MessageJob,
-    MessageJobAction,
-    )
-from lp.services.messages.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
@@ -75,6 +70,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
@@ -105,6 +101,7 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
@@ -112,7 +109,11 @@ from lp.services.job.runner import (
     BaseRunnableJobSource,
     )
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.database.stormbase import StormBase
+from lp.services.messages.interfaces.message import IMessageJob
+from lp.services.messages.model.message import (
+    MessageJob,
+    MessageJobAction,
+    )
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -376,7 +377,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         self.checkReady()
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
-        self.branch_merge_proposal.preview_diff = preview
+        with BranchMergeProposalDelta.monitor(
+            self.branch_merge_proposal):
+            self.branch_merge_proposal.preview_diff = preview
 
     def getOperationDescription(self):
         return ('generating the diff for a merge proposal')

@@ -7,7 +7,7 @@ The LoginStatus browser class
 The LoginStatus class is a view support class that handles the logic for
 showing the "Log in / Register" link that appears on most pages.
 
-    >>> from canonical.launchpad.browser import LoginStatus
+    >>> from lp.app.browser.launchpad import LoginStatus
     >>> class DummyRequest(dict):
     ...
     ...     def __init__(self, appurl, path_info, query):

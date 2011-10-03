@@ -75,6 +75,12 @@ class UnauthorizedView(SystemErrorView):
     read_only_page = ViewPageTemplateFile(
         '../../../lp/app/templates/launchpad-readonlyfailure.pt')
 
+    def page_title(self):
+        if is_read_only():
+            return super(UnauthorizedView, self).page_title
+        else:
+            return 'Forbidden'
+
     def __call__(self):
         # In read only mode, Unauthorized exceptions get raised by the
         # security policy when write permissions are requested. We need

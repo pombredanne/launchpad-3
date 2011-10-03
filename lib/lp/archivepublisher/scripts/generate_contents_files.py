@@ -27,7 +27,7 @@ from lp.services.command_spawner import (
     ReturnCodeReceiver,
     )
 from lp.services.scripts.base import (
-    LaunchpadScript,
+    LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
@@ -112,7 +112,7 @@ def move_file(old_path, new_path):
     os.rename(old_path, new_path)
 
 
-class GenerateContentsFiles(LaunchpadScript):
+class GenerateContentsFiles(LaunchpadCronScript):
 
     distribution = None
 
