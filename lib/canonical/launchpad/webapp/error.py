@@ -287,3 +287,16 @@ class OpenIdDiscoveryFailureView(SystemErrorView):
     def isSystemError(self):
         """We don't need to log these errors in the SiteLog."""
         return False
+
+
+class DisconnectionErrorView(SystemErrorView):
+
+    response_code = httplib.SERVICE_UNAVAILABLE
+    reason = u'our database being temporarily offline'
+    cors_feed = config.launchpad.launchpadstatus_json_cors_feed
+    flash_feed = config.launchpad.launchpadstatus_json_flash_feed
+
+
+class OperationalErrorView(DisconnectionErrorView):
+
+    reason = u'our database having temporary operational issues'
