@@ -18,6 +18,7 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.app.errors import NotFoundError
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -147,6 +148,7 @@ class InitializeDistroSeries:
                 ("Series {child.name} has already been initialised"
                  ".").format(
                     child=self.distroseries))
+        self._checkPublisherConfig()
         if (self.distroseries.distribution.has_published_sources and
             self.distroseries.previous_series is None):
             raise InitializationError(
@@ -159,6 +161,20 @@ class InitializeDistroSeries:
             self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
+
+    def _checkPublisherConfig(self):
+        """A series cannot be initialized if it has no publisher config
+        set up.
+        """
+        publisherconfigset = getUtility(IPublisherConfigSet)
+        config = publisherconfigset.getByDistribution(
+            self.distroseries.distribution)
+        if config is None:
+            raise InitializationError(
+                ("Distribution {child.name} has no publisher configuration. "
+                 "Please ask an administrator to set this up"
+                 ".").format(
+                    child=self.distroseries.distribution))
 
     def _checkParents(self):
         """If self.first_derivation, the parents list cannot be empty."""

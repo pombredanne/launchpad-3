@@ -748,15 +748,20 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         view = create_initialized_view(distroseries, "+initseries")
         self.assertTrue(view)
 
-    def test_is_derived_series_feature_enabled(self):
-        # The feature is disabled by default, but can be enabled by setting
-        # the soyuz.derived_series_ui.enabled flag.
+    def test_is_derived_series_feature_disabled(self):
+        # The feature is disabled by default.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
         with FeatureFixture({}):
             self.assertFalse(view.is_derived_series_feature_enabled)
+
+    def test_is_derived_series_feature_enabled(self):
+        # The feature is disabled by default, but can be enabled by setting
+        # the soyuz.derived_series_ui.enabled flag.
+        distroseries = self.factory.makeDistroSeries()
         flags = {u"soyuz.derived_series_ui.enabled": u"true"}
         with FeatureFixture(flags):
+            view = create_initialized_view(distroseries, "+initseries")
             self.assertTrue(view.is_derived_series_feature_enabled)
 
     def test_form_hidden_when_derived_series_feature_disabled(self):
@@ -905,6 +910,27 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                     u'Unable to initialize series: the distribution '
                     u'already has initialized series and this distroseries '
                     u'has no previous series.'))
+
+    def test_form_hidden_when_no_publisher_config_set_up(self):
+        # If the distribution has no publisher config set up:
+        # the form is hidden and the page contains an error message.
+        distribution = self.factory.makeDistribution(
+            no_pubconf=True, name="distro")
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution)
+        view = create_initialized_view(distroseries, "+initseries")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertThat(
+                message.text, EqualsIgnoringWhitespace(
+                    u"The series' distribution has no publisher "
+                    u"configuration. Please ask an administrator to set "
+                    "this up."))
 
 
 class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):

@@ -41,6 +41,9 @@ class TestDistribution(BugTargetBugFilingDuplicateSearchAlwaysOn,
         super(TestDistribution, self).setUp()
         self.bugtarget = self.factory.makeDistribution()
 
+    def test_pillar(self):
+        self.assertEqual(self.bugtarget, self.bugtarget.pillar)
+
 
 class TestDistroSeries(BugTargetBugFilingDuplicateSearchAlwaysOn,
                        TestCaseWithFactory):
@@ -56,6 +59,9 @@ class TestDistroSeries(BugTargetBugFilingDuplicateSearchAlwaysOn,
         self.assertTrue(ISeriesBugTarget.providedBy(self.bugtarget))
         self.assertEqual(
             self.bugtarget.distribution, self.bugtarget.bugtarget_parent)
+
+    def test_pillar(self):
+        self.assertEqual(self.bugtarget.distribution, self.bugtarget.pillar)
 
 
 class TestProjectGroup(BugTargetBugFilingDuplicateSearchAlwaysOn,
@@ -96,6 +102,9 @@ class TestProduct(BugTargetBugFilingDuplicateSearchSettable,
         self.bugtarget = self.factory.makeProduct(
             bug_supervisor=self.bug_supervisor)
 
+    def test_pillar(self):
+        self.assertEqual(self.bugtarget, self.bugtarget.pillar)
+
 
 class TestDistributionSourcePackage(BugTargetBugFilingDuplicateSearchSettable,
                                     TestCaseWithFactory):
@@ -110,6 +119,9 @@ class TestDistributionSourcePackage(BugTargetBugFilingDuplicateSearchSettable,
             bug_supervisor=self.bug_supervisor)
         self.bugtarget = self.factory.makeDistributionSourcePackage(
             distribution=distribution)
+
+    def test_pillar(self):
+        self.assertEqual(self.bugtarget.distribution, self.bugtarget.pillar)
 
 
 class BugTargetBugFilingDuplicateSearchInherited:
@@ -148,6 +160,9 @@ class TestProductSeries(BugTargetBugFilingDuplicateSearchInherited,
         self.assertEqual(
             self.bugtarget.product, self.bugtarget.bugtarget_parent)
 
+    def test_pillar(self):
+        self.assertEqual(self.bugtarget.product, self.bugtarget.pillar)
+
 
 class TestSourcePackage(BugTargetBugFilingDuplicateSearchInherited,
                        TestCaseWithFactory):
@@ -170,3 +185,7 @@ class TestSourcePackage(BugTargetBugFilingDuplicateSearchInherited,
         self.assertEqual(
             self.bugtarget.distribution_sourcepackage,
             self.bugtarget.bugtarget_parent)
+
+    def test_pillar(self):
+        self.assertEqual(
+            self.bugtarget.distroseries.distribution, self.bugtarget.pillar)

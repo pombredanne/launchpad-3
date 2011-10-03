@@ -39,9 +39,8 @@ When text is not None, the title indicates what was searched.
     ...         search_param_list.append('%s=%s' % (name, value))
     ...     query_string = '&'.join(search_param_list)
     ...     request = LaunchpadTestRequest(
-    ...         SERVER_URL='http://launchpad.dev/+search',
-    ...         QUERY_STRING=query_string,
-    ...         form=form)
+    ...         SERVER_URL='https://launchpad.dev/+search',
+    ...         QUERY_STRING=query_string, form=form, PATH_INFO='/+search')
     ...     search_view = getMultiAdapter((root, request), name="+search")
     ...     search_view.initialize()
     ...     return search_view
@@ -504,10 +503,25 @@ No page matches
 When an empty PageMatches object is returned by the GoogleSearchService to
 the view, there are no matches to show.
 
-    >>> search_view = getSearchView(
-    ...     form={'field.text': 'no-meaningful'})
+    >>> search_view = getSearchView(form={'field.text': 'no-meaningful'})
     >>> search_view.has_matches
     False
+
+
+Unintelligible searches
+-----------------------
+
+When a user searches for a malformed string, we don't OOPS, but show an
+error. Also disable warnings, since we are tossing around malformed Unicode.
+
+    >>> import warnings
+    >>> with warnings.catch_warnings():
+    ...     warnings.simplefilter('ignore')
+    ...     search_view = getSearchView(
+    ...         form={'field.text': '\xfe\xfckr\xfc'})
+    >>> html = search_view()
+    >>> 'Can not convert your search term' in html
+    True
 
 
 Bad Google response handling
@@ -518,8 +532,7 @@ Google. The LaunchpadSearchView will display the other searches and
 show a message explaining that the user can search again to find
 matching pages.
 
-    >>> search_view = getSearchView(
-    ...     form={'field.text': 'gnomebaker'})
+    >>> search_view = getSearchView(form={'field.text': 'gnomebaker'})
     >>> search_view.has_matches
     True
     >>> search_view.pillar.displayname
@@ -531,7 +544,7 @@ The view provides the requested URL so that the template can make a
 link to try the search again
 
     >>> print search_view.url
-    http://launchpad.dev/+search?field.text=gnomebaker
+    https://launchpad.dev/+search?field.text=gnomebaker
 
 
 SearchFormView and SearchFormPrimaryView

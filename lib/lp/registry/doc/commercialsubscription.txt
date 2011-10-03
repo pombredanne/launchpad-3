@@ -397,7 +397,6 @@ You can search for whether the product is marked reviewed or not.
     python-gnome2-dev
     unassigned
     alsa-utils
-    rosetta
     obsolete-junk
 
 You can search for products by license. This will match products with
@@ -457,7 +456,6 @@ not approved
     python-gnome2-dev
     unassigned
     alsa-utils
-    rosetta
 
 You can search for products based on a date range in which the product
 was created.
