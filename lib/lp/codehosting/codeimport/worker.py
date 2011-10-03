@@ -771,11 +771,7 @@ class PullingImportWorker(ImportWorker):
                 inter_branch = InterBranch.get(remote_branch, bazaar_branch)
                 self._logger.info("Importing branch.")
                 revision_limit = self.getRevisionLimit()
-                if revision_limit is None:
-                    # bzr < 2.4 does not support InterBranch.fetch()
-                    bazaar_branch.fetch(remote_branch)
-                else:
-                    inter_branch.fetch(limit=revision_limit)
+                inter_branch.fetch(limit=revision_limit)
                 if bazaar_branch.repository.has_revision(remote_branch_tip):
                     pull_result = inter_branch.pull(overwrite=True)
                     if pull_result.old_revid != pull_result.new_revid:
