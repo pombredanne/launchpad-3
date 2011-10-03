@@ -81,7 +81,7 @@ class TestBugNominationView(TestCaseWithFactory):
             "You do not have permission to nominate this bug.",
             notifications[0].message)
 
-    def test_bug_supevisor_nominate_distribution_does_not_error(self):
+    def test_bug_supervisor_nominate_distribution_does_not_error(self):
         # A bug supervisor should not receive error notifications
         # from the BugNominationView for a distro series.
         person = self.factory.makePerson(
@@ -125,7 +125,7 @@ class TestBugNominationView(TestCaseWithFactory):
         view = create_initialized_view(series_bugtask, name='+nominate')
         self.assertEqual(0, len(view.request.notifications))
 
-    def test_bug_supevisor_nominate_product_does_not_error(self):
+    def test_bug_supervisor_nominate_product_does_not_error(self):
         # A bug supervisor should not receive error notifications
         # from the BugNominationView for a product series.
         person = self.factory.makePerson(
