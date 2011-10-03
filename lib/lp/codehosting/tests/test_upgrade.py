@@ -2,7 +2,6 @@ __metaclass__ = type
 
 import logging
 
-from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.plugins.loom.branch import loomify
 from bzrlib.repofmt.groupcompress_repo import (
@@ -60,25 +59,29 @@ class TestUpgrader(TestCaseWithFactory):
     def test_simple_upgrade(self):
         """Upgrade a pack-0.92 branch."""
         upgrader = self.prepare()
-        upgraded = Branch.open(upgrader.upgrade())
+        upgrader.upgrade()
+        upgraded = upgrader.get_bzrdir().open_branch()
         self.check_branch(upgraded)
 
     def test_subtree_upgrade(self):
         """Upgrade a pack-0.92-subtree branch."""
         upgrader = self.prepare('pack-0.92-subtree')
-        upgraded = Branch.open(upgrader.upgrade())
+        upgrader.upgrade()
+        upgraded = upgrader.get_bzrdir().open_branch()
         self.check_branch(upgraded)
 
     def test_upgrade_loom(self):
         """Upgrade a loomified pack-0.92 branch."""
         upgrader = self.prepare(loomify_branch=True)
-        upgraded = Branch.open(upgrader.upgrade())
+        upgrader.upgrade()
+        upgraded = upgrader.get_bzrdir().open_branch()
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_upgrade_subtree_loom(self):
         """Upgrade a loomified pack-0.92-subtree branch."""
         upgrader = self.prepare('pack-0.92-subtree', loomify_branch=True)
-        upgraded = Branch.open(upgrader.upgrade())
+        upgrader.upgrade()
+        upgraded = upgrader.get_bzrdir().open_branch()
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_default_repo_format(self):
