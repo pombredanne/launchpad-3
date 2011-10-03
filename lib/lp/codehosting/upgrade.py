@@ -6,7 +6,6 @@ import os
 from shutil import rmtree
 from tempfile import mkdtemp
 
-from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.errors import UpToDateFormat
 from bzrlib.plugins.loom.formats import (
@@ -34,11 +33,11 @@ class Upgrader:
         if self.bzr_branch is None:
             self.bzr_branch = removeSecurityProxy(self.branch.getBzrBranch())
         self.target_dir = target_dir
+        self.target_subdir = os.path.join(self.target_dir, str(self.branch.id))
         self.logger = logger
 
-    @property
-    def target_subdir(self):
-        return os.path.join(self.target_dir, str(self.branch.id))
+    def get_bzrdir(self):
+        return BzrDir.open(self.target_subdir)
 
     def get_target_format(self):
         """Return the format to upgrade a branch to.
@@ -91,25 +90,17 @@ class Upgrader:
             'Upgrading branch %s (%s)', self.branch.unique_name,
             self.branch.id)
         with read_locked(self.bzr_branch):
-            upgrade_dir = mkdtemp(dir=self.target_dir)
-            try:
-                repository = self.create_upgraded_repository(upgrade_dir)
-                self.add_upgraded_branch(repository.bzrdir)
-            except:
-                rmtree(upgrade_dir)
-                raise
-            else:
-                os.rename(upgrade_dir, self.target_subdir)
-                return self.target_subdir
+            self.create_upgraded_repository()
+            self.add_upgraded_branch()
+        return self.target_subdir
 
-    def add_upgraded_branch(self, bd):
-        """Add an upgraded branch to the specified BzrDir.
+    def add_upgraded_branch(self):
+        """Add an upgraded branch to the target_subdir.
 
         self.branch's branch (but not repository) is mirrored to the BzrDir
         and then the bzrdir is upgraded in the normal way.
-
-        :param bd: The bzrdir to add a branch to.
         """
+        bd = self.get_bzrdir()
         self.mirror_branch(self.bzr_branch, bd)
         try:
             exceptions = upgrade(
@@ -122,20 +113,25 @@ class Upgrader:
                     return 3
         except UpToDateFormat:
             pass
+        return bd
 
-    def create_upgraded_repository(self, upgrade_dir):
+    def create_upgraded_repository(self):
         """Create a repository in an upgraded format.
 
         :param upgrade_dir: The directory to create the repository in.
         :return: The created repository.
         """
         self.logger.info('Converting repository with fetch.')
-        branch = BzrDir.create_branch_convenience(
-            upgrade_dir, force_new_tree=False, format=self.get_target_format())
-        repository = branch.repository
-        repository.bzrdir.destroy_branch()
-        repository.fetch(self.bzr_branch.repository)
-        return repository
+        upgrade_dir = mkdtemp(dir=self.target_dir)
+        try:
+            bzrdir = BzrDir.create(upgrade_dir, self.get_target_format())
+            repository = bzrdir.create_repository()
+            repository.fetch(self.bzr_branch.repository)
+        except:
+            rmtree(upgrade_dir)
+            raise
+        else:
+            os.rename(upgrade_dir, self.target_subdir)
 
     def has_tree_references(self):
         """Determine whether a repository contains tree references.
