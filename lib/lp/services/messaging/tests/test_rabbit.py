@@ -20,12 +20,13 @@ from canonical.testing.layers import (
     RabbitMQLayer,
     )
 from lp.services.messaging.interfaces import (
-    EmptyQueue,
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
     MessagingException,
     MessagingUnavailable,
+    QueueEmpty,
+    QueueNotFound,
     )
 from lp.services.messaging.rabbit import (
     RabbitMessageBase,
@@ -101,10 +102,10 @@ class TestRabbitSession(RabbitTestCase):
 
     def test_connect(self):
         session = RabbitSession()
-        self.assertIs(None, session.connection)
+        self.assertFalse(session.is_connected)
         connection = session.connect()
-        self.assertIsNot(None, session.connection)
-        self.assertIs(connection, session.connection)
+        self.assertTrue(session.is_connected)
+        self.assertIs(connection, session._connection)
 
     def test_connect_with_incomplete_configuration(self):
         self.pushConfig("rabbitmq", host="none")
@@ -117,15 +118,15 @@ class TestRabbitSession(RabbitTestCase):
         session = RabbitSession()
         session.connect()
         session.disconnect()
-        self.assertIs(None, session.connection)
+        self.assertFalse(session.is_connected)
 
-    def test_connection(self):
-        # The connection property is None once a connection has been closed.
+    def test_is_connected(self):
+        # is_connected is False once a connection has been closed.
         session = RabbitSession()
         session.connect()
         # Close the connection without using disconnect().
-        session.connection.close()
-        self.assertIs(None, session.connection)
+        session._connection.close()
+        self.assertFalse(session.is_connected)
 
     def test_defer(self):
         task = lambda foo, bar: None
@@ -148,7 +149,7 @@ class TestRabbitSession(RabbitTestCase):
         session.flush()
         self.assertEqual(["task"], log)
         self.assertEqual([], list(session._deferred))
-        self.assertIsNot(None, session.connection)
+        self.assertTrue(session.is_connected)
 
     def test_reset(self):
         # RabbitSession.reset() resets session variables and does not run
@@ -161,7 +162,7 @@ class TestRabbitSession(RabbitTestCase):
         session.reset()
         self.assertEqual([], log)
         self.assertEqual([], list(session._deferred))
-        self.assertIs(None, session.connection)
+        self.assertFalse(session.is_connected)
 
     def test_finish(self):
         # RabbitSession.finish() resets session variables after running
@@ -174,7 +175,7 @@ class TestRabbitSession(RabbitTestCase):
         session.finish()
         self.assertEqual(["task"], log)
         self.assertEqual([], list(session._deferred))
-        self.assertIs(None, session.connection)
+        self.assertFalse(session.is_connected)
 
     def test_getProducer(self):
         session = RabbitSession()
@@ -238,9 +239,9 @@ class TestRabbitMessageBase(RabbitTestCase):
     def test_channel(self):
         # Referencing the channel property causes the session to connect.
         base = RabbitMessageBase(global_session)
-        self.assertIs(None, base.session.connection)
+        self.assertFalse(base.session.is_connected)
         channel = base.channel
-        self.assertIsNot(None, base.session.connection)
+        self.assertTrue(base.session.is_connected)
         self.assertIsNot(None, channel)
         # The same channel is returned every time.
         self.assertIs(channel, base.channel)
@@ -266,11 +267,13 @@ class TestRabbitRoutingKey(RabbitTestCase):
         consumer = RabbitQueue(global_session, next(queue_names))
         routing_key = RabbitRoutingKey(global_session, next(key_names))
         routing_key.associateConsumer(consumer)
+        # The session is still not connected.
+        self.assertFalse(global_session.is_connected)
         routing_key.sendNow('now')
         routing_key.send('later')
-        # There is nothing in the queue because the consumer has not yet been
-        # associated with the routing key.
-        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
+        # The queue is not found because the consumer has not yet been
+        # associated with the routing key and the queue declared.
+        self.assertRaises(QueueNotFound, consumer.receive, timeout=2)
         transaction.commit()
         # Now that the transaction has been committed, the consumer is
         # associated, and receives the deferred message.
@@ -321,6 +324,11 @@ class TestRabbitRoutingKey(RabbitTestCase):
             received_data = consumer.receive(timeout=2)
             self.assertEqual(data, received_data)
 
+    def test_does_not_connect_session_immediately(self):
+        # RabbitRoutingKey does not connect the session until necessary.
+        RabbitRoutingKey(global_session, next(key_names))
+        self.assertFalse(global_session.is_connected)
+
 
 class TestRabbitQueue(RabbitTestCase):
 
@@ -338,14 +346,19 @@ class TestRabbitQueue(RabbitTestCase):
             self.assertEqual(data, consumer.receive(timeout=2))
 
         # All the messages received were consumed.
-        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
+        self.assertRaises(QueueEmpty, consumer.receive, timeout=2)
 
         # New connections to the queue see an empty queue too.
         consumer.session.disconnect()
         consumer = RabbitQueue(global_session, next(queue_names))
         routing_key = RabbitRoutingKey(global_session, next(key_names))
         routing_key.associateConsumerNow(consumer)
-        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
+        self.assertRaises(QueueEmpty, consumer.receive, timeout=2)
+
+    def test_does_not_connect_session_immediately(self):
+        # RabbitQueue does not connect the session until necessary.
+        RabbitQueue(global_session, next(queue_names))
+        self.assertFalse(global_session.is_connected)
 
 
 class TestRabbit(RabbitTestCase):
@@ -381,7 +394,7 @@ class TestRabbit(RabbitTestCase):
 
         # Messages sent using send() are forgotten on abort.
         transaction.abort()
-        self.assertRaises(EmptyQueue, consumer.receive, timeout=2)
+        self.assertRaises(QueueEmpty, consumer.receive, timeout=2)
 
 
 class TestRabbitWithLaunchpad(RabbitTestCase):
