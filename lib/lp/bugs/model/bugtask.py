@@ -887,8 +887,8 @@ class BugTask(SQLBase):
                     new_status.title,))
 
         if new_status == BugTaskStatus.INCOMPLETE:
-            # We store INCOMPLETE as INCOMPLETE_WITHOUT_RESPONSE so that it can
-            # be queried on efficiently.
+            # We store INCOMPLETE as INCOMPLETE_WITHOUT_RESPONSE so that it
+            # can be queried on efficiently.
             if (when is None or self.bug.date_last_message is None or
                 when > self.bug.date_last_message):
                 new_status = BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
@@ -1608,7 +1608,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return BugTaskSearchParams(
             user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            status=any(*DB_UNRESOLVED_BUGTASK_STATUSES),
             omit_dupes=True)
 
     def get(self, task_id):
@@ -3068,9 +3068,10 @@ class BugTaskSet:
             ]
 
         product_ids = [product.id for product in products]
-        conditions = And(BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
-                         Bug.duplicateof == None,
-                         BugTask.productID.is_in(product_ids))
+        conditions = And(
+            BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
+            Bug.duplicateof == None,
+            BugTask.productID.is_in(product_ids))
 
         privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter != '':
