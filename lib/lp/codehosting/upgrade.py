@@ -37,6 +37,7 @@ class Upgrader:
         self.logger = logger
 
     def get_bzrdir(self):
+        """Return the target_subdir bzrdir."""
         return BzrDir.open(self.target_subdir)
 
     def get_target_format(self):
@@ -91,8 +92,8 @@ class Upgrader:
             self.branch.id)
         with read_locked(self.bzr_branch):
             self.create_upgraded_repository()
-            self.add_upgraded_branch()
-        return self.target_subdir
+            bd = self.add_upgraded_branch()
+        return bd
 
     def add_upgraded_branch(self):
         """Add an upgraded branch to the target_subdir.

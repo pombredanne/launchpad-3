@@ -59,29 +59,25 @@ class TestUpgrader(TestCaseWithFactory):
     def test_simple_upgrade(self):
         """Upgrade a pack-0.92 branch."""
         upgrader = self.prepare()
-        upgrader.upgrade()
-        upgraded = upgrader.get_bzrdir().open_branch()
+        upgraded = upgrader.upgrade().open_branch()
         self.check_branch(upgraded)
 
     def test_subtree_upgrade(self):
         """Upgrade a pack-0.92-subtree branch."""
         upgrader = self.prepare('pack-0.92-subtree')
-        upgrader.upgrade()
-        upgraded = upgrader.get_bzrdir().open_branch()
+        upgraded = upgrader.upgrade().open_branch()
         self.check_branch(upgraded)
 
     def test_upgrade_loom(self):
         """Upgrade a loomified pack-0.92 branch."""
         upgrader = self.prepare(loomify_branch=True)
-        upgrader.upgrade()
-        upgraded = upgrader.get_bzrdir().open_branch()
+        upgraded = upgrader.upgrade().open_branch()
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_upgrade_subtree_loom(self):
         """Upgrade a loomified pack-0.92-subtree branch."""
         upgrader = self.prepare('pack-0.92-subtree', loomify_branch=True)
-        upgrader.upgrade()
-        upgraded = upgrader.get_bzrdir().open_branch()
+        upgraded = upgrader.upgrade().open_branch()
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_default_repo_format(self):
@@ -121,9 +117,7 @@ class TestUpgrader(TestCaseWithFactory):
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
             upgrader.create_upgraded_repository()
-            repository = upgrader.get_bzrdir().open_repository()
-            bd = upgrader.add_upgraded_branch()
-        upgraded = bd.open_branch()
+            upgraded = upgrader.add_upgraded_branch().open_branch()
         self.assertEqual('prepare-commit', upgraded.last_revision())
 
     def test_create_upgraded_repository_preserves_dead_heads(self):
@@ -150,9 +144,7 @@ class TestUpgrader(TestCaseWithFactory):
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
             upgrader.create_upgraded_repository()
-            repository = upgrader.get_bzrdir().open_repository()
-            bd = upgrader.add_upgraded_branch()
-        upgraded = bd.open_branch()
+            upgraded = upgrader.add_upgraded_branch().open_branch()
         self.assertEqual('rev-id', upgraded.tags.lookup_tag('steve'))
 
     def test_has_tree_references(self):
@@ -180,5 +172,5 @@ class TestUpgrader(TestCaseWithFactory):
         upgrade_dir = self.useContext(temp_dir())
         with read_locked(tree.branch):
             upgrader.create_upgraded_repository()
-            upgraded = upgrader.get_bzrdir().open_repository()
+        upgraded = upgrader.get_bzrdir().open_repository()
         self.assertIs(RepositoryFormat2aSubtree, upgraded._format.__class__)
