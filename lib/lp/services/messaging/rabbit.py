@@ -12,12 +12,15 @@ __all__ = [
 from collections import deque
 from functools import partial
 import json
+import sys
 import threading
 import time
 
 from amqplib import client_0_8 as amqp
 import transaction
 from transaction._transaction import Status as TransactionStatus
+from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
 from canonical.config import config
@@ -148,9 +151,13 @@ class RabbitUnreliableSession(RabbitSession):
     silently suppressed, `AMQPException` in particular. This means that
     services can continue to function even in the absence of a running and
     fully functional message queue.
+
+    Other types of errors are also catched because we don't want this
+    subsystem to destabilise other parts of Launchpad but we nonetheless
+    record OOPses for these.
     """
 
-    ignored_errors = (
+    suppressed_errors = (
         IOError,
         MessagingException,
         amqp.AMQPException,
@@ -159,12 +166,16 @@ class RabbitUnreliableSession(RabbitSession):
     def finish(self):
         """See `IMessageSession`.
 
-        Suppresses errors listed in `ignored_errors`.
+        Suppresses errors listed in `suppressed_errors`. Also suppresses
+        other errors but file an oops report for these.
         """
         try:
             super(RabbitUnreliableSession, self).finish()
-        except self.ignored_errors:
+        except self.suppressed_errors:
             pass
+        except Exception:
+            error_utility = getUtility(IErrorReportingUtility)
+            error_utility.raising(sys.exc_info())
 
 
 # Per-thread "unreliable" sessions.

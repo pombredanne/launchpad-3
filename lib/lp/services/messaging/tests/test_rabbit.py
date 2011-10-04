@@ -16,8 +16,10 @@ from transaction._transaction import Status as TransactionStatus
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.interfaces import FinishReadOnlyRequestEvent
 from canonical.testing.layers import (
+    FunctionalLayer,
     LaunchpadFunctionalLayer,
     RabbitMQLayer,
     )
@@ -199,6 +201,22 @@ class TestRabbitSession(RabbitTestCase):
 class TestRabbitUnreliableSession(TestRabbitSession):
 
     session_factory = RabbitUnreliableSession
+    layer = FunctionalLayer
+
+    def setUp(self):
+        super(TestRabbitUnreliableSession, self).setUp()
+        self.error_utility = ErrorReportingUtility()
+        self.prev_oops = self.error_utility.getLastOopsReport()
+
+    def assertNoOops(self):
+        oops_report = self.error_utility.getLastOopsReport()
+        self.assertEqual(repr(self.prev_oops), repr(oops_report))
+
+    def assertOops(self, text_in_oops):
+        oops_report = self.error_utility.getLastOopsReport()
+        self.assertNotEqual(
+            repr(self.prev_oops), repr(oops_report), 'No OOPS reported!')
+        self.assertTrue(text_in_oops in str(oops_report))
 
     def raise_AMQPException(self):
         raise amqp.AMQPException(123, "Suffin broke.", "Whut?")
@@ -206,17 +224,18 @@ class TestRabbitUnreliableSession(TestRabbitSession):
     def test_finish_suppresses_AMQPException(self):
         session = self.session_factory()
         session.defer(self.raise_AMQPException)
-        session.finish()
-        # Look, no exceptions!
+        session.finish()  # Look, no exceptions!
+        self.assertNoOops()
 
     def raise_MessagingException(self):
         raise MessagingException("Arm stuck in combine.")
 
     def test_finish_suppresses_MessagingException(self):
+        self.error_utility = ErrorReportingUtility()
         session = self.session_factory()
         session.defer(self.raise_MessagingException)
-        session.finish()
-        # Look, no exceptions!
+        session.finish()  # Look, no exceptions!
+        self.assertNoOops()
 
     def raise_IOError(self):
         raise IOError("Leg eaten by cow.")
@@ -224,16 +243,17 @@ class TestRabbitUnreliableSession(TestRabbitSession):
     def test_finish_suppresses_IOError(self):
         session = self.session_factory()
         session.defer(self.raise_IOError)
-        session.finish()
-        # Look, no exceptions!
+        session.finish()  # Look, no exceptions!
+        self.assertNoOops()
 
     def raise_Exception(self):
         raise Exception("That hent worked.")
 
-    def test_finish_does_not_suppress_other_errors(self):
+    def test_finish_suppresses_other_errors_with_oopses(self):
         session = self.session_factory()
         session.defer(self.raise_Exception)
-        self.assertRaises(Exception, session.finish)
+        session.finish()  # Look, no exceptions!
+        self.assertOops("That hent worked.")
 
 
 class TestRabbitMessageBase(RabbitTestCase):
