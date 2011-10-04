@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'branch_changed',
     'BranchFormat',
     'ControlFormat',
     'CURRENT_BRANCH_FORMATS',
@@ -25,6 +26,10 @@ from bzrlib.branch import (
     BzrBranchFormat7,
     )
 from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.errors import (
+    NotStacked,
+    UnstackableBranchFormat,
+    )
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1,
     BzrBranchLoomFormat6,
@@ -291,3 +296,14 @@ def get_branch_formats(bzr_branch):
     return (ControlFormat.get_enum(control_string),
             BranchFormat.get_enum(branch_string),
             RepositoryFormat.get_enum(repository_string))
+
+
+def branch_changed(launchpad_branch, bzr_branch):
+    """Mark a launchpad branch as changed, using data from a bzr branch."""
+    try:
+        stacked_on = bzr_branch.get_stacked_on_url()
+    except (NotStacked, UnstackableBranchFormat):
+        stacked_on = None
+    last_revision = bzr_branch.last_revision()
+    formats = get_branch_formats(bzr_branch)
+    launchpad_branch.branchChanged(stacked_on, last_revision, *formats)

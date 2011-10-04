@@ -14,6 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.bzr import (
     BranchFormat,
+    branch_changed,
     get_branch_formats,
     RepositoryFormat,
     )
@@ -203,3 +204,13 @@ class TestUpgrader(TestCaseWithFactory):
         branch = Branch.open_from_transport(t)
         self.check_branch(branch, BranchFormat.BZR_BRANCH_6,
                           RepositoryFormat.BZR_KNITPACK_1)
+
+    def test_run_start_upgrade(self):
+        upgrader = self.prepare()
+        branch_changed(upgrader.branch, upgrader.bzr_branch)
+        Upgrader.run_start_upgrade(
+            upgrader.target_dir, upgrader.logger)
+        upgraded = upgrader.get_bzrdir().open_repository()
+        self.assertIs(RepositoryFormat2a, upgraded._format.__class__)
+        self.assertEqual(
+            'foo', upgraded.get_revision('prepare-commit').message)

@@ -16,11 +16,11 @@ from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2aSubtree
 from bzrlib.upgrade import upgrade
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.code.bzr import RepositoryFormat
+from lp.code.model.branch import Branch
 from lp.codehosting.bzrutils import read_locked
-from lp.codehosting.vfs.branchfs import (
-    get_real_branch_path,
-    get_rw_server,
-    )
+from lp.codehosting.vfs.branchfs import get_real_branch_path
 
 
 class AlreadyUpgraded(Exception):
@@ -66,25 +66,31 @@ class Upgrader:
         return format
 
     @classmethod
-    def run(cls, branches, target_dir, logger):
+    def iter_upgraders(cls, target_dir, logger):
+        store = IStore(Branch)
+        branches = store.find(
+            Branch, Branch.repository_format != RepositoryFormat.BZR_CHK_2A)
+        branches.order_by(Branch.unique_name)
+        for branch in branches:
+            logger.info(
+                'Upgrading branch %s (%d)', branch.unique_name,
+                branch.id)
+            yield cls(branch, target_dir, logger)
+
+    @classmethod
+    def run_start_upgrade(cls, target_dir, logger):
         """Upgrade listed branches to a target directory.
 
         :param branches: The Launchpad Branches to upgrade.
         :param target_dir: The directory to store upgraded versions in.
         """
-        server = get_rw_server()
-        server.start_server()
-        try:
-            skipped = 0
-            for branch in branches:
-                upgrader = cls(branch, target_dir, logger)
-                try:
-                    upgrader.upgrade(branch)
-                except AlreadyUpgraded:
-                    skipped += 1
-            logger.info('Skipped %d already-upgraded branches.', skipped)
-        finally:
-            server.stop_server()
+        skipped = 0
+        for upgrader in cls.iter_upgraders(target_dir, logger):
+            try:
+                upgrader.start_upgrade()
+            except AlreadyUpgraded:
+                skipped += 1
+        logger.info('Skipped %d already-upgraded branches.', skipped)
 
     def finish_upgrade(self):
         """Create an upgraded version of self.branch in self.target_dir."""
