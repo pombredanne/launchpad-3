@@ -20,7 +20,6 @@ __all__ = [
     'Person',
     'person_sort_key',
     'PersonLanguage',
-    'PersonRenameMixin',
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
@@ -2887,6 +2886,30 @@ class Person(
         """See `IPerson.`"""
         return canWrite(obj, attribute)
 
+    def checkRename(self):
+        reasons = []
+        atom = 'person'
+        has_ppa = getUtility(IArchiveSet).getPPAOwnedByPerson(
+            self, has_packages=True,
+            statuses=[ArchiveStatus.ACTIVE,
+                      ArchiveStatus.DELETING]) is not None
+        has_mailing_list = None
+        if ITeam.providedBy(self):
+            atom = 'team'
+            mailing_list = getUtility(IMailingListSet).get(self.name)
+            has_mailing_list = (
+                mailing_list is not None and
+                mailing_list.status != MailingListStatus.PURGED)
+        if has_ppa:
+            reasons.append('an active PPA with packages published')
+        if has_mailing_list:
+            reasons.append('a mailing list')
+        if reasons:
+            return _('This %s has %s and may not be renamed.' % (
+                atom, ' and '.join(reasons)))
+        else:
+            return None
+
 
 class PersonSet:
     """The set of persons."""
@@ -4739,36 +4762,3 @@ def _get_recipients_for_team(team):
         recipient_ids,
         need_validity=True,
         need_preferred_email=True)
-
-
-class PersonRenameMixin:
-    """A mixin class that implements the checks if a person or team can be
-    renamed.
-    """
-
-    def can_be_renamed(self):
-        reasons = []
-        atom = 'user'
-        has_ppa = getUtility(IArchiveSet).getPPAOwnedByPerson(
-            self.context, has_packages=True,
-            statuses=[ArchiveStatus.ACTIVE,
-                      ArchiveStatus.DELETING]) is not None
-        has_mailing_list = None
-        if ITeam.providedBy(self.context):
-            atom = 'team'
-            mailing_list = getUtility(IMailingListSet).get(self.context.name)
-            has_mailing_list = (
-                mailing_list is not None and
-                mailing_list.status != MailingListStatus.PURGED)
-        if has_ppa:
-            reasons.append('has an active PPA with packages published')
-        if has_mailing_list:
-            if has_ppa:
-                reasons.append('a mailing list')
-            else:
-                reasons.append('has a mailing list')
-        if reasons:
-            return _('This %s %s and may not be renamed.' % (
-                atom, ' and '.join(reasons)))
-        else:
-            return None

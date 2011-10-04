@@ -94,7 +94,6 @@ from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,
     TeamMembershipStatus,
     )
-from lp.registry.model.person import PersonRenameMixin
 from lp.services.fields import PublicPersonChoice
 from lp.services.propertycache import cachedproperty
 
@@ -200,7 +199,7 @@ class TeamFormMixin:
 
 
 class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
-                   LaunchpadEditFormView, PersonRenameMixin):
+                   LaunchpadEditFormView):
     """View for editing team details."""
     schema = ITeam
 
@@ -256,7 +255,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         When a team has a mailing list or an active PPA, renames are
         prohibited.
         """
-        reason = super(TeamEditView, self).can_be_renamed()
+        reason = self.context.checkRename()
         if reason:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True

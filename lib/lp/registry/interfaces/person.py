@@ -1427,6 +1427,12 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         :return: a PPA `IArchive` record.
         """
 
+    def checkRename():
+        """Check if a person or team can be renamed.
+
+        :return: a text string of the reason, or None.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""

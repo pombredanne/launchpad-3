@@ -298,7 +298,6 @@ from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
-from lp.registry.model.person import PersonRenameMixin
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.messages.interfaces.message import (
@@ -4029,7 +4028,7 @@ class PersonEditHomePageView(BasePersonEditView):
     page_title = label
 
 
-class PersonEditView(BasePersonEditView, PersonRenameMixin):
+class PersonEditView(BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
@@ -4049,9 +4048,9 @@ class PersonEditView(BasePersonEditView, PersonRenameMixin):
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
-        When a user has an active PPA renames are prohibited.
+        Renames are prohibited if a user has an active PPA.
         """
-        reason = super(PersonEditView, self).can_be_renamed()
+        reason = self.context.checkRename()
         if reason:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
