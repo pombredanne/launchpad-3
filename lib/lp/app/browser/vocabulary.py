@@ -274,7 +274,8 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                     index = second_line.rfind(' ', 0, 90)
                     second_line = second_line[0:index + 1]
                 picker_entry.description = first_line
-                picker_entry.details.append(second_line)
+                if second_line:
+                    picker_entry.details.append(second_line)
                 picker_entry.alt_title = target.name
                 picker_entry.alt_title_link = canonical_url(
                     target, rootsite='mainsite')

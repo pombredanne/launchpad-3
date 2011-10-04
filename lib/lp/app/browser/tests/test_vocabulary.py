@@ -233,7 +233,7 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             sourcepackagerelease=release)
         self.assertEqual(
             "Maintainer: %s" % dsp.currentrelease.maintainer.displayname,
-            self.getPickerEntry(dsp).details[1])
+            self.getPickerEntry(dsp).details[0])
 
     def test_dsp_provides_summary(self):
         dsp = self.factory.makeDistributionSourcePackage()
@@ -310,7 +310,7 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.assertEqual(
             "Maintainer: %s" % product.owner.displayname,
-            self.getPickerEntry(product).details[1])
+            self.getPickerEntry(product).details[0])
 
     def test_product_provides_summary(self):
         product = self.factory.makeProduct()
@@ -368,7 +368,7 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
         projectgroup = self.factory.makeProject()
         self.assertEqual(
             "Maintainer: %s" % projectgroup.owner.displayname,
-            self.getPickerEntry(projectgroup).details[1])
+            self.getPickerEntry(projectgroup).details[0])
 
     def test_projectgroup_provides_summary(self):
         projectgroup = self.factory.makeProject()
@@ -424,7 +424,7 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
             distribution=distribution, status=SeriesStatus.CURRENT)
         self.assertEqual(
             "Maintainer: %s" % distribution.currentseries.owner.displayname,
-            self.getPickerEntry(distribution).details[1])
+            self.getPickerEntry(distribution).details[0])
 
     def test_distribution_provides_summary(self):
         distribution = self.factory.makeDistribution()
