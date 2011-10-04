@@ -202,6 +202,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 
@@ -2286,11 +2287,10 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             return EmptyResultSet()
         search_term = unicode(query)
         store = IStore(DistributionSourcePackageInDatabase)
-        from lp.soyuz.enums import ArchivePurpose
         # Construct the searchable text that could live in the DSP table.
         # Limit the results to ensure the user could see all the batches.
         # Only rank what will be returned.
-        searchable_dsp = SQL(u"""
+        searchable_dsp = SQL("""
             SELECT dsp.id, dsps.name, dsps.binpkgnames, rank
             FROM DistributionSourcePackage dsp
                 JOIN (
