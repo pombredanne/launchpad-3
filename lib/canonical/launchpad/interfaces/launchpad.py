@@ -152,6 +152,8 @@ class IPrivateApplication(ILaunchpadApplication):
     softwarecenteragent = Attribute(
         """Software center agent XML-RPC end point.""")
 
+    featureflags = Attribute("""Feature flag information endpoint""")
+
 
 class IAuthServerApplication(ILaunchpadApplication):
     """Launchpad legacy AuthServer application root."""

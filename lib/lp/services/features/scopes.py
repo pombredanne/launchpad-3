@@ -9,9 +9,14 @@ run from cron scripts and potentially also other places.
 """
 
 __all__ = [
+    'DefaultScope',
+    'default_scopes',
+    'FixedScope',
     'HANDLERS',
+    'MultiScopeHandler',
     'ScopesForScript',
     'ScopesFromRequest',
+    'TeamScope',
     'undocumented_scopes',
     ]
 
@@ -19,9 +24,7 @@ __metaclass__ = type
 
 import re
 
-from zope.component import getUtility
-
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.registry.interfaces.person import IPerson
 from lp.services.propertycache import cachedproperty
 import canonical.config
 
@@ -60,14 +63,7 @@ class DefaultScope(BaseScope):
         return True
 
 
-class BaseWebRequestScope(BaseScope):
-    """Base class for scopes that key off web request attributes."""
-
-    def __init__(self, request):
-        self.request = request
-
-
-class PageScope(BaseWebRequestScope):
+class PageScope(BaseScope):
     """The current page ID.
 
     Pageid scopes are written as 'pageid:' + the pageid to match.  Pageids
@@ -80,6 +76,9 @@ class PageScope(BaseWebRequestScope):
     """
 
     pattern = r'pageid:'
+
+    def __init__(self, request):
+        self._request = request
 
     def lookup(self, scope_name):
         """Is the given scope match the current pageid?"""
@@ -105,19 +104,31 @@ class PageScope(BaseWebRequestScope):
     @cachedproperty
     def _request_pageid_namespace(self):
         return tuple(self._pageid_to_namespace(
-            self.request._orig_env.get('launchpad.pageid', '')))
+            self._request._orig_env.get('launchpad.pageid', '')))
 
 
 class TeamScope(BaseScope):
-    """The current user's team memberships.
+    """A user's team memberships.
 
     Team ID scopes are written as 'team:' + the team name to match.
 
     The scope 'team:launchpad-beta-users' will match members of the team
     'launchpad-beta-users'.
+
+    The constructor takes a callable that returns the currently logged in
+    person because Scopes are set up very early in the request publication
+    process -- in particular, before authentication has happened.
     """
 
     pattern = r'team:'
+
+    def __init__(self, get_person):
+        self._get_person = get_person
+        self._person = None
+
+    @cachedproperty
+    def person(self):
+        return self._get_person()
 
     def lookup(self, scope_name):
         """Is the given scope a team membership?
@@ -126,11 +137,9 @@ class TeamScope(BaseScope):
         team based scopes in use to a small number. (Person.inTeam could be
         fixed to reduce this to one query).
         """
-        team_name = scope_name[len('team:'):]
-        person = getUtility(ILaunchBag).user
-        if person is None:
-            return False
-        return person.inTeam(team_name)
+        if self.person is not None:
+            team_name = scope_name[len('team:'):]
+            return self.person.inTeam(team_name)
 
 
 class ServerScope(BaseScope):
@@ -167,6 +176,20 @@ class ScriptScope(BaseScope):
     def lookup(self, scope_name):
         """Match the running script as a scope."""
         return scope_name == self.script_scope
+
+
+class FixedScope(BaseScope):
+    """A scope that matches an exact value.
+
+    Functionally `ScriptScope` and `DefaultScope` are equivalent to instances
+    of this class, but their docstings are used on the +feature-info page.
+    """
+
+    def __init__(self, scope):
+        self.pattern = re.escape(scope) + '$'
+
+    def lookup(self, scope_name):
+        return True
 
 
 # These are the handlers for all of the allowable scopes, listed here so that
@@ -213,21 +236,33 @@ class MultiScopeHandler():
             undocumented_scopes.add(scope_name)
 
 
+default_scopes = (DefaultScope(),)
+
+
 class ScopesFromRequest(MultiScopeHandler):
-    """Identify feature scopes based on request state."""
+    """Identify feature scopes based on request state.
+
+    Because the feature controller is constructed very very early in the
+    publication process, this needs to be very careful about looking at the
+    request -- in particular, this is called before authentication happens.
+    """
 
     def __init__(self, request):
-        super(ScopesFromRequest, self).__init__([
-            DefaultScope(),
+        def person_from_request():
+            return IPerson(request.principal, None)
+        scopes = list(default_scopes)
+        scopes.extend([
             PageScope(request),
-            TeamScope(),
-            ServerScope()])
+            ServerScope(),
+            TeamScope(person_from_request)
+            ])
+        super(ScopesFromRequest, self).__init__(scopes)
 
 
 class ScopesForScript(MultiScopeHandler):
     """Identify feature scopes for a given script."""
 
     def __init__(self, script_name):
-        super(ScopesForScript, self).__init__([
-            DefaultScope(),
-            ScriptScope(script_name)])
+        scopes = list(default_scopes)
+        scopes.append(ScriptScope(script_name))
+        super(ScopesForScript, self).__init__(scopes)

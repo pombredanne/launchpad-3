@@ -505,7 +505,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    def loginAsAnyone(self):
+    def loginAsAnyone(self, participation=None):
         """Log in as an arbitrary person.
 
         If you want to log in as a celebrity, including admins, see
@@ -513,7 +513,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         login(ANONYMOUS)
         person = self.makePerson()
-        login_as(person)
+        login_as(person, participation)
         return person
 
     @with_celebrity_logged_in('admin')
@@ -1125,6 +1125,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             url=url, **optional_branch_args)
         if private:
             removeSecurityProxy(branch).explicitly_private = True
+            removeSecurityProxy(branch).transitively_private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
         if reviewer is not None:
