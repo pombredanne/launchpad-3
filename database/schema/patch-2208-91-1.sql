@@ -20,6 +20,4 @@ CREATE TRIGGER check_branch_transitive_privacy_t
     FOR EACH ROW
     EXECUTE PROCEDURE initialise_transitively_private();
 
-ALTER TABLE Branch ALTER COLUMN transitively_private SET NOT NULL;
-
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 91, 1);
