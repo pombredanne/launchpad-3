@@ -1430,7 +1430,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     def checkRename():
         """Check if a person or team can be renamed.
 
-        :return: a text string of the reason, or None.
+        :return: a text string of the reason, or None if the rename is
+        allowed.
         """
 
 

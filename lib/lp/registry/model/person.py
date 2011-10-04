@@ -2887,6 +2887,7 @@ class Person(
         return canWrite(obj, attribute)
 
     def checkRename(self):
+        """See `IPerson.`"""
         reasons = []
         atom = 'person'
         has_ppa = getUtility(IArchiveSet).getPPAOwnedByPerson(
