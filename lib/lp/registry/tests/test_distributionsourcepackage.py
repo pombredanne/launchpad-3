@@ -42,6 +42,19 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         dsp = naked_distribution.getSourcePackage(name='pmount')
         self.assertEqual(None, dsp.summary)
 
+    def test_binary_names_built(self):
+        # The list contains the names of the built binaries.
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        distribution = bpph.distroarchseries.distroseries.distribution
+        spn = bpph.binarypackagerelease.build.source_package_release.name
+        dsp = distribution.getSourcePackage(spn)
+        self.assertEqual([bpph.binarypackagerelease.name], dsp.binary_names)
+
+    def test_binary_names_unbuilt(self):
+        # The list is empty where there are no built binaries.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertEqual([], dsp.binary_names)
+
     def test_ensure_spph_creates_a_dsp_in_db(self):
         # The DSP.ensure() class method creates a persistent instance
         # if one does not exist.

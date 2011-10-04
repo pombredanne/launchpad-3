@@ -88,6 +88,9 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     summary = Attribute(
         'The summary of binary packages built from this package')
 
+    binary_names = Attribute(
+        'A list of binary package names built from this package.')
+
     currentrelease = Attribute(
         "The latest published `IDistributionSourcePackageRelease` of a "
         "source package with this name in the distribution or distroseries, "

@@ -66,6 +66,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackage,
     SourcePackageQuestionTargetMixin,
     )
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -384,6 +385,16 @@ class DistributionSourcePackage(BugTargetBase,
     def publishing_history(self):
         """See `IDistributionSourcePackage`."""
         return self._getPublishingHistoryQuery()
+
+    @cachedproperty
+    def binary_names(self):
+        """See `IDistributionSourcePackage`."""
+        names = []
+        history = self.publishing_history
+        if history.count() > 0:
+            binaries = history[0].getBuiltBinaries()
+            names = [binary.binary_package_name for binary in binaries]
+        return names
 
     @property
     def upstream_product(self):

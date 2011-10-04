@@ -471,6 +471,7 @@
                 __getitem__
                 __ne__
                 _getOfficialTagClause
+                binary_names
                 bug_count
                 bugtasks
                 current_publishing_records
