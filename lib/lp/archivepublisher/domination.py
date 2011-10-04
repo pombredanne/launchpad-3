@@ -371,6 +371,11 @@ class Dominator:
 
         # Essentially we ideally don't want to lose superseded binaries
         # unless the entire group is ready to be made pending removal.
+
+        # TODO: This is *completely* the wrong method to make this
+        # decision, we need to prevent the binaries getting superseded
+        # in the first place so that they remain in the index.
+
         # In this instance a group is defined as all the binaries from a
         # given build. This assumes we've copied the arch_all binaries
         # from whichever build provided them into each arch-specific build
