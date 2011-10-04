@@ -235,8 +235,17 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             "Maintainer: %s" % dsp.currentrelease.maintainer.displayname,
             self.getPickerEntry(dsp).details[0])
 
-    def test_dsp_provides_summary(self):
-        dsp = self.factory.makeDistributionSourcePackage()
+    def test_dsp_provides_details_no_maintainer(self):
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertEqual(0, len(self.getPickerEntry(dsp).details))
+
+    def test_dsp_provides_summary_unbuilt(self):
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertEqual(
+            "Not yet built.", self.getPickerEntry(dsp).description)
+
+    def test_dsp_provides_summary_built(self):
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
         series = self.factory.makeDistroSeries(distribution=dsp.distribution)
         release = self.factory.makeSourcePackageRelease(
             distroseries=series,
@@ -244,9 +253,6 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=series,
             sourcepackagerelease=release)
-        self.assertEqual(
-            "Not yet built.", self.getPickerEntry(dsp).description)
-
         archseries = self.factory.makeDistroArchSeries(distroseries=series)
         bpn = self.factory.makeBinaryPackageName(name='fnord')
         self.factory.makeBinaryPackagePublishingHistory(

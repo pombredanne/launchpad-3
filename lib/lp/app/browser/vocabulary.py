@@ -313,14 +313,15 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
 
     def getMaintainer(self, target):
         """See `TargetPickerEntrySource`"""
-        return target.currentrelease.maintainer.displayname
+        release = target.currentrelease
+        if release is None:
+            return None
+        return release.maintainer.displayname
 
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
-        binaries = target.publishing_history[0].getBuiltBinaries()
-        binary_names = [binary.binary_package_name for binary in binaries]
-        if binary_names != []:
-            description = ', '.join(binary_names)
+        if target.binary_names:
+            description = ', '.join(target.binary_names)
         else:
             description = 'Not yet built.'
         return description
