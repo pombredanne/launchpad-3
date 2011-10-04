@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0603
@@ -252,13 +252,13 @@ class TxLongPollService(Service):
         broker_hostname, broker_port = as_host_port(
             config.rabbitmq.host, None, None)
         self.server = TxLongPollServer(
-            twistd_bin = twistd_bin,
-            frontend_port = config.txlongpoll.frontend_port,
-            broker_user = config.rabbitmq.userid,
-            broker_password = config.rabbitmq.password,
-            broker_vhost = config.rabbitmq.virtual_host,
-            broker_host = broker_hostname,
-            broker_port = broker_port)
+            twistd_bin=twistd_bin,
+            frontend_port=config.txlongpoll.frontend_port,
+            broker_user=config.rabbitmq.userid,
+            broker_password=config.rabbitmq.password,
+            broker_vhost=config.rabbitmq.virtual_host,
+            broker_host=broker_hostname,
+            broker_port=broker_port)
         self.useFixture(self.server)
 
 
