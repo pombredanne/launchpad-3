@@ -39,5 +39,10 @@ class TestUpgradeAllBranchesScript(TestCaseWithFactory):
             branch_changed(branch, tree.branch)
         target = self.makeTemporaryDirectory()
         stdout, stderr, retcode = self.upgrade_all_branches(target)
-        self.assertEqual('', stderr)
+        self.assertIn(
+            'INFO    Upgrading branch %s' % branch.unique_name, stderr)
+        self.assertIn(
+            'INFO    Converting repository with fetch.', stderr)
+        self.assertIn(
+            'INFO    Skipped 0 already-upgraded branches.', stderr)
         self.assertEqual(0, retcode)
