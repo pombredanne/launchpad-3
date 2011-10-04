@@ -30,7 +30,7 @@ def store_file(client):
     # To be able to retrieve the file, we must commit the current transaction.
     transaction.commit()
     alias = getUtility(ILibraryFileAliasSet)[file_id]
-    return alias.http_url
+    return (file_id, alias.http_url)
 
 
 def read_file(url):
@@ -47,20 +47,27 @@ def read_file(url):
     return data
 
 
+def upload_and_check(client, output):
+    id, url = store_file(client)
+    output.write('retrieving file from http_url (%s)\n' % (url,))
+    if read_file(url) != FILE_DATA:
+        return False
+    output.write('retrieving file from client\n')
+    if client.getFileByAlias(id).read() != FILE_DATA:
+        return False
+    return True
+
+
 def do_smoketest(restricted_client, regular_client, output=None):
     if output is None:
         output = sys.stdout
     output.write('adding a private file to the librarian...\n')
-    private_url = store_file(restricted_client)
-    output.write('retrieving private file from %s\n' % (private_url,))
-    if read_file(private_url) != FILE_DATA:
+    if not upload_and_check(restricted_client, output):
         output.write('ERROR: data fetched does not match data written\n')
         return 1
 
     output.write('adding a public file to the librarian...\n')
-    public_url = store_file(regular_client)
-    output.write('retrieving public file from %s\n' % (public_url,))
-    if read_file(public_url) != FILE_DATA:
+    if not upload_and_check(regular_client, output):
         output.write('ERROR: data fetched does not match data written\n')
         return 1
 
