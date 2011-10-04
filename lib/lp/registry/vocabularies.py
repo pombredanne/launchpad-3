@@ -2253,18 +2253,11 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             distribution = distribution or self.distribution
             if distribution is not None and spn_or_dsp is not None:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
-        try:
+        if dsp is not None and (dsp == self.dsp or dsp.is_official):
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
             summary = '%s (%s)' % (token, dsp.name)
-
-            if dsp != self.dsp and not dsp.is_official:
-                    # The dsp is not a historic value nor is it one of the
-                    # current official packages.
-                    raise LookupError(distribution, spn_or_dsp)
             return SimpleTerm(dsp, token, summary)
-        except (IndexError, AttributeError):
-            # Either the DSP was None or the DSP was never official.
-            raise LookupError(distribution, spn_or_dsp)
+        raise LookupError(distribution, spn_or_dsp)
 
     def getTerm(self, spn_or_dsp):
         """See `IBaseVocabulary`."""
