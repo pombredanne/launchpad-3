@@ -19,7 +19,6 @@ from zope.event import notify
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.interfaces import FinishReadOnlyRequestEvent
 from canonical.testing.layers import (
-    FunctionalLayer,
     LaunchpadFunctionalLayer,
     RabbitMQLayer,
     )
@@ -201,7 +200,7 @@ class TestRabbitSession(RabbitTestCase):
 class TestRabbitUnreliableSession(TestRabbitSession):
 
     session_factory = RabbitUnreliableSession
-    layer = FunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestRabbitUnreliableSession, self).setUp()
