@@ -7,11 +7,14 @@ __metaclass__ = type
 
 import transaction
 
+from zope.component import getUtility
+
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     reconnect_stores,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.vocabularies import DistributionSourcePackageVocabulary
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache,
@@ -188,9 +191,12 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         results = vocabulary.searchForTerms(dsp.name)
         self.assertIs(0, results.count())
 
-    def makeDSPCache(self, distro_name, package_name,
+    def makeDSPCache(self, distro_name, package_name, make_distro=True,
                      official=True, binary_names=None, archive=None):
-        distribution = self.factory.makeDistribution(name=distro_name)
+        if make_distro:
+            distribution = self.factory.makeDistribution(name=distro_name)
+        else:
+            distribution = getUtility(IDistributionSet).getByName(distro_name)
         dsp = self.factory.makeDistributionSourcePackage(
             distribution=distribution, sourcepackagename=package_name,
             with_db=official)
@@ -268,3 +274,50 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         results = vocabulary.searchForTerms(query='fnord/pting')
         terms = list(results)
         self.assertEqual(0, len(terms))
+
+    def test_searchForTerms_match_official_source_package_branch(self):
+        # The official package that is only a branch can be matched
+        # by source name if it was built in another distro.
+        self.makeDSPCache('fnord', 'snarf')
+        distribution = self.factory.makeDistribution(name='pting')
+        self.factory.makeDistributionSourcePackage(
+            distribution=distribution, sourcepackagename='snarf',
+            with_db=True)
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        results = vocabulary.searchForTerms(query='pting/snarf')
+        terms = list(results)
+        self.assertEqual(1, len(terms))
+        self.assertEqual('pting/snarf', terms[0].token)
+
+    def test_searchForTerms_match_official_binary_package_branch(self):
+        # The official package that is only a branch can be matched
+        # by binary name if it was built in another distro.
+        self.makeDSPCache(
+            'fnord', 'snarf', binary_names='thrpp snarf-dev ack')
+        distribution = self.factory.makeDistribution(name='pting')
+        self.factory.makeDistributionSourcePackage(
+            distribution=distribution, sourcepackagename='snarf',
+            with_db=True)
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        results = vocabulary.searchForTerms(query='pting/ack')
+        terms = list(results)
+        self.assertEqual(1, len(terms))
+        self.assertEqual('pting/snarf', terms[0].token)
+
+    def test_searchForTerms_ranking(self):
+        # Exact matches are ranked higher than similar matches.
+        self.makeDSPCache('fnord', 'snarf')
+        self.makeDSPCache('fnord', 'snarf-server', make_distro=False)
+        self.makeDSPCache(
+            'fnord', 'pting-devel', binary_names='snarf', make_distro=False)
+        self.makeDSPCache(
+            'fnord', 'pting-client', binary_names='snarf-common',
+            make_distro=False)
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        results = vocabulary.searchForTerms(query='fnord/snarf')
+        terms = list(results)
+        self.assertEqual(4, len(terms))
+        self.assertEqual('fnord/snarf', terms[0].token)
+        self.assertEqual('fnord/pting-devel', terms[1].token)
+        self.assertEqual('fnord/snarf-server', terms[2].token)
+        self.assertEqual('fnord/pting-client', terms[3].token)
