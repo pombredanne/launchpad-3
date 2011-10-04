@@ -22,11 +22,12 @@ class TestTxLongPollServer(TestCase):
     def test_service_config(self):
         # TxLongPollServer pokes some .ini configuration into its
         # service_config attributes.
-        txlongpoll_bin = os.path.join(config.root, 'bin/txlongpoll')
+        twistd_bin = os.path.join(
+            config.root, 'bin', 'twistd-for-txlongpoll')
         fixture = self.useFixture(TxLongPollServer(
             broker_user='guest', broker_password='guest', broker_vhost='/',
             broker_port=123, frontend_port=None,
-            txlongpoll_bin=txlongpoll_bin))
+            twistd_bin=twistd_bin))
         service_config = SafeConfigParser()
         service_config.readfp(StringIO(getattr(fixture, 'service_config')))
         self.assertEqual(["txlongpoll"], service_config.sections())
