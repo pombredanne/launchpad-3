@@ -53,6 +53,8 @@ reported bugs.
     <BLANKLINE>
     Bugs assigned to me
     Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
@@ -67,6 +69,8 @@ reported bugs.
     <BLANKLINE>
     0 Bugs assigned to me
     0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
     0 Bugs fixed elsewhere
     2 Open CVE bugs - CVE reports
@@ -121,6 +125,8 @@ reported bugs.
     <BLANKLINE>
     Bugs assigned to me
     Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
@@ -136,6 +142,8 @@ reported bugs.
     <BLANKLINE>
     0 Bugs assigned to me
     0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug - CVE report
@@ -187,6 +195,8 @@ reported bugs.
     <BLANKLINE>
     Bugs assigned to me
     Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs
@@ -200,6 +210,8 @@ reported bugs.
     <BLANKLINE>
     0 Bugs assigned to me
     0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
     0 Bugs fixed elsewhere
     2 Open CVE bugs
@@ -255,6 +267,8 @@ reported bugs.
     <BLANKLINE>
     Bugs assigned to me
     Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs
@@ -268,6 +282,8 @@ reported bugs.
     <BLANKLINE>
     0 Bugs assigned to me
     0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug
@@ -322,6 +338,8 @@ and reported bugs.
     <BLANKLINE>
     Bugs assigned to me
     Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs
@@ -340,6 +358,8 @@ and reported bugs.
     <BLANKLINE>
     0 Bugs assigned to me
     0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug
@@ -394,6 +414,8 @@ bugs is also shown.
     <BLANKLINE>
     Bugs assigned to me
     Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
@@ -412,6 +434,8 @@ bugs is also shown.
     <BLANKLINE>
     0 Bugs assigned to me
     0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug - CVE report

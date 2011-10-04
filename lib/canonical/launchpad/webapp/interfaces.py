@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -885,6 +885,24 @@ except ImportError:
 
         def __init__(self, request):
             self.request = request
+
+
+class IFinishReadOnlyRequestEvent(Interface):
+    """An event which gets sent when the publication is ended"""
+
+    object = Attribute("The object to which this request pertains.")
+
+    request = Attribute("The active request.")
+
+
+class FinishReadOnlyRequestEvent:
+    """An event which gets sent when the publication is ended"""
+
+    implements(IFinishReadOnlyRequestEvent)
+
+    def __init__(self, ob, request):
+        self.object = ob
+        self.request = request
 
 
 class StormRangeFactoryError(Exception):

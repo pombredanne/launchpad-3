@@ -29,7 +29,6 @@ __all__ = [
     'BugTasksAndNominationsView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
-    'BugTaskStatusView',
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
@@ -84,14 +83,10 @@ from zope import (
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
-    IDisplayWidget,
     IInputWidget,
     InputErrors,
     )
-from zope.app.form.utility import (
-    setUpWidget,
-    setUpWidgets,
-    )
+from zope.app.form.utility import setUpWidget
 from zope.component import (
     ComponentLookupError,
     getAdapter,
@@ -1570,7 +1565,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         milestone_ignored = False
         missing = object()
         new_target = new_values.pop("target", missing)
-        if new_target is not missing and bugtask.target != new_target:
+        if (new_target is not missing and
+            bugtask.target.pillar != new_target.pillar):
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
@@ -1736,36 +1732,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         self.updateContextFromData(data)
 
 
-class BugTaskStatusView(LaunchpadView):
-    """Viewing the status of a bug task."""
-
-    page_title = 'View status'
-
-    def initialize(self):
-        """Set up the appropriate widgets.
-
-        Different widgets are shown depending on if it's a remote bug
-        task or not.
-        """
-        field_names = [
-            'status', 'importance', 'assignee']
-        if not self.context.target_uses_malone:
-            field_names += ['bugwatch']
-            self.milestone_widget = None
-        else:
-            field_names += ['milestone']
-            self.bugwatch_widget = None
-
-        if self.context.distroseries or self.context.distribution:
-            field_names += ['sourcepackagename']
-
-        self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
-        self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-        self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
-
-        setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
-
-
 class BugTaskListingView(LaunchpadView):
     """A view designed for displaying bug tasks in lists."""
     # Note that this right now is only used in tests and to render
@@ -1905,6 +1871,17 @@ class BugsInfoMixin:
             return None
         else:
             return get_buglisting_search_filter_url(assignee=self.user.name)
+
+    @property
+    def my_affecting_bugs_url(self):
+        """A URL to a list of bugs affecting the current user, or None if
+        there is no current user.
+        """
+        if self.user is None:
+            return None
+        return get_buglisting_search_filter_url(
+            affecting_me=True,
+            orderby='-date_last_updated')
 
     @property
     def my_reported_bugs_url(self):
@@ -2047,6 +2024,15 @@ class BugsStatsMixin(BugsInfoMixin):
         return self.context.searchTasks(params).count()
 
     @property
+    def my_affecting_bugs_count(self):
+        """A count of bugs affecting the user, or None."""
+        if self.user is None:
+            return None
+        params = get_default_search_params(self.user)
+        params.affects_me = True
+        return self.context.searchTasks(params).count()
+
+    @property
     def bugs_with_patches_count(self):
         """A count of unresolved bugs with patches."""
         return self._bug_stats['with_patch']
@@ -2062,7 +2048,9 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 def get_buglisting_search_filter_url(
         assignee=None, importance=None, status=None, status_upstream=None,
-        has_patches=None, bug_reporter=None):
+        has_patches=None, bug_reporter=None,
+        affecting_me=None,
+        orderby=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -2078,6 +2066,10 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.has_patch', 'on'))
     if bug_reporter is not None:
         search_params.append(('field.bug_reporter', bug_reporter))
+    if affecting_me is not None:
+        search_params.append(('field.affects_me', 'on'))
+    if orderby is not None:
+        search_params.append(('orderby', orderby))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
@@ -3056,8 +3048,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def addquestion_url(self):
         """Return the URL for the +addquestion view for the context."""
         if IQuestionTarget.providedBy(self.context):
-            return canonical_url(
-                self.context, rootsite='answers', view_name='+addquestion')
+            answers_usage = IServiceUsage(self.context).answers_usage
+            if answers_usage == ServiceUsage.LAUNCHPAD:
+                return canonical_url(
+                    self.context, rootsite='answers',
+                    view_name='+addquestion')
         else:
             return None
 
@@ -3529,10 +3524,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     def initialize(self):
         super(BugTaskTableRowView, self).initialize()
         link = canonical_url(self.context)
-        edit_link = link + '/+editstatus'
-        view_link = link + '/+viewstatus'
+        task_link = edit_link = link + '/+editstatus'
         can_edit = check_permission('launchpad.Edit', self.context)
-        task_link = edit_link if can_edit else view_link
         bugtask_id = self.context.id
         launchbag = getUtility(ILaunchBag)
         is_primary = self.context.id == launchbag.bugtask.id
@@ -3545,7 +3538,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             is_conjoined_slave=self.is_conjoined_slave,
             task_link=task_link,
             edit_link=edit_link,
-            view_link=view_link,
             can_edit=can_edit,
             link=link,
             id=bugtask_id,

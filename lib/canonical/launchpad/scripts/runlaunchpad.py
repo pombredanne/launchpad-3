@@ -28,6 +28,7 @@ from lp.services.googlesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
 from lp.services.rabbit.server import RabbitServer
+from lp.services.txlongpoll.server import TxLongPollServer
 
 
 def make_abspath(path):
@@ -238,6 +239,28 @@ class RabbitService(Service):
         self.useFixture(self.server)
 
 
+class TxLongPollService(Service):
+    """A TxLongPoll service."""
+
+    @property
+    def should_launch(self):
+        return config.txlongpoll.launch
+
+    def launch(self):
+        txlongpoll_bin = os.path.join(config.root, 'bin', 'txlongpoll')
+        broker_hostname, broker_port = as_host_port(
+            config.rabbitmq.host, None, None)
+        self.server = TxLongPollServer(
+            txlongpoll_bin = txlongpoll_bin,
+            frontend_port = config.txlongpoll.frontend_port,
+            broker_user = config.rabbitmq.userid,
+            broker_password = config.rabbitmq.password,
+            broker_vhost = config.rabbitmq.virtual_host,
+            broker_host = broker_hostname,
+            broker_port = broker_port)
+        self.useFixture(self.server)
+
+
 def stop_process(process):
     """kill process and BLOCK until process dies.
 
@@ -263,6 +286,7 @@ SERVICES = {
     'google-webservice': GoogleWebService(),
     'memcached': MemcachedService(),
     'rabbitmq': RabbitService(),
+    'txlongpoll': TxLongPollService(),
     }
 
 
