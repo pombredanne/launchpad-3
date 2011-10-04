@@ -259,11 +259,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         if reason:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
-
         super(TeamEditView, self).setUpWidgets()
-
-        # Tweak the field form-help including an explanation for the
-        # read-only mode if necessary.
         if reason:
             self.widgets['name'].hint = reason
 
