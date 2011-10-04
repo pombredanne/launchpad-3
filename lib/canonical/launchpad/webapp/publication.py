@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -62,6 +62,7 @@ from canonical.launchpad.readonly import is_read_only
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
+    FinishReadOnlyRequestEvent,
     IDatabasePolicy,
     ILaunchpadRoot,
     INotificationResponse,
@@ -151,7 +152,7 @@ def maybe_block_offsite_form_post(request):
         # exception was added as a result of bug 597324 (message #10 in
         # particular).
         return
-    referrer = request.getHeader('referer') # match HTTP spec misspelling
+    referrer = request.getHeader('referer')  # Match HTTP spec misspelling.
     if not referrer:
         raise NoReferrerError('No value for REFERER header')
     # XXX: jamesh 2007-04-26 bug=98437:
@@ -531,10 +532,11 @@ class LaunchpadBrowserPublication(
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
-            self.finishReadOnlyRequest(txn)
+            self.finishReadOnlyRequest(request, ob, txn)
         elif txn.isDoomed():
-            txn.abort() # Sends an abort to the database, even though
+            # The following sends an abort to the database, even though the
             # transaction is still doomed.
+            txn.abort()
         else:
             txn.commit()
 
@@ -552,12 +554,13 @@ class LaunchpadBrowserPublication(
             # calling beforeTraversal or doing proper cleanup.
             pass
 
-    def finishReadOnlyRequest(self, txn):
+    def finishReadOnlyRequest(self, request, ob, txn):
         """Hook called at the end of a read-only request.
 
         By default it abort()s the transaction, but subclasses may need to
         commit it instead, so they must overwrite this.
         """
+        notify(FinishReadOnlyRequestEvent(ob, request))
         txn.abort()
 
     def callTraversalHooks(self, request, ob):
@@ -736,11 +739,11 @@ class LaunchpadBrowserPublication(
             if IBrowserRequest.providedBy(request):
                 OpStats.stats['http requests'] += 1
                 status = request.response.getStatus()
-                if status == 404: # Not Found
+                if status == 404:  # Not Found
                     OpStats.stats['404s'] += 1
-                elif status == 500: # Unhandled exceptions
+                elif status == 500:  # Unhandled exceptions
                     OpStats.stats['500s'] += 1
-                elif status == 503: # Timeouts
+                elif status == 503:  # Timeouts
                     OpStats.stats['503s'] += 1
 
                 # Increment counters for status code groups.
