@@ -152,7 +152,7 @@ class RabbitUnreliableSession(RabbitSession):
     services can continue to function even in the absence of a running and
     fully functional message queue.
 
-    Other types of errors are also catched because we don't want this
+    Other types of errors are also caught because we don't want this
     subsystem to destabilise other parts of Launchpad but we nonetheless
     record OOPses for these.
     """
