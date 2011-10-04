@@ -126,7 +126,6 @@ class TestUpgrader(TestCaseWithFactory):
     def test_add_upgraded_branch_preserves_tip(self):
         """Fetch-based upgrade preserves branch tip."""
         upgrader = self.prepare('pack-0.92-subtree')
-        upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
             upgrader.start_upgrade()
             upgraded = upgrader.add_upgraded_branch().open_branch()
@@ -136,7 +135,6 @@ class TestUpgrader(TestCaseWithFactory):
         """Fetch-based upgrade preserves heads in the repository."""
         upgrader = self.prepare('pack-0.92-subtree')
         upgrader.bzr_branch.set_last_revision_info(0, NULL_REVISION)
-        upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
             upgrader.create_upgraded_repository()
         upgraded = upgrader.get_bzrdir().open_repository()
@@ -146,14 +144,13 @@ class TestUpgrader(TestCaseWithFactory):
     def test_create_upgraded_repository_uses_target_subdir(self):
         upgrader = self.prepare()
         with read_locked(upgrader.bzr_branch):
-            upgraded = upgrader.create_upgraded_repository()
-        upgraded = upgrader.get_bzrdir().open_repository()
+            upgrader.create_upgraded_repository()
+        upgrader.get_bzrdir().open_repository()
 
     def test_add_upgraded_branch_preserves_tags(self):
         """Fetch-based upgrade preserves heads in the repository."""
         upgrader = self.prepare('pack-0.92-subtree')
         upgrader.bzr_branch.tags.set_tag('steve', 'rev-id')
-        upgrade_dir = self.useContext(temp_dir())
         with read_locked(upgrader.bzr_branch):
             upgrader.start_upgrade()
             upgraded = upgrader.add_upgraded_branch().open_branch()
@@ -181,7 +178,6 @@ class TestUpgrader(TestCaseWithFactory):
         tree.add_reference(sub_branch.bzrdir.open_workingtree())
         tree.commit('added tree reference')
         upgrader = self.getUpgrader(tree.branch, branch)
-        upgrade_dir = self.useContext(temp_dir())
         with read_locked(tree.branch):
             upgrader.create_upgraded_repository()
         upgraded = upgrader.get_bzrdir().open_repository()

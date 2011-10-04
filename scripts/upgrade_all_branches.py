@@ -6,7 +6,6 @@ import _pythonpath
 
 import sys
 from lp.codehosting.upgrade import Upgrader
-from lp.code.model.branch import Branch
 from lp.codehosting.bzrutils import server
 from lp.codehosting.vfs.branchfs import get_rw_server
 from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure

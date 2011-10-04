@@ -9,16 +9,12 @@ import os.path
 import transaction
 
 from canonical.testing.layers import AppServerLayer
-from lp.code.bzr import (
-    branch_changed,
-    get_branch_formats,
-    )
+from lp.code.bzr import branch_changed
 from lp.testing import (
     person_logged_in,
     run_script,
     TestCaseWithFactory,
     )
-from lp.codehosting.upgrade import Upgrader
 
 
 class TestUpgradeAllBranchesScript(TestCaseWithFactory):
@@ -38,7 +34,7 @@ class TestUpgradeAllBranchesScript(TestCaseWithFactory):
     def test_start_upgrade(self):
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree(format='pack-0.92')
-        last_revision = tree.commit('foo')
+        tree.commit('foo')
         with person_logged_in(branch.owner):
             branch_changed(branch, tree.branch)
         target = self.makeTemporaryDirectory()

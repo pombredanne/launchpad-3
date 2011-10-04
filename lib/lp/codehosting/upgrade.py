@@ -36,7 +36,8 @@ class Upgrader:
         if self.bzr_branch is None:
             self.bzr_branch = removeSecurityProxy(self.branch.getBzrBranch())
         self.target_dir = target_dir
-        self.target_subdir = os.path.join(self.target_dir, str(self.branch.id))
+        self.target_subdir = os.path.join(
+            self.target_dir, str(self.branch.id))
         self.logger = logger
 
     def get_bzrdir(self):
@@ -98,7 +99,7 @@ class Upgrader:
             'Upgrading branch %s (%s)', self.branch.unique_name,
             self.branch.id)
         with read_locked(self.bzr_branch):
-            bd = self.add_upgraded_branch()
+            self.add_upgraded_branch()
         self.swap_in()
 
     def add_upgraded_branch(self):
