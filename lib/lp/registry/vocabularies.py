@@ -2255,8 +2255,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 dsp = distribution.getSourcePackage(spn_or_dsp)
         if dsp is not None and (dsp == self.dsp or dsp.is_official):
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
-            summary = '%s (%s)' % (token, dsp.name)
-            return SimpleTerm(dsp, token, summary)
+            return SimpleTerm(dsp, token, token)
         raise LookupError(distribution, spn_or_dsp)
 
     def getTerm(self, spn_or_dsp):

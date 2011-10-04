@@ -143,6 +143,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         term = vocabulary.toTerm(dsp.sourcepackagename)
         expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
+        self.assertEqual(expected_token, term.title)
         self.assertEqual(dsp, term.value)
 
     def test_toTerm_spn_and_distribution(self):
@@ -153,6 +154,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         term = vocabulary.toTerm(dsp.sourcepackagename, dsp.distribution)
         expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
+        self.assertEqual(expected_token, term.title)
         self.assertEqual(dsp, term.value)
 
     def test_toTerm_dsp(self):
@@ -163,6 +165,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         term = vocabulary.toTerm(dsp)
         expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
+        self.assertEqual(expected_token, term.title)
         self.assertEqual(dsp, term.value)
 
     def test_getTermByToken_error(self):
