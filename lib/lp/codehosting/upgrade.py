@@ -93,11 +93,18 @@ class Upgrader:
                 skipped += 1
         logger.info('Skipped %d already-upgraded branches.', skipped)
 
+    @classmethod
+    def finish_all_upgrades(cls, target_dir, logger):
+        """Upgrade listed branches to a target directory.
+
+        :param branches: The Launchpad Branches to upgrade.
+        :param target_dir: The directory to store upgraded versions in.
+        """
+        for upgrader in cls.iter_upgraders(target_dir, logger):
+            upgrader.finish_upgrade()
+
     def finish_upgrade(self):
         """Create an upgraded version of self.branch in self.target_dir."""
-        self.logger.info(
-            'Upgrading branch %s (%s)', self.branch.unique_name,
-            self.branch.id)
         with read_locked(self.bzr_branch):
             self.add_upgraded_branch()
         self.swap_in()

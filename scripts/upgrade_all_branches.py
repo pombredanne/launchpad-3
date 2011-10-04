@@ -13,6 +13,11 @@ from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
 
 class UpgradeAllBranches(LaunchpadScript):
 
+    def add_my_options(self):
+        self.parser.add_option(
+            '--finish', action="store_true",
+            help=("Finish the upgrade and move the new branches into place."))
+
     def main(self):
         if len(self.args) < 1:
             raise LaunchpadScriptFailure('Please specify a target directory.')
@@ -20,7 +25,10 @@ class UpgradeAllBranches(LaunchpadScript):
             raise LaunchpadScriptFailure('Too many arguments.')
         target_dir = self.args[0]
         with server(get_rw_server()):
-            Upgrader.run_start_upgrade(target_dir, self.logger)
+            if self.options.finish:
+                Upgrader.finish_all_upgrades(target_dir, self.logger)
+            else:
+                Upgrader.run_start_upgrade(target_dir, self.logger)
 
 
 if __name__ == "__main__":
