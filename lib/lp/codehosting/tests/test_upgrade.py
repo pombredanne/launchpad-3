@@ -201,12 +201,23 @@ class TestUpgrader(TestCaseWithFactory):
         self.check_branch(branch, BranchFormat.BZR_BRANCH_6,
                           RepositoryFormat.BZR_KNITPACK_1)
 
-    def test_run_start_upgrade(self):
+    def test_start_all_upgrades(self):
         upgrader = self.prepare()
         branch_changed(upgrader.branch, upgrader.bzr_branch)
-        Upgrader.run_start_upgrade(
+        Upgrader.start_all_upgrades(
             upgrader.target_dir, upgrader.logger)
         upgraded = upgrader.get_bzrdir().open_repository()
         self.assertIs(RepositoryFormat2a, upgraded._format.__class__)
         self.assertEqual(
             'foo', upgraded.get_revision('prepare-commit').message)
+
+    def test_finish_all_upgrades(self):
+        upgrader = self.prepare()
+        branch_changed(upgrader.branch, upgrader.bzr_branch)
+        upgrader.start_upgrade()
+        Upgrader.finish_all_upgrades(
+            upgrader.target_dir, upgrader.logger)
+        upgraded = upgrader.branch.getBzrBranch()
+        self.assertIs(RepositoryFormat2a, upgraded.repository._format.__class__)
+        self.assertEqual(
+            'foo', upgraded.repository.get_revision('prepare-commit').message)

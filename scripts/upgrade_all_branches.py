@@ -28,7 +28,7 @@ class UpgradeAllBranches(LaunchpadScript):
             if self.options.finish:
                 Upgrader.finish_all_upgrades(target_dir, self.logger)
             else:
-                Upgrader.run_start_upgrade(target_dir, self.logger)
+                Upgrader.start_all_upgrades(target_dir, self.logger)
 
 
 if __name__ == "__main__":

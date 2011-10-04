@@ -79,7 +79,7 @@ class Upgrader:
             yield cls(branch, target_dir, logger)
 
     @classmethod
-    def run_start_upgrade(cls, target_dir, logger):
+    def start_all_upgrades(cls, target_dir, logger):
         """Upgrade listed branches to a target directory.
 
         :param branches: The Launchpad Branches to upgrade.
