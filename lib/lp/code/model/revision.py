@@ -162,7 +162,7 @@ class Revision(SQLBase):
             self.id == BranchRevision.revision_id,
             BranchRevision.branch_id == Branch.id)
         if not allow_private:
-            query = And(query, Not(Branch.explicitly_private))
+            query = And(query, Not(Branch.transitively_private))
         if not allow_junk:
             query = And(
                 query,
@@ -478,7 +478,7 @@ class RevisionSet:
             Revision,
             And(revision_time_limit(day_limit),
                 person_condition,
-                Not(Branch.explicitly_private)))
+                Not(Branch.transitively_private)))
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
@@ -497,7 +497,7 @@ class RevisionSet:
             ]
 
         conditions = And(revision_time_limit(day_limit),
-                         Not(Branch.explicitly_private))
+                         Not(Branch.transitively_private))
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)

@@ -1913,6 +1913,18 @@ class TestTransitionToTarget(TestCaseWithFactory):
                 task.transitionToTarget, self.factory.makeSourcePackage())
         self.assertEqual(milestone, task.milestone)
 
+    def test_milestone_preserved_within_a_pillar(self):
+        # Milestones are pillar-global, so transitions between packages
+        # don't unset them.
+        sp = self.factory.makeSourcePackage(publish=True)
+        dsp = sp.distribution_sourcepackage
+        task = self.factory.makeBugTask(target=dsp.distribution)
+        with person_logged_in(task.owner):
+            task.milestone = milestone = self.factory.makeMilestone(
+                distribution=dsp.distribution)
+            task.transitionToTarget(dsp)
+        self.assertEqual(milestone, task.milestone)
+
     def test_targetnamecache_updated(self):
         new_product = self.factory.makeProduct()
         task = self.factory.makeBugTask()

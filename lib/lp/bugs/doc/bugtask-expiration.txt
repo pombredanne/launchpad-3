@@ -1,4 +1,5 @@
-= Bugtask Expiration =
+Bugtask Expiration
+==================
 
 Old unattended Incomplete bugtasks clutter the search results of
 Launchpad Bugs making the bug staff's job difficult. A script is run
@@ -21,7 +22,8 @@ Bugtasks cannot transition to Expired automatically unless they meet
 all the rules stated above.
 
 
-== findExpirableBugTasks() Part 1 ==
+findExpirableBugTasks() Part 1
+------------------------------
 
 BugTaskSet provides findExpirableBugTasks() to find bugtasks that
 qualify for expiration. The bugtasks must must meet all the
@@ -62,7 +64,9 @@ to be last modified in the past.
     ...     date_modified = datetime.now(UTC) - timedelta(days=days_ago)
     ...     bug.date_last_updated = date_modified
 
-== Setup ==
+
+Setup
+-----
 
 Let's make some bugtasks that qualify for expiration. A Jokosher
 bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
@@ -240,7 +244,8 @@ expired. The other bugs do not meet one of the preconditions.
     recent           False    31  Incomplete  False     False  False  False
     no_expire        False    61  Incomplete  False     False  False  False
 
-== isExpirable() ==
+isExpirable()
+-------------
 
 In addition to can_expire bugs have an isExpirable method to which a custom
 number of days, days_old, can be passed.  days_old is then used with
@@ -256,8 +261,8 @@ a different period for bug expiration.
     >>> very_old_bugtask.transitionToStatus(
     ...     BugTaskStatus.INVALID, sample_person)
 
-    # Pass isExpirable() a days_old parameter, then set the bug to Invalid so it
-    # doesn't affect the rest of the doctest
+    # Pass isExpirable() a days_old parameter, then set the bug to Invalid so
+    # it doesn't affect the rest of the doctest.
     >>> from lp.bugs.tests.bug import create_old_bug
     >>> not_so_old_bugtask = create_old_bug('expirable_distro', 31, ubuntu)
     >>> not_so_old_bugtask.bug.isExpirable(days_old=14)
@@ -266,7 +271,8 @@ a different period for bug expiration.
     ...     BugTaskStatus.INVALID, sample_person)
 
 
-== findExpirableBugTasks() Part 2 ==
+findExpirableBugTasks() Part 2
+------------------------------
 
 The value of the min_days_old controls the bugtasks that are
 returned. The oldest bug in this test is 351 days old, the youngest is
@@ -375,7 +381,8 @@ is set to 0, no bugtasks are replaced.
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
 
 
-== Privacy ==
+Privacy
+-------
 
 The user parameter indicates which user is performing the search. Only
 bugs that the user has permission to view are returned. A value of None
@@ -443,7 +450,8 @@ even the private bugs are returned.
     True
     >>> reset_bug_modified_date(private_bug, 351)
 
-== The default expiration age ==
+The default expiration age
+--------------------------
 
 The expiration age is set using the
 config.malone.days_before_expiration configuration variable. It
@@ -457,7 +465,8 @@ days or more.
     60
 
 
-== Running the script ==
+Running the script
+------------------
 
 There are no Expired Bugtasks in sampledata, from the tests above.
 
@@ -502,7 +511,8 @@ config.malone.expiration_dbuser.
     >>> bugtasks = [BugTask.get(bugtask.id) for bugtask in bugtasks]
 
 
-== After the script has run ==
+After the script has run
+------------------------
 
 There are three Expired bugtasks. Jokosher, hoary and ubuntu were
 expired by the expiration process. Although ubuntu was never returned
@@ -549,7 +559,8 @@ The bug's activity log was updated too with the status change.
     Launchpad Janitor  Ubuntu Hoary: status  Incomplete  Expired
 
 
-== enable_bug_expiration ==
+enable_bug_expiration
+---------------------
 
 The bugtask no_expiration_bugtask has not been expired because it does
 not participate in bug expiration. When uses_bug_expiration is set to

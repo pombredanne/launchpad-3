@@ -1,4 +1,5 @@
-= Translation Groups =
+Translation Groups
+==================
 
 Make sure we can actually display the Translation Groups page.
 
@@ -503,7 +504,8 @@ story!
 
 
 
-= Appointing translators in a translation group =
+Appointing translators in a translation group
+---------------------------------------------
 
 No translators have been appointed in the polyglot group so far.
 
@@ -619,7 +621,8 @@ Normal users, however, are not.
     LinkNotFoundError
 
 
-= Change a translator in a translation group =
+Change a translator in a translation group
+------------------------------------------
 
 The system allows us to change the translator for a concrete language
 

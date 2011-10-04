@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for source package builds."""
@@ -9,7 +9,6 @@ __all__ = [
     'SourcePackageBuildsView',
     ]
 
-from lazr.restful.utils import smartquote
 
 from lp.soyuz.browser.build import BuildRecordsView
 
@@ -32,4 +31,3 @@ class SourcePackageBuildsView(BuildRecordsView):
         # this page is because it's unlikely that there will be so
         # many builds that the listing will be overwhelming.
         return None
-
