@@ -256,6 +256,17 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             distroarchseries=archseries)
         self.assertEqual("fnord", self.getPickerEntry(dsp).description)
 
+    def test_dsp_alt_title_is_none(self):
+        # DSP titles are contructed from the distro and package Launchapd Ids,
+        # alt_titles are redundant because they are also Launchpad Ids.
+        distro = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distro)
+        self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        dsp = distro.getSourcePackage('snarf')
+        self.assertEqual(None, self.getPickerEntry(dsp).alt_title)
+
     def test_dsp_provides_alt_title_link(self):
         distro = self.factory.makeDistribution(name='fnord')
         series = self.factory.makeDistroSeries(

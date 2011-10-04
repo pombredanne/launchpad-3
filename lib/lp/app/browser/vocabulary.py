@@ -324,6 +324,13 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
             description = 'Not yet built.'
         return description
 
+    def getPickerEntries(self, term_values, context_object, **kwarg):
+        this = super(DistributionSourcePackagePickerEntrySourceAdapter, self)
+        entries = this.getPickerEntries(term_values, context_object, **kwarg)
+        for picker_entry in entries:
+            picker_entry.alt_title = None
+        return entries
+
 
 @adapter(IProjectGroup)
 class ProjectGroupPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
