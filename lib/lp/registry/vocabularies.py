@@ -2282,7 +2282,8 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         store = IStore(DistributionSourcePackageInDatabase)
         # Construct the searchable text that could live in the DSP table.
         # Limit the results to ensure the user could see all the batches.
-        # Only rank what will be returned.
+        # Rank only what is returned: exact source name, exact binary
+        # name, partial source name, and lastly partial binary name.
         searchable_dsp = SQL("""
             SELECT dsp.id, dsps.name, dsps.binpkgnames, rank
             FROM DistributionSourcePackage dsp
