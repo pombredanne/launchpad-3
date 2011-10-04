@@ -202,6 +202,9 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             with_db=official)
         if archive is None:
             archive = dsp.distribution.main_archive
+        else:
+            archive = self.factory.makeArchive(
+                distribution=distribution, purpose=archive)
         transaction.commit()
         reconnect_stores('statistician')
         DistributionSourcePackageCache(
@@ -221,7 +224,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertIs(0, results.count())
 
     def test_searchForTerms_exact_offcial_source_name(self):
-        # Exact binary name matches are found.
+        # Exact source name matches are found.
         self.makeDSPCache('fnord', 'snarf')
         vocabulary = DistributionSourcePackageVocabulary(None)
         results = vocabulary.searchForTerms(query='fnord/snarf')
@@ -321,3 +324,20 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual('fnord/pting-devel', terms[1].token)
         self.assertEqual('fnord/snarf-server', terms[2].token)
         self.assertEqual('fnord/pting-client', terms[3].token)
+
+    def test_searchForTerms_partner_archive(self):
+        # Packages in partner archives are searched.
+        self.makeDSPCache('fnord', 'snarf', archive='partner')
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        results = vocabulary.searchForTerms(query='fnord/snarf')
+        terms = list(results)
+        self.assertEqual(1, len(terms))
+        self.assertEqual('fnord/snarf', terms[0].token)
+
+    def test_searchForTerms_ppa_archive(self):
+        # Packages in PPAs are ignored.
+        self.makeDSPCache('fnord', 'snarf', archive='ppa')
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        results = vocabulary.searchForTerms(query='fnord/snarf')
+        terms = list(results)
+        self.assertEqual(0, len(terms))
