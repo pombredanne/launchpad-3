@@ -168,6 +168,19 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(expected_token, term.title)
         self.assertEqual(dsp, term.value)
 
+    def test_toTerm_dsp_and_binary_names(self):
+        # The DSP can be passed with a string on binary names that will
+        # be cached as a list in DSP.binary_names.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        dsp = spph.sourcepackagerelease.distrosourcepackage
+        vocabulary = DistributionSourcePackageVocabulary(dsp)
+        term = vocabulary.toTerm((dsp, 'one two'))
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
+        self.assertEqual(expected_token, term.token)
+        self.assertEqual(expected_token, term.title)
+        self.assertEqual(dsp, term.value)
+        self.assertEqual(['one', 'two'], term.value.binary_names)
+
     def test_getTermByToken_error(self):
         # An error is raised if the token does not match a official DSP.
         dsp = self.factory.makeDistributionSourcePackage(

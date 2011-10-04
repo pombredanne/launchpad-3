@@ -2238,6 +2238,11 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
     def toTerm(self, spn_or_dsp, distribution=None):
         """See `IVocabulary`."""
         dsp = None
+        binary_names = None
+        if isinstance(spn_or_dsp, tuple):
+            # The DSP in DB was passed with its binary_names.
+            spn_or_dsp, binary_names = spn_or_dsp
+            binary_names = binary_names.split()
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
             distribution = spn_or_dsp.distribution
@@ -2254,6 +2259,10 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             if distribution is not None and spn_or_dsp is not None:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
         if dsp is not None and (dsp == self.dsp or dsp.is_official):
+            if binary_names:
+                # Search already did the hard work of looking up binary names.
+                cache = get_property_cache(dsp)
+                cache.binary_names = binary_names
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
             return SimpleTerm(dsp, token, token)
         raise LookupError(distribution, spn_or_dsp)
@@ -2317,6 +2326,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         # reduce the work of the picker adapter.
         dsps = store.with_(matching_with).using(
             SQL('SearchableDSP'), DistributionSourcePackageInDatabase).find(
-            DistributionSourcePackageInDatabase,
+            (DistributionSourcePackageInDatabase, SQL('binpkgnames')),
             SQL('DistributionSourcePackage.id = SearchableDSP.id'))
+
         return CountableIterator(dsps.count(), dsps, self.toTerm)
