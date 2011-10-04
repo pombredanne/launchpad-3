@@ -1266,6 +1266,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     user_is_subscribed = None
     edit_form = ViewPageTemplateFile('../templates/bugtask-edit-form.pt')
 
+    _next_url_override = None
+
     # The field names that we use by default. This list will be mutated
     # depending on the current context and the permissions of the user viewing
     # the form.
@@ -1275,10 +1277,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
-
-    def __init__(self, context, request):
-        super(BugTaskEditView, self).__init__(context, request)
-        self.next_url = canonical_url(self.context)
 
     def initialize(self):
         # Initialize user_is_subscribed, if it hasn't already been set.
@@ -1362,6 +1360,14 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         Bugtasks cannot be edited if the bug was converted into a question.
         """
         return self.context.bug.getQuestionCreatedFromBug() is not None
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        if self._next_url_override is None:
+            return canonical_url(self.context)
+        else:
+            return self._next_url_override
 
     @property
     def initial_values(self):
@@ -1718,7 +1724,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     "The bug you have just updated is now a private bug for "
                     "%s. You do not have permission to view such bugs."
                     % bugtask.pillar.displayname)
-                self.next_url = canonical_url(
+                self._next_url_override = canonical_url(
                     new_target.pillar, rootsite='bugs')
 
         if (bugtask.sourcepackagename and (
