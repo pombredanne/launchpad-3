@@ -82,6 +82,9 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             # interfaces/product.py.
             schema=Interface))
 
+    is_official = Attribute(
+        'Is this source package officially in the distribution?')
+
     summary = Attribute(
         'The summary of binary packages built from this package')
 

@@ -207,6 +207,14 @@ class DistributionSourcePackage(BugTargetBase,
         # in the database.
         return self._get(self.distribution, self.sourcepackagename)
 
+    @property
+    def is_official(self):
+        """See `DistributionSourcePackage`."""
+        # This will need to verify that the package has not been deleted
+        # in the future.
+        return self._get(
+            self.distribution, self.sourcepackagename) is not None
+
     def delete(self):
         """See `DistributionSourcePackage`."""
         dsp_in_db = self._self_in_database
