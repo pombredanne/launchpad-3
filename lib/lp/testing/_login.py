@@ -14,7 +14,6 @@ __all__ = [
     'login_person',
     'login_team',
     'logout',
-    'is_logged_in',
     'person_logged_in',
     'run_with_login',
     'with_anonymous_login',
@@ -43,20 +42,12 @@ from lp.services.utils import decorate_with
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
-_logged_in = False
-
-
-def is_logged_in():
-    global _logged_in
-    return _logged_in
 
 
 def _test_login_impl(participation):
     # Common implementation of the test login wrappers.
     # It sets the global _logged_in flag and create a default
     # participation if None was specified.
-    global _logged_in
-    _logged_in = True
 
     if participation is None:
         # we use the main site as the host name.  This is a guess, to make
@@ -144,8 +135,6 @@ def logout():
     canonical.launchpad.ftest.LaunchpadFunctionalTestCase's tearDown method so
     you generally won't need to call this.
     """
-    global _logged_in
-    _logged_in = False
     endInteraction()
 
 
