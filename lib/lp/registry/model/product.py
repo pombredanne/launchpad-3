@@ -386,6 +386,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     date_next_suggest_packaging = UtcDateTimeCol(default=None)
 
     @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self
+
+    @property
     def pillar_category(self):
         """See `IPillar`."""
         return "Project"
