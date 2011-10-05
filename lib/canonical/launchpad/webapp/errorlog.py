@@ -22,7 +22,7 @@ from lazr.restful.utils import (
     )
 import oops.createhooks
 from oops_datedir_repo import DateDirRepo
-import oops_datedir_repo.serializer_rfc822
+import oops_datedir_repo.serializer
 import oops_timeline
 import pytz
 from zope.component.interfaces import ObjectEvent
@@ -120,7 +120,7 @@ class ErrorReport:
     @classmethod
     def read(cls, fp):
         # Deprecated: use the oops module directly now, when possible.
-        report = oops_datedir_repo.serializer_rfc822.read(fp)
+        report = oops_datedir_repo.serializer.read(fp)
         return cls(**report)
 
 
