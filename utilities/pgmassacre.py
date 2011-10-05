@@ -17,7 +17,6 @@ import sys
 import time
 import psycopg2
 import psycopg2.extensions
-from signal import SIGTERM, SIGQUIT, SIGKILL, SIGINT
 from optparse import OptionParser
 
 
@@ -36,7 +35,7 @@ def rollback_prepared_transactions(database):
     transactions.
     """
     con = connect(database)
-    con.set_isolation_level(0) # Autocommit so we can ROLLBACK PREPARED.
+    con.set_isolation_level(0)  # Autocommit so we can ROLLBACK PREPARED.
     cur = con.cursor()
 
     # Get a list of outstanding prepared transactions.
@@ -57,7 +56,7 @@ def still_open(database, max_wait=120):
     rollback.
     """
     con = connect()
-    con.set_isolation_level(0) # Autocommit.
+    con.set_isolation_level(0)  # Autocommit.
     cur = con.cursor()
     # Keep checking until the timeout is reached, returning True if all
     # of the backends are gone.
@@ -72,14 +71,14 @@ def still_open(database, max_wait=120):
             """, vars())
         if cur.fetchone() is None:
             return False
-        time.sleep(0.6) # Stats only updated every 500ms.
+        time.sleep(0.6)  # Stats only updated every 500ms.
     con.close()
     return True
 
 
 def massacre(database):
     con = connect()
-    con.set_isolation_level(0) # Autocommit
+    con.set_isolation_level(0)  # Autocommit
     cur = con.cursor()
 
     # Allow connections to the doomed database if something turned this off,
@@ -109,7 +108,7 @@ def massacre(database):
             FROM pg_stat_activity
             WHERE datname=%s AND procpid <> pg_backend_pid()
             """, [database])
-        for procpid,success in cur.fetchall():
+        for procpid, success in cur.fetchall():
             if not success:
                 print >> sys.stderr, (
                     "pg_terminate_backend(%s) failed" % procpid)
@@ -125,7 +124,7 @@ def massacre(database):
         # AUTOCOMMIT required to execute commands like DROP DATABASE.
         con.set_isolation_level(0)
         cur = con.cursor()
-        cur.execute("DROP DATABASE %s" % database) # Not quoted.
+        cur.execute("DROP DATABASE %s" % database)  # Not quoted.
         con.close()
         return 0
     finally:
@@ -151,7 +150,7 @@ def rebuild(database, template):
     now = start
     error_msg = None
     con = connect()
-    con.set_isolation_level(0) # Autocommit required for CREATE DATABASE.
+    con.set_isolation_level(0)  # Autocommit required for CREATE DATABASE.
     create_db_cmd = """
         CREATE DATABASE %s WITH ENCODING='UTF8' TEMPLATE=%s
         """ % (database, template)
@@ -170,7 +169,7 @@ def rebuild(database, template):
             return 0
         except psycopg2.Error, exception:
             error_msg = str(exception)
-        time.sleep(0.6) # Stats only updated every 500ms.
+        time.sleep(0.6)  # Stats only updated every 500ms.
         now = time.time()
     con.close()
 
@@ -195,6 +194,7 @@ def report_open_connections(database):
 
 
 options = None
+
 
 def main():
     parser = OptionParser("Usage: %prog [options] DBNAME")
