@@ -45,14 +45,21 @@ class TestStormLifecycle(TestCase):
             "longpoll.event.faketable.1234",
             event.event_key)
 
+    def test_storm_creation_event_adapter(self):
+        event = ILongPollEvent(FakeStormClass)
+        self.assertThat(event, Provides(ILongPollEvent))
+        self.assertEqual(
+            "longpoll.event.faketable",
+            event.event_key)
+
     def test_storm_object_created(self):
         storm_object = FakeStormClass()
         storm_object.id = 1234
         with capture_longpoll_emissions() as log:
             notify(ObjectCreatedEvent(storm_object))
         expected = LongPollEventRecord(
-            "longpoll.event.faketable.1234", {
-                "event_key": "longpoll.event.faketable.1234",
+            "longpoll.event.faketable", {
+                "event_key": "longpoll.event.faketable",
                 "what": "created",
                 })
         self.assertEqual([expected], log)
