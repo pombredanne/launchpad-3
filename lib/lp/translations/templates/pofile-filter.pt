@@ -46,10 +46,10 @@
         <tal:message repeat="message messages">
           <tr>
             <td class="englishstring" style="text-align:right;">
-              <tal:obsolete condition="not:message/sequence">
+              <tal:obsolete condition="not:message/context/sequence">
                 ~</tal:obsolete>
-              <tal:nonobsolete condition="message/sequence">
-                <a tal:content="string:${message/sequence}."
+              <tal:nonobsolete condition="message/context/sequence">
+                <a tal:content="string:${message/context/sequence}."
                    tal:attributes="href message/context/fmt:url" />
               </tal:nonobsolete>
             </td>
