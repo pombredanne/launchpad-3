@@ -302,7 +302,9 @@ def _get_request_timeout(timeout=None):
         return None
     if timeout is None:
         timeout = config.database.db_statement_timeout
-        if getattr(_local, '_permit_feature_timeout', False):
+        participation_extras = get_participation_extras()
+        if (participation_extras is not None
+            and participation_extras.permit_timeout_from_features):
             set_permit_timeout_from_features(False)
             try:
                 timeout_str = features.getFeatureFlag('hard_timeout')
