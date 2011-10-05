@@ -64,18 +64,16 @@ def set_up_tacfile_logging(name, level):
     return logger
 
 
-def set_up_oops_reporting(name, configuration=None, mangle_stdout=True):
+def set_up_oops_reporting(name, configuration, mangle_stdout=True):
     """Set up OOPS reporting by starting the Twisted logger with an observer.
 
     :param name: The name of the logger to use for oops reporting.
     :param configuration: The name of the config section to use for oops
-        reporting. If None or not supplied then the existing oops configuration
-        is used.
+        reporting.
     :param mangle_stdout: If True, send stdout and stderr to the logger.
         Defaults to False.
     """
-    if configuration is not None:
-        errorlog.globalErrorUtility.configure(configuration)
+    errorlog.globalErrorUtility.configure(configuration)
     oops_observer = OOPSObserver(errorlog.globalErrorUtility._oops_config)
         config, log.PythonLoggingObserver(loggerName=name).emit)
     log.startLoggingWithObserver(oops_observer.emit, mangle_stdout)
