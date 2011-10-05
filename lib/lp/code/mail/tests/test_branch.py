@@ -221,11 +221,11 @@ class TestBranchMailerDiff(TestCaseWithFactory):
 
     def test_generateEmail_with_diff(self):
         """When there is a diff, it should be an attachment, not inline."""
-        ctrl = self.makeBobMailController(diff='hello')
+        ctrl = self.makeBobMailController(diff=u'hello \u03A3')
         self.assertEqual(1, len(ctrl.attachments))
         diff = ctrl.attachments[0]
-        self.assertEqual('hello', diff.get_payload(decode=True))
-        self.assertEqual('text/x-diff', diff['Content-type'])
+        self.assertEqual('hello \xce\xa3', diff.get_payload(decode=True))
+        self.assertEqual('text/x-diff; charset="utf-8"', diff['Content-type'])
         self.assertEqual('inline; filename="revision-diff.txt"',
                          diff['Content-disposition'])
         self.assertNotIn('hello', ctrl.body)

@@ -301,7 +301,7 @@ class BranchMailer(BaseMailer):
         # Using .txt as a file extension makes Gmail display it inline.
         ctrl.addAttachment(
             self.diff, content_type='text/x-diff', inline=True,
-                filename='revision-diff.txt')
+                filename='revision-diff.txt', charset='utf-8')
 
     @staticmethod
     def _format_user_address(user):
