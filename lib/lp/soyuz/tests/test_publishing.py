@@ -1515,6 +1515,7 @@ class TestBPPHModel(TestNativePublishingBase):
         others = foo_10_all_bins1[0].getOtherPublicationsForSameSource()
 
         # TODO: assert that only foo-bin, foo-three are returned
+        # join bpph -> bpr -> build -> bprs -> bpphs.
 
         self.assertTrue(2, others.count())
         self.assertIn(foo_10_bin1, others)
