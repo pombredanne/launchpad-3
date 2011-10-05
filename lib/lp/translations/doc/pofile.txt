@@ -92,7 +92,8 @@ We need a helper method to better display test results.
     ...             if len(translation) > 20:
     ...                 translation = translation[:17] + "..."
     ...         print "%2d. %-20s   %-20s   %-20s" % (
-    ...             potmsgset.sequence, singular, plural, translation)
+    ...             potmsgset.getSequence(pofile.potemplate),
+    ...             singular, plural, translation)
 
 
 getFullLanguageCode
@@ -131,7 +132,7 @@ substring in their original English string.
     >>> found_potmsgsets.count()
     4
 
-    >>> print_potmsgsets(found_potmsgsets)
+    >>> print_potmsgsets(found_potmsgsets, dummy_pofile)
      7. contact's header:      None
     14. The location and ...   None
     15. %d contact             %d contacts
@@ -144,7 +145,7 @@ Search is case-insensitive.
     >>> found_potmsgsets.count()
     4
 
-    >>> print_potmsgsets(found_potmsgsets)
+    >>> print_potmsgsets(found_potmsgsets, dummy_pofile)
      7. contact's header:      None
     14. The location and ...   None
     15. %d contact             %d contacts
@@ -157,7 +158,7 @@ Search will look through plural msgids as well.
     >>> found_potmsgsets.count()
     2
 
-    >>> print_potmsgsets(found_potmsgsets)
+    >>> print_potmsgsets(found_potmsgsets, dummy_pofile)
     15. %d contact             %d contacts
     16. Opening %d contac...   Opening %d contac...
 
