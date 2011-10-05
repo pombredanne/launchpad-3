@@ -128,57 +128,64 @@ class TestBugChanges(TestCaseWithFactory):
         new_notifications = self.getNewNotifications(bug)
 
         if expected_activity is None:
-            self.assertEqual(len(new_activities), 0)
+            self.assertEqual(0, len(new_activities))
         else:
             if isinstance(expected_activity, dict):
                 expected_activities = [expected_activity]
             else:
                 expected_activities = expected_activity
-            self.assertEqual(len(new_activities), len(expected_activities))
+            self.assertEqual(len(expected_activities), len(new_activities))
             for expected_activity in expected_activities:
                 added_activity = new_activities.pop(0)
                 self.assertEqual(
-                    added_activity.person, expected_activity['person'])
+                    expected_activity['person'], added_activity.person)
                 self.assertEqual(
-                    added_activity.whatchanged,
-                    expected_activity['whatchanged'])
+                    expected_activity['whatchanged'],
+                    added_activity.whatchanged)
                 self.assertEqual(
-                    added_activity.oldvalue,
-                    expected_activity.get('oldvalue'))
+                    expected_activity.get('oldvalue'),
+                    added_activity.oldvalue)
                 self.assertEqual(
-                    added_activity.newvalue,
-                    expected_activity.get('newvalue'))
+                    expected_activity.get('newvalue'),
+                    added_activity.newvalue)
                 self.assertEqual(
-                    added_activity.message, expected_activity.get('message'))
+                    expected_activity.get('message'), added_activity.message)
 
         if expected_notification is None:
-            self.assertEqual(len(new_notifications), 0)
+            self.assertEqual(0, len(new_notifications))
         else:
             if isinstance(expected_notification, dict):
                 expected_notifications = [expected_notification]
             else:
                 expected_notifications = expected_notification
             self.assertEqual(
-                len(new_notifications), len(expected_notifications))
+                len(expected_notifications), len(new_notifications))
             for expected_notification in expected_notifications:
                 added_notification = new_notifications.pop(0)
                 self.assertEqual(
-                    added_notification.message.text_contents,
-                    expected_notification['text'])
+                    expected_notification['text'],
+                    added_notification.message.text_contents)
                 self.assertEqual(
-                    added_notification.message.owner,
-                    expected_notification['person'])
+                    expected_notification['person'],
+                    added_notification.message.owner)
                 self.assertEqual(
-                    added_notification.is_comment,
-                    expected_notification.get('is_comment', False))
+                    expected_notification.get('is_comment', False),
+                    added_notification.is_comment)
                 expected_recipients = expected_notification.get('recipients')
+                expected_recipient_reasons = (
+                    expected_notification.get('recipient_reasons'))
                 if expected_recipients is None:
                     expected_recipients = bug.getBugNotificationRecipients(
                         level=BugNotificationLevel.METADATA)
                 self.assertEqual(
+                    set(expected_recipients),
                     set(recipient.person
-                        for recipient in added_notification.recipients),
-                    set(expected_recipients))
+                        for recipient in added_notification.recipients))
+                if expected_recipient_reasons:
+                    self.assertEqual(
+                        set(expected_recipient_reasons),
+                        set(recipient.reason_header
+                            for recipient in added_notification.recipients))
 
     def assertRecipients(self, expected_recipients):
         notifications = self.getNewNotifications()
@@ -1010,6 +1017,46 @@ class TestBugChanges(TestCaseWithFactory):
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=expected_notification)
+
+    def test_retarget_private_security_bug_to_product(self):
+        # When a private security related bug has a bugtask retargetted to a
+        # different product, a notification is sent to the new bug supervisor.
+
+        # Create the private bug.
+        bug = self.factory.makeBug(
+            product=self.product, owner=self.user, private=True)
+        bug_task = bug.bugtasks[0]
+        bug_supervisor = self.factory.makePerson()
+        new_target = self.factory.makeProduct(
+            owner=self.user, bug_supervisor=bug_supervisor)
+        self.saveOldChanges(bug)
+
+        bug_task_before_modification = Snapshot(
+            bug_task, providing=providedBy(bug_task))
+        bug_task.transitionToTarget(new_target)
+        notify(ObjectModifiedEvent(
+            bug_task, bug_task_before_modification,
+            ['target', 'product'], user=self.user))
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'affects',
+            'oldvalue': bug_task_before_modification.bugtargetname,
+            'newvalue': bug_task.bugtargetname,
+            }
+
+        expected_notification = {
+            'text': u"** Project changed: %s => %s" % (
+                bug_task_before_modification.bugtargetname,
+                bug_task.bugtargetname),
+            'person': self.user,
+            'recipients': [
+                self.user, bug_supervisor],
+            'recipient_reasons': ['Subscriber', 'Bug Supervisor']
+            }
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification, bug=bug)
 
     def test_target_bugtask_to_sourcepackage(self):
         # When a bugtask's target is changed, BugActivity and

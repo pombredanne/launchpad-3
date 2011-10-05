@@ -24,7 +24,7 @@ from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
     BugTaskAssigneeChange,
     get_bug_changes,
-    )
+    BugTaskTargetChange)
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
@@ -32,6 +32,7 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.bugs.model.bug import get_also_notified_subscribers
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 from lp.services.mail.sendmail import (
     format_address,
     sendmail,
@@ -171,6 +172,20 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
                         level=change.change_level,
                         include_master_dupe_subscribers=False))
                 recipients.update(change_recipients)
+            # Additionally, if we are re-targetting a bugtask for a private
+            # bug, we need to ensure the new bug supervisor is notified.
+            if (isinstance(change, BugTaskTargetChange) and
+                  old_bugtask is not None and bug_delta.bug.private):
+                bugtask_deltas = bug_delta.bugtask_deltas
+                if not isinstance(bugtask_deltas, (list, tuple)):
+                    bugtask_deltas = [bugtask_deltas]
+                for bugtask_delta in bugtask_deltas:
+                    bugtask = bugtask_delta.bugtask
+                    if (bugtask_delta.target and
+                        IProduct.providedBy(bugtask.target) and
+                        bugtask.target.bug_supervisor):
+                            recipients.addBugSupervisor(
+                                bugtask.target.bug_supervisor)
             bug_delta.bug.addChange(change, recipients=recipients)
 
 
