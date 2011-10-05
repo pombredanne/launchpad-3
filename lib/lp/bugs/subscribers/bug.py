@@ -173,19 +173,27 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
                         include_master_dupe_subscribers=False))
                 recipients.update(change_recipients)
             # Additionally, if we are re-targetting a bugtask for a private
-            # bug, we need to ensure the new bug supervisor is notified.
+            # bug, we need to ensure the new bug supervisor and maintainer are
+            # notified (if they can view the bug).
+            # If they are the same person, only send one notification.
             if (isinstance(change, BugTaskTargetChange) and
                   old_bugtask is not None and bug_delta.bug.private):
                 bugtask_deltas = bug_delta.bugtask_deltas
                 if not isinstance(bugtask_deltas, (list, tuple)):
                     bugtask_deltas = [bugtask_deltas]
                 for bugtask_delta in bugtask_deltas:
-                    bugtask = bugtask_delta.bugtask
-                    if (bugtask_delta.target and
-                        IProduct.providedBy(bugtask.target) and
-                        bugtask.target.bug_supervisor):
+                    if not bugtask_delta.target:
+                        continue
+                    new_target = bugtask_delta.bugtask.target
+                    if not new_target or not IProduct.providedBy(new_target):
+                        continue
+                    if bug_delta.bug.userCanView(new_target.owner):
+                        recipients.addMaintainer(new_target.owner)
+                    if (new_target.bug_supervisor and not
+                        new_target.bug_supervisor.inTeam(new_target.owner) and
+                        bug_delta.bug.userCanView(new_target.bug_supervisor)):
                             recipients.addBugSupervisor(
-                                bugtask.target.bug_supervisor)
+                                new_target.bug_supervisor)
             bug_delta.bug.addChange(change, recipients=recipients)
 
 
