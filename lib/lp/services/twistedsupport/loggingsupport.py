@@ -8,7 +8,6 @@
 __metaclass__ = type
 __all__ = [
     'LaunchpadLogFile',
-    'OOPSLoggingObserver',
     'log_oops_from_failure',
     'set_up_logging_for_script',
     'set_up_oops_reporting',
@@ -23,6 +22,7 @@ import os
 import signal
 import sys
 
+from oops_twisted import OOPSObserver
 from twisted.python import (
     log,
     logfile,
@@ -34,27 +34,6 @@ from zope.interface import implements
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.webapp import errorlog
 from canonical.librarian.utils import copy_and_close
-
-
-class OOPSLoggingObserver(log.PythonLoggingObserver):
-    """A version of `PythonLoggingObserver` that logs OOPSes for errors."""
-    # XXX: JonathanLange 2008-12-23 bug=314959: As best as I can tell, this
-    # ought to be a log *handler*, not a feature of the bridge from
-    # Twisted->Python logging. Ask Michael about this.
-
-    def emit(self, eventDict):
-        """See `PythonLoggingObserver.emit`."""
-        if eventDict.get('isError', False) and 'failure' in eventDict:
-            try:
-                failure = eventDict['failure']
-                request = log_oops_from_failure(failure)
-                self.logger.info(
-                    "Logged OOPS id %s: %s: %s",
-                    request.oopsid, failure.type.__name__, failure.value)
-            except:
-                self.logger.exception("Error reporting OOPS:")
-        else:
-            log.PythonLoggingObserver.emit(self, eventDict)
 
 
 def log_oops_from_failure(failure, URL=None, **args):
@@ -104,8 +83,9 @@ def set_up_oops_reporting(configuration, name, mangle_stdout=True):
         Defaults to False.
     """
     errorlog.globalErrorUtility.configure(configuration)
-    log.startLoggingWithObserver(
-        OOPSLoggingObserver(loggerName=name).emit, mangle_stdout)
+    oops_observer = OOPSObserver(errorlog.globalErrorUtility._oops_config)
+        config, log.PythonLoggingObserver(loggerName=name).emit)
+    log.startLoggingWithObserver(oops_observer.emit, mangle_stdout)
 
 
 class LaunchpadLogFile(DailyLogFile):
