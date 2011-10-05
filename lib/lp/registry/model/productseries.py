@@ -170,6 +170,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                             orderBy=['-id'])
 
     @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.product
+
+    @property
     def answers_usage(self):
         """See `IServiceUsage.`"""
         return self.product.answers_usage

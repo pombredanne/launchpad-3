@@ -1,4 +1,5 @@
-= Builds pages =
+Builds pages
+============
 
 These pages are based in the BuildRecordView class and
 template/builds-list.pt. Basically they have a buildstate selector
@@ -109,7 +110,9 @@ The anonymous user checks the contents of the distro builds list page.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+builds")
 
-== Build titles ==
+
+Build titles
+------------
 
 The anonymous user can review the build titles, including 'not
 initialized' one (fix bug #52704).
@@ -184,7 +187,9 @@ initialized' one (fix bug #52704).
     i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE
     ------------------------------
 
-== Searches on the build state ==
+
+Searches on the build state
+---------------------------
 
 Then anonymous user checks the results of some searches on build state.
 
@@ -250,7 +255,9 @@ Then anonymous user checks the results of some searches on build state.
     taking 3 minutes &mdash; see the log
     ------------------------------
 
-== Form errors ==
+
+Form errors
+-----------
 
 The form will not permit the anonymous user to enter a bad value (bug
 #41104).
@@ -282,10 +289,12 @@ form values are submitted:
     ...     "&build_text=binutils&build_state=all")
     Traceback (most recent call last):
     ...
-    UnexpectedFormData: No suitable state found for value "[u'building', u'all']"
+    UnexpectedFormData: No suitable state found for value
+    "[u'building', u'all']"
 
 
-== Builder history ==
+Builder history
+---------------
 
 Check "Build History" contents, see the information about several
 job processed by this builder. The main difference for the other
@@ -369,7 +378,8 @@ unsatisfied dependencies is presented.
     ...
 
 
-== Builds page messages ==
+Builds page messages
+--------------------
 
 When the anonymous user first views the builds page a distribution
 that has no builds, for instance 'debian' in our sampledata, the page
@@ -419,7 +429,8 @@ After opening a empty SourcePackage Builds page anonymous user will
 repeat the same set of accesses done for Distribution Builds page.
 
     >>> anon_browser.open(
-    ...    "http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+builds")
+    ...    "http://launchpad.dev/"
+    ...    "ubuntu/hoary/+source/mozilla-firefox/+builds")
 
 When anonymous user first load only 'No packages currently building'
 message is presented.
@@ -451,7 +462,8 @@ The described mechanism works similarly for:
  * DistroArchSeries Builds.
 
 
-== Partner builds ==
+Partner builds
+--------------
 
 Anonymous user can see builds of partner packages on the same builds
 page as any other packages from the primary archive.
@@ -477,7 +489,8 @@ And also on the distro series builds page:
     ...
 
 
-== Upload status ==
+Upload status
+-------------
 
 A (distro) source package release page shows any builds for that source and
 the status of the build.  If the build has been uploaded but not yet

@@ -861,43 +861,48 @@ class PersonBugsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'commentedbugs', 'reportedbugs',
+    links = ['affectingbugs', 'assignedbugs', 'commentedbugs', 'reportedbugs',
              'subscribedbugs', 'relatedbugs', 'softwarebugs']
 
     def relatedbugs(self):
-        text = 'List all related bugs'
-        summary = ('Lists all bug reports which %s reported, is assigned to, '
+        text = 'All related bugs'
+        summary = ('All bug reports which %s reported, is assigned to, '
                    'or is subscribed to.' % self.context.displayname)
         return Link('', text, site='bugs', summary=summary)
 
     def assignedbugs(self):
-        text = 'List assigned bugs'
-        summary = 'Lists bugs assigned to %s.' % self.context.displayname
+        text = 'Assigned bugs'
+        summary = 'Bugs assigned to %s.' % self.context.displayname
         return Link('+assignedbugs', text, site='bugs', summary=summary)
 
     def softwarebugs(self):
-        text = 'List subscribed packages'
+        text = 'Subscribed packages'
         summary = (
             'A summary report for packages where %s is a bug supervisor.'
             % self.context.displayname)
         return Link('+packagebugs', text, site='bugs', summary=summary)
 
     def reportedbugs(self):
-        text = 'List reported bugs'
-        summary = 'Lists bugs reported by %s.' % self.context.displayname
+        text = 'Reported bugs'
+        summary = 'Bugs reported by %s.' % self.context.displayname
         return Link('+reportedbugs', text, site='bugs', summary=summary)
 
     def subscribedbugs(self):
-        text = 'List subscribed bugs'
-        summary = ('Lists bug reports %s is subscribed to.'
+        text = 'Subscribed bugs'
+        summary = ('Bug reports %s is subscribed to.'
                    % self.context.displayname)
         return Link('+subscribedbugs', text, site='bugs', summary=summary)
 
     def commentedbugs(self):
-        text = 'List commented bugs'
-        summary = ('Lists bug reports on which %s has commented.'
+        text = 'Commented bugs'
+        summary = ('Bug reports on which %s has commented.'
                    % self.context.displayname)
         return Link('+commentedbugs', text, site='bugs', summary=summary)
+
+    def affectingbugs(self):
+        text = 'Affecting bugs'
+        summary = ('Bugs affecting %s.' % self.context.displayname)
+        return Link('+affectingbugs', text, site='bugs', summary=summary)
 
 
 class PersonSpecsMenu(NavigationMenu):
@@ -2196,6 +2201,60 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     def getSimpleSearchURL(self):
         return canonical_url(self.context, view_name="+bugs")
+
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
+
+
+class PersonAffectingBugTaskSearchListingView(
+    RelevantMilestonesMixin, BugTaskSearchListingView):
+    """All bugs affecting someone."""
+
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
+    view_name = '+affectingbugs'
+    page_title = 'Bugs affecting'   # The context is added externally.
+
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None, prejoins=[]):
+        """Return the open bugs assigned to a person."""
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['affected_user'] = context
+
+        sup = super(PersonAffectingBugTaskSearchListingView, self)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
+
+    def shouldShowAssigneeWidget(self):
+        """Should the assignee widget be shown on the advanced search page?"""
+        return False
+
+    def shouldShowTeamPortlet(self):
+        """Should the team assigned bugs portlet be shown?"""
+        return True
+
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
+        return False
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs affecting %s" % self.context.displayname
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs affecting %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context, view_name=self.view_name)
 
     @property
     def label(self):

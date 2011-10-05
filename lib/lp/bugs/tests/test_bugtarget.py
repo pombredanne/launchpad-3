@@ -178,6 +178,36 @@ def sourcePackageSetUp(test):
     test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
+class BugTargetQuestionTargetTestCase(TestCaseWithFactory):
+    """Converting a bug into a question."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canBeAQuestion_does_not_use_bugs(self):
+        bug = self.factory.makeBug()
+        pillar = bug.bugtasks[0].pillar
+        with person_logged_in(pillar.owner):
+            pillar.official_malone = False
+            pillar.official_answers = True
+        self.assertFalse(bug.canBeAQuestion())
+
+    def test_canBeAQuestion_does_not_use_answers(self):
+        bug = self.factory.makeBug()
+        pillar = bug.bugtasks[0].pillar
+        with person_logged_in(pillar.owner):
+            pillar.official_malone = True
+            pillar.official_answers = False
+        self.assertFalse(bug.canBeAQuestion())
+
+    def test_canBeAQuestion_uses_answers_and_bugs(self):
+        bug = self.factory.makeBug()
+        pillar = bug.bugtasks[0].pillar
+        with person_logged_in(pillar.owner):
+            pillar.official_malone = True
+            pillar.official_answers = True
+        self.assertTrue(bug.canBeAQuestion())
+
+
 class TestBugTargetSearchTasks(TestCaseWithFactory):
     """Tests of IHasBugs.searchTasks()."""
 

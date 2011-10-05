@@ -542,6 +542,11 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not series-specific) source package.")
 
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.distroseries.distribution
+
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
