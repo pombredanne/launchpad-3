@@ -310,6 +310,19 @@ class IOpenLaunchBag(ILaunchBag):
         '''
 
 
+class IParticipationExtras(Interface):
+    """Extra attributes we make all our participations have.
+
+    If you add something here, you should go and edit
+    `canonical.launchpad.webapp.interaction.Participation` and
+    `canonical.launchpad.webapp.servers.BasicLaunchpadRequest`.
+    """
+
+    permit_timeout_from_features = Attribute(
+        "A boolean indicating whether to read the 'hard_timeout' feature "
+        "flag.  XXX explain more here.")
+
+
 #
 # Request
 #

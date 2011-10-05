@@ -47,6 +47,7 @@ from zope.security.management import (
 
 from canonical.launchpad.webapp.interfaces import (
     IOpenLaunchBag,
+    IParticipationExtras,
     IPlacelessAuthUtility,
     )
 
@@ -166,8 +167,38 @@ def setupInteractionForPerson(person, participation=None):
 
 
 class Participation:
-    """A very simple participation."""
-    implements(IParticipation)
+    """Our most simple participation."""
 
+    implements(IParticipation, IParticipationExtras)
+
+    # From IParticipation
     interaction = None
     principal = None
+
+    # From IParticipationExtras
+    permit_timeout_from_features = False
+
+
+def get_participation_extras():
+    """Return the active provider of `IParticipationExtras`.
+
+    This is looked up from the interaction.  If there is no interaction or
+    suitable participation, then return None.
+    """
+    interaction = queryInteraction()
+    if interaction is None:
+        return None
+    # XXX We could perhaps be less LBYL-ish here and assert that there is one
+    # participation and that it provides IParticipationExtras (because in any
+    # expected situation today, that's certainly the case).
+    participations = [
+        participation
+        for participation in interaction.participations
+        if IParticipationExtras.providedBy(participation)
+        ]
+    if not participations:
+        return None
+    assert len(participations) == 1, (
+        "We expect only one provide of IParticipationExtras in the "
+        "interaction. Got %s." % len(participations))
+    return participations[0]

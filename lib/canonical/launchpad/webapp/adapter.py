@@ -71,6 +71,7 @@ from canonical.launchpad.webapp.interfaces import (
     ReadOnlyModeViolation,
     SLAVE_FLAVOR,
     )
+from canonical.launchpad.webapp.interaction import get_participation_extras
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
@@ -195,7 +196,6 @@ def set_request_started(
     _local.enable_timeout = enable_timeout
     _local.commit_logger = CommitLogger(transaction)
     transaction.manager.registerSynch(_local.commit_logger)
-    set_permit_timeout_from_features(False)
 
 
 def clear_request_started():
@@ -289,7 +289,7 @@ def set_permit_timeout_from_features(enabled):
     :param enabled: If True permit looking up request timeouts in
         feature flags.
     """
-    _local._permit_feature_timeout = enabled
+    get_participation_extras().permit_timeout_from_features = enabled
 
 
 def _get_request_timeout(timeout=None):

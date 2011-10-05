@@ -90,6 +90,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchpadProtocolError,
     INotificationRequest,
     INotificationResponse,
+    IParticipationExtras,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     OAuthPermission,
@@ -556,9 +557,12 @@ class LaunchpadBrowserRequestMixin:
 
 
 class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
-    """Mixin request class to provide stepstogo."""
+    """Mixin request class to provide stepstogo and IParticipationExtras."""
 
-    implements(IBasicLaunchpadRequest)
+    implements(IBasicLaunchpadRequest, IParticipationExtras)
+
+    # IParticipationExtras
+    permit_timeout_from_features = False
 
     def __init__(self, body_instream, environ, response=None):
         self.traversed_objects = []
@@ -866,11 +870,16 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     False
 
     """
-    implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
-               canonical.launchpad.layers.LaunchpadLayer)
+    implements(
+        INotificationRequest, IBasicLaunchpadRequest, IParticipation,
+        IParticipationExtras, canonical.launchpad.layers.LaunchpadLayer)
+
     # These two attributes satisfy IParticipation.
     principal = None
     interaction = None
+
+    # And this one satisfies IParticipationExtras.
+    permit_timeout_from_features = False
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
