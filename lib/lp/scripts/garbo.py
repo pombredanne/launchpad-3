@@ -826,7 +826,8 @@ class BugTaskIncompleteMigrator(TunableLoop):
         self.is_done = False
         self.offset = 0
         self.store = IMasterStore(BugTask)
-        self.query = self.store.find((BugTask, Bug),
+        self.query = self.store.find(
+            (BugTask, Bug),
             BugTask._status == BugTaskStatus.INCOMPLETE,
             BugTask.bugID == Bug.id)
 

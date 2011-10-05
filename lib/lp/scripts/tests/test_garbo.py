@@ -874,23 +874,24 @@ class TestGarbo(TestCaseWithFactory):
         with_response = bug.bugtasks[0]
         with_response.transitionToStatus(BugTaskStatus.INCOMPLETE, bug.owner)
         removeSecurityProxy(with_response)._status = BugTaskStatus.INCOMPLETE
-        store.flush()
         transaction.commit()
         self.factory.makeBugComment(bug=bug)
         transaction.commit()
         without_response = self.factory.makeBugTask(bug=bug)
         without_response.transitionToStatus(
             BugTaskStatus.INCOMPLETE, bug.owner)
-        removeSecurityProxy(
-            without_response)._status = BugTaskStatus.INCOMPLETE
+        removeSecurityProxy(without_response)._status = (
+            BugTaskStatus.INCOMPLETE)
         transaction.commit()
         self.runHourly()
-        self.assertEqual(1,
+        self.assertEqual(
+            1,
             store.find(BugTask.id,
                 BugTask.id == with_response.id,
                 BugTask._status ==
                        BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE).count())
-        self.assertEqual(1,
+        self.assertEqual(
+            1,
             store.find(BugTask.id,
                 BugTask.id == without_response.id,
                 BugTask._status ==

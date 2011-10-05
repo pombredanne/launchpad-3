@@ -114,6 +114,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
+    DB_INCOMPLETE_BUGTASK_STATUSES,
     DB_UNRESOLVED_BUGTASK_STATUSES,
     IBugTask,
     IBugTaskDelta,
@@ -530,9 +531,7 @@ class BugTask(SQLBase):
 
     @property
     def status(self):
-        if (self._status in [
-            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
-            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE]):
+        if self._status in DB_INCOMPLETE_BUGTASK_STATUSES:
             return BugTaskStatus.INCOMPLETE
         return self._status
 
@@ -973,8 +972,7 @@ class BugTask(SQLBase):
         # Bugs can jump in and out of 'incomplete' status
         # and for just as long as they're marked incomplete
         # we keep a date_incomplete recorded for them.
-        if new_status in (BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
-            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE):
+        if new_status in DB_INCOMPLETE_BUGTASK_STATUSES:
             self.date_incomplete = when
         else:
             self.date_incomplete = None
