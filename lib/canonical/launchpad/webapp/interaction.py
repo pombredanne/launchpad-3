@@ -55,6 +55,7 @@ from canonical.launchpad.webapp.interfaces import (
 __all__ = [
     'ANONYMOUS',
     'get_current_principal',
+    'get_participation_extras',
     'setupInteraction',
     'setupInteractionByEmail',
     'setupInteractionForPerson',
