@@ -215,7 +215,7 @@ class TestRabbitUnreliableSession(TestRabbitSession):
         oops_report = self.error_utility.getLastOopsReport()
         self.assertNotEqual(
             repr(self.prev_oops), repr(oops_report), 'No OOPS reported!')
-        self.assertTrue(text_in_oops in str(oops_report))
+        self.assertIn(text_in_oops, str(oops_report))
 
     def raise_AMQPException(self):
         raise amqp.AMQPException(123, "Suffin broke.", "Whut?")

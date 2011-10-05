@@ -167,7 +167,7 @@ class RabbitUnreliableSession(RabbitSession):
         """See `IMessageSession`.
 
         Suppresses errors listed in `suppressed_errors`. Also suppresses
-        other errors but file an oops report for these.
+        other errors but files an oops report for these.
         """
         try:
             super(RabbitUnreliableSession, self).finish()
