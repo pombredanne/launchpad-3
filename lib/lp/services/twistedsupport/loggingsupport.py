@@ -8,7 +8,6 @@
 __metaclass__ = type
 __all__ = [
     'LaunchpadLogFile',
-    'log_oops_from_failure',
     'set_up_logging_for_script',
     'set_up_oops_reporting',
     'set_up_tacfile_logging',
@@ -36,14 +35,6 @@ from canonical.launchpad.webapp import errorlog
 from canonical.librarian.utils import copy_and_close
 
 
-def log_oops_from_failure(failure, URL=None, **args):
-    request = errorlog.ScriptRequest(args.items(), URL=URL)
-    errorlog.globalErrorUtility.raising(
-        (failure.type, failure.value, failure.getTraceback()),
-        request)
-    return request
-
-
 def set_up_logging_for_script(options, name):
     """Create a `Logger` object and configure twisted to use it.
 
@@ -59,7 +50,7 @@ def set_up_tacfile_logging(name, level):
 
     This is preferable to use over `set_up_logging_for_script` for .tac
     files since there's no options to pass through.  The logger object
-    is connected to Twisted's log and returned.
+    is connected to Twisted's log and returned. 
 
     :param name: The logger instance name.
     :param level: The log level to use, eg. logging.INFO or logging.DEBUG
