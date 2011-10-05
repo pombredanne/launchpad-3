@@ -42,8 +42,6 @@ from lp.services.utils import decorate_with
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
-
-
 def _test_login_impl(participation):
     # Common implementation of the test login wrappers.
     # It creates a default participation if None was specified.
