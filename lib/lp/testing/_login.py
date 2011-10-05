@@ -46,8 +46,7 @@ from lp.testing.sampledata import ADMIN_EMAIL
 
 def _test_login_impl(participation):
     # Common implementation of the test login wrappers.
-    # It sets the global _logged_in flag and create a default
-    # participation if None was specified.
+    # It creates a default participation if None was specified.
 
     if participation is None:
         # we use the main site as the host name.  This is a guess, to make
