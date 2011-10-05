@@ -22,6 +22,7 @@ from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
+    BugTaskTargetChange,
     BugTaskAssigneeChange,
     get_bug_changes,
     )
@@ -32,6 +33,7 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.bugs.model.bug import get_also_notified_subscribers
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 from lp.services.mail.sendmail import (
     format_address,
     sendmail,
@@ -171,6 +173,28 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
                         level=change.change_level,
                         include_master_dupe_subscribers=False))
                 recipients.update(change_recipients)
+            # Additionally, if we are re-targetting a bugtask for a private
+            # bug, we need to ensure the new bug supervisor and maintainer are
+            # notified (if they can view the bug).
+            # If they are the same person, only send one notification.
+            if (isinstance(change, BugTaskTargetChange) and
+                  old_bugtask is not None and bug_delta.bug.private):
+                bugtask_deltas = bug_delta.bugtask_deltas
+                if not isinstance(bugtask_deltas, (list, tuple)):
+                    bugtask_deltas = [bugtask_deltas]
+                for bugtask_delta in bugtask_deltas:
+                    if not bugtask_delta.target:
+                        continue
+                    new_target = bugtask_delta.bugtask.target
+                    if not new_target or not IProduct.providedBy(new_target):
+                        continue
+                    if bug_delta.bug.userCanView(new_target.owner):
+                        recipients.addMaintainer(new_target.owner)
+                    if (new_target.bug_supervisor and not
+                        new_target.bug_supervisor.inTeam(new_target.owner) and
+                        bug_delta.bug.userCanView(new_target.bug_supervisor)):
+                            recipients.addBugSupervisor(
+                                new_target.bug_supervisor)
             bug_delta.bug.addChange(change, recipients=recipients)
 
 

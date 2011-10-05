@@ -1114,7 +1114,7 @@
         <!-- BugNotificationRecipients provides the following
              attributes/methods in addition. -->
         <allow
-            attributes="subscription_filters addFilter"/>
+            attributes="subscription_filters addFilter addBugSupervisor addMaintainer"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"
