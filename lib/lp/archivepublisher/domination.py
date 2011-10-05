@@ -153,6 +153,7 @@ class GeneralizedPublication:
     class.
     """
     def __init__(self, is_source=True):
+        self.is_source = is_source
         if is_source:
             self.traits = SourcePublicationTraits
         else:
@@ -297,6 +298,12 @@ class Dominator:
             # Since this always picks the latest version as the live
             # one, this dominatePackage call will never result in a
             # deletion.
+            # TODO: work out if the publication is for an arch-all binary,
+            # and ignore it if the same source has other unsuperseded
+            # arch-any binaries.
+            if not generalization.is_source:
+                # Call function to get other binaries built by same source
+                pass
             latest_version = generalization.getPackageVersion(publications[0])
             self.dominatePackage(
                 publications, [latest_version], generalization)
