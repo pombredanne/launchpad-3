@@ -217,42 +217,42 @@ class TestRabbitUnreliableSession(TestRabbitSession):
             repr(self.prev_oops), repr(oops_report), 'No OOPS reported!')
         self.assertIn(text_in_oops, str(oops_report))
 
-    def raise_AMQPException(self):
-        raise amqp.AMQPException(123, "Suffin broke.", "Whut?")
-
-    def test_finish_suppresses_AMQPException(self):
+    def _test_finish_suppresses_exception(self, exception,
+                                          oops_recorded=False):
+        # Simple helper to test that the given exception is suppressed
+        # when raised by finish() and that an oops/no oops is recorded
+        # (depending on the value of oops_recorded).
+        def raise_exception():
+            raise exception
         session = self.session_factory()
-        session.defer(self.raise_AMQPException)
+        session.defer(raise_exception)
         session.finish()  # Look, no exceptions!
-        self.assertNoOops()
+        if oops_recorded:
+            self.assertOops(str(exception))
+        else:
+            self.assertNoOops()
 
-    def raise_MessagingException(self):
-        raise MessagingException("Arm stuck in combine.")
+    def test_finish_suppresses_MessagingUnavailable(self):
+        self._test_finish_suppresses_exception(
+            MessagingUnavailable('Messaging borked.'),
+            oops_recorded=False)
 
-    def test_finish_suppresses_MessagingException(self):
-        self.error_utility = ErrorReportingUtility()
-        session = self.session_factory()
-        session.defer(self.raise_MessagingException)
-        session.finish()  # Look, no exceptions!
-        self.assertNoOops()
+    def test_finish_suppresses_AMQPException_with_oops(self):
+        self._test_finish_suppresses_exception(
+            amqp.AMQPException(123, "Suffin broke.", "Whut?"),
+            oops_recorded=True)
 
-    def raise_IOError(self):
-        raise IOError("Leg eaten by cow.")
+    def test_finish_suppresses_MessagingException_with_oops(self):
+        self._test_finish_suppresses_exception(
+            MessagingException("Arm stuck in combine."), oops_recorded=True)
 
-    def test_finish_suppresses_IOError(self):
-        session = self.session_factory()
-        session.defer(self.raise_IOError)
-        session.finish()  # Look, no exceptions!
-        self.assertNoOops()
-
-    def raise_Exception(self):
-        raise Exception("That hent worked.")
+    def test_finish_suppresses_IOError_with_oops(self):
+        self._test_finish_suppresses_exception(
+            IOError("Leg eaten by cow."), oops_recorded=True)
 
     def test_finish_suppresses_other_errors_with_oopses(self):
-        session = self.session_factory()
-        session.defer(self.raise_Exception)
-        session.finish()  # Look, no exceptions!
-        self.assertOops("That hent worked.")
+        self._test_finish_suppresses_exception(
+            Exception("That hent worked."), oops_recorded=True)
 
 
 class TestRabbitMessageBase(RabbitTestCase):

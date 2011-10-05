@@ -28,7 +28,6 @@ from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
-    MessagingException,
     MessagingUnavailable,
     QueueEmpty,
     QueueNotFound,
@@ -148,19 +147,21 @@ class RabbitUnreliableSession(RabbitSession):
     """An "unreliable" `RabbitSession`.
 
     Unreliable in this case means that certain errors in deferred tasks are
-    silently suppressed, `AMQPException` in particular. This means that
-    services can continue to function even in the absence of a running and
-    fully functional message queue.
+    silently suppressed. This means that services can continue to function
+    even in the absence of a running and fully functional message queue.
 
     Other types of errors are also caught because we don't want this
     subsystem to destabilise other parts of Launchpad but we nonetheless
     record OOPses for these.
+
+    XXX: We only suppress MessagingUnavailable for now because we want to
+    monitor this closely before we add more exceptions to the
+    suppressed_errors list. Potential candidates are `MessagingException`,
+    `IOError` or `amqp.AMQPException`.
     """
 
     suppressed_errors = (
-        IOError,
-        MessagingException,
-        amqp.AMQPException,
+        MessagingUnavailable
         )
 
     def finish(self):
