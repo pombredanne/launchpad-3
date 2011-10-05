@@ -254,7 +254,7 @@ class MailController(object):
         """
         # If encoding has already been done by virtue of a charset being
         # previously specified, then do nothing.
-        if part.has_key('Content-Transfer-Encoding'):
+        if 'Content-Transfer-Encoding' in part:
             return
         orig_payload = part.get_payload()
         if not exact and is_ascii_only(orig_payload):
