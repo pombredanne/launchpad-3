@@ -16,6 +16,10 @@ from zope.event import notify
 from zope.interface import Attribute
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.longpoll.adapters.storm import (
+    gen_primary_key,
+    get_primary_key,
+    )
 from lp.services.longpoll.interfaces import ILongPollEvent
 from lp.services.longpoll.testing import (
     capture_longpoll_emissions,
@@ -30,6 +34,48 @@ class FakeStormClass(Storm):
     __storm_table__ = 'FakeTable'
 
     id = Int(primary=True)
+
+
+class FakeStormCompoundPrimaryKeyClass(Storm):
+
+    __storm_table__ = 'FakeTableWithCompoundPrimaryKey'
+    __storm_primary__ = 'id1', 'id2'
+
+    id1 = Int()
+    id2 = Int()
+
+
+class TestFunctions(TestCase):
+
+    def test_gen_primary_key(self):
+        # gen_primary_key() returns an iterable of values from the model
+        # instance's primary key.
+        storm_object = FakeStormClass()
+        storm_object.id = 1234
+        self.assertEqual([1234], list(gen_primary_key(storm_object)))
+
+    def test_gen_primary_key_compound_key(self):
+        # gen_primary_key() returns an iterable of values from the model
+        # instance's primary key.
+        storm_object = FakeStormCompoundPrimaryKeyClass()
+        storm_object.id1 = 1234
+        storm_object.id2 = 5678
+        self.assertEqual([1234, 5678], list(gen_primary_key(storm_object)))
+
+    def test_get_primary_key(self):
+        # get_primary_key() returns the value of the model instance's primary
+        # key.
+        storm_object = FakeStormClass()
+        storm_object.id = 1234
+        self.assertEqual(1234, get_primary_key(storm_object))
+
+    def test_get_primary_key_compound_key(self):
+        # get_primary_key() returns a tuple of all the values in the model
+        # instance's primary key when the model uses a compound primary key.
+        storm_object = FakeStormCompoundPrimaryKeyClass()
+        storm_object.id1 = 1234
+        storm_object.id2 = 5678
+        self.assertEqual((1234, 5678), get_primary_key(storm_object))
 
 
 class TestStormLifecycle(TestCase):
@@ -61,6 +107,7 @@ class TestStormLifecycle(TestCase):
             "longpoll.event.faketable", {
                 "event_key": "longpoll.event.faketable",
                 "what": "created",
+                "id": 1234,
                 })
         self.assertEqual([expected], log)
 

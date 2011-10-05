@@ -39,6 +39,16 @@ def gen_primary_key(model_instance):
         yield primary_key_column.__get__(model_instance)
 
 
+def get_primary_key(model_instance):
+    """Return the primary key for the given model instance.
+
+    If the primary key contains only one value it is returned, otherwise all
+    the primary key values are returned in a tuple.
+    """
+    pkey = tuple(gen_primary_key(model_instance))
+    return pkey[0] if len(pkey) == 1 else pkey
+
+
 @long_poll_event(Storm)
 class LongPollStormEvent(LongPollEvent):
     """A `ILongPollEvent` for events of `Storm` objects.
@@ -82,7 +92,7 @@ def object_created(model_instance, object_event):
     """Subscription handler for `Storm` creation events."""
     model_class = removeSecurityProxy(model_instance).__class__
     event = ILongPollEvent(model_class)
-    event.emit(what="created")
+    event.emit(what="created", id=get_primary_key(model_instance))
 
 
 @adapter(Storm, IObjectDeletedEvent)
