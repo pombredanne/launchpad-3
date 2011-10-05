@@ -116,6 +116,7 @@ from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.person import (
+    BasePersonEditViewWidget,
     CommonMenuLinks,
     PersonIndexView,
     PersonNavigation,
@@ -261,7 +262,7 @@ class TeamFormMixin:
 
 
 class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
-                   LaunchpadEditFormView):
+                   BasePersonEditViewWidget):
     """View for editing team details."""
     schema = ITeam
 
@@ -312,18 +313,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     cancel_url = next_url
 
     def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        When a team has a mailing list or an active PPA, renames are
-        prohibited.
-        """
-        reason = self.context.checkRename()
-        if reason:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-        super(TeamEditView, self).setUpWidgets()
-        if reason:
-            self.widgets['name'].hint = reason
+        BasePersonEditViewWidget.setUpWidgets(self)
 
 
 def generateTokenAndValidationEmail(email, team):

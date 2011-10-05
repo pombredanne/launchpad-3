@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BasePersonEditViewWidget',
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'CommonMenuLinks',
@@ -3428,8 +3429,23 @@ class PersonEditHomePageView(BasePersonEditView):
 
     page_title = label
 
+class BasePersonEditViewWidget(LaunchpadEditFormView):
 
-class PersonEditView(BasePersonEditView):
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        Renames are prohibited if a user has an active PPA.
+        """
+        reason = self.context.checkRename()
+        if reason:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
+        super(BasePersonEditViewWidget, self).setUpWidgets()
+        if reason:
+            self.widgets['name'].hint = reason
+
+
+class PersonEditView(BasePersonEditView, BasePersonEditViewWidget):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
@@ -3447,17 +3463,7 @@ class PersonEditView(BasePersonEditView):
     i_know_this_is_an_openid_security_issue_input = None
 
     def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        Renames are prohibited if a user has an active PPA.
-        """
-        reason = self.context.checkRename()
-        if reason:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-        super(PersonEditView, self).setUpWidgets()
-        if reason:
-            self.widgets['name'].hint = reason
+        BasePersonEditViewWidget.setUpWidgets(self)
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""
