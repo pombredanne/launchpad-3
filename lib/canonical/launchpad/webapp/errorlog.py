@@ -288,6 +288,8 @@ class ErrorReportingUtility:
         # Constants:
         self._oops_config.template['branch_nick'] = versioninfo.branch_nick
         self._oops_config.template['revno'] = versioninfo.revno
+        reporter = config[section_name].oops_prefix
+        self._oops_config.template['reporter'] = reporter
         # Should go in an HTTP module.
         self._oops_config.template['req_vars'] = []
         # Exceptions, with the zope formatter.
@@ -308,9 +310,7 @@ class ErrorReportingUtility:
         self._oops_config.on_create.append(attach_adapter_duration)
         # We want to publish reports to disk for gathering to the central
         # analysis server.
-        self._oops_datedir_repo = DateDirRepo(
-                config[section_name].error_dir,
-                config[section_name].oops_prefix)
+        self._oops_datedir_repo = DateDirRepo(config[section_name].error_dir)
         self._oops_config.publishers.append(self._oops_datedir_repo.publish)
         # And within the zope application server (mainly for testing).
         self._oops_config.publishers.append(notify_publisher)
