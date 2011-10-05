@@ -73,7 +73,7 @@ Get the set of POTMsgSets that are untranslated.
 
 We need a helper method to better display test results.
 
-    >>> def print_potmsgsets(potmsgsets, pofile=None):
+    >>> def print_potmsgsets(potmsgsets, pofile):
     ...     for potmsgset in potmsgsets:
     ...         singular = plural = None
     ...         translation = ""

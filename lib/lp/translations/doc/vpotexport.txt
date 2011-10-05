@@ -61,7 +61,7 @@ appear in the exported file.
 
     >>> first.sequence
     0
-    >>> potmsgset.sequence
+    >>> potmsgset.getSequence(first.potemplate)
     0
 
 The POT file header is a template of common information that will get filled
