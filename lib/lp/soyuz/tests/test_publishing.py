@@ -1471,6 +1471,57 @@ class TestSPPHModel(TestCaseWithFactory):
         self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
 
 
+class TestBPPHModel(TestNativePublishingBase):
+    """Test parts of the BinaryPackagePublishingHistory model.
+
+    See also lib/lp/soyuz/doc/publishing.txt
+    """
+
+    layer = ZopelessDatabaseLayer
+
+    def test_getOtherPublicationsForSameSource(self):
+        # Set up a source with a build that generated four binaries,
+        # two of them an arch-all.
+        foo_10_src = self.getPubSource(
+            sourcename="foo", version="1.0", architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_10_bin1] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version="1.0", pub_source=foo_10_src)
+        # Now need to grab the build for the source so we can add
+        # more binaries to it.
+        [build] = foo_10_src.getBuilds()
+        bpr = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-common", version="1.0", build=build,
+            architecturespecific=False)
+        foo_10_all_bins1 = self.publishBinaryInArchive(
+            bpr, self.ubuntutest.main_archive, pocket=foo_10_src.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        bpr2 = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-two", version="1.0", build=build,
+            architecturespecific=False)
+        foo_10_all_bins2 = self.publishBinaryInArchive(
+            bpr2, self.ubuntutest.main_archive, pocket=foo_10_src.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        bpr3 = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-three", version="1.0", build=build,
+            architecturespecific=True)
+        foo_10_bin2 = self.publishBinaryInArchive(
+            bpr3, self.ubuntutest.main_archive, pocket=foo_10_src.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        others = foo_10_all_bins1[0].getOtherPublicationsForSameSource()
+
+        # TODO: assert that only foo-bin, foo-three are returned
+
+        self.assertTrue(2, others.count())
+        self.assertIn(foo_10_bin1, others)
+        self.assertIn(foo_10_bin2, others)
+
+
+
 class TestGetBuiltBinaries(TestNativePublishingBase):
     """Test SourcePackagePublishingHistory.getBuiltBinaries() works."""
 
