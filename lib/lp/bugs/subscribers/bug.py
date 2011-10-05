@@ -22,9 +22,10 @@ from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
+    BugTaskTargetChange,
     BugTaskAssigneeChange,
     get_bug_changes,
-    BugTaskTargetChange)
+    )
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
