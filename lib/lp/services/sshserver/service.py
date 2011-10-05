@@ -171,7 +171,7 @@ class SSHService(service.Service):
             logging.getLogger(self._access_log_path),
             self._access_log_path)
         manager.setUp()
-        set_up_oops_reporting(self._oops_configuration, self._main_log)
+        set_up_oops_reporting(self._main_log, self._oops_configuration)
         notify(events.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask
