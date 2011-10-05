@@ -313,10 +313,7 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
 
     def getMaintainer(self, target):
         """See `TargetPickerEntrySource`"""
-        release = target.currentrelease
-        if release is None:
-            return None
-        return release.maintainer.displayname
+        return None
 
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
