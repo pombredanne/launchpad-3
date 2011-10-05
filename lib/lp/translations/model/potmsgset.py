@@ -139,7 +139,6 @@ class POTMsgSet(SQLBase):
         notNull=True)
     msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
         notNull=False, default=DEFAULT)
-    sequence = IntCol(dbName='sequence')
     commenttext = StringCol(dbName='commenttext', notNull=False)
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)

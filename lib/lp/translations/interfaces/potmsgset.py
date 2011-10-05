@@ -95,8 +95,6 @@ class IPOTMsgSet(Interface):
         readonly=True,
         schema=IPOMsgID)
 
-    sequence = Attribute("The ordering of this set within its file.")
-
     commenttext = Attribute("The manual comments this set has.")
 
     filereferences = Attribute("The files where this set appears.")
