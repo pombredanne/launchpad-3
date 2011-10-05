@@ -2242,7 +2242,8 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         if isinstance(spn_or_dsp, tuple):
             # The DSP in DB was passed with its binary_names.
             spn_or_dsp, binary_names = spn_or_dsp
-            binary_names = binary_names.split()
+            if binary_names is not None:
+                binary_names = binary_names.split()
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
             distribution = spn_or_dsp.distribution
