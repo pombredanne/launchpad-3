@@ -89,7 +89,6 @@ class UtilsTestCase(unittest.TestCase):
         self.assertRaises(bugimport.BugXMLSyntaxError,
                           bugimport.get_text, node)
 
-
     def test_get_enum_value(self):
         # Test that the get_enum_value() function returns the
         # appropriate enum value, or raises BugXMLSyntaxError if it is
@@ -482,6 +481,7 @@ public_security_bug = '''\
   </comment>
 </bug>'''
 
+
 class ImportBugTestCase(unittest.TestCase):
     """Test importing of a bug from XML"""
     layer = LaunchpadZopelessLayer
@@ -732,9 +732,11 @@ class BugImportCacheTestCase(unittest.TestCase):
         fp.write('</launchpad-bugs>\n')
         fp.close()
         cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
+
         class MyBugImporter(bugimport.BugImporter):
             def importBug(self, bugnode):
                 raise bugnode.BugXMLSyntaxError('not imported')
+
         importer = MyBugImporter(product, xml_file, cache_filename)
         importer.importBugs(self.layer.txn)
         importer.loadCache()
@@ -753,9 +755,11 @@ class BugImportCacheTestCase(unittest.TestCase):
         fp.close()
         cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
         fail = self.fail
+
         class MyBugImporter(bugimport.BugImporter):
             def importBug(self, bugnode):
                 fail('Should not have imported bug')
+
         importer = MyBugImporter(product, xml_file, cache_filename)
         # Mark the bug as imported
         importer.bug_id_map = {42: 1}

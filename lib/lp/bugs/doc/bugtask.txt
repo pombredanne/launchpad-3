@@ -1,4 +1,5 @@
-= Introduction =
+Introduction
+===================================
 
 Bugs are problems in software. When a bug gets assigned to a specific
 upstream or distro/sourcepackagename, a bug /task/ is created. In
@@ -6,10 +7,12 @@ essence, a bug task is a bug that needs to be fixed in a specific
 place. Where a bug has things like a title, comments and subscribers,
 it's the bug task that tracks importance, assignee, etc.
 
-= Working with Bug Tasks in Launchpad =
+Working with Bug Tasks in Launchpad
+===================================
 
 
-== Creating Bug Tasks ==
+Creating Bug Tasks
+------------------
 
 All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
@@ -88,9 +91,11 @@ Next, we need to grab some values to provide for importance and status.
 # the connection after a ProgrammingError is raised. ARGH.
 
 
-== Bug Task Targets ==
+Bug Task Targets
+----------------
 
-    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
+    >>> from lp.registry.interfaces.distributionsourcepackage \
+    ...     import IDistributionSourcePackage
 
 The "target" of an IBugTask can be one of the items in the following
 list.
@@ -157,7 +162,8 @@ list.
     True
 
 Each task has a "bugtargetdisplayname" and a "bugtargetname", strings
-describing the site of the task. They concatenate the names of the distribution,
+describing the site of the task. They concatenate the names of the
+distribution,
 
     >>> bugtask = bugtaskset.get(17)
     >>> bugtask.bugtargetdisplayname
@@ -178,7 +184,8 @@ package (but only if it's named differently from the source
 package).
 
 
-=== getPackageComponent ===
+getPackageComponent
+...................
 
 We offer a convenience method on IBugTask which allows you to look up
 the archive component associated to the bugtask's target. Obviously, it
@@ -205,13 +212,15 @@ bugtask's series (for bugtasks on IDistroSeries)
     main
 
 
-== Editing Bug Tasks ==
+Editing Bug Tasks
+-----------------
 
 When changing status we must pass the user making the change. Some
 statuses are restricted to Bug Supervisors only.
 
 
-=== Upstream Bug Tasks ===
+Upstream Bug Tasks
+..................
 
 To edit an upstream task, you must be logged in. Anonymous users
 cannot edit upstream tasks.
@@ -230,7 +239,8 @@ Let's login and try again.
     ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
 
 
-=== Distro and Distro Series Bug Tasks ===
+Distro and Distro Series Bug Tasks
+..................................
 
 Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we cannot edit
@@ -260,7 +270,8 @@ We can edit the task:
     >>> distro_series_task.transitionToAssignee(sample_person)
 
 
-=== Conjoined Bug Tasks ===
+Conjoined Bug Tasks
+...................
 
 A bugtask open on the current development series for a distro is kept
 in sync with the "generic" bugtask for that distro, because they
@@ -559,7 +570,8 @@ is passed to transitionToImportance an exception is raised.
     Traceback (most recent call last):
     ...
     UserCannotEditBugTaskImportance:
-      User does not have sufficient permissions to edit the bug task importance.
+      User does not have sufficient permissions to edit the
+      bug task importance.
 
     >>> print generic_netapplet_task.importance.title
     Medium
@@ -590,7 +602,8 @@ But a normal unprivileged user can't set the milestone.
     Traceback (most recent call last):
     ...
     UserCannotEditBugTaskMilestone:
-      User does not have sufficient permissions to edit the bug task milestone.
+      User does not have sufficient permissions to edit the bug
+      task milestone.
 
     >>> print devel_focus_alsa_utils_task.milestone.name
     test
@@ -681,17 +694,19 @@ is therefore Invalid also. In other words, conjoined again.
     False
 
 
-= Bug Privacy =
+Bug Privacy
+===========
 
-A bug is either private or public. Private bugs are only visible (e.g. in search
-listings) to explicit subscribers and Launchpad admins. Public bugs are visible
-to anyone.
+A bug is either private or public. Private bugs are only visible
+(e.g. in search listings) to explicit subscribers and Launchpad
+admins. Public bugs are visible to anyone.
 
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
 
 
-== Privacy and Unprivileged Users ==
+Privacy and Unprivileged Users
+------------------------------
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
@@ -725,9 +740,9 @@ entitled _Privacy and Team Awareness_):
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-If we now login as someone who was neither implicitly nor explicitly subscribed
-to this bug, e.g. No Privileges Person, they will not be able to access or set
-properties of the bugtask.
+If we now login as someone who was neither implicitly nor explicitly
+subscribed to this bug, e.g. No Privileges Person, they will not be
+able to access or set properties of the bugtask.
 
     >>> login("no-priv@canonical.com")
     >>> mr_no_privs = launchbag.user
@@ -768,7 +783,8 @@ maintained by Foo Bar.
     [2]
 
 
-== Open bugtask count for a given list of projects ==
+Open bugtask count for a given list of projects
+-----------------------------------------------
 
 IBugTaskSet.getOpenBugTasksPerProduct() will return a dictionary
 of product_id:count entries for bugs in an open status that
@@ -806,7 +822,8 @@ will also have it added to the count.
     product_id=20 count=3
 
 
-== Privacy and Priviledged Users ==
+Privacy and Priviledged Users
+-----------------------------
 
 Now, we'll log in as Mark Shuttleworth, who was assigned to this bug
 when it was marked private:
@@ -822,7 +839,8 @@ And note that he can access and set the bugtask attributes:
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
 
-== Privacy and Team Awareness ==
+Privacy and Team Awareness
+--------------------------
 
 No Privileges Person can't see the private bug, because he's not a subscriber:
 
@@ -834,8 +852,9 @@ No Privileges Person can't see the private bug, because he's not a subscriber:
     [4, 5, 6]
 
 
-But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
-Team *is* subscribed to the bug, No Privileges Person will see the private bug.
+But if we add No Privileges Person to the Ubuntu Team, and because the
+Ubuntu Team *is* subscribed to the bug, No Privileges Person will see
+the private bug.
 
     >>> login("mark@example.com")
     >>> ignored = ubuntu_team.addMember(
@@ -859,7 +878,8 @@ if we query logged in as a user who can't see that bug).
     [1, 4, 5, 7, 13, 15, 15]
 
 
-== Privacy and Launchpad Admins ==
+Privacy and Launchpad Admins
+----------------------------
 
 Let's log in as Daniel Henrique Debonzi:
 
@@ -904,7 +924,8 @@ And attribute setting:
 
 
 
-== Sorting Bug Tasks ==
+Sorting Bug Tasks
+-----------------
 
 Bug tasks need to sort in a very particular order. We want product tasks
 first, then ubuntu tasks, then other distro-related tasks. In the
@@ -928,25 +949,28 @@ Let's just make sure that the tasks on bug_one sort correctly.
     Tubuntu
 
 
-== BugTask Adaptation ==
+BugTask Adaptation
+------------------
 
 An IBugTask can be adapted to an IBug.
 
-   >>> from lp.bugs.interfaces.bug import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
 
-   >>> bugtask_four = bugtaskset.get(4)
-   >>> bug = IBug(bugtask_four)
-   >>> bug.title
-   u'Firefox does not support SVG'
+    >>> bugtask_four = bugtaskset.get(4)
+    >>> bug = IBug(bugtask_four)
+    >>> bug.title
+    u'Firefox does not support SVG'
 
 
-== The targetnamecache attribute of BugTask ==
+The targetnamecache attribute of BugTask
+----------------------------------------
 
-The BugTask table has this targetnamecache attribute which stores a computed
-value to allow us to sort and search on that value without having to do lots
-of SQL joins. This cached value gets updated daily by the
-update-bugtask-targetnamecaches cronscript and whenever the bugtask is changed.
-Of course, it's also computed and set when a bugtask is created.
+The BugTask table has this targetnamecache attribute which stores a
+computed value to allow us to sort and search on that value without
+having to do lots of SQL joins. This cached value gets updated daily
+by the update-bugtask-targetnamecaches cronscript and whenever the
+bugtask is changed.  Of course, it's also computed and set when a
+bugtask is created.
 
 `BugTask.bugtargetdisplayname` simply returns `targetnamecache`, and
 the latter is not exposed in `IBugTask`, so the `bugtargetdisplayname`
@@ -984,7 +1008,8 @@ is used here.
     >>> (out, err) = process.communicate()
 
     >>> print err
-    INFO Creating lockfile: /var/lock/launchpad-launchpad-targetnamecacheupdater.lock
+    INFO Creating lockfile:
+        /var/lock/launchpad-launchpad-targetnamecacheupdater.lock
     INFO Updating targetname cache of bugtasks.
     INFO Calculating targets.
     INFO Will check ... targets.
@@ -1076,7 +1101,8 @@ it can also be invoked directly.
     u'Mozilla Thunderbird'
 
 
-== Target Uses Malone ==
+Target Uses Malone
+------------------
 
 Bug tasks have a flag, target_uses_malone, that says whether the bugtask
 target uses Malone as its official bugtracker.
@@ -1094,7 +1120,8 @@ target uses Malone as its official bugtracker.
     Tubuntu                        False
 
 
-== BugTask badges ==
+BugTask badges
+--------------
 
 A bug can have certain properties, which results in a badge being
 displayed in bug listings. BugTaskSet has a method,
@@ -1153,7 +1180,8 @@ multiple bug tasks in one go.
      has_specification: False
 
 
-== Similar bugs ==
+Similar bugs
+------------
 
 It's possible to get a list of bugs similar to the current bug by
 accessing the similar_bugs property of its bug tasks.
