@@ -86,9 +86,11 @@ We need a helper method to better display test results.
     ...             if len(plural) > 20:
     ...                plural = plural[:17] + "..."
     ...         if pofile is not None:
-    ...             translation = potmsgset.getCurrentTranslation(
+    ...             message = potmsgset.getCurrentTranslation(
     ...                 pofile.potemplate, pofile.language,
-    ...                 pofile.potemplate.translation_side).translations[0]
+    ...                 pofile.potemplate.translation_side)
+    ...             if message is not None:
+    ...                translation = message.translations[0]
     ...             if len(translation) > 20:
     ...                 translation = translation[:17] + "..."
     ...         print "%2d. %-20s   %-20s   %-20s" % (
