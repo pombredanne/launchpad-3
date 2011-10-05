@@ -1,4 +1,5 @@
-= An example of EnumCol with EnumeratedTypes =
+An example of EnumCol with EnumeratedTypes
+==========================================
 
 EnumCol is a type of column that is used in SQLBase classes where the
 database representation is an integer and the code uses an enumerated
@@ -100,7 +101,8 @@ But not items from another schema.
     >>> t.foo = AnotherType.ONE
     Traceback (most recent call last):
     ...
-    TypeError: DBItem from unknown enum, 'AnotherType' not in (<DBEnumeratedType 'FooType'>,)
+    TypeError: DBItem from unknown enum, 'AnotherType' not in
+        (<DBEnumeratedType 'FooType'>,)
 
 The type assigned in must be the exact type, not a derived types.
 
@@ -111,7 +113,8 @@ The type assigned in must be the exact type, not a derived types.
     >>> t.foo = item
     Traceback (most recent call last):
     ...
-    TypeError: DBItem from unknown enum, 'DerivedType' not in (<DBEnumeratedType 'FooType'>,)
+    TypeError: DBItem from unknown enum, 'DerivedType' not in
+        (<DBEnumeratedType 'FooType'>,)
 
 A simple way to assign in the correct item is to use the name of the derived
 item to access the correct item from the base type.
@@ -124,7 +127,7 @@ schemas into one table. This works if you tell the column about both enums:
     >>> class BarType(DBEnumeratedType):
     ...     use_template(FooType, exclude=('TWO'))
     ...     THREE = DBItem(3, "Three")
-    
+
 Redefine the table with awareness of BarType:
 
     >>> class FooTest(SQLBase):
