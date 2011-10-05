@@ -224,6 +224,7 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     TopLevelMenuMixin,
     )
+from lp.registry.browser.teamjoin import TeamJoinMixin
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -2573,7 +2574,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     @property
     def should_show_polls_portlet(self):
         # Circular imports.
-        from lp.register.browser.team import TeamOverviewMenu
+        from lp.registry.browser.team import TeamOverviewMenu
         menu = TeamOverviewMenu(self.context)
         return (
             self.has_current_polls or self.closedpolls
@@ -2885,7 +2886,8 @@ class EmailAddressVisibleState:
         return self.state is EmailAddressVisibleState.ALLOWED
 
 
-class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
+class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
+                      TeamJoinMixin):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
