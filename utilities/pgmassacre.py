@@ -6,12 +6,10 @@
 """
 dropdb only more so.
 
-Cut off access, slaughter connections and burn the database to the ground.
+Cut off access, slaughter connections and burn the database to the ground
+(but do nothing that could put the system into recovery mode).
 """
 
-# Nothing but system installed libraries - this script sometimes
-# gets installed standalone with no Launchpad tree available.
-from distutils.version import LooseVersion
 import sys
 import time
 import psycopg2
@@ -26,44 +24,6 @@ def connect(dbname='template1'):
         return psycopg2.connect("dbname=%s user=%s" % (dbname, options.user))
     else:
         return psycopg2.connect("dbname=%s" % dbname)
-
-
-def send_signal(database, signal):
-    con = connect()
-    con.set_isolation_level(1) # READ COMMITTED. We rollback changes we make.
-    cur = con.cursor()
-
-    # Install PL/PythonU if it isn't already.
-    cur.execute("SELECT TRUE FROM pg_language WHERE lanname = 'plpythonu'")
-    if cur.fetchone() is None:
-        cur.execute('CREATE LANGUAGE "plpythonu"')
-
-    # Create a stored procedure to kill a backend process.
-    qdatabase = str(psycopg2.extensions.QuotedString(database))
-    cur.execute("""
-        CREATE OR REPLACE FUNCTION _pgmassacre_killall(integer)
-        RETURNS Boolean AS $$
-        import os
-
-        signal = args[0]
-        for row in plpy.execute('''
-            SELECT procpid FROM pg_stat_activity WHERE datname=%(qdatabase)s
-                AND procpid != pg_backend_pid()
-            '''):
-            try:
-                os.kill(row['procpid'], signal)
-            except OSError:
-                pass
-        else:
-            return False
-
-        return True
-        $$ LANGUAGE plpythonu
-        """ % vars())
-
-    cur.execute("SELECT _pgmassacre_killall(%(signal)s)", vars())
-    con.rollback()
-    con.close()
 
 
 def rollback_prepared_transactions(database):
@@ -86,15 +46,18 @@ def rollback_prepared_transactions(database):
     con.close()
 
 
-def still_open(database, max_wait=10):
+def still_open(database, max_wait=120):
     """Return True if there are still open connections, apart from our own.
 
-    Waits a while to ensure that connections shutting down have a chance to.
+    Waits a while to ensure that connections shutting down have a chance
+    to. This might take a while if there is a big transaction to
+    rollback.
     """
     con = connect()
     con.set_isolation_level(0) # Autocommit.
     cur = con.cursor()
-    # Wait for up to 10 seconds, returning True if all backends are gone.
+    # Keep checking until the timeout is reached, returning True if all
+    # of the backends are gone.
     start = time.time()
     while time.time() < start + max_wait:
         cur.execute("""
@@ -131,22 +94,23 @@ def massacre(database):
             "UPDATE pg_database SET datallowconn=FALSE WHERE datname=%s",
             [database])
 
+        # New connections are disabled, but pg_stat_activity is only
+        # updated every 500ms. Ensure that pg_stat_activity has
+        # been refreshed to catch any connections that opened
+        # immediately before setting datallowconn.
+        time.sleep(1)
+
+        # Terminate open connections.
+        cur.execute("""
+            SELECT procpid, pg_terminate_backend(procpid)
+            FROM pg_stat_activity
+            WHERE datname=%s AND procpid <> pg_backend_pid()
+            """, [database])
+        for procpid,success in cur.fetchall():
+            if not success:
+                print >> sys.stderr, (
+                    "pg_terminate_backend(%s) failed" % procpid)
         con.close()
-
-        # Terminate current statements.
-        send_signal(database, SIGINT)
-
-        # Shutdown current connections normally.
-        if still_open(database, 1):
-            send_signal(database, SIGTERM)
-
-        # Shutdown current connections immediately.
-        if still_open(database):
-            send_signal(database, SIGQUIT)
-
-        # Shutdown current connections nastily.
-        if still_open(database):
-            send_signal(database, SIGKILL)
 
         if still_open(database):
             print >> sys.stderr, (
@@ -193,7 +157,7 @@ def rebuild(database, template):
     # We make use of this feature so we don't have to care what locale
     # was used to create the database cluster rather than requiring it
     # to be rebuilt in the C locale.
-    if pg_version >= LooseVersion("8.4.0") and template == "template0":
+    if template == "template0":
         create_db_cmd += "LC_COLLATE='C' LC_CTYPE='C'"
     while now < start + 20:
         cur = con.cursor()
@@ -228,15 +192,14 @@ def report_open_connections(database):
 
 
 options = None
-pg_version = None # LooseVersion - Initialized in main()
-
 
 def main():
     parser = OptionParser("Usage: %prog [options] DBNAME")
     parser.add_option("-U", "--user", dest="user", default=None,
         help="Connect as USER", metavar="USER")
     parser.add_option("-t", "--template", dest="template", default=None,
-        help="Recreate database using DBNAME as a template database.",
+        help="Recreate database using DBNAME as a template database."
+            " If template0, database will be created in the C locale.",
         metavar="DBNAME")
     global options
     (options, args) = parser.parse_args()
@@ -253,11 +216,6 @@ def main():
 
     con = connect()
     cur = con.cursor()
-
-    # Store the database version for version specific code.
-    global pg_version
-    cur.execute("show server_version")
-    pg_version = LooseVersion(cur.fetchone()[0])
 
     # Ensure the template database exists.
     if options.template is not None:
