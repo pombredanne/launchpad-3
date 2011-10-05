@@ -99,7 +99,7 @@ def object_created(model_instance, object_event):
 def object_deleted(model_instance, object_event):
     """Subscription handler for `Storm` deletion events."""
     event = ILongPollEvent(model_instance)
-    event.emit(what="deleted")
+    event.emit(what="deleted", id=get_primary_key(model_instance))
 
 
 @adapter(Storm, IObjectModifiedEvent)
@@ -111,4 +111,6 @@ def object_modified(model_instance, object_event):
             (field.__name__ if IAttribute.providedBy(field) else field)
             for field in edited_fields)
         event = ILongPollEvent(model_instance)
-        event.emit(what="modified", edited_fields=edited_field_names)
+        event.emit(
+            what="modified", edited_fields=edited_field_names,
+            id=get_primary_key(model_instance))

@@ -120,6 +120,7 @@ class TestStormLifecycle(TestCase):
             "longpoll.event.faketable.1234", {
                 "event_key": "longpoll.event.faketable.1234",
                 "what": "deleted",
+                "id": 1234,
                 })
         self.assertEqual([expected], log)
 
@@ -135,6 +136,7 @@ class TestStormLifecycle(TestCase):
                 "event_key": "longpoll.event.faketable.1234",
                 "what": "modified",
                 "edited_fields": ["itchy", "scratchy"],
+                "id": 1234,
                 })
         self.assertEqual([expected], log)
 
@@ -163,5 +165,6 @@ class TestStormLifecycle(TestCase):
                 "event_key": "longpoll.event.faketable.1234",
                 "what": "modified",
                 "edited_fields": ["bar", "foo"],
+                "id": 1234,
                 })
         self.assertEqual([expected], log)
