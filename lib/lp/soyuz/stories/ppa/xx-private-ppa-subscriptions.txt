@@ -54,9 +54,8 @@ picker:
     >>> print extract_all_script_and_style_links(cprov_browser.contents)
     /...
     ...
-    http://launchpad.dev/+icing/.../build/lp/calendar.js
+    http://launchpad.dev/+icing/.../build/app/calendar.js
     http://launchpad.dev/+icing/.../yui_2.7.0b/build/calendar/assets/skins/sam/calendar.css
-    ...
 
 Initially there are no subscriptions for a newly privatized PPA (although,
 this may need to change, to add the owner/team). A heading is displayed
@@ -170,18 +169,18 @@ displaying their subscription.
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Mark Shuttleworth
     deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Mark Shuttleworth
 
 This page will include information about the signing key, if the archive
 has a signing key:
 
+    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.gpg import IGPGKeySet
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> a_key = getUtility(IGPGKeySet).get(1)
@@ -194,10 +193,10 @@ has a signing key:
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Mark Shuttleworth
     deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main #Personal access of Joe Smith
+        hoary main #Personal access of Joe Smith (joesmith)
         to PPA named p3a for Mark Shuttleworth
     This repository is signed ...
 

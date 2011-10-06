@@ -15,73 +15,8 @@
 
 <div metal:fill-slot="main">
 
-  <div class="top-portlet" tal:condition="view/subscription">
-
-    <p>
-      Choose &#8220;Unsubscribe&#8221; to remove your subscription to this
-      blueprint, or &#8220;Cancel&#8221; to return to the blueprint page.
-    </p>
-
-  </div>
-
-  <div class="top-portlet" tal:condition="not: view/subscription">
-
-    <p>
-      Choose &#8220;Subscribe&#8221; to subscribe to this blueprint,
-      or &#8220;Cancel&#8221; to return to the blueprint page.
-    </p>
-
-  </div>
-
-    <form action="." method="POST">
-
-      <div class="field">
-
-        <tal:subscribed condition="view/subscription">
-          <input type="checkbox" id="essential" name="essential"
-                 value="yes" checked="yes"
-                 tal:condition="view/subscription/essential" />
-          <input type="checkbox" id="essential" name="essential"
-                 value="yes"
-                 tal:condition="not: view/subscription/essential" />
-        </tal:subscribed>
-        <tal:not_subscribed condition="not: view/subscription">
-          <input type="checkbox" id="essential" name="essential"
-                 value="yes" />
-        </tal:not_subscribed>
-
-        <label for="essential">Participation essential</label>
-
-        <span class="fieldRequired"
-              title="Required">(Required)</span>
-
-        <p class="formHelp">
-          Check this box if you want to be included in all discussions about
-          this feature when you are attending sprints or meetings with this
-          feature on the agenda.
-        </p>
-
-      </div>
-
-      <div class="actions">
-        <input tal:condition="not: view/subscription"
-               type="submit"
-               name="subscribe"
-               value="Subscribe" />
-        <input tal:condition="view/subscription"
-               type="submit"
-               name="update"
-               value="Update" />
-        <input tal:condition="view/subscription"
-               type="submit"
-               name="unsubscribe"
-               value="Unsubscribe" />
-        <input type="submit"
-               name="cancel"
-               value="Cancel" />
-      </div>
-    </form>
-
+    <div metal:use-macro="context/@@launchpad_form/form">
+    </div>
 </div>
 
 </body>

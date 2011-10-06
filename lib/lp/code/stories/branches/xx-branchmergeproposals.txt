@@ -10,16 +10,22 @@ In order to test notifications, we need a subscriber for the branch.
     >>> login('admin@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.code.enums import (
+    ...     BranchMergeProposalStatus,
+    ...     BranchSubscriptionNotificationLevel,
+    ...     CodeReviewNotificationLevel)
     ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.tests.helpers import (
+    ...     make_merge_proposal_without_reviewers)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> subscriber = getUtility(IPersonSet).getByEmail(
     ...     'foo.bar@canonical.com')
     >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/firefox/main')
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, subscriber)
 
 Also subscribe to gnome-terminal, since Firefox tests are mixed with
 Gnome Terminal tests.
@@ -28,7 +34,7 @@ Gnome Terminal tests.
     ...     '~name12/gnome-terminal/main')
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, subscriber)
     >>> from lp.code.tests.helpers import make_erics_fooix_project
     >>> locals().update(make_erics_fooix_project(factory))
     >>> logout()
@@ -41,16 +47,7 @@ is `Propose for merging`.
 Registering a merge proposal
 ----------------------------
 
-Users who are not logged on do not see the link to register.
-
-    >>> anon_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> anon_browser.getLink('Propose for merging')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-Logged in users can.
+Logged in users can register a merge proposal.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open(
@@ -62,6 +59,8 @@ Logged in users can.
     >>> nopriv_browser.getControl(
     ...     name='field.prerequisite_branch').value = (
     ...         '~name12/gnome-terminal/pushed')
+    >>> print_tag_with_id(nopriv_browser.contents, 'field.reviewer')
+    <BLANKLINE>
 
 There is a cancel link shown with the buttons.
 
@@ -80,13 +79,16 @@ The summary reflects the selected target and prerequisite.
     ...     print extract_text(find_tag_by_id(
     ...         browser.contents, 'proposal-summary'))
     >>> print_summary(nopriv_browser)
-    Status:...
+    Status:
+    ...
     Proposed branch:
     lp://dev/~name12/gnome-terminal/klingon
     Merge into:
     lp://dev/~name12/gnome-terminal/main
     Prerequisite:
     lp://dev/~name12/gnome-terminal/pushed
+    To merge this branch:
+    bzr merge lp://dev/~name12/gnome-terminal/klingon
 
 
 Editing a commit message
@@ -142,13 +144,16 @@ for the source_branch.
 Requesting reviews
 ------------------
 
-You can request a review of a merge proposal.
-
+Any newly created merge proposal will have the reviewer set if a default
+has been defined or the branch owner will be used.
     >>> sample_browser.open(klingon_proposal)
-    >>> sample_browser.getLink('Request a review').click()
-    >>> sample_browser.getControl('Reviewer').value = 'mark'
-    >>> sample_browser.getControl('Review type').value = 'first'
-    >>> sample_browser.getControl('Request Review').click()
+    >>> pending = find_tag_by_id(
+    ...     sample_browser.contents, 'code-review-votes')
+    >>> print extract_text(pending)
+    Reviewer          Review Type    Date Requested    Status
+    Sample Person                    ... ago           Pending [Review]
+    Review via email: mp+...@code.launchpad.dev
+                                                 Request another review
 
 The status of the merge proposal is updated to "Needs review".
 
@@ -159,14 +164,14 @@ The status of the merge proposal is updated to "Needs review".
 Additional reviews can be requested.
 
     >>> sample_browser.getLink('Request another review').click()
-    >>> sample_browser.getControl('Reviewer').value = 'name12'
+    >>> sample_browser.getControl('Reviewer').value = 'mark'
     >>> sample_browser.getControl('Request Review').click()
 
 You can even re-request the same person to review, so that a new email is
 sent.
 
     >>> sample_browser.getLink('Request another review').click()
-    >>> sample_browser.getControl('Reviewer').value = 'mark'
+    >>> sample_browser.getControl('Reviewer').value = 'name12'
     >>> sample_browser.getControl('Review type').value = 'second'
     >>> sample_browser.getControl('Request Review').click()
 
@@ -176,8 +181,8 @@ Only the last request is listed, showing the last review type.
     ...     sample_browser.contents, 'code-review-votes')
     >>> print extract_text(pending)
     Reviewer          Review Type    Date Requested    Status
-    Sample Person                                      Pending [Review]
-    Mark Shuttleworth second         ... ago           Pending
+    Mark Shuttleworth                ... ago           Pending
+    Sample Person     second         ... ago           Pending [Review]
     Review via email: mp+...@code.launchpad.dev
                                                  Request another review
 
@@ -540,8 +545,7 @@ The section is shown if there are links.
 
     >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
-    Linked bug reports and blueprints
-    Bug #...: Bug for linking (Undecided &ndash; New)
+    Bug #...: Bug for linking Undecided New
 
 
 Target branch edge cases
@@ -599,8 +603,8 @@ Create merge proposal with a preview diff, and go to its index page.
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.code.model.diff import PreviewDiff
     >>> from difflib import unified_diff
+    >>> from lp.code.model.diff import PreviewDiff
     >>> diff_text = ''.join(
     ...     unified_diff('', ['Fake Diff' + u'\u1010'.encode('utf-8')]))
     >>> preview_diff = PreviewDiff.create(diff_text, u'a', u'b', None, u'')
@@ -619,17 +623,19 @@ The text of the review diff is in the page.
     u'Preview Diff\nDownload diff\n1\n...Fake Diff\u1010'
 
 There is also a link to the diff URL, which is the preview diff URL plus
-"+files/preview.diff"
+"+files/preview.diff". It redirects to the file in the restricted librarian.
 
+    >>> from lazr.uri import URI
     >>> link = get_review_diff().find('a')
     >>> print link['href']
     http.../+preview-diff/+files/preview.diff
-    >>> nopriv_browser.open(str(link['href']))
-    >>> print nopriv_browser.contents
-    ---
-    +++
-    @@ -1,0 +1,1 @@
-    +Fake Diff...
+    >>> print http(
+    ...     """GET %s HTTP/1.1
+    ...     """ % URI(link['href']).path)
+    HTTP/1.1 303 See Other
+    ...
+    Location: https://...restricted.../...txt?token=...
+    ...
 
 If no diff is present, nothing is shown.
 
@@ -670,13 +676,21 @@ Merge proposal details shown on the branch page
 -----------------------------------------------
 
 A branch that has a merge proposal, but no requested reviews shows this on the
-branch page.
+branch page. We create a proposal using the factory since we want to force
+one without a reviewer.
 
-    >>> nopriv_browser.open('http://code.launchpad.dev/~fred/fooix/feature')
-    >>> nopriv_browser.getLink('Propose for merging').click()
-    >>> nopriv_browser.getControl('Reviewer').value = ''
-    >>> nopriv_browser.getControl('Propose Merge').click()
-    >>> nopriv_browser.getLink('lp://dev/~fred/fooix/feature').click()
+    >>> login('foo.bar@canonical.com')
+    >>> source_branch = getUtility(IBranchLookup).getByUniqueName(
+    ...     '~fred/fooix/feature')
+    >>> fooix = getUtility(IProductSet).getByName('fooix')
+    >>> bmp = make_merge_proposal_without_reviewers(
+    ...     factory, registrant=eric, source_branch=source_branch,
+    ...     target_branch=fooix.development_focus.branch,
+    ...     set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+    >>> bmp_url = canonical_url(bmp)
+    >>> branch_url = canonical_url(bmp.source_branch)
+    >>> logout()
+    >>> nopriv_browser.open(branch_url)
     >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
     Ready for review for merging into lp://dev/fooix
       No reviews requested

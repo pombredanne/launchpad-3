@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,33 +15,51 @@ __all__ = [
     'ProductReleaseView',
     ]
 
-import cgi
 import mimetypes
 
-from zope.event import notify
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser import TextAreaWidget, TextWidget
-
-from zope.formlib.form import FormFields
-from zope.schema import Bool
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-
-from z3c.ptcompat import ViewPageTemplateFile
-
-from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFileAddForm)
-
 from lazr.restful.interface import copy_field
-from canonical.launchpad import _
-from canonical.lazr.utils import smartquote
-from lp.registry.browser.product import ProductDownloadFileMixin
-from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, stepthrough)
-from canonical.widgets import DateTimeWidget
+from lazr.restful.utils import smartquote
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.event import notify
+from zope.formlib.form import FormFields
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.schema import Bool
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from lp.registry.browser import MilestoneOverlayMixin, RegistryDeleteViewMixin
+from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.date import DateTimeWidget
+from lp.registry.browser import (
+    BaseRdfView,
+    MilestoneOverlayMixin,
+    RegistryDeleteViewMixin,
+    )
+from lp.registry.browser.product import ProductDownloadFileMixin
+from lp.registry.interfaces.productrelease import (
+    IProductRelease,
+    IProductReleaseFileAddForm,
+    )
 
 
 class ProductReleaseNavigation(Navigation):
@@ -116,8 +134,6 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
         # should not be targeted to a milestone in the past.
         if data.get('keep_milestone_active') is False:
             milestone.active = False
-            milestone_link = '<a href="%s">%s milestone</a>' % (
-                canonical_url(milestone), cgi.escape(milestone.name))
         self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 
@@ -240,33 +256,17 @@ class ProductReleaseEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class ProductReleaseRdfView(object):
+class ProductReleaseRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile('../templates/productrelease-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader(
-            'Content-Disposition',
-            'attachment; filename=%s-%s-%s.rdf' % (
-                self.context.product.name,
-                self.context.productseries.name,
-                self.context.version))
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return '%s-%s-%s' % (
+            self.context.product.name,
+            self.context.productseries.name,
+            self.context.version)
 
 
 class ProductReleaseAddDownloadFileView(LaunchpadFormView):
@@ -333,7 +333,6 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
 class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
     """View for ProductRelease overview."""
-    __used_for__ = IProductRelease
 
     def initialize(self):
         self.form = self.request.form

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -7,45 +7,47 @@
 import _pythonpath
 
 import sys
-import optparse
+
+import transaction
 
 from zope.component import getUtility
-from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import IProductSet
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.registry.interfaces.product import IProductSet
 
 from lp.bugs.scripts.bugexport import export_bugtasks
+from lp.services.scripts.base import LaunchpadScript
 
-def main(argv):
-    parser = optparse.OptionParser(
-        description="Export bugs for a Launchpad product as XML")
-    parser.add_option('-o', '--output', metavar='FILE', action='store',
-                      help='Export bugs to this file',
-                      type='string', dest='output', default=None)
-    parser.add_option('-p', '--product', metavar='PRODUCT', action='store',
-                      help='Which product to export',
-                      type='string', dest='product', default=None)
-    parser.add_option('--include-private', action='store_true',
-                      help='Include private bugs in dump',
-                      dest='include_private', default=False)
 
-    options, args = parser.parse_args(argv[1:])
+class BugExportScript(LaunchpadScript):
 
-    if options.product is None:
-        parser.error('No product specified')
-    output = sys.stdout
-    if options.output is not None:
-        output = open(options.output, 'wb')
+    description = "Export bugs for a Launchpad product as XML"
 
-    execute_zcml_for_scripts()
-    ztm = initZopeless()
+    def add_my_options(self):
+        self.parser.add_option(
+            '-o', '--output', metavar='FILE', action='store',
+            help='Export bugs to this file', type='string', dest='output')
+        self.parser.add_option(
+            '-p', '--product', metavar='PRODUCT', action='store',
+            help='Which product to export', type='string', dest='product')
+        self.parser.add_option(
+            '--include-private', action='store_true',
+            help='Include private bugs in dump', dest='include_private',
+            default=False)
 
-    product = getUtility(IProductSet).getByName(options.product)
-    if product is None:
-        parser.error('Product %s does not exist' % options.product)
+    def main(self):
+        if self.options.product is None:
+            self.parser.error('No product specified')
+        output = sys.stdout
+        if self.options.output is not None:
+            output = open(self.options.output, 'wb')
 
-    export_bugtasks(ztm, product, output,
-                    include_private=options.include_private)
+        product = getUtility(IProductSet).getByName(self.options.product)
+        if product is None:
+            self.parser.error(
+                'Product %s does not exist' % self.options.product)
+
+        export_bugtasks(
+            transaction, product, output,
+            include_private=self.options.include_private)
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    BugExportScript("bug-export").run()

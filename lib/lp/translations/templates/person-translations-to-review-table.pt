@@ -26,8 +26,10 @@
 	<tal:stringcount replace="target_info/count_wording">
 	  1 string
 	</tal:stringcount>
-	reviewed
-      </a>
+	reviewed </a> in
+    <tal:languages replace="target_info/languages">
+      Spanish
+    </tal:languages>
     </td>
   </tr>
 </table>

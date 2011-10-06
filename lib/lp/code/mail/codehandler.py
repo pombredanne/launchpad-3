@@ -1,64 +1,91 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-from __future__ import with_statement
-
 
 __metaclass__ = type
 
 
 import operator
+import os
 import re
-import transaction
 
 from bzrlib.branch import Branch
 from bzrlib.errors import (
-    NotAMergeDirective, NotBranchError, NotStacked)
+    NotAMergeDirective,
+    NotBranchError,
+    NotStacked,
+    )
 from bzrlib.merge_directive import MergeDirective
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
+from lazr.uri import URI
 from sqlobject import SQLObjectNotFound
-
+import transaction
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.interfaces import Unauthorized
 
-from lp.codehosting.bzrutils import is_branch_stackable
-from lp.codehosting.vfs import get_lp_server
-from canonical.launchpad.interfaces.mail import (
-    IMailHandler, EmailProcessingError)
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.mail.commands import (
-    EmailCommand, EmailCommandCollection)
-from canonical.launchpad.mail.helpers import (
-    ensure_not_weakly_authenticated, get_error_message, get_main_body,
-    get_person_or_team, IncomingEmailError, parse_commands)
-from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import (
-    send_process_error_notification)
+    send_process_error_notification,
+    )
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lazr.uri import URI
-from lp.code.enums import BranchType, CodeReviewVote
-from lp.code.errors import BranchMergeProposalExists, UserNotBranchReviewer
-from lp.code.interfaces.branch import BranchCreationException
+from lp.code.bzr import get_branch_formats
+from lp.code.enums import (
+    BranchType,
+    CodeReviewVote,
+    )
+from lp.code.errors import (
+    BranchCreationException,
+    BranchMergeProposalExists,
+    UserNotBranchReviewer,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalGetter, ICreateMergeProposalJobSource)
+    IBranchMergeProposalGetter,
+    ICreateMergeProposalJobSource,
+    )
 from lp.code.interfaces.branchnamespace import (
-    lookup_branch_namespace, split_unique_name)
+    lookup_branch_namespace,
+    split_unique_name,
+    )
 from lp.code.interfaces.branchtarget import check_default_stacked_on
+from lp.codehosting.bzrutils import is_branch_stackable
+from lp.codehosting.vfs import get_lp_server
+from lp.services.mail.commands import (
+    EmailCommand,
+    EmailCommandCollection,
+    )
+from lp.services.mail.helpers import (
+    ensure_not_weakly_authenticated,
+    get_error_message,
+    get_main_body,
+    get_person_or_team,
+    IncomingEmailError,
+    parse_commands,
+    )
+from lp.services.mail.interfaces import (
+    EmailProcessingError,
+    IMailHandler,
+    )
+from lp.services.mail.sendmail import simple_sendmail
+from lp.services.messages.interfaces.message import IMessageSet
+
+
+error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
 
 
 class BadBranchMergeProposalAddress(Exception):
     """The user-supplied address is not an acceptable value."""
 
+
 class InvalidBranchMergeProposalAddress(BadBranchMergeProposalAddress):
     """The user-supplied address is not an acceptable value."""
 
+
 class NonExistantBranchMergeProposalAddress(BadBranchMergeProposalAddress):
     """The BranchMergeProposal specified by the address does not exist."""
+
 
 class InvalidVoteString(Exception):
     """The user-supplied vote is not an acceptable value."""
@@ -184,10 +211,11 @@ class UpdateStatusEmailCommand(CodeReviewEmailCommand):
                         command_name=self.name,
                         arguments='approved, rejected',
                         example_argument='approved'))
-        except UserNotBranchReviewer:
+        except (UserNotBranchReviewer, Unauthorized):
             raise EmailProcessingError(
                 get_error_message(
                     'user-not-reviewer.txt',
+                    error_templates=error_templates,
                     command_name=self.name,
                     target=context.merge_proposal.target_branch.bzr_identity))
 
@@ -196,21 +224,8 @@ class AddReviewerEmailCommand(CodeReviewEmailCommand):
     """Add a new reviewer."""
 
     def execute(self, context):
-        if len(self.string_args) == 0:
-            raise EmailProcessingError(
-                get_error_message(
-                    'num-arguments-mismatch.txt',
-                    command_name=self.name,
-                    num_arguments_expected='one or more',
-                    num_arguments_got='0'))
-
-        # Pop the first arg as the reviewer.
-        reviewer = get_person_or_team(self.string_args.pop(0))
-        if len(self.string_args) > 0:
-            review_tags = ' '.join(self.string_args)
-        else:
-            review_tags = None
-
+        reviewer, review_tags = CodeEmailCommands.parseReviewRequest(
+            self.name, self.string_args)
         context.merge_proposal.nominateReviewer(
             reviewer, context.user, review_tags,
             _notify_listeners=context.notify_event_listeners)
@@ -236,6 +251,24 @@ class CodeEmailCommands(EmailCommandCollection):
                     name, args in parse_commands(message_body,
                                                  klass._commands.keys())]
         return sorted(commands, key=operator.attrgetter('sort_order'))
+
+    @classmethod
+    def parseReviewRequest(klass, op_name, string_args):
+        if len(string_args) == 0:
+            raise EmailProcessingError(
+                get_error_message(
+                    'num-arguments-mismatch.txt',
+                    command_name=op_name,
+                    num_arguments_expected='one or more',
+                    num_arguments_got='0'))
+
+        # Pop the first arg as the reviewer.
+        reviewer = get_person_or_team(string_args.pop(0))
+        if len(string_args) > 0:
+            review_tags = ' '.join(string_args)
+        else:
+            review_tags = None
+        return (reviewer, review_tags)
 
 
 class CodeHandler:
@@ -268,7 +301,7 @@ class CodeHandler:
         try:
             ensure_not_weakly_authenticated(
                 mail, email_addr, 'not-signed-md.txt',
-                'key-not-registered-md.txt')
+                'key-not-registered-md.txt', error_templates)
         except IncomingEmailError, error:
             user = getUtility(ILaunchBag).user
             send_process_error_notification(
@@ -280,10 +313,8 @@ class CodeHandler:
             getUtility(ICreateMergeProposalJobSource).create(file_alias)
         return True
 
-    def processCommands(self, context, email_body_text):
-        """Process the commadns in the email_body_text against the context."""
-        commands = CodeEmailCommands.getCommands(email_body_text)
-
+    def processCommands(self, context, commands):
+        """Process the various merge proposal commands against the context."""
         processing_errors = []
 
         for command in commands:
@@ -308,16 +339,23 @@ class CodeHandler:
         any CodeReviewVote item value, case-insensitively.
         :return: True.
         """
+        user = getUtility(ILaunchBag).user
         try:
             merge_proposal = self.getBranchMergeProposal(email_addr)
+        except NonExistantBranchMergeProposalAddress:
+            send_process_error_notification(
+                str(user.preferredemail.email),
+                'Submit Request Failure',
+                'There is no merge proposal at %s' % email_addr,
+                mail)
+            return True
         except BadBranchMergeProposalAddress:
             return False
-
-        user = getUtility(ILaunchBag).user
         context = CodeReviewEmailCommandExecutionContext(merge_proposal, user)
         try:
             email_body_text = get_main_body(mail)
-            processed_count = self.processCommands(context, email_body_text)
+            commands = CodeEmailCommands.getCommands(email_body_text)
+            processed_count = self.processCommands(context, commands)
 
             # Make sure that the email is in fact signed.
             if processed_count > 0:
@@ -328,7 +366,7 @@ class CodeHandler:
                 owner=getUtility(ILaunchBag).user,
                 filealias=file_alias,
                 parsed_message=mail)
-            comment = merge_proposal.createCommentFromMessage(
+            merge_proposal.createCommentFromMessage(
                 message, context.vote, context.vote_tags, mail)
 
         except IncomingEmailError, error:
@@ -489,7 +527,7 @@ class CodeHandler:
         # source branch - one that has *no* Bazaar data.  Together these
         # prevent users from using Launchpad disk space at a rate that is
         # disproportionately greater than data uploaded.
-        mirrored_bzr_target = removeSecurityProxy(db_target).getBzrBranch()
+        mirrored_bzr_target = db_target.getBzrBranch()
         if not is_branch_stackable(mirrored_bzr_target):
             return db_source
         assert db_source.branch_type == BranchType.HOSTED, (
@@ -511,11 +549,16 @@ class CodeHandler:
                 except NotStacked:
                     # We don't currently support pulling in the revisions if
                     # the source branch exists and isn't stacked.
+                    # XXX Tim Penhey 2010-07-27 bug 610292
+                    # We should fail here and return an oops email to the
+                    # user.
                     return db_source
                 self._pullRevisionsFromMergeDirectiveIntoSourceBranch(
                     md, target_url, bzr_source)
                 # Get the puller to pull the branch into the mirrored area.
-                db_source.requestMirror()
+                formats = get_branch_formats(bzr_source)
+                db_source.branchChanged(
+                    stacked_url, bzr_source.last_revision(), *formats)
             return db_source
         finally:
             lp_server.stop_server()
@@ -535,8 +578,12 @@ class CodeHandler:
         # access to any needed but not supplied revisions.
         md.target_branch = target_url
         md.install_revisions(bzr_branch.repository)
-        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id,
-                        overwrite=True)
+        bzr_branch.lock_write()
+        try:
+            bzr_branch.pull(bzr_branch, stop_revision=md.revision_id,
+                            overwrite=True)
+        finally:
+            bzr_branch.unlock()
 
     def findMergeDirectiveAndComment(self, message):
         """Extract the comment and Merge Directive from a SignedMessage."""
@@ -571,9 +618,11 @@ class CodeHandler:
         """
         submitter = getUtility(ILaunchBag).user
         try:
-            comment_text, md = self.findMergeDirectiveAndComment(message)
+            email_body_text, md = self.findMergeDirectiveAndComment(message)
         except MissingMergeDirective:
-            body = get_error_message('missingmergedirective.txt')
+            body = get_error_message(
+                'missingmergedirective.txt',
+                error_templates=error_templates)
             simple_sendmail('merge@code.launchpad.net',
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
@@ -587,6 +636,7 @@ class CodeHandler:
                     md, submitter)
             except NonLaunchpadTarget:
                 body = get_error_message('nonlaunchpadtarget.txt',
+                    error_templates=error_templates,
                     target_branch=md.target_branch)
                 simple_sendmail('merge@code.launchpad.net',
                     [message.get('from')],
@@ -594,7 +644,9 @@ class CodeHandler:
                 return
             except BranchCreationException, e:
                 body = get_error_message(
-                        'branch-creation-exception.txt', reason=e)
+                        'branch-creation-exception.txt',
+                        error_templates=error_templates,
+                        reason=e)
                 simple_sendmail('merge@code.launchpad.net',
                     [message.get('from')],
                     'Error Creating Merge Proposal', body)
@@ -602,28 +654,32 @@ class CodeHandler:
         with globalErrorUtility.oopsMessage(
             'target: %r source: %r' % (target, source)):
             try:
+                # When creating a merge proposal, we need to gather all
+                # necessary arguments to addLandingTarget(). So from the email
+                # body we need to extract: reviewer, review type, description.
+                description = None
+                review_requests = []
+                email_body_text = email_body_text.strip()
+                if email_body_text != '':
+                    description = email_body_text
+                    review_args = parse_commands(
+                        email_body_text, ['reviewer'])
+                    if len(review_args) > 0:
+                        cmd, args = review_args[0]
+                        review_request = (
+                            CodeEmailCommands.parseReviewRequest(cmd, args))
+                        review_requests.append(review_request)
+
                 bmp = source.addLandingTarget(submitter, target,
-                                              needs_review=True)
-
-                context = CodeReviewEmailCommandExecutionContext(
-                    bmp, submitter, notify_event_listeners=False)
-                processed_count = self.processCommands(context, comment_text)
-
-                # If there are no reviews requested yet, request the default
-                # reviewer of the target branch.
-                if bmp.votes.count() == 0:
-                    bmp.nominateReviewer(
-                        target.code_reviewer, submitter, None,
-                        _notify_listeners=False)
-
-                comment_text = comment_text.strip()
-                if comment_text != '':
-                    bmp.description = comment_text
+                                              needs_review=True,
+                                              description=description,
+                                              review_requests=review_requests)
                 return bmp
 
             except BranchMergeProposalExists:
                 body = get_error_message(
                     'branchmergeproposal-exists.txt',
+                    error_templates=error_templates,
                     source_branch=source.bzr_identity,
                     target_branch=target.bzr_identity)
                 simple_sendmail('merge@code.launchpad.net',
@@ -634,5 +690,5 @@ class CodeHandler:
                 send_process_error_notification(
                     str(submitter.preferredemail.email),
                     'Submit Request Failure',
-                    error.message, comment_text, error.failing_command)
+                    error.message, email_body_text, error.failing_command)
                 transaction.abort()

@@ -15,27 +15,56 @@ __all__ = [
     'IProjectGroupMilestone',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, TextLine
-
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
-from lp.bugs.interfaces.bugtask import IBugTask
-from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, NoneableDescription, NoneableTextLine)
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.components.apihelpers import (
-    patch_plain_parameter_type)
-
-from lazr.restful.fields import CollectionField, Reference
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_factory_operation, exported,
-    export_operation_as, export_read_operation, export_write_operation,
-    operation_parameters, operation_returns_entry, rename_parameters_as,
-    REQUEST_USER)
+    call_with,
+    export_as_webservice_entry,
+    export_destructor_operation,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from canonical.launchpad.components.apihelpers import (
+    patch_plain_parameter_type,
+    )
+from lp.app.validators.name import name_validator
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugs,
+    IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.registry.interfaces.productrelease import IProductRelease
+from lp.services.fields import (
+    ContentNameField,
+    FormattableDate,
+    NoneableDescription,
+    NoneableTextLine,
+    )
 
 
 class MilestoneNameField(ContentNameField):
@@ -107,7 +136,7 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
         vocabulary="FilteredDistroSeries",
         required=False) # for now
     dateexpected = exported(
-        Date(title=_("Date Targeted"), required=False,
+        FormattableDate(title=_("Date Targeted"), required=False,
              description=_("Example: 2005-11-24")),
         exported_as='date_targeted')
     active = exported(
@@ -153,6 +182,7 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
     @export_factory_operation(
         IProductRelease,
         ['datereleased', 'changelog', 'release_notes'])
+    @operation_for_version('beta')
     def createProductRelease(owner, datereleased,
                              changelog=None, release_notes=None):
         """Create a new ProductRelease.
@@ -173,8 +203,9 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
         XXX sinzui 2010-01-27 bug=341687: blueprints not yet implemented.
         """
 
-    @export_write_operation()
+    @export_destructor_operation()
     @export_operation_as('delete')
+    @operation_for_version('beta')
     def destroySelf():
         """Delete this milestone.
 
@@ -201,6 +232,9 @@ class IMilestoneSet(Interface):
         NotFoundError will be raised.
         """
 
+    def getByIds(milestoneids):
+        """Get the milestones for milestoneids."""
+
     def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.
 
@@ -225,18 +259,20 @@ class IHasMilestones(Interface):
     """An interface for classes providing milestones."""
     export_as_webservice_entry()
 
-    milestones = exported(
+    has_milestones = Bool(title=_("Whether the object has any milestones."))
+
+    milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("The visible and active milestones associated with this "
                     "object, ordered by date expected."),
-            value_type=Reference(schema=IMilestone)),
+            value_type=Reference(schema=IMilestone))),
         exported_as='active_milestones')
 
-    all_milestones = exported(
+    all_milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("All milestones associated with this object, ordered by "
                     "date expected."),
-            value_type=Reference(schema=IMilestone)))
+            value_type=Reference(schema=IMilestone))))
 
 
 class ICanGetMilestonesDirectly(Interface):
@@ -246,6 +282,7 @@ class ICanGetMilestonesDirectly(Interface):
         name=TextLine(title=_("Name"), required=True))
     @operation_returns_entry(IMilestone)
     @export_read_operation()
+    @operation_for_version('beta')
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
 

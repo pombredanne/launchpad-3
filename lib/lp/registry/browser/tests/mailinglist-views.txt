@@ -27,7 +27,7 @@ Sample Person can access the +mailinglist page.
 
     >>> login('test@canonical.com')
     >>> view = create_initialized_view(aardvarks, '+mailinglist')
-    >>> check_permission('launchpad.MailingListManager', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
 No Privileges Person is added as a member of the Aardvarks.
@@ -39,7 +39,7 @@ But regular members can't access the +mailinglist page.
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(aardvarks, '+mailinglist')
-    >>> check_permission('launchpad.MailingListManager', view)
+    >>> check_permission('launchpad.Moderate', view)
     False
 
 Sample Person trusts No Privileges Person so she makes no-priv a team
@@ -60,7 +60,7 @@ Now No Privileges Person has permission to request mailing lists.
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(aardvarks, '+mailinglist')
-    >>> check_permission('launchpad.MailingListManager', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
 
@@ -76,18 +76,17 @@ no communication between the two systems.
     >>> team_one, list_one = factory.makeTeamAndMailingList(
     ...     'team-one', 'no-priv')
 
-    >>> the_owner = team_one.teamowner.preferredemail.email
+    >>> the_owner = team_one.teamowner
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebrities = getUtility(ILaunchpadCelebrities)
-    >>> an_expert = list(celebrities.mailing_list_experts.allmembers)[0]
+    >>> an_expert = list(celebrities.registry_experts.allmembers)[0]
     >>> an_admin = list(celebrities.admin.allmembers)[0]
 
     >>> def create_view(principal, form=None):
+    ...     login_person(principal)
     ...     return create_initialized_view(
-    ...         team_one, '+mailinglist',
-    ...         form=form, principal=principal)
+    ...         team_one, '+mailinglist', form=form)
 
 Nobody can purge an active mailing list, the team owner...
 
@@ -133,15 +132,13 @@ Mailman side.
     >>> logout()
     >>> transaction.commit()
 
-The team owner cannot purge his list...
+The team owner can purge his list, as well as a Launchpad administrator and
+a mailing list expert.
 
     >>> login(ANONYMOUS)
     >>> view = create_view(the_owner)
     >>> view.list_can_be_purged
-    False
-
-...but a Launchpad administrator, or mailing list expert can purge the mailing
-list.
+    True
 
     >>> view = create_view(an_admin)
     >>> view.list_can_be_purged
@@ -161,7 +158,7 @@ but not re-activated.
 
     >>> list_one.purge()
     >>> view = create_view(the_owner)
-    >>> view.list_can_be_requested
+    >>> view.list_can_be_created
     True
     >>> view.list_can_be_deactivated
     False
@@ -175,57 +172,3 @@ Of course, while purged, the mailing list cannot be purged again.
     >>> view = create_view(an_expert)
     >>> view.list_can_be_purged
     False
-
-
-Privacy and mailing lists
-=========================
-
-If a non-public team has a mailing list the information cannot be seen
-by non-members.  Access to the team index page is forbidden and the
-stanza for the mailing list is not shown.  NB:  the view class
-generates an Unauthorized exception which is turned into a NotFound in
-publication so as to fool the wily hackers.
-
-    >>> # Create a private membership team.
-    >>> owner = person_set.getByEmail('owner@canonical.com')
-    >>> login('foo.bar@canonical.com')
-    >>> from lp.registry.interfaces.person import PersonVisibility
-    >>> pmt, pmt_list = factory.makeTeamAndMailingList(
-    ...     owner_name='owner',
-    ...     team_name='private-team',
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-    >>> login(ANONYMOUS)
-    >>> view = create_initialized_view(pmt, '+index')
-    Traceback (most recent call last):
-     ...
-    Unauthorized: (<Person at ...
-
-The owner of a team can see information about the mailing list.
-
-    >>> login('owner@canonical.com')
-    >>> view = create_initialized_view(pmt, '+index')
-    >>> print view.archive_url
-    http://lists.launchpad.dev/private-team
-
-A non-owner member can see information about the mailing list.
-
-    >>> ignored = pmt.addMember(sample_person, owner)
-    >>> login('test@canonical.com')
-    >>> view = create_initialized_view(pmt, '+index')
-    >>> print view.archive_url
-    http://lists.launchpad.dev/private-team
-
-An unprivileged non-member cannot see information about the mailing list.
-
-    >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(pmt, '+index')
-    Traceback (most recent call last):
-     ...
-    Unauthorized: (<Person at ...
-
-An administrator may see the mailing list information.
-
-    >>> login('foo.bar@canonical.com')
-    >>> view = create_initialized_view(pmt, '+index')
-    >>> print view.archive_url
-    http://lists.launchpad.dev/private-team

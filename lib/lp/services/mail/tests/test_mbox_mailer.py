@@ -3,8 +3,8 @@
 
 """Test harness for running the mbox_mailer.txt tests."""
 
-import os
 import doctest
+import os
 import tempfile
 
 from zope.testing.cleanup import cleanUp

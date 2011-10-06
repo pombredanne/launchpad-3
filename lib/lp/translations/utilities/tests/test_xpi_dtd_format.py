@@ -5,9 +5,10 @@ __metaclass__ = type
 
 import unittest
 
-from lp.translations.utilities.mozilla_xpi_importer import DtdFile
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatInvalidInputError)
+    TranslationFormatInvalidInputError,
+    )
+from lp.translations.utilities.mozilla_dtd_parser import DtdFile
 
 
 class DtdFormatTestCase(unittest.TestCase):
@@ -43,7 +44,3 @@ class DtdFormatTestCase(unittest.TestCase):
 
         self.assertRaises(TranslationFormatInvalidInputError, DtdFile, None,
             'test.dtd', content)
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

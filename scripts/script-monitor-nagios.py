@@ -1,11 +1,11 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Nagios plugin for script monitoring.
 
-This script is needed as separate from script-monitor.py because Nagios 
+This script is needed as separate from script-monitor.py because Nagios
 only understands one line of returned text, and interprets specific
 return codes as plugin statuses. These are:
 
@@ -14,28 +14,35 @@ return codes as plugin statuses. These are:
     2: CRITICAL
     3: UNKNOWN
 
-As such, it was felt more appropriate to separate out the scripts, 
+As such, it was felt more appropriate to separate out the scripts,
 even though there is some code duplication.
 """
 
 __metaclass__ = type
 __all__ = ['check_script']
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from optparse import OptionParser
+import sys
+from time import strftime
+
 import _pythonpath
 
-from datetime import datetime, timedelta
-from optparse import OptionParser
-from time import strftime
-import sys
-
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import db_options, logger_options, logger
+from canonical.launchpad.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 from canonical.launchpad.scripts.scriptmonitor import check_script
 
 
 def main():
-    # XXX: Tom Haddon 2007-07-12 
-    # There's a lot of untested stuff here: parsing options - 
+    # XXX: Tom Haddon 2007-07-12
+    # There's a lot of untested stuff here: parsing options -
     # this should be moved into a testable location.
     # Also duplicated code in scripts/script-monitor.py
     parser = OptionParser(
@@ -58,7 +65,8 @@ def main():
         start_date = datetime.now() - timedelta(minutes=minutes_ago)
 
         completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
-        completed_to = strftime("%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
+        completed_to = strftime(
+            "%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
 
         hosts_scripts = []
         for arg in args:
@@ -77,11 +85,11 @@ def main():
 
     try:
         log.debug("Connecting to database")
-        con = connect(options.dbuser)
+        con = connect()
         error_found = False
         msg = []
         for hostname, scriptname in hosts_scripts:
-            failure_msg = check_script(con, log, hostname, 
+            failure_msg = check_script(con, log, hostname,
                 scriptname, completed_from, completed_to)
             if failure_msg is not None:
                 msg.append("%s:%s" % (hostname, scriptname))
@@ -95,8 +103,8 @@ def main():
             print "All scripts ran as expected"
             return 0
     except Exception, e:
-        # Squeeze the exception type and stringification of the exception value
-        # on to one line.
+        # Squeeze the exception type and stringification of the exception
+        # value on to one line.
         print "Unhandled exception: %s %r" % (e.__class__.__name__, str(e))
         return 3
 

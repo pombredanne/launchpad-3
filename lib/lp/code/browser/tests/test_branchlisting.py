@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -8,29 +8,55 @@ __metaclass__ = type
 from datetime import timedelta
 from pprint import pformat
 import re
-import unittest
 
 from lazr.uri import URI
-
-from storm.expr import Asc, Desc
+from storm.expr import (
+    Asc,
+    Desc,
+    )
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from lp.code.browser.branchlisting import (
-    BranchListingSort, BranchListingView,
-    GroupedDistributionSourcePackageBranchesView,
-    SourcePackageBranchesView)
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks)
-from lp.code.model.branch import Branch
-from lp.registry.model.person import Owner
-from lp.registry.model.product import Product
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import TestCase, TestCaseWithFactory, time_counter
-from lp.testing.views import create_initialized_view
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.browser.branchlisting import (
+    BranchListingSort,
+    BranchListingView,
+    GroupedDistributionSourcePackageBranchesView,
+    PersonProductSubscribedBranchesView,
+    SourcePackageBranchesView,
+    )
+from lp.code.enums import BranchVisibilityRule
+from lp.code.model.branch import Branch
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
+    )
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.person import Owner
+from lp.registry.model.product import Product
+from lp.testing import (
+    BrowserTestCase,
+    login_person,
+    normalize_whitespace,
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    time_counter,
+    )
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.sampledata import (
+    ADMIN_EMAIL,
+    COMMERCIAL_ADMIN_EMAIL,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestListingToSortOrder(TestCase):
@@ -55,6 +81,7 @@ class TestListingToSortOrder(TestCase):
 
     def assertSortsEqual(self, sort_one, sort_two):
         """Assert that one list of sort specs is equal to another."""
+
         def sort_data(sort):
             return sort.suffix, sort.expr
         self.assertEqual(map(sort_data, sort_one), map(sort_data, sort_two))
@@ -98,6 +125,9 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
         self.barney = self.factory.makePerson(name='barney')
         self.bambam = self.factory.makeProduct(name='bambam')
 
@@ -117,7 +147,8 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # the current batch.
         branch_ids = set([self.branches[0].id])
 
-        view = create_initialized_view(self.barney, name="+branches")
+        view = create_initialized_view(
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().branch_ids_with_bug_links,
             branch_ids)
@@ -127,7 +158,8 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # the current batch.
         branch_ids = set([self.branches[1].id])
 
-        view = create_initialized_view(self.barney, name="+branches")
+        view = create_initialized_view(
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().branch_ids_with_spec_links,
             branch_ids)
@@ -136,7 +168,8 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # _branches_for_current_batch should return a list of all branches in
         # the current batch.
         branch_ids = set([])
-        view = create_initialized_view(self.barney, name="+branches")
+        view = create_initialized_view(
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().branch_ids_with_merge_proposals,
             branch_ids)
@@ -149,7 +182,8 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         for branch_id in branch_ids:
             tip_revisions[branch_id] = None
 
-        view = create_initialized_view(self.barney, name="+branches")
+        view = create_initialized_view(
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().tip_revisions,
             tip_revisions)
@@ -166,7 +200,7 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
         sourcepackagename = self.factory.makeSourcePackageName()
         packages = {}
         for version in ("1.0", "2.0", "3.0"):
-            series = self.factory.makeDistroRelease(
+            series = self.factory.makeDistroSeries(
                 distribution=distro, version=version)
             package = self.factory.makeSourcePackage(
                 distroseries=series, sourcepackagename=sourcepackagename)
@@ -204,7 +238,7 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         # source package.
         self.distro = self.factory.makeDistribution()
         for version in ("1.0", "2.0", "3.0"):
-            self.factory.makeDistroRelease(
+            self.factory.makeDistroSeries(
                 distribution=self.distro, version=version)
         self.sourcepackagename = self.factory.makeSourcePackageName()
         self.distro_source_package = (
@@ -235,15 +269,12 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
             for i in range(branch_count)]
 
         official = []
-        # We don't care about who can make things official, so get rid of the
-        # security proxy.
-        series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
         # Sort the pocket items so RELEASE is last, and thus first popped.
         pockets = sorted(PackagePublishingPocket.items, reverse=True)
         for i in range(official_count):
             branch = branches.pop()
             pocket = pockets.pop()
-            sspb = series_set.new(
+            SeriesSourcePackageBranchSet.new(
                 distroseries, pocket, self.sourcepackagename,
                 branch, branch.owner)
             official.append(branch)
@@ -310,6 +341,17 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         expected = official[:3] + branches
         self.assertGroupBranchesEqual(expected, series)
 
+    def test_distributionsourcepackage_branch(self):
+        source_package = self.factory.makeSourcePackage()
+        dsp = source_package.distribution.getSourcePackage(
+            source_package.sourcepackagename)
+        branch = self.factory.makeBranch(sourcepackage=source_package)
+        view = create_initialized_view(
+            dsp, name='+code-index', rootsite='code')
+        html = view()
+        self.assertIn(branch.name, html)
+        self.assertIn('a moment ago</span>\n', html)
+
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
     """Make sure that the bzr_identity of the branches are correct."""
@@ -319,18 +361,19 @@ class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
     def test_package_development_focus(self):
         # Check the bzr_identity of a development focus package branch.
         branch = self.factory.makePackageBranch()
-        series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
-        sspb = series_set.new(
+        SeriesSourcePackageBranchSet.new(
             branch.distroseries, PackagePublishingPocket.RELEASE,
             branch.sourcepackagename, branch, branch.owner)
         identity = "lp://dev/%s/%s" % (
             branch.distribution.name, branch.sourcepackagename.name)
         self.assertEqual(identity, branch.bzr_identity)
         # Now confirm that we get the same through the view.
-        view = create_initialized_view(branch.distribution, name='+branches')
+        view = create_initialized_view(
+            branch.distribution, name='+branches', rootsite='code')
         # There is only one branch.
         batch = view.branches()
         [view_branch] = batch.branches
+        self.assertStatementCount(0, getattr, view_branch, 'bzr_identity')
         self.assertEqual(identity, view_branch.bzr_identity)
 
 
@@ -343,13 +386,169 @@ class TestProductSeriesTemplate(TestCaseWithFactory):
         # series on the main site, not the code site.
         branch = self.factory.makeProductBranch()
         series = self.factory.makeProductSeries(product=branch.product)
-        series.branch = branch
+        remove_security_proxy_and_shout_at_engineer(series).branch = branch
         browser = self.getUserBrowser(
             canonical_url(branch.product, rootsite='code'))
         link = browser.getLink(re.compile('^' + series.name + '$'))
         self.assertEqual('launchpad.dev', URI(link.url).host)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestPersonBranchesPage(BrowserTestCase):
+    """Tests for the person branches page.
 
+    This is the default page shown for a person on the code subdomain.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def _make_branch_for_private_team(self):
+        private_team = self.factory.makeTeam(
+            name='shh', displayname='Shh',
+            visibility=PersonVisibility.PRIVATE)
+        member = self.factory.makePerson(
+            email='member@example.com', password='test')
+        with person_logged_in(private_team.teamowner):
+            private_team.addMember(member, private_team.teamowner)
+        branch = self.factory.makeProductBranch(owner=private_team)
+        return private_team, member, branch
+
+    def test_private_team_membership_for_team_member(self):
+        # If the logged in user can see the private teams, they are shown in
+        # the related 'Branches owned by' section at the bottom of the page.
+        private_team, member, branch = self._make_branch_for_private_team()
+        browser = self.getUserBrowser(
+            canonical_url(member, rootsite='code'), member)
+        branches = find_tag_by_id(browser.contents, 'portlet-team-branches')
+        text = extract_text(branches)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'Branches owned by Shh', text)
+
+    def test_private_team_membership_for_non_member(self):
+        # Make sure that private teams are not shown (or attempted to be
+        # shown) for people who can not see the private teams.
+        private_team, member, branch = self._make_branch_for_private_team()
+        browser = self.getUserBrowser(canonical_url(member, rootsite='code'))
+        branches = find_tag_by_id(browser.contents, 'portlet-team-branches')
+        # Since there are no teams with branches that the user can see, the
+        # portlet isn't shown.
+        self.assertIs(None, branches)
+
+    def test_branch_listing_last_modified(self):
+        branch = self.factory.makeProductBranch()
+        view = create_initialized_view(
+            branch.product, name="+branches", rootsite='code')
+        self.assertIn('a moment ago', view())
+
+
+class TestProjectGroupBranches(TestCaseWithFactory):
+    """Test for the project group branches page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupBranches, self).setUp()
+        self.project = self.factory.makeProject()
+
+    def test_project_with_no_branch_visibility_rule(self):
+        view = create_initialized_view(
+            self.project, name="+branches", rootsite='code')
+        privacy_portlet = find_tag_by_id(view(), 'privacy')
+        text = extract_text(privacy_portlet)
+        expected = """
+            Inherited branch visibility for all projects in .* is Public.
+            """
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, text)
+
+    def test_project_with_private_branch_visibility_rule(self):
+        self.project.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        view = create_initialized_view(
+            self.project, name="+branches", rootsite='code')
+        privacy_portlet = find_tag_by_id(view(), 'privacy')
+        text = extract_text(privacy_portlet)
+        expected = """
+            Inherited branch visibility for all projects in .* is Forbidden.
+            """
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, text)
+
+    def _testBranchVisibilityLink(self, user):
+        login_person(user)
+        view = create_initialized_view(
+            self.project, name="+branches", rootsite='code',
+            principal=user)
+        action_portlet = find_tag_by_id(view(), 'action-portlet')
+        text = extract_text(action_portlet)
+        expected = '.*Define branch visibility.*'
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, text)
+
+    def test_branch_visibility_link_admin(self):
+        # An admin will be displayed a link to define branch visibility in the
+        # action portlet.
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        self._testBranchVisibilityLink(admin)
+
+    def test_branch_visibility_link_commercial_admin(self):
+        # A commercial admin will be displayed a link to define branch
+        # visibility in the action portlet.
+        admin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
+        self._testBranchVisibilityLink(admin)
+
+    def test_branch_visibility_link_non_admin(self):
+        # A non-admin will not see the action portlet.
+        view = create_initialized_view(
+            self.project, name="+branches", rootsite='code')
+        action_portlet = find_tag_by_id(view(), 'action-portlet')
+        self.assertIs(None, action_portlet)
+
+    def test_no_branches_gets_message_not_listing(self):
+        # If there are no product branches on the project's products, then
+        # the view shows the no code hosting message instead of a listing.
+        self.factory.makeProduct(project=self.project)
+        view = create_initialized_view(
+            self.project, name='+branches', rootsite='code')
+        displayname = self.project.displayname
+        expected_text = normalize_whitespace(
+            ("Launchpad does not know where any of %s's "
+             "projects host their code." % displayname))
+        no_branch_div = find_tag_by_id(view(), "no-branchtable")
+        text = normalize_whitespace(extract_text(no_branch_div))
+        self.assertEqual(expected_text, text)
+
+    def test_branches_get_listing(self):
+        # If a product has a branch, then the project view has a branch
+        # listing.
+        product = self.factory.makeProduct(project=self.project)
+        self.factory.makeProductBranch(product=product)
+        view = create_initialized_view(
+            self.project, name='+branches', rootsite='code')
+        table = find_tag_by_id(view(), "branchtable")
+        self.assertIsNot(None, table)
+
+
+class FauxPageTitleContext:
+
+    displayname = 'DISPLAY-NAME'
+
+    class person:
+        displayname = 'PERSON'
+
+    class product:
+        displayname = 'PRODUCT'
+
+
+class TestPageTitle(TestCase):
+    """The various views should have a page_title attribute/property."""
+
+    def test_branch_listing_view(self):
+        view = BranchListingView(FauxPageTitleContext, None)
+        self.assertEqual(
+            'Bazaar branches for DISPLAY-NAME', view.page_title)
+
+    def test_person_product_subscribed_branches_view(self):
+        view = PersonProductSubscribedBranchesView(FauxPageTitleContext, None)
+        self.assertEqual(
+            'Bazaar Branches of PRODUCT subscribed to by PERSON',
+            view.page_title)

@@ -9,16 +9,24 @@ __metaclass__ = type
 from zope.interface import Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView)
-from lp.code.errors import ReviewNotPending, UserHasExistingReview
+    canonical_url,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.code.errors import (
+    ReviewNotPending,
+    UserHasExistingReview,
+    )
+from lp.services.fields import PublicPersonChoice
 
 
 class ReassignSchema(Interface):
     """Schema to use when reassigning the reviewer for a requested review."""
 
-    reviewer = PublicPersonChoice( title=_('Reviewer'), required=True,
+    reviewer = PublicPersonChoice(title=_('Reviewer'), required=True,
             description=_('A person who you want to review this.'),
             vocabulary='ValidPersonOrTeam')
 
@@ -30,11 +38,16 @@ class CodeReviewVoteReassign(LaunchpadFormView):
 
     page_title = label = 'Reassign review request'
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context.branch_merge_proposal)
+
+    cancel_url = next_url
+
     @action('Reassign', name='reassign')
     def reassign_action(self, action, data):
         """Use the form data to change the review request reviewer."""
         self.context.reassignReview(data['reviewer'])
-        self.next_url = canonical_url(self.context.branch_merge_proposal)
 
     def validate(self, data):
         """Make sure that the reassignment can happen."""

@@ -8,25 +8,42 @@
 __metaclass__ = type
 
 __all__ = [
+    'ACTIVE_STATES',
     'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
+    'IJoinTeamEvent',
+    'ITeamInvitationEvent',
     'ITeamMembership',
     'ITeamMembershipSet',
     'ITeamParticipation',
     'TeamMembershipStatus',
-    'UserCannotChangeMembershipSilently',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, Text
-from zope.interface import Attribute, Interface
-from zope.security.interfaces import Unauthorized
-from lazr.enum import DBEnumeratedType, DBItem
-
-from lazr.restful.interface import copy_field
-from lazr.restful.fields import Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-   call_with, export_as_webservice_entry, export_write_operation, exported,
-   operation_parameters, REQUEST_USER, webservice_error)
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
 
@@ -34,15 +51,6 @@ from canonical.launchpad import _
 # either inviting him to renew his own membership or asking him to get a team
 # admin to do so, depending on the team's renewal policy.
 DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
-
-
-class UserCannotChangeMembershipSilently(Unauthorized):
-    """User not permitted to change membership status silently.
-
-    Raised when a user tries to change someone's membership silently, and is not
-    a Launchpad Administrator.
-    """
-    webservice_error(401) # HTTP Error: 'Unauthorized'
 
 
 class TeamMembershipStatus(DBEnumeratedType):
@@ -106,8 +114,15 @@ class TeamMembershipStatus(DBEnumeratedType):
         """)
 
 
+ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
+
+
 class ITeamMembership(Interface):
-    """TeamMembership for Users"""
+    """TeamMembership for Users.
+
+    This table includes *direct* team members only.  Indirect memberships are
+    handled by the TeamParticipation table.
+    """
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -196,7 +211,8 @@ class ITeamMembership(Interface):
 
         A membership can be renewed if the team's renewal policy is ONDEMAND,
         the membership itself is active (status = [ADMIN|APPROVED]) and it's
-        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT
+        days.
         """
 
     def sendSelfRenewalNotification():
@@ -216,16 +232,22 @@ class ITeamMembership(Interface):
         """
 
     def sendExpirationWarningEmail():
-        """Send an email to the member warning him that this membership will
-        expire soon.
+        """Send the member an email warning that the membership will expire.
+
+        This method cannot be called for memberships without an expiration
+        date. Emails are not sent to members if their membership has already
+        expired or if the member is no longer active.
+
+        :raises AssertionError: if the member has no expiration date of the
+            team or if the TeamMembershipRenewalPolicy is AUTOMATIC.
         """
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         status=copy_field(status),
         comment=copy_field(reviewer_comment),
-        silent=Bool(title=_("Do not send notifications of status change.  For "
-                            "use by Launchpad administrators only."),
+        silent=Bool(title=_("Do not send notifications of status change.  "
+                            "For use by Launchpad administrators only."),
                             required=False, default=False))
     @export_write_operation()
     def setStatus(status, user, comment=None, silent=False):
@@ -282,6 +304,16 @@ class ITeamMembershipSet(Interface):
         TeamMembership and I'll return None.
         """
 
+    def deactivateActiveMemberships(team, comment, reviewer):
+        """Deactivate all team members in ACTIVE_STATES.
+
+        This is a convenience method used before teams are deleted.
+
+        :param team: The team to deactivate.
+        :param comment: An explanation for the deactivation.
+        :param reviewer: The user doing the deactivation.
+        """
+
 
 class ITeamParticipation(Interface):
     """A TeamParticipation.
@@ -309,4 +341,18 @@ class CyclicalTeamMembershipError(Exception):
     any cyclical relationships.  So if A is a member of B and B is
     a member of C then attempting to make C a member of A will
     result in this error being raised.
-    """    
+    """
+
+
+class IJoinTeamEvent(Interface):
+    """A person/team joined (or tried to join) a team."""
+
+    person = Attribute("The person/team who joined the team.")
+    team = Attribute("The team.")
+
+
+class ITeamInvitationEvent(Interface):
+    """A new person/team has been invited to a team."""
+
+    member = Attribute("The person/team who was invited.")
+    team = Attribute("The team.")

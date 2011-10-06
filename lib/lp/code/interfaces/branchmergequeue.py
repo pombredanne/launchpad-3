@@ -1,85 +1,129 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0213
-
-"""Branch merge queues contain queued branch merge proposals."""
+"""Branch merge queue interfaces."""
 
 __metaclass__ = type
+
 __all__ = [
     'IBranchMergeQueue',
-    'IBranchMergeQueueSet',
-    'IMultiBranchMergeQueue',
+    'IBranchMergeQueueSource',
+    'user_has_special_merge_queue_access',
     ]
 
-
-from zope.interface import Attribute, Interface
-from zope.schema import TextLine, Datetime
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_parameters,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.component import getUtility
+from zope.interface import Interface
+from zope.schema import (
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Summary
-from canonical.launchpad.validators.name import name_validator
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.fields import (
+    PersonChoice,
+    PublicPersonChoice,
+    )
 
 
 class IBranchMergeQueue(Interface):
-    """The queued branch merge proposals for one or more branches."""
+    """An interface for managing branch merges."""
 
-    branches = Attribute("The branches that this queue is for.")
+    export_as_webservice_entry()
 
-    items = Attribute("The ordered queued branch merge proposals.")
+    id = Int(title=_('ID'), readonly=True, required=True)
 
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("The user that registered the branch."),
+            required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
 
-class IMultiBranchMergeQueue(IBranchMergeQueue):
-    """A queue that has proposals from a number of branches."""
+    owner = exported(
+        PersonChoice(
+            title=_('Owner'),
+            required=True, readonly=True,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("The owner of the merge queue.")))
 
-    name = TextLine(
-        title=_('Name'), required=True, constraint=name_validator,
-        description=_("""At least one lowercase letter or number, followed by
-            letters, dots, hyphens or plusses.
-            Keep this name short, as it is used in URLs."""))
+    name = exported(
+        TextLine(
+            title=_('Name'), required=True,
+            description=_(
+                "Keep very short, unique, and descriptive, because it will "
+                "be used in URLs.  "
+                "Examples: main, devel, release-1.0, gnome-vfs.")))
 
-    summary = Summary(title=_('Summary'), required=False,
-        description=_('Details about the purpose of the merge queue.'))
+    description = exported(
+        Text(
+            title=_('Description'), required=False,
+            description=_(
+                'A short description of the purpose of this merge queue.')))
 
-    registrant = PublicPersonChoice(
-        title=_('Registrant'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam',
-        description=_("Either yourself or a team you are a member of. "
-                      "This controls who can modify the queue."))
+    configuration = exported(
+        TextLine(
+            title=_('Configuration'), required=False, readonly=True,
+            description=_(
+                "A JSON string of configuration values.")))
 
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True,
-        vocabulary='PersonActiveMembershipPlusSelf',
-        description=_("Either yourself or a team you are a member of. "
-                      "This controls who can manipulate the queue."))
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'),
+            required=True,
+            readonly=True))
 
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
+    branches = exported(
+        CollectionField(
+            title=_('Dependent Branches'),
+            description=_(
+                'A collection of branches that this queue manages.'),
+            readonly=True,
+            value_type=Reference(Interface)))
 
+    @mutator_for(configuration)
+    @operation_parameters(
+        config=TextLine(title=_("A JSON string of configuration values.")))
+    @export_write_operation()
+    def setMergeQueueConfig(config):
+        """Set the JSON string configuration of the merge queue.
 
-class IBranchMergeQueueSet(Interface):
-    """A utility interface for getting merge queues."""
-
-    def getByName(queue_name):
-        """Return the BranchMergeQueue with the specified name.
-
-        :param queue_name: The name of the multi-branch merge queue.
-        :type queue_name: String.
-        :raises NotFoundError: if a queue with the specified name does not
-            exist.
+        :param config: A JSON string of configuration values.
         """
 
-    def getForBranch(branch):
-        """Get a `BranchMergeQueue` for the specified branch.
 
-        If the branch has defined that the queue for the branch is a
-        multi-branch queue, then that queue is returned.
+class IBranchMergeQueueSource(Interface):
 
-        :param branch: The branch to get the queue for.
-        :type branch: `IBranch`.
-        :raises NotUsingBranchMergeQueues: If the branch has said that it is
-            not using Launchpad merge queues, an exception.
+    def new(name, owner, registrant, description, configuration, branches):
+        """Create a new IBranchMergeQueue object.
+
+        :param name: The name of the branch merge queue.
+        :param description: A description of queue.
+        :param configuration: A JSON string of configuration values.
+        :param owner: The owner of the queue.
+        :param registrant: The registrant of the queue.
+        :param branches: A list of branches to add to the queue.
         """
 
-    def newMultiBranchMergeQueue(registrant, owner, name, summary):
-        """Create a new `MultiBranchMergeQueue`."""
+
+def user_has_special_merge_queue_access(user):
+    """Admins and bazaar experts have special access.
+
+    :param user: A 'Person' or None.
+    """
+    if user is None:
+        return False
+    celebs = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebs.admin)

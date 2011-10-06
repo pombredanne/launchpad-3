@@ -1,13 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 
 from canonical.database.sqlbase import block_implicit_flushes
+from lp.blueprints.enums import SpecificationGoalStatus
 from lp.registry.interfaces.person import IPerson
-from lp.blueprints.interfaces.specification import (
-    SpecificationGoalStatus)
 
 
 @block_implicit_flushes
@@ -19,3 +18,13 @@ def specification_goalstatus(spec, event):
         return
     if delta.productseries is not None or delta.distroseries is not None:
         spec.goalstatus = SpecificationGoalStatus.PROPOSED
+
+
+def specification_update_lifecycle_status(spec, event):
+    """Mark the specification as started and/or complete if appropriate.
+
+    Does nothing if there is no user associated with the event.
+    """
+    if event.user is None:
+        return
+    spec.updateLifecycleStatus(IPerson(event.user))

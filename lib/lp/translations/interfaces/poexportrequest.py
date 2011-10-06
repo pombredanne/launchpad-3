@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -11,13 +11,18 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, Object
+from zope.schema import (
+    Datetime,
+    Int,
+    Object,
+    )
 
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 
 
 class IPOExportRequestSet(Interface):
@@ -51,7 +56,7 @@ class IPOExportRequestSet(Interface):
         processing of the request completes.
         """
 
-    def removeRequest(self, request_ids):
+    def removeRequest(request_ids):
         """Remove a request off the queue.
 
         :param request_ids: A list of request record ids as returned by
@@ -74,4 +79,3 @@ class IPOExportRequest(Interface):
     pofile = Object(
         title=u'The translation file requested, if any.',
         required=True, readonly=True, schema=IPOFile)
-

@@ -16,27 +16,27 @@ import logging
 import socket
 import xmlrpclib
 
-from sqlobject import SQLObjectNotFound
+from twisted.internet import defer
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy, isinstance as zisinstance
+from zope.security.proxy import removeSecurityProxy
 
-from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
-
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.buildmaster.interfaces.builder import CorruptBuildID
+from lp.buildmaster.interfaces.builder import (
+    BuildSlaveFailure,
+    CorruptBuildCookie,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch, IBuildFarmJobBehavior)
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildqueue import BuildQueue
+    BuildBehaviorMismatch,
+    IBuildFarmJobBehavior,
+    )
+from lp.services import encoding
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.build import IBuildSet
 
 
 class BuildFarmJobBehaviorBase:
-    """Ensures that all behaviors inherit the same initialisation.
+    """Ensures that all behaviors inherit the same initialization.
 
     All build-farm job behaviors should inherit from this.
     """
@@ -58,161 +58,69 @@ class BuildFarmJobBehaviorBase:
         """The default behavior is a no-op."""
         pass
 
-    def slaveStatus(self, raw_slave_status):
+    def updateSlaveStatus(self, raw_slave_status, status):
         """See `IBuildFarmJobBehavior`.
 
         The default behavior is that we don't add any extra values."""
-        return {}
+        pass
 
-    def _helpVerifyBuildIDComponent(self, raw_id, item_type, finder):
-        """Helper for verifying parts of a `BuildFarmJob` name.
-
-        Different `IBuildFarmJob` implementations can have different
-        ways of constructing their identifying names.  The names are
-        produced by `IBuildFarmJob.getName` and verified by
-        `IBuildFarmJobBehavior.verifySlaveBuildID`.
-
-        This little helper makes it easier to verify an object id
-        embedded in that name, check that it's a valid number, and
-        retrieve the associated database object.
-
-        :param raw_id: An unverified id string as extracted from the
-            build name.  The method will verify that it is a number, and
-            try to retrieve the associated object.
-        :param item_type: The type of object this id represents.  Should
-            be a class.
-        :param finder: A function that, given an integral id, finds the
-            associated object of type `item_type`.
-        :raise CorruptBuildID: If `raw_id` is malformed in some way or
-            the associated `item_type` object is not found.
-        :return: An object that is an instance of `item_type`.
-        """
-        type_name = item_type.__name__
-        try:
-            numeric_id = int(raw_id)
-        except ValueError:
-            raise CorruptBuildID(
-                "%s ID is not a number: '%s'" % (type_name, raw_id))
-
-        try:
-            item = finder(numeric_id)
-        except (NotFoundError, SQLObjectNotFound), reason:
-            raise CorruptBuildID(
-                "%s %d is not available: %s" % (
-                    type_name, numeric_id, reason))
-        except Exception, reason:
-            raise CorruptBuildID(
-                "Error while looking up %s %d: %s" % (
-                    type_name, numeric_id, reason))
-
-        if item is None:
-            raise CorruptBuildID("There is no %s with id %d." % (
-                type_name, numeric_id))
-
-        assert zisinstance(item, item_type), (
-            "Looked for %s, but found %s." % (type_name, repr(item)))
-
-        return item
-
-    def getVerifiedBuild(self, raw_id):
-        """Verify and retrieve the `Build` component of a slave build id.
-
-        This does part of the verification for `verifySlaveBuildID`.
-
-        By default, a `BuildFarmJob` has an identifying name of the form
-        "b-q", where b is the id of its `Build` and q is the id of its
-        `BuildQueue` record.
-
-        Use `getVerifiedBuild` to verify the "b" part, and retrieve the
-        associated `Build`.
-        """
-        # Avoid circular import.
-        from lp.soyuz.model.build import Build
-
-        return self._helpVerifyBuildIDComponent(
-            raw_id, Build, getUtility(IBuildSet).getByBuildID)
-
-    def getVerifiedBuildQueue(self, raw_id):
-        """Verify and retrieve the `BuildQueue` component of a slave build id.
-
-        This does part of the verification for `verifySlaveBuildID`.
-
-        By default, a `BuildFarmJob` has an identifying name of the form
-        "b-q", where b is the id of its `Build` and q is the id of its
-        `BuildQueue` record.
-
-        Use `getVerifiedBuildQueue` to verify the "q" part, and retrieve
-        the associated `BuildQueue` object.
-        """
-        return self._helpVerifyBuildIDComponent(
-            raw_id, BuildQueue, getUtility(IBuildQueueSet).get)
-
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_cookie):
         """See `IBuildFarmJobBehavior`."""
-        # Extract information from the identifier.
-        try:
-            build_id, queue_item_id = slave_build_id.split('-')
-        except ValueError:
-            raise CorruptBuildID('Malformed build ID')
-            
-        build = self.getVerifiedBuild(build_id)
-        queue_item = self.getVerifiedBuildQueue(queue_item_id)
-
-        if build != queue_item.specific_job.build:
-            raise CorruptBuildID('Job build entry mismatch')
+        expected_cookie = self.buildfarmjob.generateSlaveBuildCookie()
+        if slave_build_cookie != expected_cookie:
+            raise CorruptBuildCookie("Invalid slave build cookie.")
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
         logger = logging.getLogger('slave-scanner')
 
-        try:
-            slave_status = self._builder.slaveStatus()
-        except (xmlrpclib.Fault, socket.error), info:
-            # XXX cprov 2005-06-29:
-            # Hmm, a problem with the xmlrpc interface,
-            # disable the builder ?? or simple notice the failure
-            # with a timestamp.
+        d = self._builder.slaveStatus()
+
+        def got_failure(failure):
+            failure.trap(xmlrpclib.Fault, socket.error)
+            info = failure.value
             info = ("Could not contact the builder %s, caught a (%s)"
                     % (queueItem.builder.url, info))
-            logger.debug(info, exc_info=True)
-            # keep the job for scan
-            return
+            raise BuildSlaveFailure(info)
 
-        builder_status_handlers = {
-            'BuilderStatus.IDLE': self.updateBuild_IDLE,
-            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
-            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
-            'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
-            'BuilderStatus.WAITING': self.updateBuild_WAITING,
-            }
+        def got_status(slave_status):
+            builder_status_handlers = {
+                'BuilderStatus.IDLE': self.updateBuild_IDLE,
+                'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
+                'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
+                'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
+                'BuilderStatus.WAITING': self.updateBuild_WAITING,
+                }
 
-        builder_status = slave_status['builder_status']
-        if builder_status not in builder_status_handlers:
-            logger.critical(
-                "Builder on %s returned unknown status %s, failing it"
-                % (self._builder.url, builder_status))
-            self._builder.failBuilder(
-                "Unknown status code (%s) returned from status() probe."
-                % builder_status)
-            # XXX: This will leave the build and job in a bad state, but
-            # should never be possible, since our builder statuses are
-            # known.
-            queueItem._builder = None
-            queueItem.setDateStarted(None)
-            return
+            builder_status = slave_status['builder_status']
+            if builder_status not in builder_status_handlers:
+                logger.critical(
+                    "Builder on %s returned unknown status %s, failing it"
+                    % (self._builder.url, builder_status))
+                self._builder.failBuilder(
+                    "Unknown status code (%s) returned from status() probe."
+                    % builder_status)
+                # XXX: This will leave the build and job in a bad state, but
+                # should never be possible, since our builder statuses are
+                # known.
+                queueItem._builder = None
+                queueItem.setDateStarted(None)
+                return
 
-        # Since logtail is a xmlrpclib.Binary container and it is returned
-        # from the IBuilder content class, it arrives protected by a Zope
-        # Security Proxy, which is not declared, thus empty. Before passing
-        # it to the status handlers we will simply remove the proxy.
-        logtail = removeSecurityProxy(slave_status.get('logtail'))
+            # Since logtail is a xmlrpclib.Binary container and it is
+            # returned from the IBuilder content class, it arrives
+            # protected by a Zope Security Proxy, which is not declared,
+            # thus empty. Before passing it to the status handlers we
+            # will simply remove the proxy.
+            logtail = removeSecurityProxy(slave_status.get('logtail'))
 
-        method = builder_status_handlers[builder_status]
-        try:
-            method(queueItem, slave_status, logtail, logger)
-        except TypeError, e:
-            logger.critical("Received wrong number of args in response.")
-            logger.exception(e)
+            method = builder_status_handlers[builder_status]
+            return defer.maybeDeferred(
+                method, queueItem, slave_status, logtail, logger)
+
+        d.addErrback(got_failure)
+        d.addCallback(got_status)
+        return d
 
     def updateBuild_IDLE(self, queueItem, slave_status, logtail, logger):
         """Somehow the builder forgot about the build job.
@@ -242,11 +150,13 @@ class BuildFarmJobBehaviorBase:
 
         Clean the builder for another jobs.
         """
-        queueItem.builder.cleanSlave()
-        queueItem.builder = None
-        if queueItem.job.status != JobStatus.FAILED:
-            queueItem.job.fail()
-        queueItem.specific_job.jobAborted()
+        d = queueItem.builder.cleanSlave()
+        def got_cleaned(ignored):
+            queueItem.builder = None
+            if queueItem.job.status != JobStatus.FAILED:
+                queueItem.job.fail()
+            queueItem.specific_job.jobAborted()
+        return d.addCallback(got_cleaned)
 
     def extractBuildStatus(self, slave_status):
         """Read build status name.
@@ -280,8 +190,9 @@ class BuildFarmJobBehaviorBase:
 
         # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
 
-        queueItem.specific_job.build.handleStatus(
-            build_status, librarian, slave_status)
+        build = queueItem.specific_job.build
+        d = build.handleStatus(build_status, librarian, slave_status)
+        return d
 
 
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):
@@ -290,7 +201,7 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
 
     def __init__(self):
         """The idle behavior is special in that a buildfarmjob is not
-        specified during initialisation as it is not the result of an
+        specified during initialization as it is not the result of an
         adaption.
         """
         super(IdleBuildBehavior, self).__init__(None)
@@ -310,6 +221,6 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         return "Idle"
 
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_id):
         """See `IBuildFarmJobBehavior`."""
-        raise CorruptBuildID('No job assigned to builder')
+        raise CorruptBuildCookie('No job assigned to builder')

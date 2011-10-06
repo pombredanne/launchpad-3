@@ -5,21 +5,23 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestCase
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.testing.factory import LaunchpadObjectFactory
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.vocabularies import MilestoneVocabulary
-
-from canonical.launchpad.ftests import login, logout
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from canonical.testing import DatabaseFunctionalLayer
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.registry.vocabularies import MilestoneVocabulary
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestMilestoneVocabulary(TestCase):
@@ -117,6 +119,9 @@ class TestMilestoneVocabulary(TestCase):
         debian = getUtility(IDistributionSet).getByName('debian')
         distro_sourcepackage = factory.makeDistributionSourcePackage(
             distribution=debian)
+        factory.makeSourcePackagePublishingHistory(
+            distroseries=debian.currentseries,
+            sourcepackagename=distro_sourcepackage.sourcepackagename)
         bugtask = factory.makeBugTask(target=distro_sourcepackage)
         vocabulary = MilestoneVocabulary(bugtask)
         self.assertEqual(
@@ -155,7 +160,3 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary],
             [u'Debian 3.1', u'Debian 3.1-rc1', u'Mozilla Firefox 1.0'])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

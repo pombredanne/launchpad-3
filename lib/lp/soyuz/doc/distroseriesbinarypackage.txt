@@ -9,7 +9,7 @@ specific distribution series.
     >>> from zope.component import getUtility
     >>> from lp.soyuz.model.binarypackagename import (
     ...     BinaryPackageName)
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
 A DistroSeriesBinaryPackage is normally accessed via a Distro
 Series:

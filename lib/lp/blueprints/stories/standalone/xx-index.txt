@@ -1,6 +1,20 @@
 =====================
 Blueprints index page
 =====================
+Enabling Firefox
+----------------
+
+For a product to work in blueprints, it must be active, so we'll activate
+blueprints for firefox.
+
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login('admin@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+    >>> logout()
 
 The blueprints index page allows users to search for blueprints within
 a single Launchpad project or across all projects.
@@ -28,7 +42,7 @@ name and title, across all projects:
     >>> browser.open('http://blueprints.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = 'svg'
     >>> browser.getControl(name='field.scope').value = ['all']
-    >>> browser.getControl('Find Blueprints').click()
+    >>> browser.getControl(name='field.actions.search').click()
     >>> print browser.url
     http://blueprints.launchpad.dev/?searchtext=svg
 
@@ -46,7 +60,7 @@ find the same result:
     >>> browser.getControl(name='field.search_text').value = 'svg'
     >>> browser.getControl(name='field.scope').value = ['project']
     >>> browser.getControl(name='field.scope.target').value = 'firefox'
-    >>> browser.getControl('Find Blueprints').click()
+    >>> browser.getControl(name='field.actions.search').click()
     >>> print browser.url
     http://blueprints.launchpad.dev/firefox?searchtext=svg
     >>> print browser.getLink('svg-support').attrs['title']

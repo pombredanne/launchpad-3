@@ -17,7 +17,7 @@ be sent. To start with, let's login:
 
     >>> login("test@canonical.com")
 
-Here are the things that cause bug notifications to be add, and what
+Here are the things that cause bug notifications to be added and what
 those notifications look like.
 
 
@@ -26,9 +26,12 @@ those notifications look like.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import (
     ...     ObjectModifiedEvent, ObjectCreatedEvent)
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IDistributionSet, IDistroSeriesSet, IPersonSet,
-    ...     IProductSet, ISourcePackageNameSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
     >>> bug_submitter = getUtility(IPersonSet).get(12)
     >>> firefox = getUtility(IProductSet).get(4)
@@ -38,7 +41,7 @@ those notifications look like.
     ...     comment="this is a comment", owner=bug_submitter)
     >>> firefox_crashes = firefox.createBug(params)
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
     Sample Person
@@ -48,11 +51,21 @@ those notifications look like.
     >>> print latest_notification.message.text_contents
     this is a comment
 
+Notifications usually have references to a corresponding bug activity.  These
+can get you details on precisely what changed from a more programmatic
+perspective.  You can get details on what the activity provides in
+bugactivity.txt, but for now here is a small demo.
+
+    >>> print latest_notification.activity.whatchanged
+    bug
+    >>> print latest_notification.activity.person.displayname
+    Sample Person
+
 
 === Editing a bug report ===
 
-    >>> from canonical.launchpad.interfaces import IBug
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_before_modification = Snapshot(firefox_crashes, providing=IBug)
     >>> firefox_crashes.description = "a new description"
     >>> firefox_crashes_modified = ObjectModifiedEvent(
@@ -69,6 +82,12 @@ those notifications look like.
     >>> print latest_notification.message.text_contents
     ** Description changed:
     ...
+    >>> print latest_notification.activity.attribute
+    description
+    >>> print latest_notification.activity.oldvalue
+    this is a comment
+    >>> print latest_notification.activity.newvalue
+    a new description
 
 
 === Filing a new task on an existing bug ===
@@ -84,13 +103,12 @@ bug. Let's take a look at each type.
     belongs in the current development series. For backporting a fix to a
     specific distro series, see 3.2.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> debian = getUtility(IDistributionSet).get(3)
     >>> firefox_source = getUtility(ISourcePackageNameSet).get(1)
     >>> firefox_crashes_in_debian = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_crashes, distribution=debian,
-    ...     sourcepackagename=firefox_source,
-    ...     owner=bug_submitter)
+    ...     firefox_crashes, bug_submitter,
+    ...     debian.getSourcePackage(firefox_source))
     >>> notify(ObjectCreatedEvent(
     ...     firefox_crashes_in_debian, firefox_crashes_in_debian.owner))
 
@@ -115,8 +133,8 @@ bug. Let's take a look at each type.
 
     >>> sid = getUtility(IDistroSeriesSet).get(8)
     >>> firefox_crashes_in_sid = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_crashes, distroseries=sid,
-    ...     sourcepackagename=firefox_source, owner=bug_submitter)
+    ...     firefox_crashes, bug_submitter,
+    ...     sid.getSourcePackage(firefox_source))
     >>> notify(ObjectCreatedEvent(
     ...     firefox_crashes_in_sid, firefox_crashes_in_sid.owner))
 
@@ -144,7 +162,7 @@ bug. Let's take a look at each type.
 
     >>> evolution = getUtility(IProductSet).get(5)
     >>> evolution_crashes_too = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_crashes, product=evolution, owner=bug_submitter)
+    ...     firefox_crashes, bug_submitter, evolution)
     >>> notify(ObjectCreatedEvent(
     ...     evolution_crashes_too, evolution_crashes_too.owner))
 
@@ -166,7 +184,7 @@ bug. Let's take a look at each type.
 
     >>> trunk = evolution.getSeries('trunk')
     >>> firefox_crashes_in_trunk = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_crashes, productseries=trunk, owner=bug_submitter)
+    ...     firefox_crashes, bug_submitter, trunk)
     >>> notify(ObjectCreatedEvent(
     ...     firefox_crashes_in_trunk, firefox_crashes_in_trunk.owner))
 
@@ -183,7 +201,7 @@ bug. Let's take a look at each type.
 
 === Commenting on a bug report ===
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
 
     >>> bugmessageset = getUtility(IBugMessageSet)
     >>> current_user = getUtility(ILaunchBag).user
@@ -207,12 +225,14 @@ bug. Let's take a look at each type.
 Let's demonstrate a notification email where Sample Person marks a
 task Fixed, and assigns himself to it.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IDistroBugTask)
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskStatus,
+    ...     IBugTask,
+    ...     )
 
     >>> bugtask_before_modification = Snapshot(
-    ...     firefox_crashes_in_debian, providing=IDistroBugTask)
+    ...     firefox_crashes_in_debian, providing=IBugTask)
     >>> firefox_crashes_in_debian.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> firefox_crashes_in_debian.transitionToAssignee(bug_submitter)
@@ -231,9 +251,8 @@ task Fixed, and assigns himself to it.
     ** Changed in: mozilla-firefox (Debian)
     ...
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
     >>> bugtask_before_modification = Snapshot(
-    ...     firefox_crashes_in_trunk, providing=IProductSeriesBugTask)
+    ...     firefox_crashes_in_trunk, providing=IBugTask)
     >>> firefox_crashes_in_trunk.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> firefox_crashes_in_trunk.transitionToAssignee(bug_submitter)
@@ -260,10 +279,10 @@ out to the bug notification recipient list. Let's create a CVE ref and
 attach it to the firefox_crashes bug that we've been using throughout
 this document:
 
-    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
+    >>> from lp.bugs.interfaces.cve import CveStatus, ICveSet
     >>> cve = getUtility(ICveSet).new(sequence="2004-0276",
     ...     description="a brief CVE description", status=CveStatus.ENTRY)
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> bug = Bug.get(1)
     >>> bugcve = cve.linkBug(bug) # note this creates the event and notifies
 

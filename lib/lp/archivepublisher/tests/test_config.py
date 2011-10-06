@@ -1,60 +1,19 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for Config.py"""
+"""Test publisher configs handling."""
 
 __metaclass__ = type
 
-import unittest
-
-from zope.component import getUtility
-
-from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.archivepublisher.config import getPubConfig
+from lp.testing import TestCaseWithFactory
 
 
-class TestConfig(unittest.TestCase):
-    layer = LaunchpadZopelessLayer
+class TestGetPubConfig(TestCaseWithFactory):
 
-    def setUp(self):
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
-        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    layer = ZopelessDatabaseLayer
 
-    def testInstantiate(self):
-        """Config should instantiate"""
-        from lp.archivepublisher.config import Config
-        d = Config(self.ubuntutest)
-
-    def testDistroName(self):
-        """Config should be able to return the distroName"""
-        from lp.archivepublisher.config import Config
-        d = Config(self.ubuntutest)
-        self.assertEqual(d.distroName, "ubuntutest")
-
-    def testDistroSeriesNames(self):
-        """Config should return two distroseries names"""
-        from lp.archivepublisher.config import Config
-        d = Config(self.ubuntutest)
-        dsns = d.distroSeriesNames()
-        self.assertEquals(len(dsns), 2)
-        self.assertEquals(dsns[0], "breezy-autotest")
-        self.assertEquals(dsns[1], "hoary-test")
-
-    def testArchTagsForSeries(self):
-        """Config should have the arch tags for the drs"""
-        from lp.archivepublisher.config import Config
-        d = Config(self.ubuntutest)
-        archs = d.archTagsForSeries("hoary-test")
-        self.assertEquals( len(archs), 2)
-
-    def testDistroConfig(self):
-        """Config should have parsed a distro config"""
-        from lp.archivepublisher.config import Config
-        d = Config(self.ubuntutest)
-        # NOTE: Add checks here when you add stuff in util.py
-        self.assertEquals(d.stayofexecution, 5)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_getPubConfig_returns_None_if_no_publisherconfig_found(self):
+        archive = self.factory.makeDistribution(no_pubconf=True).main_archive
+        self.assertEqual(None, getPubConfig(archive))

@@ -10,17 +10,22 @@ __all__ = [
 
 from textwrap import TextWrapper
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
-
-from sqlobject import ForeignKey, StringCol
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.code.enums import CodeReviewVote
-from lp.code.interfaces.codereviewcomment import (
-    ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.codereviewcomment import (
+    ICodeReviewComment,
+    ICodeReviewCommentDeletion,
+    )
+from lp.services.mail.signedmessage import signed_message_from_string
 
 
 def quote_text_as_email(text, width=80):
@@ -75,6 +80,16 @@ class CodeReviewComment(SQLBase):
     vote_tag = StringCol(default=None)
 
     @property
+    def author(self):
+        """Defer to the related message."""
+        return self.message.owner
+
+    @property
+    def date_created(self):
+        """Defer to the related message."""
+        return self.message.datecreated
+
+    @property
     def target(self):
         """See `IHasBranchTarget`."""
         return self.branch_merge_proposal.target
@@ -110,3 +125,10 @@ class CodeReviewComment(SQLBase):
     @property
     def as_quoted_email(self):
         return quote_text_as_email(self.message_body)
+
+    def getOriginalEmail(self):
+        """See `ICodeReviewComment`."""
+        if self.message.raw is None:
+            return None
+        return signed_message_from_string(self.message.raw.read())
+

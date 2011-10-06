@@ -1,10 +1,19 @@
-= PO file alternative language selection =
+PO file alternative language selection
+======================================
 
 The translation forms allow the user to select an alternative language.  The
 form will suggest translations from this alternative language as well as those
 in the form's main language.
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.testing.pages import extract_url_parameter
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+
+    >>> login(ANONYMOUS)
+    >>> utility = getUtility(IPOTemplateSet)
+    >>> dummy = utility.populateSuggestivePOTemplatesCache()
+    >>> logout()
+
     >>> def get_alternative_languages_widget(browser):
     ...     """Check and return alternative languages widget offered on page.
     ...
@@ -62,7 +71,8 @@ offered.  No alternative language is selected initially.
     ['']
 
 
-=== Suggestions ===
+Suggestions
+-----------
 
 Carlos also visits the Catalan equivalent of the same translation page, using
 Spanish as an alternative language.
@@ -96,7 +106,9 @@ coming from a cached page or outdated bookmark.  In this case the language is
 Japanese (ja).
 
     >>> browser.open(translate_page +
-    ...     "?field.alternative_language=ja&field.alternative_language-empty-marker=1&select_alternate_language=Change")
+    ...     "?field.alternative_language=ja"
+    ...     "&field.alternative_language-empty-marker=1"
+    ...     "&select_alternate_language=Change")
 
 This leads to a subtle technical problem as the alternative-language dropdown
 would have to be initialized to a language that wasn't in its list of items.
@@ -105,10 +117,15 @@ suggestions will be shown only if he adds Japanese to his preferred languages
 first.
 
     >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    ...     print extract_text(message)
     Not showing suggestions from selected alternative language Japanese (ja).
     If you wish to see suggestions from this language, add it to your
     preferred languages first.
+
+It even presents a link to where the user can set the preferred languages.
+
+    >>> print browser.getLink("add it to your preferred languages").url
+    http...~carlos/+editlanguages
 
 This distinction between alternative languages from the user's preferred set
 and other alternative languages does not exist, of course, if no preferred
@@ -132,14 +149,15 @@ languages are defined.  Suggestions just work for anonymous users.
     ...
 
 
-== Filtering & Navigation ==
+Filtering & Navigation
+----------------------
 
 The translate page also allows the user to filter the translatable strings to
 show only the strings he is interested in.
 
     >>> browser.getControl(name='show', index=1).displayOptions
     ['all items', 'untranslated items', 'translated items',
-     'items with new suggestions', 'items changed in Launchpad']
+     'items with new suggestions', 'items changed in Ubuntu']
 
 Carlos sets the filter to display only the untranslated strings.
 
@@ -168,7 +186,8 @@ messages.
     11 ... 15  of 15 results ...
 
 
-== Language variants and alternative language ==
+Language variants and alternative language
+------------------------------------------
 
 The language for the suggestions will be selected automatically when it
 is not submitted by the user. If the language variant is not available
@@ -207,7 +226,8 @@ is unset.
     ['(no value)']
 
 
-== There is only one alternative language at a time ==
+There is only one alternative language at a time
+------------------------------------------------
 
 If a user specifies more than one alternative language in the URL, he
 gets an UnexpectedFormData exception:
@@ -221,7 +241,8 @@ gets an UnexpectedFormData exception:
     UnexpectedFormData: You specified...
 
 
-== Requests for a non-translatable alternative language ==
+Requests for a non-translatable alternative language
+----------------------------------------------------
 
 There are older URLs that contain non-translatable languages such as
 English, or a non-visible language. Two example requests in OOPSes

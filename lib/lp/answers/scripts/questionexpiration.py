@@ -10,10 +10,13 @@ from logging import getLogger
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import ILaunchpadCelebrities, IQuestionSet
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
-    setupInteraction, endInteraction)
+    endInteraction,
+    setupInteraction,
+    )
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
 
 class QuestionJanitor:
@@ -78,7 +81,6 @@ class QuestionJanitor:
         finally:
             self._logout()
         self.log.info('Finished expiration run.')
-
 
     def _login(self):
         """Setup an interaction as the Launchpad Janitor."""

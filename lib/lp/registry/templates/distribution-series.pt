@@ -11,10 +11,10 @@
       <ul class="horizontal">
         <li
           tal:define="link context/menu:overview/addseries"
-          tal:condition="link/enabled">
+          tal:condition="python: link.enabled and view.show_add_series_link">
           <a tal:replace="structure link/fmt:link" />
         </li>
-        <li>
+        <li tal:condition="view/show_milestones_link">
           <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
         </li>
       </ul>
@@ -28,12 +28,12 @@
             <strong><a tal:attributes="href series/fmt:url"
              tal:content="series/named_version" /></strong>
             <em><span tal:replace="series/status/title" /></em>
-            <tal:derives condition="series/parent_series">
-              <br />Derives from
-              <a tal:attributes="href series/parent_series/fmt:url">
+            <tal:derives condition="series/previous_series">
+              <br />Successor to
+              <a tal:attributes="href series/previous_series/fmt:url">
                 <tal:distro
-                  replace="series/parent_series/distribution/displayname" />
-                <tal:distroseries replace="series/parent_series/named_version" /></a>
+                  replace="series/previous_series/distribution/displayname" />
+                <tal:distroseries replace="series/previous_series/named_version" /></a>
             </tal:derives>
             <tal:milestones
               define="milestones series/all_milestones"

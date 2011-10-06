@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -7,16 +7,25 @@ Run the doctests and pagetests.
 
 import logging
 import os
+
 import transaction
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import (
-    DatabaseLayer, DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
-
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.registry.tests import mailinglists_helper
-from lp.services.testing import build_test_suite
+from lp.services.testing import (
+    build_doctest_suite,
+    build_test_suite,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -28,34 +37,11 @@ def peopleKarmaTearDown(test):
     DatabaseLayer.force_dirty_database()
     tearDown(test)
 
+
 def mailingListXMLRPCInternalSetUp(test):
     setUp(test)
-    # Use the direct API view instance, not retrieved through the component
-    # architecture.  Don't use ServerProxy.  We do this because it's easier to
-    # debug because when things go horribly wrong, you see the errors on
-    # stdout instead of in an OOPS report living in some log file somewhere.
-    from canonical.launchpad.xmlrpc import MailingListAPIView
-    class ImpedenceMatchingView(MailingListAPIView):
-        @mailinglists_helper.fault_catcher
-        def getPendingActions(self):
-            return super(ImpedenceMatchingView, self).getPendingActions()
-        @mailinglists_helper.fault_catcher
-        def reportStatus(self, statuses):
-            return super(ImpedenceMatchingView, self).reportStatus(statuses)
-        @mailinglists_helper.fault_catcher
-        def getMembershipInformation(self, teams):
-            return super(
-                ImpedenceMatchingView, self).getMembershipInformation(teams)
-        @mailinglists_helper.fault_catcher
-        def isLaunchpadMember(self, address):
-            return super(ImpedenceMatchingView, self).isLaunchpadMember(
-                address)
-        @mailinglists_helper.fault_catcher
-        def isTeamPublic(self, team_name):
-            return super(ImpedenceMatchingView, self).isTeamPublic(team_name)
-    # Expose in the doctest's globals, the view as the thing with the
-    # IMailingListAPI interface.  Also expose the helper functions.
-    mailinglist_api = ImpedenceMatchingView(context=None, request=None)
+    mailinglist_api = mailinglists_helper.MailingListXMLRPCTestProxy(
+        context=None, request=None)
     test.globs['mailinglist_api'] = mailinglist_api
     test.globs['commit'] = transaction.commit
 
@@ -65,7 +51,7 @@ def mailingListXMLRPCExternalSetUp(test):
     # Use a real XMLRPC server proxy so that the same test is run through the
     # full security machinery.  This is more representative of the real-world,
     # but more difficult to debug.
-    from canonical.functional import XMLRPCTestTransport
+    from lp.testing.xmlrpc import XMLRPCTestTransport
     from xmlrpclib import ServerProxy
     mailinglist_api = ServerProxy(
         'http://xmlrpc-private.launchpad.dev:8087/mailinglists/',
@@ -162,10 +148,6 @@ special = {
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown,
         ),
-    'sourceforge-remote-products.txt': LayeredDocFileSuite(
-        '../doc/sourceforge-remote-products.txt',
-        layer=LaunchpadZopelessLayer,
-        ),
     'karmacache.txt': LayeredDocFileSuite(
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,
@@ -182,4 +164,9 @@ special = {
 
 
 def test_suite():
-    return build_test_suite(here, special, layer=DatabaseFunctionalLayer)
+    suite = build_test_suite(here, special, layer=DatabaseFunctionalLayer)
+    launchpadlib_path = os.path.join(os.path.pardir, 'doc', 'launchpadlib')
+    lplib_suite = build_doctest_suite(here, launchpadlib_path,
+                                      layer=DatabaseFunctionalLayer)
+    suite.addTest(lplib_suite)
+    return suite

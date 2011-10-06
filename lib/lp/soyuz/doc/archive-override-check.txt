@@ -1,4 +1,5 @@
-= Check for discrepancies in overrides between architectures =
+Check for discrepancies in overrides between architectures
+==========================================================
 
 This script looks for out-of-sync overrides, checking for
 discrepancies in overrides between architectures.
@@ -14,32 +15,30 @@ See also:
 XXX cprov 20060714: we need better populate archive/"publishing
 history" in the sampledata to test those tools properly.
 
-  >>> import os
-  >>> import subprocess
-  >>> import sys
-  >>> from canonical.config import config
+    >>> import os
+    >>> import subprocess
+    >>> import sys
+    >>> from canonical.config import config
 
-  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-  ...                       "archive-override-check.py")
+    >>> script = os.path.join(
+    ...     config.root, "scripts", "ftpmaster-tools",
+    ...     "archive-override-check.py")
 
-  >>> process = subprocess.Popen([sys.executable, script, "-vv",
-  ...                             "-d", "ubuntu",
-  ...                             "-s", "warty"],
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE,)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stderr
-  DEBUG   Acquiring lock
-  DEBUG   Initialising connection.
-  DEBUG   Considering: ubuntu/warty/RELEASE/CURRENT.
-  DEBUG   ... published sources
-  DEBUG   Rolling back any remaining transactions.
-  DEBUG   Releasing lock
-  <BLANKLINE>
+    >>> process = subprocess.Popen(
+    ...     [sys.executable, script, "-v", "-d", "ubuntu", "-s", "warty"],
+    ...     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    >>> stdout, stderr = process.communicate()
+    >>> process.returncode
+    0
+    >>> print stderr
+    INFO    Creating lockfile: ...
+    DEBUG   Considering: ubuntu/warty/RELEASE/CURRENT.
+    DEBUG   ... published sources
+    DEBUG   Rolling back any remaining transactions.
+    DEBUG   Removing lock file: ...
+    <BLANKLINE>
 
 
 Since its data is sane, empty STDOUT is okay.
 
-  >>> print stdout
+    >>> print stdout

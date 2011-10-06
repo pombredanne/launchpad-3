@@ -22,145 +22,9 @@
 ...
 */
 
-/* == Guidelines == */
-/*
- * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
-   demand it. Otherwise, use relative units (%, em).
-*/
-.yui-ieditor {padding-right: 288px;}
-.lazr-multiline-edit .yui-ieditor {padding-right: 0;}
-.lazr-multiline-edit textarea {max-width: inherit;}
-.lazr-multiline-edit .yui-ieditor-input {padding-right: 5px !important;}
-
-.demo {background-color: #fee;}
-
-
-/* == Sprites == */
-
-ul.breadcrumbs a.bzr-favicon, ul.breadcrumbs a.person-tabs {
-    padding: 8px 18px 0 23px;
-}
-h1 .edit {
-    font-size: 50%;
-    position: relative;
-    top: -3px;
-    margin-left: 0.5em;
-}
-.offscreen {
-    position: absolute;
-    left: -999em;
-}
-span.invisible-link {display:none;}
-span.invisible {left:-9999em;display:block;}
-
-/* == Things browsers should do but don't == */
-
-.clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
-  content: ".";
-  display: block;
-  height: 0;
-  clear: both;
-  visibility: hidden;
-}
-.clearfix {display: inline-table;}
-/* Work around float bug in MSIE for Windows, while hiding from MSIE for Mac \*/
-* html .clearfix {height: 1%;}
-.clearfix {display: block;}
-/* End hiding from MSIE for Mac */
-a {outline: none;}
-abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
-* html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
-caption {caption-side: bottom; text-align: left;}
-dt dfn {font-style: normal; font-weight: bold;}
-input {visibility:inherit;}
-input[type=radio] {margin-left: 1em;}
-kbd {
-  background-color: #ddd;
-  border: 1px solid;
-  border-color: white gray gray white;
-  color: black;
-  margin: 1px;
-  min-width: 1em;
-  outline: 1px #666;
-}
-label {white-space: nowrap;}
-.long td {
-    padding-right: 1em;
-    }
-.long fieldset {
-    margin-top: 1em;
-    }
-.long legend {
-    color: #666;
-    font-weight: bold;
-    font-size: 123.1%;
-    }
-.listbox { /* a scrolling list of checkboxes or radio buttons */
-  border: 1px solid #8cacbb;
-  display: inline-block;
-  max-height: 12em;
-  overflow: auto;
-  overflow: -moz-scrollbars-vertical;
-}
-.listbox label {
-  background-color: #f6f6f6;
-  border: solid white;
-  border-width: 0 0 1px 0;
-  display: block;
-}
-textarea {display: block;}
-th, td {vertical-align: baseline;}
-
-/* Opera doesn't use the general tr above for the radio button table */
-table.radio-button-widget tr td {vertical-align: top;}
-
-/* == Overall presentation == */
-/* These styles apply to pages regardless of layout or application. */
 
 /* === Fonts and colors === */
 
-/* Monospace text uses the reciprocal of this percentage, so that it
-exactly obeys your preferred monospace font size: */
-.bug-comment, .bug-activity {
-  font: 120% monospace;
-}
-
-.bug-activity {
-  color: #555;
-}
-
-/* Links are blue, brighter when clicked, and greyer once visited: */
-:link, :visited               {color: #03a;    text-decoration: none;}
-:link:hover, :visited:hover   {                text-decoration: underline;}
-:link:active, :visited:active {color: #36c;}
-/* Links that don't open separate pages are green to denote their behavior: */
-a[onclick], .collapsible legend a, a.js-action               {color: #093;}
-a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
-a.js-action:active {color: #093;}
-
-/* The js-action class is also used for non-links, for example, with
- * expand/collapse sections. */
-.widget-hd.js-action {color: #093; cursor:pointer}
-.widget-hd.js-action:hover {text-decoration: underline;}
-
-/* Help links */
-a.help {
-  border-bottom: 1px dotted #03a;
-  cursor: help;
-}
-a.help:hover, a.help:hover {
-  text-decoration: none;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  background: none;
-  clear: left;
-}
-
-.exception {color: #cc0000;}
-.discreet, .lesser, .duplicate-details {font-size: 90%;}
-.extra-discreet {font-size: 75%;}
-.offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
 .duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
@@ -169,60 +33,11 @@ h1, h2, h3, h4, h5, h6 {
 .green {color: green;}
 .red {color: red;}
 
-/* === Error, warning, and informational messages === */
-/* Error, warning, and informational alerts are in a centered box: */
-.error.message, .warning.message, .informational.message {
-  border: solid #666;
-  border-width: 1px 2px 2px 1px;
-  color: black;
-  margin: 0 auto 10px auto;
-  padding: 0 10px 10px 20px;
-  width: 30em;
-}
-/* The alerts are preceded with an icon overlaying the top left corner: */
-.error.message::before, .warning.message::before,
-.informational.message::before {
-  display: block; margin: -15px 0 -6px -35px;
-}
-/* Error messages are pink, with alerts having an error icon: */
-.error         {background: #ffe4e4;}
-.error.message::before         {content: url(/@@/error-large);}
-/* Warning messages are orange, with alerts having a warning icon: */
-.warning       {background: #fff59c;}
-.warning.message::before       {content: url(/@@/warning-large);}
-/* Informational messages are blue-to-grey, with alerts having an info icon: */
-.informational {background: #d4e8ff url(/+icing/blue-fade-to-grey);}
-.informational.message::before {content: url(/@@/info-large);}
-/* Debugging messages are white on grey, with alerts having an info icon: */
-.debugging     {background: #666; color: white;}
-.debugging.message::before     {content: url(/@@/info-large);}
-/* Form errors override this background color, because the lack of space
-between the edge of fields and the edge of the color would look bad: */
-table.form .error {background: none;}
-/* And inside, the error message itself uses a smaller icon: */
-.error .message {
-  background: url(/@@/error) center left no-repeat;
-  margin-bottom: 0.25em;
-  padding-left: 18px;
-}
-
-/* Warning messages inlined in the page. */
-.inline-warning {
-    color: red;
-    font-weight: bold;
-}
-.sml-informational {
-  background: #d4e8ff url('/+icing/blue-fade-to-grey');
-  border: solid #666;
-  border-width: 1px 2px 2px 1px;
-  color: black;
-  padding: 5px 5px 5px 5px;
-  width:44em;
-}
-.sml-informational::before {content: url('/@@/info');}
-
-.helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
-    padding: 0.5em; font-size: smaller; padding-left: 3em
+.helpwanted {
+    background-color: #fafca9;
+    border: 1px solid black;
+    padding: 0.5em;
+    padding-left: 3em;
 }
 .whiteboard {
   color: #666;
@@ -231,214 +46,6 @@ table.form .error {background: none;}
 dd .whiteboard {
   padding-left: 1em;
 }
-
-/* === Forms === */
-
-form table label {font-weight: bold;}
-fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
-button{padding:0;}
-input.urlTextType {width: 40em;}
-.fieldRequired, .fieldOptional {color: #999;}
-.formHelp {margin: 0.2em 0 0.5em 0.2em; color: #777;}
-/* Hack to add breathing room to bug status forms: */
-table.listing div.field>table {margin-top: 0.5em;}
-table.listing div.field>label, table.listing div.field>div>label,
-table.listing div.actions {
-  display: block; margin-top: 1em;
-}
-/* Text fields occupy as much of the page width as possible, minus a safety
-margin for Internet Explorer, and up to a reasonable maximum: */
-textarea {width: 90%; max-width: 60em;}
-
-/* Many forms are laid out using tables, with appropriate spacing: */
-table.form, table.extra-options {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
-table.form th {font-weight: normal;}
-table.form th, table.form td,
-table.form table.extra-options td,
-table.form table.extra-options th {padding-bottom: 1em;}
-table.form td td {padding-bottom: 0;}
-
-/* === Tables === */
-table.latest th, table.latest td {padding-bottom: 2em;}
-
-th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
-th.icon.left, td.icon.left {padding-right: 0;}
-th.icon.right, td.icon.right {padding-left: 0;}
-th.nowrap, td.nowrap {white-space: nowrap;}
-tfoot th, table.contributions th {text-align: left;}
-table.contributions th {font-weight: normal;}
-table.contributions td {vertical-align: middle; width: 16px; text-align: left;}
-
-/* ==== Listing tables ==== */
-
-table.listing {margin: 0; width: 100%; font-size: 90%;}
-table.listing, table.listing tbody, table.listing td.end-of-section {
-  border-bottom: 1px solid #d2d2d2;}
-table.listing thead, table.listing thead th, table.listing tfoot tr,
-table.listing tr.thead th {
-  border: 1px solid #d2d2d2;
-  background-color: #fff;
-}
-table.listing tr.category {border-bottom: 1px solid #d2d2d2;}
-table.listing tr.category th, table.listing tr.category td {padding-top: 1em;}
-table.listing tfoot td {border: 1px solid #d2d2d2;}
-table.listing thead td {border: none;}
-tr.white {background-color: #fff;}
-tr.shaded {background-color: #f6f6f6;}
-table.listing tr.note {font-size: smaller;}
-.amount {text-align: right;}
-table.listing th, table.listing td {padding: 0.25em;}
-/* We don't want extra padding on nested tables, such as batch navigation. */
-table.listing table th, table.listing table td {padding: 0;}
-table.listing thead th, table.listing tr.thead th {
-  font-size: 1.125em; white-space: nowrap;}
-table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
-table.listing tr.note td {border-style: none;}
-table.listing img {vertical-align: middle;}
-table.listing tr.secondary th, table.listing tr.secondary td {border-top: none;}
-table.listing table tbody, table.listing table thead,
-table.listing table thead th, table.listing tfoot tr,
-table.listing table tfoot td, table.listing table td {
-  border: none;
-}
-table.duplicate.listing * {color: #999;}
-
-table.listing table.simple {margin-left: 2em;}
-table.listing table.simple td {padding: 0.25em;}
-
-table.listing .section-heading {
-  font-size: 1.2em;
-  border: none;
-  padding-top: 1.5em;
-}
-
-table.compressed { width: auto }
-table.compressed td { padding: 0.25em 0.5em }
-
-/* ==== Summary tables ==== */
-
-/* Tables presenting summary information have subdued headers and a little
-row spacing: */
-table.summary th, table.summary td,
-table.listing table.summary th, table.listing table.summary td {
-  padding: 0 0.5em 0.5em 0;
-}
-table.summary th {color: #555; font-weight: normal;}
-table.summary caption {font-style: italic; margin-left: 1em;}
-table.summary ul, table.summary ul li {
-  list-style-position: inside;
-  margin: 0;
-  padding: 0;
-}
-
-
-/* --- Sortable tables --- */
-
-table.sortable a.sortheader {
-  color:#666666;
-  font-weight: bold;
-  text-decoration: none;
-  display: block;
-}
-table.sortable img.sortarrow {
-  padding-left: 2px;
-}
-th.ascending {
-  background-image: url(/@@/arrowDown);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-th.descending {
-  background-image: url(/@@/arrowUp);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-/* Used to indicate a value to be used to sort cells in a row */
-.sortkey, .revsortkey {display: none;}
-
-
-
-/* --- Action links and buttons --- */
-
-/*
-  Action links are those that begin the process of doing something.
-  For example, "Register a branch", "Edit profile", "Link to CVE".
-  When presented inline, they are rendered by launchpad-inline-link.pt.
-
-  Action buttons are those that submit a multi-row form.
-  Often an action button will have an "or _Cancel_" link next to it.
-
-  We want 0.5em horizontal gap between links and buttons in these sections.
-  Using margin-left would cause a bad gap to the left of a leftmost item.
-  Using margin-right would cause a bad gap to the right of a rightmost item.
-  We could fix these problems with :first-child/:last-child, but not in IE.
-  So we do something a little tricky.
-  We go ahead and give each child of the actions container a right margin:
-*/
-.actions * {margin-right: 0.5em;}
-.actions * * {margin-right: 0;} /* because ">" doesn't work in IE6 */
-/*
-  Then in addition to the top/bottom margins of the actions container, we
-  give it a *negative* right margin, cancelling out that of the last child.
-*/
-.actions {margin: 1em -0.5em 1em 0;}
-/*
-  Examples:
-  http://bugs.launchpad.dev/firefox/+bug/1 (after 'Affects' table)
-  http://bugs.launchpad.dev/firefox/+bug/1/+subscribe (bottom button)
-*/
-
-/* --- Batch navigation links --- */
-
-/* Next links have icons: */
-.batch-navigation-links .next {
-  background: center right no-repeat;
-  padding-right: 14px;
-}
-.batch-navigation-links .next {background-image: url(/@@/arrowRight);}
-.batch-navigation-links .next.inactive {
-  background-image: url(/@@/arrowRight-inactive);
-}
-.batch-navigation-links .inactive {color: #999ea7;}
-/* And all the links have spacing between them: */
-.batch-navigation-links .previous, .batch-navigation-links .next,
-.batch-navigation-links .last {
-  margin-left: 0.25em;
-}
-.batch-navigation-links .first, .batch-navigation-links .previous,
-.batch-navigation-links .next {
-  margin-right: 0.25em;
-}
-
-/* --- Other --- */
-
-/* No border on images that are links. */
-a img {
-  border: none;
-}
-/* No border on images that have link maps.
- * There's nothing special for this, as the image and map
- * may be separate.  So, just set no border for all images.
- */
-img {
-  border: none;
-}
-
-/* === Collapsible sections === */
-/* Some page sections are hidden by default, expanded by clicking a link. */
-/* see launchpad.js:activateCollapsibles() */
-fieldset.collapsible {
-  border: none;
-  margin: 0;
-  padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
-}
-.collapsible legend a, .collapsible legend a:hover {text-decoration: none;}
-img.collapseIcon {text-decoration: none; vertical-align: middle;}
-.collapsible legend a span {text-decoration: underline;}
-.collapsed {border: none; margin-bottom: 0;}
-fieldset .collapsed {display: none;}
-fieldset .expanded {display: block;}
-fieldset.collapsible legend {font-weight: normal;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -450,22 +57,6 @@ form.primary.search {
   .notforscreen {display:none;}
 }
 
-.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
-.highlighted {padding: 0.5em;}
-.highlighted h3 {margin-top: 0;}
-.unhighlighted {padding: 0 0.5em;}
-.dimmed {
-  padding: 0 0.5em;
-  opacity: .5;
-  filter: alpha(opacity=50);
-  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
-}
-
-strong em {
-  font-style: normal;
-  color: #353535;
-}
-.link_img {border: 0;}
 .debug {
   background: none;
   color: #f09;
@@ -476,104 +67,6 @@ strong em {
   overflow: hidden;
   display: none;
 }
-hr {
-  display: none;
-}
-
-/* === Universal page layout === */
-
-/* === Login control === */
-/* At the top right of the page is a link to log in or a button to log out: */
-#logincontrol {
-    float: right;
-}
-
-/* push image a little bit down to make it line up better with the text */
-#logincontrol img {
-    margin-bottom: -2px;
-}
-/* The 'Log Out' button lacks the right margin that buttons usually have: */
-#logincontrol input[type='submit'] {
-  font-size: smaller;
-  margin-right: 0;
-}
-
-/* === Location hierarchy === */
-/* Breadcrumb styling - this should be moved into style-3.0.css. It is
- * only here while we have existing non-3-0 templates, so that the
- * breadcrumbs on non-3-0 pages don't appear as a simple ordered list.
- */
-ol.breadcrumbs {
-    margin-left: 0;
-    list-style-type: none;
-    clear: both;
-    margin-bottom: 2em;
-    font-size: 80%;
-}
-ol.breadcrumbs li {
-    display:inline;
-    padding: 0;
-}
-ol.breadcrumbs li a {
-    color: #494949;
-}
-ol.breadcrumbs li:after { content: "\00BB \0020" }
-/* The following leaves a small margin in chrome/webkit, but using none
- * doesn't hide the » in webkit either (both work for FF3.5).
- */
-ol.breadcrumbs li:last-child:after { content: ''; }
-ol.breadcrumbs li:last-child {
-    font-weight: bold;
-}
-
-
-/* === Help pane === */
-/*
-Inline help is contained in a <div> and dynamically positioned by JavaScript.
-
-This should appear above all other content.  Needs to be
-above the Google Maps element on the profile pages, which
-has a z-index of 9999.  See bug #380349.
-*/
-#help-pane {
-  position: absolute;
-  border: 1px solid black;
-  padding: 1px 1px 5px 10px;
-  z-index: 11000; /* Needs to be at least 9999.  See bug #380349. */
-  background-color: #fff;
-  width: 600px; /* based on the help wiki, should change later */
-}
-/* We want the hidden pane to have dimensions so that we can position the
-frame with them.  This works because the element an absolute position, taking
-it out of the page flow. */
-#help-pane.invisible {
-    position: absolute;
-    visibility: hidden;
-    display: block;
-    left: 0px;
-    top: 0px;
-}
-
-#help-body {
-    background: url(/@@/spinner) no-repeat center center;
-}
-#help-pane iframe {width: 100%; height: 300px; border: 0;}
-#help-pane iframe.invisible {
-    visibility: hidden;
-    display: block;
-}
-#help-footer {
-  padding: 3px;
-  border-top: 1px solid #ddd;
-  text-align: right;
-}
-#help-footer button {
-  margin-bottom: 10px;
-  margin-top: 3px;
-}
-
-span.help {font-weight: normal;}
-
 
 /* === Official Bug Tag Management === */
 
@@ -587,7 +80,6 @@ span.help {font-weight: normal;}
 
 .official-tags-layout-table th {
   text-align: left;
-  font-size: 1.25em;
   padding-bottom: 5px;
 }
 
@@ -623,8 +115,7 @@ span.help {font-weight: normal;}
 }
 
 .official-tags-layout-table ul .tag-used-count {
-  color: #888;
-  font-size: 75%;
+  color: #666;
 }
 
 .official-tags-layout-table .list-scrollable-area {
@@ -646,7 +137,6 @@ span.help {font-weight: normal;}
 
 .official-tag-error-message-header {
   font-weight: bold;
-  font-size: 1.25em;
   margin-left: 1em;
 }
 
@@ -655,28 +145,9 @@ span.help {font-weight: normal;}
   text-decoration: underline;
 }
 
-a.official-tag { /* Looks just like a normal link  */}
-
-a.unofficial-tag {
-  color: #6699ee;
-}
-
-.tags-container {
-  width: 45%;
-  text-align: left;
-  float: left;
-}
-
 .tags-show { display: block; }
 
 .tags-hide { display: none; }
-
-/* === Public/private status === */
-/* The first portlet on many pages discloses whether the object is private: */
-#privacy.private {
-  background: url(/@@/private-bg) top left repeat-x; /* 8px high */
-  padding-top: 12px; /* = 8px + the usual 4px top padding */
-}
 
 .check,
 .radio {
@@ -685,60 +156,6 @@ a.unofficial-tag {
   border: 0 !important;
 }
 
-/* Some pages end with links to related items. */
-/* Examples: branch page, bug page. */
-.related {
-  margin-top: 4em;
-  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
-  padding-top: 1em;
-}
-.related ul {
-  list-style: none;
-  margin-left: 0 !important;
-  padding-left: 0 !important;
-  text-indent: 0.5em;
-}
-
-.related ul.sourcepackage-links li.sourcepackage-not-dev-focus:before {
-    content: "";
-    display: inline-block;
-    width: 1.5em;
-}
-.related ul.sourcepackage-links li.sourcepackage-dev-focus:before {
-    content: "⇒ ";
-    display: inline-block;
-    width: 1.5em;
-}
-
-.related ul li:before {content: "\00BB \0020";}
-
-
-/* --- Various custom list formats --- */
-
-ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
-ul.build-success, li.build-success   {list-style-image: url(/@@/build-success);}
-ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
-ul.language, li.language             {
-  list-style-image: url(/@@/language);
-  /* Disable .language sprite. */
-  background: inherit;
-}
-ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
-ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
-ul.news, li.news {
-  list-style-type: none;
-  margin-bottom: 1em;
-}
-ul.rss, li.rss                       {list-style-image: url(/@@/rss);}
-ul.translation, li.translation       {list-style-image: url(/@@/translation);}
-ul.webref, li.webref                 {list-style-image: url(/@@/link);}
-
-/* --- A list with icons instead of bullets --- */
-ul.iconed {
-  list-style-type: none;
-  padding-left: 0 !important;
-  margin: 0 !important;
-}
 
 /* Various custom link icons */
 
@@ -755,9 +172,8 @@ a.bg-image {
 
 /* == Application-specific styles == */
 
-.description {font-size: 1.125em;}
 /* person/project/bug descriptions, bug comments */
-.report h2 {font-size: 1.4em;}
+.report h2 {font-size: 24px;}
 .boardComment, .boardCommentSummary {border: 1px solid #ddd;}
 .boardComment {margin: 1em 0 1.5em;}
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
@@ -792,24 +208,18 @@ a.bg-image {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
 }
-.boardCommentContent { line-height: 1.5em;}
+.boardCommentContent { line-height: 1.4em;}
 .boardCommentFooter {
   background-color: #eee;
-  color: #555;
+  color: #666;
   padding: 0.5em 12px;
   border-top: 1px solid #ddd;
 }
 .from-superseded {background-color: #ffffcc;}
-dl.faq dt {font-weight: bold;}
-dl.faq dd {margin: 1em 0 2em 4em;}
 .adminHiddenComment {background-color:yellow;}
 
 /* --- Overview --- */
 
-.tab-overview #application-footer strong {
-  background: none;
-  color: #83ad23;
-}
 body.tab-overview #description, div#branch-description {
     width: 50em;
 }
@@ -823,58 +233,8 @@ div#branch-description {
     margin-top: 1em;
 }
 
-.product.series, .series {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
-/* --- Home --- */
-
-/* The following style works around the fact that the locationbar, which is
-only used of the Login/Register links in 3.0 UI, is accessible on
-"locationless" pages. It adds extra space at the top of every page in
-Launchpad but that does actually look quite good ... ;-).*/
-#locationbar {
-    height: 1em;
-}
-/* -- Notices -- */
-
-.important-notice-container {
-  text-align: center;
-  width: 100%;
-  padding-bottom: 1em;
-  position: relative;
-}
-
-.important-notice-balloon {
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-  background-color: #ededed;
-  padding: 1em;
-  border: 1px solid #000;
-  width: auto;
-  overflow: hidden;
-}
-
-.important-notice-buttons {
-  float: right;
-}
-
-.important-notice-cancel-button {
-  visibility: hidden;
-  cursor: pointer;
-}
-
-.important-notice {
-  padding: 0px 0px 40px 0px;
-  height: 32px;
-  overflow: hidden;
-}
-
-.important-notice a {
-  font-weight: bold;
-  color: black;
-  text-decoration: underline;
-}
 
 /* Soyuz-related styles (that don't have a facet, but generally are
  * under Overview)
@@ -918,10 +278,6 @@ div.archive #description fieldset {
     padding: 0 1em;
     margin:0 1em 1em 0;
 }
-table#package-requests {
-    width: 60em;
-    margin: 1em 0;
-}
 table#package-requests td {
     padding: 0.5em;
 }
@@ -929,7 +285,7 @@ form.package-search-filter {
     clear: both;
 }
 h1.disabled, .greyed-out {
-    color: grey;
+    color: gray;
 }
 table#packages_list {
     margin-top: 1em;
@@ -942,7 +298,7 @@ p.update-failure-message {
 .update-in-progress-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
-    color: #999;
+    color: #666;
 }
 
 a.update-retry {
@@ -1001,21 +357,10 @@ form.archive-subscription-activation button {
     padding: 0 0 0 15px;
     margin:0;
     cursor: pointer;
-    font-size: 100%;
 }
 form.archive-subscription-activation button:hover {
     text-decoration: underline;
 }
-
-/* Colored build status. */
-.buildstatusNEEDSBUILD     {color: gray;}
-.buildstatusBUILDING       {color: black;}
-.buildstatusFULLYBUILT     {color: green;}
-.buildstatusFAILEDTOBUILD  {color: red;}
-.buildstatusMANUALDEPWAIT  {color: red;}
-.buildstatusCHROOTWAIT     {color: red;}
-.buildstatusSUPERSEDED     {color: red;}
-.buildstatusFAILEDTOUPLOAD {color: red;}
 
 /* Shaded logging area. */
 div.logtail {
@@ -1024,7 +369,7 @@ div.logtail {
     padding: 5px;
     border: solid gray;
     border-width: 1px;
-    font: 100% monospace;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     -moz-border-radius: 5px;
     -o-border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -1039,7 +384,6 @@ div.logtail p {
 pre.changelog {
     margin: 0.5em;
     padding: 5px;
-    font: 116% monospace;
 }
 
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
@@ -1069,19 +413,6 @@ div.ppa-packaging-tmp-actions .portlet {
 
 /* --- Code --- */
 
-body.tab-branches #actions, body.tab-branches .results {background-color: #ffc;}
-body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
-  background-color: #d18b39;
-}
-.tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong, .tab-branches #application-summary strong, .tab-branches #page-summary strong.count {
-  background: none;
-  color: #d18b39;
-}
-
-.stale-diff { color: #f60; }
-.conflicts-diff { color: red; }
-
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -1102,22 +433,13 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   -webkit-border-radius: 5px;
 }
 
-.pending-update h3{
-  color: black;
+.pending-update h3 {
   font-weight: bold;
   text-align: center;
-  font-size: 160%;
   margin-top: 0.5em;
 }
 
 .mergeproposal p {margin: 0.5em 0 }
-
-.vcsimportSUCCESS {} /* inherited text color */
-.vcsimportFAILURE {color: Red;}
-
-.greylink a:link, .greylink a:visited {
-  color: grey;
-}
 
 .commentSuffix {
   height: 2.5em;
@@ -1128,7 +450,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .replyLink {
   text-align: right;
 }
-.codereviewcomment {font: 120% monospace;}
 .codereviewcomment .attachment, #review-diff .attachment,
 div.diff .attachmentBody {
   background-color: #f6f6f6;
@@ -1136,21 +457,10 @@ div.diff .attachmentBody {
 div.diff .horizontal {
   margin: 0;
 }
-body.tab-branches table.listing .section-heading {
-  color: #d18b39;
-}
 
-body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead {
-  color: #666666;
-}
-
-.yui-diff-overlay table.diff {
-  font-size: 98%;
-}
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
 table.diff {
    white-space: pre-wrap;
-   font: 120% monospace;
    width: 100%;
    background-color: white;
    margin-bottom: 0.5em;
@@ -1186,41 +496,24 @@ dl.reviews dd {
     color: black !important;
 }
 
+.code-links td.code-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.code-links td.code-link {
+  text-align: left;
+  margin: 0 0 0 0;
+}
+
 
 /* === Bugs === */
-/* The Launchpad Bugs application uses a maroon color: */
-body.tab-bugs #actions, body.tab-bugs .results {background-color: #fee;}
-body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
-  background-color: #9f2b33;
-}
-.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong,
-.tab-bugs table.listing thead {
-  background: none;
-  color: #9f2b33;
-}
-
-.statusNEW,           .statusNEW a           {color: #930;}
-.statusINCOMPLETE,    .statusINCOMPLETE a    {color: red;}
-.statusCONFIRMED,     .statusCONFIRMED a     {color: red;}
-.statusTRIAGED,       .statusTRIAGED a       {color: #f60;}
-.statusINPROGRESS,    .statusINPROGRESS a    {color: black;}
-.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: #050;}
-.statusFIXRELEASED,   .statusFIXRELEASED a   {color: green;}
-.statusINVALID,       .statusINVALID a       {color: gray;}
-.statusWONTFIX,       .statusWONTFIX a       {color: gray;}
-.importanceCRITICAL,  .importanceCRITICAL a  {color: red;}
-.importanceHIGH,      .importanceHIGH a      {color: #f60;}
-.importanceMEDIUM,    .importanceMEDIUM a    {color: green;}
-.importanceLOW,       .importanceLOW a       {color: black;}
-.importanceWISHLIST,  .importanceWISHLIST a  {color: blue;}
-.importanceUNDECIDED, .importanceUNDECIDED a {color: #999;}
-.status :link, .importance :link {text-decoration: none;}
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
 
 /* Bug report page subscribe/unsubscribe spinner */
-div#sub-unsub-spinner {
+div#sub-unsub-spinner, div#mute-unmute-spinner {
   background: url(/@@/spinner) center left no-repeat;
   color:#999;
   display:none;
@@ -1230,117 +523,10 @@ div#sub-unsub-spinner {
 
 .highlight-message {
   margin: 2em 0 2em 0;
-  font-size: 120%;
-}
-
-div.watermark-apps-portlet span img {
-    float: none;
-    margin: 0;
 }
 
 .patches-view-cell {
   padding-right: 1em;
-}
-
-/* --- Blueprints --- */
-
-body.tab-specifications #actions, body.tab-specifications .results {
-  background-color: #eff;
-}
-body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
-  background-color: #3594bb;
-}
-.tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
-.tab-specifications #application-footer strong,
-.tab-specifications table.listing thead {
-  background: none;
-  color: #3594bb;
-}
-.specstatusAPPROVED             {color: green;}
-.specstatusPENDINGAPPROVAL      {color: #f09;}
-.specstatusPENDINGREVIEW        {color: #f09;}
-.specstatusDRAFT                {color: #930;}
-.specstatusDISCUSSION           {color: #930;}
-.specstatusNEW                  {color: red;}
-.specstatusSUPERSEDED           {color: gray;}
-.specstatusOBSOLETE             {color: gray;}
-.specpriorityNOTFORUS           {color: gray;}
-.specpriorityUNDEFINED          {color: gray;}
-.specpriorityLOW                {color: black;}
-.specpriorityMEDIUM             {color: #f60;}
-.specpriorityHIGH               {color: red;}
-.specpriorityESSENTIAL          {color: red;}
-.specdeliveryUNKNOWN            {color: gray;}
-.specdeliveryNOTSTARTED         {color: gray;}
-.specdeliveryDEFERRED           {color: red;}
-.specdeliveryNEEDSINFRASTUCTURE {color: red;}
-.specdeliveryBLOCKED            {color: red;}
-.specdeliverySTARTED            {color: blue;}
-.specdeliverySLOW               {color: red;}
-.specdeliveryGOOD               {color: blue;}
-.specdeliveryBETA               {color: #f60;}
-.specdeliveryNEEDSREVIEW        {color: purple;}
-.specdeliveryAWAITINGDEPLOYMENT {color: red;}
-.specdeliveryIMPLEMENTED        {color: green;}
-.specdeliveryINFORMATIONAL      {color: green;}
-
-/* === Translations === */
-
-body.tab-translations #actions, body.tab-translations .results {
-  background-color: #f1d7e6;
-}
-body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
-  background-color: #bb3a84;
-}
-.tab-translations h1, .tab-translations h2, .tab-translations h3,
-.tab-translations #application-footer strong,
-.tab-translations table.listing thead {
-  background: none;
-  color: #bb3a84;
-}
-.translation code {font-weight: bold;} /* an interpolation code, such as %i */
-.translation samp { /* a leading/trailing space */
-  background: url(/@@/translation-space) center center no-repeat;
-  padding: 0 4px; /* should be half the width of /@@/translation-space */
-  white-space: pre; /* stops consecutive spaces from collapsing */
-}
-/* In translation forms, single-line text fields occupy nearly all of the
-available width, just like multi-line fields (see "textarea" above): */
-input.translate {width: 90%; max-width: 60em;}
-
-/* === Answers === */
-
-body.tab-answers #actions, body.tab-answers .results {background-color: #eef;}
-body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
-  background-color: #3840be;
-}
-.tab-answers h1, .tab-answers h2, .tab-answers h3,
-.tab-answers #application-footer strong, .tab-answers table.listing thead {
-  background: none;
-  color: #3840be;
-}
-
-.questionstatusOPEN      {color: #000;} /* black */
-.questionstatusNEEDSINFO {color: #930;} /* brown */
-.questionstatusANSWERED  {color: #363;} /* grey-green */
-.questionstatusSOLVED    {color: #090;} /* green */
-.questionstatusEXPIRED   {color: #666;} /* dark grey */
-.questionstatusINVALID   {color: #c00;} /* red */
-
-.search-box {
-  text-align: left;
-  float: left;
-  border:1px solid #d6d6d6;
-  margin: 0.5em 0 0.5em 0;
-  color: #717171;
-  padding: 8px;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-}
-
-.search-box form.primary.search {
-  margin: 0.5em;
 }
 
 .bug-links td.bugs-count {
@@ -1352,11 +538,45 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   text-align: left;
 }
 
-/* --- Other --- */
-
-ul#applicationchooser a, ul#applicationchooser a:hover {
-  color: #000;
+/* Intended to be used as temporary replacement for a sprite class when the
+   associated link's action is in-progress. */
+.spinner {
+  background: url(/@@/spinner) center left no-repeat;
 }
+
+/* Intended to be used as temporary replacement for a button class like
+   lazr-pos when the associated button's action is in-progress. */
+button.spinner {
+  background-image: url(/@@/spinner) !important;
+}
+
+/* This lets us have a help link sprite and a normal link sprite on the same
+   row, which the .vertical .sprite rule in the 3.0 file does not allow. */
+div#mute-link-container a.sprite {
+  width: auto;
+}
+
+/* Gives us some room after the description of the user's subscription. */
+div#current_user_subscription {
+    padding-bottom: 8px;
+}
+
+/* This lets us have a link that spans lines. */
+div#current_user_subscription a.sprite {
+  display: inline;
+}
+
+/* === Translations === */
+
+.translation code {font-weight: bold;} /* an interpolation code, such as %i */
+.translation samp { /* a leading/trailing space */
+  background: url(/@@/translation-space) center center no-repeat;
+  padding: 0 4px; /* should be half the width of /@@/translation-space */
+  white-space: pre; /* stops consecutive spaces from collapsing */
+}
+/* In translation forms, single-line text fields occupy nearly all of the
+available width, just like multi-line fields (see "textarea" above): */
+input.translate {width: 90%; max-width: 60em;}
 
 /* ====== Content area styles ====== */
 
@@ -1364,20 +584,11 @@ ul#applicationchooser a, ul#applicationchooser a:hover {
 
 .central {
   clear: left; /* Bugs FP */
-  font-size: 1.125em;
   margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }
-.central input {
-  font-size: 1em;
-}
-.front_page label {
-  color: #303030;
-  font-size: 1.2em;
-}
 #application-summary, #application-footer, #page-summary {
-  font-size: 1.2em;
   line-height: 1.4em;
   margin-top: 0;
 }
@@ -1407,24 +618,6 @@ img.mugshot {display: inline-table;}
 img.mugshot {display: block;}
 /* End hiding from MSIE for Mac */
 
-div.left, div.right {width: 50%;}
-div.left {clear: both; float: left;}
-div.right {clear: right; float: right;}
-
-div.three.column.middle {margin-right: 1%;}
-div.three.column.left, div.three.column.middle, div.three.column.right {
-  clear: none;
-  float: left;
-  width: 33%;
-}
-div.three.column.left, div.three.column.right { margin: 0;}
-.title {
-  font-weight: bold;
-}
-ul.buttons {margin: 0.5em 0 0.5em 0 !important; padding: 0 !important;}
-/*- without !important, gets overridden by the '#maincontent ol' etc rule -*/
-ul.buttons li {display: inline; margin: 0 0 0 0;}
-ul.cross-reference {font-size: 1.25em;}
 
 #project-cloud-preview a {
   padding-left: 0.5em;
@@ -1434,32 +627,6 @@ ul.cross-reference {font-size: 1.25em;}
 #project-tags a {
   padding-left: 0.5em;
   padding-right: 0.5em;
-}
-
-/* Clouds of links. */
-.cloud-size-smallest {
-  font-size: 0.8em;
-}
-.cloud-size-small {
-  font-size: 1.1em;
-}
-.cloud-size-medium {
-  font-size: 1.4em;
-}
-.cloud-size-large {
-  font-size: 1.7em;
-}
-.cloud-size-largest {
-  font-size: 2.0em;
-}
-.cloud-dark {
-  color: #00f;
-}
-.cloud-medium {
-  color: #7878ff;
-}
-.cloud-light {
-  color: #b8b8ff;
 }
 
 .lowerCaseText {
@@ -1507,14 +674,14 @@ div.popupTitle {
 #search-results .upper-batch-nav, .freeform-batch .upper-batch-nav {
   border-top: 1px solid #d2d2d2;
   margin-top: 2.5em;
-  margin-bottom: 10px;
+  margin-bottom: 1em;
   background: #e7effc;
 }
 
 #search-results .lower-batch-nav, .freeform-batch .lower-batch-nav  {
   margin-top: 1.5em;
   border-top: 1px solid #d2d2d2;
-  margin-bottom: 10px;
+  margin-bottom: 1em;
   background: #e7effc;
 }
 

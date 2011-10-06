@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -8,7 +8,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <class class="canonical.launchpad.database.EmailAddress">
+    <class class="canonical.launchpad.database.emailaddress.EmailAddress">
         <allow interface="lp.registry.interfaces.role.IHasOwner" />
         <allow attributes="
             id person personID account accountID status rdf_sha1" />
@@ -17,18 +17,18 @@
             attributes="email" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IEmailAddress"
+            set_schema="canonical.launchpad.interfaces.emailaddress.IEmailAddress"
             attributes="destroySelf syncUpdate" />
     </class>
 
     <securedutility
-        class="canonical.launchpad.database.EmailAddressSet"
-        provides="canonical.launchpad.interfaces.IEmailAddressSet">
-        <allow interface="canonical.launchpad.interfaces.IEmailAddressSet" />
+        class="canonical.launchpad.database.emailaddress.EmailAddressSet"
+        provides="canonical.launchpad.interfaces.emailaddress.IEmailAddressSet">
+        <allow interface="canonical.launchpad.interfaces.emailaddress.IEmailAddressSet" />
     </securedutility>
 
     <browser:url
-        for="canonical.launchpad.interfaces.IEmailAddress"
+        for="canonical.launchpad.interfaces.emailaddress.IEmailAddress"
         path_expression="string:+email/${email}"
         rootsite="api"
         attribute_to_parent="person" />

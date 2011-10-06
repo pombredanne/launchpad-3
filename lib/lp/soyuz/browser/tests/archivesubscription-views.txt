@@ -23,10 +23,10 @@ First, ensure that the archives we'll be using are private:
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov_private_ppa = factory.makeArchive(
-    ...     owner=cprov, private=True)
+    ...     owner=cprov, private=True, name='pppa')
     >>> mark = getUtility(IPersonSet).getByName("mark")
     >>> mark_private_ppa = factory.makeArchive(
-    ...     owner=mark, private=True)
+    ...     owner=mark, private=True, name='pppa')
     >>> transaction.commit()
     >>> logout()
 
@@ -36,7 +36,7 @@ The view includes a label property.
     >>> view = create_initialized_view(
     ...     cprov_private_ppa, name="+subscriptions")
     >>> print view.label
-    Manage access to PPA for Celso Providelo
+    Manage access to PPA named pppa for Celso Providelo
 
 Initially the view does not display any subscribers, as can be seen
 using the has_subscriptions property:
@@ -86,7 +86,7 @@ After adding a subscriber, the view includes a relevant notification:
     >>> for notification in view.request.notifications:
     ...     print notification.message
     You have granted access for Andrew Bennetts to install software
-    from PPA for Celso Providelo.
+    from PPA named pppa for Celso Providelo.
     Andrew Bennetts will be notified of the access via email.
 
 The view includes a subscribers property that returns all the current
@@ -182,7 +182,7 @@ title.
     ...     cprov_private_ppa).one()
     >>> view = create_initialized_view(spiv_subscription, name="+edit")
     >>> print view.label
-    Edit Andrew Bennetts's access to PPA for Celso Providelo
+    Edit Andrew Bennetts's access to PPA named pppa for Celso Providelo
 
 The ArchiveSubscriptionEditView presents the expiry and description ready
 for editing, together with Update and Cancel actions:
@@ -197,7 +197,7 @@ for editing, together with Update and Cancel actions:
 The ArchiveSubscriptionEditView has a next_url helper property.
 
     >>> print view.next_url
-    http://launchpad.dev/~cprov/+archive/ppa/+subscriptions
+    http://launchpad.dev/~cprov/+archive/pppa/+subscriptions
 
 The ArchiveSubscriptionEditView can be used to update the description field:
 
@@ -253,7 +253,7 @@ After canceling a subscription, a relevant notification is added to the view.
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    You have revoked Andrew Bennetts's access to PPA for
+    You have revoked Andrew Bennetts's access to PPA named pppa for
     Celso Providelo.
 
 Just uncancel the subscription before continuing on.
@@ -295,8 +295,8 @@ if one exists:
     ...         print token_text
 
     >>> print_subscriptions_with_tokens()
-    PPA for Mark Shuttleworth       None
-    PPA for Celso Providelo         None
+    PPA named pppa for Mark Shuttleworth       None
+    PPA named pppa for Celso Providelo         None
 
 After activating a subscription, the token will be included in the
 subscriptions_with_tokens property:
@@ -305,8 +305,8 @@ subscriptions_with_tokens property:
     >>> new_token = cprov_private_ppa.newAuthToken(spiv)
     >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
     >>> print_subscriptions_with_tokens()
-    PPA for Mark Shuttleworth       None
-    PPA for Celso Providelo         Token
+    PPA named pppa for Mark Shuttleworth       None
+    PPA named pppa for Celso Providelo         Token
 
 Just deactivate the new token again for the remaining tests.
 
@@ -318,7 +318,7 @@ Just deactivate the new token again for the remaining tests.
 This view displays a single subscription of a person, as well as the
 corresponding token information.
 
-The view includes a label to denifen its main heading.
+The view includes a label to define its main heading.
 
     >>> from lp.soyuz.browser.archivesubscription import (
     ...     PersonalArchiveSubscription)
@@ -326,16 +326,11 @@ The view includes a label to denifen its main heading.
     ...     spiv_subscription.subscriber, spiv_subscription.archive)
     >>> view = create_initialized_view(spiv_subscription, name="+index")
     >>> print view.label
-    Access to PPA for Celso Providelo
+    Access to PPA named pppa for Celso Providelo
 
 Initially the subscription does not have an active token:
 
     >>> print view.active_token
-    None
-
-Therefore, it will not return a sources_list_entry either:
-
-    >>> print view.sources_list_entries
     None
 
 But if 'activate' is posted, the view will generate a new token and
@@ -353,7 +348,7 @@ Now the view can then access the token and the source list entries sub-view:
     Andrew Bennetts
 
     >>> print view.sources_list_entries.context.archive_url
-    http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/...
+    http://spiv:...@private-ppa.launchpad.dev/cprov/pppa/...
 
 The view can also be used to regenerate the source.list entries.
 

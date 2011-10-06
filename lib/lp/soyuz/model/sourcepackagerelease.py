@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -10,50 +10,78 @@ __all__ = [
     ]
 
 
+import apt_pkg
 import datetime
+from debian.changelog import (
+    Changelog,
+    ChangelogCreateError,
+    ChangelogParseError,
+    )
 import operator
-import pytz
-from StringIO import StringIO
 import re
+from StringIO import StringIO
 
-from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
+import pytz
+import simplejson
+from sqlobject import (
+    ForeignKey,
+    SQLMultipleJoin,
+    StringCol,
+    )
 from storm.expr import Join
-from storm.locals import Int, Reference
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import Store
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
-    SourcePackageType, SourcePackageUrgency)
-from lp.soyuz.interfaces.archive import IArchiveSet, MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.packagediff import (
-    PackageDiffAlreadyRequested, PackageDiffStatus)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    SourcePackageType,
+    SourcePackageUrgency,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import (
+    PackageDiffStatus,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
-    PackageUpload, PackageUploadSource)
+    PackageUpload,
+    PackageUploadSource,
+    )
 from lp.soyuz.scripts.queue import QueueActionError
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
 
 
 def _filter_ubuntu_translation_file(filename):
@@ -70,10 +98,20 @@ def _filter_ubuntu_translation_file(filename):
 
     filename = filename[len(source_prefix):]
 
-    if filename.startswith('debian/po/'):
-        # Skip filenames in debian/po/*.  They're from debconf
-        # translations, which are treated separately in Ubuntu.
-        return None
+    blocked_prefixes = [
+        # Translations for use by debconf--not used in Ubuntu.
+        'debian/po/',
+        # Debian Installer translations--treated separately.
+        'd-i/',
+        # Documentation--not translatable in Launchpad.
+        'help/',
+        'man/po/',
+        'man/po4a/',
+        ]
+
+    for prefix in blocked_prefixes:
+        if filename.startswith(prefix):
+            return None
 
     return filename
 
@@ -98,14 +136,15 @@ class SourcePackageRelease(SQLBase):
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
         default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
-    copyright = StringCol(dbName='copyright', notNull=False, default=DEFAULT)
     version = StringCol(dbName='version', notNull=True)
+    changelog = ForeignKey(foreignKey='LibraryFileAlias', dbName='changelog')
     changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     build_conflicts = StringCol(dbName='build_conflicts')
     build_conflicts_indep = StringCol(dbName='build_conflicts_indep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
+    homepage = StringCol(dbName='homepage')
     format = EnumCol(dbName='format', schema=SourcePackageType,
         default=SourcePackageType.DPKG, notNull=True)
     upload_distroseries = ForeignKey(foreignKey='DistroSeries',
@@ -135,6 +174,44 @@ class SourcePackageRelease(SQLBase):
     package_diffs = SQLMultipleJoin(
         'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
 
+    _user_defined_fields = StringCol(dbName='user_defined_fields')
+
+    def __init__(self, *args, **kwargs):
+        if 'user_defined_fields' in kwargs:
+            kwargs['_user_defined_fields'] = simplejson.dumps(
+                kwargs['user_defined_fields'])
+            del kwargs['user_defined_fields']
+        # copyright isn't on the Storm class, since we don't want it
+        # loaded every time. Set it separately.
+        if 'copyright' in kwargs:
+            copyright = kwargs.pop('copyright')
+        super(SourcePackageRelease, self).__init__(*args, **kwargs)
+        self.copyright = copyright
+
+    @property
+    def copyright(self):
+        """See `ISourcePackageRelease`."""
+        store = Store.of(self)
+        store.flush()
+        return store.execute(
+            "SELECT copyright FROM sourcepackagerelease WHERE id=%s",
+            (self.id,)).get_one()[0]
+
+    @copyright.setter
+    def copyright(self, content):
+        """See `ISourcePackageRelease`."""
+        store = Store.of(self)
+        store.flush()
+        store.execute(
+            "UPDATE sourcepackagerelease SET copyright=%s WHERE id=%s",
+            (content, self.id))
+
+    @property
+    def user_defined_fields(self):
+        """See `IBinaryPackageRelease`."""
+        if self._user_defined_fields is None:
+            return []
+        return simplejson.loads(self._user_defined_fields)
 
     @property
     def builds(self):
@@ -143,13 +220,15 @@ class SourcePackageRelease(SQLBase):
         # when copy-package works for copying packages across archives,
         # a build may well have a different archive to the corresponding
         # sourcepackagerelease.
-        return Build.select("""
-            sourcepackagerelease = %s AND
-            archive.id = build.archive AND
+        return BinaryPackageBuild.select("""
+            source_package_release = %s AND
+            package_build = packagebuild.id AND
+            archive.id = packagebuild.archive AND
+            packagebuild.build_farm_job = buildfarmjob.id AND
             archive.purpose IN %s
             """ % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES),
-            orderBy=['-datecreated', 'id'],
-            clauseTables=['Archive'])
+            orderBy=['-buildfarmjob.date_created', 'id'],
+            clauseTables=['Archive', 'PackageBuild', 'BuildFarmJob'])
 
     @property
     def age(self):
@@ -171,7 +250,7 @@ class SourcePackageRelease(SQLBase):
     @property
     def needs_building(self):
         for build in self._cached_builds:
-            if build.buildstate in [BuildStatus.NEEDSBUILD,
+            if build.status in [BuildStatus.NEEDSBUILD,
                                     BuildStatus.MANUALDEPWAIT,
                                     BuildStatus.CHROOTWAIT]:
                 return True
@@ -309,12 +388,12 @@ class SourcePackageRelease(SQLBase):
         else:
             return 0.0
 
-    def createBuild(self, distroarchseries, pocket, archive, processor=None,
+    def createBuild(self, distro_arch_series, pocket, archive, processor=None,
                     status=None):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
-            pf = distroarchseries.processorfamily
+            pf = distro_arch_series.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
@@ -324,15 +403,16 @@ class SourcePackageRelease(SQLBase):
         # Force the current timestamp instead of the default
         # UTC_NOW for the transaction, avoid several row with
         # same datecreated.
-        datecreated = datetime.datetime.now(pytz.timezone('UTC'))
+        date_created = datetime.datetime.now(pytz.timezone('UTC'))
 
-        return Build(distroarchseries=distroarchseries,
-                     sourcepackagerelease=self,
-                     processor=processor,
-                     buildstate=status,
-                     datecreated=datecreated,
-                     pocket=pocket,
-                     archive=archive)
+        return getUtility(IBinaryPackageBuildSet).new(
+            distro_arch_series=distro_arch_series,
+            source_package_release=self,
+            processor=processor,
+            status=status,
+            date_created=date_created,
+            pocket=pocket,
+            archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
@@ -344,9 +424,9 @@ class SourcePackageRelease(SQLBase):
             'DistroArchSeries']
 
         query = """
-            Build.sourcepackagerelease = %s AND
-            BinaryPackageRelease.build = Build.id AND
-            DistroArchSeries.id = Build.distroarchseries AND
+            BinaryPackageBuild.source_package_release = %s AND
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND
             DistroArchSeries.architecturetag = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -355,9 +435,9 @@ class SourcePackageRelease(SQLBase):
         """ % sqlvalues(self, distroarchseries.architecturetag,
                         distroarchseries, archive)
 
-        select_results = Build.select(
+        select_results = BinaryPackageBuild.select(
             query, clauseTables=clauseTables, distinct=True,
-            orderBy='-Build.id')
+            orderBy='-BinaryPackageBuild.id')
 
         # XXX cprov 20080216: this if/elif/else block could be avoided or,
         # at least, simplified if SelectOne accepts 'distinct' argument.
@@ -383,63 +463,23 @@ class SourcePackageRelease(SQLBase):
             # inheritance tree. See bellow.
             pass
 
-        queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
-
-        # Find out all the possible parent DistroArchSeries
-        # a build could be issued (then inherited).
-        parent_architectures = []
-        archtag = distroarchseries.architecturetag
-
-        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
-            # XXX cprov 20070720: this code belongs to IDistroSeries content
-            # class as 'parent_series' property. Other parts of the system
-            # can benefit of this, like SP.packagings, for instance.
-            parent_series = []
-            candidate = distroarchseries.distroseries
-            while candidate is not None:
-                parent_series.append(candidate)
-                candidate = candidate.parent_series
-
-            for series in parent_series:
-                try:
-                    candidate = series[archtag]
-                except NotFoundError:
-                    pass
-                else:
-                    parent_architectures.append(candidate)
-            # end-of-XXX.
-        else:
-            parent_architectures.append(distroarchseries)
-
-        architectures = [
-            architecture.id for architecture in parent_architectures]
-        queries.append(
-            "Build.distroarchseries IN %s" % sqlvalues(architectures))
-
-        # Follow archive inheritance across distribution offical archives,
-        # for example:
-        # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
-        # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
-        # and so on
-        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
-            parent_archives = set()
-            archive_set = getUtility(IArchiveSet)
-            for series in parent_series:
-                target_archive = archive_set.getByDistroPurpose(
-                    series.distribution, archive.purpose)
-                parent_archives.add(target_archive)
-            archives = [archive.id for archive in parent_archives]
-        else:
-            archives = [archive.id, ]
-
-        queries.append(
-            "Build.archive IN %s" % sqlvalues(archives))
+        queries = [
+            "BinaryPackageBuild.package_build = PackageBuild.id AND "
+            "PackageBuild.build_farm_job = BuildFarmJob.id AND "
+            "DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND "
+            "PackageBuild.archive = %s AND "
+            "DistroArchSeries.architecturetag = %s AND "
+            "BinaryPackageBuild.source_package_release = %s" % (
+            sqlvalues(archive.id, distroarchseries.architecturetag, self))]
 
         # Query only the last build record for this sourcerelease
         # across all possible locations.
         query = " AND ".join(queries)
 
-        return Build.selectFirst(query, orderBy=['-datecreated'])
+        return BinaryPackageBuild.selectFirst(
+            query, clauseTables=[
+                'BuildFarmJob', 'PackageBuild', 'DistroArchSeries'],
+            orderBy=['-BuildFarmJob.date_created'])
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""
@@ -499,6 +539,15 @@ class SourcePackageRelease(SQLBase):
         return DecoratedResultSet(results, operator.itemgetter(0)).one()
 
     @property
+    def uploader(self):
+        """See `ISourcePackageRelease`"""
+        if self.source_package_recipe_build is not None:
+            return self.source_package_recipe_build.requester
+        if self.dscsigningkey is not None:
+            return self.dscsigningkey.owner
+        return None
+
+    @property
     def change_summary(self):
         """See ISourcePackageRelease"""
         # this regex is copied from apt-listchanges.py courtesy of MDZ
@@ -517,7 +566,7 @@ class SourcePackageRelease(SQLBase):
 
         return change
 
-    def attachTranslationFiles(self, tarball_alias, is_published,
+    def attachTranslationFiles(self, tarball_alias, by_maintainer,
                                importer=None):
         """See ISourcePackageRelease."""
         tarball = tarball_alias.read()
@@ -527,11 +576,13 @@ class SourcePackageRelease(SQLBase):
 
         queue = getUtility(ITranslationImportQueue)
 
+        only_templates = self.sourcepackage.has_sharing_translation_templates
         queue.addOrUpdateEntriesFromTarball(
-            tarball, is_published, importer,
+            tarball, by_maintainer, importer,
             sourcepackagename=self.sourcepackagename,
             distroseries=self.upload_distroseries,
-            filename_filter=_filter_ubuntu_translation_file)
+            filename_filter=_filter_ubuntu_translation_file,
+            only_templates=only_templates)
 
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""
@@ -558,3 +609,40 @@ class SourcePackageRelease(SQLBase):
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
+
+    def aggregate_changelog(self, since_version):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.changelog is None:
+            return None
+
+        apt_pkg.InitSystem()
+        chunks = []
+        changelog = self.changelog
+        # The python-debian API for parsing changelogs is pretty awful. The
+        # only useful way of extracting info is to use the iterator on
+        # Changelog and then compare versions.
+        try:
+            for block in Changelog(changelog.read()):
+                version = block._raw_version
+                if (since_version and
+                    apt_pkg.VersionCompare(version, since_version) <= 0):
+                    break
+                # Poking in private attributes is not nice but again the
+                # API is terrible.  We want to ensure that the name/date
+                # line is omitted from these composite changelogs.
+                block._no_trailer = True
+                try:
+                    # python-debian adds an extra blank line to the chunks
+                    # so we'll have to sort this out.
+                    chunks.append(str(block).rstrip())
+                except ChangelogCreateError:
+                    continue
+                if not since_version:
+                    # If a particular version was not requested we just
+                    # return the most recent changelog entry.
+                    break
+        except ChangelogParseError:
+            return None
+
+        output = "\n\n".join(chunks)
+        return output.decode("utf-8", "replace")

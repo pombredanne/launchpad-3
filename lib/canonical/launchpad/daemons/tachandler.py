@@ -1,68 +1,99 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-from __future__ import with_statement
 
 """Test harness for TAC (Twisted Application Configuration) files."""
 
 __metaclass__ = type
 
-__all__ = ['TacTestSetup', 'ReadyService', 'TacException']
+__all__ = [
+    'TacTestSetup',
+    'TacException',
+    ]
 
 
-# This file is used by launchpad-buildd, so it cannot import any
-# Launchpad code!
-import errno
-import sys
 import os
-import time
-from signal import SIGTERM, SIGKILL
 import subprocess
+import sys
+import time
+import warnings
 
-from twisted.application import service
-from twisted.python import log
+from fixtures import Fixture
+
+from canonical.launchpad.daemons import readyservice
+from lp.services.osutils import (
+    get_pid_from_file,
+    kill_by_pidfile,
+    remove_if_exists,
+    two_stage_kill,
+    until_no_eintr,
+    )
 
 
 twistd_script = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
     os.pardir, os.pardir, os.pardir, os.pardir, 'bin', 'twistd'))
 
-LOG_MAGIC = 'daemon ready!'
 
 class TacException(Exception):
     """Error raised by TacTestSetup."""
 
 
-class TacTestSetup:
+class TacTestSetup(Fixture):
     """Setup an TAC file as daemon for use by functional tests.
 
-    You can override setUpRoot to set up a root directory for the daemon.
+    You must override setUpRoot to set up a root directory for the daemon.
     """
-    def setUp(self, spew=False):
-        # Before we run, we want to make sure that we have cleaned up any
-        # previous runs. Although tearDown() should have been called already,
-        # we can't guarantee it.
-        self.tearDown()
+
+    def setUp(self, spew=False, umask=None):
+        Fixture.setUp(self)
+        if get_pid_from_file(self.pidfile):
+            # An attempt to run while there was an existing live helper
+            # was made. Note that this races with helpers which use unique
+            # roots, so when moving/eliminating this code check subclasses
+            # for workarounds and remove those too.
+            pid = get_pid_from_file(self.pidfile)
+            warnings.warn("Attempt to start Tachandler with an existing "
+                "instance (%d) running in %s." % (pid, self.pidfile),
+                DeprecationWarning, stacklevel=2)
+            two_stage_kill(pid)
+            # If the pid file still exists, it may indicate that the process
+            # respawned itself, or that two processes were started (race?) and
+            # one is still running while the other has ended, or the process
+            # was killed but it didn't remove the pid file (bug), or the
+            # machine was hard-rebooted and the pid file was not cleaned up
+            # (bug again). In other words, it's not safe to assume that a
+            # stale pid file is safe to delete without human intervention.
+            if get_pid_from_file(self.pidfile):
+                raise TacException(
+                    "Could not kill stale process %s." % (self.pidfile,))
 
         # setUp() watches the logfile to determine when the daemon has fully
-        # started. If it sees an old logfile, then it will find the LOG_MAGIC
-        # string and return immediately, provoking hard-to-diagnose race
-        # conditions. Delete the logfile to make sure this does not happen.
-        self._removeFile(self.logfile)
+        # started. If it sees an old logfile, then it will find the
+        # readyservice.LOG_MAGIC string and return immediately, provoking
+        # hard-to-diagnose race conditions. Delete the logfile to make sure
+        # this does not happen.
+        remove_if_exists(self.logfile)
 
         self.setUpRoot()
-        args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
+        args = [sys.executable,
+                # XXX: 2010-04-26, Salgado, bug=570246: Deprecation warnings
+                # in Twisted are not our problem.  They also aren't easy to
+                # suppress, and cause test failures due to spurious stderr
+                # output.  Just shut the whole bloody mess up.
+                '-Wignore::DeprecationWarning',
+                twistd_script, '-o', '-y', self.tacfile,
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')
+        if umask is not None:
+            args.extend(('--umask', umask))
 
         # Run twistd, and raise an error if the return value is non-zero or
         # stdout/stderr are written to.
         proc = subprocess.Popen(args, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
-        # XXX: JonathanLange 2008-03-19: This can raise EINTR. We should
-        # really catch it and try again if that happens.
-        stdout = proc.stdout.read()
+        self.addCleanup(self.killTac)
+        stdout = until_no_eintr(10, proc.stdout.read)
         if stdout:
             raise TacException('Error running %s: unclean stdout/err: %s'
                                % (args, stdout))
@@ -75,25 +106,25 @@ class TacTestSetup:
     def _hasDaemonStarted(self):
         """Has the daemon started?
 
-        Startup is recognized by the appearance of LOG_MAGIC in the log
-        file.
+        Startup is recognized by the appearance of readyservice.LOG_MAGIC in
+        the log file.
         """
         if os.path.exists(self.logfile):
             with open(self.logfile, 'r') as logfile:
-                return LOG_MAGIC in logfile.read()
+                return readyservice.LOG_MAGIC in logfile.read()
         else:
             return False
 
     def _waitForDaemonStartup(self):
         """ Wait for the daemon to fully start.
 
-        Times out after 20 seconds.  If that happens, the log file will
-        not be cleaned up so the user can post-mortem it.
+        Times out after 20 seconds.  If that happens, the log file content
+        will be included in the exception message for debugging purpose.
 
         :raises TacException: Timeout.
         """
-        # Watch the log file for LOG_MAGIC to signal that startup has
-        # completed.
+        # Watch the log file for readyservice.LOG_MAGIC to signal that startup
+        # has completed.
         now = time.time()
         deadline = now + 20
         while now < deadline and not self._hasDaemonStarted():
@@ -101,56 +132,42 @@ class TacTestSetup:
             now = time.time()
 
         if now >= deadline:
-            raise TacException('Unable to start %s. Check %s.' % (
-                self.tacfile, self.logfile))
+            raise TacException('Unable to start %s. Content of %s:\n%s' % (
+                self.tacfile, self.logfile, open(self.logfile).read()))
 
     def tearDown(self):
-        self.killTac()
-
-    def _removeFile(self, filename):
-        """Remove the given file if it exists."""
-        try:
-            os.remove(filename)
-        except OSError, e:
-            if e.errno != errno.ENOENT:
-                raise
+        # For compatibility - migrate to cleanUp.
+        self.cleanUp()
 
     def killTac(self):
         """Kill the TAC file if it is running."""
         pidfile = self.pidfile
-        if not os.path.exists(pidfile):
+        kill_by_pidfile(pidfile)
+
+    def sendSignal(self, sig):
+        """Send the given signal to the tac process."""
+        pid = get_pid_from_file(self.pidfile)
+        if pid is None:
             return
+        os.kill(pid, sig)
 
-        # Get the pid.
-        pid = open(pidfile, 'r').read().strip()
-        try:
-            pid = int(pid)
-        except ValueError:
-            # pidfile contains rubbish
-            return
+    def truncateLog(self):
+        """Truncate the log file.
 
-        # Kill the process.
-        try:
-            os.kill(pid, SIGTERM)
-        except OSError, e:
-            if e.errno in (errno.ESRCH, errno.ECHILD):
-                # Process has already been killed.
-                return
-
-        # Poll until the process has ended.
-        for i in range(50):
-            try:
-                os.kill(pid, 0)
-                time.sleep(0.1)
-            except OSError, e:
-                break
-        else:
-            # The process is still around, so terminate it violently.
-            try:
-                os.kill(pid, SIGKILL)
-            except OSError:
-                # Already terminated
-                pass
+        Leaves everything up to and including the `LOG_MAGIC` marker in
+        place. If the `LOG_MAGIC` marker is not found the log is truncated to
+        0 bytes.
+        """
+        if os.path.exists(self.logfile):
+            with open(self.logfile, "r+b") as logfile:
+                position = 0
+                for line in logfile:
+                    position += len(line)
+                    if readyservice.LOG_MAGIC in line:
+                        logfile.truncate(position)
+                        break
+                else:
+                    logfile.truncate(0)
 
     def setUpRoot(self):
         """Override this.
@@ -176,12 +193,3 @@ class TacTestSetup:
     @property
     def logfile(self):
         raise NotImplementedError
-
-
-class ReadyService(service.Service):
-    """Service that logs a 'ready!' message once the reactor has started."""
-    def startService(self):
-        from twisted.internet import reactor
-        reactor.addSystemEventTrigger('after', 'startup', log.msg, LOG_MAGIC)
-        service.Service.startService(self)
-

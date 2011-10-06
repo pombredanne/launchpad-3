@@ -1,51 +1,75 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
+    'find_team_participations',
     'TeamMembership',
     'TeamMembershipSet',
     'TeamParticipation',
     ]
 
-from datetime import datetime, timedelta
-import itertools
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 import pytz
-
-from storm.locals import Store
-
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.info import ClassAlias
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
-from canonical.database.sqlbase import (
-    flush_database_updates, SQLBase, sqlvalues)
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from canonical.config import config
-
-from canonical.launchpad.mail import format_address, simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
+from canonical.database.sqlbase import (
+    cursor,
+    flush_database_updates,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import (
-    IPersonSet, TeamMembershipRenewalPolicy)
-from lp.registry.interfaces.teammembership import (
-    CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
-    ITeamMembership, ITeamMembershipSet, ITeamParticipation,
-    TeamMembershipStatus, UserCannotChangeMembershipSilently)
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
-
-
-ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
+from lp.app.browser.tales import DurationFormatterAPI
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.errors import (
+    TeamMembershipTransitionError,
+    UserCannotChangeMembershipSilently,
+    )
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamMembershipRenewalPolicy,
+    validate_public_person,
+    )
+from lp.registry.interfaces.persontransferjob import (
+    IMembershipNotificationJobSource,
+    )
+from lp.registry.interfaces.teammembership import (
+    ACTIVE_STATES,
+    CyclicalTeamMembershipError,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ITeamMembership,
+    ITeamMembershipSet,
+    ITeamParticipation,
+    TeamMembershipStatus,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 
 
 class TeamMembership(SQLBase):
@@ -97,7 +121,7 @@ class TeamMembership(SQLBase):
         ondemand = TeamMembershipRenewalPolicy.ONDEMAND
         admin = TeamMembershipStatus.APPROVED
         approved = TeamMembershipStatus.ADMIN
-        date_limit = datetime.now(pytz.timezone('UTC')) + timedelta(
+        date_limit = datetime.now(pytz.UTC) + timedelta(
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
         return (self.status in (admin, approved)
                 and self.team.renewal_policy == ondemand
@@ -117,7 +141,8 @@ class TeamMembership(SQLBase):
                         'team_url': canonical_url(team),
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
         subject = '%s extended their membership' % member.name
-        template = get_email_template('membership-member-renewed.txt')
+        template = get_email_template(
+            'membership-member-renewed.txt', app='registry')
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
@@ -146,7 +171,7 @@ class TeamMembership(SQLBase):
         else:
             template_name = 'membership-auto-renewed-personal.txt'
             member_addrs = get_contact_email_addresses(member)
-        template = get_email_template(template_name)
+        template = get_email_template(template_name, app='registry')
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
@@ -157,7 +182,7 @@ class TeamMembership(SQLBase):
         template_name = 'membership-auto-renewed-bulk.txt'
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         admins_addrs = set(admins_addrs).difference(member_addrs)
-        template = get_email_template(template_name)
+        template = get_email_template(template_name, app='registry')
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
@@ -166,8 +191,10 @@ class TeamMembership(SQLBase):
             simple_sendmail(from_addr, address, subject, msg)
 
     def canChangeStatusSilently(self, user):
-        """Ensure that the user is in the Launchpad Administrators group before
-           silently making changes to their membership status."""
+        """Ensure that the user is in the Launchpad Administrators group.
+
+        Then the user can silently make changes to their membership status.
+        """
         return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
 
     def canChangeExpirationDate(self, person):
@@ -203,11 +230,21 @@ class TeamMembership(SQLBase):
 
     def sendExpirationWarningEmail(self):
         """See `ITeamMembership`."""
-        assert self.dateexpires is not None, (
-            'This membership has no expiration date')
-        assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
-            "This membership's expiration date must be in the future: %s"
-            % self.dateexpires.strftime('%Y-%m-%d'))
+        if self.dateexpires is None:
+            raise AssertionError(
+                '%s in team %s has no membership expiration date.' %
+                (self.person.name, self.team.name))
+        if self.team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
+            # An email will be sent later by handleMembershipsExpiringToday()
+            # when the membership is automatically renewed.
+            raise AssertionError(
+                'Team %s with automatic renewals should not send expiration '
+                'warnings.' % self.team.name)
+        if self.dateexpires < datetime.now(pytz.timezone('UTC')):
+            # The membership has reached expiration. Silently return because
+            # there is nothing to do. The member will have received emails
+            # from previous calls by flag-expired-memberships.py
+            return
         member = self.person
         team = self.team
         if member.isTeam():
@@ -269,7 +306,7 @@ class TeamMembership(SQLBase):
             'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
             'approximate_duration': formatter.approximateduration()}
 
-        msg = get_email_template(templatename) % replacements
+        msg = get_email_template(templatename, app='registry') % replacements
         from_addr = format_address(
             team.displayname, config.canonical.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
@@ -281,8 +318,8 @@ class TeamMembership(SQLBase):
 
         if silent and not self.canChangeStatusSilently(user):
             raise UserCannotChangeMembershipSilently(
-                "Only Launchpad administrators may change membership statuses "
-                "silently.")
+                "Only Launchpad administrators may change membership "
+                "statuses silently.")
 
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
@@ -303,14 +340,17 @@ class TeamMembership(SQLBase):
             deactivated: [proposed, approved, admin, invited],
             expired: [proposed, approved, admin, invited],
             proposed: [approved, admin, declined],
-            declined: [proposed, approved, admin],
+            declined: [proposed, approved, admin, invited],
             invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
-        assert self.status in state_transition, (
-            "Unknown status: %s" % self.status.name)
-        assert status in state_transition[self.status], (
-            "Bad state transition from %s to %s"
-            % (self.status.name, status.name))
+
+        if self.status not in state_transition:
+            raise TeamMembershipTransitionError(
+                "Unknown status: %s" % self.status.name)
+        if status not in state_transition[self.status]:
+            raise TeamMembershipTransitionError(
+                "Bad state transition from %s to %s"
+                % (self.status.name, status.name))
 
         if status in ACTIVE_STATES and self.team in self.person.allmembers:
             raise CyclicalTeamMembershipError(
@@ -375,96 +415,11 @@ class TeamMembership(SQLBase):
         """Send a status change notification to all team admins and the
         member whose membership's status changed.
         """
-        team = self.team
-        member = self.person
         reviewer = self.last_changed_by
-        from_addr = format_address(
-            team.displayname, config.canonical.noreply_from_address)
         new_status = self.status
-        admins_emails = team.getTeamAdminsEmailAddresses()
-        # self.person might be a team, so we can't rely on its preferredemail.
-        member_email = get_contact_email_addresses(member)
-        # Make sure we don't send the same notification twice to anybody.
-        for email in member_email:
-            if email in admins_emails:
-                admins_emails.remove(email)
-
-        if reviewer != member:
-            reviewer_name = reviewer.unique_displayname
-        else:
-            # The user himself changed his membership.
-            reviewer_name = 'the user himself'
-
-        if self.last_change_comment:
-            comment = ("\n%s said:\n %s\n" % (
-                reviewer.displayname, self.last_change_comment.strip()))
-        else:
-            comment = ""
-
-        replacements = {
-            'member_name': member.unique_displayname,
-            'recipient_name': member.displayname,
-            'team_name': team.unique_displayname,
-            'team_url': canonical_url(team),
-            'old_status': old_status.title,
-            'new_status': new_status.title,
-            'reviewer_name': reviewer_name,
-            'comment': comment}
-
-        template_name = 'membership-statuschange'
-        subject = ('Membership change: %(member)s in %(team)s'
-                   % {'member': member.name, 'team': team.name})
-        if new_status == TeamMembershipStatus.EXPIRED:
-            template_name = 'membership-expired'
-            subject = '%s expired from team' % member.name
-        elif (new_status == TeamMembershipStatus.APPROVED and
-              old_status != TeamMembershipStatus.ADMIN):
-            if old_status == TeamMembershipStatus.INVITED:
-                subject = ('Invitation to %s accepted by %s'
-                           % (member.name, reviewer.name))
-                template_name = 'membership-invitation-accepted'
-            elif old_status == TeamMembershipStatus.PROPOSED:
-                subject = '%s approved by %s' % (member.name, reviewer.name)
-            else:
-                subject = '%s added by %s' % (member.name, reviewer.name)
-        elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
-            subject = ('Invitation to %s declined by %s'
-                       % (member.name, reviewer.name))
-            template_name = 'membership-invitation-declined'
-        elif new_status == TeamMembershipStatus.DEACTIVATED:
-            subject = '%s deactivated by %s' % (member.name, reviewer.name)
-        elif new_status == TeamMembershipStatus.ADMIN:
-            subject = '%s made admin by %s' % (member.name, reviewer.name)
-        elif new_status == TeamMembershipStatus.DECLINED:
-            subject = '%s declined by %s' % (member.name, reviewer.name)
-        else:
-            # Use the default template and subject.
-            pass
-
-        if admins_emails:
-            admins_template = get_email_template(
-                "%s-bulk.txt" % template_name)
-            for address in admins_emails:
-                recipient = getUtility(IPersonSet).getByEmail(address)
-                replacements['recipient_name'] = recipient.displayname
-                msg = MailWrapper().format(
-                    admins_template % replacements, force_wrap=True)
-                simple_sendmail(from_addr, address, subject, msg)
-
-        # The member can be a team without any members, and in this case we
-        # won't have a single email address to send this notification to.
-        if member_email and reviewer != member:
-            if member.isTeam():
-                template = '%s-bulk.txt' % template_name
-            else:
-                template = '%s-personal.txt' % template_name
-            member_template = get_email_template(template)
-            for address in member_email:
-                recipient = getUtility(IPersonSet).getByEmail(address)
-                replacements['recipient_name'] = recipient.displayname
-                msg = MailWrapper().format(
-                    member_template % replacements, force_wrap=True)
-                simple_sendmail(from_addr, address, subject, msg)
+        getUtility(IMembershipNotificationJobSource).create(
+            self.person, self.team, reviewer, old_status, new_status,
+            self.last_change_comment)
 
 
 class TeamMembershipSet:
@@ -522,14 +477,49 @@ class TeamMembershipSet:
         """See `ITeamMembershipSet`."""
         return TeamMembership.selectOneBy(person=person, team=team)
 
-    def getMembershipsToExpire(self, when=None):
+    def getMembershipsToExpire(self, when=None, exclude_autorenewals=False):
         """See `ITeamMembershipSet`."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
-        query = ("date_expires <= %s AND status IN (%s, %s)"
-                 % sqlvalues(when, TeamMembershipStatus.ADMIN,
-                             TeamMembershipStatus.APPROVED))
-        return TeamMembership.select(query)
+        conditions = [
+            TeamMembership.dateexpires <= when,
+            TeamMembership.status.is_in(
+                [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]),
+            ]
+        if exclude_autorenewals:
+            # Avoid circular import.
+            from lp.registry.model.person import Person
+            conditions.append(TeamMembership.team == Person.id)
+            conditions.append(
+                Person.renewal_policy !=
+                    TeamMembershipRenewalPolicy.AUTOMATIC)
+        return IStore(TeamMembership).find(TeamMembership, *conditions)
+
+    def deactivateActiveMemberships(self, team, comment, reviewer):
+        """See `ITeamMembershipSet`."""
+        now = datetime.now(pytz.timezone('UTC'))
+        cur = cursor()
+        all_members = list(team.activemembers)
+        cur.execute("""
+            UPDATE TeamMembership
+            SET status=%(status)s,
+                last_changed_by=%(last_changed_by)s,
+                last_change_comment=%(comment)s,
+                date_last_changed=%(date_last_changed)s
+            WHERE
+                TeamMembership.team = %(team)s
+                AND TeamMembership.status IN %(original_statuses)s
+            """,
+            dict(
+                status=TeamMembershipStatus.DEACTIVATED,
+                last_changed_by=reviewer.id,
+                comment=comment,
+                date_last_changed=now,
+                team=team.id,
+                original_statuses=ACTIVE_STATES))
+        for member in all_members:
+            # store.invalidate() is called for each iteration.
+            _cleanTeamParticipation(member, team)
 
 
 class TeamParticipation(SQLBase):
@@ -541,182 +531,190 @@ class TeamParticipation(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 
-def _cleanTeamParticipation(person, team):
-    """Remove relevant entries in TeamParticipation for <person> and <team>.
+def _cleanTeamParticipation(child, parent):
+    """Remove child from team and clean up child's subteams.
 
-    Remove all tuples "person, team" from TeamParticipation for the given
-    person and team (together with all its superteams), unless this person is
-    an indirect member of the given team. More information on how to use the
-    TeamParticipation table can be found in the TeamParticipationUsage spec or
-    the teammembership.txt system doctest.
+    A participant of child is removed from parent's TeamParticipation
+    entries if the only path from the participant to parent is via
+    child.
     """
-    query = """
-        SELECT EXISTS(
-            SELECT 1 FROM TeamParticipation
-            WHERE person = %(person_id)s AND team IN (
-                    SELECT person
-                    FROM TeamParticipation JOIN Person ON (person = Person.id)
-                    WHERE team = %(team_id)s
-                        AND person NOT IN (%(team_id)s, %(person_id)s)
-                        AND teamowner IS NOT NULL
-                 )
-        )
-        """ % dict(team_id=team.id, person_id=person.id)
-    store = Store.of(person)
-    (result, ) = store.execute(query).get_one()
-    if result:
-        # The person is a participant in this team by virtue of a membership
-        # in another one, so don't attempt to remove anything.
-        return
-
-    # First of all, we remove <person> from <team> (and its superteams).
-    _removeParticipantFromTeamAndSuperTeams(person, team)
-    if not person.is_team:
-        # Nothing else to do.
-        return
-
-    store = Store.of(person)
-
-    # Clean the participation of all our participant subteams, that are
-    # not a direct members of the target team.
-    query = """
-        -- All of my participant subteams...
-        SELECT person
-        FROM TeamParticipation JOIN Person ON (person = Person.id)
-        WHERE team = %(person_id)s AND person != %(person_id)s
-            AND teamowner IS NOT NULL
-        EXCEPT
-        -- that aren't a direct member of the team.
-        SELECT person
-        FROM TeamMembership
-        WHERE team = %(team_id)s AND status IN %(active_states)s
-        """ % dict(
-            person_id=person.id, team_id=team.id,
-            active_states=sqlvalues(ACTIVE_STATES)[0])
-
-    # Avoid circular import.
-    from lp.registry.model.person import Person
-    for subteam in store.find(Person, "id IN (%s)" % query):
-        _cleanTeamParticipation(subteam, team)
-
-    # Then clean-up all the non-team participants. We can remove those
-    # in a single query when the team graph is up to date.
-    _removeAllIndividualParticipantsFromTeamAndSuperTeams(person, team)
-
-
-def _removeParticipantFromTeamAndSuperTeams(person, team):
-    """Remove participation of person in team.
-
-    If <person> is a participant (that is, has a TeamParticipation entry)
-    of any team that is a subteam of <team>, then <person> should be kept as
-    a participant of <team> and (as a consequence) all its superteams.
-    Otherwise, <person> is removed from <team> and we repeat this process for
-    each superteam of <team>.
-    """
-    # Check if the person is a member of the given team through another team.
-    query = """
-        SELECT EXISTS(
-            SELECT 1
-            FROM TeamParticipation, TeamMembership
-            WHERE
-                TeamMembership.team = %(team_id)s AND
-                TeamMembership.person = TeamParticipation.team AND
-                TeamParticipation.person = %(person_id)s AND
-                TeamMembership.status IN %(active_states)s)
-        """ % dict(team_id=team.id, person_id=person.id,
-                   active_states=sqlvalues(ACTIVE_STATES)[0])
-    store = Store.of(person)
-    (result, ) = store.execute(query).get_one()
-    if result:
-        # The person is a participant by virtue of a membership on another
-        # team, so don't remove.
-        return
-    store.find(TeamParticipation, (
-        (TeamParticipation.team == team) &
-        (TeamParticipation.person == person))).remove()
-
-    for superteam in _getSuperTeamsExcludingDirectMembership(person, team):
-        _removeParticipantFromTeamAndSuperTeams(person, superteam)
-
-
-def _removeAllIndividualParticipantsFromTeamAndSuperTeams(team, target_team):
-    """Remove all non-team participants in <team> from <target_team>.
-
-    All the non-team participants of <team> are removed from <target_team>
-    and its super teams, unless they participate in <target_team> also from
-    one of its sub team.
-    """
-    query = """
+    # Delete participation entries for the child and the child's
+    # direct/indirect members in other ancestor teams, unless those
+    # ancestor teams have another path the the child besides the
+    # membership that has just been deactivated.
+    store = Store.of(parent)
+    store.execute("""
         DELETE FROM TeamParticipation
-        WHERE team = %(target_team_id)s AND person IN (
-            -- All the individual participants.
-            SELECT person
-            FROM TeamParticipation JOIN Person ON (person = Person.id)
-            WHERE team = %(team_id)s AND teamowner IS NULL
-            EXCEPT
-            -- people participating through a subteam of target_team;
-            SELECT person
+        USING (
+            /* Get all the participation entries that might need to be
+             * deleted, i.e. all the entries where the
+             * TeamParticipation.person is a participant of child, and
+             * where child participated in TeamParticipation.team until
+             * child was removed from parent.
+             */
+            SELECT person, team
             FROM TeamParticipation
-            WHERE team IN (
-                -- The subteams of target_team.
-                SELECT person
-                FROM TeamParticipation JOIN Person ON (person = Person.id)
-                WHERE team = %(target_team_id)s
-                    AND person NOT IN (%(target_team_id)s, %(team_id)s)
-                    AND teamowner IS NOT NULL
-                 )
-            -- or people directly a member of the target team.
-            EXCEPT
-            SELECT person
-            FROM TeamMembership
-            WHERE team = %(target_team_id)s AND status IN %(active_states)s
-        )
-        """ % dict(
-            team_id=team.id, target_team_id=target_team.id,
-            active_states=sqlvalues(ACTIVE_STATES)[0])
-    store = Store.of(team)
-    store.execute(query)
-
-    super_teams = _getSuperTeamsExcludingDirectMembership(team, target_team)
-    for superteam in super_teams:
-        _removeAllIndividualParticipantsFromTeamAndSuperTeams(team, superteam)
+            WHERE person IN (
+                    SELECT person
+                    FROM TeamParticipation
+                    WHERE team = %(child)s
+                )
+                AND team IN (
+                    SELECT team
+                    FROM TeamParticipation
+                    WHERE person = %(child)s
+                        AND team != %(child)s
+                )
 
 
-def _getSuperTeamsExcludingDirectMembership(person, team):
-    """Return all the super teams of <team> where person isn't a member."""
-    query = """
-        -- All the super teams...
-        SELECT team
-        FROM TeamParticipation
-        WHERE person = %(team_id)s AND team != %(team_id)s
-        EXCEPT
-        -- The one where person has an active membership.
-        SELECT team
-        FROM TeamMembership
-        WHERE person = %(person_id)s AND status IN %(active_states)s
-        """ % dict(
-            person_id=person.id, team_id=team.id,
-            active_states=sqlvalues(ACTIVE_STATES)[0])
+            EXCEPT (
 
-    # Avoid circular import.
-    from lp.registry.model.person import Person
-    return Store.of(person).find(Person, "id IN (%s)" % query)
+                /* Compute the TeamParticipation entries that we need to
+                 * keep by walking the tree in the TeamMembership table.
+                 */
+                WITH RECURSIVE parent(person, team) AS (
+                    /* Start by getting all the ancestors of the child
+                     * from the TeamParticipation table, then get those
+                     * ancestors' direct members to recurse through the
+                     * tree from the top.
+                     */
+                    SELECT ancestor.person, ancestor.team
+                    FROM TeamMembership ancestor
+                    WHERE ancestor.status IN %(active_states)s
+                        AND ancestor.team IN (
+                            SELECT team
+                            FROM TeamParticipation
+                            WHERE person = %(child)s
+                        )
+
+                    UNION
+
+                    /* Find the next level of direct members, but hold
+                     * onto the parent.team, since we want the top and
+                     * bottom of the hierarchy to calculate the
+                     * TeamParticipation. The query above makes sure
+                     * that we do this for all the ancestors.
+                     */
+                    SELECT child.person, parent.team
+                    FROM TeamMembership child
+                        JOIN parent ON child.team = parent.person
+                    WHERE child.status IN %(active_states)s
+                )
+                SELECT person, team
+                FROM parent
+            )
+        ) AS keeping
+        WHERE TeamParticipation.person = keeping.person
+            AND TeamParticipation.team = keeping.team
+        """ % sqlvalues(
+            child=child.id,
+            active_states=ACTIVE_STATES))
+    store.invalidate()
 
 
-def _fillTeamParticipation(member, team):
+def _fillTeamParticipation(member, accepting_team):
     """Add relevant entries in TeamParticipation for given member and team.
 
     Add a tuple "member, team" in TeamParticipation for the given team and all
     of its superteams. More information on how to use the TeamParticipation
     table can be found in the TeamParticipationUsage spec.
     """
-    members = [member]
     if member.isTeam():
-        # The given member is, in fact, a team, and in this case we must
-        # add all of its members to the given team and to its superteams.
-        members.extend(member.allmembers)
+        # The submembers will be all the members of the team that is
+        # being added as a member. The superteams will be all the teams
+        # that the accepting_team belongs to, so all the members will
+        # also be joining the superteams indirectly. It is important to
+        # remember that teams are members of themselves, so the member
+        # team will also be one of the submembers, and the
+        # accepting_team will also be one of the superteams.
+        query = """
+            INSERT INTO TeamParticipation (person, team)
+            SELECT submember.person, superteam.team
+            FROM TeamParticipation submember
+                JOIN TeamParticipation superteam ON TRUE
+            WHERE submember.team = %(member)d
+                AND superteam.person = %(accepting_team)d
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM TeamParticipation
+                    WHERE person = submember.person
+                        AND team = superteam.team
+                    )
+            """ % dict(member=member.id, accepting_team=accepting_team.id)
+    else:
+        query = """
+            INSERT INTO TeamParticipation (person, team)
+            SELECT %(member)d, superteam.team
+            FROM TeamParticipation superteam
+            WHERE superteam.person = %(accepting_team)d
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM TeamParticipation
+                    WHERE person = %(member)d
+                        AND team = superteam.team
+                    )
+            """ % dict(member=member.id, accepting_team=accepting_team.id)
 
-    for m in members:
-        for t in itertools.chain(team.super_teams, [team]):
-            if not m.hasParticipationEntryFor(t):
-                TeamParticipation(person=m, team=t)
+    store = Store.of(member)
+    store.execute(query)
+
+
+def find_team_participations(people, teams=None):
+    """Find the teams the given people participate in.
+
+    :param people: The people for which to query team participation.
+    :param teams: Optionally, limit the participation check to these teams.
+
+    This method performs its work with at most a single database query.
+    It first does similar checks to those performed by IPerson.in_team() and
+    it may turn out that no database query is required at all.
+    """
+
+    teams_to_query = []
+    people_teams = {}
+
+    def add_team_to_result(person, team):
+        teams = people_teams.get(person)
+        if teams is None:
+            teams = set()
+            people_teams[person] = teams
+        teams.add(team)
+
+    # Check for the simple cases - self membership etc.
+    if teams:
+        for team in teams:
+            if team is None:
+                continue
+            for person in people:
+                if team.id == person.id:
+                    add_team_to_result(person, team)
+                    continue
+            if not team.is_team:
+                continue
+            teams_to_query.append(team)
+
+    # Avoid circular imports
+    from lp.registry.model.person import Person
+
+    # We are either checking for membership of any team or didn't eliminate
+    # all the specific team participation checks above.
+    if teams_to_query or not teams:
+        Team = ClassAlias(Person, 'Team')
+        person_ids = [person.id for person in people]
+        conditions = [
+            TeamParticipation.personID == Person.id,
+            TeamParticipation.teamID == Team.id,
+            Person.id.is_in(person_ids)
+        ]
+        team_ids = [team.id for team in teams_to_query]
+        if team_ids:
+            conditions.append(Team.id.is_in(team_ids))
+
+        store = IStore(Person)
+        rs = store.find(
+            (Person, Team),
+            *conditions)
+
+        for (person, team) in rs:
+            add_team_to_result(person, team)
+    return people_teams

@@ -10,6 +10,7 @@ __all__ = ['TranslatableMessageView']
 from canonical.launchpad.webapp import LaunchpadView
 from lp.translations.browser.browser_helpers import text_to_html
 
+
 class TranslatableMessageView(LaunchpadView):
     """View class to render an `ITranslatableMessage`."""
 
@@ -18,7 +19,7 @@ class TranslatableMessageView(LaunchpadView):
         """The form label."""
         return 'Translate messge %d into %s' % (
             self.context.sequence,
-            self.context.pofile.language.getFullEnglishName())
+            self.context.pofile.language.englishname)
 
     @property
     def page_title(self):

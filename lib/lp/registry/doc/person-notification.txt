@@ -9,8 +9,8 @@ notifications and sending them.
 
     >>> from lp.registry.interfaces.personnotification import (
     ...     IPersonNotification, IPersonNotificationSet)
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> notification_set = getUtility(IPersonNotificationSet)
     >>> mark = getUtility(IPersonSet).getByName('mark')
 
@@ -50,7 +50,9 @@ We can also retrieve notifications that are older than a certain date.
 A notification has a send() method which creates an email message and
 sends it to the recipient.
 
-    >>> notification.send()
+    >>> from lp.services.log.logger import FakeLogger
+    >>> notification.send(logger=FakeLogger())
+    INFO Sending notification to ['Mark Shuttleworth <mark@example.com>'].
     >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: bounces@canonical.com
@@ -64,9 +66,15 @@ notifications.
 
     >>> notification = notification_set.addNotification(
     ...     mark, 'subject2', 'body2')
-    >>> [n.subject for n in notification_set.getNotificationsToSend()]
-    [u'subject2']
 
+This includes notifications to teams owned by other teams.
+
+    >>> owning_team = factory.makeTeam()
+    >>> team = factory.makeTeam(owner=owning_team)
+    >>> team_notification = notification_set.addNotification(
+    ...     team, 'subject3', 'body3')
+    >>> [n.subject for n in notification_set.getNotificationsToSend()]
+    [u'subject2', u'subject3']
     >>> transaction.commit()
 
     >>> import subprocess

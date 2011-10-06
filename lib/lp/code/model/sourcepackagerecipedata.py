@@ -1,5 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=F0401,E1002
 
 """Implementation of the recipe storage.
 
@@ -9,24 +11,43 @@ interfaces.
 """
 
 __metaclass__ = type
-__all__ = ['_SourcePackageRecipeData']
+__all__ = ['SourcePackageRecipeData']
 
 from bzrlib.plugins.builder.recipe import (
-    BaseRecipeBranch, MergeInstruction, NestInstruction, RecipeBranch)
-
-from lazr.enum import DBEnumeratedType, DBItem
-
-from storm.locals import Int, Reference, ReferenceSet, Store, Storm, Unicode
-
+    BaseRecipeBranch,
+    MergeInstruction,
+    NestInstruction,
+    NestPartInstruction,
+    RecipeBranch,
+    RecipeParser,
+    SAFE_INSTRUCTIONS,
+    )
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from storm.expr import Union
+from storm.locals import (
+    And,
+    Int,
+    Reference,
+    ReferenceSet,
+    Select,
+    Store,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
-
-from lp.code.model.branch import Branch
+from lp.code.errors import (
+    NoSuchBranch,
+    PrivateBranchRecipe,
+    TooNewRecipeFormat,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, TooNewRecipeFormat)
+from lp.code.model.branch import Branch
 
 
 class InstructionType(DBEnumeratedType):
@@ -42,6 +63,11 @@ class InstructionType(DBEnumeratedType):
 
         A nest instruction.""")
 
+    NEST_PART = DBItem(3, """
+        Nest-part instruction
+
+        A nest-part instruction.""")
+
 
 class _SourcePackageRecipeDataInstruction(Storm):
     """A single line from a recipe."""
@@ -49,7 +75,9 @@ class _SourcePackageRecipeDataInstruction(Storm):
     __storm_table__ = "SourcePackageRecipeDataInstruction"
 
     def __init__(self, name, type, comment, line_number, branch, revspec,
-                 directory, recipe_data, parent_instruction):
+                 directory, recipe_data, parent_instruction,
+                 source_directory):
+        super(_SourcePackageRecipeDataInstruction, self).__init__()
         self.name = unicode(name)
         self.type = type
         self.comment = comment
@@ -61,6 +89,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
         if directory is not None:
             directory = unicode(directory)
         self.directory = directory
+        self.source_directory = source_directory
         self.recipe_data = recipe_data
         self.parent_instruction = parent_instruction
 
@@ -76,9 +105,10 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
     revspec = Unicode(allow_none=True)
     directory = Unicode(allow_none=True)
+    source_directory = Unicode(allow_none=True)
 
     recipe_data_id = Int(name='recipe_data', allow_none=False)
-    recipe_data = Reference(recipe_data_id, '_SourcePackageRecipeData.id')
+    recipe_data = Reference(recipe_data_id, 'SourcePackageRecipeData.id')
 
     parent_instruction_id = Int(name='parent_instruction', allow_none=True)
     parent_instruction = Reference(
@@ -92,12 +122,18 @@ class _SourcePackageRecipeDataInstruction(Storm):
             recipe_branch.merge_branch(branch)
         elif self.type == InstructionType.NEST:
             recipe_branch.nest_branch(self.directory, branch)
+        elif self.type == InstructionType.NEST_PART:
+            recipe_branch.nest_part_branch(
+                branch, self.source_directory, self.directory)
         else:
             raise AssertionError("Unknown type %r" % self.type)
         return branch
 
 
-class _SourcePackageRecipeData(Storm):
+MAX_RECIPE_FORMAT = 0.3
+
+
+class SourcePackageRecipeData(Storm):
     """The database representation of a BaseRecipeBranch from bzr-builder.
 
     This is referenced from the SourcePackageRecipe table as the 'recipe_data'
@@ -130,6 +166,44 @@ class _SourcePackageRecipeData(Storm):
     sourcepackage_recipe_build = Reference(
         sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
 
+    @staticmethod
+    def getParsedRecipe(recipe_text):
+        parser = RecipeParser(recipe_text)
+        return parser.parse(permitted_instructions=SAFE_INSTRUCTIONS)
+
+    @staticmethod
+    def findRecipes(branch):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = Store.of(branch)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id.is_in(Union(
+                Select(
+                    SourcePackageRecipeData.sourcepackage_recipe_id,
+                    SourcePackageRecipeData.base_branch == branch),
+                Select(
+                    SourcePackageRecipeData.sourcepackage_recipe_id,
+                    And(
+                        _SourcePackageRecipeDataInstruction.recipe_data_id ==
+                        SourcePackageRecipeData.id,
+                        _SourcePackageRecipeDataInstruction.branch == branch)
+                    )
+            ))
+        )
+
+    @classmethod
+    def createManifestFromText(cls, text, sourcepackage_recipe_build):
+        """Create a manifest for the specified build.
+
+        :param text: The text of the recipe to create a manifest for.
+        :param sourcepackage_recipe_build: The build to associate the manifest
+            with.
+        :return: an instance of SourcePackageRecipeData.
+        """
+        parsed = cls.getParsedRecipe(text)
+        return cls(
+            parsed, sourcepackage_recipe_build=sourcepackage_recipe_build)
+
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
         base_branch = BaseRecipeBranch(
@@ -159,11 +233,12 @@ class _SourcePackageRecipeData(Storm):
         """
         r = {}
         for instruction in recipe_branch.child_branches:
-            if not (isinstance(instruction, MergeInstruction) or
-                    isinstance(instruction, NestInstruction)):
-                raise ForbiddenInstruction(str(instruction))
             db_branch = getUtility(IBranchLookup).getByUrl(
                 instruction.recipe_branch.url)
+            if db_branch is None:
+                raise NoSuchBranch(instruction.recipe_branch.url)
+            if db_branch.private:
+                raise PrivateBranchRecipe(db_branch)
             r[instruction.recipe_branch.url] = db_branch
             r.update(self._scanInstructions(instruction.recipe_branch))
         return r
@@ -173,10 +248,16 @@ class _SourcePackageRecipeData(Storm):
         """Build _SourcePackageRecipeDataInstructions for the recipe_branch.
         """
         for instruction in recipe_branch.child_branches:
+            nest_path = instruction.nest_path
+            source_directory = None
             if isinstance(instruction, MergeInstruction):
                 type = InstructionType.MERGE
             elif isinstance(instruction, NestInstruction):
                 type = InstructionType.NEST
+            elif isinstance(instruction, NestPartInstruction):
+                type = InstructionType.NEST_PART
+                nest_path = instruction.target_subdir
+                source_directory = instruction.subpath
             else:
                 # Unsupported instructions should have been filtered out by
                 # _scanInstructions; if we get surprised here, that's a bug.
@@ -188,15 +269,15 @@ class _SourcePackageRecipeData(Storm):
             insn = _SourcePackageRecipeDataInstruction(
                 instruction.recipe_branch.name, type, comment,
                 line_number, db_branch, instruction.recipe_branch.revspec,
-                instruction.nest_path, self, parent_insn)
+                nest_path, self, parent_insn, source_directory)
             line_number = self._recordInstructions(
                 instruction.recipe_branch, insn, branch_map, line_number)
         return line_number
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
-        if builder_recipe.format > 0.2:
-            raise TooNewRecipeFormat(builder_recipe.format, 0.2)
+        if builder_recipe.format > MAX_RECIPE_FORMAT:
+            raise TooNewRecipeFormat(builder_recipe.format, MAX_RECIPE_FORMAT)
         branch_map = self._scanInstructions(builder_recipe)
         # If this object hasn't been added to a store yet, there can't be any
         # instructions linking to us yet.
@@ -204,6 +285,10 @@ class _SourcePackageRecipeData(Storm):
             self.instructions.find().remove()
         branch_lookup = getUtility(IBranchLookup)
         base_branch = branch_lookup.getByUrl(builder_recipe.url)
+        if base_branch is None:
+            raise NoSuchBranch(builder_recipe.url)
+        if base_branch.private:
+            raise PrivateBranchRecipe(base_branch)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
         self._recordInstructions(
@@ -212,11 +297,14 @@ class _SourcePackageRecipeData(Storm):
         self.deb_version_template = unicode(builder_recipe.deb_version)
         self.recipe_format = unicode(builder_recipe.format)
 
-    def __init__(self, recipe, sourcepackage_recipe):
+    def __init__(self, recipe, sourcepackage_recipe=None,
+                 sourcepackage_recipe_build=None):
         """Initialize from the bzr-builder recipe and link it to a db recipe.
         """
+        super(SourcePackageRecipeData, self).__init__()
         self.setRecipe(recipe)
         self.sourcepackage_recipe = sourcepackage_recipe
+        self.sourcepackage_recipe_build = sourcepackage_recipe_build
 
     def getReferencedBranches(self):
         """Return an iterator of the Branch objects referenced by this recipe.

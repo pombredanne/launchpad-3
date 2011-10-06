@@ -2,7 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-from unittest import TestLoader
+from StringIO import StringIO
+import tarfile
 
 from lp.testing.fakemethod import FakeMethod
 
@@ -19,13 +20,16 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
     """Test slave-side generate-translation-templates script."""
     layer = ZopelessDatabaseLayer
 
+    result_name = "translation-templates.tar.gz"
+
     def test_getBranch_url(self):
         # If passed a branch URL, the template generation script will
         # check out that branch into a directory called "source-tree."
         branch_url = 'lp://~my/translation/branch'
 
         generator = GenerateTranslationTemplates(
-            branch_url, self.makeTemporaryDirectory())
+            branch_url, self.result_name, self.makeTemporaryDirectory(),
+            log_file=StringIO())
         generator._checkout = FakeMethod()
         generator._getBranch()
 
@@ -38,7 +42,8 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         branch_dir = '/home/me/branch'
 
         generator = GenerateTranslationTemplates(
-            branch_dir, self.makeTemporaryDirectory())
+            branch_dir, self.result_name, self.makeTemporaryDirectory(),
+            log_file=StringIO())
         generator._checkout = FakeMethod()
         generator._getBranch()
 
@@ -47,14 +52,14 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
     def _createBranch(self, content_map=None):
         """Create a working branch.
-        
+
         :param content_map: optional dict mapping file names to file contents.
             Each of these files with their contents will be written to the
             branch.
 
         :return: a fresh lp.code.model.Branch backed by a real bzr branch.
         """
-        db_branch, tree = self.create_branch_and_tree(hosted=True)
+        db_branch, tree = self.create_branch_and_tree()
         populist = DirectBranchCommit(db_branch)
         last_revision = populist.bzrbranch.last_revision()
         db_branch.last_scanned_id = populist.last_scanned_id = last_revision
@@ -68,27 +73,43 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
     def test_getBranch_bzr(self):
         # _getBranch can retrieve branch contents from a branch URL.
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         marker_text = "Ceci n'est pas cet branch."
         branch = self._createBranch({'marker.txt': marker_text})
-        branch_url = branch.getPullURL()
 
         generator = GenerateTranslationTemplates(
-            branch_url, self.makeTemporaryDirectory())
+            branch.getInternalBzrUrl(), self.result_name,
+            self.makeTemporaryDirectory(), log_file=StringIO())
         generator.branch_dir = self.makeTemporaryDirectory()
         generator._getBranch()
 
         marker_file = file(os.path.join(generator.branch_dir, 'marker.txt'))
         self.assertEqual(marker_text, marker_file.read())
 
+    def test_templates_tarball(self):
+        # Create a tarball from pot files.
+        workdir = self.makeTemporaryDirectory()
+        branchdir = os.path.join(workdir, 'branchdir')
+        dummy_tar = os.path.join(
+            os.path.dirname(__file__),'dummy_templates.tar.gz')
+        tar = tarfile.open(dummy_tar, 'r|*')
+        tar.extractall(branchdir)
+        potnames = [member.name for member in tar.getmembers() if not member.isdir()]
+        tar.close()
+
+        generator = GenerateTranslationTemplates(
+            branchdir, self.result_name, workdir, log_file=StringIO())
+        generator._getBranch()
+        generator._makeTarball(potnames)
+        tar = tarfile.open(os.path.join(workdir, self.result_name), 'r|*')
+        tarnames = tar.getnames()
+        tar.close()
+        self.assertContentEqual(potnames, tarnames)
+
     def test_script(self):
         tempdir = self.makeTemporaryDirectory()
         workdir = self.makeTemporaryDirectory()
         (retval, out, err) = run_script(
             'lib/canonical/buildd/pottery/generate_translation_templates.py',
-            args=[tempdir, workdir])
+            args=[tempdir, self.result_name, workdir])
         self.assertEqual(0, retval)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

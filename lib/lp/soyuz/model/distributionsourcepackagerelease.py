@@ -11,32 +11,42 @@ __all__ = [
     'DistributionSourcePackageRelease',
     ]
 
+from lazr.delegates import delegates
+from storm.expr import (
+    And,
+    Desc,
+    Join,
+    LeftJoin,
+    SQL,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import Desc
-
-from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    IDistributionSourcePackageRelease)
-from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from canonical.database.sqlbase import sqlvalues
-
-from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.distroseriesbinarypackage import (
-    DistroSeriesBinaryPackage)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
-from lp.soyuz.model.build import Build
-from lp.soyuz.model.publishing import \
-    SourcePackagePublishingHistory
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
-from lazr.delegates import delegates
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease,
+    )
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 
 class DistributionSourcePackageRelease:
@@ -100,18 +110,21 @@ class DistributionSourcePackageRelease:
         # distribution that were built for a PPA but have been published
         # in a main archive.
         builds_for_distro_exprs = (
-            Build.sourcepackagerelease == self.sourcepackagerelease,
-            Build.distroarchseries == DistroArchSeries.id,
+            (BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease),
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id
             )
 
         # First, get all the builds built in a main archive (this will
         # include new and failed builds.)
         builds_built_in_main_archives = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distro_exprs,
-            Build.archive == Archive.id,
+            PackageBuild.archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
         # Next get all the builds that have a binary published in the
@@ -119,9 +132,9 @@ class DistributionSourcePackageRelease:
         # query, but not the new/failed ones. It will also include
         # ppa builds that have been published in main archives.
         builds_published_in_main_archives = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distro_exprs,
-            BinaryPackageRelease.build == Build.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.archive == Archive.id,
@@ -130,7 +143,7 @@ class DistributionSourcePackageRelease:
 
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(
-                Desc(Build.datecreated), Desc(Build.id))
+                Desc(BinaryPackageBuild.id))
 
     @property
     def binary_package_names(self):
@@ -138,43 +151,69 @@ class DistributionSourcePackageRelease:
         return BinaryPackageName.select("""
             BinaryPackageName.id =
                 BinaryPackageRelease.binarypackagename AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %s
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.source_package_release = %s
             """ % sqlvalues(self.sourcepackagerelease.id),
-            clauseTables=['BinaryPackageRelease', 'Build'],
+            clauseTables=['BinaryPackageRelease', 'BinaryPackageBuild'],
             orderBy='name',
             distinct=True)
 
     @property
     def sample_binary_packages(self):
         """See IDistributionSourcePackageRelease."""
-        all_published = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %s
-            """ % sqlvalues(self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            self.sourcepackagerelease),
-            distinct=True,
-            orderBy=['BinaryPackageName.name'],
-            clauseTables=['DistroArchSeries', 'DistroSeries',
-                          'BinaryPackageRelease', 'BinaryPackageName',
-                          'Build'],
-            prejoinClauseTables=['BinaryPackageRelease', 'BinaryPackageName'])
-        samples = []
-        names = set()
-        for publishing in all_published:
-            if publishing.binarypackagerelease.binarypackagename not in names:
-                names.add(publishing.binarypackagerelease.binarypackagename)
-                samples.append(
-                    DistroSeriesBinaryPackage(
-                        publishing.distroarchseries.distroseries,
-                        publishing.binarypackagerelease.binarypackagename))
-        return samples
+        #avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.distroseriespackagecache import (
+            DistroSeriesPackageCache)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        archive_ids = list(self.distribution.all_distro_archive_ids)
+        result_row = (
+            SQL('DISTINCT ON(BinaryPackageName.name) 0 AS ignore'),
+            BinaryPackagePublishingHistory, DistroSeriesPackageCache,
+            BinaryPackageRelease, BinaryPackageName)
+        tables = (
+            BinaryPackagePublishingHistory,
+            Join(
+                DistroArchSeries,
+                DistroArchSeries.id ==
+                 BinaryPackagePublishingHistory.distroarchseriesID),
+            Join(
+                DistroSeries,
+                DistroArchSeries.distroseriesID == DistroSeries.id),
+            Join(
+                BinaryPackageRelease,
+                BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID),
+            Join(
+                BinaryPackageName,
+                BinaryPackageName.id ==
+                BinaryPackageRelease.binarypackagenameID),
+            Join(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == BinaryPackageRelease.buildID),
+            LeftJoin(
+                DistroSeriesPackageCache,
+                And(
+                    DistroSeriesPackageCache.distroseries == DistroSeries.id,
+                    DistroSeriesPackageCache.archiveID.is_in(archive_ids),
+                    DistroSeriesPackageCache.binarypackagename ==
+                    BinaryPackageName.id)))
+
+        all_published = store.using(*tables).find(
+            result_row,
+            DistroSeries.distribution == self.distribution,
+            BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
+            BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease)
+        all_published = all_published.order_by(
+            BinaryPackageName.name)
+
+        def make_dsb_package(row):
+            publishing = row[1]
+            package_cache = row[2]
+            return DistroSeriesBinaryPackage(
+                publishing.distroarchseries.distroseries,
+                publishing.binarypackagerelease.binarypackagename,
+                package_cache)
+        return DecoratedResultSet(all_published, make_dsb_package)

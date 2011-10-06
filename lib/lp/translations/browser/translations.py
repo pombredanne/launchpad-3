@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'HelpTranslateButtonView',
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
@@ -17,35 +16,25 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IRosettaApplication)
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from lp.registry.interfaces.product import IProductSet
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.layers import TranslationsLayer
+from canonical.launchpad.interfaces.launchpad import IRosettaApplication
 from canonical.launchpad.webapp import (
-    LaunchpadView, Navigation, stepto, canonical_url)
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepto,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-
-
-class HelpTranslateButtonView:
-    """View that renders a button to help translate its context."""
-
-    def __call__(self):
-        return """
-              <a href="%s">
-                <img
-                  alt="Help translate"
-                  src="/+icing/but-sml-helptranslate.gif"
-                />
-              </a>
-        """ % canonical_url(self.context, rootsite='translations')
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.translations.publisher import TranslationsLayer
 
 
 class TranslationsMixin:
@@ -63,16 +52,12 @@ class TranslationsMixin:
     @cachedproperty
     def answers_url(self):
         return canonical_url(
-            getUtility(ILaunchpadCelebrities).lp_translations,
+            getUtility(ILaunchpadCelebrities).launchpad,
             rootsite='answers')
 
 
-class RosettaApplicationView(TranslationsMixin):
+class RosettaApplicationView(LaunchpadView, TranslationsMixin):
     """View for various top-level Translations pages."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
     @property
     def ubuntu_translationseries(self):
@@ -183,7 +168,7 @@ class PageRedirectView:
         self.request.response.redirect(
             '/'.join([
                 canonical_url(self.context, rootsite='translations'),
-                self.page
+                self.page,
                 ]), status=301)
 
 
@@ -208,6 +193,7 @@ class TranslationsVHostBreadcrumb(Breadcrumb):
 
 class TranslationsLanguageBreadcrumb(Breadcrumb):
     """Breadcrumb for objects with language."""
+
     @property
     def text(self):
         return self.context.language.displayname

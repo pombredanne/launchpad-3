@@ -12,27 +12,184 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IHasBugHeat',
     'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
     'IOfficialBugTagTargetRestricted',
+    'ISeriesBugTarget',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, List, Object, Text, TextLine
 
-from canonical.launchpad import _
-from canonical.launchpad.fields import Tag
-from lp.bugs.interfaces.bugtask import (
-    BugBranchSearch, BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from lazr.enum import DBEnumeratedType
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    LAZR_WEBSERVICE_EXPORTED,
+    operation_for_version,
+    operation_parameters,
+    operation_removed_in_version,
+    operation_returns_collection_of,
+    REQUEST_USER,
+    )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
-from lazr.restful.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
-    export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_collection_of)
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from lp.bugs.interfaces.bugtask import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTagsSearchCombinator,
+    IBugTask,
+    IBugTaskSearch,
+    )
+from lp.services.fields import Tag
+
+
+search_tasks_params_common = {
+    "order_by": List(
+        title=_('List of fields by which the results are ordered.'),
+        value_type=Text(),
+        required=False),
+    "search_text": copy_field(IBugTaskSearch['searchtext']),
+    "status": copy_field(IBugTaskSearch['status']),
+    "importance": copy_field(IBugTaskSearch['importance']),
+    "assignee": Reference(schema=Interface),
+    "bug_reporter": Reference(schema=Interface),
+    "bug_supervisor": Reference(schema=Interface),
+    "bug_commenter": Reference(schema=Interface),
+    "bug_subscriber": Reference(schema=Interface),
+    "structural_subscriber": Reference(schema=Interface),
+    "owner": Reference(schema=Interface),
+    "affected_user": Reference(schema=Interface),
+    "has_patch": copy_field(IBugTaskSearch['has_patch']),
+    "has_cve": copy_field(IBugTaskSearch['has_cve']),
+    "tags": copy_field(IBugTaskSearch['tag']),
+    "tags_combinator": copy_field(IBugTaskSearch['tags_combinator']),
+    "omit_duplicates": copy_field(IBugTaskSearch['omit_dupes']),
+    "status_upstream": copy_field(IBugTaskSearch['status_upstream']),
+    "milestone_assignment": copy_field(
+        IBugTaskSearch['milestone_assignment']),
+    "milestone": copy_field(IBugTaskSearch['milestone']),
+    "component": copy_field(IBugTaskSearch['component']),
+    "nominated_for": Reference(schema=Interface),
+    "has_no_package": copy_field(IBugTaskSearch['has_no_package']),
+    "hardware_bus": Choice(
+        title=_(u"The bus of a hardware device related to a bug"),
+        # The vocabulary should be HWBus; this is fixed in
+        # _schema_circular_imports to avoid circular imports.
+        vocabulary=DBEnumeratedType, required=False),
+    "hardware_vendor_id": TextLine(
+        title=_(
+            u"The vendor ID of a hardware device related to a bug."),
+        description=_(
+            u"Allowed values of the vendor ID depend on the bus of the "
+            "device.\n\n"
+            "Vendor IDs of PCI, PCCard and USB devices are hexadecimal "
+            "string representations of 16 bit integers in the format "
+            "'0x01ab': The prefix '0x', followed by exactly 4 digits; "
+            "where a digit is one of the characters 0..9, a..f. The "
+            "characters A..F are not allowed.\n\n"
+            "SCSI vendor IDs are strings with exactly 8 characters. "
+            "Shorter names are right-padded with space (0x20) characters."
+            "\n\n"
+            "IDs for other buses may be arbitrary strings."),
+        required=False),
+    "hardware_product_id": TextLine(
+        title=_(
+            u"The product ID of a hardware device related to a bug."),
+        description=_(
+            u"Allowed values of the product ID depend on the bus of the "
+            "device.\n\n"
+            "Product IDs of PCI, PCCard and USB devices are hexadecimal "
+            "string representations of 16 bit integers in the format "
+            "'0x01ab': The prefix '0x', followed by exactly 4 digits; "
+            "where a digit is one of the characters 0..9, a..f. The "
+            "characters A..F are not allowed.\n\n"
+            "SCSI product IDs are strings with exactly 16 characters. "
+            "Shorter names are right-padded with space (0x20) characters."
+            "\n\n"
+            "IDs for other buses may be arbitrary strings."),
+        required=False),
+    "hardware_driver_name": TextLine(
+        title=_(
+            u"The driver controlling a hardware device related to a "
+            "bug."),
+        required=False),
+    "hardware_driver_package_name": TextLine(
+        title=_(
+            u"The package of the driver which controls a hardware "
+            "device related to a bug."),
+        required=False),
+    "hardware_owner_is_bug_reporter": Bool(
+        title=_(
+            u"Search for bugs reported by people who own the given "
+            "device or who use the given hardware driver."),
+        required=False),
+    "hardware_owner_is_affected_by_bug": Bool(
+        title=_(
+            u"Search for bugs where people affected by a bug own the "
+            "given device or use the given hardware driver."),
+        required=False),
+    "hardware_owner_is_subscribed_to_bug": Bool(
+        title=_(
+            u"Search for bugs where a bug subscriber owns the "
+            "given device or uses the given hardware driver."),
+        required=False),
+    "hardware_is_linked_to_bug": Bool(
+        title=_(
+            u"Search for bugs which are linked to hardware reports "
+            "which contain the given device or whcih contain a device"
+            "controlled by the given driver."),
+        required=False),
+    "linked_branches": Choice(
+        title=_(
+            u"Search for bugs that are linked to branches or for bugs "
+            "that are not linked to branches."),
+        vocabulary=BugBranchSearch, required=False),
+    "modified_since": Datetime(
+        title=_(
+            u"Search for bugs that have been modified since the given "
+            "date."),
+        required=False),
+    "created_since": Datetime(
+        title=_(
+            u"Search for bugs that have been created since the given "
+            "date."),
+        required=False),
+    }
+
+search_tasks_params_for_api_default = dict(
+    search_tasks_params_common,
+    omit_targeted=copy_field(
+        IBugTaskSearch['omit_targeted']))
+
+search_tasks_params_for_api_devel = dict(
+    search_tasks_params_common,
+    omit_targeted=copy_field(
+        IBugTaskSearch['omit_targeted'], default=False),
+    linked_blueprints=Choice(
+        title=_(
+            u"Search for bugs that are linked to blueprints or for "
+            u"bugs that are not linked to blueprints."),
+        vocabulary=BugBlueprintSearch, required=False))
 
 
 class IHasBugs(Interface):
@@ -49,6 +206,8 @@ class IHasBugs(Interface):
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
     inprogress_bugtasks = Attribute(
         "A list of in-progress bugTasks for this target.")
+    high_bugtasks = Attribute(
+        "A list of high importance BugTasks for this target.")
     critical_bugtasks = Attribute(
         "A list of critical BugTasks for this target.")
     new_bugtasks = Attribute("A list of New BugTasks for this target.")
@@ -56,115 +215,24 @@ class IHasBugs(Interface):
         "A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
-    max_bug_heat = Attribute(
-        "The current highest bug heat value for this target.")
     has_bugtasks = Attribute(
-        "True if at least one BugTask has ever been reported for this target.")
+        "True if a BugTask has ever been reported for this target.")
 
+    # searchTasks devel API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
-    @operation_parameters(
-        order_by=List(
-            title=_('List of fields by which the results are ordered.'),
-            value_type=Text(),
-            required=False),
-        search_text=copy_field(IBugTaskSearch['searchtext']),
-        status=copy_field(IBugTaskSearch['status']),
-        importance=copy_field(IBugTaskSearch['importance']),
-        assignee=Reference(schema=Interface),
-        bug_reporter=Reference(schema=Interface),
-        bug_supervisor=Reference(schema=Interface),
-        bug_commenter=Reference(schema=Interface),
-        bug_subscriber=Reference(schema=Interface),
-        owner=Reference(schema=Interface),
-        affected_user=Reference(schema=Interface),
-        has_patch=copy_field(IBugTaskSearch['has_patch']),
-        has_cve=copy_field(IBugTaskSearch['has_cve']),
-        tags=copy_field(IBugTaskSearch['tag']),
-        tags_combinator=copy_field(IBugTaskSearch['tags_combinator']),
-        omit_duplicates=copy_field(IBugTaskSearch['omit_dupes']),
-        omit_targeted=copy_field(IBugTaskSearch['omit_targeted']),
-        status_upstream=copy_field(IBugTaskSearch['status_upstream']),
-        milestone_assignment=copy_field(
-            IBugTaskSearch['milestone_assignment']),
-        milestone=copy_field(IBugTaskSearch['milestone']),
-        component=copy_field(IBugTaskSearch['component']),
-        nominated_for=Reference(schema=Interface),
-        has_no_package=copy_field(IBugTaskSearch['has_no_package']),
-        hardware_bus=Choice(
-            title=u'The bus of a hardware device related to a bug',
-            # The vocabulary should be HWBus; this is fixed in
-            # _schema_circular_imports to avoid circular imports.
-            vocabulary=DBEnumeratedType, required=False),
-        hardware_vendor_id=TextLine(
-            title=(
-                u"The vendor ID of a hardware device related to a bug."),
-            description=(
-                u"Allowed values of the vendor ID depend on the bus of the "
-                "device.\n\n"
-                "Vendor IDs of PCI, PCCard and USB devices are hexadecimal "
-                "string representations of 16 bit integers in the format "
-                "'0x01ab': The prefix '0x', followed by exactly 4 digits; "
-                "where a digit is one of the characters 0..9, a..f. The "
-                "characters A..F are not allowed.\n\n"
-                "SCSI vendor IDs are strings with exactly 8 characters. "
-                "Shorter names are right-padded with space (0x20) characters."
-                "\n\n"
-                "IDs for other buses may be arbitrary strings."),
-            required=False),
-        hardware_product_id=TextLine(
-            title=(
-                u"The product ID of a hardware device related to a bug."),
-            description=(
-                u"Allowed values of the product ID depend on the bus of the "
-                "device.\n\n"
-                "Product IDs of PCI, PCCard and USB devices are hexadecimal "
-                "string representations of 16 bit integers in the format "
-                "'0x01ab': The prefix '0x', followed by exactly 4 digits; "
-                "where a digit is one of the characters 0..9, a..f. The "
-                "characters A..F are not allowed.\n\n"
-                "SCSI product IDs are strings with exactly 16 characters. "
-                "Shorter names are right-padded with space (0x20) characters."
-                "\n\n"
-                "IDs for other buses may be arbitrary strings."),
-            required=False),
-        hardware_driver_name=TextLine(
-            title=(
-                u"The driver controlling a hardware device related to a "
-                "bug."),
-            required=False),
-        hardware_driver_package_name=TextLine(
-            title=(
-                u"The package of the driver which controls a hardware "
-                "device related to a bug."),
-            required=False),
-        hardware_owner_is_bug_reporter=Bool(
-            title=(
-                u"Search for bugs reported by people who own the given "
-                "device or who use the given hardware driver."),
-            required=False),
-        hardware_owner_is_affected_by_bug=Bool(
-            title=(
-                u"Search for bugs where people affected by a bug own the "
-                "given device or use the given hardware driver."),
-            required=False),
-        hardware_owner_is_subscribed_to_bug=Bool(
-            title=(
-                u"Search for bugs where a bug subscriber owns the "
-                "given device or uses the given hardware driver."),
-            required=False),
-        hardware_is_linked_to_bug=Bool(
-            title=(
-                u"Search for bugs which are linked to hardware reports "
-                "wich contain the given device or whcih contain a device"
-                "contolled by the given driver."),
-            required=False),
-        linked_branches=Choice(
-            title=(
-                u"Search for bugs that are linked to branches or for bugs"
-                "that are not linked to branches."),
-            vocabulary=BugBranchSearch, required=False))
+    @operation_parameters(**search_tasks_params_for_api_devel)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
+
+    # Pop the *default* version (decorators are run last to first).
+    @operation_removed_in_version('devel')
+
+    # searchTasks default API declaration.
+    @call_with(search_params=None, user=REQUEST_USER)
+    @operation_parameters(**search_tasks_params_for_api_default)
+    @operation_returns_collection_of(IBugTask)
+    @export_read_operation()
+    @operation_for_version('beta')
     def searchTasks(search_params, user=None,
                     order_by=None, search_text=None,
                     status=None, importance=None,
@@ -183,7 +251,9 @@ class IHasBugs(Interface):
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False, linked_branches=None):
+                    hardware_is_linked_to_bug=False, linked_branches=None,
+                    linked_blueprints=None, structural_subscriber=None,
+                    modified_since=None, created_since=None, prejoins=[]):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -202,21 +272,15 @@ class IHasBugs(Interface):
         hardware_is_linked_to_bug to True.
         """
 
-    def getBugCounts(user, statuses=None):
-        """Return a dict with the number of bugs in each possible status.
+    def getBugTaskWeightFunction():
+        """Return a function that is used to weight the bug tasks.
 
-            :user: Only bugs the user has permission to view will be
-                   counted.
-            :statuses: Only bugs with these statuses will be counted. If
-                       None, all statuses will be included.
+        The function should take a bug task as a parameter and return
+        an OrderedBugTask.
+
+        The ordered bug tasks are used to choose the most relevant bug task
+        for any particular context.
         """
-
-    def setMaxBugHeat(heat):
-        """Set the max_bug_heat for this context."""
-
-    def recalculateMaxBugHeat():
-        """Recalculate and set the max_bug_heat for this context."""
-
 
 
 class IBugTarget(IHasBugs):
@@ -232,16 +296,40 @@ class IBugTarget(IHasBugs):
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")
 
+    pillar = Attribute("The pillar containing this target.")
+
     bug_reporting_guidelines = exported(
         Text(
             title=(
-                u"If I\N{right single quotation mark}m reporting a bug, "
-                u"I should include, if possible"),
+                u"Helpful guidelines for reporting a bug"),
             description=(
                 u"These guidelines will be shown to "
-                "anyone reporting a bug."),
+                "everyone reporting a bug and should be "
+                "text or a bulleted list with your particular "
+                "requirements, if any."),
             required=False,
             max_length=50000))
+
+    bug_reported_acknowledgement = exported(
+        Text(
+            title=(
+                u"After reporting a bug, I can expect the following."),
+            description=(
+                u"This message of acknowledgement will be displayed "
+                "to anyone after reporting a bug."),
+            required=False,
+            max_length=50000))
+
+    enable_bugfiling_duplicate_search = Bool(
+        title=u"Search for possible duplicate bugs when a new bug is filed",
+        description=(
+            u"If enabled, Launchpad searches the project for bugs which "
+            u"could match the summary given by the bug reporter. However, "
+            u"this can lead users to mistake an existing bug as the one "
+            u"they want to report. This can happen for example for hardware "
+            u"related bugs where the one symptom can be caused by "
+            u"completely different hardware and drivers."),
+        required=False)
 
     def createBug(bug_params):
         """Create a new bug on this target.
@@ -257,6 +345,24 @@ IBugTask['transitionToTarget'].getTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
 
 
+class IHasBugHeat(Interface):
+    """An entity which has bug heat."""
+
+    max_bug_heat = Attribute(
+        "The current highest bug heat value for this entity.")
+
+    def setMaxBugHeat(heat):
+        """Set the max_bug_heat for this context."""
+
+    def recalculateBugHeatCache():
+        """Recalculate and set the various bug heat values for this context.
+
+        Several different objects cache max_bug_heat.
+        When DistributionSourcePackage is the target, the total_bug_heat
+        and bug_count are also cached.
+        """
+
+
 class BugDistroSeriesTargetDetails:
     """The details of a bug targeted to a specific IDistroSeries.
 
@@ -266,8 +372,10 @@ class BugDistroSeriesTargetDetails:
     :istargeted: Is there a fix targeted to this series?
     :sourcepackage: The sourcepackage to which the fix would be targeted.
     :assignee: An IPerson, or None if no assignee.
-    :status: A BugTaskStatus dbschema item, or None, if series is not targeted.
+    :status: A BugTaskStatus dbschema item, or None, if series is not
+        targeted.
     """
+
     def __init__(self, series, istargeted=False, sourcepackage=None,
                  assignee=None, status=None):
         self.series = series
@@ -289,14 +397,21 @@ class IHasOfficialBugTags(Interface):
     def getUsedBugTags():
         """Return the tags used by the context as a sorted list of strings."""
 
-    def getUsedBugTagsWithOpenCounts(user):
+    def getUsedBugTagsWithOpenCounts(user, tag_limit=0, include_tags=None):
         """Return name and bug count of tags having open bugs.
 
-        It returns a list of tuples contining the tag name, and the
-        number of open bugs having that tag. Only the bugs that the user
-        has permission to see are counted, and only tags having open
-        bugs will be returned.
+        :param user: The user who wants the report.
+        :param tag_limit: The number of tags to return (excludes those found by
+            matching include_tags). If 0 then all tags are returned. If
+            non-zero then the most frequently used tags are returned.
+        :param include_tags: A list of string tags to return irrespective of
+            usage. Tags in this list that have no open bugs are returned with a
+            count of 0. May be None if there are tags to require inclusion of.
+        :return: A dict from tag -> count.
         """
+
+    def _getOfficialTagClause():
+        """Get the storm clause for finding this targets tags."""
 
 
 class IOfficialBugTagTargetPublic(IHasOfficialBugTags):
@@ -312,12 +427,14 @@ class IOfficialBugTagTargetRestricted(Interface):
     @operation_parameters(
         tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
+    @operation_for_version('beta')
     def addOfficialBugTag(tag):
         """Add tag to the official bug tags of this target."""
 
     @operation_parameters(
         tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
+    @operation_for_version('beta')
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
 
@@ -341,3 +458,10 @@ class IOfficialBugTag(Interface):
         schema=IOfficialBugTagTarget,
         description=
             u'The distribution or product having this official bug tag.')
+
+
+class ISeriesBugTarget(Interface):
+    """An `IBugTarget` which is a series."""
+
+    bugtarget_parent = Attribute(
+        "Non-series parent of this series bug target.")

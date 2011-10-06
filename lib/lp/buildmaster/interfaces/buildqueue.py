@@ -12,15 +12,27 @@ __all__ = [
     'IBuildQueueSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Field, Int, Text, Timedelta
-
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    Text,
+    Timedelta,
+    )
 
 from canonical.launchpad import _
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, BuildFarmJobType)
+    IBuildFarmJob,
+    )
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.processor import IProcessor
 
@@ -148,20 +160,3 @@ class IBuildQueueSet(Interface):
 
     def getActiveBuildJobs():
         """Return All active Build Jobs."""
-
-    def calculateCandidates(archseries):
-        """Return the BuildQueue records for the given archseries.
-
-        Returns a selectRelease of BuildQueue items sorted by descending
-        'lastscore' within the given archseries.
-
-        'archseries' argument should be a list of DistroArchSeries and it is
-        asserted to not be None/empty.
-        """
-
-    def getForBuilds(build_ids):
-        """Return the IBuildQueue instance for the IBuild IDs at hand.
-
-        Retrieve the build queue and related builder rows associated with the
-        builds in question where they exist.
-        """

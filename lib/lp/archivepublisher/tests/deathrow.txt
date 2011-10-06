@@ -15,7 +15,7 @@ We will work within the Ubuntu distribution context only.
 
 The no-operation use case, reflects the sampledata status.
 
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.archivepublisher.deathrow import DeathRow
     >>> from lp.archivepublisher.diskpool import DiskPool
 
@@ -36,7 +36,7 @@ Setup `SoyuzTestPublisher` for creating publications for Ubuntu/hoary.
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> hoary = ubuntu.getSeries('hoary')
@@ -193,8 +193,8 @@ Group the test publications according to their purpose:
 
 Publish files on disk and build a list of all created file paths
 
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> quiet_disk_pool = DiskPool(pool_path, temp_path, QuietFakeLogger())
+    >>> from lp.services.log.logger import BufferLogger
+    >>> quiet_disk_pool = DiskPool(pool_path, temp_path, BufferLogger())
 
     >>> unique_file_paths = set()
 
@@ -207,7 +207,7 @@ Publish files on disk and build a list of all created file paths
     ...                 pub_file.libraryfilealiasfilename.encode('utf-8')
     ...              )
     ...             unique_file_paths.add(file_path)
-    ...             pub_file.publish(quiet_disk_pool, QuietFakeLogger())
+    ...             pub_file.publish(quiet_disk_pool, BufferLogger())
 
     >>> all_test_file_paths = sorted(unique_file_paths)
 
@@ -246,7 +246,6 @@ Run DeathRow against the current 'removable' context.
     DEBUG Checking superseded_666.dsc (02129bb861061d1a052c592e2dc6b383)
     DEBUG Checking obsolete_666.dsc (02129bb861061d1a052c592e2dc6b383)
     ...
-    DEBUG Batch ...
     INFO Removing 7 files marked for reaping
     DEBUG Removing superseded/superseded_666.dsc from main
     DEBUG Removing superseded-ignored/superseded-bin_666_i386.deb from main
@@ -343,7 +342,6 @@ Now DeathRow considers 'stuck-bin' publications.
     DEBUG Cannot remove.
     DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Already verified.
-    DEBUG Batch ...
     INFO Removing 0 files marked for reaping
     INFO Total bytes freed: 0
     DEBUG Marking 0 condemned packages as removed.
@@ -369,7 +367,6 @@ single pass.
     DEBUG Already verified.
     DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Already verified.
-    DEBUG Batch ...
     INFO Removing 1 files marked for reaping
     DEBUG Removing removed-ignored/stuck-bin_666_i386.deb from main
     INFO Total bytes freed: 1

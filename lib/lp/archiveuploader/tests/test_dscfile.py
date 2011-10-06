@@ -6,79 +6,313 @@
 __metaclass__ = type
 
 import os
-import unittest
 
-from lp.archiveuploader.dscfile import findCopyright
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.archiveuploader.dscfile import (
+    cleanup_unpacked_dir,
+    DSCFile,
+    find_changelog,
+    find_copyright,
+    format_to_file_checker_map,
+    unpack_source,
+    )
 from lp.archiveuploader.nascentuploadfile import UploadError
-from lp.archiveuploader.tests import mock_logger_quiet
-from lp.testing import TestCase
+from lp.archiveuploader.tests import datadir
+from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.log.logger import BufferLogger, DevNullLogger
+from lp.soyuz.enums import SourcePackageFormat
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+
+
+ORIG_TARBALL = SourcePackageFileType.ORIG_TARBALL
+DEBIAN_TARBALL = SourcePackageFileType.DEBIAN_TARBALL
+NATIVE_TARBALL = SourcePackageFileType.NATIVE_TARBALL
+DIFF = SourcePackageFileType.DIFF
 
 
 class TestDscFile(TestCase):
-
-    class MockDSCFile:
-        copyright = None
 
     def setUp(self):
         super(TestDscFile, self).setUp()
         self.tmpdir = self.makeTemporaryDirectory()
         self.dir_path = os.path.join(self.tmpdir, "foo", "debian")
         os.makedirs(self.dir_path)
-        self.file_path = os.path.join(self.dir_path, "copyright")
-        self.dsc_file = self.MockDSCFile()
-
-    def removeCopyrightFile(self):
-        """Remove any test copyright file we may have lying around."""
-        if os.path.exists(self.file_path):
-            os.remove(self.file_path)
+        self.copyright_path = os.path.join(self.dir_path, "copyright")
+        self.changelog_path = os.path.join(self.dir_path, "changelog")
 
     def testBadDebianCopyright(self):
-        """Test that a symlink instead of a real file will fail."""
-        os.symlink("/etc/passwd", self.file_path)
-        errors = list(findCopyright(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
+        """Test that a symlink as debian/copyright will fail.
 
-        self.addCleanup(self.removeCopyrightFile)
-        self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0], UploadError)
+        This is a security check, to make sure its not possible to use a
+        dangling symlink in an attempt to try and access files on the system
+        processing the source packages."""
+        os.symlink("/etc/passwd", self.copyright_path)
+        error = self.assertRaises(
+            UploadError, find_copyright, self.tmpdir, DevNullLogger())
         self.assertEqual(
-            errors[0].message,
-            "Symbolic link for debian/copyright not allowed")
+            error.args[0], "Symbolic link for debian/copyright not allowed")
 
     def testGoodDebianCopyright(self):
+        """Test that a proper copyright file will be accepted"""
         copyright = "copyright for dummies"
-        file = open(self.file_path, "w")
+        file = open(self.copyright_path, "w")
         file.write(copyright)
         file.close()
 
-        errors = list(findCopyright(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
+        self.assertEquals(
+            copyright, find_copyright(self.tmpdir, DevNullLogger()))
 
+    def testBadDebianChangelog(self):
+        """Test that a symlink as debian/changelog will fail.
 
-        self.addCleanup(self.removeCopyrightFile)
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(self.dsc_file.copyright, copyright)
+        This is a security check, to make sure its not possible to use a
+        dangling symlink in an attempt to try and access files on the system
+        processing the source packages."""
+        os.symlink("/etc/passwd", self.changelog_path)
+        error = self.assertRaises(
+            UploadError, find_changelog, self.tmpdir, DevNullLogger())
+        self.assertEqual(
+            error.args[0], "Symbolic link for debian/changelog not allowed")
 
-    def testOversizedDebianCopyright(self):
-        """Test that a copyright file larger than 10MiB will fail."""
+    def testGoodDebianChangelog(self):
+        """Test that a proper changelog file will be accepted"""
+        changelog = "changelog for dummies"
+        file = open(self.changelog_path, "w")
+        file.write(changelog)
+        file.close()
 
+        self.assertEquals(
+            changelog, find_changelog(self.tmpdir, DevNullLogger()))
+
+    def testOversizedFile(self):
+        """Test that a file larger than 10MiB will fail.
+
+        This check exists to prevent a possible denial of service attack
+        against launchpad by overloaded the database or librarian with massive
+        changelog and copyright files. 10MiB was set as a sane lower limit
+        which is incredibly unlikely to be hit by normal files in the
+        archive"""
         dev_zero = open("/dev/zero", "r")
-        empty_file = dev_zero.read(20971520)
+        ten_MiB = 2**20 * 10
+        empty_file = dev_zero.read(ten_MiB + 1)
         dev_zero.close()
 
-        file = open(self.file_path, "w")
+        file = open(self.changelog_path, "w")
         file.write(empty_file)
         file.close()
 
-        errors = list(findCopyright(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
-
-        self.addCleanup(self.removeCopyrightFile)
-        self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0], UploadError)
+        error = self.assertRaises(
+            UploadError, find_changelog, self.tmpdir, DevNullLogger())
         self.assertEqual(
-            errors[0].message,
-            "debian/copyright file too large, 10MiB max")
+            error.args[0], "debian/changelog file too large, 10MiB max")
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+
+class TestDscFileLibrarian(TestCaseWithFactory):
+    """Tests for DscFile that may use the Librarian."""
+
+    layer = LaunchpadZopelessLayer
+
+    def getDscFile(self, name):
+        dsc_path = datadir(os.path.join('suite', name, name + '.dsc'))
+
+        class Changes:
+            architectures = ['source']
+        logger = BufferLogger()
+        policy = BuildDaemonUploadPolicy()
+        policy.distroseries = self.factory.makeDistroSeries()
+        policy.archive = self.factory.makeArchive()
+        policy.distro = policy.distroseries.distribution
+        return DSCFile(dsc_path, 'digest', 0, 'main/editors',
+            'priority', 'package', 'version', Changes, policy, logger)
+
+    def test_ReadOnlyCWD(self):
+        """Processing a file should work when cwd is read-only."""
+        tempdir = self.useTempDir()
+        os.chmod(tempdir, 0555)
+        try:
+            dsc_file = self.getDscFile('bar_1.0-1')
+            list(dsc_file.verify())
+        finally:
+            os.chmod(tempdir, 0755)
+
+
+class BaseTestSourceFileVerification(TestCase):
+
+    def assertErrorsForFiles(self, expected, files, components={},
+                             bzip2_count=0, xz_count=0):
+        """Check problems with the given set of files for the given format.
+
+        :param expected: a list of expected errors, as strings.
+        :param format: the `SourcePackageFormat` to check against.
+        :param files: a dict mapping `SourcePackageFileType`s to counts.
+        :param components: a dict mapping orig component tarball components
+            to counts.
+        :param bzip2_count: number of files using bzip2 compression.
+        :param xz_count: number of files using xz compression.
+        """
+        full_files = {
+            NATIVE_TARBALL: 0,
+            ORIG_TARBALL: 0,
+            DIFF: 0,
+            DEBIAN_TARBALL: 0,
+            }
+        full_files.update(files)
+        self.assertEquals(
+            expected,
+            [str(e) for e in format_to_file_checker_map[self.format](
+                'foo_1.dsc', full_files, components, bzip2_count, xz_count)])
+
+    def assertFilesOK(self, files, components={}, bzip2_count=0, xz_count=0):
+        """Check that the given set of files is OK for the given format.
+
+        :param format: the `SourcePackageFormat` to check against.
+        :param files: a dict mapping `SourcePackageFileType`s to counts.
+        :param components: a dict mapping orig component tarball components
+            to counts.
+        :param bzip2_count: number of files using bzip2 compression.
+        :param xz_count: number of files using xz compression.
+        """
+        self.assertErrorsForFiles([], files, components, bzip2_count, xz_count)
+
+
+class Test10SourceFormatVerification(BaseTestSourceFileVerification):
+
+    format = SourcePackageFormat.FORMAT_1_0
+
+    wrong_files_error = ('foo_1.dsc: must have exactly one tar.gz, or an '
+                         'orig.tar.gz and diff.gz')
+    bzip2_error = 'foo_1.dsc: is format 1.0 but uses bzip2 compression.'
+    xz_error = 'foo_1.dsc: is format 1.0 but uses xz compression.'
+
+    def testFormat10Debian(self):
+        # A 1.0 source can contain an original tarball and a Debian diff
+        self.assertFilesOK({ORIG_TARBALL: 1, DIFF: 1})
+
+    def testFormat10Native(self):
+        # A 1.0 source can contain a native tarball.
+        self.assertFilesOK({NATIVE_TARBALL: 1})
+
+    def testFormat10CannotHaveWrongFiles(self):
+        # A 1.0 source cannot have a combination of native and
+        # non-native files, and cannot have just one of the non-native
+        # files.
+        for combination in (
+            {DIFF: 1}, {ORIG_TARBALL: 1}, {ORIG_TARBALL: 1, DIFF: 1,
+            NATIVE_TARBALL: 1}):
+            self.assertErrorsForFiles([self.wrong_files_error], combination)
+
+        # A 1.0 source with component tarballs is invalid.
+        self.assertErrorsForFiles(
+            [self.wrong_files_error], {ORIG_TARBALL: 1, DIFF: 1}, {'foo': 1})
+
+    def testFormat10CannotUseBzip2(self):
+        # 1.0 sources cannot use bzip2 compression.
+        self.assertErrorsForFiles(
+            [self.bzip2_error], {NATIVE_TARBALL: 1}, {}, 1, 0)
+
+    def testFormat10CannotUseXz(self):
+        # 1.0 sources cannot use xz compression.
+        self.assertErrorsForFiles(
+            [self.xz_error], {NATIVE_TARBALL: 1}, {}, 0, 1)
+
+
+class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
+
+    format = SourcePackageFormat.FORMAT_3_0_QUILT
+
+    wrong_files_error = ('foo_1.dsc: must have only an orig.tar.*, a '
+                         'debian.tar.* and optionally orig-*.tar.*')
+    comp_conflict_error = 'foo_1.dsc: has more than one orig-bar.tar.*.'
+
+    def testFormat30Quilt(self):
+        # A 3.0 (quilt) source must contain an orig tarball and a debian
+        # tarball. It may also contain at most one component tarball for
+        # each component, and can use gzip, bzip2, or xz compression.
+        for components in ({}, {'foo': 1}, {'foo': 1, 'bar': 1}):
+            for bzip2_count in (0, 1):
+                for xz_count in (0, 1):
+                    self.assertFilesOK(
+                        {ORIG_TARBALL: 1, DEBIAN_TARBALL: 1}, components,
+                        bzip2_count, xz_count)
+
+    def testFormat30QuiltCannotHaveConflictingComponentTarballs(self):
+        # Multiple conflicting tarballs for a single component are
+        # invalid.
+        self.assertErrorsForFiles(
+            [self.comp_conflict_error],
+            {ORIG_TARBALL: 1, DEBIAN_TARBALL: 1}, {'foo': 1, 'bar': 2})
+
+    def testFormat30QuiltCannotHaveWrongFiles(self):
+        # 3.0 (quilt) sources may not have a diff or native tarball.
+        for filetype in (DIFF, NATIVE_TARBALL):
+            self.assertErrorsForFiles(
+                [self.wrong_files_error],
+                {ORIG_TARBALL: 1, DEBIAN_TARBALL: 1, filetype: 1})
+
+
+class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
+
+    format = SourcePackageFormat.FORMAT_3_0_NATIVE
+
+    wrong_files_error = 'foo_1.dsc: must have only a tar.*.'
+
+    def testFormat30Native(self):
+        # 3.0 (native) sources must contain just a native tarball. They
+        # may use gzip, bzip2, or xz compression.
+        for bzip2_count in (0, 1):
+            self.assertFilesOK({NATIVE_TARBALL: 1}, {},
+            bzip2_count, 0)
+        self.assertFilesOK({NATIVE_TARBALL: 1}, {}, 0, 1)
+
+    def testFormat30NativeCannotHaveWrongFiles(self):
+        # 3.0 (quilt) sources may not have a diff, Debian tarball, orig
+        # tarball, or any component tarballs.
+        for filetype in (DIFF, DEBIAN_TARBALL, ORIG_TARBALL):
+            self.assertErrorsForFiles(
+                [self.wrong_files_error], {NATIVE_TARBALL: 1, filetype: 1})
+        # A 3.0 (native) source with component tarballs is invalid.
+        self.assertErrorsForFiles(
+            [self.wrong_files_error], {NATIVE_TARBALL: 1}, {'foo': 1})
+
+
+class UnpackedDirTests(TestCase):
+    """Tests for unpack_source and cleanup_unpacked_dir."""
+
+    def test_unpack_source(self):
+        # unpack_source unpacks in a temporary directory and returns the
+        # path.
+        unpacked_dir = unpack_source(
+            datadir(os.path.join('suite', 'bar_1.0-1', 'bar_1.0-1.dsc')))
+        try:
+            self.assertEquals(["bar-1.0"], os.listdir(unpacked_dir))
+            self.assertContentEqual(
+                ["THIS_IS_BAR", "debian"],
+                os.listdir(os.path.join(unpacked_dir, "bar-1.0")))
+        finally:
+            cleanup_unpacked_dir(unpacked_dir)
+
+    def test_cleanup(self):
+        # cleanup_dir removes the temporary directory and all files under it.
+        temp_dir = self.makeTemporaryDirectory()
+        unpacked_dir = os.path.join(temp_dir, "unpacked")
+        os.mkdir(unpacked_dir)
+        os.mkdir(os.path.join(unpacked_dir, "bar_1.0"))
+        cleanup_unpacked_dir(unpacked_dir)
+        self.assertFalse(os.path.exists(unpacked_dir))
+
+    def test_cleanup_invalid_mode(self):
+        # cleanup_dir can remove a directory even if the mode does
+        # not allow it.
+        temp_dir = self.makeTemporaryDirectory()
+        unpacked_dir = os.path.join(temp_dir, "unpacked")
+        os.mkdir(unpacked_dir)
+        bar_path = os.path.join(unpacked_dir, "bar_1.0")
+        os.mkdir(bar_path)
+        os.chmod(bar_path, 0600)
+        os.chmod(unpacked_dir, 0600)
+        cleanup_unpacked_dir(unpacked_dir)
+        self.assertFalse(os.path.exists(unpacked_dir))

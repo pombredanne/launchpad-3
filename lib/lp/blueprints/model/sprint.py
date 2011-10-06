@@ -11,31 +11,48 @@ __all__ = [
     ]
 
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.locals import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import (
-    ForeignKey, StringCol, SQLRelatedJoin)
-
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
-from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
-from lp.blueprints.interfaces.sprintspecification import (
-    SprintSpecificationStatus)
-from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote)
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-
-from lp.registry.interfaces.person import validate_public_person
+from canonical.database.sqlbase import (
+    flush_database_updates,
+    quote,
+    SQLBase,
+    )
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.enums import (
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    SprintSpecificationStatus,
+    )
+from lp.blueprints.interfaces.sprint import (
+    ISprint,
+    ISprintSet,
+    )
+from lp.blueprints.model.specification import HasSpecificationsMixin
 from lp.blueprints.model.sprintattendance import SprintAttendance
-from lp.blueprints.model.sprintspecification import (
-    SprintSpecification)
+from lp.blueprints.model.sprintspecification import SprintSpecification
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
+from lp.registry.model.hasdrivers import HasDriversMixin
 
 
-class Sprint(SQLBase):
+class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
     """See `ISprint`."""
 
     implements(ISprint, IHasLogo, IHasMugshot, IHasIcon)
@@ -80,12 +97,12 @@ class Sprint(SQLBase):
         """See IHasDrivers."""
         if self.driver is not None:
             return [self.driver, self.owner]
-        return [self.owner,]
+        return [self.owner]
 
-    # useful joins
-    attendees = SQLRelatedJoin('Person',
-        joinColumn='sprint', otherColumn='attendee',
-        intermediateTable='SprintAttendance', orderBy='name')
+    @property
+    def attendees(self):
+        # Only really used in tests.
+        return [a.attendee for a in self.attendances]
 
     def spec_filter_clause(self, filter=None):
         """Figure out the appropriate query for specifications on a sprint.
@@ -128,7 +145,7 @@ class Sprint(SQLBase):
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -267,30 +284,37 @@ class Sprint(SQLBase):
     # attendance
     def attend(self, person, time_starts, time_ends, is_physical):
         """See `ISprint`."""
-        # first see if a relevant attendance exists, and if so, update it
-        for attendance in self.attendances:
-            if attendance.attendee.id == person.id:
-                attendance.time_starts = time_starts
-                attendance.time_ends = time_ends
-                attendance.is_physical = is_physical
-                return attendance
-        # since no previous attendance existed, create a new one
-        return SprintAttendance(
-            sprint=self, attendee=person, is_physical=is_physical,
-            time_starts=time_starts, time_ends=time_ends)
+        # First see if a relevant attendance exists, and if so, update it.
+        attendance = Store.of(self).find(
+            SprintAttendance,
+            SprintAttendance.sprint == self,
+            SprintAttendance.attendee == person).one()
+        if attendance is None:
+            # Since no previous attendance existed, create a new one.
+            attendance = SprintAttendance(sprint=self, attendee=person)
+        attendance.time_starts = time_starts
+        attendance.time_ends = time_ends
+        attendance.is_physical = is_physical
+        return attendance
 
     def removeAttendance(self, person):
         """See `ISprint`."""
-        for attendance in self.attendances:
-            if attendance.attendee.id == person.id:
-                attendance.destroySelf()
-                return
+        Store.of(self).find(
+            SprintAttendance,
+            SprintAttendance.sprint == self,
+            SprintAttendance.attendee == person).remove()
 
     @property
     def attendances(self):
-        ret = SprintAttendance.selectBy(sprint=self)
-        return sorted(ret.prejoin(['attendee']),
-                      key=lambda a: a.attendee.name)
+        result = list(Store.of(self).find(
+            SprintAttendance,
+            SprintAttendance.sprint == self))
+        people = [a.attendeeID for a in result]
+        # In order to populate the person cache we need to materialize the
+        # result set.  Listification should do.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                people, need_validity=True))
+        return sorted(result, key=lambda a: a.attendee.displayname.lower())
 
     # linking to specifications
     def linkSpecification(self, spec):
@@ -391,4 +415,3 @@ class HasSprintsMixin:
         return Sprint.select(
             query, clauseTables=tables, orderBy='-time_starts',
             distinct=True)
-

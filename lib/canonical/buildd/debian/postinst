@@ -28,8 +28,26 @@ case "$1" in
         adduser --ingroup buildd --disabled-login --gecos 'Buildd user' \
                 --uid $BUILDDUID ${USER}
 
-        grep -q ^${USER} /etc/sudoers ||
-                echo "${USER}  ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
+	SUDO_VERSION=$(sudo -V | sed -n '/^Sudo version/s/.* //p')
+	if dpkg --compare-versions $SUDO_VERSION lt 1.7 ||
+	   ! grep -q '^#includedir /etc/sudoers.d' /etc/sudoers; then
+		grep -q ^${USER} /etc/sudoers ||
+		    echo "${USER}  ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
+	else
+		if ! sudo -l -U ${USER} | grep -q '(ALL) NOPASSWD: ALL' ||
+		   ! sudo -l -U ${USER} | grep -q umask_override; then
+		    cat << EOF >> /etc/sudoers.d/buildd
+Defaults:buildd umask_override
+Defaults>buildd umask_override
+
+${USER}  ALL=(ALL) NOPASSWD: ALL
+%buildd ALL=(buildd) NOPASSWD: ALL, (root) NOPASSWD: /bin/su - buildd
+%lpbuildd ALL=(ALL) NOPASSWD: ALL
+EOF
+		fi
+		chmod 440 /etc/sudoers.d/buildd
+		chown root:root /etc/sudoers.d/buildd
+	fi
 
         install -d -o${USER} -m0755 /home/${USER}
 

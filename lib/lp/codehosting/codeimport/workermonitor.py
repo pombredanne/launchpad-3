@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0702
@@ -12,21 +12,25 @@ __all__ = []
 import os
 import tempfile
 
-from twisted.internet import defer, error, reactor, task
+from twisted.internet import (
+    defer,
+    error,
+    reactor,
+    task,
+    )
 from twisted.python import failure
 from twisted.web import xmlrpc
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.librarian.interfaces import IFileUploadClient
-from canonical.twistedsupport.loggingsupport import (
-    log_oops_from_failure)
-from canonical.twistedsupport.processmonitor import (
-    ProcessMonitorProtocolWithTimeout)
 from lp.code.enums import CodeImportResultStatus
 from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
+from lp.services.twistedsupport.loggingsupport import log_oops_from_failure
+from lp.services.twistedsupport.processmonitor import (
+    ProcessMonitorProtocolWithTimeout,
+    )
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
@@ -121,7 +125,7 @@ class CodeImportWorkerMonitor:
     path_to_script = os.path.join(
         config.root, 'scripts', 'code-import-worker.py')
 
-    def __init__(self, job_id, logger, codeimport_endpoint):
+    def __init__(self, job_id, logger, codeimport_endpoint, access_policy):
         """Construct an instance.
 
         :param job_id: The ID of the CodeImportJob we are to work on.
@@ -134,6 +138,7 @@ class CodeImportWorkerMonitor:
         self._log_file = tempfile.TemporaryFile()
         self._branch_url = None
         self._log_file_name = 'no-name-set.txt'
+        self._access_policy = access_policy
 
     def _logOopsFromFailure(self, failure):
         request = log_oops_from_failure(
@@ -158,6 +163,7 @@ class CodeImportWorkerMonitor:
         """
         deferred = self.codeimport_endpoint.callRemote(
             'getImportDataForJobID', self._job_id)
+
         def _processResult(result):
             code_import_arguments, branch_url, log_file_name = result
             self._branch_url = branch_url
@@ -165,7 +171,8 @@ class CodeImportWorkerMonitor:
             self._logger.info(
                 'Found source details: %s', code_import_arguments)
             return code_import_arguments
-        return deferred.addCallbacks(_processResult, self._trap_nosuchcodeimportjob)
+        return deferred.addCallbacks(
+            _processResult, self._trap_nosuchcodeimportjob)
 
     def updateHeartbeat(self, tail):
         """Call the updateHeartbeat method for the job we are working on."""
@@ -219,7 +226,10 @@ class CodeImportWorkerMonitor:
         deferred = defer.Deferred()
         protocol = self._makeProcessProtocol(deferred)
         interpreter = '%s/bin/py' % config.root
-        command = [interpreter, self.path_to_script] + worker_arguments
+        args = [interpreter, self.path_to_script]
+        if self._access_policy is not None:
+            args.append("--access-policy=%s" % self._access_policy)
+        command = args + worker_arguments
         self._logger.info(
             "Launching worker child process %s.", command)
         reactor.spawnProcess(
@@ -244,14 +254,24 @@ class CodeImportWorkerMonitor:
         Different exit codes are presumed by Twisted to be errors, but are
         different kinds of success for us.
         """
+        exit_code_map = {
+            CodeImportWorkerExitCode.SUCCESS_NOCHANGE:
+                CodeImportResultStatus.SUCCESS_NOCHANGE,
+            CodeImportWorkerExitCode.SUCCESS_PARTIAL:
+                CodeImportResultStatus.SUCCESS_PARTIAL,
+            CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE:
+                CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE,
+            CodeImportWorkerExitCode.FAILURE_INVALID:
+                CodeImportResultStatus.FAILURE_INVALID,
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN:
+                CodeImportResultStatus.FAILURE_FORBIDDEN,
+            CodeImportWorkerExitCode.FAILURE_REMOTE_BROKEN:
+                CodeImportResultStatus.FAILURE_REMOTE_BROKEN,
+                }
         if isinstance(reason, failure.Failure):
             if reason.check(error.ProcessTerminated):
-                if reason.value.exitCode == \
-                       CodeImportWorkerExitCode.SUCCESS_NOCHANGE:
-                    return CodeImportResultStatus.SUCCESS_NOCHANGE
-                elif reason.value.exitCode == \
-                       CodeImportWorkerExitCode.SUCCESS_PARTIAL:
-                    return CodeImportResultStatus.SUCCESS_PARTIAL
+                return exit_code_map.get(reason.value.exitCode,
+                    CodeImportResultStatus.FAILURE)
             return CodeImportResultStatus.FAILURE
         else:
             return CodeImportResultStatus.SUCCESS

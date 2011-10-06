@@ -1,7 +1,7 @@
 = POFile statistics =
 
 We frequently display statistics about POFiles: how many of its messages
-remain untranslated, how many have been changed in Launchpad, how many have
+remain untranslated, how many have been changed in Ubuntu, how many have
 had suggested translations submitted that need to be reviewed?
 
 It takes too long to gather these statistics on demand, so we cache them in
@@ -20,13 +20,16 @@ The statistics verifier is invoked by the cron job, but we can also call
 it directly.
 
     >>> import transaction
+    >>> from lp.services.mail.stub import test_emails
     >>> from lp.translations.scripts.verify_pofile_stats import (
     ...     VerifyPOFileStatsProcess)
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> logger = FakeLogger()
     >>> VerifyPOFileStatsProcess(transaction, logger).run()
     INFO Starting verification of POFile stats at id 0
+    ...
     INFO Done.
+    >>> old_email = test_emails.pop()
 
 All POFile statistics in our database are now correct, and we can test in
 more detail.
@@ -64,7 +67,7 @@ reports this giving both the wrong and the corrected statistics.
     (0, 0, 3, 0)
 
 We have a POFile with zero current, updated, and unreviewed translations, and
-3 translations changed in Launchpad (compared to upstream).
+3 translations changed in Ubuntu (compared to upstream).
 
 A software bug incorrectly sets the number of changed translations to 999.
 
@@ -92,7 +95,6 @@ are once again what they were.
 
 The Translations administrators also receive an email about the error.
 
-    >>> from lp.services.mail.stub import test_emails
     >>> from_addr, to_addrs, body = test_emails.pop()
     >>> len(test_emails)
     0
@@ -176,7 +178,7 @@ all fixed already.
     >>> print returncode
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-pofile-stats-daily.lock
     INFO    Verifying stats of POFiles updated in the last ... days.
     INFO    Verifying a total of 1 POFiles.
     INFO    Done.
@@ -192,7 +194,7 @@ fixed by running the verifier directly.
     >>> print returncode
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-pofile-stats.lock
     INFO    Starting verification of POFile stats at id 99
     INFO    Done.
 

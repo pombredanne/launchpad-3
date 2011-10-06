@@ -17,7 +17,7 @@ middle of the data so we can ensure binary data is handled correctly.
     >>> anon_browser.getControl('Continue').click()
 
     >>> import re
-    >>> match = re.search('Your ticket is "(\w+)"', anon_browser.contents)
+    >>> match = re.search('Your ticket is "([\w-]+)"', anon_browser.contents)
     >>> match is not None
     True
     >>> ticket = match.group(1)
@@ -32,7 +32,8 @@ Retrieve the blob and make sure it got stored correctly.
 
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
     >>> login(ANONYMOUS)
-    >>> from canonical.launchpad.database import TemporaryBlobStorage
+    >>> from canonical.launchpad.database.temporaryblobstorage import (
+    ...     TemporaryBlobStorage)
     >>> blob = TemporaryBlobStorage.byUuid(ticket)
     >>> blob.blob
     'abcd\x00efg'

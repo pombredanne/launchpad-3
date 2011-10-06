@@ -2,7 +2,7 @@
 
 Let's use Celso's PPA for the tests.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 
@@ -15,11 +15,14 @@ First let's create a copy archive:
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> copy_location = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu,
     ...     name="intrepid-security-rebuild")
-    >>> copy_archive = copy_location.archive
+    >>> copy_archive = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_location).archive
 
 And let's create two views to compare:
 
@@ -38,16 +41,15 @@ and None otherwise:
     None
 
 The ArchiveView includes an archive_label property that returns either
-the string 'PPA' or 'Archive' depending on whether the archive is a PPA
+the string 'PPA' or 'archive' depending on whether the archive is a PPA
 (this is mainly for branding purposes):
 
     >>> print ppa_archive_view.archive_label
     PPA
     >>> print copy_archive_view.archive_label
-    Archive
+    archive
 
-The ArchiveView is provides the html for the inline description
-editing widget.
+The ArchiveView provides the html for the inline description editing widget.
 
     >>> print ppa_archive_view.archive_description_html.title
     PPA description
@@ -65,8 +67,10 @@ IPackageCopyRequest's associated with an archive:
     0
 
     # Create a copy-request to Celso's PPA.
+    >>> naked_copy_location = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_location)
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     copy_location, copy_archive.owner)
+    ...     naked_copy_location, copy_archive.owner)
 
     >>> len(copy_archive_view.package_copy_requests)
     1
@@ -141,7 +145,7 @@ The COPY archive has no packages.
     >>> print_repository_usage(copy_repository_usage)
     binaries_size:   0
     binary_label:    0 binary packages
-    quota:           1073741824
+    quota:           2147483648
     source_label:    0 source packages
     sources_size:    0
     used:            0
@@ -304,12 +308,15 @@ they were published. We include any relevant builds for failures.
     ...             )
     >>> print_latest_updates(view.latest_updates)
     cdrkit - Failed to build: i386
-    pmount - Successfully built
     iceweasel - Successfully built
+    pmount - Successfully built
 
 Let's now update the datepublished for iceweasel to show that the ordering
-is from most recent.
+is from most recent.  The view's latest_updates property is cached so we need
+to reload the view.
 
+    >>> login('celso.providelo@canonical.com')
+    >>> view = create_initialized_view(cprov.archive, name="+index")
     >>> from canonical.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')
     >>> view.filtered_sources[1].datepublished = UTC_NOW
@@ -355,14 +362,16 @@ are building as well as the number of packages waiting to build.
 
 Let's set some builds appropriately to see the results.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.buildmaster.enums import BuildStatus
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
     >>> source = view.filtered_sources[0]
     >>> ignore = source.sourcepackagerelease.createBuild(
-    ...     distroarchseries=warty_hppa, archive=view.context,
+    ...     distro_arch_series=warty_hppa, archive=view.context,
     ...     pocket=source.pocket)
-    >>> builds = getUtility(IBuildSet).getBuildsForArchive(view.context)
+    >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+    ...     view.context)
     >>> for build in builds:
     ...     print build.title
     hppa build of cdrkit 1.0 in ubuntu warty RELEASE
@@ -372,9 +381,9 @@ Let's set some builds appropriately to see the results.
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
     >>> login('foo.bar@canonical.com')
-    >>> builds[0].buildstate = BuildStatus.NEEDSBUILD
-    >>> builds[1].buildstate = BuildStatus.BUILDING
-    >>> builds[2].buildstate = BuildStatus.BUILDING
+    >>> builds[0].status = BuildStatus.NEEDSBUILD
+    >>> builds[1].status = BuildStatus.BUILDING
+    >>> builds[2].status = BuildStatus.BUILDING
     >>> login(ANONYMOUS)
 
     >>> view.num_pkgs_building
@@ -384,7 +393,7 @@ Adding a second waiting build for the cdrkit does not add to the number
 of packages that are currently building.
 
     >>> login('foo.bar@canonical.com')
-    >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
+    >>> builds[4].status = BuildStatus.NEEDSBUILD
     >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}
@@ -393,7 +402,7 @@ But as soon as one of cdrkit's builds start, the package is considered
 to be building:
 
     >>> login('foo.bar@canonical.com')
-    >>> builds[4].buildstate = BuildStatus.BUILDING
+    >>> builds[4].status = BuildStatus.BUILDING
     >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 3, 'waiting': 0, 'total': 3}
@@ -442,7 +451,17 @@ from using PPAs.
     True
 
     >>> print view.archive_description_html.value
-    http://example.dom/
+    <p>http://example.dom/</p>
+
+The description is HTML escaped, and not linkified even when it contains HTML
+tags.
+
+    >>> login('admin@canonical.com')
+    >>> cprov.archive.description = (
+    ...     '<a href="http://example.com/">http://example.com/</a>')
+    >>> login(ANONYMOUS)
+    >>> print view.archive_description_html.value
+    <p>&lt;a href="http://example.com/"&gt;http://example.com/&lt;/a&gt;</p>
 
 The PPA description is linked when the user has made a contribution.
 
@@ -732,8 +751,9 @@ dependency. Each element has:
     >>> print dependency.token
     mark/ppa
 
-    >>> print dependency.title
-    <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark Shuttleworth</a>
+    >>> print dependency.title.escapedtext
+    <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark
+    Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the
 first listed dependency.
@@ -1157,8 +1177,8 @@ team he is member of.
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> ubuntu_team_ppa = getUtility(IArchiveSet).new(
     ...     owner=ubuntu_team, distribution=None, purpose=ArchivePurpose.PPA,
     ...     description="Don't we have a distribution ?")
@@ -1232,7 +1252,7 @@ options making it the default option, 'This PPA' rendered option.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Ubuntu Team (ubuntu-team/ppa)
+    PPA for Ubuntu Team
 
     >>> print archive_widget.getInputValue() == cprov.archive
     True
@@ -1282,8 +1302,8 @@ value is submitted.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Celso Providelo (cprov/ppa)
-    PPA for No Privileges Person (no-priv/ppa)
+    PPA for Celso Providelo
+    PPA for No Privileges Person
 
     >>> print archive_widget.getInputValue()
     Traceback (most recent call last):
@@ -1367,32 +1387,34 @@ it's a valid sources.list entry.
     >>> ppa_archive_view = create_initialized_view(
     ...     cprov.archive, name="+admin")
 
-The validate_external_dependencies() method is called when validating and will
-return a list of errors if the data dis not validate.  A valid entry is of the
-form:
+    >>> from lp.soyuz.interfaces.archive import validate_external_dependencies
+
+The validate_external_dependencies() function is called when validating and
+will return a list of errors if the data dis not validate.  A valid entry is
+of the form:
     deb scheme://domain/ suite component[s]
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic main")
     []
 
 Multiple entries are valid, separated by newlines:
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic main\n"
     ...     "deb http://example.com/ karmic restricted")
     []
 
 If the line does not start with the word "deb" it fails:
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic universe\n"
     ...     "dab http://example.com/ karmic main")
     ["dab http://example.com/ karmic main: Must start with 'deb'"]
 
 If the line has too few parts it fails.  Here we're missing a suite:
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic universe\n"
     ...     "deb http://example.com/ main")
     ["'deb http://example.com/ main'
@@ -1400,7 +1422,7 @@ If the line has too few parts it fails.  Here we're missing a suite:
 
 If the URL looks invalid, it fails:
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic universe\n"
     ...     "deb example.com/ karmic main")
     ['deb example.com/ karmic main: Invalid URL']

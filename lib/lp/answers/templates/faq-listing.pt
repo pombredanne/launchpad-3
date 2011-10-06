@@ -50,7 +50,7 @@
         class="faq">
       <li tal:repeat="faq faqs/batch"
           tal:attributes="title faq/content/fmt:shorten/320"
-          ><a href="#" 
+          ><a href="#"
               tal:attributes="href faq/fmt:url"
               tal:content="faq/title"
               class="sprite question">How do I do this?</a></li>
@@ -58,9 +58,11 @@
     <tal:navigation replace="structure faqs/@@+navigation-links-lower" />
   </tal:results>
 
-  <p tal:condition="context/required:launchpad.Moderate">
-    <a href="+createfaq">Create a new FAQ</a>.
-  </p>
+  <ul class="horizontal">
+    <li>
+      <a tal:replace="structure view/menu:answers/create_faq/fmt:link" />
+    </li>
+  </ul>
 </div>
 
 </body>

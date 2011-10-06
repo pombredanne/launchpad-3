@@ -3,17 +3,18 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguage, IProductSeriesLanguageSet)
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from canonical.testing import ZopelessDatabaseLayer
+from lp.translations.interfaces.productserieslanguage import (
+    IProductSeriesLanguage,
+    IProductSeriesLanguageSet,
+    )
 
 
 class TestProductSeriesLanguages(TestCaseWithFactory):
@@ -24,52 +25,62 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
     def setUp(self):
         # Create a productseries that uses translations.
         TestCaseWithFactory.setUp(self)
-        self.productseries = self.factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        self.productseries = self.factory.makeProductSeries(
+            product=product)
 
-    def test_NoTemplatesNoTranslation(self):
+    def test_no_templates_no_translation(self):
         # There are no templates and no translations.
-        self.assertEquals(self.productseries.productserieslanguages,
-                          [])
+        self.assertEquals([],
+                          self.productseries.productserieslanguages)
 
-    def test_OneTemplateNoTranslation(self):
+    def test_one_template_no_translation(self):
         # There is a template and no translations.
         self.factory.makePOTemplate(productseries=self.productseries)
-        self.assertEquals(self.productseries.productserieslanguages,
-                          [])
+        self.assertEquals([],
+                          self.productseries.productserieslanguages)
 
-    def test_OneTemplateWithTranslations(self):
+    def test_one_template_with_pofile(self):
         # There is a template and one translation.
+        # With a single PO file, PSL optimizes this and
+        # provides a POFile directly through "pofile" attribute.
+        potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries)
+
+        # Add a Serbian translation.
+        sr_pofile = self.factory.makePOFile('sr', potemplate)
+
+        psls = list(self.productseries.productserieslanguages)
+        self.assertEquals(1, len(psls))
+
+        # ProductSeriesLanguage object correctly keeps values
+        # for a language, productseries itself and POFile.
+        sr_psl = psls[0]
+        self.assertEquals(self.productseries, sr_psl.productseries)
+        self.assertEquals(sr_pofile.language, sr_psl.language)
+        self.assertEquals(sr_pofile, sr_psl.pofile)
+        self.assertEquals([sr_pofile], list(sr_psl.pofiles))
+
+    def test_productserieslanguages_languages_sorting(self):
+        # ProductSeriesLanguages are sorted alphabetically by language.
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
 
         # Add a Serbian translation.
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
         sr_pofile = self.factory.makePOFile(serbian.code, potemplate)
-
-        psls = list(self.productseries.productserieslanguages)
-        self.assertEquals(len(psls), 1)
-
-        # ProductSeriesLanguage object correctly keeps values
-        # for a language, productseries itself and POFile.
-        sr_psl = psls[0]
-        self.assertEquals(sr_psl.productseries, self.productseries)
-        self.assertEquals(sr_psl.language, serbian)
-        self.assertEquals(sr_psl.pofile, sr_pofile)
-
         # Add another translation (eg. "Albanian", so it sorts
         # it before Serbian).
         albanian = getUtility(ILanguageSet).getLanguageByCode('sq')
         sq_pofile = self.factory.makePOFile(albanian.code, potemplate)
-        psls = list(self.productseries.productserieslanguages)
-        self.assertEquals(len(psls), 2)
 
-        # Ordering is alphabetic by English name of the language.
-        self.assertEquals(psls[0].language, albanian)
-        self.assertEquals(psls[1].language, serbian)
+        languages = [psl.language for psl in
+                     self.productseries.productserieslanguages]
+        self.assertEquals([albanian, serbian], languages)
 
-    def test_TwoTemplatesWithTranslations(self):
-        # There is a template and one translation.
+    def test_two_templates_pofile_not_set(self):
+        # With two templates, pofile attribute doesn't get set.
         potemplate1 = self.factory.makePOTemplate(
             productseries=self.productseries)
         potemplate2 = self.factory.makePOTemplate(
@@ -81,22 +92,10 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
         pofile1 = self.factory.makePOFile(serbian.code, potemplate1)
         psls = list(self.productseries.productserieslanguages)
-        self.assertEquals(len(psls), 1)
 
         # `pofile` is not set when there's more than one template.
-        sr_psl = self.productseries.productserieslanguages[0]
-        self.assertEquals(sr_psl.productseries, self.productseries)
-        self.assertEquals(sr_psl.language, serbian)
-        self.assertEquals(sr_psl.pofile, None)
-
-        # Only this POFile is returned by the `pofiles` property.
-        self.assertEquals(list(sr_psl.pofiles), [pofile1])
-
-        # If we provide a POFile for the other template, `pofiles`
-        # returns both (ordered by decreasing priority).
-        pofile2 = self.factory.makePOFile(serbian.code, potemplate2)
-        sr_psl = self.productseries.productserieslanguages[0]
-        self.assertEquals(list(sr_psl.pofiles), [pofile2, pofile1])
+        sr_psl = psls[0]
+        self.assertEquals(None, sr_psl.pofile)
 
 
 class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
@@ -127,8 +126,10 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
     def setUp(self):
         # Create a productseries that uses translations.
         TestCaseWithFactory.setUp(self)
-        self.productseries = self.factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        self.productseries = self.factory.makeProductSeries(
+            product=product)
         self.psl_set = getUtility(IProductSeriesLanguageSet)
         self.language = getUtility(ILanguageSet).getLanguageByCode('sr')
 
@@ -143,16 +144,19 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
              psl.last_changed_date),
              stats)
 
-    def test_DummyProductSeriesLanguage(self):
+    def test_dummy_ProductSeriesLanguage(self):
         # With no templates all counts are zero.
-        psl = self.psl_set.getDummy(self.productseries, self.language)
+        psl = self.psl_set.getProductSeriesLanguage(
+            self.productseries, self.language)
         self.failUnless(verifyObject(IProductSeriesLanguage, psl))
         self.assertPSLStatistics(psl, (0, 0, 0, 0, 0, 0, None))
 
         # Adding a single template with 10 messages makes the total
         # count of messages go up to 10.
         potemplate = self.createPOTemplateWithPOTMsgSets(10)
-        psl = self.psl_set.getDummy(self.productseries, self.language)
+        psl = self.psl_set.getProductSeriesLanguage(
+            self.productseries, self.language)
+        psl.recalculateCounts()
         self.assertPSLStatistics(
             psl, (10, 0, 0, 0, 0, 0, None))
 
@@ -168,10 +172,11 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # Getting PSL through PSLSet gives an uninitialized object.
         psl = self.psl_set.getProductSeriesLanguage(
             self.productseries, self.language)
-        self.assertEquals(psl.messageCount(), None)
+        self.assertEquals(psl.messageCount(), 0)
 
-        # So, we need to get it through productseries.productserieslanguages.
-        psl = self.productseries.productserieslanguages[0]
+        # We explicitely ask for stats to be recalculated.
+        psl.recalculateCounts()
+
         self.assertPSLStatistics(psl,
                                  (pofile.messageCount(),
                                   pofile.translatedCount(),
@@ -196,17 +201,14 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         self.setPOFileStatistics(pofile2, 1, 1, 1, 1, pofile2.date_changed)
 
         psl = self.productseries.productserieslanguages[0]
-
-        # The psl.last_changed_date here is a naive datetime. So, for sake of
-        # the tests, we should make pofile2 naive when checking if it matches
-        # the last calculated changed date, that should be the same as
-        # pofile2, created last.
+        # We explicitely ask for stats to be recalculated.
+        psl.recalculateCounts()
 
         # Total is a sum of totals in both POTemplates (10+20).
         # Translated is a sum of imported and rosetta translations,
         # which adds up as (4+3)+(1+1).
         self.assertPSLStatistics(psl, (30, 9, 5, 4, 3, 6,
-            pofile2.date_changed.replace(tzinfo=None)))
+            pofile2.date_changed))
         self.assertPSLStatistics(psl, (
             pofile1.messageCount() + pofile2.messageCount(),
             pofile1.translatedCount() + pofile2.translatedCount(),
@@ -214,7 +216,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
             pofile1.rosettaCount() + pofile2.rosettaCount(),
             pofile1.updatesCount() + pofile2.updatesCount(),
             pofile1.unreviewedCount() + pofile2.unreviewedCount(),
-            pofile2.date_changed.replace(tzinfo=None)))
+            pofile2.date_changed))
 
     def test_recalculateCounts(self):
         # Test that recalculateCounts works correctly.
@@ -233,13 +235,14 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
 
         psl = self.psl_set.getProductSeriesLanguage(self.productseries,
                                                     self.language)
-        # recalculateCounts() doesn't recalculate the last changed date.
+
         psl.recalculateCounts()
         # Total is a sum of totals in both POTemplates (10+20).
         # Translated is a sum of imported and rosetta translations,
         # which adds up as (1+3)+(1+1).
+        # recalculateCounts() recalculates even the last changed date.
         self.assertPSLStatistics(psl, (30, 6, 2, 4, 3, 5,
-            None))
+            pofile2.date_changed))
 
     def test_recalculateCounts_no_pofiles(self):
         # Test that recalculateCounts works correctly even when there
@@ -252,7 +255,3 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # And all the counts are zero.
         self.assertPSLStatistics(psl, (3, 0, 0, 0, 0, 0,
             None))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

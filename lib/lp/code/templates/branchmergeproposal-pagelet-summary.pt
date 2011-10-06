@@ -17,15 +17,25 @@
     <tr id="summary-row-1-status">
       <th>Status:</th>
       <td id="branchmergeproposal-status-value">
-        <span tal:attributes="class string:value mergestatus${context/queue_status/name}"
-              tal:content="context/queue_status/title">
-          Work in progress
-        </span>
-        <a tal:define="link context/menu:context/edit_status"
-           tal:condition="link/enabled"
-           tal:attributes="href link/url">
-           <img class="editicon" src="/@@/edit" alt="Edit status" />
-        </a>
+
+        <tal:merge-status define="link context_menu/edit_status;
+                                  status_name context/queue_status/name">
+          <a tal:condition="link/enabled"
+             tal:content="context/queue_status/title"
+             tal:attributes="href link/url;
+                             class string:value mergestatus${status_name}">
+            Work in progress
+          </a>
+          <span tal:condition="not: link/enabled"
+                tal:content="context/queue_status/title"
+                tal:attributes="class string:value mergestatus${status_name}">
+            Work in progress
+          </span>
+            <a tal:condition="link/enabled"
+               tal:attributes="href link/url">
+              <img class="editicon" src="/@@/edit" alt="Edit status" />
+            </a>
+        </tal:merge-status>
       </td>
     </tr>
     <tal:comment condition="nothing">
@@ -130,6 +140,10 @@
         <pre tal:condition="context/preview_diff/has_conflicts"
              tal:content="context/preview_diff/conflicts"/>
       </td>
+    </tr>
+    <tr id="summary-row-merge-instruction">
+      <th>To merge this branch:</th>
+      <td>bzr merge <span class="branch-url" tal:content="context/source_branch/bzr_identity" /></td>
     </tr>
   </tbody>
 </table>

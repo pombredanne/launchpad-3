@@ -3,24 +3,22 @@
 
 __metaclass__ = type
 
-import unittest
-
 from launchpadlib.testing.helpers import salgado_with_full_permissions
-from canonical.testing import AppServerLayer
+import transaction
+
+from canonical.testing.layers import AppServerLayer
+from lp.testing import TestCaseWithFactory
 
 
-class TestLaunchpadLib(unittest.TestCase):
+class TestLaunchpadLib(TestCaseWithFactory):
     """Tests for the launchpadlib client for the REST API."""
 
     layer = AppServerLayer
-    launchpad = None
-    project = None
 
     def setUp(self):
-        if self.launchpad is None:
-            self.launchpad = salgado_with_full_permissions.login()
-        if self.project is None:
-            self.project = self.launchpad.projects['firefox']
+        super(TestLaunchpadLib, self).setUp()
+        self.launchpad = salgado_with_full_permissions.login()
+        self.project = self.launchpad.projects['firefox']
 
     def verifyAttributes(self, element):
         """Verify that launchpadlib can parse the element's attributes."""
@@ -43,7 +41,10 @@ class TestLaunchpadLib(unittest.TestCase):
 
     def test_branch(self):
         """Test branch attributes."""
-        branch = self.project.getBranches()[0]
+        branch_name = self.factory.makeBranch().unique_name
+        transaction.commit()
+        branch = self.launchpad.branches.getByUniqueName(
+            unique_name=branch_name)
         self.verifyAttributes(branch)
 
     def test_milestone(self):
@@ -52,7 +53,3 @@ class TestLaunchpadLib(unittest.TestCase):
         # so project.milestones[0] doesn't work.
         milestone = self.project.active_milestones[:1][0]
         self.verifyAttributes(milestone)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

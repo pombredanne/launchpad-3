@@ -27,7 +27,7 @@ We will create a testing delayed-copy for Ubuntu/breezy-autotest.
     >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
     ...     archive=ubuntu.main_archive, distroseries=breezy_autotest,
     ...     pocket=PackagePublishingPocket.RELEASE, signing_key=None)
-    >>> unused = delayed_copy.addSource(build.sourcepackagerelease)
+    >>> unused = delayed_copy.addSource(build.source_package_release)
     >>> unused = delayed_copy.addBuild(build)
     >>> transaction.commit()
     >>> delayed_copy.acceptFromCopy()
@@ -48,7 +48,7 @@ It's is listed as a normal upload, however there is no link to the
 
     >>> for row in find_tags_by_class(anon_browser.contents, "queue-row"):
     ...     print extract_text(row)
-    Package                           Version  Component Section Priority Pocket When
+    Package                           Version  Component Section Priority Sets Pocket When
     foo, foo (delayed) (source, i386) 666      main      base    low      ...
 
     >>> anon_browser.getLink('foo, foo')
@@ -84,7 +84,7 @@ archive, nothing else.
 
     >>> for row in find_tags_by_class(cprov_browser.contents, "queue-row"):
     ...     print extract_text(row)
-    Package                           Version  Component Section Priority Pocket When
+    Package                           Version  Component Section Priority Sets Pocket When
     foo, foo (delayed) (source, i386) 666      main      base    low      ...
 
     >>> anon_browser.getLink('foo, foo')
@@ -107,8 +107,8 @@ become available to everyone.
     # DB objects that have no security adapter are modified during the
     # delayed copy, the modification must be done in Zopeless mode.
     >>> import os.path
-    >>> from canonical.launchpad.ftests.script import run_script
     >>> from canonical.config import config
+    >>> from canonical.launchpad.ftests.script import run_script
     >>> script = os.path.join(config.root, "scripts/process-accepted.py")
     >>> result, stdout, stderr = run_script(script, ["ubuntu"])
     >>> if result != 0:
@@ -122,7 +122,7 @@ Any user can access the DONE queue and access the delayed-copy
     >>> anon_browser.getControl("Update").click()
 
     >>> print anon_browser.getLink('foo, foo').url
-    http://localhost:58000/.../foo_666_source.changes
+    http://.../.../foo_666_source.changes
 
     >>> extra_information = find_tags_by_class(
     ...     anon_browser.contents, 'queue-%s' % delayed_copy.id)

@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -9,47 +9,34 @@
   >
 
   <securedutility
-      class="canonical.launchpad.xmlrpc.PrivateApplication"
-      provides="canonical.launchpad.interfaces.IPrivateApplication">
-      <allow interface="canonical.launchpad.interfaces.IPrivateApplication"/>
+      class="canonical.launchpad.xmlrpc.application.PrivateApplication"
+      provides="canonical.launchpad.interfaces.launchpad.IPrivateApplication">
+      <allow interface="canonical.launchpad.interfaces.launchpad.IPrivateApplication"/>
   </securedutility>
 
   <securedutility
     class="canonical.launchpad.systemhomes.AuthServerApplication"
-    provides="canonical.launchpad.interfaces.IAuthServerApplication">
-    <allow interface="canonical.launchpad.interfaces.IAuthServerApplication"/>
+    provides="canonical.launchpad.interfaces.launchpad.IAuthServerApplication">
+    <allow interface="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.IAuthServerApplication"
-    interface="canonical.launchpad.interfaces.IAuthServer"
-    class="canonical.launchpad.xmlrpc.AuthServerAPIView"
+    for="canonical.launchpad.interfaces.launchpad.IAuthServerApplication"
+    interface="canonical.launchpad.interfaces.authserver.IAuthServer"
+    class="canonical.launchpad.xmlrpc.authserver.AuthServerAPIView"
     permission="zope.Public"
     />
 
   <securedutility
-    class="canonical.launchpad.systemhomes.BranchPullerApplication"
-    provides="lp.code.interfaces.codehosting.IBranchPullerApplication">
-    <allow interface="lp.code.interfaces.codehosting.IBranchPullerApplication"/>
+    class="canonical.launchpad.systemhomes.CodehostingApplication"
+    provides="lp.code.interfaces.codehosting.ICodehostingApplication">
+    <allow interface="lp.code.interfaces.codehosting.ICodehostingApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="lp.code.interfaces.codehosting.IBranchPullerApplication"
-    interface="lp.code.interfaces.codehosting.IBranchPuller"
-    class="lp.code.xmlrpc.codehosting.BranchPuller"
-    permission="zope.Public"
-    />
-
-  <securedutility
-    class="canonical.launchpad.systemhomes.BranchFileSystemApplication"
-    provides="lp.code.interfaces.codehosting.IBranchFileSystemApplication">
-    <allow interface="lp.code.interfaces.codehosting.IBranchFileSystemApplication"/>
-  </securedutility>
-
-  <xmlrpc:view
-    for="lp.code.interfaces.codehosting.IBranchFileSystemApplication"
-    interface="lp.code.interfaces.codehosting.IBranchFileSystem"
-    class="lp.code.xmlrpc.codehosting.BranchFileSystem"
+    for="lp.code.interfaces.codehosting.ICodehostingApplication"
+    interface="lp.code.interfaces.codehosting.ICodehostingAPI"
+    class="lp.code.xmlrpc.codehosting.CodehostingAPI"
     permission="zope.Public"
     />
 
@@ -62,20 +49,20 @@
   <xmlrpc:view
     for="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"
     interface="lp.code.interfaces.codeimportscheduler.ICodeImportScheduler"
-    class="canonical.launchpad.xmlrpc.CodeImportSchedulerAPI"
+    class="lp.code.xmlrpc.codeimportscheduler.CodeImportSchedulerAPI"
     permission="zope.Public"
     />
 
   <securedutility
     class="canonical.launchpad.systemhomes.PrivateMaloneApplication"
-    provides="canonical.launchpad.interfaces.IPrivateMaloneApplication">
-    <allow interface="canonical.launchpad.interfaces.IPrivateMaloneApplication"/>
+    provides="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication">
+    <allow interface="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.IPrivateMaloneApplication"
-    interface="canonical.launchpad.interfaces.IExternalBugTrackerTokenAPI"
-    class="canonical.launchpad.xmlrpc.ExternalBugTrackerTokenAPI"
+    for="canonical.launchpad.interfaces.launchpad.IPrivateMaloneApplication"
+    interface="lp.bugs.interfaces.externalbugtracker.IExternalBugTrackerTokenAPI"
+    class="lp.bugs.xmlrpc.bug.ExternalBugTrackerTokenAPI"
     permission="zope.Public"
     />
 
@@ -217,4 +204,10 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.AccountSuspended">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidSourcePackageName">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
 </configure>

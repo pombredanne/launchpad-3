@@ -5,13 +5,11 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
 from operator import attrgetter
 
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import ProductSeriesVocabulary
 from lp.testing import TestCaseWithFactory
-
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestProductSeriesVocabulary(TestCaseWithFactory):
@@ -76,7 +74,3 @@ class TestProductSeriesVocabulary(TestCaseWithFactory):
         self.assertRaises(
             LookupError,
             self.vocabulary.getTermByToken, 'does/notexist')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -15,7 +15,6 @@ __all__ = [
     'BranchNameInUse',
     'BranchUniqueNameConflict',
     'CannotHaveLinkedBranch',
-    'check_fault',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
@@ -23,6 +22,8 @@ __all__ = [
     'InvalidBranchUniqueName',
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
+    'InvalidSourcePackageName',
+    'OopsOccurred',
     'NoBranchWithID',
     'NoLinkedBranch',
     'NoSuchBranch',
@@ -42,41 +43,8 @@ __all__ = [
     ]
 
 
-import xmlrpclib
-
-
 from lp.registry.interfaces.projectgroup import IProjectGroup
-
-
-def check_fault(fault, *fault_classes):
-    """Check if 'fault's faultCode matches any of 'fault_classes'.
-
-    :param fault: An instance of `xmlrpclib.Fault`.
-    :param fault_classes: Any number of `LaunchpadFault` subclasses.
-    """
-    for cls in fault_classes:
-        if fault.faultCode == cls.error_code:
-            return True
-    return False
-
-
-class LaunchpadFault(xmlrpclib.Fault):
-    """Base class for a Launchpad XMLRPC fault.
-
-    Subclasses should define a unique error_code and a msg_template,
-    which will be interpolated with the given keyword arguments.
-    """
-
-    error_code = None
-    msg_template = None
-
-    def __init__(self, **kw):
-        assert self.error_code is not None, (
-            "Subclasses must define error_code.")
-        assert self.msg_template is not None, (
-            "Subclasses must define msg_template.")
-        msg = self.msg_template % kw
-        xmlrpclib.Fault.__init__(self, self.error_code, msg)
+from lp.services.xmlrpc import LaunchpadFault
 
 
 class NoSuchProduct(LaunchpadFault):
@@ -484,3 +452,38 @@ class NoSuchCodeImportJob(LaunchpadFault):
 
     def __init__(self, job_id):
         LaunchpadFault.__init__(self, job_id=job_id)
+
+
+class AccountSuspended(LaunchpadFault):
+    """Raised by `ISoftwareCenterAgentAPI` when an account is suspended."""
+
+    error_code = 370
+    msg_template = (
+        'The openid_identifier \'%(openid_identifier)s\''
+        ' is linked to a suspended account.')
+
+    def __init__(self, openid_identifier):
+        LaunchpadFault.__init__(self, openid_identifier=openid_identifier)
+
+
+class OopsOccurred(LaunchpadFault):
+    """An oops has occurred performing the requested operation."""
+
+    error_code = 380
+    msg_template = (
+        'An unexpected error has occurred while %(server_op)s. '
+        'Please report a Launchpad bug and quote: %(oopsid)s.')
+
+    def __init__(self, server_op, oopsid):
+        LaunchpadFault.__init__(self, server_op=server_op, oopsid=oopsid)
+        self.oopsid = oopsid
+
+
+class InvalidSourcePackageName(LaunchpadFault):
+
+    error_code = 390
+    msg_template = ("%(name)s is not a valid source package name.")
+
+    def __init__(self, name):
+        self.name = name
+        LaunchpadFault.__init__(self, name=name)

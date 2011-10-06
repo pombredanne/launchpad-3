@@ -14,13 +14,15 @@ __all__ = [
 from zope.component import queryAdapter
 from zope.traversing.interfaces import IPathAdapter
 
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace)
-from lp.registry.interfaces.personproduct import IPersonProduct
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp import (
-    Link, Navigation, StandardLaunchpadFacets)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.app.errors import NotFoundError
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.registry.interfaces.personproduct import IPersonProduct
 
 
 class PersonProductNavigation(Navigation):
@@ -59,7 +61,7 @@ class PersonProductFacets(StandardLaunchpadFacets):
     enable_only = ['branches']
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = ('Bazaar Branches of %s owned by %s' %
                    (self.context.product.displayname,
                     self.context.person.displayname))

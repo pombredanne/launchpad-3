@@ -30,7 +30,7 @@
                 }
             }
             formatlist.on('change', toggle_pochanged);
-            // Initialise the state of the controls.
+            // Initialize the state of the controls.
             toggle_pochanged();
         });
     });
@@ -60,7 +60,8 @@
                    >PO format</option>
               </select>
             </div>
-            <div id="div_pochanged" style="margin-top: 10px">
+            <div id="div_pochanged" style="margin-top: 10px"
+                 tal:condition="view/has_pochanged_option">
               <input type="checkbox" name="pochanged" id="cb_pochanged"
                      value="POCHANGED" />
               <label for="cb_pochanged">

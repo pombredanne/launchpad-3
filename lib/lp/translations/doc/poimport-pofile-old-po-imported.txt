@@ -1,4 +1,5 @@
-= PO Import test with a .po file that has a PO-Revision-Date not updated =
+PO Import test with a .po file that has a PO-Revision-Date not updated
+======================================================================
 
 When we import a .po file with a 'PO-Revision-Date' that has an older
 value than the one stored in IPOFile.header, we should detect it and
@@ -6,18 +7,19 @@ notify the user that they should update that field or we assume that
 such file is an old version that should not be imported. That way, they
 have a chance to fix it.
 
-We have to make an exception for published files, though, because the user
-may not be able to get the file fixed upstream or the file is older because
-a user upload occured before the published file made it to Launchpad. In
-either case we assume that the published file is OK and accept it for upload.
+We have to make an exception for files coming from upstream, though, because
+the user may not be able to get the file fixed upstream or the file is older
+because a user upload occured before the upstream file made it to Launchpad.
+In either case we assume that the upstream file is OK and accept it for
+upload.
 
 In this test, we are going to check that we detect these situations and
 notify the user about them.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.model.potemplate import POTemplateSubset
@@ -29,8 +31,7 @@ Here are some imports we need to get this test running.
 
 And also, the DBSchema to change the imports status
 
-    >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     RosettaImportStatus)
+    >>> from lp.translations.enums import RosettaImportStatus
 
 Login as an admin to be able to do changes to the import queue.
 
@@ -74,9 +75,9 @@ First, we do a valid import.
     ... msgid "foo"
     ... msgstr "blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> published = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -122,9 +123,9 @@ field with a date older than a previous .po import.
     ... msgid "foo"
     ... msgstr "blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> published = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -175,7 +176,7 @@ The code also generated an email about the error we produced.
     'PO-Revision-Date' field updated.
     <BLANKLINE>
     For your convenience, you can get the file you uploaded at:
-    http://localhost:58000/.../firefox-cy.po
+    http://.../firefox-cy.po
     <BLANKLINE>
     Thank you,
     <BLANKLINE>
@@ -183,11 +184,11 @@ The code also generated an email about the error we produced.
     <BLANKLINE>
 
 Finally we are going to import the same po file with the old
-'PO-Revision-Date' field but not it is marked as a 'published' file.
+'PO-Revision-Date' field but mark it as a file uploaded by the maintainer.
 
-    >>> published = True
+    >>> by_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 

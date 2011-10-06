@@ -7,8 +7,10 @@ requires several steps, starting with registration of the list by the owner of
 an existing team.  This is done through an IMailingListSet utility.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingList, IMailingListSet)
+    >>> from lp.registry.interfaces.mailinglist import (
+    ...     IMailingList,
+    ...     IMailingListSet,
+    ...     )
     >>> list_set = getUtility(IMailingListSet)
     >>> verifyObject(IMailingListSet, list_set)
     True
@@ -49,13 +51,14 @@ create the list until Mailman acts on the mailing list creation request.
     >>> verifyObject(IMailingList, list_one)
     True
     >>> list_one
-    <MailingList for team "team-one"; status=APPROVED at 0x...>
+    <MailingList for team "team-one"; status=APPROVED;
+     address=team-one@lists.launchpad.dev at 0x...>
 
 You can always access the mailing list through its team, if the team has a
 mailing list.
 
     >>> team_one.mailing_list
-    <MailingList for team "team-one"; status=APPROVED at 0x...>
+    <MailingList for team "team-one"; status=APPROVED; ...>
     >>> print team_two.mailing_list
     None
 
@@ -79,7 +82,7 @@ neither and thus may not create a list for team_two.
 
 However, if we make Anne a team owner, she can create the mailing list.
 
-    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> login('foo.bar@canonical.com')
     >>> bart = factory.makePersonByName('Bart')
     >>> ignored = team_two.addMember(
@@ -87,7 +90,7 @@ However, if we make Anne a team owner, she can create the mailing list.
     >>> login(ANONYMOUS)
     >>> list_two = list_set.new(team_two, anne)
     >>> list_two
-    <MailingList for team "team-two"; status=APPROVED at ...>
+    <MailingList for team "team-two"; status=APPROVED; ...>
     >>> print list_two.address
     team-two@lists.launchpad.dev
 
@@ -127,8 +130,8 @@ mailing lists to construct, the list's statuses are set to the CONSTRUCTING
 state.
 
     >>> sorted_lists(list_set.approved_lists)
-    [<MailingList for team "team-one"; status=APPROVED at ...>,
-     <MailingList for team "team-two"; status=APPROVED at ...>]
+    [<MailingList for team "team-one"; status=APPROVED; ...>,
+     <MailingList for team "team-two"; status=APPROVED; ...>]
 
     >>> list_one.startConstructing()
     >>> print list_one.status.name
@@ -137,7 +140,7 @@ state.
 Once in the construction phase, a list is no longer in the approval state.
 
     >>> sorted_lists(list_set.approved_lists)
-    [<MailingList for team "team-two"; status=APPROVED at ...>]
+    [<MailingList for team "team-two"; status=APPROVED; ...>]
 
 Lists should never be constructed more than once.
 
@@ -161,7 +164,8 @@ a mailing list is made active, its email address is registered in Launchpad
 and associated with the team's mailing list, so that it can be used as the
 team's contact address.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> email_set = getUtility(IEmailAddressSet)
     >>> print email_set.getByEmail(list_one.address)
     None
@@ -188,9 +192,9 @@ Some list constructions may fail.
 You can then get the mailing list for a team, given the team name.
 
     >>> list_set.get(team_one.name)
-    <MailingList for team "team-one"; status=ACTIVE at ...>
+    <MailingList for team "team-one"; status=ACTIVE; ...>
     >>> list_set.get(team_two.name)
-    <MailingList for team "team-two"; status=FAILED at ...>
+    <MailingList for team "team-two"; status=FAILED; ...>
 
 This method will return None for missing teams or non-team people.
 
@@ -221,7 +225,7 @@ needs to query for the requested deactivations, take the necessary actions,
 and report the deactivation results.
 
     >>> sorted_lists(list_set.deactivated_lists)
-    [<MailingList for team "team-three"; status=DEACTIVATING at ...>]
+    [<MailingList for team "team-three"; status=DEACTIVATING; ...>]
     >>> list_three.transitionToStatus(MailingListStatus.INACTIVE)
     >>> print list_three.status.name
     INACTIVE
@@ -274,7 +278,7 @@ Mailing list permissions
 Permissions on a team's mailing list are not tracked separately from
 permissions on the team.
 
-You cannot turn a team with a mailing list into a private membership team.
+You cannot turn a team with a mailing list into a private team.
 
     >>> from zope.component import queryAdapter
     >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
@@ -282,18 +286,18 @@ You cannot turn a team with a mailing list into a private membership team.
     >>> queryAdapter(team_one, IObjectPrivacy).is_private
     False
     >>> login('foo.bar@canonical.com')
-    >>> team_one.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> team_one.visibility = PersonVisibility.PRIVATE
     Traceback (most recent call last):
     ...
     ImmutableVisibilityError: This team cannot be converted to
-    Private Membership since it is referenced by a mailing list.
+    Private since it is referenced by a mailing list.
 
-However, you can give a private membership team a mailing list.
+However, you can give a private team a mailing list.
 
     >>> thereminists = new_team('thereminists')
     >>> queryAdapter(thereminists, IObjectPrivacy).is_private
     False
-    >>> thereminists.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> thereminists.visibility = PersonVisibility.PRIVATE
 
     >>> queryAdapter(thereminists, IObjectPrivacy).is_private
     True
@@ -301,16 +305,7 @@ However, you can give a private membership team a mailing list.
     ...     new_list_for_team)
     >>> thereminists_list = new_list_for_team(thereminists)
     >>> thereminists_list
-    <MailingList for team "thereminists"; status=ACTIVE at ...>
-
-Once a private team has a mailing list though, it cannot be made public.
-
-    >>> thereminists.visibility = PersonVisibility.PUBLIC
-    Traceback (most recent call last):
-    ...
-    ImmutableVisibilityError: This team cannot be made public since it has a
-    mailing list
-
+    <MailingList for team "thereminists"; status=ACTIVE; ...>
 
 Welcome messages
 ================
@@ -331,7 +326,7 @@ After changing the welcome message, the list's status should be MODIFIED.
     >>> print list_one.status.name
     MODIFIED
     >>> sorted_lists(list_set.modified_lists)
-    [<MailingList for team "team-one"; status=MODIFIED at ...>]
+    [<MailingList for team "team-one"; status=MODIFIED; ...>]
 
 Eventually, Mailman will get around to acting on this modification.  When it
 does so, the list's state transitions first to UPDATING so as to avoid
@@ -423,9 +418,9 @@ Activating the mailing list (changing it's status to 'available for
 subscription') will fire an instance of the ObjectModifiedEvent.
 
     # Register an event listener that will print event it receives.
-    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
-    >>> from canonical.launchpad.interfaces import IMailingList
     >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
+    >>> from lp.registry.interfaces.mailinglist import IMailingList
     >>> def print_event(object, event):
     ...     print "Received %s on %s" % (
     ...         event.__class__.__name__.split('.')[-1],
@@ -506,7 +501,7 @@ A list that has been approved, or is being constructed cannot be purged.
     >>> naked_list = removeSecurityProxy(list_six)
     >>> naked_list.status = MailingListStatus.APPROVED
     >>> transaction.commit()
-    >>> logout()
+    >>> login(ANONYMOUS)
     >>> print list_six.status.name
     APPROVED
     >>> list_six.purge()

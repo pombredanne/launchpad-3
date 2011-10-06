@@ -1,6 +1,6 @@
-===============================
-Projects and the answer tracker
-===============================
+====================================
+ProjectGroups and the answer tracker
+====================================
 
 Although question cannot be filed directly against project groups,
 IProjectGroup in Launchpad also provides the IQuestionCollection and
@@ -50,7 +50,7 @@ In the case where a project group has no projects, there are no results.
 Questions can be searched by all the standard searchQuestions() parameters.
 See questiontarget.txt for the full details.
 
-    >>> from lp.answers.interfaces.questionenums import (
+    >>> from lp.answers.enums import (
     ...     QuestionSort, QuestionStatus)
     >>> for question in mozilla_project.searchQuestions(
     ...     owner=sample_person, status=QuestionStatus.OPEN,
@@ -67,7 +67,7 @@ getQuestionLanguages() returns the set of languages that is used by all the
 questions in the project group's projects.
 
     # The Firefox project group has one question created in Brazilian
-    # Portuguese. 
+    # Portuguese.
     >>> print ', '.join(
     ...     sorted(language.code
     ...            for language in mozilla_project.getQuestionLanguages()))

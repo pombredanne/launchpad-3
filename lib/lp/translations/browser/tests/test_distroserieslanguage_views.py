@@ -1,22 +1,23 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from lazr.restful.utils import get_current_browser_request
+from testtools.matchers import Equals
 import transaction
-import unittest
-
 from zope.component import getUtility
 
-from lazr.restful.utils import get_current_browser_request
-
-from lp.translations.browser.serieslanguage import (
-    DistroSeriesLanguageView)
-from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
+from lp.translations.browser.serieslanguage import DistroSeriesLanguageView
+from lp.translations.interfaces.translator import ITranslatorSet
 
 
 class TestDistroSeriesLanguage(TestCaseWithFactory):
@@ -27,14 +28,14 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
     def setUp(self):
         # Create a distroseries that uses translations.
         TestCaseWithFactory.setUp(self)
-        self.distroseries = self.factory.makeDistroRelease()
+        self.distroseries = self.factory.makeDistroSeries()
         self.distroseries.distribution.official_rosetta = True
         self.language = getUtility(ILanguageSet).getLanguageByCode('sr')
         sourcepackagename = self.factory.makeSourcePackageName()
         potemplate = self.factory.makePOTemplate(
             distroseries=self.distroseries,
             sourcepackagename=sourcepackagename)
-        pofile = self.factory.makePOFile('sr', potemplate)
+        self.factory.makePOFile('sr', potemplate)
         self.distroseries.updateStatistics(transaction)
         self.dsl = self.distroseries.distroserieslanguages[0]
         self.view = DistroSeriesLanguageView(
@@ -85,6 +86,12 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
             "is in read-only mode.")
         self.assertEqual(notice, self.view.access_level_description)
 
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_sourcepackagenames_bulk_loaded(self):
+        # SourcePackageName records referenced by POTemplates
+        # are bulk loaded. Accessing the sourcepackagename attribute
+        # of a potemplate does not require an additional SQL query.
+        self.view.initialize()
+        template = self.view.batchnav.currentBatch()[0]
+        with StormStatementRecorder() as recorder:
+            template.sourcepackagename
+        self.assertThat(recorder, HasQueryCount(Equals(0)))

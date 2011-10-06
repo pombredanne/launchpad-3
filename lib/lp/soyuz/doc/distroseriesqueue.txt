@@ -1,4 +1,5 @@
-== Upload processing queue ==
+Upload processing queue
+=======================
 
 The upload processing queue (PackageUpload and friends) is where
 uploads go after they have been checked by process-upload.py and
@@ -38,55 +39,52 @@ binaries + custom, other only source.
 First up, we need to actually process an upload to get it into the
 queue. To do this we prepare an OpenPGP key, and then run the upload handler.
 
-  >>> from canonical.launchpad.ftests import import_public_test_keys
-  >>> import_public_test_keys()
+    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> import_public_test_keys()
 
 We need some setup for the upload handler.
 
-  >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+    >>> from lp.archiveuploader.nascentupload import NascentUpload
+    >>> from lp.archiveuploader.tests import datadir, getPolicy
 
 Since we landed correct security adapters for PackageUpload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
-  >>> from canonical.launchpad.ftests import login
-  >>> login("foo.bar@canonical.com")
+    >>> from canonical.launchpad.ftests import login
+    >>> login("foo.bar@canonical.com")
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, IDistributionSet)
-  >>> from canonical.launchpad.database import ComponentSelection
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> hoary = ubuntu['hoary']
-  >>> universe = getUtility(IComponentSet)['universe']
-  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.model.component import ComponentSelection
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> trash = ComponentSelection(distroseries=hoary, component=universe)
 
 Construct an upload.
 
-  >>> anything_policy = getPolicy(
-  ...     name='anything', distro='ubuntu', distroseries='hoary')
-  >>> anything_policy.can_upload_binaries = True
-  >>> anything_policy.can_upload_mixed = True
+    >>> anything_policy = getPolicy(
+    ...     name='absolutely-anything', distro='ubuntu', distroseries='hoary')
 
-  >>> ed_upload = NascentUpload(
-  ...     datadir('ed_0.2-20_i386.changes'),
-  ...     anything_policy, mock_logger_quiet)
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> ed_upload = NascentUpload.from_changesfile_path(
+    ...     datadir("ed_0.2-20_i386.changes.source-only-unsigned"),
+    ...     anything_policy, DevNullLogger())
 
-  >>> ed_upload.process()
-  >>> success = ed_upload.do_accept()
-  >>> success
-  True
+    >>> ed_upload.process()
+    >>> success = ed_upload.do_accept()
+    >>> success
+    True
 
 Now the upload is in the queue, it'll likely be there as NEW because that's
 what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...      QueueInconsistentStateError)
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+    >>> from lp.soyuz.enums import PackageUploadStatus
+    >>> from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
-  >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
+    >>> new_queue = hoary.getPackageUploads(PackageUploadStatus.NEW)
 
 Use state-machine method provided by PackageUpload to ACCEPT an
 upload. If some designed check according the request state do not
@@ -95,160 +93,159 @@ upload can not have that state.
 
 XXX cprov 20051209: need to build a broken upload to test it properly
 
-  >>> for item in new_queue:
-  ...     try:
-  ...         item.setAccepted()
-  ...         item.syncUpdate()
-  ...     except QueueInconsistentStateError, info:
-  ...         print info
+    >>> for item in new_queue:
+    ...     try:
+    ...         item.setAccepted()
+    ...         item.syncUpdate()
+    ...     except QueueInconsistentStateError, info:
+    ...         print info
 
-  >>> accepted_queue = hoary.getQueueItems(PackageUploadStatus.ACCEPTED)
+    >>> accepted_queue = hoary.getPackageUploads(PackageUploadStatus.ACCEPTED)
 
-  >>> for item in accepted_queue:
-  ...     for source in item.sources:
-  ...         print source.sourcepackagerelease.name
-  ...     pub_records = item.realiseUpload(mock_logger)
-  ed
-  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
-  DEBUG: Publishing build to ubuntu/hoary/i386
-  DEBUG: ... ed/0.2-20 (Arch Specific)
+    >>> from lp.services.log.logger import FakeLogger
+    >>> for item in accepted_queue:
+    ...     for source in item.sources:
+    ...         print source.sourcepackagerelease.name
+    ...     pub_records = item.realiseUpload(FakeLogger())
+    ed
+    DEBUG Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
 
 
 Confirm we can now find ed published in hoary.
 
-  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-  >>> for release in SourcePackagePublishingHistory.selectBy(
-  ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
-  ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
-  ...         print release.sourcepackagerelease.version
-  0.2-20
+    >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+    >>> for release in SourcePackagePublishingHistory.selectBy(
+    ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
+    ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
+    ...         print release.sourcepackagerelease.version
+    0.2-20
 
 
 Check IPackageUploadSet behaviour:
 
-  >>> from canonical.launchpad.interfaces import IPackageUploadSet
-  >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 Grab an utility:
 
-  >>> qset = getUtility(IPackageUploadSet)
+    >>> qset = getUtility(IPackageUploadSet)
 
 Check if it implements its interface completely:
 
-  >>> verifyObject(IPackageUploadSet, qset)
-  True
+    >>> verifyObject(IPackageUploadSet, qset)
+    True
 
 Iterating over IPackageUploads via iPackageUploadSet:
 
-  >>> len([item for item in qset])
-  16
+    >>> len([item for item in qset])
+    16
 
 Retrieving an IPackageUpload by its id:
 
-  >>> qset[1].id
-  1
+    >>> qset[1].id
+    1
 
-  >>> qset.get(1).id
-  1
+    >>> qset.get(1).id
+    1
 
 Counter, optionally by status (informally named "queue") and or distroseries:
 
-  >>> qset.count()
-  16
+    >>> qset.count()
+    16
 
-  >>> qset.count(PackageUploadStatus.DONE)
-  5
+    >>> qset.count(PackageUploadStatus.DONE)
+    5
 
-  >>> qset.count(PackageUploadStatus.REJECTED)
-  0
+    >>> qset.count(PackageUploadStatus.REJECTED)
+    0
 
 Retrieve some data from DB to play more with counter.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
-  >>> breezy_autotest = distro['breezy-autotest']
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> breezy_autotest = distro['breezy-autotest']
 
-  >>> qset.count(distroseries=breezy_autotest)
-  13
+    >>> qset.count(distroseries=breezy_autotest)
+    13
 
-  >>> qset.count(status=PackageUploadStatus.ACCEPTED,
-  ...            distroseries=breezy_autotest)
-  0
+    >>> qset.count(status=PackageUploadStatus.ACCEPTED,
+    ...            distroseries=breezy_autotest)
+    0
 
-  >>> qset.count(status=PackageUploadStatus.DONE,
-  ...            distroseries=hoary)
-  1
+    >>> qset.count(status=PackageUploadStatus.DONE,
+    ...            distroseries=hoary)
+    1
 
 
 Check the behaviour of @cachedproperty  attributes:
 
-  >>> qitem = qset.get(1)
+    >>> qitem = qset.get(1)
 
-  >>> qitem.date_created
-  datetime.datetime(...)
+    >>> qitem.date_created
+    datetime.datetime(...)
 
-  >>> print qitem.changesfile.filename
-  mozilla-firefox_0.9_i386.changes
+    >>> print qitem.changesfile.filename
+    mozilla-firefox_0.9_i386.changes
 
-  >>> print qitem.sourcepackagerelease.name
-  mozilla-firefox
+    >>> print qitem.sourcepackagerelease.name
+    mozilla-firefox
 
-  >>> print qitem.displayname
-  mozilla-firefox
+    >>> print qitem.displayname
+    mozilla-firefox
 
-  >>> print qitem.displayversion
-  0.9
+    >>> print qitem.displayversion
+    0.9
 
-  >>> print qitem.displayarchs
-  i386
+    >>> print qitem.displayarchs
+    i386
 
-  >>> qitem.sourcepackagerelease
-  <SourcePackageRelease at ...>
+    >>> qitem.sourcepackagerelease
+    <SourcePackageRelease at ...>
 
 
 Let's check the behaviour of @cachedproperty attributes in a custom upload:
 
-  >>> custom_item = qset.get(5)
+    >>> custom_item = qset.get(5)
 
-  >>> custom_item.date_created
-  datetime.datetime(...)
+    >>> custom_item.date_created
+    datetime.datetime(...)
 
-  >>> print custom_item.changesfile.filename
-  netapplet-1.0.0.tar.gz
+    >>> print custom_item.changesfile.filename
+    netapplet-1.0.0.tar.gz
 
-  >>> print custom_item.displayname
-  netapplet-1.0.0.tar.gz
+    >>> print custom_item.displayname
+    netapplet-1.0.0.tar.gz
 
-  >>> print custom_item.displayversion
-  -
+    >>> print custom_item.displayversion
+    -
 
-  >>> print custom_item.displayarchs
-  raw-translations
+    >>> print custom_item.displayarchs
+    raw-translations
 
-  >>> print custom_item.sourcepackagerelease
-  None
+    >>> print custom_item.sourcepackagerelease
+    None
 
 The method getBuildByBuildIDs() will return all the PackageUploadBuild
 records that match the supplied build IDs.
 
-  >>> ids = (18,19)
-  >>> for package_upload_build in qset.getBuildByBuildIDs(ids):
-  ...     print package_upload_build.packageupload.displayname
-  mozilla-firefox
-  pmount
+    >>> ids = (18,19)
+    >>> for package_upload_build in qset.getBuildByBuildIDs(ids):
+    ...     print package_upload_build.packageupload.displayname
+    mozilla-firefox
+    pmount
 
 If the supplied IDs is empty or None, an empty list is returned:
 
-  >>> qset.getBuildByBuildIDs([])
-  []
+    >>> qset.getBuildByBuildIDs([])
+    []
 
-  >>> qset.getBuildByBuildIDs(None)
-  []
+    >>> qset.getBuildByBuildIDs(None)
+    []
 
 
-== Upload Signing Key ==
+Upload Signing Key
+------------------
 
 IPackageUpload.signing_key should store the IGPGKey reference to
 the key used to sign the changesfile when it applies (insecure policy
@@ -260,351 +257,203 @@ done by someone else.
 
 Let's process a new upload:
 
-  >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntu', distroseries='hoary')
+    >>> insecure_policy = getPolicy(
+    ...     name='insecure', distro='ubuntu', distroseries='hoary')
 
-  >>> bar_ok = NascentUpload(
-  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     insecure_policy, mock_logger_quiet)
-  >>> bar_ok.process()
-  >>> success = bar_ok.do_accept()
-  >>> success
-  True
+    >>> bar_ok = NascentUpload.from_changesfile_path(
+    ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+    ...     insecure_policy, DevNullLogger())
+    >>> bar_ok.process()
+    >>> success = bar_ok.do_accept()
+    >>> success
+    True
 
-  >>> signed_queue = bar_ok.queue_root
+    >>> signed_queue = bar_ok.queue_root
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPackageUpload, IGPGKey)
+    >>> from lp.registry.interfaces.gpg import IGPGKey
+    >>> from lp.soyuz.interfaces.queue import IPackageUpload
 
-  >>> verifyObject(IPackageUpload, signed_queue)
-  True
+    >>> verifyObject(IPackageUpload, signed_queue)
+    True
 
-  >>> verifyObject(IGPGKey, signed_queue.signing_key)
-  True
+    >>> verifyObject(IGPGKey, signed_queue.signing_key)
+    True
 
 Let's check the IPerson entities related to this source upload:
 
-  >>> signed_src = signed_queue.sources[0].sourcepackagerelease
+    >>> signed_src = signed_queue.sources[0].sourcepackagerelease
 
-  >>> signed_src.creator.displayname
-  u'Daniel Silverstone'
+    >>> signed_src.creator.displayname
+    u'Daniel Silverstone'
 
-  >>> signed_src.maintainer.displayname
-  u'Launchpad team'
+    >>> signed_src.maintainer.displayname
+    u'Launchpad team'
 
-  >>> signed_queue.signing_key.owner.displayname
-  u'Foo Bar'
+    >>> signed_queue.signing_key.owner.displayname
+    u'Foo Bar'
 
 Based on this information we can conclude that source 'bar' is
 maintained by 'Launchpad Team', was modified by 'Daniel Silverstone'
 and sponsored by 'Foo Bar'.
 
 
-== IHasQueueItems ==
-
-Explore the queue features of a DistroSeries instance, let's check
-some usages of IHasQueueItems.getQueueItems, which returns a list
-of IPackageUpload entries.
-
-  >>> new_items = breezy_autotest.getQueueItems(
-  ...    PackageUploadStatus.NEW)
-  >>> new_items.count()
-  6
-
-Invetigate the queue entries type:
-
-  >>> for n in new_items:
-  ...     n.builds.count(), n.sources.count()
-  (0, 0)
-  (0, 0)
-  (0, 1)
-  (0, 1)
-  (1, 0)
-  (1, 0)
-
-Exercises build side of getQueueItems, Retrieve queue entry for a
-name like 'moz':
-
-  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-  ...                                            name='moz')
-  >>> items.count()
-  1
-
-  >>> items[0].builds[0].build.binarypackages[0].name
-  u'mozilla-firefox'
-  >>> items[0].builds[0].build.binarypackages[0].version
-  u'0.9'
-
-Got a distroseries build queue entry for 'mozilla-firefox_0.9'
-
-Try with version:
-
-  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-  ...                                            name='moz', version='0.9')
-  >>> items.count()
-  1
-
-  >>> items[0].builds[0].build.binarypackages[0].name
-  u'mozilla-firefox'
-  >>> items[0].builds[0].build.binarypackages[0].version
-  u'0.9'
-
-Got the same queue entry.
-
-Let's try another entry where binary package name is LIKE 'pmount'
-
-  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-  ...                                            name='pmount')
-  >>> items.count()
-  1
-
-  >>> items[0].builds[0].build.binarypackages[0].name
-  u'pmount'
-  >>> items[0].builds[0].build.binarypackages[0].version
-  u'0.1-1'
-
-Got 'pmount_0.1-1'.
-
-Look for every queue entry which package name is like 'mo'
-
-  >>> items = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.NEW, name='mo')
-  >>> items.count()
-  2
-
-  >>> for item in items:
-  ...     a_binary = item.builds[0].build.binarypackages[0]
-  ...     print item.displayname
-  pmount
-  mozilla-firefox
-
-Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
-
-Try 'exact_match' for 'mozil_0.0.1'
-
-  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-  ...                 name='mozil', version='0.0.1', exact_match=True)
-  >>> items.count()
-  0
-
-There is no match on queue entries.
-
-Try to match custom uploads by filename, there is one sampledata
-custom upload in UNAPPROVED queue.
-
-  >>> items = breezy_autotest.getQueueItems(
-  ...      PackageUploadStatus.UNAPPROVED)
-  >>> items.count()
-  5
-
-We can't retrieve it with a 'what' substring:
-
-  >>> items = breezy_autotest.getQueueItems(
-  ...      PackageUploadStatus.UNAPPROVED, name='what')
-  >>> items.count()
-  0
-
-But it works with the right substring 'net' from 'netapplet.tar.gz'
-
-  >>> items = breezy_autotest.getQueueItems(
-  ...      PackageUploadStatus.UNAPPROVED, name='net')
-  >>> items.count()
-  2
-
-
-Also check the optional argument pocket:
-
-  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-
-  >>> breezy_autotest.getQueueItems(
-  ...      pocket=PackagePublishingPocket.RELEASE).count()
-  10
-
-  >>> breezy_autotest.getQueueItems(
-  ...      pocket=PackagePublishingPocket.UPDATES).count()
-  1
-
-Ensure list of pockets is also valid:
-
-  >>> breezy_autotest.getQueueItems(
-  ...      pocket=[PackagePublishingPocket.UPDATES,
-  ...              PackagePublishingPocket.RELEASE]).count()
-  11
-
-
-Check if association of status and pocket arguments works well:
-
-  >>> breezy_autotest.getQueueItems(
-  ...      PackageUploadStatus.UNAPPROVED,
-  ...      pocket=PackagePublishingPocket.UPDATES).count()
-  1
-
-  >>> breezy_autotest.getQueueItems(
-  ...      PackageUploadStatus.NEW,
-  ...      pocket=PackagePublishingPocket.UPDATES).count()
-  0
-
-  >>> breezy_autotest.getQueueItems(
-  ...      [PackageUploadStatus.NEW, PackageUploadStatus.UNAPPROVED],
-  ...      pocket=PackagePublishingPocket.UPDATES).count()
-  1
+IHasQueueItems
+--------------
 
 Check State Machine over PackageUploadBuilds:
 
 Performing full acceptance:
 
-  >>> from canonical.launchpad.ftests import syncUpdate
-  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
-  >>> for item in items:
-  ...      try:
-  ...          item.setAccepted()
-  ...      except QueueInconsistentStateError, e:
-  ...          print item.displayname, e
-  ...      else:
-  ...          print item.displayname, item.status.name
-  ...      syncUpdate(item)
-  netapplet-1.0.0.tar.gz ACCEPTED
-  netapplet-1.0.0.tar.gz ACCEPTED
-  alsa-utils ACCEPTED
-  netapplet ACCEPTED
-  pmount ACCEPTED
-  mozilla-firefox ACCEPTED
+    >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.NEW)
+    >>> for item in items:
+    ...      try:
+    ...          item.setAccepted()
+    ...      except QueueInconsistentStateError, e:
+    ...          print item.displayname, e
+    ...      else:
+    ...          print item.displayname, item.status.name
+    netapplet-1.0.0.tar.gz ACCEPTED
+    netapplet-1.0.0.tar.gz ACCEPTED
+    alsa-utils ACCEPTED
+    netapplet ACCEPTED
+    pmount ACCEPTED
+    mozilla-firefox ACCEPTED
 
 Move the ACCEPTED items back to NEW.
 
-  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.ACCEPTED)
-  >>> for item in items:
-  ...     item.setNew()
-  ...     print item.displayname, item.status.name
-  ...     syncUpdate(item)
-  netapplet-1.0.0.tar.gz NEW
-  netapplet-1.0.0.tar.gz NEW
-  alsa-utils NEW
-  netapplet NEW
-  pmount NEW
-  mozilla-firefox NEW
+    >>> items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.ACCEPTED)
+    >>> for item in items:
+    ...     item.setNew()
+    ...     print item.displayname, item.status.name
+    netapplet-1.0.0.tar.gz NEW
+    netapplet-1.0.0.tar.gz NEW
+    alsa-utils NEW
+    netapplet NEW
+    pmount NEW
+    mozilla-firefox NEW
 
 Check if the state machine methods raise when trying to set the same state:
 
-  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
-  >>> for item in items:
-  ...      try:
-  ...          item.setNew()
-  ...      except QueueInconsistentStateError, e:
-  ...          print item.displayname, e
-  ...      else:
-  ...          print item.displayname, 'BOGUS'
-  netapplet-1.0.0.tar.gz Queue item already new
-  netapplet-1.0.0.tar.gz Queue item already new
-  alsa-utils Queue item already new
-  netapplet Queue item already new
-  pmount Queue item already new
-  mozilla-firefox Queue item already new
+    >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.NEW)
+    >>> for item in items:
+    ...      try:
+    ...          item.setNew()
+    ...      except QueueInconsistentStateError, e:
+    ...          print item.displayname, e
+    ...      else:
+    ...          print item.displayname, 'BOGUS'
+    netapplet-1.0.0.tar.gz Queue item already new
+    netapplet-1.0.0.tar.gz Queue item already new
+    alsa-utils Queue item already new
+    netapplet Queue item already new
+    pmount Queue item already new
+    mozilla-firefox Queue item already new
 
 Check several available state machine methods on a NEW queue item
 (except setAccepted, it's already covered by other tests, check if they
 don't raise any exception):
 
-  >>> test_qitem = getUtility(IPackageUploadSet)[1]
-  >>> test_qitem.setUnapproved()
-  >>> test_qitem.setRejected()
-  >>> test_qitem.setDone()
-  >>> test_qitem.setNew()
+    >>> test_qitem = getUtility(IPackageUploadSet)[1]
+    >>> test_qitem.setUnapproved()
+    >>> test_qitem.setRejected()
+    >>> test_qitem.setDone()
+    >>> test_qitem.setNew()
 
 Check forbidden approval of not selected Section:
 
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, ISectionSet)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.section import ISectionSet
 
 Retrieve mozilla-firefox Upload:
 
-  >>> item = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.NEW, name='mozilla')[0]
+    >>> item = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'mozilla')[0]
 
 Override the mozilla-firefox component to fresh created 'hell' component.
 
 XXX cprov 20060118: remove proxy magic is required for BPR instances.
 
-  >>> naked_bin = removeSecurityProxy(
-  ...       item.builds[0].build.binarypackages[0])
-  >>> naked_bin.component = getUtility(IComponentSet).new('hell')
-  >>> try:
-  ...     item.setAccepted()
-  ... except QueueInconsistentStateError, e:
-  ...     print item.displayname, e
-  ... else:
-  ...     print item.displayname, 'ACCEPTED'
-  mozilla-firefox Component "hell" is not allowed in breezy-autotest
+    >>> naked_bin = removeSecurityProxy(
+    ...       item.builds[0].build.binarypackages[0])
+    >>> naked_bin.component = getUtility(IComponentSet).new('hell')
+    >>> try:
+    ...     item.setAccepted()
+    ... except QueueInconsistentStateError, e:
+    ...     print item.displayname, e
+    ... else:
+    ...     print item.displayname, 'ACCEPTED'
+    mozilla-firefox Component "hell" is not allowed in breezy-autotest
 
 Check how we treat source upload duplications in UNAPPROVED queue (NEW
 has a similar behaviour):
 
-  >>> dups = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.UNAPPROVED, name='cnews')
-  >>> dups.count()
-  2
-  >>> dup_one, dup_two = list(dups)
+    >>> dups = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.UNAPPROVED, name=u'cnews')
+    >>> dups.count()
+    2
+    >>> dup_one, dup_two = list(dups)
 
-  >>> dup_one.displayname, dup_one.displayversion
-  (u'cnews', u'1.0')
-  >>> dup_two.displayname, dup_two.displayversion
-  (u'cnews', u'1.0')
+    >>> dup_one.displayname, dup_one.displayversion
+    (u'cnews', u'1.0')
+    >>> dup_two.displayname, dup_two.displayversion
+    (u'cnews', u'1.0')
 
 The upload admin can not accept both since we check unique
 (name, version) accross distribution:
 
-  >>> dup_one.setAccepted()
-  >>> dup_one.status == PackageUploadStatus.ACCEPTED
-  True
+    >>> dup_one.setAccepted()
+    >>> dup_one.status == PackageUploadStatus.ACCEPTED
+    True
 
 The database modification needs to be realised in the DB, otherwise
 the look up code won't be able to identify any duplications:
 
-  >>> dup_one.syncUpdate()
+    >>> dup_one.syncUpdate()
 
 As expected the second item acceptance will fail and the item will
 remain in the original queue
 
-  >>> dup_two.setAccepted()
-  Traceback (most recent call last):
-  ...
-  QueueInconsistentStateError: The source cnews - 1.0 is already
-  accepted in ubuntu/breezy-autotest and you cannot upload the same
-  version within the same distribution. You have to modify the source
-  version and re-upload.
-  >>> dup_two.status.name
-  'UNAPPROVED'
+    >>> dup_two.setAccepted()
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: The source cnews - 1.0 is already
+    accepted in ubuntu/breezy-autotest and you cannot upload the same
+    version within the same distribution. You have to modify the source
+    version and re-upload.
+    >>> dup_two.status.name
+    'UNAPPROVED'
 
 The only available action will be rejection:
 
-  >>> dup_two.setRejected()
-  >>> dup_one.syncUpdate()
-  >>> dup_two.status.name
-  'REJECTED'
+    >>> dup_two.setRejected()
+    >>> dup_one.syncUpdate()
+    >>> dup_two.status.name
+    'REJECTED'
 
 Move the second item back to its original queue to perform the same
 test after the former accepted item was published (DONE queue)
 
-  >>> dup_two.setUnapproved()
-  >>> dup_two.syncUpdate()
-  >>> dup_two.status.name
-  'UNAPPROVED'
+    >>> dup_two.setUnapproved()
+    >>> dup_two.syncUpdate()
+    >>> dup_two.status.name
+    'UNAPPROVED'
 
-  >>> dup_one.setDone()
-  >>> dup_one.status == PackageUploadStatus.DONE
-  True
-  >>> dup_one.syncUpdate()
+    >>> dup_one.setDone()
+    >>> dup_one.status == PackageUploadStatus.DONE
+    True
+    >>> dup_one.syncUpdate()
 
 The protection code should also identify dups with items in DONE queue
 
-  >>> dup_two.setAccepted()
-  Traceback (most recent call last):
-  ...
-  QueueInconsistentStateError: The source cnews - 1.0 is already
-  accepted in ubuntu/breezy-autotest and you cannot upload the same
-  version within the same distribution. You have to modify the source
-  version and re-upload.
+    >>> dup_two.setAccepted()
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: The source cnews - 1.0 is already
+    accepted in ubuntu/breezy-autotest and you cannot upload the same
+    version within the same distribution. You have to modify the source
+    version and re-upload.
 
 The ubuntu policy allows unofficial sections to live sometime in the
 repository, until someone find time to override them. It's better than
@@ -614,140 +463,137 @@ for such a unimportant issue.
 Retrieve the 'pmount' NEW queue entry and override it with a
 just-created, thus unofficial, section named 'boing'.
 
-  >>> item = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.NEW, name='pmount')[0]
+    >>> item = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount')[0]
 
-  >>> pmount_binary = item.builds[0].build.binarypackages[0]
-  >>> removeSecurityProxy(
-  ...     pmount_binary).section = getUtility(ISectionSet).new('boing')
+    >>> pmount_binary = item.builds[0].build.binarypackages[0]
+    >>> removeSecurityProxy(
+    ...     pmount_binary).section = getUtility(ISectionSet).new('boing')
 
 The 'pmount' entry for the unofficial section 'boing', can be
 normally accepted.
 
-  >>> item.setAccepted()
-  >>> print item.status.name
-  ACCEPTED
+    >>> item.setAccepted()
+    >>> print item.status.name
+    ACCEPTED
 
 We will reject the just-accepted entry so it does not mess with the
 other tests.
 
-  >>> item.setRejected()
+    >>> item.setRejected()
 
 Check how the security adapters work for PackageUpload:
 
-  >>> pub_qitem = getUtility(IPackageUploadSet)[1]
+    >>> pub_qitem = getUtility(IPackageUploadSet)[1]
 
 UNAPPROVED queue items are expected to be private:
 
-  >>> priv_qitem = getUtility(IPackageUploadSet)[5]
+    >>> priv_qitem = getUtility(IPackageUploadSet)[5]
 
 Anonymous can view all queue items, public and private ones.
 
-  >>> login(ANONYMOUS)
+    >>> login(ANONYMOUS)
 
-  >>> pub_qitem.displayname
-  u'mozilla-firefox'
+    >>> pub_qitem.displayname
+    u'mozilla-firefox'
 
-  >>> priv_qitem.displayname
-  u'netapplet-1.0.0.tar.gz'
+    >>> priv_qitem.displayname
+    u'netapplet-1.0.0.tar.gz'
 
 A normal user can't act on both of them:
 
-  >>> login('no-priv@canonical.com')
+    >>> login('no-priv@canonical.com')
 
-  >>> pub_qitem.setDone()
-  Traceback (most recent call last):
-  ...
-  Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
+    >>> pub_qitem.setDone()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
 
-  >>> priv_qitem.setDone()
-  Traceback (most recent call last):
-  ...
-  Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
+    >>> priv_qitem.setDone()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
 
 Only the members of distroseries drivers in question have
 launchpad.Edit on a packageupload record.
 
-  >>> login('foo.bar@canonical.com')
+    >>> login('foo.bar@canonical.com')
 
-  >>> pub_qitem.displayname
-  u'mozilla-firefox'
+    >>> pub_qitem.displayname
+    u'mozilla-firefox'
 
-  >>> priv_qitem.displayname
-  u'netapplet-1.0.0.tar.gz'
+    >>> priv_qitem.displayname
+    u'netapplet-1.0.0.tar.gz'
 
-  >>> pub_qitem.setDone()
+    >>> pub_qitem.setDone()
 
-  >>> priv_qitem.setDone()
+    >>> priv_qitem.setDone()
 
 Roll back modified data:
 
-  >>> transaction.abort()
+    >>> transaction.abort()
 
 Clear existing mail stack:
 
-  >>> from lp.testing.mail_helpers import pop_notifications
-  >>> rubbish = pop_notifications()
+    >>> from lp.testing.mail_helpers import pop_notifications
+    >>> rubbish = pop_notifications()
 
-As mentioned above, values returned by 'getQueueItems' matching a given
+As mentioned above, values returned by getPackageUploads matching a given
 'name' and 'version' may contain different types of uploads.
 
 Sampledata contains only a i386 binary exactly matching 'pmount 0.1-1'.
 
-  >>> from operator import attrgetter
-  >>> def print_queue_items(queue_items):
-  ...     # XXX StuartBishop 20100311 bug=537335
-  ...     # Sort items here as getQueueItems fails to do this.
-  ...     queue_items = sorted(list(queue_items),
-  ...         key=attrgetter('displayarchs', 'displayname', 'displayversion'))
-  ...     for queue_item in queue_items:
-  ...         print "%s  %s  %s" % (
-  ...             queue_item.displayname, queue_item.displayversion,
-  ...             queue_item.displayarchs)
+    >>> from operator import attrgetter
+    >>> def print_queue_items(queue_items):
+    ...     for queue_item in queue_items:
+    ...         print "%s  %s  %s" % (
+    ...             queue_item.displayname, queue_item.displayversion,
+    ...             queue_item.displayarchs)
 
-  >>> queue_items = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
-  ...     exact_match=True)
-  >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount', version=u'0.1-1',
+    ...     exact_match=True)
+    >>> print_queue_items(queue_items)
+    pmount  0.1-1  i386
 
-We will setup a very peculiar environment to test this aspect of
-`getQueueItems`. First we will include another a non-matching source
+We will set up a very peculiar environment to test this aspect of
+`getPackageUploads`. First we will include another a non-matching source
 version of pmount (0.1-2) into the binary pmount upload we already
 have in the sampledata.
 
-  >>> [binary_queue] = queue_items
-  >>> pmount = ubuntu.getSourcePackage('pmount')
-  >>> non_matching_pmount = pmount.getVersion('0.1-2')
-  >>> unused = binary_queue.addSource(
-  ...    non_matching_pmount.sourcepackagerelease)
+    >>> [binary_queue] = queue_items
+    >>> pmount = ubuntu.getSourcePackage('pmount')
+    >>> non_matching_pmount = pmount.getVersion('0.1-2')
+    >>> unused = binary_queue.addSource(
+    ...    non_matching_pmount.sourcepackagerelease)
 
 'pmount 0.1-1' binary upload continues to be returned when we query
 the queue for 'pmount 0.1-1', via the existing binary path.
 
-  >>> queue_items = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
-  ...     exact_match=True)
-  >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount', version=u'0.1-1',
+    ...     exact_match=True)
+    >>> print_queue_items(queue_items)
+    pmount  0.1-1  i386
 
 Also, when we can create a source 'pmount 0.1-1' upload in the
 breezy-autotest context. It also becomes part of the lookup results.
 
-  >>> candidate_queue = breezy_autotest.createQueueEntry(
-  ...     PackagePublishingPocket.RELEASE,
-  ...     'pmount_0.1-1_source.changes', 'some content',
-  ...     breezy_autotest.main_archive)
-  >>> matching_pmount = pmount.getVersion('0.1-1')
-  >>> unused = candidate_queue.addSource(
-  ...     matching_pmount.sourcepackagerelease)
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> candidate_queue = breezy_autotest.createQueueEntry(
+    ...     PackagePublishingPocket.RELEASE,
+    ...     breezy_autotest.main_archive,
+    ...     'pmount_0.1-1_source.changes', 'some content')
+    >>> matching_pmount = pmount.getVersion('0.1-1')
+    >>> unused = candidate_queue.addSource(
+    ...     matching_pmount.sourcepackagerelease)
 
-  >>> queue_items = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
-  ...     exact_match=True)
-  >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
-  pmount  0.1-1  source
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount', version=u'0.1-1',
+    ...     exact_match=True)
+    >>> print_queue_items(queue_items)
+    pmount  0.1-1  source
+    pmount  0.1-1  i386
 
 It means that call sites querying the upload queue should be aware of
 this aspect and filter the results appropriately.
@@ -758,42 +604,43 @@ It should allow the acceptance of 'pmount 0.1-1' source, even if there
 is a 'pmount 0.1-1' binary upload already accepted in its context.
 (see bug #280700 for more information about this policy decision)
 
-  >>> # XXX StuartBishop 20100311 bug=537335: Need to order results here.
-  >>> queue_items = sorted(list(queue_items),
-  ...     key=attrgetter('displayarchs'))
-  >>> [binary_item, source_item] = queue_items
-  >>> binary_item.setAccepted()
+# XXX StuartBishop 20100311 bug=537335: Need to order results here.
+    >>> queue_items = sorted(list(queue_items),
+    ...     key=attrgetter('displayarchs'))
+    >>> [binary_item, source_item] = queue_items
+    >>> binary_item.setAccepted()
 
-  >>> queue_items = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.ACCEPTED, name='pmount', version='0.1-1',
-  ...     exact_match=True)
-  >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.ACCEPTED, name=u'pmount',
+    ...     version=u'0.1-1', exact_match=True)
+    >>> print_queue_items(queue_items)
+    pmount  0.1-1  i386
 
 Binary accepted, let's accept the source.
 
-  >>> source_item.setAccepted()
+    >>> source_item.setAccepted()
 
 Both uploads are waiting to be published.
 
-  >>> queue_items = breezy_autotest.getQueueItems(
-  ...     PackageUploadStatus.ACCEPTED, name='pmount', version='0.1-1',
-  ...     exact_match=True)
-  >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
-  pmount  0.1-1  source
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.ACCEPTED, name=u'pmount',
+    ...     version='0.1-1', exact_match=True)
+    >>> print_queue_items(queue_items)
+    pmount  0.1-1  source
+    pmount  0.1-1  i386
 
 Let's publish them.
 
-  >>> binary_item.setDone()
-  >>> source_item.setDone()
+    >>> binary_item.setDone()
+    >>> source_item.setDone()
 
 Roll back modified data:
 
-  >>> transaction.abort()
+    >>> transaction.abort()
 
 
-== Overriding uploads ==
+Overriding uploads
+------------------
 
 Sources and binaries for the upload may be overridden via the methods
 overrideSource() and overrideBinaries().  The former allows overriding
@@ -806,8 +653,8 @@ QueueInconsistentStateError is raised.
 The alsa-utils source is already in the queue with component "main"
 and section "base".
 
-    >>> [item] = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='alsa-utils')
+    >>> [item] = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'alsa-utils')
     >>> [source] = item.sources
     >>> print "%s/%s" % (
     ...     source.sourcepackagerelease.component.name,
@@ -826,7 +673,7 @@ an error:
     ...     allowed_components=(universe,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main to restricted
+    QueueInconsistentStateError: No rights to override to restricted
 
 Allowing "restricted" still won't work because the original component
 is "main":
@@ -836,7 +683,7 @@ is "main":
     ...     allowed_components=(restricted,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main to restricted
+    QueueInconsistentStateError: No rights to override from main
 
 Specifying both main and restricted allows the override to restricted/web.
 overrideSource() returns True if it completed the task.
@@ -852,8 +699,8 @@ overrideSource() returns True if it completed the task.
 
 Similarly for binaries:
 
-    >>> [item] = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='pmount')
+    >>> [item] = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount')
     >>> [build] = item.builds
     >>> [binary_package] = build.build.binarypackages
     >>> print "%s/%s/%s" % (
@@ -862,7 +709,7 @@ Similarly for binaries:
     ...     binary_package.priority.title)
     main/base/Important
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
     ...     new_section=web,
@@ -870,7 +717,7 @@ Similarly for binaries:
     ...     allowed_components=(universe,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main to restricted
+    QueueInconsistentStateError: No rights to override to restricted
 
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
@@ -879,7 +726,7 @@ Similarly for binaries:
     ...     allowed_components=(restricted,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main to restricted
+    QueueInconsistentStateError: No rights to override from main
 
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
@@ -894,7 +741,8 @@ Similarly for binaries:
     restricted/web/Extra
 
 
-== Queue items retrieval ==
+Queue items retrieval
+---------------------
 
 IPackageUploadSet.getPackageUploads() returns an optionally filtered list of
 PackageUpload records for the supplied distroseries.
@@ -905,14 +753,14 @@ PackageUpload records for the supplied distroseries.
 
 Filtering by status:
 
-    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
     >>> warty.getPackageUploads(
     ...     status=PackageUploadStatus.DONE).count()
     1
 
 Filtering by archive:
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
     ...     warty.distribution, ArchivePurpose.PARTNER)
     >>> warty.getPackageUploads(archive=partner_archive).count()
@@ -926,7 +774,7 @@ Filtering by pocket:
 
 Filtering by custom_type.  We need to add some custom uploads to show this.
 
-    >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+    >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> static_xlat = PackageUploadCustomFormat.STATIC_TRANSLATIONS
     >>> def add_static_xlat_upload():
     ...     upload = warty.createQueueEntry(
@@ -934,7 +782,7 @@ Filtering by custom_type.  We need to add some custom uploads to show this.
     ...         changesfilename="test", changesfilecontent="test",
     ...         archive=warty.main_archive)
     ...     arbitrary_file = factory.makeLibraryFileAlias()
-    ...     custom = upload.addCustom(arbitrary_file, static_xlat)
+    ...     upload.addCustom(arbitrary_file, static_xlat)
 
     >>> add_static_xlat_upload()
 
@@ -945,7 +793,9 @@ Filtering by custom_type.  We need to add some custom uploads to show this.
 There is also a created_since_date filter that will only return packages
 uploaded since the timestamp specified.  This is most useful when retrieving
 static translation files.  Static translation files are Gnome help files that
-are stripped from built packages and uploaded with the binary as a custom file.
+are stripped from built packages and uploaded with the binary as a custom
+file.
+
 Providing the timestamp of the last one returned in the previous call is a
 convenient way to continue from where the caller left off.
 
@@ -975,7 +825,8 @@ Only the just-created file is returned:
     True
 
 
-== Queue Manipulation ==
+Queue Manipulation
+------------------
 
 Two convenience methods exist, acceptFromQueue and rejectFromQueue that will
 accept or reject the item and send an email respectively.
@@ -983,157 +834,159 @@ accept or reject the item and send an email respectively.
 Let's accept something in the queue.  (We need to populate the librarian
 with fake changes files first so that emails can be generated.)
 
-  >>> from lp.archiveuploader.tests import insertFakeChangesFile
-  >>> insertFakeChangesFile(items[1].changesfile.id)
-  >>> insertFakeChangesFile(items[3].changesfile.id)
-  >>> try:
-  ...    items[1].acceptFromQueue('announce@example.com')
-  ... except QueueInconsistentStateError, e:
-  ...    print 'FAILED'
-  ... else:
-  ...    print 'DONE'
-  DONE
+    >>> from lp.archiveuploader.tests import insertFakeChangesFile
+    >>> insertFakeChangesFile(items[1].changesfile.id)
+    >>> insertFakeChangesFile(items[3].changesfile.id)
+    >>> try:
+    ...    items[1].acceptFromQueue()
+    ... except QueueInconsistentStateError, e:
+    ...    print 'FAILED'
+    ... else:
+    ...    print 'DONE'
+    DONE
 
 Two emails are generated.  We won't look what is inside them here, that is
 well shown in nascentupload-announcements.txt.
 
-  >>> [notification, announcement] = pop_notifications()
+    >>> [notification, announcement] = pop_notifications()
 
 When accepting single sources we also immediately create its
 corresponding build records. It means that the source will be ready to
 build once it was accepted, using 'queue-tool' or via the Web UI.
 
-  >>> queue_source = items[1].sources[0]
-  >>> [build] = queue_source.sourcepackagerelease.builds
+    >>> queue_source = items[1].sources[0]
+    >>> [build] = queue_source.sourcepackagerelease.builds
 
-  >>> print build.title
-  i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
+    >>> print build.title
+    i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
 
-  >>> print build.buildstate.name
-  NEEDSBUILD
+    >>> print build.status.name
+    NEEDSBUILD
 
-  >>> print build.buildqueue_record.lastscore
-  10
+    >>> print build.buildqueue_record.lastscore
+    10
 
 Let's reject something in the queue:
 
-  >>> try:
-  ...     items[3].rejectFromQueue()
-  ... except QueueInconsistentStateError, e:
-  ...    print 'FAILED'
-  ... else:
-  ...    print 'REJECTED'
-  REJECTED
+    >>> try:
+    ...     items[3].rejectFromQueue()
+    ... except QueueInconsistentStateError, e:
+    ...    print 'FAILED'
+    ... else:
+    ...    print 'REJECTED'
+    REJECTED
 
 One email is generated (see nascentupload-announcements.txt)
 
-  >>> [notification] = pop_notifications()
+    >>> [notification] = pop_notifications()
 
 Clean up the librarian files:
 
-   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
-   >>> cleanupLibrarianFiles()
+    >>> from canonical.testing.layers import LibrarianLayer
+    >>> LibrarianLayer.librarian_fixture.clear()
 
 
-== Delayed copies ==
+Delayed copies
+--------------
 
 IPackageUploadSet allows call sites to create 'delayed-copy'
 PackageUpload records.
 
-   >>> from lp.registry.interfaces.gpg import IGPGKeySet
-   >>> testing_key = getUtility(IGPGKeySet).get(1)
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
+    >>> testing_key = getUtility(IGPGKeySet).get(1)
 
-   >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-   >>> test_publisher = SoyuzTestPublisher()
-   >>> test_publisher.addFakeChroots(hoary)
-   >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
-   >>> from lp.registry.interfaces.person import IPersonSet
-   >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.addFakeChroots(hoary)
+    >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 A 'delayed-copy' is a PackageUpload record.
 
-   >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
-   ...     ubuntu.main_archive, hoary,
-   ...     PackagePublishingPocket.RELEASE, testing_key)
+    >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+    ...     ubuntu.main_archive, hoary,
+    ...     PackagePublishingPocket.RELEASE, testing_key)
 
 Delayed copies are manipulated exactly as normal uploads
 are. Contents can be attached to it.
 
-   >>> a_source_package = test_publisher.createSource(
-   ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
-   >>> transaction.commit()
-   >>> unused = delayed_copy.addSource(a_source_package.sourcepackagerelease)
+    >>> a_source_package = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
+    >>> transaction.commit()
+    >>> unused = delayed_copy.addSource(a_source_package.sourcepackagerelease)
 
-   >>> print delayed_copy.displayname
-   foocomm (delayed)
+    >>> print delayed_copy.displayname
+    foocomm (delayed)
 
-   >>> verifyObject(IPackageUpload, delayed_copy)
-   True
+    >>> verifyObject(IPackageUpload, delayed_copy)
+    True
 
 The distinction between normal uploads and delayed-copies can be made
 by checking IPackageUpload.is_delayed_copy.
 
-   >>> delayed_copy.is_delayed_copy
-   True
+    >>> delayed_copy.is_delayed_copy
+    True
 
-   >>> normal_upload = breezy_autotest.createQueueEntry(
-   ...     PackagePublishingPocket.RELEASE, 'foo.changes',
-   ...     'something', ubuntu.main_archive)
+    >>> normal_upload = breezy_autotest.createQueueEntry(
+    ...     PackagePublishingPocket.RELEASE,
+    ...     ubuntu.main_archive, 'foo.changes',
+    ...     'something')
 
-   >>> normal_upload.is_delayed_copy
-   False
+    >>> normal_upload.is_delayed_copy
+    False
 
 Delayed-copies are targeted to a publication context (archive,
 distroseries, pocket).
 
-   >>> print delayed_copy.archive.displayname
-   Primary Archive for Ubuntu Linux
+    >>> print delayed_copy.archive.displayname
+    Primary Archive for Ubuntu Linux
 
-   >>> print delayed_copy.distroseries.displayname
-   Hoary
+    >>> print delayed_copy.distroseries.displayname
+    Hoary
 
-   >>> print delayed_copy.pocket.name
-   RELEASE
+    >>> print delayed_copy.pocket.name
+    RELEASE
 
 And are created in NEW state, so they have to pass through the upload
 state-machine.
 
-   >>> print delayed_copy.status.name
-   NEW
+    >>> print delayed_copy.status.name
+    NEW
 
 However they have no 'changesfile', only a signing_key representing the
 requester of the copy.
 
-   >>> print delayed_copy.changesfile
-   None
+    >>> print delayed_copy.changesfile
+    None
 
-   >>> print delayed_copy.signing_key.owner.displayname
-   Foo Bar
+    >>> print delayed_copy.signing_key.owner.displayname
+    Foo Bar
 
 IPackageUpload.acceptFromCopy() simply checks and accepts a
 delayed-copy record. Bugs mentioned in the changelog are closed by
 `process-accepted` (transition to ACCEPTED to DONE) see
 closing-bugs-from-changelogs.txt for more information.
 
-   >>> print delayed_copy.status.name
-   NEW
+    >>> print delayed_copy.status.name
+    NEW
 
-   >>> delayed_copy.acceptFromCopy()
+    >>> delayed_copy.acceptFromCopy()
 
-   >>> print delayed_copy.status.name
-   ACCEPTED
+    >>> print delayed_copy.status.name
+    ACCEPTED
 
 Once accepted a delayed-copy is published as a normal upload, via
 IPackageUpload.realiseUpload().
 
-   >>> publishing_records = delayed_copy.realiseUpload()
+    >>> publishing_records = delayed_copy.realiseUpload()
 
-   >>> for pub_record in publishing_records:
-   ...     print pub_record.displayname, pub_record.status.name
-   foocomm 2.0-1 in hoary PENDING
+    >>> for pub_record in publishing_records:
+    ...     print pub_record.displayname, pub_record.status.name
+    foocomm 2.0-1 in hoary PENDING
 
-   >>> print delayed_copy.status.name
-   DONE
+    >>> print delayed_copy.status.name
+    DONE
 
 As mentioned above, delayed copies wait in the ACCEPTED upload queue
 until they get processed, resulting in the corresponding publishing
@@ -1143,29 +996,29 @@ For that period of time, between creation and processing, a
 delayed-copy existence is not apparent in the publishing domain and
 creating a duplicated delayed-copy is perfectly possible.
 
-   >>> dup_delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
-   ...     ubuntu.main_archive, breezy_autotest,
-   ...     PackagePublishingPocket.RELEASE, testing_key)
+    >>> dup_delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+    ...     ubuntu.main_archive, breezy_autotest,
+    ...     PackagePublishingPocket.RELEASE, testing_key)
 
-   >>> unused = dup_delayed_copy.addSource(
-   ...     a_source_package.sourcepackagerelease)
+    >>> unused = dup_delayed_copy.addSource(
+    ...     a_source_package.sourcepackagerelease)
 
 Although it cannot be accepted.
 
-   >>> dup_delayed_copy.acceptFromCopy()
-   Traceback (most recent call last):
-   ...
-   QueueInconsistentStateError: The source foocomm - 2.0-1 is already
-   accepted in ubuntu/hoary and you cannot upload the same version within the
-   same distribution. You have to modify the source version and re-upload.
+    >>> dup_delayed_copy.acceptFromCopy()
+    Traceback (most recent call last):
+    ...
+    QueueInconsistentStateError: The source foocomm - 2.0-1 is already
+    accepted in ubuntu/hoary and you cannot upload the same version within the
+    same distribution. You have to modify the source version and re-upload.
 
 For detecting conflicting delayed copies we have to inspect the
 ACCEPTED and DONE queue for uploads of sources matching a given
 (name, version) pair in a publishing context, archive and
 distribution.
 
-   >>> conflict = getUtility(IPackageUploadSet).findSourceUpload(
-   ...     'foocomm', '2.0-1', ubuntu.main_archive, ubuntu)
+    >>> conflict = getUtility(IPackageUploadSet).findSourceUpload(
+    ...     'foocomm', '2.0-1', ubuntu.main_archive, ubuntu)
 
-   >>> conflict.id == delayed_copy.id
-   True
+    >>> conflict.id == delayed_copy.id
+    True

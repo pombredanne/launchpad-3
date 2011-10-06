@@ -26,3 +26,4 @@ The binding of name -> class is done in the configure.zcml
 
 from canonical.launchpad.vocabularies.dbobjects import *
 
+

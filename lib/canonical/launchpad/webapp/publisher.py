@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -14,7 +14,6 @@ __all__ = [
     'canonical_url',
     'canonical_url_iterator',
     'get_current_browser_request',
-    'HTTP_MOVED_PERMANENTLY',
     'nearest',
     'Navigation',
     'rootObject',
@@ -26,30 +25,64 @@ __all__ = [
     'UserAttributeCache',
     ]
 
+import httplib
 
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
+from lazr.restful.declarations import error_status
+from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.tales import WebLayerAPI
+from lazr.restful.utils import get_current_browser_request
+import simplejson
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
-from zope.component import getUtility, queryMultiAdapter
-from zope.interface import implements
+from zope.component import (
+    getUtility,
+    queryMultiAdapter,
+    )
+from zope.component.interfaces import ComponentLookupError
+from zope.interface import (
+    directlyProvides,
+    implements,
+    )
 from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.security.checker import ProxyFactory, NamesChecker
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher,
+    IDefaultBrowserLayer,
+    )
+from zope.security.checker import (
+    NamesChecker,
+    ProxyFactory,
+    )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
-from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
-from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.layers import (
+    LaunchpadLayer,
+    setFirstLayer,
+    WebServiceLayer,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
-    ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl,
-    NotFoundError)
+    ICanonicalUrlData,
+    ILaunchBag,
+    ILaunchpadApplication,
+    ILaunchpadContainer,
+    ILaunchpadRoot,
+    IOpenLaunchBag,
+    IStructuredString,
+    NoCanonicalUrl,
+    )
 from canonical.launchpad.webapp.url import urlappend
-from canonical.lazr.utils import get_current_browser_request
+from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.app.errors import NotFoundError
+from lp.services.encoding import is_ascii_only
 
-
-# HTTP Status code constants - define as appropriate.
-HTTP_MOVED_PERMANENTLY = 301
+# Monkeypatch NotFound to always avoid generating OOPS
+# from NotFound in web service calls.
+error_status(httplib.NOT_FOUND)(NotFound)
 
 
 class DecoratorAdvisor:
@@ -202,19 +235,6 @@ class UserAttributeCache:
             self._user = getUtility(ILaunchBag).user
         return self._user
 
-    _is_beta = None
-    @property
-    def isBetaUser(self):
-        """Return True if the user is in the beta testers team."""
-        if self._is_beta is not None:
-            return self._is_beta
-
-        # We cannot import ILaunchpadCelebrities here, so we will use the
-        # hardcoded name of the beta testers team
-        self._is_beta = self.user is not None and self.user.inTeam(
-            'launchpad-beta-testers')
-        return self._is_beta
-
 
 class LaunchpadView(UserAttributeCache):
     """Base class for views in Launchpad.
@@ -229,7 +249,7 @@ class LaunchpadView(UserAttributeCache):
     - render()     <-- used to render the page.  override this if you have
                        many templates not set via zcml, or you want to do
                        rendering from Python.
-    - isBetaUser   <-- whether the logged-in user is a beta tester
+    - publishTraverse() <-- override this to support traversing-through.
     """
 
     def __init__(self, context, request):
@@ -326,6 +346,23 @@ class LaunchpadView(UserAttributeCache):
 
     info_message = property(_getInfoMessage, _setInfoMessage)
 
+    def getCacheJSON(self):
+        if self.user is not None:
+            cache = dict(IJSONRequestCache(self.request).objects)
+        else:
+            cache = dict()
+        if WebLayerAPI(self.context).is_entry:
+            cache['context'] = self.context
+        return simplejson.dumps(
+            cache, cls=ResourceJSONEncoder,
+            media_type=EntryResource.JSON_TYPE)
+
+    def publishTraverse(self, request, name):
+        """See IBrowserPublisher."""
+        # By default, a LaunchpadView cannot be traversed through.
+        # Those that can be must override this method.
+        raise NotFound(self, name, request=request)
+
 
 class LaunchpadXMLRPCView(UserAttributeCache):
     """Base class for writing XMLRPC view code."""
@@ -408,6 +445,29 @@ class CanonicalAbsoluteURL:
     __call__ = __str__
 
 
+def layer_for_rootsite(rootsite):
+    """Return the registered layer for the specified rootsite.
+
+    'code' -> lp.code.publisher.CodeLayer
+    'translations' -> lp.translations.publisher.TranslationsLayer
+    et al.
+
+    The layer is defined in ZCML using a named utility with the name of the
+    rootsite, and providing IDefaultBrowserLayer.  If there is no utility
+    defined with the specified name, then LaunchpadLayer is returned.
+    """
+    try:
+        return getUtility(IDefaultBrowserLayer, rootsite)
+    except ComponentLookupError:
+        return LaunchpadLayer
+
+
+class FakeRequest:
+    """Used solely to provide a layer for the view check in canonical_url."""
+
+    form_ng = None
+
+
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,
     view_name=None, force_local_path=False):
@@ -428,9 +488,9 @@ def canonical_url(
     the request.  If a request is not provided, but a web-request is in
     progress, the protocol, host and port are taken from the current request.
 
-    If there is no request available, the protocol, host and port are taken
-    from the root_url given in launchpad.conf.
-
+    :param request: The web request; if not provided, canonical_url attempts
+        to guess at the current request, using the protocol, host, and port
+        taken from the root_url given in launchpad.conf.
     :param path_only_if_possible: If the protocol and hostname can be omitted
         for the current request, return a url containing only the path.
     :param view_name: Provide the canonical url for the specified view,
@@ -448,8 +508,7 @@ def canonical_url(
             raise NoCanonicalUrl(obj, obj)
         rootsite = obj_urldata.rootsite
 
-    # The request is needed when there's no rootsite specified and when
-    # handling the different shipit sites.
+    # The request is needed when there's no rootsite specified.
     if request is None:
         # Look for a request from the interaction.
         current_request = get_current_browser_request()
@@ -472,14 +531,14 @@ def canonical_url(
             request = current_request
 
     if view_name is not None:
-        assert request is not None, (
-            "Cannot check view_name parameter when the request is not "
-            "available.")
-
+        # Make sure that the view is registered for the site requested.
+        fake_request = FakeRequest()
+        directlyProvides(fake_request, layer_for_rootsite(rootsite))
         # Look first for a view.
-        if queryMultiAdapter((obj, request), name=view_name) is None:
+        if queryMultiAdapter((obj, fake_request), name=view_name) is None:
             # Look if this is a special name defined by Navigation.
-            navigation = queryMultiAdapter((obj, request), IBrowserPublisher)
+            navigation = queryMultiAdapter(
+                (obj, fake_request), IBrowserPublisher)
             if isinstance(navigation, Navigation):
                 all_names = navigation.all_traversal_and_redirection_names
             else:
@@ -487,10 +546,13 @@ def canonical_url(
             if view_name not in all_names:
                 raise AssertionError(
                     'Name "%s" is not registered as a view or navigation '
-                    'step for "%s".' % (view_name, obj.__class__.__name__))
+                    'step for "%s" on "%s".' % (
+                        view_name, obj.__class__.__name__, rootsite))
         urlparts.insert(0, view_name)
 
     if request is None:
+        # Yes this really does need to be here, as rootsite can be None, and
+        # we don't want to make the getRootURL from the request break.
         if rootsite is None:
             rootsite = 'mainsite'
         root_url = allvhosts.configs[rootsite].rooturl
@@ -501,8 +563,7 @@ def canonical_url(
     if ((path_only_if_possible and
          request is not None and
          root_url.startswith(request.getApplicationURL()))
-        or force_local_path
-        ):
+        or force_local_path):
         return unicode('/' + path)
     return unicode(root_url + path)
 
@@ -544,9 +605,6 @@ def nearest(obj, *interfaces):
 
 class RootObject:
     implements(ILaunchpadApplication, ILaunchpadRoot)
-    # These next two needed by the Z3 API browser
-    __parent__ = None
-    __name__ = 'Launchpad'
 
 
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
@@ -605,13 +663,16 @@ class Navigation:
         return RedirectionView(target, self.request, status)
 
     # The next methods are for use by the Zope machinery.
-
     def publishTraverse(self, request, name):
         """Shim, to set objects in the launchbag when traversing them.
 
         This needs moving into the publication component, once it has been
         refactored.
         """
+        # Launchpad only produces ascii URLs.  If the name is not ascii, we
+        # can say nothing is found here.
+        if not is_ascii_only(name):
+            raise NotFound(self.context, name)
         nextobj = self._publishTraverse(request, name)
         getUtility(IOpenLaunchBag).add(nextobj)
         return nextobj
@@ -794,7 +855,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound(name, self.context)
+        raise NotFound(self.context, name)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""

@@ -6,16 +6,29 @@
 __metaclass__ = type
 __all__ = [
     'UrlLib2Transport',
-    'XMLRPCRedirectHandler'
+    'XMLRPCRedirectHandler',
     ]
 
 
 from cookielib import Cookie
+from cStringIO import StringIO
 from urllib2 import (
-    HTTPCookieProcessor, HTTPError, HTTPRedirectHandler, Request,
-    build_opener)
-from urlparse import urlparse, urlunparse
-from xmlrpclib import ProtocolError, Transport
+    build_opener,
+    HTTPCookieProcessor,
+    HTTPError,
+    HTTPRedirectHandler,
+    Request,
+    )
+from urlparse import (
+    urlparse,
+    urlunparse,
+    )
+from xmlrpclib import (
+    ProtocolError,
+    Transport,
+    )
+
+from lp.services.utils import traceback_info
 
 
 class XMLRPCRedirectHandler(HTTPRedirectHandler):
@@ -95,8 +108,10 @@ class UrlLib2Transport(Transport):
         headers = {'Content-type': 'text/xml'}
         request = Request(url, request_body, headers)
         try:
-            response = self._parse_response(self.opener.open(request), None)
+            response = self.opener.open(request).read()
         except HTTPError, he:
             raise ProtocolError(
                 request.get_full_url(), he.code, he.msg, he.hdrs)
-        return response
+        else:
+            traceback_info(response)
+            return self._parse_response(StringIO(response), None)

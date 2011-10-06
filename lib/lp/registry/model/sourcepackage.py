@@ -1,8 +1,8 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
-"""Database classes that implement SourcePacakge items."""
+"""Database classes that implement SourcePackage items."""
 
 __metaclass__ = type
 
@@ -12,58 +12,90 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from zope.interface import classProvides, implements
+
+from lazr.restful.utils import smartquote
+from storm.locals import (
+    And,
+    Desc,
+    Select,
+    Store,
+    )
 from zope.component import getUtility
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
-from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import And, Desc, In, Select, SQL, Store
-
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import flush_database_updates, sqlvalues
-from canonical.lazr.utils import smartquote
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.model.branch import Branch
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
-from lp.bugs.model.bug import get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase
-from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
-from lp.soyuz.model.build import Build, BuildSet
-from lp.soyuz.model.distributionsourcepackagerelease import (
-    DistributionSourcePackageRelease)
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease)
-from lp.registry.model.packaging import Packaging
-from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
-    POTemplate)
+from canonical.database.sqlbase import (
+    flush_database_updates,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (
-    QuestionTargetMixin, QuestionTargetSearch)
+    QuestionTargetMixin,
+    QuestionTargetSearch,
+    )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugHeat,
+    ISeriesBugTarget,
+    )
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
+from lp.bugs.model.bug import get_bug_tags_open_count
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.model.seriessourcepackagebranch import (
-    SeriesSourcePackageBranch)
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
-from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.registry.interfaces.packaging import PackagingType
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+    SeriesSourcePackageBranchSet,
+    )
+from lp.code.model.branch import Branch
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasCodeImportsMixin,
+    HasMergeProposalsMixin,
+    )
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.registry.interfaces.distribution import NoPartnerArchive
+from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks)
 from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage, ISourcePackageFactory)
+    ISourcePackage,
+    ISourcePackageFactory,
+    )
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadCustomFormat,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.model.binarypackagebuild import (
+    BinaryPackageBuild,
+    BinaryPackageBuildSet,
+    )
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
+    )
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
+from lp.translations.model.potemplate import TranslationTemplatesCollection
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -111,9 +143,11 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
         # Sourcepackages are supported by their distribtions too.
-        persons = self.distribution.getAnswerContactsForLanguage(language)
-        persons.update(QuestionTargetMixin.getAnswerContactsForLanguage(
-            self, language))
+        persons = set(
+            self.distribution.getAnswerContactsForLanguage(language))
+        persons.update(
+            set(QuestionTargetMixin.getAnswerContactsForLanguage(
+            self, language)))
         return sorted(
             [person for person in persons], key=attrgetter('displayname'))
 
@@ -154,8 +188,12 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             self.distribution.answer_contacts_with_languages)
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
+    @property
+    def owner(self):
+        return self.distribution.owner
 
-class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
+
+class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     HasBranchesMixin, HasMergeProposalsMixin):
     """A source package, e.g. apache2, in a distroseries.
@@ -166,14 +204,20 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
-        IQuestionTarget)
+        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords,
+        ISeriesBugTarget)
 
     classProvides(ISourcePackageFactory)
 
     def __init__(self, sourcepackagename, distroseries):
+        # We store the ID of the sourcepackagename and distroseries
+        # simply because Storm can break when accessing them
+        # with implicit flush is blocked (like in a permission check when
+        # storing the object in the permission cache).
+        self.sourcepackagenameID = sourcepackagename.id
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
+        self.distroseriesID = distroseries.id
 
     @classmethod
     def new(cls, sourcepackagename, distroseries):
@@ -181,7 +225,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return cls(sourcepackagename, distroseries)
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, self.path)
+        return '<%s %r %r %r>' % (self.__class__.__name__,
+            self.distribution, self.distroseries, self.sourcepackagename)
 
     def _get_ubuntu(self):
         # XXX: kiko 2006-03-20: Ideally, it would be possible to just do
@@ -289,10 +334,29 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return "%s (%s)" % (self.name, self.distroseries.fullseriesname)
 
     @property
+    def bugtarget_parent(self):
+        """See `ISeriesBugTarget`."""
+        return self.distribution_sourcepackage
+
+    @property
     def title(self):
         """See `ISourcePackage`."""
         return smartquote('"%s" source package in %s') % (
             self.sourcepackagename.name, self.distroseries.displayname)
+
+    @property
+    def summary(self):
+        """See `ISourcePackage`."""
+        releases = self.releases
+        if len(releases) == 0:
+            return None
+        current = releases[0]
+        name_summaries = [
+            '%s: %s' % (binary.name, binary.summary)
+            for binary in current.sample_binary_packages]
+        if name_summaries == []:
+            return None
+        return '\n'.join(name_summaries)
 
     @property
     def distribution(self):
@@ -307,9 +371,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def releases(self):
         """See `ISourcePackage`."""
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
         packages = self._getPublishingHistory(
-            order_by=[SQLConstant(order_const),
+            order_by=["SourcePackageRelease.version",
                       "SourcePackagePublishingHistory.datepublished"])
 
         return [DistributionSourcePackageRelease(
@@ -331,13 +394,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagename ==
                     self.sourcepackagename,
-                In(SourcePackagePublishingHistory.archiveID,
+                SourcePackagePublishingHistory.archiveID.is_in(
                     self.distribution.all_distro_archive_ids)))
 
         return IStore(SourcePackageRelease).find(
             SourcePackageRelease,
-            In(SourcePackageRelease.id, subselect)).order_by(Desc(
-                SQL("debversion_sort_key(SourcePackageRelease.version)")))
+            SourcePackageRelease.id.is_in(subselect)).order_by(Desc(
+                SourcePackageRelease.version))
 
     @property
     def name(self):
@@ -378,16 +441,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntuseries = self.distroseries.previous_series
-            if ubuntuseries:
-                previous_ubuntu_series = ubuntuseries[0]
+            ubuntuseries = self.distroseries.priorReleasedSeries()
+            previous_ubuntu_series = ubuntuseries.first()
+            if previous_ubuntu_series is not None:
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
         # if we have a parent distroseries, try that
-        if self.distroseries.parent_series is not None:
+        if self.distroseries.previous_series is not None:
             sp = SourcePackage(sourcepackagename=self.sourcepackagename,
-                               distroseries=self.distroseries.parent_series)
+                               distroseries=self.distroseries.previous_series)
             return sp.packaging
         # capitulate
         return None
@@ -423,9 +486,23 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
 
+    @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reported_acknowledgement
+
+    @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return (
+            self.distribution_sourcepackage.enable_bugfiling_duplicate_search)
+
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
+
+    def _getOfficialTagClause(self):
+        return self.distroseries._getOfficialTagClause()
 
     @property
     def official_bug_tags(self):
@@ -436,12 +513,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            And(BugTask.distroseries == self.distroseries,
-                BugTask.sourcepackagename == self.sourcepackagename),
-            user)
+            And(BugSummary.distroseries == self.distroseries,
+                BugSummary.sourcepackagename == self.sourcepackagename),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def max_bug_heat(self):
@@ -462,32 +542,79 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not series-specific) source package.")
 
-    def _getBugTaskContextClause(self):
-        """See BugTargetBase."""
-        return (
-            'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
-                sqlvalues(self.distroseries, self.sourcepackagename))
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.distroseries.distribution
 
-    def setPackaging(self, productseries, user):
+    def getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distroseries == self.distroseries,
+                BugSummary.sourcepackagename == self.sourcepackagename)
+
+    def setPackaging(self, productseries, owner):
+        """See `ISourcePackage`."""
         target = self.direct_packaging
         if target is not None:
-            # we should update the current packaging
-            target.productseries = productseries
-            target.owner = user
-            target.datecreated = UTC_NOW
-        else:
-            # ok, we need to create a new one
-            Packaging(
-                distroseries=self.distroseries,
-                sourcepackagename=self.sourcepackagename,
-                productseries=productseries, owner=user,
-                packaging=PackagingType.PRIME)
+            if target.productseries == productseries:
+                return
+            # Delete the current packaging and create a new one so
+            # that the translation sharing jobs are started.
+            self.direct_packaging.destroySelf()
+        Packaging(
+            distroseries=self.distroseries,
+            sourcepackagename=self.sourcepackagename,
+            productseries=productseries, owner=owner,
+            packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
 
+    def setPackagingReturnSharingDetailPermissions(self, productseries,
+                                                   owner):
+        """See `ISourcePackage`."""
+        self.setPackaging(productseries, owner)
+        return self.getSharingDetailPermissions()
+
+    def getSharingDetailPermissions(self):
+        user = getUtility(ILaunchBag).user
+        productseries = self.productseries
+        permissions = {
+                'user_can_change_product_series': False,
+                'user_can_change_branch': False,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': False}
+        if user is None:
+            pass
+        elif productseries is None:
+            permissions['user_can_change_product_series'] = user.canAccess(
+                self, 'setPackaging')
+        else:
+            permissions.update({
+                'user_can_change_product_series':
+                    self.direct_packaging.userCanDelete(),
+                'user_can_change_branch':
+                    user.canWrite(productseries, 'branch'),
+                'user_can_change_translation_usage':
+                    user.canWrite(
+                        productseries.product, 'translations_usage'),
+                'user_can_change_translations_autoimport_mode':
+                    user.canWrite(
+                        productseries, 'translations_autoimport_mode'),
+                })
+        return permissions
+
+    def deletePackaging(self):
+        """See `ISourcePackage`."""
+        if self.direct_packaging is None:
+            return
+        self.direct_packaging.destroySelf()
+
     def __hash__(self):
         """See `ISourcePackage`."""
-        return hash(self.distroseries.id) ^ hash(self.sourcepackagename.id)
+        return hash(self.distroseriesID) ^ hash(self.sourcepackagenameID)
 
     def __eq__(self, other):
         """See `ISourcePackage`."""
@@ -501,65 +628,74 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return not self.__eq__(other)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
+        """See `IHasBuildRecords`"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now and this method only returns records for SPRs in a
         # distribution).
         # We also ignore the name parameter (required as part of the
-        # IHasBuildRecords interface) and use our own name.
+        # IHasBuildRecords interface) and use our own name and the
+        # binary_only parameter as a source package can only have
+        # binary builds.
 
-        """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
 
         condition_clauses = ["""
-        Build.sourcepackagerelease = SourcePackageRelease.id AND
+        BinaryPackageBuild.source_package_release =
+            SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
             SourcePackageRelease.id AND
-        SourcePackagePublishingHistory.archive = Build.archive
+        SourcePackagePublishingHistory.archive = PackageBuild.archive
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
-                        self.distribution.all_distro_archive_ids)]
+                        list(self.distribution.all_distro_archive_ids))]
 
         # We re-use the optional-parameter handling provided by BuildSet
         # here, but pass None for the name argument as we've already
         # matched on exact source package name.
-        BuildSet().handleOptionalParamsForBuildQueries(
+        BinaryPackageBuildSet().handleOptionalParamsForBuildQueries(
             condition_clauses, clauseTables, build_state, name=None,
             pocket=pocket, arch_tag=arch_tag)
 
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
-            "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
+            "NOT (BuildFarmJob.status=%s AND "
+            "     BuildFarmJob.date_finished is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
-        # * NEEDSBUILD & BUILDING by -lastscore
+        # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
         # * SUPERSEDED by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if build_state in [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            ]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildPackageJob')
-            condition_clauses.append('BuildPackageJob.build = Build.id')
+            condition_clauses.append(
+                'BuildPackageJob.build = BinaryPackageBuild.id')
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.job = BuildPackageJob.job')
         elif build_state == BuildStatus.SUPERSEDED or build_state is None:
-            orderBy = ["-Build.datecreated"]
+            orderBy = ["-BuildFarmJob.date_created"]
         else:
-            orderBy = ["-Build.datebuilt"]
+            orderBy = ["-BuildFarmJob.date_finished"]
 
         # Fallback to ordering by -id as a tie-breaker.
         orderBy.append("-id")
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        return Build.select(' AND '.join(condition_clauses),
+        return BinaryPackageBuild.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)
 
     @property
@@ -595,39 +731,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         else:
             return distribution.main_archive
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(
-            distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename)
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        collection = TranslationTemplatesCollection()
+        collection = collection.restrictDistroSeries(self.distroseries)
+        return collection.restrictSourcePackageName(self.sourcepackagename)
 
-    def getCurrentTranslationTemplates(self, just_ids=False):
+    def getSharingPartner(self):
         """See `IHasTranslationTemplates`."""
-        store = Store.of(self.sourcepackagename)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        result = store.find(looking_for, And(
-            POTemplate.iscurrent == True,
-            POTemplate.distroseries == self.distroseries,
-            POTemplate.sourcepackagename == self.sourcepackagename,
-            self.distroseries.distribution.official_rosetta == True))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            sourcepackagename = %s AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
-            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
-            clauseTables = ['DistroSeries', 'Distribution'])
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        return self.productseries
 
     def getBranch(self, pocket):
         """See `ISourcePackage`."""
@@ -642,12 +754,19 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def setBranch(self, pocket, branch, registrant):
         """See `ISourcePackage`."""
-        series_set = getUtility(IMakeOfficialBranchLinks)
-        series_set.delete(self, pocket)
+        SeriesSourcePackageBranchSet.delete(self, pocket)
         if branch is not None:
-            series_set.new(
+            SeriesSourcePackageBranchSet.new(
                 self.distroseries, pocket, self.sourcepackagename, branch,
                 registrant)
+            # Avoid circular imports.
+            from lp.registry.model.distributionsourcepackage import (
+                DistributionSourcePackage,
+                )
+            DistributionSourcePackage.ensure(sourcepackage=self)
+        else:
+            # Delete the official DSP if there is no publishing history.
+            self.distribution_sourcepackage.delete()
 
     @property
     def linked_branches(self):
@@ -678,7 +797,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         our_format = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
 
         packagename = self.sourcepackagename.name
-        displayname = self.displayname
         distro = self.distroseries.distribution
 
         histories = distro.main_archive.getPublishedSources(
@@ -706,3 +824,28 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def linkedBranches(self):
         """See `ISourcePackage`."""
         return dict((p.name, b) for (p, b) in self.linked_branches)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        We look for the source package task, followed by the distro source
+        package, then the distroseries task, and lastly the distro task.
+        """
+        sourcepackagenameID = self.sourcepackagename.id
+        seriesID = self.distroseries.id
+        distributionID = self.distroseries.distributionID
+
+        def weight_function(bugtask):
+            if bugtask.sourcepackagenameID == sourcepackagenameID:
+                if bugtask.distroseriesID == seriesID:
+                    return OrderedBugTask(1, bugtask.id, bugtask)
+                elif bugtask.distributionID == distributionID:
+                    return OrderedBugTask(2, bugtask.id, bugtask)
+            elif bugtask.distroseriesID == seriesID:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+            elif bugtask.distributionID == distributionID:
+                return OrderedBugTask(4, bugtask.id, bugtask)
+            # Catch the default case, and where there is a task for the same
+            # sourcepackage on a different distro.
+            return OrderedBugTask(5, bugtask.id, bugtask)
+        return weight_function

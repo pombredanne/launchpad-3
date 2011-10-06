@@ -1,22 +1,25 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the puller's support for various Bazaar formats."""
 
 __metaclass__ = type
 
-import unittest
-
-from bzrlib.branch import Branch, BzrBranchFormat7
-from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.plugins.weave_fmt.bzrdir import BzrDirFormat6
+from bzrlib.plugins.weave_fmt.repository import (
+    RepositoryFormat6,
+    RepositoryFormat7,
+    )
+from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack5
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
-from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
 from bzrlib.tests.per_repository import TestCaseWithRepository
 
+import lp.codehosting  # For bzr plugins.
 from lp.codehosting.puller.tests import PullerWorkerMixin
+from lp.codehosting.safe_open import SafeBranchOpener
 from lp.codehosting.tests.helpers import LoomTestMixin
-from lazr.uri import URI
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
@@ -26,6 +29,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         TestCaseWithRepository.setUp(self)
         # make_bzrdir relies on this being a relative filesystem path.
         self._source_branch_path = 'source-branch'
+        SafeBranchOpener.install_hook()
         self.worker = self.makePullerWorker(
             self.get_url(self._source_branch_path),
             self.get_url('dest-path'))
@@ -77,53 +81,6 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
             stacked_branch_url, revision_id, stacked=True)
         return stacked_bzrdir.open_branch()
 
-    def test_stackedBranch(self):
-        # When we mirror a stacked branch for the first time, the mirrored
-        # branch has the same stacked-on branch.
-        base_branch = self._createSourceBranch(
-            RepositoryFormatKnitPack5(),
-            BzrDirMetaFormat1(),
-            branch_format=BzrBranchFormat7())
-        stacked_branch = self._makeStackedBranch(
-            'stacked-branch', base_branch)
-        worker = self.makePullerWorker(
-            stacked_branch.base, self.get_url('dest'))
-        worker.mirror()
-        mirrored_branch = Branch.open(worker.dest)
-        self.assertMirrored(stacked_branch, mirrored_branch)
-        orig = stacked_branch.get_stacked_on_url()
-        mirrored = mirrored_branch.get_stacked_on_url()
-        self.assertEqual(URI(orig).path, mirrored)
-
-    def test_reStackedBranch(self):
-        # When we re-mirror a stacked branch we propagate any change of
-        # stacking information.
-        # Create and mirror a stacked branch as in the previous test.
-        base_branch = self._createSourceBranch(
-            RepositoryFormatKnitPack5(),
-            BzrDirMetaFormat1(),
-            branch_format=BzrBranchFormat7())
-        stacked_branch = self._makeStackedBranch(
-            'stacked-branch', base_branch)
-        worker = self.makePullerWorker(
-            stacked_branch.base, self.get_url('dest'))
-        worker.mirror()
-
-        # Change the stacked-on URL and re-mirror.
-        new_base = base_branch.bzrdir.clone(
-            self.get_url('new-base')).open_branch()
-        stacked_branch.set_stacked_on_url(new_base.base)
-        worker = self.makePullerWorker(
-            stacked_branch.base, self.get_url('dest'))
-        worker.mirror()
-
-        # Check that the mirrored branch's stacked_on_url has changed.
-        mirrored_branch = Branch.open(worker.dest)
-        self.assertMirrored(stacked_branch, mirrored_branch)
-        orig = stacked_branch.get_stacked_on_url()
-        mirrored = mirrored_branch.get_stacked_on_url()
-        self.assertEqual(URI(orig).path, mirrored)
-
     def test_loomBranch(self):
         # When we mirror a loom branch for the first time, the mirrored loom
         # branch matches the original.
@@ -172,7 +129,3 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         # The mirrored branch should now be in knit format.
         self.assertMirrored(
             Branch.open(self.worker.source), Branch.open(self.worker.dest))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,110 +1,88 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Branch merge queues contain queued branch merge proposals."""
+"""Implementation classes for IBranchMergeQueue, etc."""
 
 __metaclass__ = type
-__all__ = [
-    'BranchMergeQueueSet',
-    'MultiBranchMergeQueue',
-    'SingleBranchMergeQueue',
-    ]
+__all__ = ['BranchMergeQueue']
 
+import simplejson
+from storm.locals import (
+    Int,
+    Reference,
+    Store,
+    Storm,
+    Unicode,
+    )
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
-from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin)
-from zope.interface import implements
-
-from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-
-from lp.code.enums import BranchMergeProposalStatus
-from lp.code.model.branchmergeproposal import BranchMergeProposal
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import (
-    IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
-from lp.registry.interfaces.person import validate_public_person
+    IBranchMergeQueue,
+    IBranchMergeQueueSource,
+    )
+from lp.code.model.branch import Branch
 
 
-class BaseBranchMergeQueue:
-    """Common methods for both the single and multi branch queues."""
+class BranchMergeQueue(Storm):
+    """See `IBranchMergeQueue`."""
 
-    # Subclasses must implement a .branches attribute which contains the
-    # branches the queue is managing.
+    __storm_table__ = 'BranchMergeQueue'
+    implements(IBranchMergeQueue)
+    classProvides(IBranchMergeQueueSource)
+
+    id = Int(primary=True)
+
+    registrant_id = Int(name='registrant', allow_none=True)
+    registrant = Reference(registrant_id, 'Person.id')
+
+    owner_id = Int(name='owner', allow_none=True)
+    owner = Reference(owner_id, 'Person.id')
+
+    name = Unicode(allow_none=False)
+    description = Unicode(allow_none=False)
+    configuration = Unicode(allow_none=False)
+
+    date_created = UtcDateTimeCol(notNull=True)
 
     @property
-    def items(self):
-        """The qeueued merge proposals for the managed branches."""
-        branch_ids = [branch.id for branch in self.branches]
-        # If there are no associated branches, there is no queue.
-        if len(branch_ids) == 0:
-            return None
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch in %s AND
-            BranchMergeProposal.queue_status = %s
-            """ % sqlvalues(branch_ids, BranchMergeProposalStatus.QUEUED),
-            orderBy="queue_position")
+    def branches(self):
+        """See `IBranchMergeQueue`."""
+        return Store.of(self).find(
+            Branch,
+            Branch.merge_queue_id == self.id)
 
+    def setMergeQueueConfig(self, config):
+        """See `IBranchMergeQueue`."""
+        try:
+            simplejson.loads(config)
+            self.configuration = config
+        except ValueError: # The config string is not valid JSON
+            raise InvalidMergeQueueConfig
 
-class SingleBranchMergeQueue(BaseBranchMergeQueue):
-    """A branch merge queue contains proposals from one or more branches."""
+    @classmethod
+    def new(cls, name, owner, registrant, description=None,
+            configuration=None, branches=None):
+        """See `IBranchMergeQueueSource`."""
+        store = IMasterStore(BranchMergeQueue)
 
-    implements(IBranchMergeQueue)
+        if configuration is None:
+            configuration = unicode(simplejson.dumps({}))
 
-    def __init__(self, branch):
-        """Constructed with the single branch.
+        queue = cls()
+        queue.name = name
+        queue.owner = owner
+        queue.registrant = registrant
+        queue.description = description
+        queue.configuration = configuration
+        if branches is not None:
+            for branch in branches:
+                branch.addToQueue(queue)
 
-        All the items in the queue belong to this single branch.
-        """
-        self.branches = [branch]
-
-
-class MultiBranchMergeQueue(SQLBase, BaseBranchMergeQueue):
-    """A database entity used to group branches proposals together."""
-
-    implements(IMultiBranchMergeQueue)
-
-    # XXX: Tim Penhey 2008-06-14, bug 240881
-    # Need to rename the database table
-    _table = 'BranchMergeRobot'
-
-    registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-    owner = ForeignKey(
-        dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-    name = StringCol(notNull=False)
-    summary = StringCol(dbName='whiteboard', default=None)
-
-    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-
-    branches = SQLMultipleJoin('Branch', joinColumn='merge_queue')
-
-
-class BranchMergeQueueSet:
-    """A utility for getting queues."""
-
-    implements(IBranchMergeQueueSet)
-
-    @staticmethod
-    def getByName(queue_name):
-        """See `IBranchMergeQueueSet`."""
-        return MultiBranchMergeQueue.selectOneBy(name=queue_name)
-
-    @staticmethod
-    def getForBranch(branch):
-        """See `IBranchMergeQueueSet`."""
-        if branch.merge_queue is None:
-            return SingleBranchMergeQueue(branch)
-        else:
-            return branch.merge_queue
-
-    @staticmethod
-    def newMultiBranchMergeQueue(registrant, owner, name, summary):
-        """See `IBranchMergeQueueSet`."""
-        return MultiBranchMergeQueue(
-            registrant=registrant,
-            owner=owner,
-            name=name,
-            summary=summary)
+        store.add(queue)
+        return queue

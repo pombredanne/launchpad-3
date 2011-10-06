@@ -1,130 +1,108 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from zope.component import getUtility
+from lazr.restful.utils import smartquote
 
-from canonical.lazr.utils import smartquote
-
-from canonical.launchpad.layers import TranslationsLayer
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
-
+from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguageSet)
+    IDistroSeriesLanguageSet,
+    )
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguageSet)
+    IProductSeriesLanguageSet,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 
 
-class BaseTranslationsBreadcrumbTestCase(BaseBreadcrumbTestCase):
-    request_layer = TranslationsLayer
-
-    def setUp(self):
-        super(BaseTranslationsBreadcrumbTestCase, self).setUp()
-        self.traversed_objects = [self.root]
-
-    def _testContextBreadcrumbs(self, traversal_list, links, texts, url=None):
-        self.traversed_objects.extend(traversal_list)
-        if url is None:
-            url = canonical_url(traversal_list[-1], rootsite='translations')
-
-        self.assertEquals(
-            links,
-            self._getBreadcrumbsURLs(url, self.traversed_objects))
-        self.assertEquals(
-            texts,
-            self._getBreadcrumbsTexts(url, self.traversed_objects))
-
-
-class TestTranslationsVHostBreadcrumb(BaseTranslationsBreadcrumbTestCase):
+class TestTranslationsVHostBreadcrumb(BaseBreadcrumbTestCase):
 
     def test_product(self):
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
-        self._testContextBreadcrumbs(
-            [product],
-            ['http://launchpad.dev/crumb-tester',
-             'http://translations.launchpad.dev/crumb-tester'],
-            ["Crumb Tester", "Translations"])
+        self.assertBreadcrumbs(
+            [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester')],
+            product, rootsite='translations')
 
     def test_productseries(self):
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
         series = self.factory.makeProductSeries(name="test", product=product)
-        self._testContextBreadcrumbs(
-            [product, series],
-            ['http://launchpad.dev/crumb-tester',
-             'http://launchpad.dev/crumb-tester/test',
-             'http://translations.launchpad.dev/crumb-tester/test'],
-            ["Crumb Tester", "Series test", "Translations"])
+        self.assertBreadcrumbs(
+            [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
+             ("Series test", 'http://launchpad.dev/crumb-tester/test'),
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester/test')],
+            series, rootsite='translations')
 
     def test_distribution(self):
         distribution = self.factory.makeDistribution(
             name='crumb-tester', displayname="Crumb Tester")
-        self._testContextBreadcrumbs(
-            [distribution],
-            ['http://launchpad.dev/crumb-tester',
-             'http://translations.launchpad.dev/crumb-tester'],
-            ["Crumb Tester", "Translations"])
+        self.assertBreadcrumbs(
+            [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester')],
+            distribution, rootsite='translations')
 
     def test_distroseries(self):
         distribution = self.factory.makeDistribution(
             name='crumb-tester', displayname="Crumb Tester")
-        series = self.factory.makeDistroRelease(
+        series = self.factory.makeDistroSeries(
             name="test", version="1.0", distribution=distribution)
-        self._testContextBreadcrumbs(
-            [distribution, series],
-            ['http://launchpad.dev/crumb-tester',
-             'http://launchpad.dev/crumb-tester/test',
-             'http://translations.launchpad.dev/crumb-tester/test'],
-            ["Crumb Tester", "Test (1.0)", "Translations"])
+        self.assertBreadcrumbs(
+            [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
+             ("Test (1.0)", 'http://launchpad.dev/crumb-tester/test'),
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester/test')],
+            series, rootsite='translations')
 
     def test_project(self):
         project = self.factory.makeProject(
             name='crumb-tester', displayname="Crumb Tester")
-        self._testContextBreadcrumbs(
-            [project],
-            ['http://launchpad.dev/crumb-tester',
-             'http://translations.launchpad.dev/crumb-tester'],
-            ["Crumb Tester", "Translations"])
+        self.assertBreadcrumbs(
+            [("Crumb Tester", 'http://launchpad.dev/crumb-tester'),
+             ("Translations",
+              'http://translations.launchpad.dev/crumb-tester')],
+            project, rootsite='translations')
 
     def test_person(self):
         person = self.factory.makePerson(
             name='crumb-tester', displayname="Crumb Tester")
-        self._testContextBreadcrumbs(
-            [person],
-            ['http://launchpad.dev/~crumb-tester',
-             'http://translations.launchpad.dev/~crumb-tester'],
-            ["Crumb Tester", "Translations"])
+        self.assertBreadcrumbs(
+            [("Crumb Tester", 'http://launchpad.dev/~crumb-tester'),
+             ("Translations",
+              'http://translations.launchpad.dev/~crumb-tester')],
+            person, rootsite='translations')
 
 
-class TestTranslationGroupsBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+class TestTranslationGroupsBreadcrumbs(BaseBreadcrumbTestCase):
 
     def test_translationgroupset(self):
         group_set = getUtility(ITranslationGroupSet)
-        url = canonical_url(group_set, rootsite='translations')
-        self._testContextBreadcrumbs(
-            [group_set],
-            ['http://translations.launchpad.dev/+groups'],
-            ['Translation groups'],
-            url=url)
+        self.assertBreadcrumbs(
+            [("Translation groups",
+              'http://translations.launchpad.dev/+groups')],
+            group_set, rootsite='translations')
 
     def test_translationgroup(self):
-        group_set = getUtility(ITranslationGroupSet)
         group = self.factory.makeTranslationGroup(
             name='test-translators', title='Test translators')
-        self._testContextBreadcrumbs(
-            [group_set, group],
-            ["http://translations.launchpad.dev/+groups",
-             "http://translations.launchpad.dev/+groups/test-translators"],
-            ["Translation groups", "Test translators"])
+        self.assertBreadcrumbs(
+            [("Translation groups",
+              'http://translations.launchpad.dev/+groups'),
+             ("Test translators",
+              'http://translations.launchpad.dev/+groups/test-translators')],
+            group, rootsite='translations')
 
 
-class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+class TestSeriesLanguageBreadcrumbs(BaseBreadcrumbTestCase):
+
     def setUp(self):
         super(TestSeriesLanguageBreadcrumbs, self).setUp()
         self.language = getUtility(ILanguageSet)['sr']
@@ -132,76 +110,87 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
     def test_distroserieslanguage(self):
         distribution = self.factory.makeDistribution(
             name='crumb-tester', displayname="Crumb Tester")
-        series = self.factory.makeDistroRelease(
+        series = self.factory.makeDistroSeries(
             name="test", version="1.0", distribution=distribution)
+        naked_series = remove_security_proxy_and_shout_at_engineer(series)
+        naked_series.hide_all_translations = False
         serieslanguage = getUtility(IDistroSeriesLanguageSet).getDummy(
             series, self.language)
-        self._testContextBreadcrumbs(
-            [distribution, series, serieslanguage],
-            ["http://launchpad.dev/crumb-tester",
-             "http://launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test/+lang/sr"],
-            ["Crumb Tester", "Test (1.0)", "Translations", "Serbian (sr)"])
+
+        self.assertBreadcrumbs(
+            [("Crumb Tester", "http://launchpad.dev/crumb-tester"),
+             ("Test (1.0)", "http://launchpad.dev/crumb-tester/test"),
+             ("Translations",
+              "http://translations.launchpad.dev/crumb-tester/test"),
+             ("Serbian (sr)",
+              "http://translations.launchpad.dev/"
+              "crumb-tester/test/+lang/sr")],
+            serieslanguage)
 
     def test_productserieslanguage(self):
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
         series = self.factory.makeProductSeries(
             name="test", product=product)
-        serieslanguage = getUtility(IProductSeriesLanguageSet).getDummy(
+        psl_set = getUtility(IProductSeriesLanguageSet)
+        serieslanguage = psl_set.getProductSeriesLanguage(
             series, self.language)
-        self._testContextBreadcrumbs(
-            [product, series, serieslanguage],
-            ["http://launchpad.dev/crumb-tester",
-             "http://launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test/+lang/sr"],
-            ["Crumb Tester", "Series test", "Translations", "Serbian (sr)"])
+
+        self.assertBreadcrumbs(
+            [("Crumb Tester", "http://launchpad.dev/crumb-tester"),
+             ("Series test", "http://launchpad.dev/crumb-tester/test"),
+             ("Translations",
+              "http://translations.launchpad.dev/crumb-tester/test"),
+             ("Serbian (sr)",
+              "http://translations.launchpad.dev/"
+              "crumb-tester/test/+lang/sr")],
+            serieslanguage)
 
 
-class TestPOTemplateBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+class TestPOTemplateBreadcrumbs(BaseBreadcrumbTestCase):
+    """Test POTemplate breadcrumbs."""
+
     def test_potemplate(self):
         product = self.factory.makeProduct(
-            name='crumb-tester', displayname="Crumb Tester")
+            name='crumb-tester', displayname="Crumb Tester",
+            translations_usage=ServiceUsage.LAUNCHPAD)
         series = self.factory.makeProductSeries(
             name="test", product=product)
-        potemplate = self.factory.makePOTemplate(name="template",
-                                                 productseries=series)
-        self._testContextBreadcrumbs(
-            [product, series, potemplate],
-            ["http://launchpad.dev/crumb-tester",
-             "http://launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test"
-             "/+pots/template"],
-            ["Crumb Tester", "Series test", "Translations",
-             smartquote('Template "template"')])
+        potemplate = self.factory.makePOTemplate(
+            name="template", productseries=series)
+        self.assertBreadcrumbs(
+            [("Crumb Tester", "http://launchpad.dev/crumb-tester"),
+             ("Series test", "http://launchpad.dev/crumb-tester/test"),
+             ("Translations",
+              "http://translations.launchpad.dev/crumb-tester/test"),
+             (smartquote('Template "template"'),
+              "http://translations.launchpad.dev/"
+              "crumb-tester/test/+pots/template")],
+            potemplate)
 
 
-class TestPOFileBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+class TestPOFileBreadcrumbs(BaseBreadcrumbTestCase):
 
     def setUp(self):
         super(TestPOFileBreadcrumbs, self).setUp()
-        self.language = getUtility(ILanguageSet)['eo']
-        self.product = self.factory.makeProduct(
-            name='crumb-tester', displayname="Crumb Tester")
-        self.series = self.factory.makeProductSeries(
-            name="test", product=self.product)
-        self.potemplate = self.factory.makePOTemplate(self.series,
-            name="test-template")
-        self.pofile = self.factory.makePOFile('eo', self.potemplate)
 
     def test_pofiletranslate(self):
-        self._testContextBreadcrumbs(
-            [self.product, self.series, self.potemplate, self.pofile],
-            ["http://launchpad.dev/crumb-tester",
-             "http://launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test"
-               "/+pots/test-template",
-             "http://translations.launchpad.dev/crumb-tester/test"
-               "/+pots/test-template/eo",
-             ],
-            ["Crumb Tester", "Series test", "Translations",
-             smartquote('Template "test-template"'), "Esperanto (eo)"])
+        product = self.factory.makeProduct(
+            name='crumb-tester', displayname="Crumb Tester",
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        series = self.factory.makeProductSeries(name="test", product=product)
+        potemplate = self.factory.makePOTemplate(series, name="test-template")
+        pofile = self.factory.makePOFile('eo', potemplate)
+
+        self.assertBreadcrumbs(
+            [("Crumb Tester", "http://launchpad.dev/crumb-tester"),
+             ("Series test", "http://launchpad.dev/crumb-tester/test"),
+             ("Translations",
+              "http://translations.launchpad.dev/crumb-tester/test"),
+             (smartquote('Template "test-template"'),
+              "http://translations.launchpad.dev/crumb-tester/test"
+              "/+pots/test-template"),
+             ("Esperanto (eo)",
+              "http://translations.launchpad.dev/crumb-tester/test"
+              "/+pots/test-template/eo")],
+            pofile)

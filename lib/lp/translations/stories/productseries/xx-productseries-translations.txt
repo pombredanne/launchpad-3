@@ -5,9 +5,10 @@ This page shows a list of available languages for user to translate to in
 a single product series, or instructions on how to set up a series for
 translation.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login('foo.bar@canonical.com')
-    >>> frobnicator = factory.makeProduct(name='frobnicator')
-    >>> frobnicator.official_rosetta = True
+    >>> frobnicator = factory.makeProduct(name='frobnicator',
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> frobnicator_trunk = frobnicator.getSeries('trunk')
     >>> frobnicator_trunk_url = canonical_url(
     ...     frobnicator_trunk, rootsite='translations')
@@ -15,23 +16,31 @@ translation.
 
 Listing languages with translations is best checked with a helper method.
 
+    >>> def extract_link_info(container):
+    ...         link_tag = container.find('a')
+    ...         if link_tag:
+    ...             href = extract_link_from_tag(link_tag)
+    ...         else:
+    ...             href = ''
+    ...         return int(extract_text(container)), href
+
     >>> def print_language_stats(browser):
     ...     table = find_tag_by_id(browser.contents, 'languagestats')
     ...     if table is None:
     ...         print "No translations."
     ...         return
     ...     language_rows = find_tags_by_class(str(table), 'stats')
-    ...     print "%-25s %13s %13s %13s" % (
-    ...         "Language", "Untranslated", "Unreviewed", "Changed")
+    ...     print "%-25s %13s %13s" % (
+    ...         "Language", "Untranslated", "Unreviewed")
     ...     for row in language_rows:
     ...         cols = row.findAll('td')
     ...         language = extract_text(cols[0])
-    ...         untranslated = extract_text(cols[2])
-    ...         unreviewed = extract_text(cols[3])
-    ...         changed = extract_text(cols[4])
-    ...         print "%-25s %13d %13d %13d" % (
-    ...             language,
-    ...             int(untranslated), int(unreviewed), int(changed))
+    ...         untranslated = extract_link_info(cols[2])
+    ...         unreviewed = extract_link_info(cols[3])
+    ...         print "%-25s %13d %13d\n" % (
+    ...             language, untranslated[0], unreviewed[0])
+    ...         print "Untranslated link: %s\n" % untranslated[1]
+    ...         print "Unreviewed link: %s\n" % unreviewed[1]
 
 When there are no translatable templates, series is considered as not
 being set up for translation.
@@ -63,7 +72,8 @@ translation.
     To start translating your project...
 
 With one translatable template (with fake stats for 10 messages), a listing
-of existing translations is shown.
+of existing translations is shown. Since there is only one template, each row
+count links to the correctly filtered PO file pages.
 
     >>> login('foo.bar@canonical.com')
     >>> pot = factory.makePOTemplate(
@@ -79,8 +89,10 @@ of existing translations is shown.
 
     >>> browser.open(frobnicator_trunk_url)
     >>> print_language_stats(browser)
-    Language                   Untranslated    Unreviewed       Changed
-    Serbian                               6             5             2
+    Language                   Untranslated    Unreviewed
+    Serbian                               6             5
+    Untranslated link: /frobnicator/trunk/+pots/template1/sr/+translate?show=untranslated
+    Unreviewed link: /frobnicator/trunk/+pots/template1/sr/+translate?show=new_suggestions
 
 Since there is only one template, language link directly to PO file
 pages.
@@ -99,12 +111,15 @@ A product series can have more than one translatable template.
     >>> removeSecurityProxy(pot).messagecount = 5
     >>> logout()
 
-Statistics add up for untranslated messages.
+Statistics add up for untranslated messages. With more than one template the
+aggregated row numbers do not link anywhere.
 
     >>> browser.open(frobnicator_trunk_url)
     >>> print_language_stats(browser)
-    Language                   Untranslated    Unreviewed       Changed
-    Serbian                              11             5             2
+    Language                   Untranslated    Unreviewed
+    Serbian                              11             5
+    Untranslated link:
+    Unreviewed link:
 
 With more than one template, link points to a product series per-language
 translations page.
@@ -148,7 +163,8 @@ Launchpad Translations.
 
     # Use the raw DB object to bypass the security proxy.
     >>> from lp.registry.model.product import Product
-    >>> Product.byName('bazaar').official_rosetta = False
+    >>> product = Product.byName('bazaar')
+    >>> product.translations_usage = ServiceUsage.NOT_APPLICABLE
 
 When the owner now visits the upload page for trunk, there's a notice.
 
@@ -158,15 +174,20 @@ When the owner now visits the upload page for trunk, there's a notice.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         owner_browser.contents, 'not-translated-in-launchpad'))
-    This project is not using Launchpad for translations.
-    You can change this in the project settings. (Getting
-    started with translating your project in Launchpad)
+    trunk does not translate its messages.
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         owner_browser.contents, 'translations-explanation'))
+    Launchpad allows communities to translate projects using
+    imports or a branch.
+    Getting started with translating your project in Launchpad
+    Configure translations
 
-The notice links to the project settings where the option can be set.
+The notice links to the page for configuring translations on the project.
 
-    >>> owner_browser.getLink('project settings').click()
+    >>> owner_browser.getLink('Configure translations').click()
     >>> print owner_browser.url
-    http://.../bazaar/+edit
+    http://.../bazaar/+configure-translations
 
 An administrator also sees the notice.
 
@@ -176,18 +197,24 @@ An administrator also sees the notice.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         admin_browser.contents, 'not-translated-in-launchpad'))
-    This project is not using Launchpad for translations.
-    You can change this in the project settings. (Getting
-    started with translating your project in Launchpad)
+    trunk does not translate its messages.
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         admin_browser.contents, 'translations-explanation'))
+    Launchpad allows communities to translate projects using
+    imports or a branch.
+    Getting started with translating your project in Launchpad
+    Configure translations
 
 A Translations admin who is neither a Launchpad admin nor the project
 owner (and so won't be able to change the project's settings) sees the
 notice but not the link to the project's settings.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet, ITeamMembershipSet,
-    ...     TeamMembershipStatus)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     ITeamMembershipSet, TeamMembershipStatus)
 
     # Log in so as to be able to create objects
     >>> admin_email = 'foo.bar@canonical.com'
@@ -212,21 +239,28 @@ notice but not the link to the project's settings.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         jtv_browser.contents, 'not-translated-in-launchpad'))
-    This project is not using Launchpad for translations.
-    (Getting started with translating your project in Launchpad)
-
+    trunk does not translate its messages.
 
 Branch synchronization options
 ------------------------------
 
-If automatic import and export are set, but import branch is unset, we only
-indicate that export is happening.
+When no imports or exports have been set up, the page indicates that
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> sync_settings = first_tag_by_class(
+    ...     browser.contents, 'automatic-synchronization')
+    >>> print extract_text(sync_settings)
+    Automatic synchronization
+    This project is currently not using any synchronization
+    with bazaar branches.
+
+If a translation branch is set we indicate that exports are happening.
+Imports are not mentioned until a series branch has been set.
 
     >>> login('foo.bar@canonical.com')
     >>> from lp.translations.interfaces.translations import (
     ...     TranslationsBranchImportMode)
     >>> branch = factory.makeBranch(product=frobnicator)
-    >>> branch_name = branch.name
     >>> frobnicator_trunk.branch = None
     >>> frobnicator_trunk.translations_autoimport_mode = (
     ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
@@ -234,10 +268,42 @@ indicate that export is happening.
     >>> logout()
 
     >>> browser.open(frobnicator_trunk_url)
-    >>> print extract_text(browser.contents)
-    Translations...
+    >>> sync_settings = first_tag_by_class(
+    ...     browser.contents, 'automatic-synchronization')
+    >>> print extract_text(sync_settings)
+    Automatic synchronization
     Translations are exported daily to branch
-    ...
+    lp://dev/~person-name.../frobnicator/branch....
+
+If the branch is private, though the page pretends to non-privileged users
+that no synchronization has been set up.
+
+    >>> login('foo.bar@canonical.com')
+    >>> private_branch = factory.makeBranch(product=frobnicator, private=True)
+    >>> frobnicator_trunk.translations_branch = private_branch
+    >>> logout()
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> sync_settings = first_tag_by_class(
+    ...     browser.contents, 'automatic-synchronization')
+    >>> print extract_text(sync_settings)
+    Automatic synchronization
+    This project is currently not using any synchronization
+    with bazaar branches.
+
+Imports are indicated in likewise manner once a series branch has been set.
+
+    >>> login('foo.bar@canonical.com')
+    >>> frobnicator_trunk.branch = branch
+    >>> logout()
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> sync_settings = first_tag_by_class(
+    ...     browser.contents, 'automatic-synchronization')
+    >>> print extract_text(sync_settings)
+    Automatic synchronization
+    Translations are imported with every update from branch
+    lp://dev/frobnicator.
 
 
 Translation focus
@@ -248,7 +314,7 @@ release series should be translated.
 
     >>> login('admin@canonical.com')
     >>> distribution = factory.makeDistribution(name='earthian')
-    >>> distroseries = factory.makeDistroRelease(
+    >>> distroseries = factory.makeDistroSeries(
     ...     name='1.4', distribution=distribution)
     >>> logout()
     >>> print distribution.translation_focus
@@ -260,7 +326,7 @@ release series should be translated.
 If focus is set, nice explanatory text is displayed.
 
     >>> login('admin@canonical.com')
-    >>> focus_series = factory.makeDistroRelease(
+    >>> focus_series = factory.makeDistroSeries(
     ...     name='1.6', distribution=distribution)
     >>> distribution.translation_focus = focus_series
     >>> logout()
@@ -291,8 +357,8 @@ project admin does not see the link for configuring other branches.
 
 A new series is added.
 
-    >>> from lp.registry.model.product import Product
     >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> from lp.registry.model.product import Product
     >>> login('foo.bar@canonical.com')
     >>> evolution = Product.byName('evolution')
     >>> series = factory.makeProductSeries(

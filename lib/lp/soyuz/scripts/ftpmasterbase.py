@@ -15,12 +15,14 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.soyuz.adapters.packagelocation import (
-    build_package_location)
-from lp.soyuz.interfaces.component import IComponentSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+from lp.soyuz.adapters.packagelocation import build_package_location
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
 
 
 class SoyuzScriptError(Exception):
@@ -151,12 +153,12 @@ class SoyuzScript(LaunchpadScript):
             pocket=self.location.pocket,
             exact_match=True)
 
-        if not published_sources:
+        try:
+            latest_source = published_sources[0]
+        except IndexError:
             raise SoyuzScriptError(
                 "Could not find source '%s/%s' in %s" % (
                 name, self.options.version, self.location))
-
-        latest_source = published_sources[0]
         self._validatePublishing(latest_source)
         return latest_source
 
@@ -240,9 +242,6 @@ class SoyuzScript(LaunchpadScript):
 
     def setupLocation(self):
         """Setup `PackageLocation` for context distribution and suite."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archive import ArchivePurpose
-
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
         if getattr(self.options, 'partner_archive', ''):

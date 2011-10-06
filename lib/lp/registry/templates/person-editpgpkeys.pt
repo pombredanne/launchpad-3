@@ -107,8 +107,12 @@
       </div>
       <div><input type="submit" value="Deactivate Key" /></div>
 
-      <p><strong>Note:</strong> If you deactivate a key here, Launchpad will automatically disable any features that
-      use that key, such as a signed code of conduct. Also, the key will be deactivated on Launchpad only.</p>
+      <p>
+        <strong>Note:</strong> deactivating a key in Launchpad disables all
+        Launchpad features that use that key such as signed codes of conduct.
+        Deactivating the key in Launchpad does not alter the key outside of
+        Launchpad.
+      </p>
 
     </form>
 
@@ -153,7 +157,8 @@
       <h2>Import an OpenPGP key</h2>
 
       <p>To start using an OpenPGP key with your Launchpad account, simply
-        paste its fingerprint below.
+        paste its fingerprint below. The key must be registered with the
+        Ubuntu key server.
         (<a href="/+help/import-pgp-key.html" target="help">How to get the
         fingerprint</a>)
       </p>

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Debbugs ExternalBugTracker utility."""
@@ -11,28 +11,42 @@ __all__ = [
 
 from datetime import datetime
 import email
+from email.Utils import (
+    mktime_tz,
+    parseaddr,
+    parsedate_tz,
+    )
 import os.path
 
-from email.Utils import mktime_tz, parseaddr, parsedate_tz
-
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-import pytz
-
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    InvalidBugId, UnknownRemoteStatusError)
-from canonical.launchpad.interfaces.message import IMessageSet
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing,
-    UNKNOWN_REMOTE_IMPORTANCE)
-from canonical.launchpad.mail import simple_sendmail
-from lp.bugs.scripts import debbugs
 from canonical.launchpad.webapp import urlsplit
+from lp.bugs.externalbugtracker import (
+    BATCH_SIZE_UNLIMITED,
+    BugNotFound,
+    BugTrackerConnectError,
+    ExternalBugTracker,
+    InvalidBugId,
+    UnknownRemoteStatusError,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.externalbugtracker import (
+    ISupportsBugImport,
+    ISupportsCommentImport,
+    ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE,
+    )
+from lp.bugs.scripts import debbugs
+from lp.services.database.isolation import ensure_no_transaction
+from lp.services.mail.sendmail import simple_sendmail
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,
@@ -50,8 +64,6 @@ class DebBugs(ExternalBugTracker):
     implements(
         ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
-    sync_comments = config.checkwatches.sync_debbugs_comments
-
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(
@@ -60,10 +72,15 @@ class DebBugs(ExternalBugTracker):
     # Because we keep a local copy of debbugs, we remove the batch_size
     # limit so that all debbugs watches that need checking will be
     # checked each time checkwatches runs.
-    batch_size = None
+    batch_size = BATCH_SIZE_UNLIMITED
 
     def __init__(self, baseurl, db_location=None):
         super(DebBugs, self).__init__(baseurl)
+        # debbugs syncing can be enabled/disabled separately.
+        self.sync_comments = (
+            self.sync_comments and
+            config.checkwatches.sync_debbugs_comments)
+
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
@@ -89,7 +106,6 @@ class DebBugs(ExternalBugTracker):
         # We don't know the exact time for the Debbugs server, but we
         # trust it being correct.
         return datetime.now(pytz.timezone('UTC'))
-
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -120,7 +136,6 @@ class DebBugs(ExternalBugTracker):
             raise UnknownRemoteStatusError(remote_status)
 
         status = parts[0]
-        severity = parts[1]
         tags = parts[2:]
 
         # For the moment we convert only the status, not the severity.
@@ -248,7 +263,7 @@ class DebBugs(ExternalBugTracker):
         """See `ISupportsCommentImport`."""
         # This method does nothing since DebBugs bugs are stored locally
         # and their comments don't need to be pre-fetched. It exists
-        # purely to ensure that BugWatchUpdater doesn't choke on it.
+        # purely to ensure that CheckwatchesMaster doesn't choke on it.
         pass
 
     def getPosterForComment(self, remote_bug_id, comment_id):
@@ -319,6 +334,7 @@ class DebBugs(ExternalBugTracker):
                 commit()
                 return message
 
+    @ensure_no_transaction
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Push a comment to the remote DebBugs instance.
 

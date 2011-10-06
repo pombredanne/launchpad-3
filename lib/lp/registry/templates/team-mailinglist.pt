@@ -16,43 +16,54 @@
     <metal:extra-info fill-slot="extra_info">
       <p id="mailing_list_status_message"
          tal:condition="view/mailing_list_status_message">
-        <b tal:content="structure view/mailing_list_status_message">
+        <strong tal:content="structure view/mailing_list_status_message">
           This team's mailing list will be available within a few minutes.
-        </b>
+        </strong>
       </p>
 
       <p tal:condition="view/list_is_usable">
         This team's mailing list is active at
-        <b><address tal:replace="view/mailinglist_address" /></b>.
+        <strong><address tal:replace="view/mailinglist_address" /></strong>.
+        Messages are in a <strong id="mailing-list-archive"
+              tal:content="context/visibility/title/fmt:lower">public</strong>
+        archive at
+        <a tal:attributes="href context/mailing_list/archive_url"
+          tal:content="context/mailing_list/archive_url" />
       </p>
     </metal:extra-info>
 
     <metal:widgets fill-slot="widgets">
       <div id="no_mailing_list"
-         tal:condition="view/list_can_be_requested">
+         tal:condition="view/list_can_be_created">
         <p>
-          You can request a mailing list for this team. Once a
-          Launchpad administrator approves your request, team members
-          can subscribe and post to the team mailing list. The team
-          mailing list may also be used as the team's contact address.
+          You can create a mailing list for this team. Team members
+          can subscribe and post to the team mailing list.
         </p>
-        <p id="ubuntu-notice"><strong>Ubuntu mailing lists should not be
-          created here.  Create them
-          at <a href="https://lists.ubuntu.com">lists.ubuntu.com</a> instead.
+
+        <ul class="bulleted">
+          <li>
+            The mailing list can be used as the team's contact address
+          </li>
+          <li>
+            Messages will be kept in a
+            <strong id="mailing-list-archive"
+              tal:content="context/visibility/title/fmt:lower" /> archive
+          </li>
+          <li>
+            Launchpad will silently discard email sent from addresses that are
+            not associated with a Launchpad account.
+          </li>
+        </ul>
+
+        <p id="ubuntu-notice"><strong>Ubuntu does not use Launchpad to host
+          its mailing lists. Create them at
+          <a href="https://lists.ubuntu.com">lists.ubuntu.com</a> instead.
         </strong></p>
 
         <p>
-          &#187; <a href="http://help.launchpad.net/ListHelp">Help for mailing lists</a>
+          &#187; <a href="https://help.launchpad.net/Teams/MailingLists">Help for mailing lists</a>
         </p>
-        <input tal:replace="structure view/request_list_creation/render" />
-      </div>
-
-      <div id="mailing_list_pending_approval"
-         tal:condition="view/list_application_can_be_cancelled">
-        <p>The application for this team's mailing list is pending approval.</p>
-        <p>
-          <input tal:replace="structure view/cancel_list_creation/render" />
-        </p>
+        <input tal:replace="structure view/create_list_creation/render" />
       </div>
 
       <div id="mailing_list_purge"

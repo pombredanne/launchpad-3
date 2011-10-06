@@ -1,4 +1,5 @@
-= Objects that contains build records =
+Objects that contains build records
+===================================
 
 Build records can be looked up in different contexts, they are:
 
@@ -19,11 +20,13 @@ We will create a helper function to inspect build collections in
 different contexts.
 
     >>> def print_builds(builds):
-    ...     for entry in sorted(builds['entries']):
+    ...     for entry in sorted(builds['entries'],
+    ...                         key=lambda entry:entry.get('title')):
     ...         print entry['title']
 
 
-== Filtering builds ==
+Filtering builds
+----------------
 
 Celso Providelo PPA builds can be browsed via the API.
 
@@ -33,8 +36,8 @@ Celso Providelo PPA builds can be browsed via the API.
 
     >>> print_builds(ppa_builds)
     hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     i386 build of pmount 0.1-1 in ubuntu warty RELEASE
 
 An entry can be selected in the returned collection.
@@ -82,7 +85,8 @@ Finally, filtering by the target pocket.
     0
 
 
-== Distribution builds ==
+Distribution builds
+-------------------
 
 Distributions, like ubuntu, allow users to call browse builds.
 
@@ -92,13 +96,14 @@ Distributions, like ubuntu, allow users to call browse builds.
 
     >>> print_builds(ubuntu_builds)
     hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
-    i386 build of foobar 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
+    i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
 
 
-== DistroSeries builds ==
+DistroSeries builds
+-------------------
 
 DistroSeries, like ubuntu/hoary, allow users to call browse builds.
 
@@ -108,8 +113,8 @@ DistroSeries, like ubuntu/hoary, allow users to call browse builds.
 
     >>> print_builds(hoary_builds)
     hppa build of pmount 0.1-1 in ubuntu hoary RELEASE
-    i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
     i386 build of libstdc++ b8p in ubuntu hoary RELEASE
+    i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
 

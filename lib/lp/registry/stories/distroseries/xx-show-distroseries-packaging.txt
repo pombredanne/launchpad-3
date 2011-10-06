@@ -16,14 +16,16 @@ The page lists the upstream packaging links.
     ...     find_tag_by_id(anon_browser.contents, 'packagings'))
     Source Package   Upstream Project   Upstream Contributor Connections
     netapplet
-      NetApplet ... The Novell Network Applet
+      NetApplet The Novell Network Applet
         GNOME...NetApplet...trunk
         ...Bug supervisor: no   Bug tracker: yes Branch: no
+        ...
     evolution
-      Evolution ... Evolution is an email client, addressbook ...
+      Evolution Evolution is an email client, addressbook ...
         GNOME...Evolution...trunk
         ...Bug supervisor: no   Bug tracker: yes
         Branch: yes   Translations: no
+      A newer version of evolution is available for packaging: Evolution 2.1.6
 
 Any use can see that this page is related to the needs packaging report. It
 is linked, but the link to this page is not enabled.

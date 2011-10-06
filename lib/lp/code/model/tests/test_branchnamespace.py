@@ -1,37 +1,49 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBranchNamespace` implementations."""
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.testing import DatabaseFunctionalLayer
-
-from lp.code.model.branchnamespace import (
-    PackageNamespace, PersonalNamespace, ProductNamespace)
-from lp.registry.model.sourcepackage import SourcePackage
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, BranchVisibilityRule)
-from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists, NoSuchBranch)
+    BranchLifecycleStatus,
+    BranchType,
+    BranchVisibilityRule,
+    )
+from lp.code.errors import (
+    BranchCreationForbidden,
+    BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreatorNotOwner,
+    BranchExists,
+    InvalidNamespace,
+    NoSuchBranch,
+    )
 from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespacePolicy, IBranchNamespace,
-    IBranchNamespaceSet, lookup_branch_namespace, InvalidNamespace)
+    get_branch_namespace,
+    IBranchNamespace,
+    IBranchNamespacePolicy,
+    IBranchNamespaceSet,
+    lookup_branch_namespace,
+    )
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.model.branchnamespace import (
+    PackageNamespace,
+    PersonalNamespace,
+    ProductNamespace,
+    )
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.distribution import NoSuchDistribution
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
-from lp.registry.interfaces.sourcepackagename import (
-    NoSuchSourcePackageName)
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import TestCaseWithFactory
 
 
@@ -86,6 +98,15 @@ class NamespaceMixin:
             BranchLifecycleStatus.EXPERIMENTAL, branch.lifecycle_status)
         self.assertEqual(whiteboard, branch.whiteboard)
 
+    def test_createBranch_subscribes_owner(self):
+        owner = self.factory.makeTeam()
+        namespace = self.getNamespace(owner)
+        branch_name = self.factory.getUniqueString()
+        registrant = owner.teamowner
+        branch = namespace.createBranch(
+            BranchType.HOSTED, branch_name, registrant)
+        self.assertEqual([owner], list(branch.subscribers))
+
     def test_getBranches_no_branches(self):
         # getBranches on an IBranchNamespace returns a result set of branches
         # in that namespace. If there are no branches, the result set is
@@ -134,7 +155,7 @@ class NamespaceMixin:
     def test_isNameUsed_yes(self):
         namespace = self.getNamespace()
         branch_name = self.factory.getUniqueString()
-        branch = namespace.createBranch(
+        namespace.createBranch(
             BranchType.HOSTED, branch_name,
             removeSecurityProxy(namespace).owner)
         self.assertEqual(True, namespace.isNameUsed(branch_name))
@@ -399,14 +420,14 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
             person = self.factory.makePerson()
         return get_branch_namespace(
             person=person,
-            distroseries=self.factory.makeDistroRelease(),
+            distroseries=self.factory.makeDistroSeries(),
             sourcepackagename=self.factory.makeSourcePackageName())
 
     def test_name(self):
         # A package namespace has branches that start with
         # ~foo/ubuntu/spicy/packagename.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = PackageNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
@@ -419,7 +440,7 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
     def test_owner(self):
         # The person passed to a package namespace is the owner.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = PackageNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
@@ -442,7 +463,7 @@ class TestPackageNamespacePrivacy(TestCaseWithFactory):
     def test_subscriber(self):
         # There are no implicit subscribers for a personal namespace.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = PackageNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
@@ -471,7 +492,7 @@ class TestNamespaceSet(TestCaseWithFactory):
 
     def test_get_package(self):
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = get_branch_namespace(
             person=person, distroseries=distroseries,
@@ -533,7 +554,7 @@ class TestNamespaceSet(TestCaseWithFactory):
 
     def test_lookup_package_no_source_package(self):
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.assertRaises(
             NoSuchSourcePackageName, lookup_branch_namespace,
             '~%s/%s/%s/no-such-spn' % (
@@ -561,7 +582,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         # ~user/no-such-product and ~user/no-such-distro, so we just raise
         # NoSuchProduct, which is perhaps the most common case.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.assertRaises(
             NoSuchProduct, lookup_branch_namespace,
             '~%s/%s' % (person.name, distroseries.distribution.name))
@@ -570,7 +591,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         # Given a too-short path to a package branch namespace, lookup will
         # raise an InvalidNamespace error.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.assertInvalidName(
             '~%s/%s/%s' % (
                 person.name, distroseries.distribution.name,
@@ -592,7 +613,7 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_lookup_long_name_sourcepackage(self):
         # Given a too-long name, lookup will raise an InvalidNamespace error.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         self.assertInvalidName(
             '~%s/%s/%s/%s/foo' % (
@@ -774,7 +795,7 @@ class TestNamespaceSet(TestCaseWithFactory):
 
     def test_traverse_sourcepackagename_not_found(self):
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         distro = distroseries.distribution
         segments = iter(
             [person.name, distro.name, distroseries.name, 'no-such-package',
@@ -838,7 +859,7 @@ class BaseCanCreateBranchesMixin:
         # A member of a team is able to create a branch on this namespace.
         # This is a team junk branch.
         person = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=person)
+        self.factory.makeTeam(owner=person)
         namespace = self._getNamespace(person)
         self.assertTrue(namespace.canCreateBranches(person))
 
@@ -846,7 +867,7 @@ class BaseCanCreateBranchesMixin:
         # A person who is not part of the team cannot create branches for the
         # personal team target.
         person = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=person)
+        self.factory.makeTeam(owner=person)
         namespace = self._getNamespace(person)
         self.assertFalse(
             namespace.canCreateBranches(self.factory.makePerson()))
@@ -1201,14 +1222,6 @@ class BaseValidateNewBranchMixin:
             namespace.validateRegistrant,
             self.factory.makePerson())
 
-    def test_registrant_special_access(self):
-        # If the registrant has special access to branches, then they are
-        # valid.
-        namespace = self._getNamespace(self.factory.makePerson())
-        bazaar_experts = getUtility(ILaunchpadCelebrities).bazaar_experts
-        special_person = bazaar_experts.teamowner
-        self.assertIs(None, namespace.validateRegistrant(special_person))
-
     def test_existing_branch(self):
         # If a branch exists with the same name, then BranchExists is raised.
         namespace = self._getNamespace(self.factory.makePerson())
@@ -1451,8 +1464,8 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
 
 
 class PolicySimple(BranchVisibilityPolicyTestCase):
-    """Test the visiblity policy where the base visibility rule is PUBLIC with
-    one team specified to have PRIVATE branches.
+    """Test the visibility policy where the base visibility rule is PUBLIC
+    with one team specified to have PRIVATE branches.
     """
 
     def setUp(self):
@@ -1496,8 +1509,8 @@ class PolicySimple(BranchVisibilityPolicyTestCase):
 
 
 class PolicyPrivateOnly(BranchVisibilityPolicyTestCase):
-    """Test the visiblity policy where the base visibility rule is PUBLIC with
-    one team specified to have the PRIVATE_ONLY rule.
+    """Test the visibility policy where the base visibility rule is PUBLIC
+    with one team specified to have the PRIVATE_ONLY rule.
 
     PRIVATE_ONLY only stops the user from changing the branch from private to
     public and for branch creation behaves in the same maner as the PRIVATE
@@ -1545,7 +1558,7 @@ class PolicyPrivateOnly(BranchVisibilityPolicyTestCase):
 
 
 class PolicyForbidden(BranchVisibilityPolicyTestCase):
-    """Test the visiblity policy where the base visibility rule is FORBIDDEN
+    """Test the visibility policy where the base visibility rule is FORBIDDEN
     with one team specified to have the PRIVATE branches and another team
     specified to have PUBLIC branches.
     """
@@ -1934,7 +1947,3 @@ class TestBranchNamespaceMoveBranch(TestCaseWithFactory):
         self.assertEqual(team, branch.owner)
         # And for paranoia.
         self.assertNamespacesEqual(namespace, branch.namespace)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -51,7 +51,7 @@ While navigating around the PPA the "structural location" includes a PPA:
     Hierarchy: Celso Providelo > PPA for Celso Providelo
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Branches - http://code.launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -72,7 +72,7 @@ The PPA breadcrumb follows the PPA displayname.
     Hierarchy: Celso Providelo > Default PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Branches - http://code.launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -117,7 +117,7 @@ The user can navigate to an individual build details:
     Hierarchy: Celso Providelo > Default PPA > i386 build of iceweasel 1.0
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Branches - http://code.launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -179,8 +179,8 @@ This is the last page, so the next and last links are inactive.
 The 'First' and 'Previous' links, however, are now active.
 
     >>> anon_browser.getLink('First').url
-    'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?start=0&batch=1'
+    'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?batch=1'
 
     >>> anon_browser.getLink('Previous').url
-    'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?start=1&batch=1'
+    'http://launchpad.dev/%7Ecprov/+archive/ppa/+index?batch=1&direction=backwards&memo=2&start=1'
 

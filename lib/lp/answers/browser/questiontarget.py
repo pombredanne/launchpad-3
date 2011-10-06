@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IQuestionTarget browser views."""
@@ -17,40 +17,86 @@ __all__ = [
     'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
     'QuestionTargetFacetMixin',
+    'QuestionTargetPortletAnswerContactsWithDetails',
     'QuestionTargetTraversalMixin',
     'QuestionTargetAnswersMenu',
     'UserSupportLanguagesMixin',
     ]
 
 from operator import attrgetter
+from simplejson import dumps
 from urllib import urlencode
 
-from zope.app.form.browser import DropdownWidget
-from zope.component import getUtility, queryMultiAdapter
-from zope.formlib import form
-from zope.schema import Bool, Choice, List
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import DropdownWidget
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    queryMultiAdapter,
+    )
+from zope.formlib import form
+from zope.schema import (
+    Bool,
+    Choice,
+    List,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
+from zope.traversing.browser import absoluteURL
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import (
-    browserLanguages, is_english_variant, preferred_or_request_languages)
-from lp.answers.browser.faqcollection import FAQCollectionMenu
-from canonical.launchpad.interfaces import (
-    IDistribution, IFAQCollection, ILanguageSet, ILaunchpadCelebrities,
-    IProjectGroup, IQuestionCollection, IQuestionSet, IQuestionTarget,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
-    QuestionStatus)
+    browserLanguages,
+    is_english_variant,
+    preferred_or_request_languages,
+    )
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, Link,
-    safe_action, stepto, stepthrough, urlappend)
+    canonical_url,
+    Link,
+    stepthrough,
+    stepto,
+    urlappend,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.answers.browser.faqcollection import FAQCollectionMenu
+from lp.answers.enums import QuestionStatus
+from lp.answers.interfaces.faqcollection import IFAQCollection
+from lp.answers.interfaces.questioncollection import (
+    IQuestionCollection,
+    IQuestionSet,
+    ISearchableByQuestionOwner,
+    )
+from lp.answers.interfaces.questiontarget import (
+    IQuestionTarget,
+    ISearchQuestionsForm,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.enums import service_uses_launchpad
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.fields import PublicPersonChoice
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class AskAQuestionButtonView:
@@ -129,7 +175,7 @@ class QuestionCollectionOpenCountView:
     """View used to render the number of open questions.
 
     This view is used to render the number of open questions on
-    each ISourcePackageRelease on the person-packages-templates.pt.
+    each IDistributionSourcePackage on the person-packages-templates.pt.
     It is simpler to define generic view and an adapter (since
     SourcePackageRelease does not provide IQuestionCollection), than
     to write a specific view for that template.
@@ -156,7 +202,32 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
 
-    template = ViewPageTemplateFile('../templates/question-listing.pt')
+    default_template = ViewPageTemplateFile(
+        '../templates/question-listing.pt')
+    unknown_template = ViewPageTemplateFile('../templates/unknown-support.pt')
+
+    @property
+    def template(self):
+        """The template to render the presentation.
+
+        Subclasses can redefine this property to choose their own template.
+        """
+        if IQuestionSet.providedBy(self.context):
+            return self.default_template
+        involvement = getMultiAdapter(
+            (self.context, self.request), name='+get-involved')
+        if service_uses_launchpad(involvement.answers_usage):
+            # Primary contexts that officially use answers have a
+            # search and listing presentation.
+            return self.default_template
+        else:
+            # Primary context that do not officially use answers have an
+            # an explanation about about the current state.
+            return self.unknown_template
+
+    def render(self):
+        """See `LaunchpadView`."""
+        return self.template()
 
     @property
     def page_title(self):
@@ -388,7 +459,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             "can't call matching_faqs_url when matching_faqs_count == 0")
         collection = IFAQCollection(self.context)
         return canonical_url(collection) + '/+faqs?' + urlencode({
-            'field.search_text': self.search_text,
+            'field.search_text': self.search_text.encode('utf-8'),
             'field.actions.search': 'Search',
             })
 
@@ -402,9 +473,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
-        if self.search_params.get('search_text', None) is not None:
-            self.search_params['search_text'] = (
-                self.search_params['search_text'].strip())
+        search_text = self.search_params.get('search_text', None)
+        if search_text is not None:
+            self.search_params['search_text'] = search_text.strip()
 
     def searchResults(self):
         """Return the questions corresponding to the search."""
@@ -445,6 +516,15 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return '<a href="%s">%s</a>' % (
                 canonical_url(sourcepackage, rootsite='answers'),
                 question.sourcepackagename.name)
+
+    @property
+    def can_configure_answers(self):
+        """Can the user configure answers for the `IQuestionTarget`."""
+        target = self.context
+        if IProduct.providedBy(target) or IDistribution.providedBy(target):
+            return check_permission('launchpad.Edit', self.context)
+        else:
+            return False
 
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
@@ -655,7 +735,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             answer_contacts).intersection(self.administrated_teams)
         return {
             'want_to_be_answer_contact': user in answer_contacts,
-            'answer_contact_teams': list(answer_contact_teams)
+            'answer_contact_teams': list(answer_contact_teams),
             }
 
     @action(_('Continue'), name='update')
@@ -667,12 +747,12 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         replacements = {'context': self.context.displayname}
         if want_to_be_answer_contact:
             self._updatePreferredLanguages(self.user)
-            if self.context.addAnswerContact(self.user):
+            if self.context.addAnswerContact(self.user, self.user):
                 response.addNotification(
                     _('You have been added as an answer contact for '
                       '$context.', mapping=replacements))
         else:
-            if self.context.removeAnswerContact(self.user):
+            if self.context.removeAnswerContact(self.user, self.user):
                 response.addNotification(
                     _('You have been removed as an answer contact for '
                       '$context.', mapping=replacements))
@@ -681,12 +761,12 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
                 self._updatePreferredLanguages(team)
-                if self.context.addAnswerContact(team):
+                if self.context.addAnswerContact(team, self.user):
                     response.addNotification(
                         _('$teamname has been added as an answer contact '
                           'for $context.', mapping=replacements))
             else:
-                if self.context.removeAnswerContact(team):
+                if self.context.removeAnswerContact(team, self.user):
                     response.addNotification(
                         _('$teamname has been removed as an answer contact '
                           'for $context.', mapping=replacements))
@@ -717,8 +797,8 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         english = getUtility(ILaunchpadCelebrities).english
         if person_or_team.isTeam():
             person_or_team.addLanguage(english)
-            team_mapping = {'name' : person_or_team.name,
-                            'displayname' : person_or_team.displayname}
+            team_mapping = {'name': person_or_team.name,
+                            'displayname': person_or_team.displayname}
             msgid = _("English was added to ${displayname}'s "
                       '<a href="/~${name}/+editlanguages">preferred '
                       'languages</a>.',
@@ -735,8 +815,74 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             msgid = _('<a href="/people/+me/+editlanguages">Your preferred '
                       'languages</a> were updated to include your browser '
                       'languages: $languages.',
-                      mapping={'languages' : language_str})
+                      mapping={'languages': language_str})
             response.addNotification(structured(msgid))
+
+
+class QuestionTargetPortletAnswerContacts(LaunchpadView):
+    """View sets up the required url data for the answer contacts portlet."""
+
+    @cachedproperty
+    def api_request(self):
+        return IWebServiceClientRequest(self.request)
+
+    def initialize(self):
+        cache = IJSONRequestCache(self.request).objects
+        context_url_data = {
+            'web_link': canonical_url(self.context, rootsite='mainsite'),
+            'self_link': absoluteURL(self.context, self.api_request),
+            }
+        cache[self.context.name + '_answer_portlet_url_data'] = (
+            context_url_data)
+
+
+class QuestionTargetPortletAnswerContactsWithDetails(LaunchpadView):
+    """View returns JSON dump of answer contact details for questiontarget."""
+
+    @cachedproperty
+    def api_request(self):
+        return IWebServiceClientRequest(self.request)
+
+    def answercontact_data(self, questiontarget):
+        """Get the answer contact data.
+
+        This method is isolated from the answercontact_data_js so that query
+        count testing can be done accurately and robustly.
+        """
+        data = []
+        answer_contacts = list(questiontarget.direct_answer_contacts)
+        for person in answer_contacts:
+            can_edit = questiontarget.canUserAlterAnswerContact(
+                person, self.user)
+            if person.private and not can_edit:
+                # Skip private teams user is not a member of.
+                continue
+
+            answer_contact = {
+                'name': person.name,
+                'display_name': person.displayname,
+                'web_link': canonical_url(person, rootsite='mainsite'),
+                'self_link': absoluteURL(person, self.api_request),
+                'is_team': person.is_team,
+                'can_edit': can_edit
+                }
+            record = {
+                'subscriber': answer_contact,
+                }
+            data.append(record)
+        return data
+
+    @property
+    def answercontact_data_js(self):
+        """Return subscriber_ids in a form suitable for JavaScript use."""
+        questiontarget = IQuestionTarget(self.context)
+        data = self.answercontact_data(questiontarget)
+        return dumps(data)
+
+    def render(self):
+        """Override the default render() to return only JSON."""
+        self.request.response.setHeader('content-type', 'application/json')
+        return self.answercontact_data_js
 
 
 class QuestionTargetFacetMixin:
@@ -771,7 +917,6 @@ class QuestionTargetTraversalMixin:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(question))
 
-
     @stepto('+ticket')
     def redirect_ticket(self):
         """Use RedirectionNavigation to redirect to +question.
@@ -783,15 +928,13 @@ class QuestionTargetTraversalMixin:
         return self.redirectSubTree(target)
 
 
-
-# XXX flacoste 2007-07-08 bug=125851:
-# This menu shouldn't "extend" FAQCollectionMenu.
-# But this is needed because of limitations in the current menu architecture.
-# Menu should be built by merging all menus applying to the context object
-# (-based on the interfaces it provides).
 class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
-
+    # XXX flacoste 2007-07-08 bug=125851:
+    # This menu shouldn't "extend" FAQCollectionMenu.
+    # architecture. But this is needed because of limitations in the current
+    # menu  Menu should be built by merging all menus applying to the context
+    # object (-based on the interfaces it provides).
     usedfor = ISearchableByQuestionOwner
     facet = 'answers'
     links = FAQCollectionMenu.links + [

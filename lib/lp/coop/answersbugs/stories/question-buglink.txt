@@ -98,8 +98,9 @@ message is displayed:
     # This should use a private bug in our sample data.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IBugSet, ILaunchBag
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('foo.bar@canonical.com')
     >>> private_bug = getUtility(IBugSet).get(6)
     >>> private_bug.setPrivate(True, getUtility(ILaunchBag).user)
@@ -136,15 +137,14 @@ able to link to that bug.
     Bug #6: Firefox crashes when Save As dialog for a nonexistent window
     is closed
 
-An anonymous visitor (or a user that doesn't have access to the bug)
-will only see that a private bug is linked.
+An anonymous visitor (or a user that doesn't have access to the bug) sees
+nothing.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'related-bugs'))
     Related bugs
-    Bug #6: private bug
 
 Only the administrator will be able to unlink the bug.
 

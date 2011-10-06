@@ -30,58 +30,6 @@ No other versions are available.
     HTTP/1.1 404 Not Found
     ...
 
-No beta team redirection
-========================
-
-Members of the beta team aren't redirected to the beta site on API call.
-
-(Enable beta redirection for demonstration purpose)
-
-    >>> from canonical.config import config
-    >>> beta_data = """
-    ...     [launchpad]
-    ...     beta_testers_redirection_host = beta.launchpad.dev
-    ...     """
-    >>> config.push('beta_data', beta_data)
-
-    >>> from lp.testing import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> login(ANONYMOUS)
-    >>> beta_admin = getUtility(IPersonSet).getByEmail(
-    ...     'beta-admin@launchpad.net')
-    >>> beta_user = webservice_for_person(beta_admin)
-    >>> logout()
-
-A request to the web site is redirected:
-
-    >>> print http('GET /~launchpad-beta-owner HTTP/1.1\n'
-    ... 'Host: launchpad.dev\n'
-    ... 'Authorization: Basic %s\n' %
-    ...     "beta-admin@launchpad.net:test".encode('base64'))
-    HTTP/1.1 303 See Other
-    ...
-    Location: http://beta.launchpad.dev/~launchpad-beta-owner
-    ...
-
-But not a request to the web service:
-
-    >>> print beta_user.get("/~launchpad-beta-owner")
-    HTTP/1.1 200 Ok
-    ...
-
-    >>> ignored = config.pop('beta_data')
-
-Resources not exposed on the web service
-========================================
-
-Soyuz build set (exposed on the web at /builders) are not available on the
-web service:
-
-    >>> print webservice.get("/builders")
-    HTTP/1.1 404 Not Found
-    ...
 
 Anonymous requests
 ==================
@@ -102,7 +50,7 @@ consumer keys.
 
     >>> from canonical.launchpad.testing.pages import (
     ...     LaunchpadWebServiceCaller)
-    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 
     >>> caller = LaunchpadWebServiceCaller('new-consumer', 'access-key')
     >>> response = caller.get(root)
@@ -110,7 +58,6 @@ consumer keys.
     401 Unauthorized
     >>> print response.body
     Unknown consumer (new-consumer).
-    ...
 
 But with anonymous access there is no registration step. The first
 time Launchpad sees a consumer key might be during an
@@ -118,6 +65,7 @@ anonymous request, and it can't reject that request just because it
 doesn't recognize the client.
 
     >>> login(ANONYMOUS)
+    >>> from zope.component import getUtility
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> print consumer_set.getByKey('another-new-consumer')
     None
@@ -142,7 +90,6 @@ Anonymous requests can't access certain data.
     401 Unauthorized
     >>> print response.body
     You need to be logged in to view this URL.
-    ...
 
 Anonymous requests can't change the dataset.
 
@@ -154,7 +101,60 @@ Anonymous requests can't change the dataset.
     401 Unauthorized
     >>> print response.body
     (<Person at...>, 'displayname', 'launchpad.Edit')
+
+A completely unsigned web service request is treated as an anonymous
+request, with the OAuth consumer name being equal to the User-Agent.
+
+    >>> agent = "unsigned-user-agent"
+    >>> login(ANONYMOUS)
+    >>> print consumer_set.getByKey(agent)
+    None
+    >>> logout()
+
+    >>> from zope.app.testing.functional import HTTPCaller
+    >>> def request_with_user_agent(agent, url="/devel"):
+    ...     if agent is None:
+    ...         agent_string = ''
+    ...     else:
+    ...         agent_string = '\nUser-Agent: %s' % agent
+    ...     http = HTTPCaller()
+    ...     request = ("GET %s HTTP/1.1\n"
+    ...                "Host: api.launchpad.dev"
+    ...                "%s\n\n") % (url, agent_string)
+    ...     return http(request)
+
+    >>> response = request_with_user_agent(agent)
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
     ...
+    {...}
+
+Here, too, the OAuth consumer name is automatically registered if it
+doesn't exist.
+
+    >>> login(ANONYMOUS)
+    >>> print consumer_set.getByKey(agent).key
+    unsigned-user-agent
+    >>> logout()
+
+Here's another request now that the User-Agent has been registered as
+a consumer name.
+
+    >>> response = request_with_user_agent(agent)
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    {...}
+
+An unsigned request, like a request signed with the empty string,
+isn't logged in as any particular user:
+
+    >>> response = request_with_user_agent(agent, "/devel/people/+me")
+    >>> print response.getOutput()
+    HTTP/1.1 401 Unauthorized
+    ...
+    You need to be logged in to view this URL.
+
 
 API Requests to other hosts
 ===========================
@@ -200,7 +200,8 @@ scheme (and don't require OAuth).
     ...
 
 But the regular authentication still doesn't work on the normal API
-virtual host:
+virtual host: an attempt to do HTTP Basic Auth will be treated as an
+anonymous request.
 
     >>> noauth_webservice.domain = 'api.launchpad.dev'
     >>> print noauth_webservice.get(
@@ -208,4 +209,26 @@ virtual host:
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 401 Unauthorized
     ...
-    Request is missing an OAuth consumer key.
+    You need to be logged in to view this URL.
+
+
+The 'Vary' Header
+=================
+
+Launchpad's web service sets the Vary header differently from other
+parts of Launchpad.
+
+    >>> browser.open("http://launchpad.dev/")
+    >>> print browser.headers['Vary']
+    Cookie, Authorization
+
+    >>> response = webservice.get(
+    ...     'http://bugs.launchpad.dev/api/devel/')
+    >>> print response.getheader('Vary')
+    Accept
+
+The web service's Vary header does not mention the 'Cookie' header,
+because the web service doesn't use cookies. It doesn't mention the
+'Authorization' header, because every web service request has a
+distinct 'Authorization' header. It does mention the 'Accept' header,
+because the web service does use content negotiation.

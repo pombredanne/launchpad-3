@@ -1,15 +1,14 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Model tests for distro series source package branch links."""
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.model.seriessourcepackagebranch import (
-    SeriesSourcePackageBranchSet)
+    SeriesSourcePackageBranchSet,
+    )
 from lp.code.tests.helpers import make_linked_package_branch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
@@ -58,7 +57,7 @@ class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
         # SeriesSourcePackageBranchSet.delete removes the link between a
         # particular branch and a (distro_series, pocket, sourcepackagename)
         # tupled.
-        distro_series = self.factory.makeDistroRelease()
+        distro_series = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         sourcepackage = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=distro_series)
@@ -76,8 +75,3 @@ class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
         links = self.link_set.findForSourcePackage(sourcepackage)
         self.assertEqual(
             sorted([branch_release]), sorted([link.branch for link in links]))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

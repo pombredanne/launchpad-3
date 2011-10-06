@@ -17,7 +17,7 @@ There are currently four bugs open in Ubuntu.
 
 Now if we go to the advanced search and choose to list only the bugs
 needing a bug watch, only the bugs with tasks in other contexts that
-don't use Launchpad Bugs are shown, if at least one of those contexts 
+don't use Launchpad Bugs are shown, if at least one of those contexts
 doesn't have a bug watch.
 
     # XXX: Bjorn Tillenius 2006-07-04 bug=51853:
@@ -38,9 +38,10 @@ bugtasks on contexts that don't use Launchpad are Invalid, those bugs
 are not included in the report.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IBugSet, ILaunchBag)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
 
     >>> login("foo.bar@canonical.com")
 
@@ -49,7 +50,6 @@ are not included in the report.
     ...     if not bugtask.target_uses_malone:
     ...         bugtask.transitionToStatus(
     ...             BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-    ...         syncUpdate(bugtask)
 
     >>> for bugtask in bug_two.bugtasks:
     ...     print "%s, %s" % (
@@ -96,7 +96,7 @@ Let's modify some existing bugtasks and create some new ones, to
 demonstrate.
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from lp.bugs.tests.test_bugtask_1 import (
+    >>> from lp.bugs.model.tests.test_bugtask import (
     ...     BugTaskSearchBugsElsewhereTest)
     >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
     >>> login('test@canonical.com')
@@ -180,8 +180,8 @@ The user opens a bookmark for "upstream status doesn't matter"
        linux-source-2.6.15 Medium New
     2 Blackhole Trash folder
       &mdash; Medium New
- 
-The user opens a bookmark for "upstream status: Show only bugs that need 
+
+The user opens a bookmark for "upstream status: Show only bugs that need
 to be forwarded to an upstream bug tracker".
 
     >>> bookmark_params['field.status_upstream'] = 'pending_bugwatch'
@@ -224,7 +224,7 @@ Other values for status_upstream lead to an error.
     ...         bookmark_params, True))
     Traceback (most recent call last):
     ...
-    UnexpectedFormData: Unexpected value for field 'status_upstream'. 
+    UnexpectedFormData: Unexpected value for field 'status_upstream'.
     Perhaps your bookmarks are out of date or you changed the URL by hand?
 
 

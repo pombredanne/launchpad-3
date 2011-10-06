@@ -11,18 +11,27 @@ __all__ = [
     'SourcePackageReleaseFile',
     ]
 
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
+from lp.services.database.bulk import load_related
+from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.files import (
-    IBinaryPackageFile, IBinaryPackageFileSet, ISourcePackageReleaseFile,
-    ISourcePackageReleaseFileSet)
+    IBinaryPackageFile,
+    IBinaryPackageFileSet,
+    ISourcePackageReleaseFile,
+    ISourcePackageReleaseFileSet,
+    )
 
 
 class BinaryPackageFile(SQLBase):
@@ -50,15 +59,20 @@ class BinaryPackageFileSet:
         return BinaryPackageFile.select("""
             PackageUploadBuild.packageupload = PackageUpload.id AND
             PackageUpload.id IN %s AND
-            Build.id = PackageUploadBuild.build AND
-            BinaryPackageRelease.build = Build.id AND
+            BinaryPackageBuild.id = PackageUploadBuild.build AND
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
             BinaryPackageFile.binarypackagerelease = BinaryPackageRelease.id
             """ % sqlvalues(package_upload_ids),
-            clauseTables=["PackageUpload", "PackageUploadBuild", "Build",
-                          "BinaryPackageRelease"],
+            clauseTables=["PackageUpload", "PackageUploadBuild",
+                          "BinaryPackageBuild", "BinaryPackageRelease"],
             prejoins=["binarypackagerelease", "binarypackagerelease.build",
-                      "libraryfile", "libraryfile.content",
                       "binarypackagerelease.binarypackagename"])
+
+    def loadLibraryFiles(self, binary_files):
+        """See `IBinaryPackageFileSet`."""
+        lfas = load_related(LibraryFileAlias, binary_files, ['libraryfileID'])
+        load_related(LibraryFileContent, lfas, ['contentID'])
+        return lfas
 
 
 class SourceFileMixin:

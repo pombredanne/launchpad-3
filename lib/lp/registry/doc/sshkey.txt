@@ -1,10 +1,11 @@
-= SSH Keys =
+SSH Keys
+========
 
 Launchpad models SSH keys in a SSHKey class.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISSHKeySet, IPersonSet, SSHKeyType)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.ssh import ISSHKeySet
     >>> personset = getUtility(IPersonSet)
     >>> name12 = personset.getByName('name12')
     >>> [(key.keytype, key.comment) for key in name12.sshkeys]
@@ -20,15 +21,29 @@ You can fetch SSH keys by ID:
 Adding new keys is pretty easy:
 
     >>> foobar = personset.getByName('name16')
-    >>> key = sshkeyset.new(foobar, SSHKeyType.RSA, "zzzNOT-REALLY",
-    ...     "This is just a test key.")
+    >>> key = sshkeyset.new(
+    ...     foobar, "ssh-rsa zzzNOT-REALLY This is just a test key")
     >>> key, key.keytext
     (<SSHKey at ...>, u'zzzNOT-REALLY')
 
-    >>> key = sshkeyset.new(name12, SSHKeyType.RSA, "zzzNOT-EITHER",
-    ...     "This is just a test key.")
+    >>> key = sshkeyset.new(
+    ...     name12, "ssh-rsa zzzNOT-EITHER This is just a test key.")
     >>> key, key.keytext
     (<SSHKey at ...>, u'zzzNOT-EITHER')
+
+Bad keys raise a SSHKeyAdditionError.
+
+    >>> sshkeyset.new(foobar, None)
+    Traceback (most recent call last):
+      ...
+    SSHKeyAdditionError
+
+    >>> bad_key = "thiskeyhasnospaces"
+    >>> sshkeyset.new(foobar, bad_key)
+    Traceback (most recent call last):
+      ...
+    SSHKeyAdditionError
+
 
 There's also a convenience method for fetching multiple SSH keys at
 once:
@@ -39,4 +54,3 @@ once:
     [(u'name12', <DBItem SSHKeyType.RSA, (1) RSA>, u'zzzNOT-EITHER'),
      (u'name12', <DBItem SSHKeyType.DSA, (2) DSA>, u'AAAAB3...vz9SG1gBOiI='),
      (u'name16', <DBItem SSHKeyType.RSA, (1) RSA>, u'zzzNOT-REALLY')]
-

@@ -3,7 +3,8 @@
 First, let's define a helper to post to the Person +addbranch form.
 
     >>> def add_branch(url):
-    ...     user_browser.open('http://launchpad.dev/~lifeless/+addbranch')
+    ...     user_browser.open(
+    ...         'http://code.launchpad.dev/~lifeless/+addbranch')
     ...     user_browser.getControl('Name').value = 'pyresources'
     ...     user_browser.getControl('Branch URL').value = url
     ...     user_browser.getControl('Register Branch').click()
@@ -57,7 +58,7 @@ Try to create a branch without URL
     There is 1 error.
     Branch URLs are required for Mirrored branches.
 
-Try to create a branch using the bzr+ssh URL scheme. Bug 76854 (see also 5573)
+Try to create a branch using the bzr+ssh URL scheme.
 
     >>> add_branch('bzr+ssh://example.com/code/branch')
     >>> print user_browser.url

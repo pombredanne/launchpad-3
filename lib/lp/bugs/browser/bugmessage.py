@@ -12,11 +12,16 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp import (
+    canonical_url,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bugattachment import BugAttachmentContentCheck
 from lp.bugs.interfaces.bugmessage import IBugMessageAddForm
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.webapp import action, canonical_url
-from canonical.launchpad.webapp import LaunchpadFormView
 
 
 class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
@@ -107,7 +112,7 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
             # If the patch flag is not consistent with the result of
             # the guess made in attachmentTypeConsistentWithContentType(),
             # we use the guessed type and lead the user to a page
-            # where he can override the flag value, if Luanchpad's
+            # where he can override the flag value, if Launchpad's
             # guess is wrong.
             patch_flag_consistent = (
                 self.attachmentTypeConsistentWithContentType(

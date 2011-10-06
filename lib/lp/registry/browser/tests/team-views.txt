@@ -1,10 +1,12 @@
-= Team pages =
+Team pages
+==========
 
-== Home page ==
+Home page
+---------
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
     >>> from zope.component import getMultiAdapter
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> person_set = getUtility(IPersonSet)
 
 On a team home page, we show up to the latest five members who were approved
@@ -65,17 +67,13 @@ Posting malformed data to the team home page raises an error.
     form fields.
 
 
-== +map-portlet ==
++map-portlet
+------------
 
-The team profile page contain the location portlet that shows a map. The
-map requires the google GMap JavaScript to display, so the views set the
-state of the request's needs_gmap2 attribute to true if there are
-members who have set their location.
+The team profile page contain the location portlet that shows a map.
 
     >>> team_view = create_initialized_view(ubuntu_team, '+index')
     >>> team_view.has_visible_location
-    False
-    >>> team_view.request.needs_gmap2
     False
 
 After a member has set his location, the map will be rendered.
@@ -87,8 +85,6 @@ After a member has set his location, the map will be rendered.
     >>> team_view = create_initialized_view(ubuntu_team, '+index')
     >>> team_view.has_visible_location
     True
-    >>> team_view.request.needs_gmap2
-    True
 
 The small_maps key in the launchpad_views cookie can be set by the viewing
 user to 'false' to indicate that small maps are not wanted.
@@ -96,11 +92,9 @@ user to 'false' to indicate that small maps are not wanted.
     >>> cookie = 'launchpad_views=small_maps=false'
     >>> team_view = create_initialized_view(
     ...     ubuntu_team, '+index', cookie=cookie)
-    >>> team_view.request.needs_gmap2
-    False
 
-
-== +map ==
++map
+----
 
 A team's +map page will show a map with markers on the location of all
 members of that team.  That page also lists the local times of members.
@@ -113,15 +107,10 @@ members of that team.  That page also lists the local times of members.
     >>> view.times
     []
 
-There are no mapped member yet, so needs_gmap2 is False, so the map will
-not be rendered.
 
-    >>> view.request.needs_gmap2
-    False
-
-Once a member is mapped, needs_gmap2 is True and the map will be rendered.
-The view provides a cached property to access the mapped participants. The
-views number of times is incremented for each timezone the members reside in.
+Once a member is mapped, the map will be rendered. The view provides a cached
+property to access the mapped participants. The views number of times is
+incremented for each timezone the members reside in.
 
     >>> london_member = factory.makePerson(
     ...     latitude=51.49, longitude=-0.13, time_zone='Europe/London')
@@ -133,9 +122,6 @@ views number of times is incremented for each timezone the members reside in.
     1
     >>> len(view.times)
     1
-
-    >>> view.request.needs_gmap2
-    True
 
     >>> brazil_member = factory.makePerson(
     ...     latitude=-23.60, longitude=-46.64, time_zone='America/Sao_Paulo')
@@ -210,7 +196,8 @@ the scale of a map.
     min_lng: -46...
 
 
-== Contacting the team ==
+Contacting the team
+-------------------
 
 Logged in users can contact any other Launchpad user through a 'Contact this
 user' feature (see person-pages.txt).  Similarly, a logged in user can contact
@@ -231,7 +218,8 @@ because bart is not a member of the team.
     Contact this team's owner
 
 
-== Mugshots ==
+Mugshots
+--------
 
 The mugshots for all members of a team can be seen on the +mugshots
 page.  The display of mugshots is batched.
@@ -258,7 +246,8 @@ page.  The display of mugshots is batched.
     <Person at ... mark (Mark Shuttleworth)>
 
 
-== Privacy and visibility ==
+Privacy and visibility
+----------------------
 
 Team visibility is used on the page to indicate privacy.  GuadaMen is a public
 team.
@@ -284,20 +273,8 @@ Private teams are indicated as private.
     >>> print view.visibility_portlet_class
     portlet private
 
-Private membership teams are also indicated as private.
-
-    >>> private_membership_team = factory.makeTeam(
-    ...     owner=sample_person,
-    ...     name='private-membership-team',
-    ...     displayname='Private Membership Team',
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-    >>> view = create_initialized_view(private_membership_team, '+index')
-    >>> print view.visibility_info
-    Team membership is viewable by team members
-    >>> print view.visibility_portlet_class
-    portlet private
-
-== +add-my-teams ==
++add-my-teams
+-------------
 
 This page lists the teams that you administer and can add as a member
 to the current team. Private teams cannot be added as members to another
@@ -309,15 +286,3 @@ team.
     ...     print candidate.name, candidate.visibility.title
     landscape-developers Public
     launchpad-users Public
-
-Making one of the teams that sample person owns public will cause it
-to show up.
-
-    >>> removeSecurityProxy(private_membership_team).visibility = (
-    ...     PersonVisibility.PUBLIC)
-    >>> view = create_initialized_view(guadamen, '+add-my-teams')
-    >>> for candidate in view.candidate_teams:
-    ...     print candidate.name, candidate.visibility.title
-    landscape-developers Public
-    launchpad-users Public
-    private-membership-team Public

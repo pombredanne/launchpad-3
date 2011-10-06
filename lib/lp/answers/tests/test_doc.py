@@ -1,29 +1,34 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
 Run the doctests and pagetests.
 """
 
-import logging
 import os
 import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from canonical.launchpad.testing.pages import PageTestSuite
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import DatabaseFunctionalLayer
-
+from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
+
 
 def productSetUp(test):
     """Test environment for product."""
@@ -64,6 +69,7 @@ def projectSetUp(test):
     test.globs['collection'] = gnome_project
     test.globs['newFAQ'] = newFAQ
 
+
 def sourcepackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -94,7 +100,6 @@ special = {
         'questiontarget.txt',
         [('product', productSetUp),
          ('distribution', distributionSetUp),
-         ('sourcepackage', sourcepackageSetUp),
          ('distributionsourcepackage', distributionsourcepackageSetUp),
          ]),
 
@@ -109,10 +114,14 @@ special = {
         [('product', productSetUp),
          ('distribution', distributionSetUp),
          ('project', projectSetUp),
-         ])
+         ]),
+    'emailinterface.txt': LayeredDocFileSuite(
+        'emailinterface.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=ProcessMailLayer,
+        stdout_logging=False)
     }
 
 
 def test_suite():
     return build_test_suite(here, special)
-

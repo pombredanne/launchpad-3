@@ -1,4 +1,4 @@
-<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the 
+<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -18,7 +18,7 @@
     <browser:url
         for="lp.services.worlddata.interfaces.country.ICountrySet"
         path_expression="string:+countries"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         rootsite="mainsite" />
 
     <browser:navigation

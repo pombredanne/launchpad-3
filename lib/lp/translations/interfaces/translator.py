@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -12,12 +12,18 @@ __all__ = [
     'ITranslatorSet',
     ]
 
+from zope.interface import Interface
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    )
+
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, URIField
-
-from zope.interface import Interface, Attribute
-
-from zope.schema import Choice, Datetime, Int
+from lp.services.fields import (
+    PublicPersonChoice,
+    URIField,
+    )
 
 
 class IEditTranslator(Interface):
@@ -81,8 +87,6 @@ class ITranslator(IEditTranslator, IAdminTranslator):
 
 class ITranslatorSet(Interface):
     """A container for `ITranslator`s."""
-
-    title = Attribute('Title')
 
     def new(translationgroup, language, translator, style_guide_url):
         """Create a new `ITranslator` for a `TranslationGroup`."""

@@ -3,17 +3,55 @@
 
 __metaclass__ = type
 
-import unittest
-
+from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    launchpadlib_for,
+    TestCaseWithFactory,
+    )
+
+
+class TestPersonEmailSecurity(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonEmailSecurity, self).setUp()
+        self.target = self.factory.makePerson(name='target')
+        self.email_one = self.factory.makeEmail(
+                'test1@example.com', self.target)
+        self.email_two = self.factory.makeEmail(
+                'test2@example.com', self.target)
+
+    def test_logged_in_can_access(self):
+        # A logged in launchpadlib connection can see confirmed email
+        # addresses.
+        accessor = self.factory.makePerson()
+        lp = launchpadlib_for("test", accessor.name)
+        person = lp.people['target']
+        emails = sorted(list(person.confirmed_email_addresses))
+        self.assertNotEqual(
+                sorted([self.email_one, self.email_two]),
+                len(emails))
+
+    def test_anonymous_cannot_access(self):
+        # An anonymous launchpadlib connection cannot see email addresses.
+
+        # Need to endInteraction() because launchpadlib_for() will
+        # setup a new one.
+        endInteraction()
+        lp = launchpadlib_for('test', person=None, version='devel')
+        person = lp.people['target']
+        emails = list(person.confirmed_email_addresses)
+        self.assertEqual([], emails)
 
 
 class TestPersonRepresentation(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -36,7 +74,3 @@ class TestPersonRepresentation(TestCaseWithFactory):
         self.assertEquals(
             rendered_comment,
             '<a href="/~test-person" class="sprite person">Test Person</a>')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

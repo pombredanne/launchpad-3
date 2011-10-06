@@ -46,19 +46,59 @@
       </dd>
     </dl>
 
+    <tal:derivation-not-enabled
+        tal:condition="not:request/features/soyuz.derived_series_ui.enabled">
+
     <dl>
-      <dt>Derives from:</dt>
+      <dt>Successor to:</dt>
       <dd>
         <a
-          tal:condition="context/parent_series"
-          tal:attributes="href context/parent_series/fmt:url"
-          tal:content="context/parent_series/named_version" />
-        <tal:none condition="not: context/parent_series">
-          <tal:name replace="context/named_version"/> is not derived from
-          another series.
+          tal:condition="context/previous_series"
+          tal:attributes="href context/previous_series/fmt:url"
+          tal:content="context/previous_series/named_version" />
+        <tal:none condition="not: context/previous_series">
+          <tal:name replace="context/named_version"/>
+          did not succeed any earlier series.
         </tal:none>
       </dd>
     </dl>
+
+    </tal:derivation-not-enabled>
+
+    <tal:derivation-enabled
+        tal:condition="request/features/soyuz.derived_series_ui.enabled">
+
+    <dl tal:define="parents context/getParentSeries">
+      <dt>Derives from:</dt>
+      <dd tal:condition="parents">
+        <tal:parents repeat="parent parents">
+          <a tal:attributes="href parent/fmt:url"
+             tal:content="parent/named_version">
+          </a><tal:comma condition="not:repeat/parent/end">, </tal:comma>
+        </tal:parents>
+      </dd>
+      <dd tal:condition="not:parents">
+        <tal:name replace="context/named_version"/> is not derived from
+        another series.
+      </dd>
+    </dl>
+
+    <dl tal:define="all_child_series context/getDerivedSeries">
+      <dt>Derived series:</dt>
+      <dd>
+        <tal:per_child_series repeat="child_series all_child_series">
+          <a
+            tal:attributes="href child_series/fmt:url"
+            tal:content="child_series/named_version" /><tal:comma
+            condition="not: repeat/child_series/end">,</tal:comma>
+        </tal:per_child_series>
+        <tal:none condition="not:all_child_series">
+          No derived series.
+        </tal:none>
+      </dd>
+    </dl>
+
+    </tal:derivation-enabled>
 
     <dl tal:define="sourcecount context/sourcecount">
       <dt>Source packages:</dt>

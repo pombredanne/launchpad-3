@@ -3,10 +3,10 @@
 The base class for BugChanges doesn't actually implement anything.
 
     >>> import pytz
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from datetime import datetime
     >>> from lp.bugs.adapters.bugchange import BugChangeBase
     >>> from lp.bugs.interfaces.bugchange import IBugChange
-    >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -54,7 +54,7 @@ Bug.addChange().
 
 We'll create a test class that actually implements the methods we need.
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.bugs.mail.bugnotificationrecipients import (
     ...     BugNotificationRecipients)
 
     >>> example_message = factory.makeMessage(content="Hello, world")
@@ -106,7 +106,7 @@ BugActivity entries are added when addChange() is called.
 
 As are BugNotifications.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.text_contents
     Some message text
@@ -140,17 +140,22 @@ for the Bug will be used. This includes people subscribed to the
 bug's target for Meta data changes, but not for lifecycle changes.
 
 
-    >>> from canonical.launchpad.interfaces import BugNotificationLevel
+    >>> from lp.testing import person_logged_in
+    >>> from lp.bugs.enum import BugNotificationLevel
     >>> lifecycle_subscriber = factory.makePerson(
     ...         displayname='Lifecycle subscriber')
     >>> metadata_subscriber = factory.makePerson(
     ...         displayname='Meta-data subscriber')
     >>> subscription = example_bug.bugtasks[0].target.addBugSubscription(
     ...     lifecycle_subscriber, lifecycle_subscriber)
-    >>> subscription.bug_notification_level = BugNotificationLevel.LIFECYCLE
+    >>> with person_logged_in(lifecycle_subscriber):
+    ...     filter = subscription.bug_filters.one()
+    ...     filter.bug_notification_level = BugNotificationLevel.LIFECYCLE
     >>> subscription = example_bug.bugtasks[0].target.addBugSubscription(
     ...     metadata_subscriber, metadata_subscriber)
-    >>> subscription.bug_notification_level = BugNotificationLevel.METADATA
+    >>> with person_logged_in(metadata_subscriber):
+    ...     filter = subscription.bug_filters.one()
+    ...     filter.bug_notification_level = BugNotificationLevel.METADATA
     >>> example_bug.addChange(
     ...     TestBugChange(when=nowish, person=example_person))
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
@@ -378,8 +383,8 @@ space-separated string for display.
 Addtions and removals are expressed separately in the notification.
 
     >>> print tags_change.getBugNotification()['text']
-    ** Tags added: zillionth-tag
     ** Tags removed: first-tag
+    ** Tags added: zillionth-tag
 
 
 === BugSecurityChange ===
@@ -479,13 +484,14 @@ You can add an attachment...
     ...     old_value=None, new_value=attachment)
 
     >>> print pretty(attachment_change.getBugActivity())
-    {'newvalue': u'sample-attachment http://...',
+    {'newvalue':
+         u'sample-attachment http://bugs.launchpad.dev/bugs/...+files/...',
      'oldvalue': None,
      'whatchanged': 'attachment added'}
 
     >>> print attachment_change.getBugNotification()['text']
     ** Attachment added: "sample-attachment"
-       http...
+    http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/...
 
 Or remove one.
 
@@ -496,12 +502,13 @@ Or remove one.
 
     >>> print pretty(attachment_change.getBugActivity())
     {'newvalue': None,
-     'oldvalue': u'sample-attachment http://...',
+     'oldvalue':
+         u'sample-attachment http://bugs.launchpad.dev/bugs/...+files/...',
      'whatchanged': 'attachment removed'}
 
     >>> print attachment_change.getBugNotification()['text']
     ** Attachment removed: "sample-attachment"
-       http...
+    http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/...
 
 
 == BugTaskAttributeChange ==

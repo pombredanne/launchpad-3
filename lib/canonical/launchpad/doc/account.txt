@@ -14,7 +14,8 @@ implements the IAccountSet interface.
 
     >>> from zope.interface.verify import verifyObject
     >>> from lp.registry.interfaces.person import IPerson
-    >>> from canonical.launchpad.interfaces import IAccount, IAccountSet
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     IAccount, IAccountSet)
 
     >>> account_set = getUtility(IAccountSet)
     >>> verifyObject(IAccountSet, account_set)
@@ -76,7 +77,7 @@ Each Launchpad user is assigned an permanent OpenID identity URL. The
 last component of this URL is specific to the user, and can be used to
 look up the user.
 
-    >>> account = account_set.getByOpenIDIdentifier('no-priv_oid')
+    >>> account = account_set.getByOpenIDIdentifier(u'no-priv_oid')
     >>> IAccount.providedBy(account)
     True
     >>> print account.displayname
@@ -84,7 +85,7 @@ look up the user.
 
 A LookupError is raised if the identifier is not used by any account.
 
-    >>> account_set.getByOpenIDIdentifier('no-such-identifier')
+    >>> account_set.getByOpenIDIdentifier(u'no-such-identifier')
     Traceback (most recent call last):
     ...
     LookupError: no-such-identifier
@@ -125,8 +126,10 @@ email address.
 If we add a new guessed email address, it will be included in the
 guessed list.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, IEmailAddressSet)
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus,
+    ...     IEmailAddressSet,
+    ...     )
     >>> email = getUtility(IEmailAddressSet).new(
     ...     "guessed-email@example.com", account=account,
     ...     status=EmailAddressStatus.NEW)
@@ -196,37 +199,11 @@ database. Only an admin can change the status.
     >>> account.status = AccountStatus.ACTIVE
     >>> login('no-priv@canonical.com')
 
-The Account's displayname is synced to the Person's displayname if there
-is one. If the Person.displayname is changed, the Account.displayname is
-changed too.
+An Account has at least one OpenID identifier used to generate the
+OpenID identity URL.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-
-    >>> personset = getUtility(IPersonSet)
-    >>> person = personset.getByEmail('no-priv@canonical.com')
-    >>> person.displayname = 'Something New'
-    >>> print account.displayname
-    Something New
-
-However, the reverse is not true. If we change the Account.displayname,
-the linked Person.displayname (if there is one) is not updated
-immediately.  Instead, a cron job will sync this information later. This
-allows displayname changes to happen even when the Person table is
-unavailable.
-
-    >>> account.displayname = 'No Privileges Account'
-    >>> print person.displayname
-    Something New
-
-    >>> person.displayname = 'No Privileges Person'
-    >>> print account.displayname
-    No Privileges Person
-
-An Account has an OpenID identifier used to generate the OpenID identity
-URL.
-
-    >>> print account.openid_identifier
-    no-priv_oid
+    >>> account.openid_identifiers.any().identifier
+    u'no-priv_oid'
 
 
 Creating new accounts
@@ -235,13 +212,14 @@ Creating new accounts
 New Accounts are created using the AccountSet.new() method. The account
 rationale and displayname are required.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces.account import (
     ...     AccountCreationRationale)
+    >>> from storm.store import Store
 
     >>> login('admin@canonical.com')
     >>> passwordless_account = account_set.new(
     ...     AccountCreationRationale.USER_CREATED, 'Passwordless')
+    >>> transaction.commit()
     >>> print passwordless_account.creation_rationale.name
     USER_CREATED
     >>> print passwordless_account.displayname
@@ -258,7 +236,7 @@ then the method encrypts it for us.
     >>> passworded_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Passworded',
     ...     password=u'clear_password')
-    >>> syncUpdate(passworded_account)
+    >>> Store.of(passworded_account).flush()
     >>> passworded_account.password == u'clear_password'
     False
 
@@ -268,7 +246,7 @@ encrypted, by setting password_is_encrypted to True.
     >>> clear_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Clear',
     ...     password=u'clear_password', password_is_encrypted=True)
-    >>> syncUpdate(clear_account)
+    >>> Store.of(clear_account).flush()
     >>> print clear_account.password
     clear_password
 
@@ -283,7 +261,6 @@ account with no email address is not valid.
     >>> account = account_set.new(
     ...     AccountCreationRationale.USER_CREATED,
     ...     "Valid Account Test")
-    >>> syncUpdate(account)
     >>> account.status = AccountStatus.ACTIVE
     >>> account.is_valid
     False
@@ -298,7 +275,7 @@ Let's add a new email address to the account.
 The account is still not valid because it has no preferred email.
 Setting the email to preferred fixes this.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     >>> email.status = EmailAddressStatus.PREFERRED
     >>> account.is_valid
     True
@@ -318,8 +295,8 @@ Launchpad accounts with an attached Person.
 
     # We need to change database policy here again, as the SSO Server cannot
     # modify tables in the lpmain replication set.
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
     >>> from lp.registry.interfaces.person import PersonCreationRationale
@@ -364,16 +341,3 @@ address, a new Person cannot be created.
 
     >>> db_policy = getUtility(IStoreSelector).pop()
 
-
-OpenID identifiers
-------------------
-
-The account is given an openid identifier. The identifier is created directly
-in the database; it not available until the account object is synced.
-
-    >>> new_account = account_set.new(
-    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'OID Account',
-    ...     password=u'clear_password')
-    >>> syncUpdate(new_account)
-    >>> len(new_account.openid_identifier) == 7
-    True

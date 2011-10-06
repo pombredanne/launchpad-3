@@ -5,16 +5,20 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
-from canonical.testing.layers import DatabaseFunctionalLayer
 from psycopg2 import IntegrityError
-from storm.locals import Int, Store
+from storm.locals import (
+    Int,
+    Store,
+    )
 
 from canonical.launchpad.database.stormsugar import (
-    ForeignKey, ObjectNotFound, Sugar, UnknownProperty)
+    ForeignKey,
+    ObjectNotFound,
+    Sugar,
+    UnknownProperty,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCase
-
 
 
 class SugarDerived(Sugar):
@@ -119,7 +123,3 @@ class TestSugar(TestCase):
         obj2 = ReferencingObjectWithName(foo=obj1)
         self.assertEqual(obj1, obj2.foo)
         self.assertEqual(obj1.id, obj2._foo_id)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

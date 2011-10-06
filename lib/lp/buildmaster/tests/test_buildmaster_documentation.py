@@ -11,10 +11,21 @@ import os
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 def buildmasterSetUp(test):
@@ -33,18 +44,18 @@ def buildmasterSetUp(test):
 def buildmasterTearDown(test):
     logout()
 
+
 special = {
     'builder.txt': LayeredDocFileSuite(
         '../doc/builder.txt',
         setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer,
-        ),
+        layer=LaunchpadFunctionalLayer),
     'buildqueue.txt': LayeredDocFileSuite(
         '../doc/buildqueue.txt',
         setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer,
-        ),
+        layer=LaunchpadFunctionalLayer),
     }
+
 
 def test_suite():
     """Load doctests in this directory.

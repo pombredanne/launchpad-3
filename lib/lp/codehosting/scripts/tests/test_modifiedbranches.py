@@ -7,18 +7,19 @@ __metaclass__ = type
 
 from datetime import datetime
 import os
-import unittest
 
 import pytz
 
-from lp.codehosting.scripts.modifiedbranches import (
-    ModifiedBranchesScript)
-from lp.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.testing import TestCase, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
+from lp.codehosting.scripts.modifiedbranches import ModifiedBranchesScript
+from lp.codehosting.vfs import branch_id_to_path
+from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestModifiedBranchesLocations(TestCaseWithFactory):
@@ -26,41 +27,15 @@ class TestModifiedBranchesLocations(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def assertHostedLocation(self, branch, location):
-        """Assert that the location is the hosted location for the branch."""
-        path = branch_id_to_path(branch.id)
-        self.assertEqual(
-            os.path.join(config.codehosting.hosted_branches_root, path),
-            location)
-
-    def assertMirroredLocation(self, branch, location):
-        """Assert that the location is the mirror location for the branch."""
+    def test_branch(self):
+        # A branch location is the physical disk directory.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        script = ModifiedBranchesScript('modified-branches', test_args=[])
+        location = script.branch_location(branch)
         path = branch_id_to_path(branch.id)
         self.assertEqual(
             os.path.join(config.codehosting.mirrored_branches_root, path),
             location)
-
-    def test_hosted_branch(self):
-        # A hosted branch prints both the hosted and mirrored locations.
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        script = ModifiedBranchesScript('modified-branches', test_args=[])
-        [mirrored, hosted] = script.branch_locations(branch)
-        self.assertHostedLocation(branch, hosted)
-        self.assertMirroredLocation(branch, mirrored)
-
-    def test_mirrored_branch(self):
-        # A mirrored branch prints only the mirrored location.
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
-        script = ModifiedBranchesScript('modified-branches', test_args=[])
-        [mirrored] = script.branch_locations(branch)
-        self.assertMirroredLocation(branch, mirrored)
-
-    def test_imported_branch(self):
-        # A mirrored branch prints only the mirrored location.
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
-        script = ModifiedBranchesScript('modified-branches', test_args=[])
-        [mirrored] = script.branch_locations(branch)
-        self.assertMirroredLocation(branch, mirrored)
 
 
 class TestModifiedBranchesLastModifiedEpoch(TestCase):
@@ -212,8 +187,3 @@ class TestModifiedBranchesUpdateLocations(TestCase):
         self.script.update_locations('foo/bar/who')
         expected = set(['foo', 'foo/bar', 'foo/bar/baz', 'foo/bar/who'])
         self.assertEqual(expected, self.script.locations)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

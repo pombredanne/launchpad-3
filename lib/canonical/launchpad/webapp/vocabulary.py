@@ -12,22 +12,76 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
+    'FilteredVocabularyBase',
+    'ForgivingSimpleVocabulary',
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
     'NamedSQLObjectHugeVocabulary',
     'CountableIterator',
     'BatchedCountableIterator',
+    'VocabularyFilter',
 ]
 
-from sqlobject import AND, CONTAINSSTRING
+from collections import namedtuple
 
-from zope.interface import implements, Attribute, Interface
-from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
-from zope.schema.vocabulary import SimpleTerm
+from lazr.restful.utils import safe_hasattr
+
+from sqlobject import (
+    AND,
+    CONTAINSSTRING,
+    )
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
+from zope.schema.interfaces import (
+    IVocabulary,
+    IVocabularyTokenized,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.helpers import ensure_unicode
+
+
+class ForgivingSimpleVocabulary(SimpleVocabulary):
+    """A vocabulary that returns a default term for unrecognized values."""
+
+    def __init__(self, *args, **kws):
+        missing = object()
+        self._default_term = kws.pop('default_term', missing)
+        if self._default_term is missing:
+            raise TypeError('required argument "default_term" not provided')
+        return super(ForgivingSimpleVocabulary, self).__init__(*args, **kws)
+
+    def getTerm(self, value):
+        """Look up a value, returning the default if it is not found."""
+        try:
+            return super(ForgivingSimpleVocabulary, self).getTerm(value)
+        except LookupError:
+            return self._default_term
+
+
+class VocabularyFilter(namedtuple('VocabularyFilter',
+                                ('name', 'title', 'description'))):
+    """A VocabularyFilter is used to filter the results of searchForTerms()
+
+    A filter has the following attributes:
+    name: the filter name, eg ALL, PRODUCT
+    title: the text displayed in the ui, as presented to the user eg 'All'
+    description: the tooltip text
+    """
+
+    @property
+    def filter_terms(self):
+        """Query terms used to perform the required filtering."""
+        return []
 
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
@@ -38,13 +92,29 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """
 
     displayname = Attribute(
-        'A name for this vocabulary, to be displayed in the popup window.')
+        'A name for this vocabulary, to be displayed in the picker window.')
 
-    def searchForTerms(query=None):
+    step_title = Attribute(
+        'The search step title in the picker window.')
+
+    def searchForTerms(query=None, vocab_filter=None):
         """Return a `CountableIterator` of `SimpleTerm`s that match the query.
+
+        :param query: a query string used to limit the results.
+        :param vocab_filter: a VocabularyFilter applied to the results. A
+            filter has a specific meaning for each vocabulary implementation
+            which supports it's use. Vocabularies which support the use of
+            filters should each accept the ALL filter which means the same as
+            not applying any filter.
+            The parameter value can be a string corresponding to a supported
+            filter name, or a filter instance.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
+        """
+
+    def supportedFilters():
+        """Return the VocabularyFilters supported by searchForTerms.
         """
 
 
@@ -54,7 +124,6 @@ class ICountableIterator(Interface):
     # XXX: JonathanLange 2009-02-23: This should probably be fused with or at
     # least adapted from storm.zope.interfaces.IResultSet. Or maybe just
     # deleted in favour of passing around Storm ResultSets.
-
     def count():
         """Return the number of items in the iterator."""
 
@@ -70,12 +139,14 @@ class ICountableIterator(Interface):
         # work; we should probably change that to either check for the
         # presence of a count() method, or for a simpler interface than
         # ISelectResults, but I'm not going to do that today.
+        pass
 
     def __getslice__(argument):
         """Return a slice of the collection."""
         # Python will use __getitem__ if this method is not implemented,
         # but it is convenient to define it in the interface for
         # allowing access to the attributes through the security proxy.
+        pass
 
 
 class CountableIterator:
@@ -167,7 +238,47 @@ class BatchedCountableIterator(CountableIterator):
         raise NotImplementedError
 
 
-class SQLObjectVocabularyBase:
+class VocabularyFilterAll(VocabularyFilter):
+    # A filter returning all objects.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'ALL', 'All', 'Display all search results')
+
+
+class FilteredVocabularyBase:
+    """A mixin to provide base filtering support."""
+
+    ALL_FILTER = VocabularyFilterAll()
+
+    # We need to convert any string values passed in for the vocab_filter
+    # parameter to a VocabularyFilter instance.
+    def __getattribute__(self, name):
+        func = object.__getattribute__(self, name)
+        if (safe_hasattr(func, '__call__')
+                and (
+                    func.__name__ == 'searchForTerms'
+                    or func.__name__ == 'search')):
+            def do_search(
+                    query=None, vocab_filter=None, *args, **kwargs):
+                if isinstance(vocab_filter, basestring):
+                    for filter in self.supportedFilters():
+                        if filter.name == vocab_filter:
+                            vocab_filter = filter
+                            break
+                    else:
+                        raise ValueError(
+                            "Invalid vocab filter value: %s" % vocab_filter)
+                return func(query, vocab_filter, *args, **kwargs)
+            return do_search
+        else:
+            return func
+
+    def supportedFilters(self):
+        return []
+
+
+class SQLObjectVocabularyBase(FilteredVocabularyBase):
     """A base class for widgets that are rendered to collect values
     for attributes that are SQLObjects, e.g. ForeignKey.
 
@@ -196,11 +307,11 @@ class SQLObjectVocabularyBase:
     # that. It is possible that a better solution would be to have the
     # search functionality produce a new vocabulary restricted to the
     # desired subset.
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
 
-    def search(self):
+    def search(self, query, vocab_filter=None):
         # This default implementation of searchForTerms glues together
         # the legacy API of search() with the toTerm method. If you
         # don't reimplement searchForTerms you will need to at least
@@ -244,9 +355,6 @@ class SQLObjectVocabularyBase:
                 clause = AND(clause, self._filter)
             found_obj = self._table.selectOne(clause)
             return found_obj is not None
-
-    def getQuery(self):
-        return None
 
     def getTerm(self, value):
         # Short circuit. There is probably a design problem here since
@@ -316,10 +424,10 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
         return self.toTerm(objs[0])
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """Return terms where query is a subtring of the name."""
         if query:
-            clause = CONTAINSSTRING(self._table.q.name, query)
+            clause = CONTAINSSTRING(self._table.q.name, ensure_unicode(query))
             if self._filter:
                 clause = AND(clause, self._filter)
             return self._table.select(clause, orderBy=self._orderBy)
@@ -332,6 +440,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
     _orderBy = 'name'
     displayname = None
+    step_title = 'Search'
     # The iterator class will be used to wrap the results; its iteration
     # methods should return SimpleTerms, as the reference implementation
     # CountableIterator does.
@@ -342,17 +451,17 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
         if self.displayname is None:
             self.displayname = 'Select %s' % self.__class__.__name__
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         # XXX kiko 2007-01-17: this is a transitional shim; we're going to
         # get rid of search() altogether, but for now we've only done it for
         # the NamedSQLObjectHugeVocabulary.
         raise NotImplementedError
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         if not query:
             return self.emptySelectResults()
 
-        query = query.lower()
+        query = ensure_unicode(query).lower()
         clause = CONTAINSSTRING(self._table.q.name, query)
         if self._filter:
             clause = AND(clause, self._filter)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -6,35 +6,49 @@
 __metaclass__ = type
 __all__ = [
     'TranslationGroup',
-    'TranslationGroupSet'
+    'TranslationGroupSet',
     ]
 
-from zope.component import getUtility
-from zope.interface import implements
+import operator
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound)
-
-from storm.expr import Join
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import (
+    Join,
+    LeftJoin,
+    )
 from storm.store import Store
+from zope.interface import implements
 
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroup, ITranslationGroupSet)
-from lp.registry.model.person import Person
-from lp.registry.model.product import Product
-from lp.registry.model.project import Project
-from lp.registry.model.teammembership import TeamParticipation
-from lp.services.worlddata.model.language import Language
-from lp.translations.model.translator import Translator
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
-
-from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IStore,
+    ISlaveStore,
+    )
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.person import Person
+from lp.registry.model.teammembership import TeamParticipation
+from lp.services.worlddata.model.language import Language
+from lp.translations.interfaces.translationgroup import (
+    ITranslationGroup,
+    ITranslationGroupSet,
+    )
+from lp.translations.model.translator import Translator
 
 
 class TranslationGroup(SQLBase):
@@ -65,16 +79,15 @@ class TranslationGroup(SQLBase):
 
     def __getitem__(self, language_code):
         """See `ITranslationGroup`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        query = store.find(
+        query = Store.of(self).find(
             Translator,
             Translator.translationgroup == self,
             Translator.languageID == Language.id,
             Language.code == language_code)
-        
+
         translator = query.one()
         if translator is None:
-            raise NotFoundError, language_code
+            raise NotFoundError(language_code)
 
         return translator
 
@@ -96,11 +109,19 @@ class TranslationGroup(SQLBase):
 
     @property
     def products(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import Product
+
         return Product.selectBy(translationgroup=self.id, active=True)
 
     @property
     def projects(self):
-        return Project.selectBy(translationgroup=self.id, active=True)
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.projectgroup import ProjectGroup
+
+        return ProjectGroup.selectBy(translationgroup=self.id, active=True)
 
     # A limit of projects to get for the `top_projects`.
     TOP_PROJECTS_LIMIT = 6
@@ -135,14 +156,112 @@ class TranslationGroup(SQLBase):
             return 0
 
     def fetchTranslatorData(self):
-        """See ITranslationGroup."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        translator_data = store.find(
-            (Translator, Language, Person),
+        """See `ITranslationGroup`."""
+        # Fetch Translator, Language, and Person; but also prefetch the
+        # icon information.
+        using = [
+            Translator,
+            Language,
+            Person,
+            LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Person.iconID),
+            LeftJoin(
+                LibraryFileContent,
+                LibraryFileContent.id == LibraryFileAlias.contentID),
+            ]
+        tables = (
+            Translator,
+            Language,
+            Person,
+            LibraryFileAlias,
+            LibraryFileContent,
+            )
+        translator_data = Store.of(self).using(*using).find(
+            tables,
             Translator.translationgroup == self,
             Language.id == Translator.languageID,
             Person.id == Translator.translatorID)
-        return translator_data.order_by(Language.englishname)
+        translator_data = translator_data.order_by(Language.englishname)
+        mapper = lambda row: row[slice(0, 3)]
+        return DecoratedResultSet(translator_data, mapper)
+
+    def fetchProjectsForDisplay(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import (
+            Product,
+            ProductWithLicenses,
+            )
+
+        using = [
+            Product,
+            LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Product.iconID),
+            LeftJoin(
+                LibraryFileContent,
+                LibraryFileContent.id == LibraryFileAlias.contentID),
+            ]
+        columns = (
+            Product,
+            ProductWithLicenses.composeLicensesColumn(),
+            LibraryFileAlias,
+            LibraryFileContent,
+            )
+        product_data = ISlaveStore(Product).using(*using).find(
+            columns,
+            Product.translationgroupID == self.id, Product.active == True)
+        product_data = product_data.order_by(Product.displayname)
+
+        return [
+            ProductWithLicenses(product, tuple(licenses))
+            for product, licenses, icon_alias, icon_content in product_data]
+
+    def fetchProjectGroupsForDisplay(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.projectgroup import ProjectGroup
+
+        using = [
+            ProjectGroup,
+            LeftJoin(
+                LibraryFileAlias, LibraryFileAlias.id == ProjectGroup.iconID),
+            LeftJoin(
+                LibraryFileContent,
+                LibraryFileContent.id == LibraryFileAlias.contentID),
+            ]
+        tables = (
+            ProjectGroup,
+            LibraryFileAlias,
+            LibraryFileContent,
+            )
+        project_data = ISlaveStore(ProjectGroup).using(*using).find(
+            tables,
+            ProjectGroup.translationgroupID == self.id,
+            ProjectGroup.active == True).order_by(ProjectGroup.displayname)
+
+        return DecoratedResultSet(project_data, operator.itemgetter(0))
+
+    def fetchDistrosForDisplay(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.distribution import Distribution
+
+        using = [
+            Distribution,
+            LeftJoin(
+                LibraryFileAlias, LibraryFileAlias.id == Distribution.iconID),
+            LeftJoin(
+                LibraryFileContent,
+                LibraryFileContent.id == LibraryFileAlias.contentID),
+            ]
+        tables = (
+            Distribution,
+            LibraryFileAlias,
+            LibraryFileContent,
+            )
+        distro_data = ISlaveStore(Distribution).using(*using).find(
+            tables, Distribution.translationgroupID == self.id).order_by(
+            Distribution.displayname)
+
+        return DecoratedResultSet(distro_data, operator.itemgetter(0))
 
 
 class TranslationGroupSet:
@@ -165,10 +284,17 @@ class TranslationGroupSet:
 
     def __getitem__(self, name):
         """See ITranslationGroupSet."""
+        return self.getByName(name)
+
+    def getByName(self, name):
+        """See ITranslationGroupSet."""
         try:
             return TranslationGroup.byName(name)
         except SQLObjectNotFound:
-            raise NotFoundError, name
+            raise NotFoundError(name)
+
+    def _get(self):
+        return IStore(TranslationGroup).find(TranslationGroup)
 
     def new(self, name, title, summary, translation_guide_url, owner):
         """See ITranslationGroupSet."""
@@ -180,22 +306,20 @@ class TranslationGroupSet:
             owner=owner)
 
     def getByPerson(self, person):
-        """See ITranslationGroupSet."""
-
+        """See `ITranslationGroupSet`."""
         store = Store.of(person)
         origin = [
             TranslationGroup,
             Join(Translator,
                 Translator.translationgroupID == TranslationGroup.id),
             Join(TeamParticipation,
-                TeamParticipation.teamID == Translator.translatorID)
+                TeamParticipation.teamID == Translator.translatorID),
             ]
         result = store.using(*origin).find(
             TranslationGroup, TeamParticipation.person == person)
 
-        return result.order_by(TranslationGroup.title)
+        return result.config(distinct=True).order_by(TranslationGroup.title)
 
     def getGroupsCount(self):
         """See ITranslationGroupSet."""
         return TranslationGroup.select().count()
-

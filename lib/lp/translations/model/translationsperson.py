@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,38 +6,45 @@ __all__ = [
     'TranslationsPerson',
     ]
 
-from storm.expr import And, Coalesce, Desc, Join, LeftJoin, Or
+from storm.expr import (
+    And,
+    Coalesce,
+    Desc,
+    Join,
+    LeftJoin,
+    Or,
+    )
 from storm.info import ClassAlias
 from storm.store import Store
-
-from zope.component import adapts, getUtility
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-
+from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPerson
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet, TranslationPermission)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.interfaces.translator import ITranslatorSet
-
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.project import Project
+from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.worlddata.model.language import Language
+from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.model.potemplate import POTemplate
-from lp.translations.model.translator import Translator
 from lp.translations.model.translationgroup import TranslationGroup
 from lp.translations.model.translationrelicensingagreement import (
-    TranslationRelicensingAgreement)
+    TranslationRelicensingAgreement,
+    )
+from lp.translations.model.translator import Translator
 
 
 class TranslationsPerson:
@@ -68,6 +75,10 @@ class TranslationsPerson:
 
         entries = Store.of(self.person).find(POFileTranslator, conditions)
         return entries.order_by(Desc(POFileTranslator.date_last_touched))
+
+    def hasTranslated(self):
+        """See `ITranslationsPerson`."""
+        return self.getTranslationHistory().any() is not None
 
     @property
     def translation_history(self):
@@ -189,7 +200,7 @@ class TranslationsPerson:
         permission = Coalesce(
             Distribution.translationpermission,
             Product.translationpermission,
-            Project.translationpermission)
+            ProjectGroup.translationpermission)
         Reviewership = ClassAlias(TeamParticipation, 'Reviewership')
         # XXX JeroenVermeulen 2009-08-28 bug=420364: Storm's Coalesce()
         # can't currently infer its return type from its inputs, leading
@@ -240,7 +251,7 @@ class TranslationsPerson:
 
         Returns a list of Storm joins for a query on `POFile`.  The
         joins will involve `Distribution`, `DistroSeries`, `POFile`,
-        `Product`, `ProductSeries`, `Project`, `TranslationGroup`,
+        `Product`, `ProductSeries`, `ProjectGroup`, `TranslationGroup`,
         `TranslationTeam`, and `Translator`.
 
         The joins will restrict the ultimate query to `POFile`s
@@ -250,6 +261,7 @@ class TranslationsPerson:
         The added joins may make the overall query non-distinct, so be
         sure to enforce distinctness.
         """
+
         POTemplateJoin = Join(POTemplate, And(
             POTemplate.id == POFile.potemplateID,
             POTemplate.iscurrent == True))
@@ -258,7 +270,7 @@ class TranslationsPerson:
         # and ProductSeries are left joins, but one of them may
         # ultimately lead to a TranslationGroup.  In the case of
         # ProductSeries it may lead to up to two: one for the Product
-        # and one for the Project.
+        # and one for the ProjectGroup.
         DistroSeriesJoin = LeftJoin(
             DistroSeries, DistroSeries.id == POTemplate.distroseriesID)
 
@@ -266,24 +278,30 @@ class TranslationsPerson:
         # translation focus.
         distrojoin_conditions = And(
             Distribution.id == DistroSeries.distributionID,
-            Distribution.official_rosetta == True,
+            Distribution._translations_usage == ServiceUsage.LAUNCHPAD,
             Distribution.translation_focusID == DistroSeries.id)
 
         DistroJoin = LeftJoin(Distribution, distrojoin_conditions)
 
         ProductSeriesJoin = LeftJoin(
             ProductSeries, ProductSeries.id == POTemplate.productseriesID)
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
+        # this query is using _translations_usage, but there's no cleaner
+        # way to deal with it. Once the bug above is resolved, this should
+        # should be fixed to use translations_usage.
         ProductJoin = LeftJoin(Product, And(
             Product.id == ProductSeries.productID,
-            Product.official_rosetta == True))
+            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Product.active == True))
 
-        ProjectJoin = LeftJoin(Project, Project.id == Product.projectID)
+        ProjectJoin = LeftJoin(
+            ProjectGroup, ProjectGroup.id == Product.projectID)
 
         # Look up translation group.
         groupjoin_conditions = Or(
             TranslationGroup.id == Product.translationgroupID,
             TranslationGroup.id == Distribution.translationgroupID,
-            TranslationGroup.id == Project.translationgroupID)
+            TranslationGroup.id == ProjectGroup.translationgroupID)
         if expect_reviewer_status:
             GroupJoin = Join(TranslationGroup, groupjoin_conditions)
         else:

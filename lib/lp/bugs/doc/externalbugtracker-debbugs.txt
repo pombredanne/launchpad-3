@@ -6,16 +6,16 @@ to point it to our test debbugs db. Let's set up the db location for our
 test:
 
     >>> import os.path
-    >>> from canonical.launchpad.components.ftests import __file__
     >>> from canonical.config import config
+    >>> from canonical.launchpad.components.ftests import __file__
     >>> test_db_location = os.path.join(
     ...     os.path.dirname(__file__), 'debbugs_db')
 
 You can specify the db_location explicitly:
 
     >>> from lp.bugs.externalbugtracker import (
-    ...     DebBugs)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    ...     BATCH_SIZE_UNLIMITED, DebBugs)
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_debbugs = DebBugs(
     ...     'http://example.com/', db_location=test_db_location)
@@ -42,8 +42,8 @@ Because we keep a local copy of the DebBugs database we don't need to
 worry about batching bug watch updates for performance reasons, so
 DebBugs instances don't have a batch_size limit.
 
-    >>> print external_debbugs.batch_size
-    None
+    >>> external_debbugs.batch_size == BATCH_SIZE_UNLIMITED
+    True
 
 
 == Retrieving bug status from the debbugs database ==
@@ -89,24 +89,40 @@ being correct.
 
 == Checking debbugs bug watches ==
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
-    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate(23))
+    >>> bug_watches = list(debbugs.watches_needing_update)
+    >>> len(bug_watches)
+    0
+
+It looks as though there are no bug watches needing to be updated.
+That's because the check for whether a bug watch needs to be updated
+looks at its next_check field, which is None by default. Updating the
+bug watches should solve that problem.
+
+    >>> from datetime import datetime
+    >>> from pytz import utc
+    >>> for watch in debbugs.watches:
+    ...     watch.next_check = datetime.now(utc)
+
+    >>> bug_watches = list(debbugs.watches_needing_update)
     >>> len(bug_watches)
     5
 
-Log in and kick off the update. The importing of comments, which is
-controlled by a configuration option, is disabled here and will be
-tested later.
+Now there are some watches to update we can run the update against them.
+The importing of comments, which is controlled by a configuration
+option, is disabled here and will be tested later.
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> transaction.commit()
+
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = sorted([bug_watch.id for bug_watch in bug_watches])
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
     INFO:...:Updating 5 watches for 5 bugs on http://...
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> for bug_watch_id in bug_watch_ids:
     ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
@@ -116,11 +132,11 @@ tested later.
     327549: open important security
     308994: open important
 
-The lastchecked attribute got updated for each bug watch, so no more
-watches are in need of an update.
+The next_check value for all the watches got set to null when they
+were updated, so there are no watches left needing an update.
 
     >>> flush_database_updates()
-    >>> watches = debbugs.getBugWatchesNeedingUpdate(23)
+    >>> watches = debbugs.watches_needing_update
     >>> watches.count()
     0
 
@@ -264,7 +280,7 @@ be raised.
 The Debbugs ExternalBugTracker can import a Debian bug into Launchpad.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ISupportsBugImport
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBugImport
     >>> verifyObject(ISupportsBugImport, external_debbugs)
     True
 
@@ -332,8 +348,8 @@ ISupportsCommentImport interface.
 
     >>> from lp.bugs.externalbugtracker import (
     ...     get_external_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, ISupportsCommentImport)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> external_debbugs = get_external_bugtracker(
@@ -348,8 +364,9 @@ DebBugs implements all of these.
 
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug = getUtility(IBugSet).get(4)
     >>> bug_watch = bug.addWatch(
@@ -403,7 +420,7 @@ However, getCommentIds() will only return the comment ID once.
 The debbugs implementation of fetchComments() doesn't actually do
 anything, since DebBugs comments are stored locally and there is no need
 to pre-fetch them. It exists, nevertheless, so that
-BugWatchUpdater.importBugComments() can call it.
+CheckwatchesMaster.importBugComments() can call it.
 
     >>> external_debbugs.fetchComments(bug_watch, comment_ids)
 
@@ -420,8 +437,10 @@ getMessageForComment() will return an imported comment as a Launchpad
 Message. It requires a Person instance to be used as the Message's
 owner, so we'll turn Teun Vink into a Person.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PersonCreationRationale)
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonCreationRationale,
+    ...     )
     >>> poster = getUtility(IPersonSet).ensurePerson(
     ...     poster_email, poster_name, PersonCreationRationale.BUGIMPORT,
     ...     comment='when importing comments for %s.' % bug_watch.title)
@@ -538,7 +557,7 @@ The DebBugs ExternalBugTracker implements the ISupportsCommentPushing
 interface, which allows checkwatches to use it to push Launchpad
 comments back to the remote DebBugs instance.
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentPushing
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentPushing
     >>> ISupportsCommentPushing.providedBy(external_debbugs)
     True
 
@@ -556,6 +575,8 @@ which we want to push the comment, the body of the comment that we wish
 to push and the rfc822msgid of the comment that we're pushing. It
 returns the ID of the comment on the remote bugtracker, which in this
 case will be the rfc822msgid that gets passed as a parameter.
+
+    >>> transaction.commit()
 
     >>> external_debbugs.addRemoteComment(
     ...     '1234', 'A little fermented curd will do the trick!',
@@ -594,6 +615,20 @@ tracker.
     >>> [bug.title for bug in debbugs.getBugsWatching('322535')]
     []
     >>> commit()
+
+    # Make sane data to play this test.
+    >>> from canonical.config import config
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> evolution_dsp = debian.getSourcePackage('evolution')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=debian.currentseries,
+    ...     sourcepackagename=evolution_dsp.sourcepackagename)
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
     >>> import subprocess
     >>> process = subprocess.Popen(

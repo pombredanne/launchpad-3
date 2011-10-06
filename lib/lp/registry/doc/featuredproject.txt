@@ -6,9 +6,10 @@ use of Launchpad, so we want to draw attention to them. The list of
 projects is stored in the FeaturedProject table, and managed through the
 PillarNameSet.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPillarNameSet, IProductSet, IProjectGroupSet
-    ...     )
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.pillar import IPillarNameSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> pillar_set = getUtility(IPillarNameSet)
     >>> def isFeatured(project):
     ...     return project in getUtility(IPillarNameSet).featured_projects

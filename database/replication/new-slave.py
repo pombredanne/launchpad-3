@@ -1,6 +1,6 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bring a new slave online."""
@@ -8,24 +8,28 @@
 __metaclass__ = type
 __all__ = []
 
-import _pythonpath
-
 from optparse import OptionParser
 import subprocess
 import sys
-import time
 from textwrap import dedent
+import time
 
+import _pythonpath
 import psycopg2
+import replication.helpers
+from replication.helpers import LPMAIN_SET_ID
 
 from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import (
-    connect_string, ISOLATION_LEVEL_AUTOCOMMIT)
-from canonical.launchpad.scripts import db_options, logger_options, logger
-from canonical.launchpad.webapp.adapter import _auth_store_tables
+    connect_string,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
+from canonical.launchpad.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 
-import replication.helpers
-from replication.helpers import AUTHDB_SET_ID, LPMAIN_SET_ID
 
 def main():
     parser = OptionParser(
@@ -45,7 +49,7 @@ def main():
 
     # Confirm we can connect to the source database.
     # Keep the connection as we need it later.
-    source_connection_string = ConnectionString(connect_string('slony'))
+    source_connection_string = ConnectionString(connect_string(user='slony'))
     try:
         log.debug(
             "Opening source connection to '%s'" % source_connection_string)
@@ -77,8 +81,6 @@ def main():
     # Get the connection string for masters.
     lpmain_connection_string = get_master_connection_string(
         source_connection, parser, LPMAIN_SET_ID) or source_connection_string
-    authdb_connection_string = get_master_connection_string(
-        source_connection, parser, AUTHDB_SET_ID) or source_connection_string
 
     # Sanity check the target connection string.
     target_connection_string = ConnectionString(raw_target_connection_string)
@@ -130,31 +132,6 @@ def main():
         log.error("Failed to duplicate database schema.")
         return 1
 
-    # Drop the authdb replication set tables we just restored, as they
-    # will be broken if the authdb master is a seperate database to the
-    # lpmain master.
-    log.debug("Dropping (possibly corrupt) authdb tables.")
-    cur = target_con.cursor()
-    for table_name in _auth_store_tables:
-        cur.execute("DROP TABLE IF EXISTS %s CASCADE" % table_name)
-    target_con.commit()
-
-    # Duplicate the authdb schema.
-    log.info("Duplicating authdb schema from '%s' to '%s'" % (
-        authdb_connection_string, target_connection_string))
-    table_args = ["--table=%s" % table for table in _auth_store_tables]
-    # We need to restore the two cross-replication-set views that where
-    # dropped as a side effect of dropping the auth store tables.
-    table_args.append("--table=ValidPersonCache")
-    table_args.append("--table=ValidPersonOrTeamCache")
-    cmd = "pg_dump --schema-only --no-privileges %s %s | psql -1 -q %s" % (
-        ' '.join(table_args),
-        source_connection_string.asPGCommandLineArgs(),
-        target_connection_string.asPGCommandLineArgs())
-    if subprocess.call(cmd, shell=True) != 0:
-        log.error("Failed to duplicate database schema.")
-        return 1
-
     # Trash the broken Slony tables we just duplicated.
     log.debug("Removing slony cruft.")
     cur = target_con.cursor()
@@ -163,21 +140,30 @@ def main():
     del target_con
 
     # Get a list of existing set ids that can be subscribed too. This
-    # is all sets where the origin is the master_node, and set 2 if
-    # the master happens to be configured as a forwarding slave. We
+    # is all sets where the origin is the master_node. We
     # don't allow other sets where the master is configured as a
     # forwarding slave as we have to special case rebuilding the database
-    # schema (such as we do for the authdb replication set 2).
+    # schema, and we want to avoid cascading slave configurations anyway
+    # since we are running an antique Slony-I at the moment - keep it
+    # simple!
+    # We order the sets smallest to largest by number of tables.
+    # This should let us subscribe the quickest sets first for more
+    # immediate feedback.
     source_connection.rollback()
     master_node = replication.helpers.get_master_node(source_connection)
     cur = source_connection.cursor()
     cur.execute("""
-        SELECT set_id FROM _sl.sl_set WHERE set_origin=%d
-        UNION
-        SELECT sub_set AS set_id FROM _sl.sl_subscribe
-        WHERE sub_receiver=%d AND sub_forward IS TRUE AND sub_active IS TRUE
-            AND sub_set=2
-        """ % (master_node.node_id, master_node.node_id))
+        SELECT set_id
+        FROM _sl.sl_set, (
+            SELECT tab_set, count(*) AS tab_count
+            FROM _sl.sl_table GROUP BY tab_set
+            ) AS TableCounts
+        WHERE
+            set_origin=%d
+            AND tab_set = set_id
+        ORDER BY tab_count
+        """
+        % (master_node.node_id,))
     set_ids = [set_id for set_id, in cur.fetchall()]
     log.debug("Discovered set ids %s" % repr(list(set_ids)))
 
@@ -191,7 +177,7 @@ def main():
 
         echo 'Initializing new node.';
         try {
-            store node (id=@new_node, comment='%s');
+            store node (id=@new_node, comment='%s', event node=@master_node);
             echo 'Creating new node paths.';
         """ % (node_id, target_connection_string, comment))
 
@@ -207,21 +193,38 @@ def main():
 
     script += dedent("""\
         } on error { echo 'Failed.'; exit 1; }
+
+        echo 'You may need to restart the Slony daemons now. If the first';
+        echo 'of the following syncs passes then there is no need.';
         """)
 
-    for set_id in set_ids:
+    full_sync = []
+    sync_nicknames = [node.nickname for node in existing_nodes] + ['new_node']
+    for nickname in sync_nicknames:
+        full_sync.append(dedent("""\
+            echo 'Waiting for %(nickname)s sync.';
+            sync (id=@%(nickname)s);
+            wait for event (
+                origin = @%(nickname)s, confirmed=ALL,
+                wait on = @%(nickname)s, timeout=0);
+            echo 'Ok. Replication syncing fine with new node.';
+            """ % {'nickname': nickname}))
+    full_sync = '\n'.join(full_sync)
+    script += full_sync
 
+    for set_id in set_ids:
         script += dedent("""\
         echo 'Subscribing new node to set %d.';
         subscribe set (
             id=%d, provider=@master_node, receiver=@new_node, forward=yes);
-
-        echo 'Waiting for sync... this might take a while...';
+        echo 'Waiting for subscribe to start processing.';
+        echo 'This will block on long running transactions.';
         sync (id = @master_node);
         wait for event (
-            origin = ALL, confirmed = ALL,
+            origin = @master_node, confirmed = ALL,
             wait on = @master_node, timeout = 0);
         """ % (set_id, set_id))
+        script += full_sync
 
     replication.helpers.execute_slonik(script)
 
@@ -249,7 +252,8 @@ def get_master_connection_string(con, parser, set_id):
 
     # Confirm we can connect from here.
     try:
-        test_con = psycopg2.connect(str(connection_string))
+        # Test connection only.  We're not going to use it.
+        psycopg2.connect(str(connection_string))
     except psycopg2.Error, exception:
         parser.error("Failed to connect to using '%s' (%s)" % (
             connection_string, str(exception).strip()))

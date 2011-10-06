@@ -22,7 +22,7 @@ also have a Translations page.)
     Hierarchy: Ubuntu > ?alsa-utils? package
     Tabs:
     * Overview (selected) - not linked
-    * Branches - http://code.launchpad.dev/ubuntu/+source/alsa-utils
+    * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/alsa-utils
     * Blueprints - not linked
     * Translations - not linked
@@ -34,12 +34,12 @@ also have a Translations page.)
     Hierarchy: Ubuntu > ?alsa-utils? package > Bugs
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/+source/alsa-utils
-    * Branches - http://code.launchpad.dev/ubuntu/+source/alsa-utils
+    * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
     * Bugs (selected) - not linked
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: (No main heading)
+    Main heading: Bugs in ?alsa-utils? package in Ubuntu
 
 
 == Distribution source package release ==
@@ -55,7 +55,7 @@ source package.
     Hierarchy: Ubuntu > ?alsa-utils? package > 1.0.9a-4ubuntu1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
-    * Branches - http://code.launchpad.dev/ubuntu/+source/alsa-utils
+    * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/alsa-utils
     * Blueprints - not linked
     * Translations - not linked
@@ -77,7 +77,7 @@ source package release, but that's more than I can chew off for now.)
     Hierarchy: Ubuntu > ?alsa-utils? package > 1.0.9a-4ubuntu1 > i386 build
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
-    * Branches - http://code.launchpad.dev/ubuntu/+source/alsa-utils
+    * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/alsa-utils
     * Blueprints - not linked
     * Translations - not linked
@@ -96,28 +96,12 @@ and Answers.
     Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package
     Tabs:
     * Overview (selected) - not linked
-    * Branches - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
+    * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
+    * Answers - not linked
     Main heading: ?alsa-utils? source package in Hoary
-
-(XXX 20080612 mpt: That should eventually be "?alsa-utils? source package in
-Ubuntu Hoary".)
-
-    >>> anon_browser.open(
-    ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')
-    >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package > Questions
-    Tabs:
-    * Overview - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Branches - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Blueprints - not linked
-    * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Answers (selected) - not linked
-    Main heading: Questions for alsa-utils in Ubuntu Hoary
 
 
 == Distribution series source package release ==
@@ -134,11 +118,11 @@ series source package.
     Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Branches - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
+    * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
+    * Answers - not linked
     Main heading: ?alsa-utils? 1.0.9a-4ubuntu1 source package in
         The Hoary Hedgehog Release
 
@@ -153,7 +137,7 @@ Translations from the distribution series.
     Hierarchy: Ubuntu > Hoary (5.04) > i386
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
-    * Branches - http://code.launchpad.dev/ubuntu/hoary
+    * Code - http://code.launchpad.dev/ubuntu/hoary
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary
     * Blueprints - http://blueprints.launchpad.dev/ubuntu/hoary
     * Translations - http://translations.launchpad.dev/ubuntu/hoary
@@ -171,7 +155,7 @@ Bugs, Blueprints and Translations from the distribution series.
     Hierarchy: Ubuntu > Hoary (5.04) > i386 > pmount
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
-    * Branches - http://code.launchpad.dev/ubuntu/hoary
+    * Code - http://code.launchpad.dev/ubuntu/hoary
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary
     * Blueprints - http://blueprints.launchpad.dev/ubuntu/hoary
     * Translations - http://translations.launchpad.dev/ubuntu/hoary
@@ -190,10 +174,9 @@ Bugs, Blueprints and Translations from the distribution series.
     Hierarchy: Ubuntu > Hoary (5.04) > i386 > pmount > 0.1-1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
-    * Branches - http://code.launchpad.dev/ubuntu/hoary
+    * Code - http://code.launchpad.dev/ubuntu/hoary
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary
     * Blueprints - http://blueprints.launchpad.dev/ubuntu/hoary
     * Translations - http://translations.launchpad.dev/ubuntu/hoary
     * Answers - not linked
     Main heading: pmount 0.1-1 (i386 binary) in ubuntu hoary
-

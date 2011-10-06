@@ -35,47 +35,93 @@ __all__ = [
 
 import re
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
+from storm.expr import (
+    Alias,
+    And,
+    Count,
+    Not,
+    Or,
+    Select,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
-from storm.expr import Alias, And, Count, In, Not, Or, Select
-from storm.store import Store
-
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.bugs.model.bug import Bug, BugAffectsPerson, BugTag
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators.name import valid_name
+from lp.bugs.model.bug import (
+    Bug,
+    BugAffectsPerson,
+    BugTag,
+    )
 from lp.bugs.model.bugsubscription import BugSubscription
-from canonical.launchpad.validators.name import valid_name
+from lp.hardwaredb.interfaces.hwdb import (
+    HWBus,
+    HWSubmissionFormat,
+    HWSubmissionKeyNotUnique,
+    HWSubmissionProcessingStatus,
+    IHWDevice,
+    IHWDeviceClass,
+    IHWDeviceClassSet,
+    IHWDeviceDriverLink,
+    IHWDeviceDriverLinkSet,
+    IHWDeviceNameVariant,
+    IHWDeviceNameVariantSet,
+    IHWDeviceSet,
+    IHWDriver,
+    IHWDriverName,
+    IHWDriverPackageName,
+    IHWDriverSet,
+    IHWSubmission,
+    IHWSubmissionBug,
+    IHWSubmissionBugSet,
+    IHWSubmissionDevice,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionSet,
+    IHWSystemFingerprint,
+    IHWSystemFingerprintSet,
+    IHWVendorID,
+    IHWVendorIDSet,
+    IHWVendorName,
+    IHWVendorNameSet,
+    IllegalQuery,
+    ParameterError,
+    )
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
+from lp.registry.interfaces.product import License
 from lp.registry.model.distribution import Distribution
-from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from lp.hardwaredb.interfaces.hwdb import (
-    HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
-    HWSubmissionProcessingStatus, IHWDevice, IHWDeviceClass,
-    IHWDeviceClassSet, IHWDeviceDriverLink, IHWDeviceDriverLinkSet,
-    IHWDeviceNameVariant, IHWDeviceNameVariantSet, IHWDeviceSet, IHWDriver,
-    IHWDriverName, IHWDriverPackageName, IHWDriverSet, IHWSubmission,
-    IHWSubmissionBug, IHWSubmissionBugSet, IHWSubmissionDevice,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
-    IHWVendorNameSet, IllegalQuery, ParameterError)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import License
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 # The vendor name assigned to new, unknown vendor IDs. See
 # HWDeviceSet.create().
@@ -248,7 +294,9 @@ class HWSubmissionSet:
         return result_set
 
     def search(self, user=None, device=None, driver=None, distribution=None,
-               distroseries=None, architecture=None, owner=None):
+               distroseries=None, architecture=None, owner=None,
+               created_before=None, created_after=None,
+               submitted_before=None, submitted_after=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         args = []
@@ -284,6 +332,14 @@ class HWSubmissionSet:
                 args.append(DistroArchSeries.distroseries == distroseries.id)
         if owner is not None:
             args.append(HWSubmission.owner == owner.id)
+        if created_before is not None:
+            args.append(HWSubmission.date_created <= created_before)
+        if created_after is not None:
+            args.append(HWSubmission.date_created > created_after)
+        if submitted_before is not None:
+            args.append(HWSubmission.date_submitted <= submitted_before)
+        if submitted_after is not None:
+            args.append(HWSubmission.date_submitted > submitted_after)
 
         result_set = store.find(
             HWSubmission,
@@ -297,13 +353,7 @@ class HWSubmissionSet:
         # DISTINCT clause.
         result_set.config(distinct=True)
         result_set.order_by(HWSubmission.id)
-        # The Storm implementation of ResultSet.count() is incorrect if
-        # the select query uses the distinct directive (see bug #217644).
-        # DecoratedResultSet solves this problem by modifying the query
-        # to count only the records appearing in a subquery.
-        # We don't actually need to transform the results, which is why
-        # the second argument is a no-op.
-        return DecoratedResultSet(result_set, lambda result: result)
+        return result_set
 
     def _submissionsSubmitterSelects(
         self, target_column, bus, vendor_id, product_id, driver_name,
@@ -345,7 +395,7 @@ class HWSubmissionSet:
             columns=[HWSubmissionDevice.submissionID],
             tables=device_tables, where=And(*device_clauses))
 
-        clauses.append(In(HWSubmission.id, submission_ids))
+        clauses.append(HWSubmission.id.is_in(submission_ids))
         submissions_with_device = Select(
             columns=[target_column], tables=tables, where=And(*clauses),
             distinct=True)
@@ -407,17 +457,20 @@ class HWSubmissionSet:
 
         tables.append(Bug)
         if bug_ids is not None and bug_ids is not []:
-            clauses.append(In(Bug.id, bug_ids))
+            clauses.append(Bug.id.is_in(bug_ids))
 
         if bug_tags is not None and bug_tags is not []:
             clauses.extend([
-                Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
+                Bug.id == BugTag.bugID, BugTag.tag.is_in(bug_tags)])
             tables.append(BugTag)
 
         # If we OR-combine the search for bug owners, subscribers
         # and affected people on SQL level, the query runs very slow.
         # So let's run the queries separately and join the results
         # on Python level.
+
+        # This would be quicker still if we did it as a single query
+        # using UNION.
 
         owner_query = Select(
             columns=[HWSubmission.ownerID], tables=tables,
@@ -426,7 +479,7 @@ class HWSubmissionSet:
 
         if subscribed_to_bug:
             subscriber_clauses = [
-                BugSubscription.personID == HWSubmission.ownerID,
+                BugSubscription.person_id == HWSubmission.ownerID,
                 BugSubscription.bug == Bug.id,
                 ]
             subscriber_query = Select(
@@ -452,7 +505,8 @@ class HWSubmissionSet:
         if len(user_ids) == 0:
             result = store.find(Person, False)
         else:
-            result = store.find(Person, In(Person.id, list(user_ids)))
+            user_ids = [row[0] for row in user_ids]
+            result = store.find(Person, Person.id.is_in(user_ids))
         result.order_by(Person.displayname)
         return result
 
@@ -476,21 +530,21 @@ class HWSubmissionSet:
             HWSubmissionDevice.submission == HWSubmission.id,
             HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
             HWDeviceDriverLink.device == HWDevice.id,
-            HWDevice.bus_vendor == HWVendorID.id
-            ]
+            HWDevice.bus_vendor == HWVendorID.id]
 
         if bug_ids is not None and bug_ids is not []:
-            clauses.append(In(Bug.id, bug_ids))
+            clauses.append(Bug.id.is_in(bug_ids))
 
         if bug_tags is not None and bug_tags is not []:
-            clauses.extend([Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
+            clauses.extend(
+                [Bug.id == BugTag.bugID, BugTag.tag.is_in(bug_tags)])
 
         clauses.append(_userCanAccessSubmissionStormClause(user))
 
         person_clauses = [Bug.ownerID == HWSubmission.ownerID]
         if subscribed_to_bug:
             person_clauses.append(
-                And(BugSubscription.personID == HWSubmission.ownerID,
+                And(BugSubscription.person_id == HWSubmission.ownerID,
                     BugSubscription.bug == Bug.id))
             tables.append(BugSubscription)
         if affected_by_bug:
@@ -504,8 +558,7 @@ class HWSubmissionSet:
         query = Select(
             columns=[
                 Person.name, HWVendorID.bus,
-                HWVendorID.vendor_id_for_bus, HWDevice.bus_product_id
-                ],
+                HWVendorID.vendor_id_for_bus, HWDevice.bus_product_id],
             tables=tables, where=And(*clauses), distinct=True,
             order_by=[HWVendorID.bus, HWVendorID.vendor_id_for_bus,
                       HWDevice.bus_product_id, Person.name])
@@ -589,6 +642,7 @@ validProductID = {
     HWBus.USB: four_hex_digits,
     HWBus.SCSI: scsi_product,
     }
+
 
 def isValidVendorID(bus, id):
     """Check that the string id is a valid vendor ID for this bus.
@@ -1230,8 +1284,7 @@ def make_submission_device_statistics_clause(
             HWVendorID.vendor_id_for_bus == vendor_id,
             HWDevice.bus_vendor == HWVendorID.id,
             HWDeviceDriverLink.device == HWDevice.id,
-            HWDevice.bus_product_id == product_id
-            ])
+            HWDevice.bus_product_id == product_id])
 
     if driver_name is None and package_name is None:
         where_clauses.append(HWDeviceDriverLink.driver == None)
@@ -1252,6 +1305,7 @@ def make_submission_device_statistics_clause(
                 where_clauses.append(HWDriver.package_name == package_name)
 
     return tables, where_clauses
+
 
 def make_distro_target_clause(distro_target):
     """Create a where expression and a table list to limit results to a
@@ -1282,6 +1336,7 @@ def make_distro_target_clause(distro_target):
                 'Parameter distro_target must be an IDistribution, '
                 'IDistroSeries or IDistroArchSeries')
     return ([], [])
+
 
 def _userCanAccessSubmissionStormClause(user):
     """Limit results of HWSubmission queries to rows the user can access.

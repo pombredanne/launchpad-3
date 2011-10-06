@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad database policies."""
@@ -14,26 +14,50 @@ __all__ = [
     'SlaveOnlyDatabasePolicy',
     ]
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
 from textwrap import dedent
 
-from storm.cache import Cache, GenerationalCache
-from storm.exceptions import TimeoutError
+from storm.cache import (
+    Cache,
+    GenerationalCache,
+    )
 from storm.zope.interfaces import IZStorm
-from zope.session.interfaces import ISession, IClientIdManager
-from zope.component import getUtility
-from zope.interface import implements, alsoProvides
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.component import getUtility
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
+from zope.session.interfaces import (
+    IClientIdManager,
+    ISession,
+    )
 
-from canonical.config import config, dbconfig
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.database.sqlbase import StupidCache
-from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy, IStoreSelector,
-    MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR,
+    DisallowedStore,
+    IDatabasePolicy,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    ReadOnlyModeDisallowedStore,
+    SLAVE_FLAVOR,
+    )
 
 
 def _now():
@@ -64,10 +88,6 @@ class BaseDatabasePolicy:
     """Base class for database policies."""
     implements(IDatabasePolicy)
 
-    # The section name to retrieve database connection details from.
-    # None means the default.
-    config_section = None
-
     # The default flavor to use.
     default_flavor = MASTER_FLAVOR
 
@@ -79,9 +99,7 @@ class BaseDatabasePolicy:
         if flavor == DEFAULT_FLAVOR:
             flavor = self.default_flavor
 
-        config_section = self.config_section or dbconfig.getSectionName()
-
-        store_name = '%s-%s-%s' % (config_section, name, flavor)
+        store_name = '%s-%s' % (name, flavor)
         store = getUtility(IZStorm).get(
             store_name, 'launchpad:%s' % store_name)
         if not getattr(store, '_lp_store_initialized', False):
@@ -125,6 +143,7 @@ class BaseDatabasePolicy:
 
 class DatabaseBlockedPolicy(BaseDatabasePolicy):
     """`IDatabasePolicy` that blocks all access to the database."""
+
     def getStore(self, name, flavor):
         """Raises `DisallowedStore`. No Database access is allowed."""
         raise DisallowedStore(name, flavor)
@@ -156,6 +175,7 @@ class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
     This policy is used for Feeds requests and other always-read only request.
     """
     default_flavor = SLAVE_FLAVOR
+
     def getStore(self, name, flavor):
         """See `IDatabasePolicy`."""
         if flavor == MASTER_FLAVOR:
@@ -167,13 +187,13 @@ class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
 def LaunchpadDatabasePolicyFactory(request):
     """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    # We need to select a non-load balancing DB policy for +opstats so
+    # We need to select a non-load balancing DB policy for some status URLs so
     # it doesn't query the DB for lag information (this page should not
     # hit the database at all). We haven't traversed yet, so we have
     # to sniff the request this way.  Even though PATH_INFO is always
     # present in real requests, we need to tread carefully (``get``) because
     # of test requests in our automated tests.
-    if request.get('PATH_INFO') == u'/+opstats':
+    if request.get('PATH_INFO') in [u'/+opstats', u'/+haproxy']:
         return DatabaseBlockedPolicy(request)
     elif is_read_only():
         return ReadOnlyLaunchpadDatabasePolicy(request)
@@ -186,6 +206,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
     Selects the DEFAULT_FLAVOR based on the request.
     """
+
     def __init__(self, request):
         # The super constructor is a no-op.
         # pylint: disable-msg=W0231
@@ -314,7 +335,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
             logging.error(
                 "No data in DatabaseReplicationLag for node %d"
                 % slave_node_id)
-            return timedelta(days=999) # A long, long time.
+            return timedelta(days=999)
         return lag[0]
 
 
@@ -340,6 +361,7 @@ class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
 
     Access to all master Stores is blocked.
     """
+
     def getStore(self, name, flavor):
         """See `IDatabasePolicy`.
 
@@ -359,6 +381,7 @@ class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
 
 class WhichDbView(LaunchpadView):
     "A page that reports which database is being used by default."
+
     def render(self):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         dbname = store.execute("SELECT current_database()").get_one()[0]

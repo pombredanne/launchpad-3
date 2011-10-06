@@ -3,8 +3,6 @@
 
 """Functions to build PO templates on the build slave."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'check_potfiles_in',
@@ -35,17 +33,35 @@ def find_potfiles_in():
 
 
 def check_potfiles_in(path):
-    """Check if the files listed in the POTFILES.in file exist."""
+    """Check if the files listed in the POTFILES.in file exist.
+
+    Running 'intltool-update -m' will perform this check and also take a
+    possible POTFILES.skip into account. It stores details about 'missing'
+    (files that should be in POTFILES.in) and 'notexist'ing files (files
+    that are listed in POTFILES.in but don't exist) in files which are
+    named accordingly. These files are removed before the run.
+
+    We don't care about files missing from POTFILES.in but want to know if
+    all listed files exist. The presence of the 'notexist' file tells us
+    that.
+
+    :param path: The directory where POTFILES.in resides.
+    :returns: False if the directory does not exist, if an error occurred
+        when executing intltool-update or if files are missing from
+        POTFILES.in. True if all went fine and all files in POTFILES.in
+        actually exist.  
+    """
     current_path = os.getcwd()
 
     try:
         os.chdir(path)
     except OSError, e:
-        # Abort nicely if directory does not exist.
+        # Abort nicely if the directory does not exist.
         if e.errno == errno.ENOENT:
             return False
         raise
     try:
+        # Remove stale files from a previous run of intltool-update -m.
         for unlink_name in ['missing', 'notexist']:
             try:
                 os.unlink(unlink_name)
@@ -62,6 +78,7 @@ def check_potfiles_in(path):
         os.chdir(current_path)
 
     if returncode != 0:
+        # An error occurred when executing intltool-update.
         return False
 
     notexist = os.path.join(path, "notexist")
@@ -69,19 +86,49 @@ def check_potfiles_in(path):
 
 
 def find_intltool_dirs():
-    """Search the current directory and its subdiretories for intltool
-    structure.
+    """Search for directories with intltool structure.
+
+    The current directory and its subdiretories are searched. An 'intltool
+    structure' is a directory that contains a POFILES.in file and where all
+    files listed in that POTFILES.in do actually exist. The latter
+    condition makes sure that the file is not stale.
+
+    :returns: A list of directory names.
     """
     return sorted(filter(check_potfiles_in, find_potfiles_in()))
 
 
-def _try_substitution(path, substitution):
-    """Try to find a substitution in the given config file.
+def _get_AC_PACKAGE_NAME(config_file):
+    """Get the value of AC_PACKAGE_NAME from function parameters.
+
+    The value of AC_PACKAGE_NAME is either the first or the fourth
+    parameter of the AC_INIT call if it is called with at least two
+    parameters.
+    """
+    params = config_file.getFunctionParams("AC_INIT")
+    if params is None or len(params) < 2:
+        return None
+    if len(params) < 4:
+        return params[0]
+    else:
+        return params[3]
+
+
+def _try_substitution(config_files, varname, substitution):
+    """Try to find a substitution in the config files.
 
     :returns: The completed substitution or None if none was found.
     """
-    subst_value = ConfigFile(path).getVariable(substitution.name)
-    if subst_value is None:
+    subst_value = None
+    if varname == substitution.name:
+        # Do not look for the same name in the current file.
+        config_files = config_files[:-1]
+    for config_file in reversed(config_files):
+        subst_value = config_file.getVariable(substitution.name)
+        if subst_value is not None:
+            # Substitution found.
+            break
+    else:
         # No substitution found.
         return None
     return substitution.replace(subst_value)
@@ -94,49 +141,50 @@ def get_translation_domain(dirname):
     translation domain the build environment provides. The domain is usually
     defined in the GETTEXT_PACKAGE variable in one of the build files. Another
     variant is DOMAIN in the Makevars file. This function goes through the
-    ordered list of these possible locations, the order having been copied
-    from intltool-update, and tries to find a valid value.
+    ordered list of these possible locations, top to bottom, and tries to
+    find a valid value. Since the same variable name may be defined in
+    multiple files (usually configure.ac and Makefile.in.in), it needs to
+    keep trying with the next file, until it finds the most specific
+    definition.
 
     If the found value contains a substitution, either autoconf style (@...@)
-    or make style ($(...)), the search is continued in the same file and down
-    the list of files, now searching for the substitution. Multiple
+    or make style ($(...)), the search is continued in the same file and back
+    up the list of files, now searching for the substitution. Multiple
     substitutions or multi-level substitutions are not supported.
     """
     locations = [
-        ('Makefile.in.in', 'GETTEXT_PACKAGE'),
-        ('../configure.ac', 'GETTEXT_PACKAGE'),
-        ('../configure.in', 'GETTEXT_PACKAGE'),
-        ('Makevars', 'DOMAIN'),
+        ('../configure.ac', 'GETTEXT_PACKAGE', True),
+        ('../configure.in', 'GETTEXT_PACKAGE', True),
+        ('Makefile.in.in', 'GETTEXT_PACKAGE', False),
+        ('Makevars', 'DOMAIN', False),
     ]
     value = None
     substitution = None
-    for filename, varname in locations:
+    config_files = []
+    for filename, varname, keep_trying in locations:
         path = os.path.join(dirname, filename)
         if not os.access(path, os.R_OK):
             # Skip non-existent files.
             continue
-        if substitution is None:
-            value = ConfigFile(path).getVariable(varname)
-            if value is not None:
-                # Check if the value need a substitution.
+        config_files.append(ConfigFile(path))
+        new_value = config_files[-1].getVariable(varname)
+        if new_value is not None:
+            value = new_value
+            if value == "AC_PACKAGE_NAME":
+                value = _get_AC_PACKAGE_NAME(config_files[-1])
+            else:
+                # Check if the value needs a substitution.
                 substitution = Substitution.get(value)
                 if substitution is not None:
-                    # Try to substitute with value from current file but
-                    # avoid recursion.
-                    if substitution.name != varname:
-                        value = _try_substitution(path, substitution)
-                    else:
-                        # The value has not been found yet but is now stored
-                        # in the Substitution instance.
-                        value = None
-        else:
-            value = _try_substitution(path, substitution)
-        if value is not None:
+                    # Try to substitute with value.
+                    value = _try_substitution(
+                        config_files, varname, substitution)
+                    if value is None:
+                        # No substitution found; the setup is broken.
+                        break
+        if value is not None and not keep_trying:
             # A value has been found.
             break
-    if substitution is not None and not substitution.replaced:
-        # Substitution failed.
-        return None
     return value
 
 
@@ -150,6 +198,12 @@ def chdir(directory):
 
 def generate_pot(podir, domain):
     """Generate one PO template using intltool.
+
+    Although 'intltool-update -p' can try to find out the translation domain
+    we trust our own code more on this one and simply specify the domain.
+    Also, the man page for 'intltool-update' states that the '-g' option
+    "has an additional effect: the name of current working directory is no
+    more  limited  to 'po' or 'po-*'." We don't want that limit either.
 
     :param podir: The PO directory in which to build template.
     :param domain: The translation domain to use as the name of the template.
@@ -185,17 +239,51 @@ class ConfigFile(object):
             conf_file = file(file_or_name)
         else:
             conf_file = file_or_name
-        self.content_lines = conf_file.readlines()
+        self.content = conf_file.read()
+
+    def _stripQuotes(self, identifier):
+        """Strip surrounding quotes from `identifier`, if present.
+
+        :param identifier: a string, possibly surrounded by matching
+            'single,' "double," or [bracket] quotes.
+        :return: `identifier` but with the outer pair of matching quotes
+            removed, if they were there.
+        """
+        if len(identifier) < 2:
+            return identifier
+
+        quote_pairs = [
+            ('"', '"'),
+            ("'", "'"),
+            ("[", "]"),
+            ]
+        for (left, right) in quote_pairs:
+            if identifier.startswith(left) and identifier.endswith(right):
+                return identifier[1:-1]
+
+        return identifier
 
     def getVariable(self, name):
         """Search the file for a variable definition with this name."""
-        pattern = re.compile("^%s[ \t]*=[ \t]*([^\s]*)" % re.escape(name))
-        variable = None
-        for line in self.content_lines:
-            result = pattern.match(line)
-            if result is not None:
-                variable = result.group(1)
-        return variable
+        pattern = re.compile(
+            "^%s[ \t]*=[ \t]*([^\s]*)" % re.escape(name), re.M)
+        result = pattern.search(self.content)
+        if result is None:
+            return None
+        return self._stripQuotes(result.group(1))
+
+    def getFunctionParams(self, name):
+        """Search file for a function call with this name, return parameters.
+        """
+        pattern = re.compile("^%s\(([^)]*)\)" % re.escape(name), re.M)
+        result = pattern.search(self.content)
+        if result is None:
+            return None
+        else:
+            return [
+                self._stripQuotes(param.strip())
+                for param in result.group(1).split(',')
+                ]
 
 
 class Substitution(object):

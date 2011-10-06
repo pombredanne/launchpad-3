@@ -8,14 +8,15 @@ __all__ = [
     'IBuildFarmBuildJob'
     ]
 
-from canonical.launchpad import _
 from lazr.restful.fields import Reference
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.soyuz.interfaces.build import IBuild
+
+from canonical.launchpad import _
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 
 
-class IBuildFarmBuildJob(IBuildFarmJob):
+class IBuildFarmBuildJob(IBuildFarmJobOld):
     """An `IBuildFarmJob` with an `IBuild` reference."""
     build = Reference(
-        IBuild, title=_("Build"), required=True, readonly=True,
+        IBinaryPackageBuild, title=_("Build"), required=True, readonly=True,
         description=_("Build record associated with this job."))

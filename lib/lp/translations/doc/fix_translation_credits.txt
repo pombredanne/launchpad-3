@@ -9,7 +9,8 @@ Marks all existing translation credits as translated.
     >>> print returncode
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile:
+        /var/lock/launchpad-fix-translation-credits.lock
     INFO    Figuring out POFiles that need fixing: this may take a while...
     INFO    Marking up a total of 3 credits as translated.
     INFO    Processed ...
@@ -18,5 +19,5 @@ Marks all existing translation credits as translated.
 After altering the database from a separate process, we must tell the
 test setup that the database is dirty in spite of appearances.
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-    >>> LaunchpadTestSetup().force_dirty_database()
+    >>> from canonical.testing.layers import DatabaseLayer
+    >>> DatabaseLayer.force_dirty_database()

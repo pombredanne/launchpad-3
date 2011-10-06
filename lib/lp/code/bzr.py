@@ -9,31 +9,54 @@ __all__ = [
     'ControlFormat',
     'CURRENT_BRANCH_FORMATS',
     'CURRENT_REPOSITORY_FORMATS',
+    'get_branch_formats',
     'RepositoryFormat',
     ]
 
 
-# Ensure correct plugins are loaded. Do not delete this comment or the line
-# below this comment.
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
 import lp.codehosting
-from bzrlib.branch import (
-    BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6, BzrBranchFormat7)
-from bzrlib.bzrdir import (
-    BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
-from bzrlib.plugins.loom.branch import (
-    BzrBranchLoomFormat1, BzrBranchLoomFormat6)
-from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
-    RepositoryFormatKnit3, RepositoryFormatKnit4)
-from bzrlib.repofmt.pack_repo import (
-    RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
-    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5)
-from bzrlib.repofmt.weaverepo import (
-    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
-    RepositoryFormat7)
-from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
 
-from lazr.enum import DBEnumeratedType, DBItem
+from bzrlib.branch import (
+    BranchReferenceFormat,
+    BzrBranchFormat5,
+    BzrBranchFormat6,
+    BzrBranchFormat7,
+    )
+from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.plugins.loom.branch import (
+    BzrBranchLoomFormat1,
+    BzrBranchLoomFormat6,
+    )
+from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
+from bzrlib.plugins.weave_fmt.bzrdir import (
+    BzrDirFormat4,
+    BzrDirFormat5,
+    BzrDirFormat6,
+    )
+from bzrlib.plugins.weave_fmt.repository import (
+    RepositoryFormat4,
+    RepositoryFormat5,
+    RepositoryFormat6,
+    RepositoryFormat7,
+    )
+from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
+from bzrlib.repofmt.knitpack_repo import (
+    RepositoryFormatKnitPack1,
+    RepositoryFormatKnitPack3,
+    RepositoryFormatKnitPack4,
+    RepositoryFormatKnitPack5,
+    )
+from bzrlib.repofmt.knitrepo import (
+    RepositoryFormatKnit1,
+    RepositoryFormatKnit3,
+    RepositoryFormatKnit4,
+    )
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 def _format_enum(num, format, format_string=None, description=None):
@@ -45,7 +68,20 @@ def _format_enum(num, format, format_string=None, description=None):
     return DBItem(num, format_string, description)
 
 
-class BranchFormat(DBEnumeratedType):
+class BazaarFormatEnum(DBEnumeratedType):
+    """Base class for the format enums."""
+
+    @classmethod
+    def get_enum(klass, format_name):
+        """Find the matching enum value for the format name specified."""
+        for value in klass.items:
+            if value.title == format_name:
+                return value
+        else:
+            return klass.UNRECOGNIZED
+
+
+class BranchFormat(BazaarFormatEnum):
     """Branch on-disk format.
 
     This indicates which (Bazaar) format is used on-disk.  The list must be
@@ -81,7 +117,7 @@ class BranchFormat(DBEnumeratedType):
         107, "Bazaar-NG Loom branch format 7\n", "Loom branch format 7")
 
 
-class RepositoryFormat(DBEnumeratedType):
+class RepositoryFormat(BazaarFormatEnum):
     """Repository on-disk format.
 
     This indicates which (Bazaar) format is used on-disk.  The list must be
@@ -177,6 +213,11 @@ class RepositoryFormat(DBEnumeratedType):
         "1.6.1-subtree with B+Tree indices.\n"
         )
 
+    BZR_DEV_8 = DBItem(306,
+        "Bazaar development format 8\n",
+        "2a repository format with support for nested trees.\n"
+        )
+
     BZR_CHK1 = DBItem(400,
         "Bazaar development format - group compression and chk inventory"
         " (needs bzr.dev from 1.14)\n",
@@ -194,7 +235,7 @@ class RepositoryFormat(DBEnumeratedType):
     BZR_CHK_2A = _format_enum(415, RepositoryFormat2a)
 
 
-class ControlFormat(DBEnumeratedType):
+class ControlFormat(BazaarFormatEnum):
     """Control directory (BzrDir) format.
 
     This indicates what control directory format is on disk.  Must be updated
@@ -233,6 +274,20 @@ CURRENT_REPOSITORY_FORMATS = (
     RepositoryFormat.BZR_DEV_1_SUBTREE,
     RepositoryFormat.BZR_DEV_2,
     RepositoryFormat.BZR_DEV_2_SUBTREE,
+    RepositoryFormat.BZR_DEV_8,
     RepositoryFormat.BZR_CHK1,
     RepositoryFormat.BZR_CHK2,
     RepositoryFormat.BZR_CHK_2A)
+
+
+def get_branch_formats(bzr_branch):
+    """Return a tuple of format enumerations for the bazaar branch.
+
+    :returns: tuple of (ControlFormat, BranchFormat, RepositoryFormat)
+    """
+    control_string = bzr_branch.bzrdir._format.get_format_string()
+    branch_string = bzr_branch._format.get_format_string()
+    repository_string = bzr_branch.repository._format.get_format_string()
+    return (ControlFormat.get_enum(control_string),
+            BranchFormat.get_enum(branch_string),
+            RepositoryFormat.get_enum(repository_string))

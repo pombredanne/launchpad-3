@@ -5,10 +5,19 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:webservice="http://namespaces.canonical.com/webservice"
   xmlns:lp="http://namespaces.canonical.com/lp"
   i18n_domain="launchpad">
 
   <include package=".browser" />
+
+  <publisher
+      name="answers"
+      factory="lp.answers.publisher.answers_request_publication_factory"/>
+  <utility
+      component="lp.answers.publisher.AnswersLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="answers" />
 
     <subscriber
         for=".interfaces.question.IQuestion
@@ -52,17 +61,21 @@
         handler=".karma.question_comment_added"
         />
 
-    <subscriber
-        for=".interfaces.question.IQuestion
-             lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler=".model.questionreopening.create_questionreopening"
-        />
-
     <class class=".model.questionreopening.QuestionReopening">
         <allow
           interface=".interfaces.questionreopening.IQuestionReopening"
           />
     </class>
+
+    <class class=".model.questionjob.QuestionEmailJob">
+      <allow interface=".interfaces.questionjob.IQuestionEmailJob"/>
+    </class>
+
+    <securedutility
+        component=".model.questionjob.QuestionEmailJob"
+        provides=".interfaces.questionjob.IQuestionEmailJobSource">
+      <allow interface=".interfaces.questionjob.IQuestionEmailJobSource"/>
+    </securedutility>
 
     <!-- QuestionSubscription -->
     <class class=".model.questionsubscription.QuestionSubscription">
@@ -86,8 +99,9 @@
                     can_request_info can_give_info can_give_answer
                     can_confirm_answer can_reopen
                     subscriptions isSubscribed getRecipients
-                    getDirectRecipients getIndirectRecipients
-                    getDirectSubscribers getIndirectSubscribers"
+                    direct_recipients indirect_recipients
+                    getDirectSubscribers getIndirectSubscribers
+                    getDirectSubscribersWithDetails"
       />
     <require
       permission="launchpad.Owner"
@@ -100,9 +114,13 @@
       set_attributes="title description datedue target language"
       />
     <require
-      permission="launchpad.Moderate"
+      permission="launchpad.Append"
       attributes="reject"
       set_attributes="assignee"
+      />
+    <require
+      permission="launchpad.Moderate"
+      attributes="setCommentVisibility"
       />
     <require
       permission="launchpad.Admin"
@@ -122,16 +140,6 @@
     <allow interface=".interfaces.questionmessage.IQuestionMessage"/>
   </class>
 
-  <class class=".model.questionsperson.QuestionsPerson">
-    <allow interface=".interfaces.questionsperson.IQuestionsPerson"/>
-  </class>
-
-  <adapter
-    for="lp.registry.interfaces.person.IPerson"
-    provides=".interfaces.questionsperson.IQuestionsPerson"
-    factory=".model.questionsperson.QuestionsPerson"
-    trusted="yes"
-    />
   <adapter
     for=".interfaces.question.IQuestion"
     provides=".interfaces.questiontarget.IQuestionTarget"
@@ -144,30 +152,43 @@
     />
   <adapter
     provides=".interfaces.faqtarget.IFAQTarget"
-    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
     factory=".adapters.distrosourcepackage_to_faqtarget"
     />
   <adapter
-    for="canonical.launchpad.interfaces.IDistroSeries"
+    for="lp.registry.interfaces.distroseries.IDistroSeries"
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.series_to_questiontarget"
     />
     <adapter
-      for="canonical.launchpad.interfaces.IProductSeries"
+      for="lp.registry.interfaces.productseries.IProductSeries"
       provides=".interfaces.questiontarget.IQuestionTarget"
       factory=".adapters.series_to_questiontarget"
       />
   <adapter
-    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.sourcepackagerelease_to_questiontarget"
+    />
+  <adapter
+    for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+    provides=".interfaces.questiontarget.IQuestionTarget"
+    factory=".adapters.sourcepackage_to_questiontarget"
     />
 
   <adapter
     provides=".interfaces.faqtarget.IFAQTarget"
-    for="canonical.launchpad.interfaces.ISourcePackage"
+    for="lp.registry.interfaces.sourcepackage.ISourcePackage"
     factory=".adapters.sourcepackage_to_faqtarget"
     />
+
+  <securedutility
+    name="UsesAnswersDistribution"
+    component=".vocabulary.UsesAnswersDistributionVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
   <!-- QuestionSet -->
   <class class=".model.question.QuestionSet">
@@ -235,7 +256,7 @@
 
 
   <lp:help-folder
-      folder="help" type="canonical.launchpad.layers.AnswersLayer" />
+      folder="help" type="lp.answers.publisher.AnswersLayer" />
   <adapter
       name="answers"
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -254,4 +275,6 @@
       for="lp.registry.interfaces.person.IPerson"
       factory="lp.answers.browser.questiontarget.AnswersVHostBreadcrumb"
       permission="zope.Public"/>
+
+  <webservice:register module="lp.answers.interfaces.webservice" />
 </configure>

@@ -16,7 +16,7 @@ Let's say we rename the '+old_tickets_page' view on IQuestionTarget to
 like this:
 
     >>> request = LaunchpadTestRequest()
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> view = RenamedView(ubuntu, request, '+questions')
 
@@ -89,7 +89,7 @@ raise an error. e.g. http://launchpad.dev/ubuntu/+tickets/foo
     >>> view.publishTraverse(request, u'foo')
     Traceback (most recent call last):
      ...
-    NotFound: Object: u'foo', name: <Distribution 'Ubuntu' (ubuntu)>
+    NotFound: Object: <Distribution 'Ubuntu' (ubuntu)>, name: u'foo'
 
 
 == Registering from ZCML ==
@@ -103,7 +103,7 @@ browser:renamed-page is available for this purpose.
     ...   <include package="canonical.launchpad.webapp" file="meta.zcml" />
     ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:renamed-page
-    ...       for="canonical.launchpad.interfaces.IQuestionTarget"
+    ...       for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     ...       name="+old_tickets_page"
     ...       new_name="+questions"
     ...       rootsite="answers"

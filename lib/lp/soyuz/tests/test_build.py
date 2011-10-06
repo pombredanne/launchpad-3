@@ -1,295 +1,411 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test Build features."""
+__metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from exceptions import AssertionError
 import pytz
-import unittest
-
-from storm.store import Store
+import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.testing import LaunchpadZopelessLayer
-from lp.services.job.model.job import Job
-from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
-from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.soyuz.interfaces.build import IBuild, IBuildSet
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import CannotBeRescored
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
-from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.sampledata import ADMIN_EMAIL
 
 
-class TestBuildInterface(TestCaseWithFactory):
+class TestBuild(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
-    def test_providesInterfaces(self):
-        # Build provides IBuildBase and IBuild.
-        publisher = SoyuzTestPublisher()
-        publisher.prepareBreezyAutotest()
-        gedit_src_hist = publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        build = gedit_src_hist.createMissingBuilds()[0]
+    def setUp(self):
+        super(TestBuild, self).setUp()
+        self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        self.pf = self.factory.makeProcessorFamily()
+        pf_proc = self.pf.addProcessor(self.factory.getUniqueString(), '', '')
+        self.distroseries = self.factory.makeDistroSeries()
+        self.das = self.factory.makeDistroArchSeries(
+            distroseries=self.distroseries, processorfamily=self.pf,
+            supports_virtualized=True)
+        with person_logged_in(self.admin):
+            self.publisher = SoyuzTestPublisher()
+            self.publisher.prepareBreezyAutotest()
+            self.distroseries.nominatedarchindep = self.das
+            self.publisher.addFakeChroots(distroseries=self.distroseries)
+            self.builder = self.factory.makeBuilder(processor=pf_proc)
+        self.now = datetime.now(pytz.UTC)
+        self.properties = {
+            'log': 1, 'date_started': self.now, 'date_finished': self.now,
+            'builder': self.builder, 'status': BuildStatus.FAILEDTOUPLOAD,
+            'dependencies': u'whatever', 'upload_log': 1}
 
-        # The IBuild.calculated_buildstart property asserts
-        # that both datebuilt and buildduration are set.
-        build.datebuilt = datetime.now(pytz.UTC)
-        build.buildduration = timedelta(0, 1)
+    def test_title(self):
+        # A build has a title which describes the context source version and
+        # in which series and architecture it is targeted for.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        expected_title = '%s build of %s %s in %s %s RELEASE' % (
+            self.das.architecturetag, spph.source_package_name,
+            spph.source_package_version, self.distroseries.distribution.name,
+            self.distroseries.name)
+        self.assertEquals(expected_title, build.title)
 
-        self.assertProvides(build, IBuildBase)
-        self.assertProvides(build, IBuild)
+    def test_linking(self):
+        # A build directly links to the archive, distribution, distroseries,
+        # distroarchseries, pocket in its context and also the source version
+        # that generated it.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        self.assertEquals(self.distroseries.main_archive, build.archive)
+        self.assertEquals(self.distroseries.distribution, build.distribution)
+        self.assertEquals(self.distroseries, build.distro_series)
+        self.assertEquals(self.das, build.distro_arch_series)
+        self.assertEquals(PackagePublishingPocket.RELEASE, build.pocket)
+        self.assertEquals(self.das.architecturetag, build.arch_tag)
+        self.assertTrue(build.is_virtualized)
+        self.assertEquals(
+            '%s - %s' % (spph.source_package_name,
+                spph.source_package_version),
+            build.source_package_release.title)
 
-class TestBuildUpdateDependencies(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def _setupSimpleDepwaitContext(self):
-        """Use `SoyuzTestPublisher` to setup a simple depwait context.
-
-        Return an `IBuild` in MANUALDEWAIT state and depending on a
-        binary that exists and is reachable.
-        """
-        test_publisher = SoyuzTestPublisher()
-        test_publisher.prepareBreezyAutotest()
-
-        depwait_source = test_publisher.getPubSource(
-            sourcename='depwait-source')
-
-        test_publisher.getPubBinaries(
-            binaryname='dep-bin',
+    def test_processed_builds(self):
+        # Builds which were already processed also offer additional
+        # information about its process such as the time it was started and
+        # finished and its 'log' and 'upload_changesfile' as librarian files.
+        spn=self.factory.getUniqueString()
+        version="%s.1" % self.factory.getUniqueInteger()
+        spph = self.publisher.getPubSource(
+            sourcename=spn, version=version,
+            distroseries=self.distroseries,
             status=PackagePublishingStatus.PUBLISHED)
+        with person_logged_in(self.admin):
+            binary = self.publisher.getPubBinaries(binaryname=spn,
+                distroseries=self.distroseries, pub_source=spph,
+                version=version, builder=self.builder)
+        build = binary[0].binarypackagerelease.build
+        self.assertTrue(build.was_built)
+        self.assertEquals(
+            PackageUploadStatus.DONE, build.package_upload.status)
+        self.assertEquals(
+            datetime(2008, 01, 01, 0, 0, 0, tzinfo=pytz.UTC),
+            build.date_started)
+        self.assertEquals(
+            datetime(2008, 01, 01, 0, 5, 0, tzinfo=pytz.UTC),
+            build.date_finished)
+        self.assertEquals(timedelta(minutes=5), build.duration)
+        expected_buildlog = 'buildlog_%s-%s-%s.%s_%s_FULLYBUILT.txt.gz' % (
+            self.distroseries.distribution.name, self.distroseries.name,
+            self.das.architecturetag, spn, version)
+        self.assertEquals(expected_buildlog, build.log.filename)
+        url_start = (
+            'http://launchpad.dev/%s/+source/%s/%s/+build/%s/+files' % (
+                self.distroseries.distribution.name, spn, version, build.id))
+        expected_buildlog_url = '%s/%s' % (url_start, expected_buildlog)
+        self.assertEquals(expected_buildlog_url, build.log_url)
+        expected_changesfile = '%s_%s_%s.changes' % (
+            spn, version, self.das.architecturetag)
+        self.assertEquals(
+            expected_changesfile, build.upload_changesfile.filename)
+        expected_changesfile_url = '%s/%s' % (url_start, expected_changesfile)
+        self.assertEquals(expected_changesfile_url, build.changesfile_url)
+        # Since this build was sucessful, it can not be retried
+        self.assertFalse(build.can_be_retried)
 
-        [depwait_build] = depwait_source.createMissingBuilds()
-        depwait_build.buildstate = BuildStatus.MANUALDEPWAIT
-        depwait_build.dependencies = 'dep-bin'
+    def test_current_component(self):
+        # The currently published component is provided via the
+        # 'current_component' property.  It looks over the publishing records
+        # and finds the current publication of the source in question.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        self.assertEquals('main', build.current_component.name)
+        # It may not be the same as
+        self.assertEquals('main', build.source_package_release.component.name)
+        # If the package has no uploads, its package_upload is None
+        self.assertEquals(None, build.package_upload)
 
-        return depwait_build
+    def test_retry_for_released_series(self):
+        # Builds can not be retried for released distroseries
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, processorfamily=self.pf,
+            supports_virtualized=True)
+        with person_logged_in(self.admin):
+            distroseries.nominatedarchindep = das
+            distroseries.status = SeriesStatus.OBSOLETE
+            self.publisher.addFakeChroots(distroseries=distroseries)
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=distroseries)
+        [build] = spph.createMissingBuilds()
+        self.assertFalse(build.can_be_retried)
 
-    def testBuildqueueRemoval(self):
-        """Test removing buildqueue items.
+    def test_partner_retry_for_released_series(self):
+        # Builds for PARTNER can be retried -- even if the distroseries is
+        # released.
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, processorfamily=self.pf,
+            supports_virtualized=True)
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PARTNER,
+            distribution=distroseries.distribution)
+        with person_logged_in(self.admin):
+            distroseries.nominatedarchindep = das
+            distroseries.status = SeriesStatus.OBSOLETE
+            self.publisher.addFakeChroots(distroseries=distroseries)
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=distroseries, archive=archive)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.FAILEDTOBUILD
+        self.assertTrue(build.can_be_retried)
 
-        Removing a Buildqueue row should also remove its associated
-        BuildPackageJob and Job rows.
-        """
-        # Create a build in depwait.
-        depwait_build = self._setupSimpleDepwaitContext()
+    def test_retry(self):
+        # A build can be retried
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.FAILEDTOBUILD
+        self.assertTrue(build.can_be_retried)
 
-        # Grab the relevant db records for later comparison.
-        store = Store.of(depwait_build)
-        build_package_job = store.find(
-            BuildPackageJob,
-            depwait_build.id == BuildPackageJob.build).one()
-        build_package_job_id = build_package_job.id
-        job_id = store.find(Job, Job.id == build_package_job.job.id).one().id
-        build_queue_id = store.find(
-            BuildQueue, BuildQueue.job == job_id).one().id
+    def test_uploadlog(self):
+        # The upload log can be attached to a build
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        self.assertEquals(None, build.upload_log)
+        self.assertEquals(None, build.upload_log_url)
+        build.storeUploadLog('sample upload log')
+        expected_filename = 'upload_%s_log.txt' % build.id
+        self.assertEquals(expected_filename, build.upload_log.filename)
+        url_start = (
+            'http://launchpad.dev/%s/+source/%s/%s/+build/%s/+files' % (
+                self.distroseries.distribution.name, spph.source_package_name,
+                spph.source_package_version, build.id))
+        expected_url = '%s/%s' % (url_start, expected_filename)
+        self.assertEquals(expected_url, build.upload_log_url)
 
-        depwait_build.buildqueue_record.destroySelf()
+    def test_retry_does_not_modify_first_dispatch(self):
+        # Retrying a build does not modify the first dispatch time of the
+        # build
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.FAILEDTOBUILD
+            # The build can't be queued if we're going to retry it
+            build.buildqueue_record.destroySelf()
+        removeSecurityProxy(build).date_first_dispatched = self.now
+        with person_logged_in(self.admin):
+            build.retry()
+        self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
+        self.assertEquals(self.now, build.date_first_dispatched)
+        self.assertEquals(None, build.log)
+        self.assertEquals(None, build.upload_log)
 
-        # Test that the records above no longer exist in the db.
-        self.assertEqual(
-            store.find(
-                BuildPackageJob,
-                BuildPackageJob.id == build_package_job_id).count(),
-            0)
-        self.assertEqual(
-            store.find(Job, Job.id == job_id).count(),
-            0)
-        self.assertEqual(
-            store.find(BuildQueue, BuildQueue.id == build_queue_id).count(),
-            0)
+    def test_create_bpr(self):
+        # Test that we can create a BPR from a given build.
+        spn = self.factory.getUniqueString()
+        version = "%s.1" % self.factory.getUniqueInteger()
+        bpn = self.factory.makeBinaryPackageName(name=spn)
+        spph = self.publisher.getPubSource(
+            sourcename=spn, version=version, distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        binary = build.createBinaryPackageRelease(
+            binarypackagename=bpn, version=version, summary='',
+            description='', binpackageformat=BinaryPackageFormat.DEB,
+            component=spph.sourcepackagerelease.component.id,
+            section=spph.sourcepackagerelease.section.id,
+            priority=PackagePublishingPriority.STANDARD, installedsize=0,
+            architecturespecific=False)
+        self.assertEquals(1, build.binarypackages.count())
+        self.assertEquals([binary], list(build.binarypackages))
 
-    def testUpdateDependenciesWorks(self):
-        # Calling `IBuild.updateDependencies` makes the build
-        # record ready for dispatch.
-        depwait_build = self._setupSimpleDepwaitContext()
-        depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, '')
+    def test_multiple_create_bpr(self):
+        # We can create multiple BPRs from a build
+        spn = self.factory.getUniqueString()
+        version = "%s.1" % self.factory.getUniqueInteger()
+        spph = self.publisher.getPubSource(
+            sourcename=spn, version=version, distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        expected_names = []
+        for i in range(15):
+            bpn_name = '%s-%s' % (spn, i)
+            bpn = self.factory.makeBinaryPackageName(bpn_name)
+            expected_names.append(bpn_name)
+            build.createBinaryPackageRelease(
+                binarypackagename=bpn, version=str(i), summary='',
+                description='', binpackageformat=BinaryPackageFormat.DEB,
+                component=spph.sourcepackagerelease.component.id,
+                section=spph.sourcepackagerelease.section.id,
+                priority=PackagePublishingPriority.STANDARD, installedsize=0,
+                architecturespecific=False)
+        self.assertEquals(15, build.binarypackages.count())
+        bin_names = [b.name for b in build.binarypackages]
+        # Verify .binarypackages returns sorted by name
+        expected_names.sort()
+        self.assertEquals(expected_names, bin_names)
 
-    def testInvalidDependencies(self):
-        # Calling `IBuild.updateDependencies` on a build with
-        # invalid 'dependencies' raises an AssertionError.
-        # Anything not following '<name> [([relation] <version>)][, ...]'
-        depwait_build = self._setupSimpleDepwaitContext()
+    def test_cannot_rescore_non_needsbuilds_builds(self):
+        # If a build record isn't in NEEDSBUILD, it can not be rescored.
+        # We will also need to log into an admin to do the rescore.
+        with person_logged_in(self.admin):
+            [bpph] = self.publisher.getPubBinaries(
+                binaryname=self.factory.getUniqueString(),
+                version="%s.1" % self.factory.getUniqueInteger(),
+                distroseries=self.distroseries)
+            build = bpph.binarypackagerelease.build
+            self.assertRaises(CannotBeRescored, build.rescore, 20)
 
-        # None is not a valid dependency values.
-        depwait_build.dependencies = None
-        self.assertRaises(
-            AssertionError, depwait_build.updateDependencies)
+    def test_rescore_builds(self):
+        # If the user has build-admin privileges, they can rescore builds
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
+        self.assertEquals(2505, build.buildqueue_record.lastscore)
+        with person_logged_in(self.admin):
+            build.rescore(5000)
+            transaction.commit()
+        self.assertEquals(5000, build.buildqueue_record.lastscore)
 
-        # Missing 'name'.
-        depwait_build.dependencies = '(>> version)'
-        self.assertRaises(
-            AssertionError, depwait_build.updateDependencies)
+    def test_source_publication_override(self):
+        # Components can be overridden in builds.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        self.assertEquals(spph, build.current_source_publication)
+        universe = getUtility(IComponentSet)['universe']
+        overridden_spph = spph.changeOverride(new_component=universe)
+        # We can now see current source publication points to the overridden
+        # publication.
+        self.assertNotEquals(spph, build.current_source_publication)
+        self.assertEquals(overridden_spph, build.current_source_publication)
 
-        # Missing 'version'.
-        depwait_build.dependencies = 'name (>>)'
-        self.assertRaises(
-            AssertionError, depwait_build.updateDependencies)
+    def test_security_anonymous(self):
+        # Certain attributes of a build cannot be set by anonymous users.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        for key in self.properties.keys():
+            self.assertRaises(
+                Unauthorized, setattr, build, key, self.properties[key])
 
-        # Missing comman between dependencies.
-        depwait_build.dependencies = 'name1 name2'
-        self.assertRaises(
-            AssertionError, depwait_build.updateDependencies)
+    def test_security_admin(self):
+        # Certain attributes of a build can be set by an admin.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            props = self.properties.keys()
+            props.reverse()
+            for key in props:
+                setattr(build, key, self.properties[key])
+                actual = getattr(build, key)
+                if key.endswith('log'):
+                    self.assertEquals(1, actual.id)
+                elif key.startswith('date'):
+                    self.assertEquals(self.now, actual)
+                else:
+                    self.assertEquals(self.properties[key], actual)
 
-    def testBug378828(self):
-        # `IBuild.updateDependencies` copes with the scenario where
-        # the corresponding source publication is not active (deleted)
-        # and the source original component is not a valid ubuntu
-        # component.
-        depwait_build = self._setupSimpleDepwaitContext()
+    def test_estimated_duration(self):
+        # Builds will have an estimated duration that is set to a
+        # previous build of the same sources duration.
+        spn = self.factory.getUniqueString()
+        spph = self.publisher.getPubSource(
+            sourcename=spn, status=PackagePublishingStatus.PUBLISHED)
+        [build] = spph.createMissingBuilds()
+        # Duration is based on package size if there is no previous build.
+        self.assertEquals(
+            timedelta(0, 60), build.buildqueue_record.estimated_duration)
+        # Set the build as done, and its duration.
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.FULLYBUILT
+            build.date_started = self.now - timedelta(minutes=72)
+            build.date_finished = self.now
+            build.buildqueue_record.destroySelf()
+            transaction.commit()
+        new_spph = self.publisher.getPubSource(
+            sourcename=spn, status=PackagePublishingStatus.PUBLISHED)
+        [new_build] = new_spph.createMissingBuilds()
+        # The duration for this build is now 72 minutes.
+        self.assertEquals(
+            timedelta(0, 72 * 60),
+            new_build.buildqueue_record.estimated_duration)
+        
+    def test_store_uploadlog_refuses_to_overwrite(self):
+        # Storing an upload log for a build will fail if the build already
+        # has an upload log.
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.FAILEDTOUPLOAD
+            build.storeUploadLog('foo')
+        self.assertRaises(AssertionError, build.storeUploadLog, 'bar')   
 
-        depwait_build.current_source_publication.requestDeletion(
-            depwait_build.sourcepackagerelease.creator)
-        contrib = getUtility(IComponentSet).new('contrib')
-        depwait_build.sourcepackagerelease.component = contrib
-
-        depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, '')
-
-
-class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        """Publish some builds for the test archive."""
-        super(BaseTestCaseWithThreeBuilds, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Create three builds for the publisher's default
-        # distroseries.
-        self.builds = []
-        self.sources = []
-        gedit_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        self.builds += gedit_src_hist.createMissingBuilds()
-        self.sources.append(gedit_src_hist)
-
-        firefox_src_hist = self.publisher.getPubSource(
-            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED)
-        self.builds += firefox_src_hist.createMissingBuilds()
-        self.sources.append(firefox_src_hist)
-
-        gtg_src_hist = self.publisher.getPubSource(
-            sourcename="getting-things-gnome",
-            status=PackagePublishingStatus.PUBLISHED)
-        self.builds += gtg_src_hist.createMissingBuilds()
-        self.sources.append(gtg_src_hist)
-
-
-class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
-
-    def setUp(self):
-        """Publish some builds for the test archive."""
-        super(TestBuildSetGetBuildsForArchive, self).setUp()
-
-        # Short-cuts for our tests.
-        self.archive = self.publisher.distroseries.main_archive
-        self.build_set = getUtility(IBuildSet)
-
-    def test_getBuildsForArchive_no_params(self):
-        # All builds should be returned when called without filtering
-        builds = self.build_set.getBuildsForArchive(self.archive)
-        self.assertContentEqual(builds, self.builds)
-
-    def test_getBuildsForArchive_by_arch_tag(self):
-        # Results can be filtered by architecture tag.
-        i386_builds = self.builds[:]
-        hppa_build = i386_builds.pop()
-        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
-
-        builds = self.build_set.getBuildsForArchive(self.archive,
-                                                    arch_tag="i386")
-        self.assertContentEqual(builds, i386_builds)
-
-
-class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
-
-    def setUp(self):
-        super(TestBuildSetGetBuildsForBuilder, self).setUp()
-
-        # Short-cuts for our tests.
-        self.build_set = getUtility(IBuildSet)
-
-        # Create a 386 builder
-        owner = self.factory.makePerson()
-        processor_family = ProcessorFamilySet().getByProcessorName('386')
-        processor = processor_family.processors[0]
-        builder_set = getUtility(IBuilderSet)
-
-        self.builder = builder_set.new(
-            processor, 'http://example.com', 'Newbob', 'New Bob the Builder',
-            'A new and improved bob.', owner)
-
-        # Ensure that our builds were all built by the test builder.
-        for build in self.builds:
-            build.builder = self.builder
-
-    def test_getBuildsForBuilder_no_params(self):
-        # All builds should be returned when called without filtering
-        builds = self.build_set.getBuildsForBuilder(self.builder.id)
-        self.assertContentEqual(builds, self.builds)
-
-    def test_getBuildsForBuilder_by_arch_tag(self):
-        # Results can be filtered by architecture tag.
-        i386_builds = self.builds[:]
-        hppa_build = i386_builds.pop()
-        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
-
-        builds = self.build_set.getBuildsForBuilder(self.builder.id,
-                                                    arch_tag="i386")
-        self.assertContentEqual(builds, i386_builds)
-
-
-class TestStoreBuildInfo(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestStoreBuildInfo, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        gedit_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        self.build = gedit_src_hist.createMissingBuilds()[0]
-
-        self.builder = self.factory.makeBuilder()
-        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
-        self.build.buildqueue_record.builder = self.builder
-        self.build.buildqueue_record.setDateStarted(UTC_NOW)
-
-    def testDependencies(self):
-        """Verify that storeBuildInfo sets any dependencies."""
-        self.build.storeBuildInfo(None, {'dependencies': 'somepackage'})
-        self.assertIsNot(None, self.build.buildlog)
-        self.assertEqual(self.builder, self.build.builder)
-        self.assertEqual(u'somepackage', self.build.dependencies)
-        self.assertIsNot(None, self.build.datebuilt)
-        self.assertIsNot(None, self.build.buildduration)
-
-    def testWithoutDependencies(self):
-        """Verify that storeBuildInfo clears the build's dependencies."""
-        # Set something just to make sure that storeBuildInfo actually
-        # empties it.
-        self.build.dependencies = u'something'
-
-        self.build.storeBuildInfo(None, {})
-        self.assertIsNot(None, self.build.buildlog)
-        self.assertEqual(self.builder, self.build.builder)
-        self.assertIs(None, self.build.dependencies)
-        self.assertIsNot(None, self.build.datebuilt)
-        self.assertIsNot(None, self.build.buildduration)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_assert_with_no_source_history(self):
+        # We can create a BinaryPackageBuild with only an SPR -- this means
+        # that the build has no history (no SourcePackagePublishingHistory),
+        # and we can't queue it.
+        spr = self.factory.makeSourcePackageRelease(
+            distroseries=self.distroseries)
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spr)
+        expected_msg = (
+            "Build %d lacks a corresponding source publication." % (
+                build.id))
+        self.assertRaisesWithContent(
+            AssertionError, expected_msg, build.queueBuild)

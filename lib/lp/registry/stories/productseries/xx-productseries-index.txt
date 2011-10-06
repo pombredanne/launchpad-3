@@ -13,7 +13,7 @@ The product series overview page summarises the series.
 
     >>> print extract_text(find_tag_by_id(content, 'series-details'))
     Series information
-    Project: Mozilla Firefox (Unspecified)
+    Project: Mozilla Firefox
     Series: trunk
     Project drivers: Sample Person
     Release manager: None
@@ -43,7 +43,8 @@ and thus a member of the series drivers.
 
 Any user can subscribe to bug mail via the link on the page.
 
-    >>> anon_browser.getLink('Subscribe to bug mail')
+    >>> user_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> user_browser.getLink('Subscribe to bug mail')
     <Link ... url='http://launchpad.dev/firefox/trunk/+subscribe'>
 
 The series page lists the milestones and releases for the series.
@@ -110,9 +111,9 @@ an explanation where he can push the branch.
 Distribution packaging is listed too. There is a link to the source package
 in each Ubuntu series.
 
-   >>> print extract_text(find_tag_by_id(
-   ...     content, 'distribution-packaging-explanation'))
-   This series is packaged in the following distribution series:
+    >>> print extract_text(find_tag_by_id(
+    ...     content, 'distribution-packaging-explanation'))
+    This series is packaged in the following distribution series:
 
     >>> print extract_text(find_tag_by_id(content, 'distribution-packaging'))
     Ubuntu Warty mozilla-firefox
@@ -125,9 +126,9 @@ If there are no sourcepackages, any user can see there are none:
     >>> anon_2_browser = setupBrowser()
     >>> anon_2_browser.open('http://launchpad.dev/thunderbird/trunk')
     >>> thunderbird_content = find_main_content(anon_2_browser.contents)
-   >>> print extract_text(find_tag_by_id(
-   ...     thunderbird_content, 'distribution-packaging-explanation'))
-   This series is not packaged in any distribution series.
+    >>> print extract_text(find_tag_by_id(
+    ...     thunderbird_content, 'distribution-packaging-explanation'))
+    This series is not packaged in any distribution series.
 
 
 The driver sees a packaging link near the distribution packaging.
@@ -139,7 +140,18 @@ There is a section that lists related links to this series
 
     >>> anon_browser.getLink('View series for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+series'>
-    >>> anon_browser.getLink('View milestones for the Mozilla Firefox project')
+    >>> anon_browser.getLink(
+    ...     'View milestones for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+milestones'>
     >>> anon_browser.getLink('View downloads for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+download'>
+
+The involvement portlet has links to various actions, including
+submitting a new branch.
+
+    >>> user_browser.open('http://launchpad.dev/evolution/trunk')
+    >>> user_browser.getLink('Submit code')
+    <Link ... url='http://code.launchpad.dev/evolution/+addbranch'>
+    >>> user_browser.getLink('Submit code').click()
+    >>> print user_browser.title
+    Register a branch : Code : Evolution

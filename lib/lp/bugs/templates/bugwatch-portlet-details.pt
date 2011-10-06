@@ -5,13 +5,13 @@
   class="portlet">
   <h2>Bug watch details</h2>
     <div class="two-column-list">
-      <dl>
+      <dl class="bugwatch-data">
         <dt>Tracker:</dt>
         <dd>
           <a tal:replace="structure context/bugtracker/fmt:link"/>
         </dd>
       </dl>
-      <dl>
+      <dl class="bugwatch-data">
         <dt>Remote bug ID:</dt>
         <dd>
           <a tal:attributes="href context/url">
@@ -19,7 +19,7 @@
           </a>
         </dd>
       </dl>
-      <dl>
+      <dl class="bugwatch-data">
         <dt>Last status:</dt>
         <dd>
           <span tal:condition="not: context/remotestatus">
@@ -28,7 +28,7 @@
           <span tal:replace="context/remotestatus">6642</span>
         </dd>
       </dl>
-      <dl>
+      <dl class="bugwatch-data">
         <dt>Changed:</dt>
         <dd>
           <span
@@ -38,7 +38,7 @@
            </span>
         </dd>
       </dl>
-      <dl>
+      <dl class="bugwatch-data" id="bugwatch-lastchecked">
         <dt>Checked:</dt>
         <dd>
           <span
@@ -48,7 +48,21 @@
            </span>
         </dd>
       </dl>
-      <dl>
+      <dl class="bugwatch-data" id="bugwatch-next_check">
+        <dt>Next check:</dt>
+        <dd>
+          <span
+            tal:condition="context/next_check"
+            tal:content="context/next_check/fmt:datetime">
+            13 Jan 2004
+           </span>
+          <span
+            tal:condition="not: context/next_check">
+            Not yet scheduled
+           </span>
+        </dd>
+      </dl>
+      <dl class="bugwatch-data">
         <dt>Created:</dt>
         <dd>
           <span
@@ -58,7 +72,7 @@
            </span>
         </dd>
       </dl>
-      <dl>
+      <dl class="bugwatch-data">
         <dt>Created by:</dt>
         <dd>
           <a tal:replace="structure context/owner/fmt:link" />

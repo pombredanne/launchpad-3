@@ -17,14 +17,17 @@ sampledata builder.
     >>> stp.prepareBreezyAutotest()
     >>> source = stp.getPubSource(sourcename='testing', version='1.0')
     >>> [build] = source.createMissingBuilds()
+    >>> build_id = build.id
 
     # Enable the sampledata builder.
     >>> bob_builder = getUtility(IBuilderSet)['bob']
     >>> bob_builder.builderok = True
 
     # Set a known duration for the current job.
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build2 = getUtility(IBuildSet).getByQueueEntry(bob_builder.currentjob)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build2 = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+    ...     bob_builder.currentjob)
     >>> in_progress_build = removeSecurityProxy(build2)
     >>> one_minute = datetime.timedelta(seconds=60)
     >>> in_progress_build.buildqueue_record.estimated_duration = one_minute
@@ -36,7 +39,7 @@ package in a `DistroArchSeries`. There is an individual page for each
 individual `Build`, and they can be accessed via the build-farm URL
 shortcut.
 
-    >>> build_url = "http://launchpad.dev/builders/+build/%d" % build.id
+    >>> build_url = "http://launchpad.dev/builders/+build/%d" % build_id
 
 Using the short-cut URL any user can promptly access the build
 page. It's title briefly describes the build.
@@ -63,7 +66,8 @@ component.
     ...
     Build status
     Needs building
-    Start in ... (2505) What's this?
+    Start in ... 
+    Build score:2505 (What's this?)
     Build details
     Source: testing - 1.0
     Archive: Primary Archive for Ubuntu Test
@@ -76,13 +80,16 @@ Let's disable the job associated with the build. This has the side effect
 that a dispatch time estimation will not be available for the build in
 question.
 
+    >>> login('foo.bar@canonical.com')
     >>> build.buildqueue_record.job.suspend()
+    >>> logout()
     >>> anon_browser.open(build_url)
     >>> print extract_text(find_main_content(anon_browser.contents))
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     Build status
     Needs building
+    Build score:2505 (What's this?)
     Build details
     Source: testing - 1.0
     Archive: Primary Archive for Ubuntu Test
@@ -93,7 +100,9 @@ question.
 
 Re-enable the build in order to avioid subsequent test breakage.
 
+    >>> login('foo.bar@canonical.com')
     >>> build.buildqueue_record.job.resume()
+    >>> logout()
     >>> anon_browser.open(build_url)
 
 The 'Build details' section exists for all status and contains links
@@ -135,7 +144,8 @@ new 'score' value is presented.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
-    Start in ... (0) Rescore build What's this?
+    Start in ... 
+    Build score:0 Rescore build (What's this?)
 
 Eventually a pending build record will get started, and while it's
 building the page will also contain a link to the builder where the
@@ -146,7 +156,7 @@ messages.
     # build with an known buildlog 'tail'.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.database.constants import UTC_NOW
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> in_progress_build.buildqueue_record.reset()
     >>> build.buildqueue_record.markAsBuilding(bob_builder)
     >>> build.buildqueue_record.logtail = 'one line\nanother line'
@@ -158,6 +168,7 @@ messages.
     ...     find_tag_by_id(anon_browser.contents, 'status'))
     Build status
     Currently building on Bob The Builder
+    Build score:0 (What's this?)
     Started ... ago
 
     >>> print anon_browser.getLink('Bob The Builder').url
@@ -190,11 +201,13 @@ how long it took.
     # Mark the testing build as failed.
     >>> login('foo.bar@canonical.com')
     >>> build.buildqueue_record.destroySelf()
-    >>> build.buildstate = BuildStatus.FAILEDTOUPLOAD
+    >>> build.status = BuildStatus.FAILEDTOUPLOAD
     >>> build.builder = bob_builder
-    >>> build.datebuilt = UTC_NOW
-    >>> build.buildduration = datetime.timedelta(minutes=1)
-    >>> build.buildlog = stp.addMockFile('fake-buildlog')
+    >>> import pytz
+    >>> build.date_finished = datetime.datetime.now(pytz.UTC)
+    >>> build.date_started = build.date_finished - datetime.timedelta(
+    ...     minutes=1)
+    >>> build.log = stp.addMockFile('fake-buildlog')
     >>> build.upload_log = stp.addMockFile('fake-uploadlog')
     >>> logout()
 
@@ -274,12 +287,13 @@ retrying the build is not a possibility anymore.
     >>> admin_browser.getControl("Retry Build").click()
     >>> for text in get_feedback_messages(admin_browser.contents):
     ...     print text
-    Build record active
+    Build retried
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
-    Start in ... (0) Rescore build What's this?
+    Start in ... 
+    Build score:... Rescore build (What's this?)
 
     >>> admin_browser.getLink("Retry this build").click()
     Traceback (most recent call last):
@@ -295,18 +309,19 @@ appropriate 'Build status' section the user will see 2 new sections,
     >>> login('foo.bar@canonical.com')
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> build.buildqueue_record.destroySelf()
-    >>> build.buildstate = BuildStatus.FULLYBUILT
+    >>> build.status = BuildStatus.FULLYBUILT
     >>> build.builder = bob_builder
-    >>> build.datebuilt = UTC_NOW
-    >>> build.buildduration = datetime.timedelta(minutes=1)
-    >>> build.buildlog = stp.addMockFile('fake-buildlog')
+    >>> build.date_finished = datetime.datetime.now(pytz.UTC)
+    >>> build.date_started = build.date_finished - datetime.timedelta(
+    ...     minutes=1)
+    >>> build.log = stp.addMockFile('fake-buildlog')
     >>> build.upload_log = None
     >>> binaries = stp.uploadBinaryForBuild(build, 'testing-bin')
     >>> upload = stp.distroseries.createQueueEntry(
     ...     PackagePublishingPocket.RELEASE,
+    ...     stp.distroseries.main_archive,
     ...     'testing_1.0_all.changes',
-    ...     'nothing-special',
-    ...     stp.distroseries.main_archive)
+    ...     'nothing-special')
     >>> unused = upload.addBuild(build)
     >>> logout()
 
@@ -453,6 +468,7 @@ The 'Build status' section is identical for PPAs.
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'status'))
     Build status
     Successfully built on Bob The Builder
+    Build score:...
     Started on ...
     Finished on ... (took 5 minutes, 0.0 seconds)
     buildlog (6 bytes)
@@ -505,6 +521,29 @@ section for PPA builds.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+If the source package was created from a recipe build, link to it.
+
+    >>> login('foo.bar@canonical.com')
+    >>> product = factory.makeProduct(name='product')
+    >>> branch = factory.makeProductBranch(
+    ...     owner=cprov, product=product, name='mybranch')
+    >>> recipe = factory.makeSourcePackageRecipe(
+    ...     owner=cprov, name=u'myrecipe', branches=[branch])
+    >>> ppa_source.sourcepackagerelease.source_package_recipe_build = (
+    ...  factory.makeSourcePackageRecipeBuild(recipe=recipe,
+    ...  archive=cprov.archive))
+    >>> logout()
+    >>> anon_browser.open(ppa_build_url)
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'details'))
+    Build details
+    ...
+    Source package recipe build:
+    ~cprov/product/mybranch recipe build [cprov/ppa]
+    ...
+
+    >>> print anon_browser.getLink('~cprov/product/mybranch recipe build').url
+    http://launchpad.dev/~cprov/+archive/ppa/+recipebuild/1
 
 Finally, the 'Build files' section is identical for PPA builds.
 

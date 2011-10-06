@@ -42,7 +42,7 @@ hidden from the UI.
     ...     print extract_text(tr)
     Created: 2005-06-06
     Creation reason: Created by the owner himself, coming from Launchpad.
-    OpenID Identifier: salgado_oid
+    OpenID Identifiers: salgado_oid
     Email Addresses: guilherme.salgado@canonical.com
 
 The page also contains a link back to the +review page.
@@ -63,7 +63,7 @@ feedback message.
     >>> print admin_browser.title
     The one and only Salgado does not use Launchpad
     >>> print get_feedback_messages(admin_browser.contents)[0]
-    The account "The one and only Salgado" has been suspended.
+    The account "Guilherme Salgado" has been suspended.
 
 The admin can see the account information of a user that does not use
 Launchpad, and can change the account too. Note that all pages that belong
@@ -91,26 +91,38 @@ them from their index.
     The user is reactivated. He must use the "forgot password" to log in.
 
 
-Partial access for registry experts
------------------------------------
+Registry experts
+----------------
 
-Members of the registry team get partial access to the review account page to
-be able to suspend spam accounts.
+Registry experts can see the +review page, minus the displayname.
 
-    >>> login('foo.bar@canonical.com')
-    >>> registry_expert = factory.makePerson(email='expert@example.com',
-    ...                                      password='test')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from zope.component import getUtility
-    >>> registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-    >>> ignored = registry_team.addMember(
-    ...     registry_expert, registry_team.teamowner)
-    >>> print registry_expert.inTeam(registry_team)
-    True
+    >>> email = "expert@example.com"
+    >>> password = "test"
+    >>> expert= factory.makeRegistryExpert(email=email, password=password)
+    >>> expert_browser = setupBrowser(auth='Basic %s:%s' % (email, password))
     >>> logout()
+    >>> expert_browser.open('http://launchpad.dev/~no-priv/+review')
+    >>> print expert_browser.title
+    Review person...
 
-    >>> expert_browser = setupBrowser(auth='Basic expert@example.com:test')
-    >>> expert_browser.open('http://launchpad.dev/~no-priv/+reviewaccount')
+    >>> expert_browser.getControl('Name', index=0).value = "no-way"
+    >>> expert_browser.getControl(
+    ...     'Display Name', index=0)
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Display Name'
+
+    >>> expert_browser.getControl('Personal standing').value = ['GOOD']
+    >>> expert_browser.getControl(
+    ...     name='field.personal_standing_reason').value = 'good guy'
+    >>> expert_browser.getControl('Change').click()
+    >>> print expert_browser.url
+    http://launchpad.dev/~no-way
+
+However, members of the registry team only get partial access to the
+review account page to be able to suspend spam accounts.
+
+    >>> expert_browser.open('http://launchpad.dev/~no-way/+reviewaccount')
     >>> print expert_browser.title
     Review person's account...
 
@@ -163,4 +175,3 @@ Non admins cannot access the +review and +reviewaccount pages.
     Traceback (most recent call last):
     ...
     Unauthorized: ...
-

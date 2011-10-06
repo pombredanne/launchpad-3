@@ -5,14 +5,22 @@ __metaclass__ = type
 
 from lazr.restful.utils import get_current_browser_request
 
-from lp.testing import TestCase
-
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.readonly import (
-    is_read_only, read_only_file_exists, READ_ONLY_MODE_ANNOTATIONS_KEY)
+    is_read_only,
+    read_only_file_exists,
+    READ_ONLY_MODE_ANNOTATIONS_KEY,
+    )
 from canonical.launchpad.tests.readonly import (
-    remove_read_only_file, touch_read_only_file)
+    remove_read_only_file,
+    touch_read_only_file,
+    )
 from canonical.testing.layers import FunctionalLayer
+from lp.testing import TestCase
 
 
 class TestReadOnlyModeDetection(TestCase):

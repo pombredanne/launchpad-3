@@ -11,7 +11,8 @@ Homepage
 
 The Rosetta homepage.
 
-    >>> from canonical.launchpad.interfaces import IRosettaApplication
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     IRosettaApplication)
     >>> canonical_url(getUtility(IRosettaApplication))
     u'http://launchpad.dev/translations'
 
@@ -29,7 +30,7 @@ First, the distribution kind.  We'll need the source package name.
 
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distroset = getUtility(IDistributionSet)
@@ -50,30 +51,30 @@ name.
 
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> canonical_url(potemplate)
-    u'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
+    u'http://translations.../hoary/+source/evolution/+pots/evolution-2.2'
 
 And we can get a particular PO file for this PO template by its language code.
 
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> canonical_url(pofile)
-    u'http://translations.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
+    u'http://translations.../hoary/+source/evolution/+pots/evolution-2.2/es'
 
 Also, we can get the url to a translation message.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslation(
+    ...     pofile.potemplate, pofile.language, potemplate.translation_side)
     >>> translationmessage.setPOFile(pofile)
     >>> print canonical_url(translationmessage)
-    http://translations.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1
+    http://transl.../hoary/+source/evolution/+pots/evolution-2.2/es/1
 
 Even for a dummy one.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
-    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     pofile)
     >>> print canonical_url(translationmessage)
-    http://translations.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20
+    http://transl.../hoary/+source/evolution/+pots/evolution-2.2/es/20
 
 Upstream POTemplateSubsets work in much the same way, except they hang off a
 product series.  Let's get a product series.
@@ -81,7 +82,7 @@ product series.  Let's get a product series.
 Now we can get an upstream subset and do the same sorts of thing as we did
 with the distro subset.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> productset = getUtility(IProductSet)
     >>> evolution_product = productset['evolution']
     >>> evolution_trunk_series = evolution_product.getSeries('trunk')
@@ -99,8 +100,8 @@ with the distro subset.
 Also, we can get the url to a dummy one
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslation(
+    ...     pofile.potemplate, pofile.language, potemplate.translation_side)
     >>> translationmessage.setPOFile(pofile)
     >>> print canonical_url(translationmessage)
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/1
@@ -108,8 +109,8 @@ Also, we can get the url to a dummy one
 Even for a dummy PO msgset
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
-    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage = potmsgset.getCurrentTranslationMessageOrDummy(
+    ...     pofile)
     >>> print canonical_url(translationmessage)
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/20
 
@@ -136,7 +137,7 @@ Distribution and distribution series default to the main vhost.
     >>> canonical_url(distribution)
     u'http://launchpad.dev/boo'
 
-    >>> distroseries = factory.makeDistroRelease(
+    >>> distroseries = factory.makeDistroSeries(
     ...     name='bah', distribution=distribution)
     >>> canonical_url(distroseries)
     u'http://launchpad.dev/boo/bah'
@@ -173,7 +174,8 @@ ProductSeriesLanguage objects have their URLs on translations vhost.
     >>> from lp.translations.interfaces.productserieslanguage import (
     ...     IProductSeriesLanguageSet)
 
-    >>> coo_cah_serbian = getUtility(IProductSeriesLanguageSet).getDummy(
+    >>> psl_set = getUtility(IProductSeriesLanguageSet)
+    >>> coo_cah_serbian = psl_set.getProductSeriesLanguage(
     ...     productseries, serbian)
     >>> canonical_url(coo_cah_serbian)
     u'http://translations.launchpad.dev/coo/cah/+lang/sr'

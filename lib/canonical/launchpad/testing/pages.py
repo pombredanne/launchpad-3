@@ -3,45 +3,68 @@
 
 """Testing infrastructure for page tests."""
 
-# Stop lint warning about not initializing TestCase parent on
-# PageStoryTestCase, see the comment bellow.
-# pylint: disable-msg=W0231
-
 __metaclass__ = type
 
+import doctest
 import os
 import pdb
 import pprint
 import re
-import transaction
 import unittest
-
-from BeautifulSoup import (
-    BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
-    ProcessingInstruction, SoupStrainer, Tag)
-from contrib.oauth import (
-    OAuthConsumer, OAuthRequest, OAuthSignatureMethod_PLAINTEXT, OAuthToken)
 from urlparse import urljoin
 
-from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from BeautifulSoup import (
+    BeautifulSoup,
+    CData,
+    Comment,
+    Declaration,
+    NavigableString,
+    PageElement,
+    ProcessingInstruction,
+    SoupStrainer,
+    Tag,
+    )
+from contrib.oauth import (
+    OAuthConsumer,
+    OAuthRequest,
+    OAuthSignatureMethod_PLAINTEXT,
+    OAuthToken,
+    )
+from lazr.restful.interfaces import IRepresentationCache
+from lazr.restful.testing.webservice import WebServiceCaller
+import transaction
+from zope.app.testing.functional import (
+    HTTPCaller,
+    SimpleCookie,
+    )
 from zope.component import getUtility
-from zope.testbrowser.testing import Browser
-from zope.testing import doctest
 from zope.security.proxy import removeSecurityProxy
+from zope.testbrowser.testing import Browser
 
-from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
-    TeamMembershipStatus)
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthConsumerSet,
+    OAUTH_REALM,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, SpecialOutputChecker, stop, strip_prefix)
+    LayeredDocFileSuite,
+    stop,
+    strip_prefix,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.testing import PageTestLayer
-from lazr.restful.testing.webservice import WebServiceCaller
-from lp.testing import ANONYMOUS, login, login_person, logout
+from canonical.testing.layers import PageTestLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.errors import NameAlreadyTaken
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.testing import (
+    ANONYMOUS,
+    launchpadlib_for,
+    login,
+    login_person,
+    logout,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.registry.interfaces.person import NameAlreadyTaken
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -291,6 +314,27 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
             print sep.join(row_content)
 
 
+def get_radio_button_text_for_field(soup, name):
+    """Find the input called field.name, and return an iterable of strings.
+
+    The resulting output will look something like:
+    ['(*) A checked option', '( ) An unchecked option']
+    """
+    buttons = soup.findAll(
+        'input', {'name': 'field.%s' % name})
+    for button in buttons:
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                soup.find('label', attrs={'for': button['id']}))
+        if button.get('checked', None):
+            radio = '(*)'
+        else:
+            radio = '( )'
+        yield "%s %s" % (radio, label)
+
+
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
 
@@ -299,19 +343,8 @@ def print_radio_button_field(content, name):
     ( ) An unchecked option
     """
     main = BeautifulSoup(content)
-    buttons =  main.findAll(
-        'input', {'name': 'field.%s' % name})
-    for button in buttons:
-        if button.parent.name == 'label':
-            label = extract_text(button.parent)
-        else:
-            label = extract_text(
-                main.find('label', attrs={'for': button['id']}))
-        if button.get('checked', None):
-            radio = '(*)'
-        else:
-            radio = '( )'
-        print radio, label
+    for field in get_radio_button_text_for_field(main, name):
+        print field
 
 
 def strip_label(label):
@@ -642,6 +675,21 @@ def setupBrowser(auth=None):
     return browser
 
 
+def setupBrowserForUser(user, password='test'):
+    """Setup a browser grabbing details from a user.
+
+    :param user: The user to use.
+    :param password: The password to use.
+    """
+    naked_user = removeSecurityProxy(user)
+    email = naked_user.preferredemail.email
+    if hasattr(naked_user, '_password_cleartext_cached'):
+        password = naked_user._password_cleartext_cached
+    logout()
+    return setupBrowser(
+        auth="Basic %s:%s" % (str(email), password))
+
+
 def safe_canonical_url(*args, **kwargs):
     """Generate a bytestring URL for an object"""
     return str(canonical_url(*args, **kwargs))
@@ -667,6 +715,16 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     access_token = request_token.createAccessToken()
     logout()
     return LaunchpadWebServiceCaller(consumer_key, access_token.key)
+
+
+def ws_uncache(obj):
+    """Manually remove an object from the web service representation cache.
+
+    Directly modifying a data model object during a test may leave
+    invalid data in the representation cache.
+    """
+    cache = getUtility(IRepresentationCache)
+    cache.delete(obj)
 
 
 def setupDTCBrowser():
@@ -752,6 +810,7 @@ def setUpGlobs(test):
     test.globs['print_table'] = print_table
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
+    test.globs['launchpadlib_for'] = launchpadlib_for
     test.globs['login'] = login
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout
@@ -772,64 +831,7 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
-
-
-class PageStoryTestCase(unittest.TestCase):
-    """A test case that represents a pagetest story
-
-    This is achieved by holding a testsuite for the story, and
-    delegating responsiblity for most methods to it.
-    We want this to be a TestCase instance and not a TestSuite
-    instance to be compatible with various test runners that
-    filter tests - they generally ignore test suites and may
-    select individual tests - but stories cannot be split up.
-    """
-
-    layer = PageTestLayer
-
-    def __init__(self, name, storysuite):
-        """Create a PageTest story from the given suite.
-
-        :param name: an identifier for the story, such as the directory
-            containing the tests.
-        :param storysuite: a test suite containing the tests to be run
-            as a story.
-        """
-        # we do not run the super __init__ because we are not using any of
-        # the base classes functionality, and we'd just have to give it a
-        # meaningless method.
-        self._description = name
-        self._suite = storysuite
-
-    def countTestCases(self):
-        return self._suite.countTestCases()
-
-    def shortDescription(self):
-        return "pagetest: %s" % self._description
-
-    def id(self):
-        return self.shortDescription()
-
-    def __str__(self):
-        return self.shortDescription()
-
-    def __repr__(self):
-        return "<%s name=%s>" % (self.__class__.__name__, self._description)
-
-    def run(self, result=None):
-        if result is None:
-            result = self.defaultTestResult()
-        PageTestLayer.startStory()
-        try:
-            # XXX Robert Collins 2006-01-17: we can hook in pre and post
-            # story actions here much more tidily (and in self.debug too)
-            # - probably via self.setUp and self.tearDown
-            self._suite.run(result)
-        finally:
-            PageTestLayer.endStory()
-
-    def debug(self):
-        self._suite.debug()
+    test.globs['ws_uncache'] = ws_uncache
 
 
 # This function name doesn't follow our standard naming conventions,
@@ -843,8 +845,7 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     :param package: the package to resolve storydir relative to.  Defaults
         to the caller's package.
 
-    The unnumbered page tests will be added to the suite individually,
-    while the numbered tests will be run together as a story.
+    Each file is added as a separate DocFileTest.
     """
     # we need to normalise the package name here, because it
     # involves checking the parent stack frame.  Otherwise the
@@ -856,31 +857,14 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     filenames = set(filename
                     for filename in os.listdir(abs_storydir)
                     if filename.lower().endswith('.txt'))
-    numberedfilenames = set(filename for filename in filenames
-                            if len(filename) > 4
-                            and filename[:2].isdigit()
-                            and filename[2] == '-')
-    unnumberedfilenames = filenames - numberedfilenames
 
-    # A predictable order is important, even if it remains officially
-    # undefined for un-numbered filenames.
-    numberedfilenames = sorted(numberedfilenames)
-    unnumberedfilenames = sorted(unnumberedfilenames)
-
-    # Add unnumbered tests to the suite individually.
-    checker = SpecialOutputChecker()
-    suite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        layer=PageTestLayer, setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in unnumberedfilenames])
-
-    # Add numbered tests to the suite as a single story.
-    storysuite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))
-
+    suite = unittest.TestSuite()
+    # Add tests to the suite individually.
+    if filenames:
+        checker = doctest.OutputChecker()
+        suite.addTest(LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            layer=PageTestLayer, setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in filenames]))
     return suite

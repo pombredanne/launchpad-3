@@ -38,9 +38,13 @@
         <input id="text" type="text" name="text" size="50" />
         <input type="submit" value="Find a Project" />
       </form>
+      <script type="text/javascript"><!--
+         setFocusByName('text');
+       // --></script>
+
       <p id="application-summary">
         Launchpad can host your project&#8217;s source code
-        using the <a href="http://bazaar-vcs.org/">Bazaar</a>
+        using the <a href="http://bazaar.canonical.com/">Bazaar</a>
         version control system.
         We also import
         <tal:XXX condition="nothing">
@@ -52,9 +56,15 @@
         so you can use Bazaar with those too.
         (<a href="https://help.launchpad.net/Code">Read our guide</a>)
       </p>
+      <p id="build-recipes" class="application-summary" style="padding-top: 0.25em;">
+        Launchpad can build Ubuntu packages directly from branches using recipes.
+        We currently build over <a href="/+daily-builds">100 different packages</a>
+        into PPAs automatically using this method.
+        (<a href="https://help.launchpad.net/Packaging/SourceBuilds">Learn more about recipes</a>)
+      </p>
 
       <div id="project-cloud-preview" tal:content="cache:public,6 hours">
-        <h2>Projects with active branches</h2>
+        <h2>Most active projects in the last month</h2>
         <a tal:repeat="product view/short_product_tag_cloud"
            tal:attributes="href product/url;
                            class product/html_class;
@@ -121,17 +131,13 @@
           </a>
         </div>
         <div>
-          <a href="/+code-import-list">
+          <a href="/+code-imports">
             <strong tal:content="view/import_count">123</strong>
             imported branches
           </a>
         </div>
         <div>
-          <strong tal:content="view/branches_with_bugs_count">12</strong>
-          branches associated with bug reports
-        </div>
-        <div>
-          Launchpad uses <a href="http://bazaar-vcs.org/">Bazaar</a>
+          Launchpad uses <a href="http://bazaar.canonical.com/">Bazaar</a>
           <tal:version tal:content="view/bzr_version">2.0</tal:version>.
         </div>
       </div>

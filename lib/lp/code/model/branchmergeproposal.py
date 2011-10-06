@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,F0401
@@ -13,48 +13,88 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
-from storm.expr import And, Or, Select
+
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Desc,
+    Join,
+    LeftJoin,
+    Or,
+    Select,
+    SQL,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import Join, LeftJoin
-from storm.locals import Int, Reference
-from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
-
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
 from lp.code.errors import (
-    BadBranchMergeProposalSearchContext, BadStateTransition,
-    UserNotBranchReviewer, WrongBranchMergeProposal)
-from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.codereviewcomment import CodeReviewComment
-from lp.code.model.codereviewvote import (
-    CodeReviewVoteReference)
-from lp.code.model.diff import PreviewDiff
+    BadBranchMergeProposalSearchContext,
+    BadStateTransition,
+    BranchMergeProposalExists,
+    UserNotBranchReviewer,
+    WrongBranchMergeProposal,
+    )
 from lp.code.event.branchmergeproposal import (
-    BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
-    ReviewerNominatedEvent)
+    BranchMergeProposalNeedsReviewEvent,
+    BranchMergeProposalStatusChangeEvent,
+    NewCodeReviewCommentEvent,
+    ReviewerNominatedEvent,
+    )
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter)
+    IBranchMergeProposal,
+    IBranchMergeProposalGetter,
+    )
+from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.mail.branch import RecipientReason
-from lp.registry.model.person import Person
-from lp.registry.interfaces.person import IPerson
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.diff import (
+    Diff,
+    IncrementalDiff,
+    PreviewDiff,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.person import validate_public_person
-from lp.services.mail.sendmail import validate_message
+from lp.registry.model.person import Person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.mail.sendmail import validate_message
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
@@ -74,21 +114,40 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
         if dupes.count() > 0:
             return False
 
-    [wip, needs_review, code_approved, rejected,
-     merged, merge_failed, queued, superseded
-     ] = BranchMergeProposalStatus.items
-    # Transitioning to code approved, rejected or queued from
+    [
+        wip,
+        needs_review,
+        code_approved,
+        rejected,
+        merged,
+        merge_failed,
+        queued,
+        superseded,
+    ] = BranchMergeProposalStatus.items
+
+    # Transitioning to code approved, rejected, failed or queued from
     # work in progress, needs review or merge failed needs the
     # user to be a valid reviewer, other states are fine.
     valid_reviewer = proposal.target_branch.isPersonTrustedReviewer(user)
-    if (next_state == rejected and not valid_reviewer):
-        return False
-    # Non-reviewers can toggle between code_approved and queued, but not
-    # make anything else approved or queued.
-    elif (next_state in (code_approved, queued) and
-          from_state not in (code_approved, queued)
-          and not valid_reviewer):
-        return False
+    reviewed_ok_states = (code_approved, queued, merge_failed)
+    if not valid_reviewer:
+        # Non reviewers cannot reject proposals [XXX: what about their own?]
+        if next_state == rejected:
+            return False
+        # Non-reviewers can toggle within the reviewed ok states
+        # (approved/queued/failed): they can dequeue something they spot an
+        # environmental issue with (queued or failed to approved). Retry
+        # things that had an environmental issue (failed or approved to
+        # queued) and note things as failing (approved and queued to failed).
+        # This is perhaps more generous than needed, but its not clearly wrong
+        # - a key concern is to prevent non reviewers putting things in the
+        # queue that haven't been approved (and thus moved to approved or one
+        # of the workflow states that approved leads to).
+        elif (next_state in reviewed_ok_states and
+              from_state not in reviewed_ok_states):
+            return False
+        else:
+            return True
     else:
         return True
 
@@ -125,37 +184,32 @@ class BranchMergeProposal(SQLBase):
     @property
     def private(self):
         return (
-            self.source_branch.private or self.target_branch.private or
+            self.source_branch.transitively_private or
+            self.target_branch.transitively_private or
             (self.prerequisite_branch is not None and
-             self.prerequisite_branch.private))
+             self.prerequisite_branch.transitively_private))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    review_diff = ForeignKey(
-        foreignKey='StaticDiff', notNull=False, default=None)
-
     @property
     def next_preview_diff_job(self):
         # circular dependencies
         from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob, MergeProposalCreatedJob,
-            UpdatePreviewDiffJob)
-        job_classes = [MergeProposalCreatedJob, UpdatePreviewDiffJob]
-        type_classes = dict(
-            (job_class.class_job_type, job_class)
-            for job_class in job_classes)
-        job = Store.of(self).find(
+            BranchMergeProposalJob, BranchMergeProposalJobFactory,
+            BranchMergeProposalJobType)
+        jobs = Store.of(self).find(
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == self,
-            BranchMergeProposalJob.job_type.is_in(type_classes.keys()),
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF,
             BranchMergeProposalJob.job == Job.id,
-            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING])
-            ).order_by(Job.scheduled_start, Job.date_created).first()
+            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
+        job = jobs.order_by(Job.scheduled_start, Job.date_created).first()
         if job is not None:
-            return type_classes[job.job_type](job)
+            return BranchMergeProposalJobFactory.create(job)
         else:
             return None
 
@@ -181,14 +235,15 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    @property
-    def related_bugs(self):
-        """Bugs which are linked to the source but not the target.
+    def getRelatedBugTasks(self, user):
+        """Bug tasks which are linked to the source but not the target.
 
-        Implies that these bugs would be fixed, in the target, by the merge.
+        Implies that these would be fixed, in the target, by the merge.
         """
-        return (bug for bug in self.source_branch.linked_bugs
-                if bug not in self.target_branch.linked_bugs)
+        source_tasks = self.source_branch.getLinkedBugTasks(user)
+        target_tasks = self.target_branch.getLinkedBugTasks(user)
+        return [bugtask
+            for bugtask in source_tasks if bugtask not in target_tasks]
 
     @property
     def address(self):
@@ -280,10 +335,10 @@ class BranchMergeProposal(SQLBase):
         # aleady.
         for review in self.votes:
             reviewer = review.reviewer
-            if not reviewer.is_team:
-                recipients[reviewer] = RecipientReason.forReviewer(
-                    review, reviewer,
-                    branch_identity_cache=branch_identity_cache)
+            pending = review.comment is None
+            recipients[reviewer] = RecipientReason.forReviewer(
+                self, pending, reviewer,
+                branch_identity_cache=branch_identity_cache)
         # If the registrant of the proposal is getting emails, update the
         # rationale to say that they registered it.  Don't however send them
         # emails if they aren't asking for any.
@@ -327,23 +382,23 @@ class BranchMergeProposal(SQLBase):
         # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
         # would be better as a dict mapping.
         # See bug #281060.
+        if (self.queue_status == BranchMergeProposalStatus.QUEUED and
+            status != BranchMergeProposalStatus.QUEUED):
+            self.dequeue()
         if status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
             self.requestReview()
         elif status == BranchMergeProposalStatus.CODE_APPROVED:
-            # Other half of the edge case.  If the status is currently queued,
-            # we need to dequeue, otherwise we just approve the branch.
-            if self.queue_status == BranchMergeProposalStatus.QUEUED:
-                self.dequeue()
-            else:
-                self.approveBranch(user, revision_id)
+            self.approveBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.REJECTED:
             self.rejectBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.QUEUED:
             self.enqueue(user, revision_id)
         elif status == BranchMergeProposalStatus.MERGED:
             self.markAsMerged(merge_reporter=user)
+        elif status == BranchMergeProposalStatus.MERGE_FAILED:
+            self._transitionToState(status, user=user)
         else:
             raise AssertionError('Unexpected queue status: ' % status)
 
@@ -364,6 +419,11 @@ class BranchMergeProposal(SQLBase):
         # review state.
         if _date_requested is None:
             _date_requested = UTC_NOW
+        # If we are going from work in progress to needs review, then reset
+        # the root message id and trigger a job to send out the email.
+        if self.queue_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
+            self.root_message_id = None
+            notify(BranchMergeProposalNeedsReviewEvent(self))
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
@@ -381,7 +441,7 @@ class BranchMergeProposal(SQLBase):
 
     def _reviewProposal(self, reviewer, next_state, revision_id,
                         _date_reviewed=None):
-        """Set the proposal to one of the two review statuses."""
+        """Set the proposal to next_state."""
         # Check the reviewer can review the code for the target branch.
         old_state = self.queue_status
         if not self.target_branch.isPersonTrustedReviewer(reviewer):
@@ -435,7 +495,7 @@ class BranchMergeProposal(SQLBase):
         self.queue_status = BranchMergeProposalStatus.QUEUED
         self.queue_position = position
         self.queuer = queuer
-        self.queued_revision_id = revision_id
+        self.queued_revision_id = revision_id or self.reviewed_revision_id
         self.date_queued = UTC_NOW
         self.syncUpdate()
 
@@ -467,14 +527,6 @@ class BranchMergeProposal(SQLBase):
         self.queue_position = first_entry.queue_position - 1
         self.syncUpdate()
 
-    def mergeFailed(self, merger):
-        """See `IBranchMergeProposal`."""
-        self._transitionToState(
-            BranchMergeProposalStatus.MERGE_FAILED, merger)
-        self.merger = merger
-        # Remove from the queue.
-        self.queue_position = None
-
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
@@ -486,8 +538,10 @@ class BranchMergeProposal(SQLBase):
         self.queue_position = None
 
         if merged_revno is not None:
-            branch_revision = BranchRevision.selectOneBy(
-                branch=self.target_branch, sequence=merged_revno)
+            branch_revision = Store.of(self).find(
+                BranchRevision,
+                BranchRevision.branch == self.target_branch,
+                BranchRevision.sequence == merged_revno).one()
             if branch_revision is not None:
                 date_merged = branch_revision.revision.revision_date
 
@@ -495,8 +549,24 @@ class BranchMergeProposal(SQLBase):
             date_merged = UTC_NOW
         self.date_merged = date_merged
 
-    def resubmit(self, registrant):
+    def resubmit(self, registrant, source_branch=None, target_branch=None,
+                 prerequisite_branch=DEFAULT, description=None,
+                 break_link=False):
         """See `IBranchMergeProposal`."""
+        if source_branch is None:
+            source_branch = self.source_branch
+        if target_branch is None:
+            target_branch = self.target_branch
+        # DEFAULT instead of None, because None is a valid value.
+        proposals = BranchMergeProposalGetter.activeProposalsForBranches(
+            source_branch, target_branch)
+        for proposal in proposals:
+            if proposal is not self:
+                raise BranchMergeProposalExists(proposal)
+        if prerequisite_branch is DEFAULT:
+            prerequisite_branch = self.prerequisite_branch
+        if description is None:
+            description = self.description
         # You can transition from REJECTED to SUPERSEDED, but
         # not from MERGED or SUPERSEDED.
         self._transitionToState(
@@ -505,15 +575,16 @@ class BranchMergeProposal(SQLBase):
         # a database query to identify if there are any active proposals
         # with the same source and target branches.
         self.syncUpdate()
-        review_requests = set(
-            (vote.reviewer, vote.review_type) for vote in self.votes)
-        proposal = self.source_branch.addLandingTarget(
+        review_requests = list(set(
+            (vote.reviewer, vote.review_type) for vote in self.votes))
+        proposal = source_branch.addLandingTarget(
             registrant=registrant,
-            target_branch=self.target_branch,
-            prerequisite_branch=self.prerequisite_branch,
-            description=self.description,
+            target_branch=target_branch,
+            prerequisite_branch=prerequisite_branch,
+            description=description,
             needs_review=True, review_requests=review_requests)
-        self.superseded_by = proposal
+        if not break_link:
+            self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
         # properties of supersedes and superseded_by are visible to
         # the old and the new proposal.
@@ -579,14 +650,22 @@ class BranchMergeProposal(SQLBase):
 
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""
-        return BranchRevision.select('''
-            BranchRevision.branch = %s AND
-            BranchRevision.sequence IS NOT NULL AND
-            BranchRevision.revision NOT IN (
-              SELECT revision FROM BranchRevision
-              WHERE branch = %s)
-            ''' % sqlvalues(self.source_branch, self.target_branch),
-            prejoins=['revision'], orderBy='-sequence', limit=10)
+        store = Store.of(self)
+        source = SQL("""source AS (SELECT BranchRevision.branch,
+            BranchRevision.revision, Branchrevision.sequence FROM
+            BranchRevision WHERE BranchRevision.branch = %s and
+            BranchRevision.sequence IS NOT NULL ORDER BY BranchRevision.branch
+            DESC, BranchRevision.sequence DESC
+            LIMIT 10)""" % self.source_branch.id)
+        where = SQL("""BranchRevision.revision NOT IN (SELECT revision from
+            BranchRevision AS target where target.branch = %s and
+            BranchRevision.revision = target.revision)""" %
+            self.target_branch.id)
+        using = SQL("""source as BranchRevision""")
+        revisions = store.with_(source).using(using).find(
+            BranchRevision, where)
+        return list(revisions.order_by(
+            Desc(BranchRevision.sequence)).config(limit=10))
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
@@ -614,12 +693,12 @@ class BranchMergeProposal(SQLBase):
 
         # Until these are moved into the lp module, import here to avoid
         # circular dependencies from canonical.launchpad.database.__init__.py
-        from canonical.launchpad.database.message import Message, MessageChunk
+        from lp.services.messages.model.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
-        chunk = MessageChunk(message=message, content=content, sequence=1)
+        MessageChunk(message=message, content=content, sequence=1)
         return self.createCommentFromMessage(
             message, vote, review_type, original_email=None,
             _notify_listeners=_notify_listeners, _validate=False)
@@ -649,9 +728,8 @@ class BranchMergeProposal(SQLBase):
             CodeReviewVoteReference,
             CodeReviewVoteReference.branch_merge_proposal == self,
             CodeReviewVoteReference.review_type == review_type,
-            CodeReviewVoteReference.comment == None
-            ).order_by(CodeReviewVoteReference.date_created)
-        for ref in refs:
+            CodeReviewVoteReference.comment == None)
+        for ref in refs.order_by(CodeReviewVoteReference.date_created):
             if user.inTeam(ref.reviewer):
                 return ref
         return None
@@ -729,6 +807,102 @@ class BranchMergeProposal(SQLBase):
         # the storm store.
         Store.of(self).flush()
         return self.preview_diff
+
+    def getIncrementalDiffRanges(self):
+        groups = self.getRevisionsSinceReviewStart()
+        return [
+            (group[0].revision.getLefthandParent(), group[-1].revision)
+            for group in groups]
+
+    def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
+        """Generate an incremental diff for the merge proposal.
+
+        :param old_revision: The `Revision` to generate the diff from.
+        :param new_revision: The `Revision` to generate the diff to.
+        :param diff: If supplied, a pregenerated `Diff`.
+        """
+        if diff is None:
+            source_branch = self.source_branch.getBzrBranch()
+            ignore_branches = [self.target_branch.getBzrBranch()]
+            if self.prerequisite_branch is not None:
+                ignore_branches.append(
+                    self.prerequisite_branch.getBzrBranch())
+            diff = Diff.generateIncrementalDiff(
+                old_revision, new_revision, source_branch, ignore_branches)
+        incremental_diff = IncrementalDiff()
+        incremental_diff.diff = diff
+        incremental_diff.branch_merge_proposal = self
+        incremental_diff.old_revision = old_revision
+        incremental_diff.new_revision = new_revision
+        IMasterStore(IncrementalDiff).add(incremental_diff)
+        return incremental_diff
+
+    def getIncrementalDiffs(self, revision_list):
+        """Return a list of diffs for the specified revisions.
+
+        :param revision_list: A list of tuples of (`Revision`, `Revision`).
+            The first revision in the tuple is the old revision.  The second
+            is the new revision.
+        :return: A list of IncrementalDiffs in the same order as the supplied
+            Revisions.
+        """
+        diffs = Store.of(self).find(IncrementalDiff,
+            IncrementalDiff.branch_merge_proposal_id == self.id)
+        diff_dict = dict(
+            ((diff.old_revision, diff.new_revision), diff)
+            for diff in diffs)
+        return [diff_dict.get(revisions) for revisions in revision_list]
+
+    @property
+    def revision_end_date(self):
+        """The cutoff date for showing revisions.
+
+        If the proposal has been merged, then we stop at the merged date. If
+        it is rejected, we stop at the reviewed date. For superseded
+        proposals, it should ideally use the non-existant date_last_modified,
+        but could use the last comment date.
+        """
+        status = self.queue_status
+        if status == BranchMergeProposalStatus.MERGED:
+            return self.date_merged
+        if status == BranchMergeProposalStatus.REJECTED:
+            return self.date_reviewed
+        # Otherwise return None representing an open end date.
+        return None
+
+    def _getNewerRevisions(self):
+        start_date = self.date_review_requested
+        if start_date is None:
+            start_date = self.date_created
+        return self.source_branch.getMainlineBranchRevisions(
+            start_date, self.revision_end_date, oldest_first=True)
+
+    def getRevisionsSinceReviewStart(self):
+        """Get the grouped revisions since the review started."""
+        entries = [
+            ((comment.date_created, -1), comment) for comment
+            in self.all_comments]
+        revisions = self._getNewerRevisions()
+        entries.extend(
+            ((revision.date_created, branch_revision.sequence),
+                branch_revision)
+            for branch_revision, revision in revisions)
+        entries.sort()
+        current_group = []
+        for sortkey, entry in entries:
+            if IBranchRevision.providedBy(entry):
+                current_group.append(entry)
+            else:
+                if current_group != []:
+                    yield current_group
+                    current_group = []
+        if current_group != []:
+            yield current_group
+
+    def getMissingIncrementalDiffs(self):
+        ranges = self.getIncrementalDiffRanges()
+        diffs = self.getIncrementalDiffs(ranges)
+        return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
 
 
 class BranchMergeProposalGetter:
@@ -849,5 +1023,3 @@ class BranchMergeProposalGetter:
             BranchMergeProposal.target_branch = %s AND
             BranchMergeProposal.queue_status NOT IN %s
                 """ % sqlvalues(source_branch, target_branch, FINAL_STATES))
-
-

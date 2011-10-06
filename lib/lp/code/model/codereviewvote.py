@@ -8,7 +8,10 @@ __all__ = [
     'CodeReviewVoteReference',
     ]
 
-from sqlobject import ForeignKey, StringCol
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 from zope.schema import Int
 
@@ -16,7 +19,10 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from lp.code.errors import (
-    ClaimReviewFailed, ReviewNotPending, UserHasExistingReview)
+    ClaimReviewFailed,
+    ReviewNotPending,
+    UserHasExistingReview,
+    )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 
 
@@ -75,6 +81,8 @@ class CodeReviewVoteReference(SQLBase):
 
     def claimReview(self, claimant):
         """See `ICodeReviewVote`"""
+        if self.reviewer == claimant:
+            return
         self.validateClaimReview(claimant)
         self.reviewer = claimant
 

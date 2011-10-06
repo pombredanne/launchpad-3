@@ -8,18 +8,22 @@ __all__ = [
     'ISuiteSourcePackage',
     ]
 
-from lazr.restful.declarations import export_as_webservice_entry, exported
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from lazr.restful.fields import Reference
-
 from zope.interface import Interface
-from zope.schema import Choice, TextLine
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 class ISuiteSourcePackage(Interface):

@@ -14,7 +14,7 @@ alsa-utils and foobar in ubuntu to test with:
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> login('foo.bar@canonical.com')
     >>> stp = SoyuzTestPublisher()
@@ -74,11 +74,11 @@ for each file related with the alsa-utils source publication in ubuntu.
 'iceweasel' source in Celso's PPA contains binary files that can be
 inspected.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
 
     >>> iceweasel_source_pub = cprov.archive.getPublishedSources(
-    ...     'iceweasel')[0]
+    ...     'iceweasel').first()
 
     >>> ppa_source_view = getMultiAdapter(
     ...     (iceweasel_source_pub, LaunchpadTestRequest()),
@@ -138,7 +138,6 @@ This test will fail if we add a new value to the PackagePublishingStatus
 enumeration but neglect to update BasePublishingRecordView.timestamp_map
 accordingly.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> from lp.soyuz.browser.publishing import (
     ...     BasePublishingRecordView)
     >>> for pps in PackagePublishingStatus.items:

@@ -1,29 +1,45 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Diff, etc."""
 
 __metaclass__ = type
 
-
 from cStringIO import StringIO
 from difflib import unified_diff
 import logging
-from unittest import TestLoader
 
-from bzrlib.branch import Branch
 from bzrlib import trace
+from bzrlib.patches import (
+    InsertLine,
+    parse_patches,
+    RemoveLine,
+    )
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
-from canonical.launchpad.webapp import canonical_url, errorlog
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
-from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
-from lp.code.model.directbranchcommit import DirectBranchCommit
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
-    IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
-from lp.testing import login, login_person, TestCaseWithFactory
+    IDiff,
+    IIncrementalDiff,
+    IPreviewDiff,
+    )
+from lp.code.model.diff import (
+    Diff,
+    PreviewDiff,
+    )
+from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class RecordLister(logging.Handler):
@@ -36,31 +52,41 @@ class RecordLister(logging.Handler):
         self.records.append(record)
 
 
+def commit_file(branch, path, contents, merge_parents=None):
+    """Create a commit that updates a file to specified contents.
+
+    This will create or modify the file, as needed.
+    """
+    committer = DirectBranchCommit(
+        removeSecurityProxy(branch), no_race_check=True,
+        merge_parents=merge_parents)
+    committer.writeFile(path, contents)
+    try:
+        return committer.commit('committing')
+    finally:
+        committer.unlock()
+
+
+def create_example_merge(test_case):
+    """Create a merge proposal with conflicts and updates."""
+    bmp = test_case.factory.makeBranchMergeProposal()
+    # Make the branches of the merge proposal look good as far as the
+    # model is concerned.
+    test_case.factory.makeRevisionsForBranch(bmp.source_branch)
+    test_case.factory.makeRevisionsForBranch(bmp.target_branch)
+    bzr_target = test_case.createBzrBranch(bmp.target_branch)
+    commit_file(bmp.target_branch, 'foo', 'a\n')
+    test_case.createBzrBranch(bmp.source_branch, bzr_target)
+    source_rev_id = commit_file(bmp.source_branch, 'foo', 'd\na\nb\n')
+    target_rev_id = commit_file(bmp.target_branch, 'foo', 'c\na\n')
+    return bmp, source_rev_id, target_rev_id
+
+
 class DiffTestCase(TestCaseWithFactory):
 
-    @staticmethod
-    def commitFile(branch, path, contents):
-        """Create a commit that updates a file to specified contents.
-
-        This will create or modify the file, as needed.
-        """
-        committer = DirectBranchCommit(branch, to_mirror=True)
-        committer.writeFile(path, contents)
-        try:
-            return committer.commit('committing')
-        finally:
-            committer.unlock()
-
     def createExampleMerge(self):
-        """Create a merge proposal with conflicts and updates."""
-        self.useBzrBranches()
-        bmp = self.factory.makeBranchMergeProposal()
-        bzr_target = self.createBzrBranch(bmp.target_branch)
-        self.commitFile(bmp.target_branch, 'foo', 'a\n')
-        self.createBzrBranch(bmp.source_branch, bzr_target)
-        source_rev_id = self.commitFile(bmp.source_branch, 'foo', 'd\na\nb\n')
-        target_rev_id = self.commitFile(bmp.target_branch, 'foo', 'c\na\n')
-        return bmp, source_rev_id, target_rev_id
+        self.useBzrBranches(direct_database=True)
+        return create_example_merge(self)
 
     def checkExampleMerge(self, diff_text):
         """Ensure the diff text matches the values for ExampleMerge."""
@@ -77,7 +103,7 @@ class DiffTestCase(TestCaseWithFactory):
 
     def preparePrerequisiteMerge(self, bmp=None):
         """Prepare a merge scenario with a prerequisite branch."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         if bmp is None:
             target = self.factory.makeBranch()
             prerequisite = self.factory.makeBranch()
@@ -87,17 +113,16 @@ class DiffTestCase(TestCaseWithFactory):
             source = bmp.source_branch
             prerequisite = bmp.prerequisite_branch
         target_bzr = self.createBzrBranch(target)
-        self.commitFile(target, 'file', 'target text\n')
+        commit_file(target, 'file', 'target text\n')
         prerequisite_bzr = self.createBzrBranch(prerequisite, target_bzr)
-        self.commitFile(
+        commit_file(
             prerequisite, 'file', 'target text\nprerequisite text\n')
         source_bzr = self.createBzrBranch(source, prerequisite_bzr)
-        source_rev_id = self.commitFile(
+        source_rev_id = commit_file(
             source, 'file',
             'target text\nprerequisite text\nsource text\n')
         return (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
                 prerequisite)
-
 
 
 class TestDiff(DiffTestCase):
@@ -155,27 +180,27 @@ class TestDiffInScripts(DiffTestCase):
     def test_mergePreviewFromBranches(self):
         # mergePreviewFromBranches generates the correct diff.
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
-        source_branch = Branch.open(bmp.source_branch.warehouse_url)
-        target_branch = Branch.open(bmp.target_branch.warehouse_url)
+        source_branch = bmp.source_branch.getBzrBranch()
+        target_branch = bmp.target_branch.getBzrBranch()
         diff, conflicts = Diff.mergePreviewFromBranches(
             source_branch, source_rev_id, target_branch)
         transaction.commit()
         self.checkExampleMerge(diff.text)
 
     diff_bytes = (
-        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
-        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
         "-a\n"
         "-b\n"
         "-c\n"
-        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
-        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "--- baz\t1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz\t2009-08-26 15:53:57.000000000 -0400\n"
         "@@ -0,0 +1,2 @@\n"
         "+a\n"
         "+b\n"
-        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
-        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
         "@@ -1,3 +1,4 @@\n"
         " a\n"
         "-b\n"
@@ -184,19 +209,19 @@ class TestDiffInScripts(DiffTestCase):
         "+e\n")
 
     diff_bytes_2 = (
-        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
-        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
         "-a\n"
         "-b\n"
         "-c\n"
-        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
-        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "--- baz\t1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz\t2009-08-26 15:53:57.000000000 -0400\n"
         "@@ -0,0 +1,2 @@\n"
         "+a\n"
         "+b\n"
-        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
-        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
         "@@ -1,3 +1,5 @@\n"
         " a\n"
         "-b\n"
@@ -220,7 +245,7 @@ class TestDiffInScripts(DiffTestCase):
         # affect the diff.
         (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
          prerequisite) = self.preparePrerequisiteMerge()
-        self.commitFile(
+        commit_file(
             prerequisite, 'file', 'prerequisite text2\n')
         diff, conflicts = Diff.mergePreviewFromBranches(
             source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
@@ -254,82 +279,13 @@ class TestDiffInScripts(DiffTestCase):
     def test_fromFile_withError(self):
         # If the diff is formatted such that generating the diffstat fails, we
         # want to record an oops but continue.
-        last_oops_id = errorlog.globalErrorUtility.lastid
         diff_bytes = "not a real diff"
         diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
-        self.assertNotEqual(last_oops_id, errorlog.globalErrorUtility.lastid)
+        oops = self.oopses[0]
+        self.assertEqual('MalformedPatchHeader', oops['type'])
         self.assertIs(None, diff.diffstat)
         self.assertIs(None, diff.added_lines_count)
         self.assertIs(None, diff.removed_lines_count)
-
-
-class TestStaticDiff(TestCaseWithFactory):
-    """Test that StaticDiff objects work."""
-
-    layer = LaunchpadZopelessLayer
-
-    def test_providesInterface(self):
-        verifyObject(IStaticDiff, StaticDiff())
-
-    def test_providesSourceInterface(self):
-        verifyObject(IStaticDiffSource, StaticDiff)
-
-    def test_acquire_existing(self):
-        """Ensure that acquire returns the existing StaticDiff."""
-        self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit', rev_id='rev1')
-        diff1 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
-        diff2 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
-        self.assertIs(diff1, diff2)
-
-    def test_acquire_existing_different_repo(self):
-        """The existing object is used even if the repository is different."""
-        self.useBzrBranches()
-        branch1, tree1 = self.create_branch_and_tree('tree1')
-        tree1.commit('First commit', rev_id='rev1')
-        branch2, tree2 = self.create_branch_and_tree('tree2')
-        tree2.pull(tree1.branch)
-        diff1 = StaticDiff.acquire('null:', 'rev1', tree1.branch.repository)
-        diff2 = StaticDiff.acquire('null:', 'rev1', tree2.branch.repository)
-        self.assertTrue(diff1 is diff2)
-
-    def test_acquire_nonexisting(self):
-        """A new object is created if there is no existant matching object."""
-        self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit', rev_id='rev1')
-        tree.commit('Next commit', rev_id='rev2')
-        diff1 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
-        diff2 = StaticDiff.acquire('rev1', 'rev2', tree.branch.repository)
-        self.assertIsNot(diff1, diff2)
-
-    def test_acquireFromText(self):
-        """acquireFromText works as expected.
-
-        It creates a new object if there is none, but uses the existing one
-        if possible.
-        """
-        diff_a = ''.join(unified_diff('', 'a'))
-        diff_b = ''.join(unified_diff('', 'b'))
-        static_diff = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_a)
-        self.assertEqual('rev1', static_diff.from_revision_id)
-        self.assertEqual('rev2', static_diff.to_revision_id)
-        static_diff2 = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_b)
-        self.assertIs(static_diff, static_diff2)
-
-    def test_acquireFromTextEmpty(self):
-        static_diff = StaticDiff.acquireFromText('rev1', 'rev2', '')
-        self.assertEqual('', static_diff.diff.text)
-
-    def test_acquireFromTextNonEmpty(self):
-        diff_bytes = ''.join(unified_diff('', 'abc'))
-        static_diff = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_bytes)
-        transaction.commit()
-        self.assertEqual(diff_bytes, static_diff.diff.text)
 
 
 class TestPreviewDiff(DiffTestCase):
@@ -424,17 +380,16 @@ class TestPreviewDiff(DiffTestCase):
 
     def test_fromPreviewDiff_with_no_conflicts(self):
         """Test fromPreviewDiff when no conflicts are present."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         bmp = self.factory.makeBranchMergeProposal()
         bzr_target = self.createBzrBranch(bmp.target_branch)
-        self.commitFile(bmp.target_branch, 'foo', 'a\n')
+        commit_file(bmp.target_branch, 'foo', 'a\n')
         self.createBzrBranch(bmp.source_branch, bzr_target)
-        source_rev_id = self.commitFile(bmp.source_branch, 'foo', 'a\nb\n')
-        target_rev_id = self.commitFile(bmp.target_branch, 'foo', 'c\na\n')
+        commit_file(bmp.source_branch, 'foo', 'a\nb\n')
+        commit_file(bmp.target_branch, 'foo', 'c\na\n')
         diff = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual('', diff.conflicts)
         self.assertFalse(diff.has_conflicts)
-
 
     def test_fromBranchMergeProposal(self):
         # Correctly generates a PreviewDiff from a BranchMergeProposal.
@@ -472,7 +427,7 @@ class TestPreviewDiff(DiffTestCase):
         logger = logging.getLogger('bzr')
         logger.addHandler(handler)
         try:
-            preview = PreviewDiff.fromBranchMergeProposal(bmp)
+            PreviewDiff.fromBranchMergeProposal(bmp)
             self.assertEqual(handler.records, [])
             # check that our handler would normally intercept warnings.
             trace.warning('foo!')
@@ -492,5 +447,80 @@ class TestPreviewDiff(DiffTestCase):
             NotFoundError, diff.getFileByName, 'preview.diff')
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestIncrementalDiff(DiffTestCase):
+    """Test that IncrementalDiff objects work."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_providesInterface(self):
+        incremental_diff = self.factory.makeIncrementalDiff()
+        verifyObject(IIncrementalDiff, incremental_diff)
+
+    @staticmethod
+    def diff_changes(diff_bytes):
+        inserted = []
+        removed = []
+        for patch in parse_patches(diff_bytes.splitlines(True)):
+            for hunk in patch.hunks:
+                for line in hunk.lines:
+                    if isinstance(line, InsertLine):
+                        inserted.append(line.contents)
+                    if isinstance(line, RemoveLine):
+                        removed.append(line.contents)
+        return inserted, removed
+
+    def test_generateIncrementalDiff(self):
+        """generateIncrementalDiff works.
+
+        Changes merged from the prerequisite and target are ignored in the
+        diff.
+
+        We generate an incremental diff from old_revision_id to
+        new_revision_id.
+
+        old_revision_id has:
+        a
+        b
+        e
+
+        new_revision_id has:
+        d
+        a
+        c
+        e
+        f
+
+        Because the prerequisite branch adds "d", this change is ignored.
+        Because the target branch adds "f", this change is ignored.
+        So the incremental diff shows that "c" was added and "b" was removed.
+        """
+        self.useBzrBranches(direct_database=True)
+        prerequisite_branch = self.factory.makeAnyBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            prerequisite_branch=prerequisite_branch)
+        target_branch = self.createBzrBranch(bmp.target_branch)
+        old_revision_id = commit_file(bmp.target_branch, 'foo', 'a\nb\ne\n')
+        old_revision = self.factory.makeRevision(rev_id=old_revision_id)
+        source_branch = self.createBzrBranch(
+            bmp.source_branch, target_branch)
+        commit_file(bmp.source_branch, 'foo', 'a\nc\ne\n')
+        prerequisite = self.createBzrBranch(
+            bmp.prerequisite_branch, target_branch)
+        prerequisite_revision = commit_file(
+            bmp.prerequisite_branch, 'foo', 'd\na\nb\ne\n')
+        merge_parent = commit_file(bmp.target_branch, 'foo', 'a\nb\ne\nf\n')
+        source_branch.repository.fetch(target_branch.repository,
+            revision_id=merge_parent)
+        commit_file(bmp.source_branch, 'foo', 'a\nc\ne\nf\n', [merge_parent])
+        source_branch.repository.fetch(prerequisite.repository,
+            revision_id=prerequisite_revision)
+        new_revision_id = commit_file(
+            bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
+            [prerequisite_revision])
+        new_revision = self.factory.makeRevision(rev_id=new_revision_id)
+        incremental_diff = bmp.generateIncrementalDiff(
+            old_revision, new_revision)
+        transaction.commit()
+        inserted, removed = self.diff_changes(incremental_diff.text)
+        self.assertEqual(['c\n'], inserted)
+        self.assertEqual(['b\n'], removed)

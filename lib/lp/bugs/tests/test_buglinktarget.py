@@ -15,12 +15,16 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.cve import ICveSet
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+
 
 def questionSetUp(test):
     setUp(test)

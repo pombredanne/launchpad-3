@@ -6,15 +6,17 @@
 __metaclass__ = type
 
 import unittest
+
 from zope.interface.verify import verifyObject
 
-from lp.translations.utilities.mozilla_xpi_importer import (
-    MozillaXpiImporter)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationFormatImporter)
-from canonical.testing import LaunchpadZopelessLayer
+    ITranslationFormatImporter,
+    )
+from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
 
 
 class MozillaXpiImporterTestCase(unittest.TestCase):
@@ -43,7 +45,3 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
             self.importer.uses_source_string_msgids,
             "MozillaXpiImporter format says it's not using alternative msgid"
             " when it really does!")
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

@@ -5,7 +5,15 @@
   metal:use-macro="view/macro:page/main_only"
 >
   <body>
-    <div metal:fill-slot="head_epilogue">
+    <tal:head_epilogue metal:fill-slot="head_epilogue">
+      <script type="text/javascript">
+        LPS.use('lp.translations.sourcepackage_sharing_details', function(Y) {
+          Y.on('domready', function() {
+              Y.lp.translations.sourcepackage_sharing_details.prepare(
+                LP.cache);
+          });
+        });
+      </script>
       <style type="text/css">
         .inactive_links a{
           background: none;
@@ -53,7 +61,7 @@
           });
       });
       </script>
-    </div>
+    </tal:head_epilogue>
     <div metal:fill-slot="main">
       <div class="translation-help-links">
         <a href="https://help.launchpad.net/Translations"
@@ -73,79 +81,13 @@
       <div class="yui-b">
       <table class="sortable listing" id="templates_table">
         <thead>
-          <tr>
-            <th class="priority_column">Priority</th>
-            <th tal:condition="view/is_distroseries"
-                class="sourcepackage_column">Source package</th>
-            <th class="template_column">Template name</th>
-            <th class="length_column">Length</th>
-            <th class="languages_column">Languages</th>
-            <th class="lastupdate_column">Updated</th>
-            <th class="actions_column"
-                tal:condition="context/required:launchpad.AnyPerson">
-              Actions</th>
+          <tr tal:content="structure view/renderTemplatesHeader">
           </tr>
         </thead>
         <tbody>
-          <tal:templates repeat="template view/iter_templates">
-            <tr tal:define="
-                  inactive_css_class python:view.rowCSSClass(template)"
-                tal:condition="python: view.isVisible(template)"
-                tal:attributes="
-                  class string: template_row ${inactive_css_class}">
-              <td class="priority_column"
-                  tal:content="template/priority">7</td>
-              <td tal:condition="view/is_distroseries"
-                  tal:content="template/sourcepackagename/name"
-                  class="sourcepackage_column">Source package
-              </td>
-              <td class="template_column">
-                <a tal:attributes="href template/fmt:url">
-                  <span tal:content="template/name">Template name</span>
-                </a>
-                <tal:inactive condition="not: template/iscurrent">
-                  (inactive)
-                </tal:inactive>
-              </td>
-              <td class="length_column"
-                  tal:content="template/getPOTMsgSetsCount">1777</td>
-              <td class="languages_column"
-                  tal:content="template/language_count">777</td>
-              <td class="lastupdate_column">
-                <span class="sortkey"
-                      tal:condition="template/date_last_updated"
-                      tal:content="template/date_last_updated/fmt:datetime">
-                      time sort key
-                </span>
-                <span class="lastupdate_column"
-                      tal:condition="template/date_last_updated"
-                      tal:attributes="
-                        title template/date_last_updated/fmt:datetime"
-                      tal:content="
-                        template/date_last_updated/fmt:approximatedate"
-                >
-                   2009-09-23
-                </span>
-              </td>
-              <td class="actions_column"
-                  tal:condition="context/required:launchpad.AnyPerson">
-              <div class="template_links">
-                <a tal:replace="
-                    structure template/menu:translations/edit/fmt:link
-                    " />
-                <a tal:replace="
-                    structure template/menu:translations/upload/fmt:link
-                    " />
-                <a tal:replace="
-                    structure template/menu:translations/download/fmt:link
-                    " />
-                <a tal:replace="
-                    structure template/menu:translations/administer/fmt:link
-                    " />
-              </div>
-              </td>
-            </tr>
-          </tal:templates>
+          <tal:templates
+              repeat="data view/iter_data"
+              content="structure python:view.renderTemplateRow(*data)"/>
         </tbody>
       </table>
       </div>

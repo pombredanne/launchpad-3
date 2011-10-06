@@ -9,18 +9,27 @@ __all__ = [
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
-    'ProductSeriesBranchTarget',
     ]
+
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.sorting import sorted_version_numbers
+from lp.code.errors import NoLinkedBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
-    check_default_stacked_on, IBranchTarget)
+    check_default_stacked_on,
+    IBranchTarget,
+    )
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.registry.interfaces.series import SeriesStatus
 
 
 def branch_to_target(branch):
@@ -35,6 +44,21 @@ class _BaseBranchTarget:
 
     def __ne__(self, other):
         return self.context != other.context
+
+    def newCodeImport(self, registrant, branch_name, rcs_type, url=None,
+                      cvs_root=None, cvs_module=None, owner=None):
+        """See `IBranchTarget`."""
+        return getUtility(ICodeImportSet).new(
+            registrant, self, branch_name, rcs_type, url=url,
+            cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)
+
+    def getRelatedSeriesBranchInfo(self, parent_branch, limit_results=None):
+        """See `IBranchTarget`."""
+        return []
+
+    def getRelatedPackageBranchInfo(self, parent_branch, limit_results=None):
+        """See `IBranchTarget`."""
+        return []
 
 
 class PackageBranchTarget(_BaseBranchTarget):
@@ -95,6 +119,16 @@ class PackageBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         # Branches are mergable into a PackageTarget if the source package
@@ -140,11 +174,31 @@ class PackageBranchTarget(_BaseBranchTarget):
         branch.distroseries = self.sourcepackage.distroseries
         branch.sourcepackagename = self.sourcepackage.sourcepackagename
 
+    def getRelatedPackageBranchInfo(self, parent_branch, limit_results=None):
+        """See `IBranchTarget`."""
+        result = []
+        linked_branches = self.sourcepackage.linkedBranches()
+        distroseries = self.sourcepackage.distroseries
+        result.extend(
+                [(branch, distroseries)
+                 for branch in linked_branches.values()
+                 if (check_permission('launchpad.View', branch) and
+                    branch != parent_branch and
+                    distroseries.status != SeriesStatus.OBSOLETE)])
+
+        result = sorted_version_numbers(result, key=lambda branch_info: (
+                    getattr(branch_info[1], 'name')))
+
+        if limit_results is not None:
+            # We only want the most recent branches
+            result = result[:limit_results]
+        return result
+
 
 class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
-    name = '+junk'
+    name = u'+junk'
     default_stacked_on_branch = None
     default_merge_target = None
 
@@ -179,6 +233,16 @@ class PersonBranchTarget(_BaseBranchTarget):
 
     @property
     def supports_merge_proposals(self):
+        """See `IBranchTarget`."""
+        return False
+
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return False
+
+    @property
+    def supports_code_imports(self):
         """See `IBranchTarget`."""
         return False
 
@@ -258,6 +322,16 @@ class ProductBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         # Branches are mergable into a PackageTarget if the source package
@@ -299,19 +373,74 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.distroseries = None
         branch.sourcepackagename = None
 
-
-class ProductSeriesBranchTarget(ProductBranchTarget):
-
-    def __init__(self, productseries):
-        self.productseries = productseries
-        self.product = productseries.product
-
-    @property
-    def context(self):
+    def getRelatedSeriesBranchInfo(self, parent_branch, limit_results=None):
         """See `IBranchTarget`."""
-        return self.productseries
+        sorted_series = []
+        for series in self.product.series:
+            if (series.status != SeriesStatus.OBSOLETE
+                and series != self.product.development_focus):
+                sorted_series.append(series)
+        # Now sort the list by name with newer versions before older.
+        sorted_series = sorted_version_numbers(sorted_series,
+                                             key=attrgetter('name'))
+        # Add the development focus first.
+        sorted_series.insert(0, self.product.development_focus)
+
+        result = []
+        for series in sorted_series:
+            try:
+                branch = get_linked_to_branch(series).branch
+                if (branch not in result and branch != parent_branch and
+                    check_permission('launchpad.View', branch)):
+                    result.append((branch, series))
+            except NoLinkedBranch:
+                # If there's no branch for a particular series, we don't care.
+                pass
+
+        if limit_results is not None:
+            # We only want the most recent branches
+            result = result[:limit_results]
+        return result
+
+    def getRelatedPackageBranchInfo(self, parent_branch, limit_results=None):
+        """See `IBranchTarget`."""
+        result = []
+        for distrosourcepackage in self.product.distrosourcepackages:
+            try:
+                branch = get_linked_to_branch(distrosourcepackage).branch
+                series = distrosourcepackage.distribution.currentseries
+                if (branch != parent_branch and series is not None and
+                    check_permission('launchpad.View', branch)):
+                        result.append((branch, series))
+            except NoLinkedBranch:
+                # If there's no branch for a particular source package,
+                # we don't care.
+                pass
+
+        result = sorted_version_numbers(result, key=lambda branch_info: (
+                    getattr(branch_info[1], 'name')))
+
+        if limit_results is not None:
+            # We only want the most recent branches
+            result = result[:limit_results]
+        return result
 
 
 def get_canonical_url_data_for_target(branch_target):
     """Return the `ICanonicalUrlData` for an `IBranchTarget`."""
     return ICanonicalUrlData(branch_target.context)
+
+
+def product_series_to_branch_target(product_series):
+    """The Product itself is the branch target given a ProductSeries."""
+    return ProductBranchTarget(product_series.product)
+
+
+def distribution_sourcepackage_to_branch_target(distro_sourcepackage):
+    """The development version of the distro sourcepackage is the target."""
+    dev_version = distro_sourcepackage.development_version
+    # It is possible for distributions to not have any series, and if that is
+    # the case, the dev_version is None.
+    if dev_version is None:
+        return None
+    return PackageBranchTarget(dev_version)

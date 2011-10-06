@@ -13,14 +13,18 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
-
 from canonical.launchpad.interfaces.temporaryblobstorage import (
-    BlobTooLarge, ITemporaryBlobStorage, ITemporaryStorageManager)
+    BlobTooLarge,
+    ITemporaryBlobStorage,
+    ITemporaryStorageManager,
+    )
 from canonical.launchpad.webapp import GetitemNavigation
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.librarian.interfaces import UploadFailed
-
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 
 
@@ -61,7 +65,6 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
             self.addError('Uploaded file was too large.')
             return None
         except UploadFailed, e:
-            import pdb; pdb.set_trace()
             self.addError('File storage unavailable - try again later.')
             return None
         else:

@@ -4,7 +4,7 @@ BuildQueue class represents the run-time-records of builds being
 processed.
 
 See buildd-queuebuilder.txt for more information about the BuildQueue
-initialisation.
+initialization.
 
 BuildQueue should provide all the information needed for dispatching
 and collecting build results.
@@ -31,14 +31,14 @@ Instances returned by IBuildQueueSet provides the IBuildQueue interface:
 The IBuild record related to this job is provided by the 'build'
 attribute:
 
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build = getUtility(IBuildSet).getByQueueEntry(bq)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bq)
     >>> build.id
     8
-    >>> build.buildstate.name
+    >>> build.status.name
     'BUILDING'
 
-The static timestamps, representing when the record was initialised
+The static timestamps, representing when the record was initialized
 (inserted) and when the job was dispatched are provided as datetime
 instances:
 
@@ -124,8 +124,8 @@ builder.
     True
     >>> print job.logtail
     Dummy sampledata entry, not processing
-    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
-    >>> print build.buildstate.name
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+    >>> print build.status.name
     BUILDING
     >>> print job.lastscore
     1
@@ -144,7 +144,7 @@ to another build. The score value of the job is preserved.
     None
     >>> print job.logtail
     None
-    >>> print build.buildstate.name
+    >>> print build.status.name
     NEEDSBUILD
     >>> print job.lastscore
     1
@@ -161,7 +161,7 @@ the specified builder.
     bob
     >>> job.date_started is not None
     True
-    >>> print build.buildstate.name
+    >>> print build.status.name
     BUILDING
 
 
@@ -217,7 +217,7 @@ corresponding to a build record in NEEDSBUILD state.
 
 Use all architectures available in ubuntu/hoary, i.e, i386 and hppa:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
     >>> archseries = [arch for arch in hoary.architectures]
@@ -255,8 +255,8 @@ Materialize the changes in database:
 Note that the results are ordered by descending BuildQueue.lastscore
 and restricted
 
-    >>> for bq in bqset.calculateCandidates(archseries):
-    ...     build = getUtility(IBuildSet).getByQueueEntry(bq)
+    >>> for bq in getUtility(IBinaryPackageBuildSet).calculateCandidates(archseries):
+    ...     build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bq)
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (1000, 2)
@@ -267,7 +267,7 @@ after other packages in the queue. First we need to create a fake
 language pack build.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import ISectionSet
+    >>> from lp.soyuz.interfaces.section import ISectionSet
     >>> section_set = getUtility(ISectionSet)
     >>> [transl_section] = [s for s in section_set
     ...     if s.name == u'translations']
@@ -287,8 +287,8 @@ The build score for the fake language pack is zero.
 The fake language pack will be queued behind the other source packages
 as intended.
 
-    >>> for bq in bqset.calculateCandidates(archseries):
-    ...     build = getUtility(IBuildSet).getByQueueEntry(bq)
+    >>> for bq in getUtility(IBinaryPackageBuildSet).calculateCandidates(archseries):
+    ...     build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bq)
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (1000, 2)
@@ -299,8 +299,8 @@ as intended.
 Restricting the domain to only hoary/hppa:
 
     >>> archseries = [hoary['hppa']]
-    >>> for bq in bqset.calculateCandidates(archseries):
-    ...     build = getUtility(IBuildSet).getByQueueEntry(bq)
+    >>> for bq in getUtility(IBinaryPackageBuildSet).calculateCandidates(archseries):
+    ...     build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bq)
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
     hppa build of alsa-utils 1.0.9a-4 in ubuntu hoary RELEASE (500, 3)
@@ -308,12 +308,12 @@ Restricting the domain to only hoary/hppa:
 This method asserts a valid 'archseries' argument, None or an empty
 list will result in a AssertionFailure.
 
-    >>> bqset.calculateCandidates(None).count()
+    >>> getUtility(IBinaryPackageBuildSet).calculateCandidates(None).count()
     Traceback (most recent call last):
     ...
     AssertionError: Given 'archseries' cannot be None/empty.
 
-    >>> bqset.calculateCandidates([]).count()
+    >>> getUtility(IBinaryPackageBuildSet).calculateCandidates([]).count()
     Traceback (most recent call last):
     ...
     AssertionError: Given 'archseries' cannot be None/empty.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -18,14 +18,27 @@ __all__ = [
 
 import re
 
-from zope.schema import Bool, Int, TextLine, Choice
-from zope.interface import Interface, Attribute
-
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.role import IHasOwner
-from lazr.restful.declarations import export_as_webservice_entry, exported
 
 
 def valid_fingerprint(fingerprint):
@@ -144,5 +157,5 @@ class IGPGKeySet(Interface):
         Optionally for a given owner and or a given status.
         """
 
-    def getGPGKeysForPeople(self, people):
+    def getGPGKeysForPeople(people):
         """Return OpenPGP keys for a set of people."""

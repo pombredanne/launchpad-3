@@ -141,7 +141,7 @@ discarded.
 Similarly, email addresses with an unvalidated status are not considered
 registered either.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> emailset = getUtility(IEmailAddressSet)
     >>> new_address = emailset.new(
     ...     'frederick@example.com', fred, account=fred.account)
@@ -185,7 +185,7 @@ By default, Launchpad members have an unknown, and thus not good, standing.
 Anne is a bad person and the Launchpad administrator assigns her a poor
 standing.
 
-    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> from lp.registry.interfaces.person import PersonalStanding
     >>> anne.personal_standing = PersonalStanding.POOR
     >>> transaction.commit()
 
@@ -269,28 +269,30 @@ However, in order to prevent this address from being used to forge spam onto
 the lists, the archive address is hard-coded to not be registered in
 Launchpad.
 
-    >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
+    >>> mailinglist_api.isRegisteredInLaunchpad(
+    ...     config.mailman.archive_address)
     False
 
 This is true even if by dumb luck the address actually gets registered in
 Launchpad.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     >>> new_address = emailset.new(
     ...     config.mailman.archive_address, fred,
     ...     EmailAddressStatus.VALIDATED, account=fred.account)
     >>> transaction.commit()
 
-    >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
+    >>> mailinglist_api.isRegisteredInLaunchpad(
+    ...     config.mailman.archive_address)
     False
 
 The Mail Archive is only used for public team mailing lists.  If the team
 itself is private, so is its archive, and then messages are not sent to the
 archiver email address.
 
-    >>> from lp.registry.interfaces.person import PersonVisibility
-    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
     >>> from zope.component import queryAdapter
+    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+    >>> from lp.registry.interfaces.person import PersonVisibility
     >>> team_three = new_team('team-three')
     >>> queryAdapter(team_three, IObjectPrivacy).is_private
     False
@@ -298,9 +300,7 @@ archiver email address.
 Teams with mailing lists cannot change visibility, so the team must be made
 private before its mailing list is created.
 
-    >>> team_three.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(team_three)
+    >>> team_three.visibility = PersonVisibility.PRIVATE
     >>> queryAdapter(team_three, IObjectPrivacy).is_private
     True
 

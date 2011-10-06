@@ -10,7 +10,7 @@ from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.librarian import db
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class DBTestCase(unittest.TestCase):
@@ -39,13 +39,13 @@ class DBTestCase(unittest.TestCase):
                          sorted(library.lookupBySHA1('deadbeef')))
 
         aliasID = library.addAlias(fileID, 'file1', 'text/unknown')
-        alias = library.getAlias(aliasID)
+        alias = library.getAlias(aliasID, None, '/')
         self.assertEqual('file1', alias.filename)
         self.assertEqual('text/unknown', alias.mimetype)
 
 
-class TestTransactionDecorators(unittest.TestCase):
-    """Tests for the transaction decorators used by the librarian."""
+class TestLibrarianStuff(unittest.TestCase):
+    """Tests for the librarian."""
 
     layer = LaunchpadZopelessLayer
 
@@ -65,42 +65,44 @@ class TestTransactionDecorators(unittest.TestCase):
         # Library.getAlias() returns the LibrarayFileAlias for a given
         # LibrarayFileAlias ID.
         library = db.Library(restricted=False)
-        alias = library.getAlias(1)
+        alias = library.getAlias(1, None, '/')
         self.assertEqual(1, alias.id)
 
     def test_getAlias_no_such_record(self):
         # Library.getAlias() raises a LookupError, if no record with
         # the given ID exists.
         library = db.Library(restricted=False)
-        self.assertRaises(LookupError, library.getAlias, -1)
+        self.assertRaises(LookupError, library.getAlias, -1, None, '/')
 
     def test_getAlias_content_is_null(self):
         # Library.getAlias() raises a LookupError, if no content
         # record for the given alias exists.
         library = db.Library(restricted=False)
-        alias = library.getAlias(1)
+        alias = library.getAlias(1, None, '/')
         alias.content = None
-        self.assertRaises(LookupError, library.getAlias, 1)
+        self.assertRaises(LookupError, library.getAlias, 1, None, '/')
 
     def test_getAlias_content_is_none(self):
         # Library.getAlias() raises a LookupError, if the matching
         # record does not reference any LibraryFileContent record.
         library = db.Library(restricted=False)
-        alias = library.getAlias(1)
+        alias = library.getAlias(1, None, '/')
         alias.content = None
-        self.assertRaises(LookupError, library.getAlias, 1)
+        self.assertRaises(LookupError, library.getAlias, 1, None, '/')
 
     def test_getAlias_content_wrong_library(self):
         # Library.getAlias() raises a LookupError, if a restricted
         # library looks up a unrestricted LibraryFileAlias and
         # vice versa.
         restricted_library = db.Library(restricted=True)
-        self.assertRaises(LookupError, restricted_library.getAlias, 1)
+        self.assertRaises(
+            LookupError, restricted_library.getAlias, 1, None, '/')
 
         unrestricted_library = db.Library(restricted=False)
-        alias = unrestricted_library.getAlias(1)
+        alias = unrestricted_library.getAlias(1, None, '/')
         alias.restricted = True
-        self.assertRaises(LookupError, unrestricted_library.getAlias, 1)
+        self.assertRaises(
+            LookupError, unrestricted_library.getAlias, 1, None, '/')
 
     def test_getAliases(self):
         # Library.getAliases() returns a sequence
@@ -119,7 +121,7 @@ class TestTransactionDecorators(unittest.TestCase):
         # Library.getAliases() does not return records which do not
         # reference any LibraryFileContent record.
         library = db.Library(restricted=False)
-        alias = library.getAlias(1)
+        alias = library.getAlias(1, None, '/')
         alias.content = None
         aliases = library.getAliases(1)
         expected_aliases = [
@@ -132,7 +134,7 @@ class TestTransactionDecorators(unittest.TestCase):
         # LibrarayFileAlias records when called from a unrestricted
         # library and vice versa.
         unrestricted_library = db.Library(restricted=False)
-        alias = unrestricted_library.getAlias(1)
+        alias = unrestricted_library.getAlias(1, None, '/')
         alias.restricted = True
 
         aliases = unrestricted_library.getAliases(1)
@@ -147,60 +149,3 @@ class TestTransactionDecorators(unittest.TestCase):
             (1, u'netapplet-1.0.0.tar.gz', u'application/x-gtar'),
             ]
         self.assertEqual(expected_aliases, aliases)
-
-    def test_read_transaction_reset_store(self):
-        """Make sure that the store is reset after the transaction."""
-        @db.read_transaction
-        def no_op():
-            pass
-        no_op()
-        self.failIf(
-            self.file_content is self._getTestFileContent(),
-            "Store wasn't reset properly.")
-
-    def test_write_transaction_reset_store(self):
-        """Make sure that the store is reset after the transaction."""
-        @db.write_transaction
-        def no_op():
-            pass
-        no_op()
-        self.failIf(
-            self.file_content is self._getTestFileContent(),
-            "Store wasn't reset properly.")
-
-    def test_write_transaction_reset_store_with_raise(self):
-        """Make sure that the store is reset after the transaction."""
-        @db.write_transaction
-        def no_op():
-            raise RuntimeError('an error occured')
-        self.assertRaises(RuntimeError, no_op)
-        self.failIf(
-            self.file_content is self._getTestFileContent(),
-            "Store wasn't reset properly.")
-
-    def test_writing_transaction_reset_store_on_commit_failure(self):
-        """The store should be reset even if committing the transaction fails.
-        """
-        class TransactionAborter:
-            """Make the next commit() fails."""
-            def newTransaction(self, txn):
-                pass
-
-            def beforeCompletion(self, txn):
-                raise RuntimeError('the commit will fail')
-        aborter = TransactionAborter()
-        transaction.manager.registerSynch(aborter)
-        try:
-            @db.write_transaction
-            def no_op():
-                pass
-            self.assertRaises(RuntimeError, no_op)
-            self.failIf(
-                self.file_content is self._getTestFileContent(),
-                "Store wasn't reset properly.")
-        finally:
-            transaction.manager.unregisterSynch(aborter)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

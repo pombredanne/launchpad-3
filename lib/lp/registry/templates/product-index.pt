@@ -12,6 +12,39 @@
     <tal:registrant replace="structure context/registrant/fmt:link" />
   </tal:registering>
 
+<head>
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <style type="text/css">
+      div.collapsible {
+        border:medium none;
+        margin:0;
+        padding:16px 0 0;
+      }
+
+      div.collapsed {
+        display: None
+      }
+    </style>
+
+    <noscript>
+      <style type="text/css">
+        div.collapsible, div.collapsed {display: block;}
+      </style>
+    </noscript>
+    <tal:uses_launchpad_bugtracker
+       condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript">
+          LPS.use('lp.registry.structural_subscription', function(Y) {
+              var module = Y.lp.registry.structural_subscription;
+              Y.on('domready', function() {
+                module.setup({content_box: "#structural-subscription-content-box"});
+              });
+          });
+      </script>
+    </tal:uses_launchpad_bugtracker>
+  </tal:head-epilogue>
+</head>
+
   <body>
     <tal:main metal:fill-slot="main"
       define="overview_menu context/menu:overview">
@@ -79,25 +112,21 @@
 
               <dl id="driver">
                 <dt>Driver:</dt>
-                <dd tal:condition="view/effective_driver">
+                <dd>
+
+                  <tal:driver_set condition="view/effective_driver">
                   <a tal:replace="structure view/effective_driver/fmt:link" />
                   <a tal:replace="structure overview_menu/reassign/fmt:icon" />
-                </dd>
-                <dd tal:condition="not: view/effective_driver">
+                  </tal:driver_set>
+
+                  <tal:driver_unset condition="not: view/effective_driver">
                   Not yet appointed.
                   <a tal:replace="structure overview_menu/reassign/fmt:icon" />
-                </dd>
-              </dl>
+                  </tal:driver_unset>
 
-              <dl id="uses" tal:define="uses_launchpad view/uses_launchpad_for">
-                <tal:uses_launchpad condition="uses_launchpad">
-                  <dt>Uses Launchpad for:</dt>
-                  <dd><tal:uses content="structure uses_launchpad" />.</dd>
-                </tal:uses_launchpad>
-                <tal:no_launchpad condition="not: uses_launchpad">
-                  <dt>Does not use Launchpad for development.</dt>
-                  <dd></dd>
-                </tal:no_launchpad>
+                  <a target="help" href="/+help/driver.html"
+                     class="sprite maybe">&nbsp;<span class="invisible-link">Driver help</span></a>
+                </dd>
               </dl>
 
               <dl id="dev-focus"
@@ -116,10 +145,6 @@
                     <br/>
                     <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
                   </p>
-                  <p tal:condition="not: trunk_visible">
-                    Development focus branch has not been specified
-                    <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
-                  </p>
                 </dd>
               </dl>
 
@@ -137,9 +162,9 @@
                         condition="not:repeat/license/end">,</tal:comma>
                   </tal:licenses>
                   <tal:none condition="not:context/licenses">None specified</tal:none>
-                  <tal:has_description condition="context/license_info">
-                    (<tal:description replace="context/license_info" />)
-                  </tal:has_description>
+                  <tal:has_license_info condition="view/show_license_info">
+                    (<tal:license_info replace="context/license_info" />)
+                  </tal:has_license_info>
                 </dd>
                 <dd id="commercial_subscription"
                   tal:condition="context/commercial_subscription">
@@ -157,7 +182,7 @@
             </p>
 
             <div id="project-admin-whiteboard" class="whiteboard"
-              tal:condition="context/required:launchpad.ProjectReview">
+              tal:condition="context/required:launchpad.Moderate">
               <div>
                 <strong>Whiteboard</strong>
                 <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
@@ -190,6 +215,10 @@
               <li>
                 <a tal:replace="structure overview_menu/milestones/fmt:link" />
               </li>
+              <li tal:define="link context/menu:overview/view_recipes"
+                  tal:condition="link/enabled">
+                <a tal:replace="structure link/fmt:link" />
+              </li>
             </ul>
           </div>
         </div>
@@ -208,10 +237,10 @@
       <div class="yui-g">
         <div class="yui-u first">
           <div tal:content="structure context/@@+portlet-listfaqs"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-latestbugs"
-            tal:condition="context/official_malone" />
+            tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-top-contributors" />
 
@@ -220,19 +249,25 @@
 
         <div class="yui-u">
           <div tal:content="structure context/@@+portlet-latestquestions"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-latestspecs"
-            tal:condition="context/official_blueprints" />
+            tal:condition="context/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>
+        <div class="yui-u">
+          <div id="structural-subscription-content-box"></div>
+        </div>
+
       </div>
     </tal:main>
 
     <tal:side metal:fill-slot="side"
       define="overview_menu context/menu:overview">
       <tal:menu replace="structure view/@@+global-actions" />
+
+      <div tal:replace="structure context/@@+get-involved" />
 
       <div id="downloads" class="top-portlet downloads"
         tal:define="release view/latest_release_with_download_files">
@@ -249,13 +284,11 @@
             tal:attributes="href link/fmt:url;
                             title link/summary">All downloads</a>
            <tal:no-files condition="not: release">
-             <tal:name replace="context/displayname" /> does not have any
-              download files.
+             <tal:name replace="context/displayname" />
+             does not have any download files registered with Launchpad.
            </tal:no-files>
         </p>
       </div>
-
-      <div tal:replace="structure context/@@+get-involved" />
 
       <div tal:replace="structure context/@@+portlet-latestannouncements" />
     </tal:side>

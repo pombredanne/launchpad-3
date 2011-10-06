@@ -11,10 +11,10 @@ __metaclass__ = type
 
 __all__ = ['ISpokenIn']
 
-from canonical.launchpad import _
-
 from zope.interface import Interface
 from zope.schema import Int
+
+from canonical.launchpad import _
 
 
 class ISpokenIn(Interface):

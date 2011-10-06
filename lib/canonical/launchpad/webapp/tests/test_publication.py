@@ -7,35 +7,70 @@ __metaclass__ = type
 
 import logging
 import sys
-import unittest
 
-from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-
-from storm.database import STATE_DISCONNECTED, STATE_RECONNECT
+from contrib.oauth import (
+    OAuthRequest,
+    OAuthSignatureMethod_PLAINTEXT,
+    )
+from storm.database import (
+    STATE_DISCONNECTED,
+    STATE_RECONNECT,
+    )
 from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
-
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.publisher.interfaces import Retry
+from zope.interface import directlyProvides
+from zope.publisher.interfaces import (
+    NotFound,
+    Retry,
+    )
 
 from canonical.config import dbconfig
 from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
+    )
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.tests.readonly import (
-    remove_read_only_file, touch_read_only_file)
+    remove_read_only_file,
+    touch_read_only_file,
+    )
 import canonical.launchpad.webapp.adapter as dbadapter
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, OAuthPermission, SLAVE_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    NoReferrerError,
+    OAuthPermission,
+    OffsiteFormPostError,
+    SLAVE_FLAVOR,
+    )
 from canonical.launchpad.webapp.publication import (
-    is_browser, LaunchpadBrowserPublication)
+    is_browser,
+    LaunchpadBrowserPublication,
+    maybe_block_offsite_form_post,
+    OFFSITE_POST_WHITELIST,
+    )
 from canonical.launchpad.webapp.servers import (
-    LaunchpadTestRequest, WebServicePublication)
-from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
-from lp.testing import TestCase, TestCaseWithFactory
+    LaunchpadTestRequest,
+    WebServicePublication,
+    )
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestLaunchpadBrowserPublication(TestCase):
@@ -98,6 +133,14 @@ class TestReadOnlyModeSwitches(TestCase):
         self.slave_connection = slave._connection
         self.zstorm = getUtility(IZStorm)
         self.publication = LaunchpadBrowserPublication(None)
+        # Run through once to initialize. beforeTraversal will never
+        # disconnect Stores the first run through because there is no
+        # need.
+        request = LaunchpadTestRequest()
+        self.publication.beforeTraversal(request)
+        self.publication.endRequest(request, None)
+        getUtility(IStoreSelector).pop()
+
         self.request = LaunchpadTestRequest()
 
     @property
@@ -106,14 +149,14 @@ class TestReadOnlyModeSwitches(TestCase):
 
     def test_no_mode_changes(self):
         # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         self.publication.beforeTraversal(self.request)
 
         # Since the mode didn't change, the stores were left in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         # With the store's connection being the same as before.
         master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
@@ -128,8 +171,8 @@ class TestReadOnlyModeSwitches(TestCase):
 
     def test_changing_modes(self):
         # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         try:
             touch_read_only_file()
@@ -142,8 +185,8 @@ class TestReadOnlyModeSwitches(TestCase):
 
         # Here the mode has changed to read-only, so the stores were removed
         # from zstorm.
-        self.assertNotIn('launchpad-main-master', self.zstorm_stores)
-        self.assertNotIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertNotIn('main-master', self.zstorm_stores)
+        self.assertNotIn('main-slave', self.zstorm_stores)
 
         # If they're needed again, they'll be re-created by ZStorm, and when
         # that happens they will point to the read-only databases.
@@ -200,7 +243,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         # Create a lone account followed by an account-with-person just to
         # make sure in the second one the ID of the account and the person are
         # different.
-        dummy_account = self.factory.makeAccount('Personless account')
+        self.factory.makeAccount('Personless account')
         person = self.factory.makePerson()
         self.failIfEqual(person.id, person.account.id)
 
@@ -247,10 +290,8 @@ class TestWebServicePublication(TestCaseWithFactory):
         next_oops = error_reporting_utility.getLastOopsReport()
 
         # Ensure the OOPS mentions the correct exception
-        self.assertTrue(repr(next_oops).find("DisconnectionError") != -1)
-
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
+        self.assertTrue(repr(next_oops).find("DisconnectionError") != -1,
+            "next_oops was %r" % next_oops)
 
         # Ensure that it is different to the last logged OOPS.
         self.assertNotEqual(repr(last_oops), repr(next_oops))
@@ -282,12 +323,9 @@ class TestWebServicePublication(TestCaseWithFactory):
         # Ensure the OOPS mentions the correct exception
         self.assertNotEqual(repr(next_oops).find("Bug #504291"), -1)
 
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
-
         # Ensure the store has been rolled back and in a usable state.
         self.assertEqual(store._connection._state, STATE_RECONNECT)
-        store.find(EmailAddress).first() # Confirms Store is working.
+        store.find(EmailAddress).first()  # Confirms Store is working.
 
     def test_is_browser(self):
         # No User-Agent: header.
@@ -304,6 +342,121 @@ class TestWebServicePublication(TestCaseWithFactory):
         self.assertFalse(is_browser(request))
 
 
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-    return suite
+class TestBlockingOffsitePosts(TestCase):
+    """We are very particular about what form POSTs we will accept."""
+
+    def test_NoReferrerError(self):
+        # If this request is a POST and there is no referrer, an exception is
+        # raised.
+        request = LaunchpadTestRequest(
+            method='POST', environ=dict(PATH_INFO='/'))
+        self.assertRaises(
+            NoReferrerError, maybe_block_offsite_form_post, request)
+
+    def test_nonPOST_requests(self):
+        # If the request isn't a POST it is always allowed.
+        request = LaunchpadTestRequest(method='SOMETHING')
+        maybe_block_offsite_form_post(request)
+
+    def test_localhost_is_ok(self):
+        # we accept "localhost" and "localhost:9000" as valid referrers.  See
+        # comments in the code as to why and for a related bug report.
+        request = LaunchpadTestRequest(
+            method='POST', environ=dict(PATH_INFO='/', REFERER='localhost'))
+        # this doesn't raise an exception
+        maybe_block_offsite_form_post(request)
+
+    def test_whitelisted_paths(self):
+        # There are a few whitelisted POST targets that don't require the
+        # referrer be LP.  See comments in the code as to why and for related
+        # bug reports.
+        for path in OFFSITE_POST_WHITELIST:
+            request = LaunchpadTestRequest(
+                method='POST', environ=dict(PATH_INFO=path))
+            # this call shouldn't raise an exception
+            maybe_block_offsite_form_post(request)
+
+    def test_OAuth_signed_requests(self):
+        # Requests that are OAuth signed are allowed.
+        request = LaunchpadTestRequest(
+            method='POST', environ=dict(PATH_INFO='/'))
+        directlyProvides(request, IOAuthSignedRequest)
+        # this call shouldn't raise an exception
+        maybe_block_offsite_form_post(request)
+
+    def test_nonbrowser_requests(self):
+        # Requests that are from non-browsers are allowed.
+        class FakeNonBrowserRequest:
+            method = 'SOMETHING'
+
+        # this call shouldn't raise an exception
+        maybe_block_offsite_form_post(FakeNonBrowserRequest)
+
+    def test_onsite_posts(self):
+        # Other than the explicit execptions, all POSTs have to come from a
+        # known LP virtual host.
+        for hostname in allvhosts.hostnames:
+            referer = 'http://' + hostname + '/foo'
+            request = LaunchpadTestRequest(
+                method='POST', environ=dict(PATH_INFO='/', REFERER=referer))
+            # this call shouldn't raise an exception
+            maybe_block_offsite_form_post(request)
+
+    def test_offsite_posts(self):
+        # If a post comes from an unknown host an execption is raised.
+        disallowed_hosts = ['example.com', 'not-subdomain.launchpad.net']
+        for hostname in disallowed_hosts:
+            referer = 'http://' + hostname + '/foo'
+            request = LaunchpadTestRequest(
+                method='POST', environ=dict(PATH_INFO='/', REFERER=referer))
+            self.assertRaises(
+                OffsiteFormPostError, maybe_block_offsite_form_post, request)
+
+    def test_unparsable_referer(self):
+        # If a post has a referer that is unparsable as a URI an exception is
+        # raised.
+        referer = 'this is not a URI'
+        request = LaunchpadTestRequest(
+            method='POST', environ=dict(PATH_INFO='/', REFERER=referer))
+        self.assertRaises(
+            OffsiteFormPostError, maybe_block_offsite_form_post, request)
+
+    def test_openid_callback_with_query_string(self):
+        # An OpenId provider (OP) may post to the +openid-callback URL with a
+        # query string and without a referer.  These posts need to be allowed.
+        path_info = u'/+openid-callback?starting_url=...'
+        request = LaunchpadTestRequest(
+            method='POST', environ=dict(PATH_INFO=path_info))
+        # this call shouldn't raise an exception
+        maybe_block_offsite_form_post(request)
+
+
+class TestEncodedReferer(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_not_found(self):
+        # No oopses are reported when accessing the referer while rendering
+        # the page.
+        browser = self.getUserBrowser()
+        browser.addHeader('Referer', '/whut\xe7foo')
+        self.assertRaises(
+            NotFound,
+            browser.open,
+            'http://launchpad.dev/missing')
+        self.assertEqual(0, len(self.oopses))
+
+
+class TestUnicodePath(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_non_ascii_url(self):
+        # No oopses are reported when accessing the URL while rendering the
+        # page.
+        browser = self.getUserBrowser()
+        self.assertRaises(
+            NotFound,
+            browser.open,
+            'http://launchpad.dev/%ED%B4%B5')
+        self.assertEqual(0, len(self.oopses))

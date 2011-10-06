@@ -8,7 +8,8 @@
               admin_comment_hidden_class
               python: comment.show_for_admin and 'adminHiddenComment' or ''"
   tal:attributes="class string:boardComment ${remote_bug_comment_class}
-                 ${admin_comment_hidden_class}">
+                 ${admin_comment_hidden_class}"
+  tal:content="cache:authenticated noparam,comment/rendered_cache_time,comment/index">
 
   <div class="boardCommentDetails">
     <table>
@@ -16,7 +17,7 @@
         <tr>
           <td tal:condition="not: comment/bugwatch">
             <tal:comment_owner
-                replace="structure comment/owner/fmt:link" />
+                replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
             <span tal:attributes="title comment/datecreated/fmt:datetime"
                   tal:content="comment/datecreated/fmt:displaydate">
@@ -33,7 +34,7 @@
             <a tal:attributes="href comment/bugwatch/url"
                tal:content="comment/bugwatch/title" />,
             <tal:comment_owner
-                replace="structure comment/owner/fmt:link" />
+                replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
             <span tal:attributes="title comment/datecreated/fmt:datetime"
                   tal:content="comment/datecreated/fmt:displaydate">
@@ -55,9 +56,12 @@
 
   <div class="boardCommentBody">
     <ul tal:condition="comment/bugattachments" style="margin-bottom: 1em">
-      <li tal:repeat="attachment comment/bugattachments" class="download-attachment">
-        <a tal:attributes="href attachment/libraryfile/http_url"
-           tal:content="attachment/title" class="sprite download-icon">foo.txt</a>
+      <li tal:repeat="attachment comment/bugattachments"
+            class="download-attachment">
+        <a tal:attributes="href python: view.proxiedUrlOfLibraryFileAlias(attachment)"
+            tal:content="attachment/title"
+            class="sprite download-icon">foo.txt</a>
+        <a tal:attributes="href attachment/fmt:url" alt="edit" class="sprite edit"></a>
         (<span
            tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
         <span tal:replace="attachment/libraryfile/mimetype" />)
@@ -66,8 +70,9 @@
 
     <ul tal:condition="comment/patches" style="margin-bottom: 1em">
       <li tal:repeat="attachment comment/patches" class="download-attachment">
-        <a tal:attributes="href attachment/libraryfile/http_url"
+        <a tal:attributes="href python: view.proxiedUrlOfLibraryFileAlias(attachment)"
            tal:content="attachment/title" class="sprite haspatch-icon">foo.txt</a>
+        <a tal:attributes="href attachment/fmt:url" alt="edit" class="sprite edit"></a>
         (<span
            tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
         <span tal:replace="attachment/libraryfile/mimetype" />)
@@ -84,6 +89,14 @@
     </p>
   </div>
   <div class="boardCommentFooter" tal:condition="comment/show_footer">
+    <a tal:attributes="id string:mark-spam-${context/index};"
+       tal:condition="view/show_spam_controls"
+       class="js-action sprite edit mark-spam" href="#">
+       <tal:not-spam condition="not: context/visible"
+       >Unhide comment</tal:not-spam>
+       <tal:spam condition="context/visible"
+       >Hide comment</tal:spam>
+    </a>
     <tal:activity
         define="activity_list comment/activity"
         condition="comment/activity">

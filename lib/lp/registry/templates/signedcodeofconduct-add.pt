@@ -46,14 +46,6 @@
                     </p>
                   </li>
                   <li>
-                    <p>
-                      If you want to, add extra spaces or blank lines between words
-                      in the file.
-                      (This helps protect against other people trying to
-                      forge your signature.)
-                    </p>
-                  </li>
-                  <li>
                     <div tal:define="filename string:UbuntuCodeofConduct-${context/version}.txt">
                       In a terminal, run the command:
                       <blockquote>

@@ -3,26 +3,30 @@
 
 __metaclass__ = type
 
-import unittest
 import base64
-from zope.interface import implements
-from zope.component import getUtility
+import unittest
 
+from zope.app.security.basicauthadapter import BasicAuthAdapter
+from zope.app.security.interfaces import ILoginPassword
+from zope.app.security.principalregistry import UnauthenticatedPrincipal
+from zope.app.testing import ztapi
+from zope.app.testing.placelesssetup import PlacelessSetup
+from zope.component import getUtility
+from zope.interface import implements
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
 
-from zope.app.testing import ztapi
-from zope.app.testing.placelesssetup import PlacelessSetup
-from zope.app.security.interfaces import ILoginPassword
-from zope.app.security.basicauthadapter import BasicAuthAdapter
-
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.webapp.authentication import (
-    LaunchpadPrincipal, PlacelessAuthUtility)
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.interfaces import (
-    IAccount, IPasswordEncryptor, IPerson)
+    LaunchpadPrincipal,
+    PlacelessAuthUtility,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    IPlacelessAuthUtility,
+    IPlacelessLoginSource,
+    )
+from lp.registry.interfaces.person import IPerson
 
 
 class DummyPerson(object):
@@ -59,6 +63,7 @@ class DummyPasswordEncryptor(object):
 
 
 class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
+
     def setUp(self):
         PlacelessSetup.setUp(self)
         ztapi.provideUtility(IPasswordEncryptor, DummyPasswordEncryptor())
@@ -110,8 +115,3 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
     def test_getPrincipalByLogin(self):
         authsvc, request = self._make('bruce', 'bruce!')
         self.assertEqual(authsvc.getPrincipalByLogin('bruce'), Bruce)
-
-
-def test_suite():
-    t = unittest.makeSuite(TestPlacelessAuth)
-    return unittest.TestSuite((t,))

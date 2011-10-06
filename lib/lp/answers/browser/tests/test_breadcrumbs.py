@@ -1,15 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
-
 from lp.testing import login_person
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
 class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
@@ -36,22 +32,21 @@ class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
             self.project, rootsite='answers')
 
     def test_product(self):
-        crumbs = self._getBreadcrumbs(
-            self.product_questions_url, [self.root, self.product])
+        crumbs = self.getBreadcrumbsForObject(
+            self.product, rootsite='answers')
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.product_questions_url)
         self.assertEquals(last_crumb.text, 'Questions')
 
     def test_project(self):
-        crumbs = self._getBreadcrumbs(
-            self.project_questions_url, [self.root, self.project])
+        crumbs = self.getBreadcrumbsForObject(
+            self.project, rootsite='answers')
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.project_questions_url)
         self.assertEquals(last_crumb.text, 'Questions')
 
     def test_person(self):
-        crumbs = self._getBreadcrumbs(
-            self.person_questions_url, [self.root, self.person])
+        crumbs = self.getBreadcrumbsForObject(self.person, rootsite='answers')
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.person_questions_url)
         self.assertEquals(last_crumb.text, 'Questions')
@@ -69,19 +64,13 @@ class TestAnswersBreadcrumb(BaseBreadcrumbTestCase):
         self.question = self.factory.makeQuestion(
             target=self.product, title='Seeds are hard to chew')
         self.question_url = canonical_url(self.question, rootsite='answers')
-        crumbs = self._getBreadcrumbs(
-            self.question_url, [self.root, self.product, self.question])
+        crumbs = self.getBreadcrumbsForObject(self.question)
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.text, 'Question #%d' % self.question.id)
 
     def test_faq(self):
         self.faq = self.factory.makeFAQ(target=self.product, title='Seedless')
         self.faq_url = canonical_url(self.faq, rootsite='answers')
-        crumbs = self._getBreadcrumbs(
-            self.faq_url, [self.root, self.product, self.faq])
+        crumbs = self.getBreadcrumbsForObject(self.faq)
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.text, 'FAQ #%d' % self.faq.id)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

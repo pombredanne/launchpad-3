@@ -1,28 +1,30 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # arch-tag: 90e6eb79-83a2-47e8-9f8b-3c687079c923
 
-import unittest
-import sys
-import shutil
+import os
 
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.archiveuploader.tests import datadir
+from lp.archiveuploader.utils import (
+    determine_binary_file_type,
+    determine_source_file_type,
+    DpkgSourceError,
+    extract_dpkg_source,
+    re_isadeb,
+    re_issource,
+    )
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.soyuz.enums import BinaryPackageFileType
+from lp.testing import TestCase
 
 
-class TestUtilities(unittest.TestCase):
-
-    def testImport(self):
-        """lp.archiveuploader.utils should be importable"""
-        import lp.archiveuploader.utils
+class TestUtilities(TestCase):
 
     def test_determine_source_file_type(self):
         """lp.archiveuploader.utils.determine_source_file_type should work."""
-        from lp.archiveuploader.utils import determine_source_file_type
 
         # .dsc -> DSC
         self.assertEquals(
@@ -45,6 +47,9 @@ class TestUtilities(unittest.TestCase):
         self.assertEquals(
             determine_source_file_type('foo_1.0.orig.tar.bz2'),
             SourcePackageFileType.ORIG_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig.tar.xz'),
+            SourcePackageFileType.ORIG_TARBALL)
 
         # Component original tarballs too.
         self.assertEquals(
@@ -52,6 +57,9 @@ class TestUtilities(unittest.TestCase):
             SourcePackageFileType.COMPONENT_ORIG_TARBALL)
         self.assertEquals(
             determine_source_file_type('foo_1.0.orig-bar.tar.bz2'),
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig-bar.tar.xz'),
             SourcePackageFileType.COMPONENT_ORIG_TARBALL)
 
         # And Debian tarballs...
@@ -61,6 +69,9 @@ class TestUtilities(unittest.TestCase):
         self.assertEquals(
             determine_source_file_type('foo_1.0-2.debian.tar.bz2'),
             SourcePackageFileType.DEBIAN_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0-2.debian.tar.xz'),
+            SourcePackageFileType.DEBIAN_TARBALL)
 
         # And even native tarballs!
         self.assertEquals(
@@ -69,18 +80,24 @@ class TestUtilities(unittest.TestCase):
         self.assertEquals(
             determine_source_file_type('foo_1.0.tar.bz2'),
             SourcePackageFileType.NATIVE_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.tar.xz'),
+            SourcePackageFileType.NATIVE_TARBALL)
 
         self.assertEquals(None, determine_source_file_type('foo_1.0'))
         self.assertEquals(None, determine_source_file_type('foo_1.0.blah.gz'))
 
     def test_determine_binary_file_type(self):
         """lp.archiveuploader.utils.determine_binary_file_type should work."""
-        from lp.archiveuploader.utils import determine_binary_file_type
-
         # .deb -> DEB
         self.assertEquals(
             determine_binary_file_type('foo_1.0-1_all.deb'),
             BinaryPackageFileType.DEB)
+
+        # .ddeb -> DDEB
+        self.assertEquals(
+            determine_binary_file_type('foo_1.0-1_all.ddeb'),
+            BinaryPackageFileType.DDEB)
 
         # .udeb -> UDEB
         self.assertEquals(
@@ -121,17 +138,6 @@ class TestUtilities(unittest.TestCase):
                                                       "multiverse")
         self.assertEquals(sect, "libs")
         self.assertEquals(comp, "restricted")
-
-    def testBuildFileListFromChanges(self):
-        """lp.archiveuploader.utils.build_file_list should be capable of
-           reading changes files
-        """
-        from lp.archiveuploader.utils import build_file_list
-        from lp.archiveuploader.tagfiles import parse_tagfile
-
-        ch = parse_tagfile(datadir("good-signed-changes"))
-        fl = build_file_list(ch)
-        self.assertEquals("abiword_2.0.10-1.2_mips.deb" in fl, True)
 
     def testFixMaintainerOkay(self):
         """lp.archiveuploader.utils.fix_maintainer should parse correct values
@@ -196,7 +202,7 @@ class TestUtilities(unittest.TestCase):
              " <zakame@ubuntu.com (Zak B. Elep)>",
              " <zakame@ubuntu.com (Zak B. Elep)>",
              "",
-             "zakame@ubuntu.com (Zak B. Elep)")
+             "zakame@ubuntu.com (Zak B. Elep)"),
              )
 
         for case in cases:
@@ -222,19 +228,70 @@ class TestUtilities(unittest.TestCase):
             except ParseMaintError:
                 pass
 
-def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestUtilities))
-    return suite
 
-def main(argv):
-    suite = test_suite()
-    runner = unittest.TextTestRunner(verbosity = 2)
-    if not runner.run(suite).wasSuccessful():
-        return 1
-    return 0
+class TestFilenameRegularExpressions(TestCase):
 
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    def test_re_isadeb(self):
+        # Verify that the three binary extensions match the regexp.
+        for extension in ('deb', 'ddeb', 'udeb'):
+            self.assertEquals(
+                ('foo-bar', '1.0', 'i386', extension),
+                re_isadeb.match('foo-bar_1.0_i386.%s' % extension).groups())
 
+        # Some other extension doesn't match.
+        self.assertIs(None, re_isadeb.match('foo-bar_1.0_i386.notdeb'))
+
+        # A missing architecture also doesn't match.
+        self.assertIs(None, re_isadeb.match('foo-bar_1.0.deb'))
+
+    def test_re_issource(self):
+        # Verify that various source extensions match the regexp.
+        extensions = (
+            'dsc', 'tar.gz', 'tar.bz2', 'tar.xz', 'diff.gz',
+            'orig.tar.gz', 'orig.tar.bz2', 'orig.tar.xz',
+            'orig-bar.tar.gz', 'orig-bar.tar.bz2', 'orig-bar.tar.xz',
+            'orig-foo_bar.tar.gz',
+            'debian.tar.gz', 'debian.tar.bz2', 'debian.tar.xz')
+        for extension in extensions:
+            self.assertEquals(
+                ('foo-bar', '1.0', extension),
+                re_issource.match('foo-bar_1.0.%s' % extension).groups())
+
+        # While orig-*.tar.gz is all interpreted as extension, *orig-*.tar.gz
+        # is taken to have an extension of just 'tar.gz'.
+        self.assertEquals(
+            ('foo-bar', '1.0.porig-bar', 'tar.gz'),
+            re_issource.match('foo-bar_1.0.porig-bar.tar.gz').groups())
+
+        # Some other extension doesn't match.
+        self.assertIs(None, re_issource.match('foo-bar_1.0.notdsc'))
+
+        # A badly formatted name also doesn't match.
+        self.assertIs(None, re_issource.match('foo-bar.dsc'))
+
+        # bzip2/xz compression for files which must be gzipped is invalid.
+        self.assertIs(None, re_issource.match('foo-bar_1.0.diff.bz2'))
+        self.assertIs(None, re_issource.match('foo-bar_1.0.diff.xz'))
+
+
+class DdpkgExtractSourceTests(TestCase):
+    """Tests for dpkg_extract_source."""
+
+    def test_simple(self):
+        # unpack_source unpacks in a temporary directory and returns the
+        # path.
+        temp_dir = self.makeTemporaryDirectory()
+        extract_dpkg_source(
+            datadir(os.path.join('suite', 'bar_1.0-1', 'bar_1.0-1.dsc')),
+            temp_dir)
+        self.assertEquals(["bar-1.0"], os.listdir(temp_dir))
+        self.assertContentEqual(
+            ["THIS_IS_BAR", "debian"],
+            os.listdir(os.path.join(temp_dir, "bar-1.0")))
+
+    def test_nonexistant(self):
+        temp_dir = self.makeTemporaryDirectory()
+        err = self.assertRaises(
+            DpkgSourceError, extract_dpkg_source,
+            "thispathdoesntexist", temp_dir)
+        self.assertEquals(2, err.result)

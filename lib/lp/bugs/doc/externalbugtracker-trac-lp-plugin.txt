@@ -31,37 +31,35 @@ Trac to validate $token and return a Set-Cookie header.
 
     >>> import random
     >>> from canonical.config import config
+    >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
     >>> from canonical.launchpad.webapp.url import urlappend
-    >>> from canonical.launchpad.interfaces import ILoginTokenSet
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
 
     >>> class FakeResponse:
     ...     def __init__(self):
     ...         self.headers = {}
 
     >>> class TestTracLPPlugin(TracLPPlugin):
-    ...     def urlopen(self, url):
-    ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
-    ...         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
-    ...         if not url.startswith(base_auth_url + '/'):
-    ...             raise AssertionError("Unexpected URL: %s" % url)
-    ...         token_text = url.split('/')[-1]
-    ...         token = getUtility(ILoginTokenSet)[token_text]
-    ...         if token.tokentype.name != 'BUGTRACKER':
-    ...             raise AssertionError(
-    ...                 'Invalid token type: %s' % token.tokentype.name)
-    ...         if token.date_consumed is not None:
-    ...             raise AssertionError("Token has already been consumed.")
-    ...         token.consume()
-    ...         print "Successfully validated the token."
-    ...
-    ...         cookie_string = (
-    ...             'trac_auth=random_token-' + str(random.random()))
-    ...         self._xmlrpc_transport.setCookie(cookie_string)
-    ...
-    ...         response = FakeResponse()
-    ...         response.headers['Set-Cookie'] = cookie_string
-    ...         LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    ...     def urlopen(self, url, data=None):
+    ...         with lp_dbuser():
+    ...             base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
+    ...             if not url.startswith(base_auth_url + '/'):
+    ...                 raise AssertionError("Unexpected URL: %s" % url)
+    ...             token_text = url.split('/')[-1]
+    ...             token = getUtility(ILoginTokenSet)[token_text]
+    ...             if token.tokentype.name != 'BUGTRACKER':
+    ...                 raise AssertionError(
+    ...                     'Invalid token type: %s' % token.tokentype.name)
+    ...             if token.date_consumed is not None:
+    ...                 raise AssertionError(
+    ...                     "Token has already been consumed.")
+    ...             token.consume()
+    ...             print "Successfully validated the token."
+    ...             cookie_string = (
+    ...                 'trac_auth=random_token-' + str(random.random()))
+    ...             self._xmlrpc_transport.setCookie(cookie_string)
+    ...             response = FakeResponse()
+    ...             response.headers['Set-Cookie'] = cookie_string
     ...
     ...         return response
 
@@ -135,7 +133,7 @@ If authentication fails, a BugTrackerAuthenticationError will be raised.
 
     >>> from urllib2 import HTTPError
     >>> class TestFailingTracLPPlugin(TracLPPlugin):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         raise HTTPError(url, 401, "Denied!", {}, None)
 
     >>> test_trac = TestFailingTracLPPlugin(
@@ -146,7 +144,7 @@ If authentication fails, a BugTrackerAuthenticationError will be raised.
     Traceback (most recent call last):
       ...
     BugTrackerAuthenticationError: http://example.com:
-    401 "Denied!"...
+    HTTP Error 401: Denied!
 
 
 == Current time ==
@@ -311,7 +309,8 @@ TracLPPlugin implements the ISupportsCommentImport interface, providing
 three methods: getCommentIds(), getPosterForComment() and
 getMessageForComment().
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentImport)
     >>> ISupportsCommentImport.providedBy(trac)
     True
 
@@ -337,30 +336,27 @@ comment importing functionality.
 
 We also need an example Bug, BugTracker and BugWatch.
 
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, CreateBugParams, IPersonSet, IProductSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> bug = firefox.createBug(
-    ...     CreateBugParams(sample_person, "Yet another test bug",
-    ...         "Yet another test description.",
-    ...         subscribe_owner=False))
-
-    >>> bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
-    >>> bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
-    >>> bug_watch_three = bug.addWatch(bug_tracker, '3', sample_person)
-    >>> bug_watch_broken = bug.addWatch(bug_tracker, '123', sample_person)
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     sample_person = getUtility(IPersonSet).getByEmail(
+    ...         'test@canonical.com')
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     bug = firefox.createBug(
+    ...         CreateBugParams(sample_person, "Yet another test bug",
+    ...             "Yet another test description.",
+    ...             subscribe_owner=False))
+    ...     bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
+    ...     bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
+    ...     bug_watch_three = bug.addWatch(bug_tracker, '3', sample_person)
+    ...     bug_watch_broken = bug.addWatch(bug_tracker, '123', sample_person)
 
 getCommentIds() returns all the comment IDs for a given remote bug.
 bug_watch is against remote bug 1, which has one comment.
@@ -405,8 +401,11 @@ After fetchComments() is called the bug's 'comments' field will contain
 a dict in the form {<comment_id>: <comment_dict>}, which can then be
 parsed.
 
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
     >>> test_transport.expireCookie(test_transport.auth_cookie)
-    >>> trac.fetchComments(bug_watch.remotebug, ['1-1'])
+    >>> trac.fetchComments(remote_bug, ['1-1'])
     Using XML-RPC to generate token.
     Successfully validated the token.
 
@@ -430,8 +429,11 @@ is supplied for the 'user' field by returning None as the user's
 displayname. When this is passed to IPersonSet.ensurePerson() a display
 name will be generated for the user from their email address.
 
-    >>> trac.fetchComments(bug_watch_two.remotebug, ['2-1', '2-2'])
-    >>> trac.getPosterForComment(bug_watch_two.remotebug, '2-1')
+    >>> remote_bug = bug_watch_two.remotebug
+    >>> transaction.commit()
+
+    >>> trac.fetchComments(remote_bug, ['2-1', '2-2'])
+    >>> trac.getPosterForComment(remote_bug, '2-1')
     (None, 'test@canonical.com')
 
 getPosterForComment() will also return displayname, email tuples in
@@ -470,7 +472,8 @@ The TracLPPlugin ExternalBugTracker implements the
 ISupportsCommentPushing interface, which allows Launchpad to use it to
 push comments to the remote bug tracker.
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentPushing
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentPushing)
     >>> ISupportsCommentPushing.providedBy(trac)
     True
 
@@ -482,15 +485,10 @@ the ID assigned to the comment by the remote bug tracker.
 
 To demonstrate this method, we'll create a comment to push.
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> from canonical.launchpad.interfaces import IMessageSet
-    >>> message = getUtility(IMessageSet).fromText(
-    ...     "A subject", "An example comment to push.", poster)
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> from lp.services.messages.interfaces.message import IMessageSet
+    >>> with lp_dbuser():
+    ...     message = getUtility(IMessageSet).fromText(
+    ...         "A subject", "An example comment to push.", poster)
 
 Calling addRemoteComment() on our TracLPPlugin instance will push the
 comment to the remote bug tracker. We'll add it to bug three on the
@@ -504,8 +502,12 @@ instance. We'll expire our auth cookie to demonstrate this.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
 
+    >>> message_text_contents = message.text_contents
+    >>> message_rfc822msgid = message.rfc822msgid
+    >>> transaction.commit()
+
     >>> remote_comment_id = trac.addRemoteComment(
-    ...     '3', message.text_contents, message.rfc822msgid)
+    ...     '3', message_text_contents, message_rfc822msgid)
     Using XML-RPC to generate token.
     Successfully validated the token.
 
@@ -555,7 +557,7 @@ We call setLaunchpadBugId() to set the Launchpad bug ID for a remote
 bug. setLaunchpadBugId() also requires authentication.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
-    >>> trac.setLaunchpadBugId('3', 15)
+    >>> trac.setLaunchpadBugId('3', 15, 'http://bugs.launchpad.dev/bugs/xxx')
     Using XML-RPC to generate token.
     Successfully validated the token.
 
@@ -568,7 +570,7 @@ that's the Launchpad bug ID that we've just set.
 Passing a Launchpad bug ID of None to setLaunchpadBugId() will unset the
 Launchpad bug ID for the remote bug.
 
-    >>> trac.setLaunchpadBugId('3', None)
+    >>> trac.setLaunchpadBugId('3', None, None)
     >>> print trac.getLaunchpadBugId('3')
     None
 
@@ -580,7 +582,8 @@ remote bug that doesn't exist, a BugNotFound error will be raised.
       ...
     BugNotFound: 12345
 
-    >>> trac.setLaunchpadBugId('12345', 1)
+    >>> trac.setLaunchpadBugId(
+    ...     '12345', 1, 'http://bugs.launchpad.dev/bugs/xxx')
     Traceback (most recent call last):
       ...
     BugNotFound: 12345

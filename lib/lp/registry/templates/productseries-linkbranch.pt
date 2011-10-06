@@ -7,8 +7,44 @@
   i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
-      <div metal:use-macro="context/@@launchpad_form/form" />
+      <ul>
+        <li>If the code is already in a Bazaar branch registered with Launchpad,
+          specify it here:
+          <div metal:use-macro="context/@@launchpad_form/form" />
+        </li>
+
+        <li>
+          <p>
+            Otherwise, if the code is in a Bazaar branch not yet on Launchpad
+            you can either:
+          </p>
+
+          <ul class="bulleted" style="margin-bottom: 0;">
+            <li>
+              Have the branch mirrored from a remote location by
+               <a tal:attributes="href context/product/menu:overview/branch_add/fmt:url">
+              registering a mirrored branch</a>
+            </li>
+            <li id="ssh-key-directions">
+              Push the branch directly to Launchpad, e.g. with:<br />
+              <tt><strong>
+                bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/<tal:series replace="context/name"/>
+              </strong></tt>
+              <tal:no-keys condition="not:view/user/sshkeys">
+                <br/>To authenticate with the Launchpad branch upload service,
+                you need to
+                <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+                  register a SSH key</a>.
+              </tal:no-keys>
+            </li>
+          </ul>
+        </li>
+
+        <li id="external-code">
+          If the code is in Git, Mercurial, CVS or Subversion you can
+          <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
+        </li>
+      </ul>
     </div>
   </body>
 </html>
-

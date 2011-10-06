@@ -23,7 +23,7 @@ a descriptive main heading.
     Hierarchy: Celso Providelo > PPA for Celso Providelo > Packages in...
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Branches - http://code.launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -140,7 +140,7 @@ published, this will be indicated to the viewer:
     ...     name='pmount', version='0.1-1')[1]
     >>> print pmount_i386_pub.displayname
     pmount 0.1-1 in warty i386
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> pmount_i386_pub.status = PackagePublishingStatus.PENDING
     >>> pmount_i386_pub.datepublished = None
     >>> transaction.commit()
@@ -192,7 +192,7 @@ the source into a public PPA to demonstrate this.
     ...     distribution=ubuntu)
     >>> joe = factory.makePerson(name="joe")
     >>> public_ppa = factory.makeArchive(
-    ...     owner=joe, distribution=ubuntu)
+    ...     owner=joe, distribution=ubuntu, name='ppa')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
@@ -271,20 +271,19 @@ modify some publication in Celso's PPA to SUPERSEDED and DELETED
 states. Note, for consistency we have to create the binary publishing records
 for iceweasel before marking it as superseded.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PackagePublishingStatus)
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(
-    ...     name='iceweasel')[0]
+    ...     name='iceweasel').first()
     >>> bpr = test_publisher.uploadBinaryForBuild(
     ...     iceweasel_pub.getBuilds()[0], 'bar-bin')
     >>> pub_bins = test_publisher.publishBinaryInArchive(
     ...     bpr, cprov.archive, status=PackagePublishingStatus.PUBLISHED)
     >>> iceweasel_pub.status = (
     ...     PackagePublishingStatus.SUPERSEDED)
-    >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount')[0]
+    >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount').first()
     >>> pmount_pub.status = PackagePublishingStatus.DELETED
     >>> pmount_pub.removed_by = cprov
     >>> pmount_pub.removal_comment = 'nhack !'

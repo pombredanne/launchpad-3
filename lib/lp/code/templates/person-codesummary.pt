@@ -2,28 +2,36 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  id="page-summary"
-  tal:define="menu context/menu:branches"
+  id="portlet-person-codesummary"
+  class="portlet"
+  tal:define="menu context/menu:branches;
+      features request/features"
   tal:condition="menu/show_summary">
 
-  <p>
-    <strong class="count" tal:content="menu/owned_branch_count">100</strong>
-    <tal:link condition="menu"
-        replace="structure menu/owned/render"
-        />,
-    <strong class="count" tal:content="menu/registered_branch_count">100</strong>
-    <tal:link condition="menu"
-        replace="structure menu/registered/render"
-        />,
-    <strong class="count" tal:content="menu/subscribed_branch_count">100</strong>
-    <tal:link condition="menu"
-        replace="structure menu/subscribed/render"
-        />
-  </p>
-  <p id="merge-counts">
-    <strong class="count" tal:content="menu/active_review_count">5</strong>
-    <tal:link condition="menu"
-        replace="structure menu/active_reviews/render"
-        />
-  </p>
+  <table>
+    <tr class="code-links">
+      <td class="code-count" tal:content="menu/owned_branch_count">100</td>
+      <td tal:content="structure menu/owned/render"
+          />
+    </tr>
+    <tr class="code-links"
+        tal:condition="menu/registered/enabled">
+      <td class="code-count" tal:content="menu/registered_branch_count">100</td>
+      <td tal:content="structure menu/registered/render" />
+    </tr>
+    <tr class="code-links">
+      <td class="code-count" tal:content="menu/subscribed_branch_count">100</td>
+      <td tal:content="structure menu/subscribed/render" />
+    </tr>
+    <tr class="code-links" id="merge-counts">
+      <td class="code-count" tal:content="menu/active_review_count">5</td>
+      <td tal:content="structure menu/active_reviews/render" />
+    </tr>
+    <tr tal:condition="features/code.branchmergequeue" id="mergequeue-counts">
+      <td class="code-count" tal:content="menu/mergequeue_count">5</td>
+      <td tal:condition="menu"
+          tal:content="structure menu/mergequeues/render"
+          />
+    </tr>
+  </table>
 </div>

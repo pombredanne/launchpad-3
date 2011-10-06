@@ -12,30 +12,52 @@ __all__ = [
     ]
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
-import pytz
 
+import pytz
 from sqlobject import (
-    StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
-from storm.expr import In, Join, LeftJoin
-from storm.store import Store
-from zope.component import getSiteManager, getUtility
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    IntervalCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.interface import implements
 
+from canonical.database.constants import DEFAULT
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob)
+    IBuildFarmJob,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
-from lp.buildmaster.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.interfaces.buildqueue import (
+    IBuildQueue,
+    IBuildQueueSet,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
 
 def normalize_virtualization(virtualized):
@@ -91,6 +113,14 @@ class BuildQueue(SQLBase):
     _table = "BuildQueue"
     _defaultOrder = "id"
 
+    def __init__(self, job, job_type=DEFAULT,  estimated_duration=DEFAULT,
+                 virtualized=DEFAULT, processor=DEFAULT, lastscore=None):
+        super(BuildQueue, self).__init__(job_type=job_type, job=job,
+            virtualized=virtualized, processor=processor,
+            estimated_duration=estimated_duration, lastscore=lastscore)
+        if lastscore is None and self.specific_job is not None:
+            self.score()
+
     job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
     job_type = EnumCol(
         enum=BuildFarmJobType, notNull=True,
@@ -133,7 +163,7 @@ class BuildQueue(SQLBase):
         job = self.job
         specific_job = self.specific_job
         SQLBase.destroySelf(self)
-        Store.of(specific_job).remove(specific_job)
+        specific_job.cleanUp()
         job.destroySelf()
 
     def manualScore(self, value):
@@ -525,49 +555,4 @@ class BuildQueueSet(object):
             # status is a property. Let's use _status.
             Job._status == JobStatus.RUNNING,
             Job.date_started != None)
-        return result_set
-
-    def calculateCandidates(self, archseries):
-        """See `IBuildQueueSet`."""
-        if not archseries:
-            raise AssertionError("Given 'archseries' cannot be None/empty.")
-
-        arch_ids = [d.id for d in archseries]
-
-        query = """
-           Build.distroarchseries IN %s AND
-           Build.buildstate = %s AND
-           BuildQueue.job_type = %s AND
-           BuildQueue.job = BuildPackageJob.job AND
-           BuildPackageJob.build = build.id AND
-           BuildQueue.builder IS NULL
-        """ % sqlvalues(
-            arch_ids, BuildStatus.NEEDSBUILD, BuildFarmJobType.PACKAGEBUILD)
-
-        candidates = BuildQueue.select(
-            query, clauseTables=['Build', 'BuildPackageJob'],
-            orderBy=['-BuildQueue.lastscore'])
-
-        return candidates
-
-    def getForBuilds(self, build_ids):
-        """See `IBuildQueueSet`."""
-        # Avoid circular import problem.
-        from lp.soyuz.model.build import Build
-        from lp.buildmaster.model.builder import Builder
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        origin = (
-            BuildPackageJob,
-            Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
-            Join(Build, BuildPackageJob.build == Build.id),
-            LeftJoin(
-                Builder,
-                BuildQueue.builderID == Builder.id),
-            )
-        result_set = store.using(*origin).find(
-            (BuildQueue, Builder, BuildPackageJob),
-            In(Build.id, build_ids))
-
         return result_set

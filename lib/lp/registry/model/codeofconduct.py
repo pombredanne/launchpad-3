@@ -11,29 +11,44 @@ __metaclass__ = type
 __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet']
 
-import os
 from datetime import datetime
+import os
 
 import pytz
-from zope.interface import implements
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    StringCol,
+    )
 from zope.component import getUtility
-
-from sqlobject import ForeignKey, StringCol, BoolCol
+from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from lp.services.mail.sendmail import simple_sendmail, format_address
-from canonical.launchpad.webapp import canonical_url
-
+from canonical.database.sqlbase import (
+    flush_database_updates,
+    quote,
+    SQLBase,
+    )
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGVerificationError, IGPGHandler)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+    GPGVerificationError,
+    IGPGHandler,
+    )
+from canonical.launchpad.webapp import canonical_url
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
-    ICodeOfConduct, ICodeOfConductConf, ICodeOfConductSet,
-    ISignedCodeOfConduct, ISignedCodeOfConductSet)
+    ICodeOfConduct,
+    ICodeOfConductConf,
+    ICodeOfConductSet,
+    ISignedCodeOfConduct,
+    ISignedCodeOfConductSet,
+    )
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 
 
 class CodeOfConductConf:

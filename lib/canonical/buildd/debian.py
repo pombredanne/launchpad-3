@@ -20,7 +20,6 @@ class DebianBuildState:
     INIT = "INIT"
     UNPACK = "UNPACK"
     MOUNT = "MOUNT"
-    OGRE = "OGRE"
     SOURCES = "SOURCES"
     UPDATE = "UPDATE"
     REAP = "REAP"
@@ -35,7 +34,6 @@ class DebianBuildManager(BuildManager):
         BuildManager.__init__(self, slave, buildid)
         self._updatepath = slave._config.get("debianmanager", "updatepath")
         self._scanpath = slave._config.get("debianmanager", "processscanpath")
-        self._ogrepath = slave._config.get("debianmanager", "ogrepath")
         self._sourcespath = slave._config.get("debianmanager", "sourcespath")
         self._cachepath = slave._config.get("slave","filecache")
         self._state = DebianBuildState.INIT
@@ -49,40 +47,25 @@ class DebianBuildManager(BuildManager):
     def initiate(self, files, chroot, extra_args):
         """Initiate a build with a given set of files and chroot."""
 
-        if 'ogrecomponent' in extra_args:
-            # Ubuntu refers to the concept that "main sees only main
-            # while building" etc as "The Ogre Model" (onions, layers
-            # and all). If we're given an ogre component, use it
-            self.ogre = extra_args['ogrecomponent']
-        else:
-            self.ogre = False
-        if 'archives' in extra_args and extra_args['archives']:
-            self.sources_list = extra_args['archives']
-        else:
-            self.sources_list = None
+        self.arch_tag = extra_args.get('arch_tag', self._slave.getArch())
+        self.sources_list = extra_args.get('archives')
 
         BuildManager.initiate(self, files, chroot, extra_args)
-
-    def doOgreModel(self):
-        """Perform the ogre model activation."""
-        self.runSubProcess(self._ogrepath,
-                           ["apply-ogre-model", self._buildid, self.ogre])
 
     def doSourcesList(self):
         """Override apt/sources.list.
 
         Mainly used for PPA builds.
         """
-        # XXX cprov 2007-05-17: It 'undo' ogre-component changes.
-        # for PPAs it must be re-implemented on builddmaster side.
         args = ["override-sources-list", self._buildid]
         args.extend(self.sources_list)
         self.runSubProcess(self._sourcespath, args)
 
     def doUpdateChroot(self):
         """Perform the chroot upgrade."""
-        self.runSubProcess(self._updatepath,
-                           ["update-debian-chroot", self._buildid])
+        self.runSubProcess(
+            self._updatepath,
+            ["update-debian-chroot", self._buildid, self.arch_tag])
 
     def doRunBuild(self):
         """Run the main build process.
@@ -114,8 +97,7 @@ class DebianBuildManager(BuildManager):
                 yield filename
 
     def getChangesFilename(self):
-        changes = (
-            self._dscfile[:-4] + "_" + self._slave.getArch() + ".changes")
+        changes = self._dscfile[:-4] + "_" + self.arch_tag + ".changes"
         return get_build_path(self._buildid, changes)
 
     def gatherResults(self):
@@ -147,7 +129,7 @@ class DebianBuildManager(BuildManager):
         func(success)
 
     def iterate_INIT(self, success):
-        """Just finished initialising the build."""
+        """Just finished initializing the build."""
         if success != 0:
             if not self.alreadyfailed:
                 # The init failed, can't fathom why that would be...
@@ -180,26 +162,6 @@ class DebianBuildManager(BuildManager):
                 self.alreadyfailed = True
             self._state = DebianBuildState.UMOUNT
             self.doUnmounting()
-        else:
-            # Run OGRE if we need to, else run UPDATE
-            if self.ogre:
-                self._state = DebianBuildState.OGRE
-                self.doOgreModel()
-            elif self.sources_list is not None:
-                self._state = DebianBuildState.SOURCES
-                self.doSourcesList()
-            else:
-                self._state = DebianBuildState.UPDATE
-                self.doUpdateChroot()
-
-    def iterate_OGRE(self, success):
-        """Just finished running the ogre applicator."""
-        if success != 0:
-            if not self.alreadyfailed:
-                self._slave.chrootFail()
-                self.alreadyfailed = True
-            self._state = DebianBuildState.REAP
-            self.doReapProcesses()
         else:
             if self.sources_list is not None:
                 self._state = DebianBuildState.SOURCES

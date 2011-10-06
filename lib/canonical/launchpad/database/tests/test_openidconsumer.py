@@ -5,14 +5,13 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.launchpad.database.tests.test_baseopenidstore import (
-    BaseStormOpenIDStoreTestsMixin)
+    BaseStormOpenIDStoreTestsMixin,
+    )
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCase
 
 
@@ -24,7 +23,3 @@ class OpenIDConsumerStoreTests(BaseStormOpenIDStoreTestsMixin, TestCase):
     def setUp(self):
         super(OpenIDConsumerStoreTests, self).setUp()
         self.store = getUtility(IOpenIDConsumerStore)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

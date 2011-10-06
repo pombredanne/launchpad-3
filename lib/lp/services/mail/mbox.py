@@ -8,14 +8,14 @@ __metaclass__ = type
 
 
 import email
-import mailbox
-
 from email.Utils import make_msgid
 from logging import getLogger
+import mailbox
 
 from zope.app import zapi
-from zope.sendmail.interfaces import IMailer
 from zope.interface import implements
+from zope.sendmail.interfaces import IMailer
+
 
 COMMASPACE = ', '
 
@@ -41,7 +41,7 @@ class MboxMailer:
     def send(self, fromaddr, toaddrs, message):
         """See IMailer."""
         env_recips = COMMASPACE.join(toaddrs)
-        log = getLogger('canonical.launchpad.mail')
+        log = getLogger('lp.services.mail')
         log.info('Email from %s to %s being stored in mailbox %s',
                  fromaddr, env_recips, self.filename)
         msg = email.message_from_string(message)

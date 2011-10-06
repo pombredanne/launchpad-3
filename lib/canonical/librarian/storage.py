@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -11,15 +11,24 @@ import tempfile
 
 from zope.component import getUtility
 
+from canonical.config import dbconfig
+from canonical.database.postgresql import ConnectionString
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.librarian.db import write_transaction
+from lp.services.database import write_transaction
 
-__all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
-           'DuplicateFileIDError', 'WrongDatabaseError',
-           # _relFileLocation needed by other modules in this package.
-           # Listed here to keep the import facist happy
-           '_relFileLocation', '_sameFile']
+__all__ = [
+    'DigestMismatchError',
+    'LibrarianStorage',
+    'LibraryFileUpload',
+    'DuplicateFileIDError',
+    'WrongDatabaseError',
+    # _relFileLocation needed by other modules in this package.
+    # Listed here to keep the import fascist happy
+    '_relFileLocation',
+    '_sameFile',
+    ]
+
 
 class DigestMismatchError(Exception):
     """The given digest doesn't match the SHA-1 digest of the file."""
@@ -31,6 +40,7 @@ class DuplicateFileIDError(Exception):
 
 class WrongDatabaseError(Exception):
     """The client's database name doesn't match our database."""
+
     def __init__(self, clientDatabaseName, serverDatabaseName):
         Exception.__init__(self, clientDatabaseName, serverDatabaseName)
         self.clientDatabaseName = clientDatabaseName
@@ -40,8 +50,8 @@ class WrongDatabaseError(Exception):
 class LibrarianStorage:
     """Blob storage.
 
-    This manages the actual storage of files on disk and the record of those in
-    the database; it has nothing to do with the network interface to those
+    This manages the actual storage of files on disk and the record of those
+    in the database; it has nothing to do with the network interface to those
     files.
     """
 
@@ -64,8 +74,8 @@ class LibrarianStorage:
     def startAddFile(self, filename, size):
         return LibraryFileUpload(self, filename, size)
 
-    def getFileAlias(self, aliasid):
-        return self.library.getAlias(aliasid)
+    def getFileAlias(self, aliasid, token, path):
+        return self.library.getAlias(aliasid, token, path)
 
 
 class LibraryFileUpload(object):
@@ -109,20 +119,30 @@ class LibraryFileUpload(object):
             # the file really is removed or renamed, and can't possibly be
             # left in limbo
             os.remove(self.tmpfilepath)
-            raise DigestMismatchError, (self.srcDigest, dstDigest)
+            raise DigestMismatchError(self.srcDigest, dstDigest)
 
         try:
-            # If the client told us the name database of the database
-            # its using, check that it matches
+            # If the client told us the name of the database it's using,
+            # check that it matches.
             if self.databaseName is not None:
+                # Per Bug #840068, there are two methods of getting the
+                # database name (connection string and db
+                # introspection), and they can give different results
+                # due to pgbouncer database aliases. Lets check both,
+                # and succeed if either matches.
+                config_dbname = ConnectionString(
+                    dbconfig.rw_main_master).dbname
+
                 store = getUtility(IStoreSelector).get(
                         MAIN_STORE, DEFAULT_FLAVOR)
                 result = store.execute("SELECT current_database()")
-                databaseName = result.get_one()[0]
-                if self.databaseName != databaseName:
-                    raise WrongDatabaseError(self.databaseName, databaseName)
+                real_dbname = result.get_one()[0]
+                if self.databaseName not in (config_dbname, real_dbname):
+                    raise WrongDatabaseError(
+                        self.databaseName, (config_dbname, real_dbname))
 
-            self.debugLog.append('database name %r ok' % (self.databaseName,))
+            self.debugLog.append(
+                'database name %r ok' % (self.databaseName, ))
             # If we haven't got a contentID, we need to create one and return
             # it to the client.
             if self.contentID is None:
@@ -135,7 +155,7 @@ class LibraryFileUpload(object):
             else:
                 contentID = self.contentID
                 aliasID = None
-                self.debugLog.append('received contentID: %r' % (contentID,))
+                self.debugLog.append('received contentID: %r' % (contentID, ))
 
         except:
             # Abort transaction and re-raise

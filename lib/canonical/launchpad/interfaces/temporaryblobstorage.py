@@ -13,16 +13,28 @@ __all__ = [
     'BlobTooLarge',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Text, Bytes
-from canonical.launchpad import _
-
 from lazr.restful.declarations import (
-    collection_default_content, exported,
-    export_as_webservice_collection, export_as_webservice_entry,
-    export_read_operation, operation_parameters, rename_parameters_as,
-    REQUEST_USER)
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
 from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bytes,
+    Datetime,
+    Text,
+    )
+
+from canonical.launchpad import _
 
 
 class BlobTooLarge(Exception):
@@ -35,11 +47,12 @@ class BlobTooLarge(Exception):
 class ITemporaryBlobStorage(Interface):
     """A blob which we will store in the database temporarily."""
     export_as_webservice_entry(
-        singular_name='temporary_blob', plural_name='temporary_blobs')
+        singular_name='temporary_blob', plural_name='temporary_blobs',
+        as_of="beta")
 
     uuid = exported(
         Text(title=_('UUID'), required=True, readonly=True),
-        exported_as='token')
+        exported_as='token', as_of="beta")
     blob = Bytes(title=_('BLOB'), required=True, readonly=True)
     date_created = Datetime(title=_('Date created'),
         required=True, readonly=True)
@@ -48,6 +61,10 @@ class ITemporaryBlobStorage(Interface):
     @export_read_operation()
     def hasBeenProcessed():
         """Return True if this blob has been processed."""
+
+    @export_read_operation()
+    def getProcessedData():
+        """Returns a dict containing the processed blob data."""
 
 
 class ITemporaryStorageManager(Interface):
@@ -75,8 +92,4 @@ class ITemporaryStorageManager(Interface):
 
     @collection_default_content()
     def default_temporary_blob_storage_list():
-        """Return the default list of `ITemporaryBlobStorage` objects.
-
-        :returns: All the the `ITemporaryBlobStorage` blobs whose file
-                  aliases have not expired.
-        """
+        """Return an empty set - only exists to keep lazr.restful happy."""

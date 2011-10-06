@@ -16,18 +16,34 @@ __all__ = [
     'IOAuthNonce',
     'IOAuthRequestToken',
     'IOAuthRequestTokenSet',
+    'IOAuthSignedRequest',
     'NonceAlreadyUsed',
     'TimestampOrderingError',
     'ClockSkew',
+    'TokenException',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Object, TextLine
-from zope.interface import Attribute, Interface
+import httplib
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Object,
+    TextLine,
+    )
+
+from lazr.restful.declarations import error_status
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import (
+    AccessLevel,
+    OAuthPermission,
+    )
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
-
 
 # The challenge included in responses with a 401 status.
 OAUTH_REALM = 'https://api.launchpad.net'
@@ -52,11 +68,25 @@ class IOAuthConsumer(Interface):
         description=_('The secret which, if not empty, should be used by the '
                       'consumer to sign its requests.'))
 
+    is_integrated_desktop = Attribute(
+        """This attribute is true if the consumer corresponds to a
+        user account on a personal computer or similar device.""")
+
+    integrated_desktop_name = Attribute(
+        """If the consumer corresponds to a user account on a personal
+        computer or similar device, this is the self-reported name of
+        the computer. If the consumer is a specific web or desktop
+        application, this is None.""")
+
+    integrated_desktop_type = Attribute(
+        """If the consumer corresponds to a user account on a personal
+        computer or similar device, this is the self-reported type of
+        that computer (usually the operating system plus the word
+        "desktop"). If the consumer is a specific web or desktop
+        application, this is None.""")
+
     def newRequestToken():
         """Return a new `IOAuthRequestToken` with a random key and secret.
-
-        Also sets the token's date_expires to `REQUEST_TOKEN_VALIDITY` hours
-        from the creation date (now).
 
         The other attributes of the token are supposed to be set whenever the
         user logs into Launchpad and grants (or not) access to this consumer.
@@ -119,12 +149,6 @@ class IOAuthToken(Interface):
     person = Object(
         schema=IPerson, title=_('Person'), required=False, readonly=False,
         description=_('The user on whose behalf the consumer is accessing.'))
-    date_created = Datetime(
-        title=_('Date created'), required=True, readonly=True)
-    date_expires = Datetime(
-        title=_('Date expires'), required=False, readonly=False,
-        description=_('From this date onwards this token can not be used '
-                      'by the consumer to access protected resources.'))
     key = TextLine(
         title=_('Key'), required=True, readonly=True,
         description=_('The key used to identify this token.  It is included '
@@ -134,12 +158,19 @@ class IOAuthToken(Interface):
         description=_('The secret associated with this token.  It is used '
                       'by the consumer to sign its requests.'))
     product = Choice(title=_('Project'), required=False, vocabulary='Product')
-    project = Choice(title=_('Project'), required=False, vocabulary='Project')
+    project = Choice(
+        title=_('Project'), required=False, vocabulary='ProjectGroup')
     sourcepackagename = Choice(
         title=_("Package"), required=False, vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
     context = Attribute("FIXME")
+
+    is_expired = Bool(
+        title=_("Whether or not this token has expired."),
+        required=False, readonly=True,
+        description=_("A token may only be usable for a limited time, "
+                      "after which it will expire."))
 
 
 class IOAuthAccessToken(IOAuthToken):
@@ -154,6 +185,16 @@ class IOAuthAccessToken(IOAuthToken):
         vocabulary=AccessLevel,
         description=_('The level of access given to the application acting '
                       'on your behalf.'))
+
+    date_created = Datetime(
+        title=_('Date created'), required=True, readonly=True,
+        description=_('The date some request token was exchanged for '
+                      'this token.'))
+
+    date_expires = Datetime(
+        title=_('Date expires'), required=False, readonly=False,
+        description=_('From this date onwards this token can not be used '
+                      'by the consumer to access protected resources.'))
 
     def checkNonceAndTimestamp(nonce, timestamp):
         """Verify the nonce and timestamp.
@@ -189,11 +230,22 @@ class IOAuthRequestToken(IOAuthToken):
         vocabulary=OAuthPermission,
         description=_('The permission you give to the application which may '
                       'act on your behalf.'))
+    date_created = Datetime(
+        title=_('Date created'), required=True, readonly=True,
+        description=_('The date the token was created. The request token '
+                      'will be good for a limited time after this date.'))
+
+    date_expires = Datetime(
+        title=_('Date expires'), required=False, readonly=False,
+        description=_('The expiration date for the permission you give to '
+                      'the application which may act on your behalf.'))
+
     date_reviewed = Datetime(
         title=_('Date reviewed'), required=True, readonly=True,
         description=_('The date in which the user authorized (or not) the '
                       'consumer to access his protected resources on '
                       'Launchpad.'))
+
     is_reviewed = Bool(
         title=_('Has this token been reviewed?'),
         required=False, readonly=True,
@@ -247,14 +299,31 @@ class IOAuthNonce(Interface):
     access_token = Object(schema=IOAuthAccessToken, title=_('The token'))
     nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
 
-# Note that these three exceptions are converted to Unauthorized (equating to
-# 401 status) in webapp/servers.py, WebServicePublication.getPrincipal.
 
-class NonceAlreadyUsed(Exception):
+class IOAuthSignedRequest(Interface):
+    """Marker interface for a request signed with OAuth credentials."""
+
+
+# Note that these exceptions are marked as UNAUTHORIZED (401 status)
+# so they may be raised but will not cause an OOPS to be generated.  The
+# client will see them as an UNAUTHORIZED error.
+
+@error_status(httplib.UNAUTHORIZED)
+class _TokenException(Exception):
+    """Base class for token, nonce, and timestamp exceptions."""
+
+
+class NonceAlreadyUsed(_TokenException):
     """Nonce has been used together with same token but another timestamp."""
 
-class TimestampOrderingError(Exception):
+
+class TimestampOrderingError(_TokenException):
     """Timestamp is too old, compared to the last request."""
 
-class ClockSkew(Exception):
+
+class ClockSkew(_TokenException):
     """Timestamp is too far off from server's clock."""
+
+
+class TokenException(_TokenException):
+    """Token has expired."""

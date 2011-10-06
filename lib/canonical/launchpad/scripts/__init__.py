@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Library functions for use in all scripts.
@@ -8,83 +8,41 @@ __metaclass__ = type
 
 __all__ = [
     'db_options',
+    'dummy_logger_options',
     'execute_zcml_for_scripts',
     'log',
     'logger',
     'logger_options',
-    'BufferLogger',
-    'FakeLogger',
-    'QuietFakeLogger',
     'WatchedFileHandler',
     ]
 
 import atexit
 import os
-from textwrap import dedent
+import sys
 import threading
 
-import zope.app.appsetup
-import zope.sendmail.delivery
-import zope.site.hooks
 from zope.configuration.config import ConfigurationMachine
-from zope.configuration.config import GroupingContextDecorator
 from zope.security.management import setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
+import zope.sendmail.delivery
+import zope.site.hooks
 
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-
-from canonical import lp
 from canonical.config import config
-
+# these are intentional re-exports, apparently, used by *many* files.
 from canonical.launchpad.scripts.logger import (
-    # these are intentional re-exports, apparently, used by *many* files.
-    logger_options, logger, log, BufferLogger, FakeLogger, QuietFakeLogger)
+    dummy_logger_options,
+    log,
+    logger,
+    logger_options,
+    )
+from canonical.database.postgresql import ConnectionString
 # Intentional re-export, following along the lines of the logger module.
 from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
-
-# XXX StuartBishop 2005-06-02:
-# We should probably split out all the stuff in this directory that
-# doesn't rely on Zope and migrate it to canonical/scripts.
-
-# XXX SteveAlexander 2005-04-11:
-# This is a total mess.  I need to work out what this all means.
-
-class NullItem:
-    def __init__(self, context, handler, info, *argdata):
-        newcontext = GroupingContextDecorator(context)
-        newcontext.info = info
-        self.context = newcontext
-        self.handler = handler
-        self.argdata = argdata
-
-    def contained(self, name, data, info):
-        return NullItem(self.context, None, None)
-
-    def finish(self):
-        pass
-
-
-def NullFactory(context, data, info):
-    return NullItem(context, data, info)
-
-
-class CustomMachine(ConfigurationMachine):
-
-    def factory(self, context, name):
-        # Hackery to remove 'browser:xxx' directives from being processed.
-        # This is needed to avoid page directives, which screw up when you
-        # parse the zcml from a cwd that isn't the launchpad root.
-        # XXX: Bjorn Tillenius 2005-07-14:
-        #      I added a workaround so that browser:url directives get
-        #      processed, though. SteveA said he will fix it better when
-        #      he lands the navigation stuff.
-        ns, simplename = name
-        if (ns == u'http://namespaces.zope.org/browser'
-            and simplename != 'url'):
-            return NullFactory
-        else:
-            f = ConfigurationMachine.factory(self, context, name)
-            return f
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interaction import (
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
 
 
 def execute_zcml_for_scripts(use_web_security=False):
@@ -94,30 +52,35 @@ def execute_zcml_for_scripts(use_web_security=False):
     application uses will be used. Otherwise everything protected by a
     permission is allowed, and everything else denied.
     """
-    # Prevent some cases of erroneous layer useage.
-    from canonical.testing import (
-            FunctionalLayer, BaseLayer, ZopelessLayer
-            )
-    assert not FunctionalLayer.isSetUp, \
-            'Setting up Zopeless CA when Zopefull CA is already running'
-    assert not BaseLayer.isSetUp or ZopelessLayer.isSetUp, """
-            execute_zcml_for_scripts should not be called from tests.
-            Instead, your test should use the Zopeless layer.
+
+    # When in testing mode, prevent some cases of erroneous layer usage.
+    # But we don't want to import that module in production usage, thus
+    # the conditional block.
+    if 'canonical.testing.layers' in sys.modules:
+        from canonical.testing.layers import (
+                FunctionalLayer, BaseLayer, ZopelessLayer)
+        assert not FunctionalLayer.isSetUp, \
+                'Setting up Zopeless CA when Zopefull CA is already running'
+        assert not BaseLayer.isSetUp or ZopelessLayer.isSetUp, """
+                execute_zcml_for_scripts should not be called from tests.
+                Instead, your test should use the Zopeless layer.
             """
 
-    scriptzcmlfilename = os.path.normpath(
-        os.path.join(os.path.dirname(__file__),
-                     os.pardir, os.pardir, os.pardir, os.pardir,
-                     'script.zcml'))
+    if config.isTestRunner():
+        scriptzcmlfilename = 'script-testing.zcml'
+    else:
+        scriptzcmlfilename = 'script.zcml'
 
-    scriptzcmlfilename = os.path.abspath(scriptzcmlfilename)
+    scriptzcmlfilename = os.path.abspath(
+        os.path.join(config.root, 'zcml', scriptzcmlfilename))
+
     from zope.configuration import xmlconfig
 
     # Hook up custom component architecture calls
     zope.site.hooks.setHooks()
 
     # Load server-independent site config
-    context = CustomMachine()
+    context = ConfigurationMachine()
     xmlconfig.registerCommonDirectives(context)
     context = xmlconfig.file(
         scriptzcmlfilename, execute=True, context=context)
@@ -148,21 +111,13 @@ def execute_zcml_for_scripts(use_web_security=False):
     # the proper API for having a principal / user running in scripts.
     # The script will have full permissions because of the
     # PermissiveSecurityPolicy set up in script.zcml.
-    # XXX gary 20-Oct-2008 bug 285808
-    # The wisdom of using a test fixture for production should be
-    # reconsidered.
-    from canonical.launchpad.ftests import login
-    # The Participation is used to specify that we do not want a
-    # LaunchpadTestRequest, which ftests normally use. shipit scripts, in
-    # particular, need to be careful, because of code in canonical_url.
-    from canonical.launchpad.webapp.interaction import Participation
-    login('launchpad.anonymous', Participation())
+    setupInteractionByEmail(ANONYMOUS)
 
 
 def db_options(parser):
     """Add and handle default database connection options on the command line
 
-    Adds -d (--database), -H (--host) and -U (--user)
+    Adds -d (--database), -H (--host), -p (--port) and -U (--user)
 
     Parsed options provide dbname, dbhost and dbuser attributes.
 
@@ -171,84 +126,95 @@ def db_options(parser):
     maintenance tools cannot do this however.
 
     dbname and dbhost are also propagated to config.database.dbname and
-    config.database.dbhost. dbname, dbhost and dbuser are also propagated to
-    lp.dbname, lp.dbhost and lp.dbuser. This ensures that all systems will
-    be using the requested connection details.
-
-    To test, we first need to store the current values so we can reset them
-    later.
-
-    >>> dbname, dbhost, dbuser = lp.dbname, lp.dbhost, lp.dbuser
+    config.database.dbhost. This ensures that all systems will be using
+    the requested connection details.
 
     Ensure that command line options propagate to where we say they do
 
+    >>> from optparse import OptionParser
     >>> parser = OptionParser()
     >>> db_options(parser)
     >>> options, args = parser.parse_args(
-    ...     ['--dbname=foo', '--host=bar', '--user=baz'])
-    >>> options.dbname, lp.dbname, config.database.dbname
-    ('foo', 'foo', 'foo')
-    >>> (options.dbhost, lp.dbhost, config.database.dbhost)
-    ('bar', 'bar', 'bar')
-    >>> (options.dbuser, lp.dbuser)
-    ('baz', 'baz')
+    ...     ['--dbname=foo', '--host=bar', '--user=baz', '--port=6432'])
+    >>> options.dbname
+    'foo'
+    >>> options.dbhost
+    'bar'
+    >>> options.dbuser
+    'baz'
+    >>> options.dbport
+    6432
+    >>> config.database.rw_main_master
+    'dbname=foo user=baz host=bar port=6432'
+    >>> config.database.rw_main_slave
+    'dbname=foo user=baz host=bar port=6432'
+    >>> config.database.ro_main_master
+    'dbname=foo user=baz host=bar port=6432'
+    >>> config.database.ro_main_slave
+    'dbname=foo user=baz host=bar port=6432'
 
     Make sure that the default user is None
 
     >>> parser = OptionParser()
     >>> db_options(parser)
     >>> options, args = parser.parse_args([])
-    >>> options.dbuser, lp.dbuser
-    (None, None)
-
-    Reset config
-
-    >>> lp.dbname, lp.dbhost, lp.dbuser = dbname, dbhost, dbuser
+    >>> print options.dbuser
+    None
     """
+    conn_string = ConnectionString(config.database.rw_main_master)
+
+    def update_db_config(**kw):
+        connection_string_keys = [
+            'rw_main_master',
+            'rw_main_slave',
+            'ro_main_master',
+            'ro_main_slave',
+            ]
+        config_data = ["[database]"]
+        for con_str_key in connection_string_keys:
+            con_str = ConnectionString(getattr(config.database, con_str_key))
+            for kwarg, kwval in kw.items():
+                setattr(con_str, kwarg, kwval)
+            config_data.append("%s: %s" % (con_str_key, str(con_str)))
+        config.push('update_db_config', '\n'.join(config_data))
+
     def dbname_callback(option, opt_str, value, parser):
         parser.values.dbname = value
-        config_data = dedent("""
-            [database]
-            dbname: %s
-            """ % value)
-        config.push('dbname_callback', config_data)
-        lp.dbname = value
+        update_db_config(dbname=value)
 
     parser.add_option(
             "-d", "--dbname", action="callback", callback=dbname_callback,
-            type="string", dest="dbname", default=lp.dbname,
+            type="string", dest="dbname", default=conn_string.dbname,
             help="PostgreSQL database to connect to."
             )
 
     def dbhost_callback(options, opt_str, value, parser):
         parser.values.dbhost = value
-        config_data = dedent("""
-            [database]
-            dbhost: %s
-            """ % value)
-        config.push('dbhost_callback', config_data)
-        lp.dbhost = value
+        update_db_config(host=value)
 
     parser.add_option(
              "-H", "--host", action="callback", callback=dbhost_callback,
-             type="string", dest="dbhost", default=lp.dbhost,
+             type="string", dest="dbhost", default=conn_string.host,
              help="Hostname or IP address of PostgreSQL server."
              )
 
+    def dbport_callback(options, opt_str, value, parser):
+        value = int(value)
+        parser.values.dbport = value
+        update_db_config(port=value)
+
+    parser.add_option(
+        "-p", "--port", action="callback", callback=dbport_callback,
+        type=int, dest="dbport", default=conn_string.port,
+        help="Port PostgreSQL server is listening on."
+        )
+
     def dbuser_callback(options, opt_str, value, parser):
         parser.values.dbuser = value
-        lp.dbuser = value
+        update_db_config(user=value)
 
     parser.add_option(
              "-U", "--user", action="callback", callback=dbuser_callback,
              type="string", dest="dbuser", default=None,
              help="PostgreSQL user to connect as."
              )
-
-    # The default user is None for scripts (which translates to 'connect
-    # as a PostgreSQL user named the same as the current Unix user').
-    # If the -U option was not given on the command line, our callback is
-    # never called so we need to set this different default here.
-    # Same for dbhost
-    lp.dbuser = None
-    lp.dbhost = None

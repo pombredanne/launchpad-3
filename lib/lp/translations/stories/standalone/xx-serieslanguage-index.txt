@@ -1,7 +1,7 @@
 Product or distribution release series language overview
 ========================================================
 
-These pages are used by translators for accessing all templates in a 
+These pages are used by translators for accessing all templates in a
 release series and viewing translation statistics for each template for
 a specific language
 
@@ -22,7 +22,7 @@ and pointed to the translation group owner.
 
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'group-team-info'))
-    There is no team to manage Evolution ... translations to ...
+    There is no team to manage Evolution translations to ...
     To set one up, please get in touch with Carlos Perelló Marín.
 
 Anonymous users are informed that in order to make translations they
@@ -47,14 +47,13 @@ requiring a review.
     There is no translation group to manage Ubuntu translations.
 
 Create a translation group for Ubuntu, together with a translation
-person for managing Ubuntu Spanish translations and set translation 
+person for managing Ubuntu Spanish translations and set translation
 policy to RESTRICTED.
 This is done to so see what the page will look like when they exist.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.translations.enums import TranslationPermission
     >>> login('foo.bar@canonical.com')
     >>> utc_owner = factory.makePerson(displayname='Some Guy')
     >>> utc_team = factory.makeTeam(
@@ -77,7 +76,7 @@ This is done to so see what the page will look like when they exist.
     >>> logout()
 
 Spanish has a translation team for managing its translations and all
-Evolution Spanish templates can be accessed from the distribution series 
+Evolution Spanish templates can be accessed from the distribution series
 translation page.
 
     >>> user_browser.open(

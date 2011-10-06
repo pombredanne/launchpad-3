@@ -356,6 +356,8 @@ class BuildDSlave(object):
         # for abort to complete. This is potentially an issue in a heavy
         # load situation.
         if self.builderstatus != BuilderStatus.BUILDING:
+            # XXX: Should raise a known Fault so that the client can make
+            # useful decisions about the error!
             raise ValueError("Slave is not BUILDING when asked to abort")
         self.manager.abort()
         self.builderstatus = BuilderStatus.ABORTING
@@ -546,7 +548,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
     """XMLRPC build daemon slave management interface"""
 
     def __init__(self, config):
-        xmlrpc.XMLRPC.__init__(self)
+        xmlrpc.XMLRPC.__init__(self, allowNone=True)
         # The V1.0 new-style protocol introduces string-style protocol
         # versions of the form 'MAJOR.MINOR', the protocol is '1.0' for now
         # implying the presence of /filecache/ /filecache/buildlog and
@@ -554,7 +556,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         self.protocolversion = '1.0'
         self.slave = BuildDSlave(config)
         self._builders = {}
-        print "Initialised"
+        print "Initialized"
 
     def registerBuilder(self, builderclass, buildertag):
         self._builders[buildertag] = builderclass
@@ -651,7 +653,8 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         # check requested builder
         if not builder in self._builders:
-            return (BuilderStatus.UNKNOWNBUILDER, None)
+            extra_info = "%s not in %r" % (builder, self._builders.keys())
+            return (BuilderStatus.UNKNOWNBUILDER, extra_info)
         # check requested chroot availability
         chroot_present, info = self.slave.ensurePresent(chrootsum)
         if not chroot_present:

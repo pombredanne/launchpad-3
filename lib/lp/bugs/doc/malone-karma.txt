@@ -2,14 +2,16 @@ This file lists all the karma events that Malone produces. First let's
 import some stuff and define a function to help us make the
 documentation cleaner:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IDistributionSet, IKarmaActionSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.karma import IKarmaActionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
 Setup an event listener to help ensure karma is assigned when it should.
 
     >>> from zope.event import notify
-    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
+    >>> from lp.testing.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 
@@ -25,7 +27,7 @@ Create a bug:
 
     >>> from lazr.lifecycle.event import (
     ...     ObjectCreatedEvent, ObjectModifiedEvent)
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> params = CreateBugParams(
     ...     comment=u"Give me some karma!", title=u"New Bug", owner=foo_bar)
@@ -35,7 +37,7 @@ Create a bug:
 Change the title of a bug:
 
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.title = "Better Title"
     >>> notify(ObjectModifiedEvent(bug, old_bug, ['title']))
@@ -50,8 +52,8 @@ Change the description of a bug:
 
 Add a CVE reference to a bug:
 
-    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
-    >>> from canonical.launchpad.database import BugCve
+    >>> from lp.bugs.interfaces.cve import CveStatus, ICveSet
+    >>> from lp.bugs.model.cve import BugCve
     >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
     ...     status=CveStatus.CANDIDATE)
     >>> bugcve = BugCve(cve=cve, bug=bug)
@@ -60,8 +62,8 @@ Add a CVE reference to a bug:
 
 Add watch for external bug to the bug:
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> from canonical.launchpad.database import BugWatch
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.bugs.model.bugwatch import BugWatch
     >>> debbugs = getUtility(IBugTrackerSet)['debbugs']
     >>> bugwatch = BugWatch(
     ...     bug=bug,bugtracker=debbugs, remotebug=u'42', owner=foo_bar)
@@ -70,10 +72,12 @@ Add watch for external bug to the bug:
 
 Mark a bug task as fixed:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IDistroBugTask)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskStatus,
+    ...     IBugTask,
+    ...     )
     >>> bugtask = bug.bugtasks[0]
-    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
@@ -81,13 +85,11 @@ Mark a bug task as fixed:
 
 Mark a bug task as fixed when it is assigned awards the karma to the assignee:
 
-    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
-
     >>> ufo_product = factory.makeProduct(name='ufo')
     >>> assignee = factory.makePerson(name='assignee')
     >>> assigned_bugtask = factory.makeBugTask(bug=bug, target=ufo_product)
     >>> assigned_bugtask.transitionToAssignee(assignee)
-    >>> old_bugtask = Snapshot(assigned_bugtask, providing=IUpstreamBugTask)
+    >>> old_bugtask = Snapshot(assigned_bugtask, providing=IBugTask)
     >>> assigned_bugtask.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(assigned_bugtask, old_bugtask, ['status']))
@@ -99,15 +101,15 @@ Mark a bug task as fixed when it is assigned awards the karma to the assignee:
 
 Reject a bug task:
 
-    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
     >>> bugtask.transitionToStatus(
-    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.INVALID, bugtask.target.owner)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugrejected, distribution=debian
 
 User accept a bug task:
 
-    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
@@ -116,7 +118,7 @@ User accept a bug task:
 Driver accept a bug task:
 
     >>> login_person(bugtask.target.owner)
-    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
@@ -126,11 +128,11 @@ Driver accept a bug task:
 
 Change a bug task's importance:
 
-    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> bugtask.transitionToImportance(
     ...     BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
     >>> for importance in BugTaskImportance.items:
-    ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    ...     old_bugtask = Snapshot(bugtask, providing=IBugTask)
     ...     bugtask.transitionToImportance(
     ...         importance, getUtility(ILaunchBag).user)
     ...     print importance.name
@@ -152,10 +154,11 @@ Change a bug task's importance:
 
 Create a new bug task on a product:
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> evolution = getUtility(IProductSet)['evolution']
     >>> evolution_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, product=evolution, owner=foo_bar)
+    ...     bug, foo_bar, evolution)
     >>> notify(ObjectCreatedEvent(evolution_task))
     Karma added: action=bugtaskcreated, product=evolution
 
@@ -163,7 +166,7 @@ Create a new bug task on a product series:
 
     >>> evolution_trunk = evolution.getSeries('trunk')
     >>> evolution_trunk_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, productseries=evolution_trunk, owner=foo_bar)
+    ...     bug, foo_bar, evolution_trunk)
     >>> notify(ObjectCreatedEvent(evolution_trunk_task))
     Karma added: action=bugtaskcreated, product=evolution
 
@@ -171,7 +174,7 @@ Create a new bug task on a distroseries:
 
     >>> debian_woody = debian.getSeries("woody")
     >>> debian_woody_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, distroseries=debian_woody, owner=foo_bar)
+    ...     bug, foo_bar, debian_woody)
     >>> notify(ObjectCreatedEvent(debian_woody_task))
     Karma added: action=bugtaskcreated, distribution=debian
 
@@ -179,9 +182,8 @@ Accept a distro series task.
 
     >>> debian_woody_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
-    >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
     >>> old_bugtask = Snapshot(
-    ...     debian_woody_task, providing=IDistroSeriesBugTask)
+    ...     debian_woody_task, providing=IBugTask)
     >>> debian_woody_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
@@ -191,9 +193,8 @@ Accept a productseries task.
 
     >>> evolution_trunk_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
-    >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
     >>> old_bugtask = Snapshot(
-    ...     evolution_trunk_task, providing=IProductSeriesBugTask)
+    ...     evolution_trunk_task, providing=IBugTask)
     >>> evolution_trunk_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(
@@ -204,7 +205,7 @@ Mark a bug as a duplicate:
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.duplicateof = bug_one
+    >>> bug.markAsDuplicate(bug_one)
 
     (Notice how changing a bug with multiple bugtasks will assign karma to you
     once for each bugtask. This is so because we consider changes in a bug to
@@ -218,7 +219,7 @@ Mark a bug as a duplicate:
 
 Adding a comment generates a karma event, but gives no points:
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> comment = getUtility(IBugMessageSet).createMessage(
     ...     subject="foo", bug=bug, owner=foo_bar, content="bar")
     >>> notify(ObjectCreatedEvent(comment))

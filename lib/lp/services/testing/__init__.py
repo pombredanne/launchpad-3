@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -10,24 +10,61 @@ Assumes the following layout beneath base_dir:
  doc/ - Contains doctests
 """
 
+__metaclass__ = type
+__all__ = [
+    'build_doctest_suite',
+    'build_test_suite',
+    ]
+
+import doctest
 import logging
 import os
 import unittest
 
-from zope.testing import doctest
-
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import DatabaseFunctionalLayer
-from canonical.launchpad.testing.systemdocs import strip_prefix
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
+
+
+def build_doctest_suite(base_dir, tests_path, special_tests={},
+                        layer=DatabaseFunctionalLayer,
+                        setUp=setUp, tearDown=tearDown,
+                        package=None):
+    """Build the doc test suite."""
+    suite = unittest.TestSuite()
+    # Tests are run relative to the calling module, not this module.
+    if package is None:
+        package = doctest._normalize_module(None)
+    testsdir = os.path.abspath(
+        os.path.normpath(os.path.join(base_dir, tests_path)))
+
+    if os.path.exists(testsdir):
+        # Add doctests using default setup/teardown.
+        filenames = [filename
+                     for filename in os.listdir(testsdir)
+                     if (filename.endswith('.txt')
+                         and filename not in special_tests)]
+        # Sort the list to give a predictable order.
+        filenames.sort()
+        for filename in filenames:
+            path = os.path.join(tests_path, filename)
+            one_test = LayeredDocFileSuite(
+                path, package=package, setUp=setUp, tearDown=tearDown,
+                layer=layer, stdout_logging_level=logging.WARNING)
+            suite.addTest(one_test)
+    return suite
+
 
 def build_test_suite(base_dir, special_tests={},
                      layer=DatabaseFunctionalLayer,
                      setUp=setUp, tearDown=tearDown):
     """Build a test suite from a directory containing test files.
 
-    The parent's 'stories' subdirectory will be checked for pagetests and 
+    The parent's 'stories' subdirectory will be checked for pagetests and
     the parent's 'doc' subdirectory will be checked for doctests.
 
     :param base_dir: The tests subdirectory that.
@@ -63,24 +100,6 @@ def build_test_suite(base_dir, special_tests={},
         suite.addTest(special_suite)
 
     tests_path = os.path.join(os.path.pardir, 'doc')
-    testsdir = os.path.abspath(
-        os.path.normpath(os.path.join(base_dir, tests_path))
-        )
-
-    if os.path.exists(testsdir):
-        # Add doctests using default setup/teardown
-        filenames = [filename
-                     for filename in os.listdir(testsdir)
-                     if (filename.endswith('.txt')
-                         and filename not in special_tests)]
-        # Sort the list to give a predictable order.
-        filenames.sort()
-        for filename in filenames:
-            path = os.path.join(tests_path, filename)
-            one_test = LayeredDocFileSuite(
-                path, package=package, setUp=setUp, tearDown=tearDown,
-                layer=layer, stdout_logging_level=logging.WARNING
-                )
-            suite.addTest(one_test)
-
+    suite.addTest(build_doctest_suite(base_dir, tests_path, special_tests,
+                                      layer, setUp, tearDown, package))
     return suite

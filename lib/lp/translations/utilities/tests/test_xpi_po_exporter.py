@@ -1,30 +1,38 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
 from textwrap import dedent
-from zope.component import getAdapter, getUtility
+import unittest
+
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface.verify import verifyObject
 
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import sync
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
+    ITranslationFileData,
+    )
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from lp.translations.utilities.xpi_po_exporter import (
-    XPIPOExporter)
-from canonical.testing import LaunchpadZopelessLayer
+    ITranslationImportQueue,
+    )
 from lp.translations.utilities.tests.test_xpi_import import (
-    get_en_US_xpi_file_to_import)
+    get_en_US_xpi_file_to_import,
+    )
+from lp.translations.utilities.translation_export import ExportFileStorage
+from lp.translations.utilities.xpi_po_exporter import XPIPOExporter
 
 
 class XPIPOExporterTestCase(unittest.TestCase):
@@ -68,13 +76,13 @@ class XPIPOExporterTestCase(unittest.TestCase):
     def setUpTranslationImportQueueForTemplate(self):
         """Return an ITranslationImportQueueEntry for testing purposes."""
         # Get the file to import.
-        en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
+        en_US_xpi = get_en_US_xpi_file_to_import('en-US')
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
-        published = True
+        by_maintainer = True
         entry = translation_import_queue.addOrUpdateEntry(
-            self.firefox_template.path, en_US_xpi.read(), published,
+            self.firefox_template.path, en_US_xpi.read(), by_maintainer,
             self.importer, productseries=self.firefox_template.productseries,
             potemplate=self.firefox_template)
 
@@ -89,7 +97,6 @@ class XPIPOExporterTestCase(unittest.TestCase):
         (subject, body) = self.firefox_template.importFromQueue(entry)
 
         # The status is now IMPORTED:
-        sync(entry)
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
 
     def test_Interface(self):
@@ -106,8 +113,9 @@ class XPIPOExporterTestCase(unittest.TestCase):
 
         translation_file_data = getAdapter(
             self.firefox_template, ITranslationFileData, 'all_messages')
-        exported_template = self.translation_exporter.exportTranslationFiles(
-            [translation_file_data])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            translation_file_data, storage)
 
         expected_template = dedent(ur'''
             #, fuzzy
@@ -137,7 +145,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
             "  </Description>\n"
             "</RDF>\n"
 
-            #.  This is a DTD file inside a subdirectory 
+            #.  This is a DTD file inside a subdirectory
             #: jar:chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.title)
             msgctxt "main/subdir/test2.dtd"
             msgid "MENU"
@@ -180,13 +188,13 @@ class XPIPOExporterTestCase(unittest.TestCase):
             msgid "FooZilla!"
             msgstr ""
 
-            #.  Translators, don't play with fire! 
+            #.  Translators, don't play with fire!
             #: jar:chrome/en-US.jar!/test1.dtd(foozilla.play.fire)
             msgctxt "main/test1.dtd"
             msgid "Do you want to play with fire?"
             msgstr ""
 
-            #.  This is just a comment, not a comment for translators 
+            #.  This is just a comment, not a comment for translators
             #: jar:chrome/en-US.jar!/test1.dtd(foozilla.play.ice)
             msgctxt "main/test1.dtd"
             msgid "Play with ice?"
@@ -215,8 +223,5 @@ class XPIPOExporterTestCase(unittest.TestCase):
             msgstr ""
             ''').strip()
 
-        output = exported_template.read().decode("utf-8")
+        output = storage.export().read().decode("utf-8")
         self._compareExpectedAndExported(expected_template, output)
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

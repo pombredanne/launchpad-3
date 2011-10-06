@@ -7,13 +7,21 @@
 __metaclass__ = type
 __all__ = [
     'touch_read_only_file',
+    'read_only_mode',
     'remove_read_only_file',
     ]
 
+from contextlib import contextmanager
 import os
 
+from lazr.restful.utils import get_current_browser_request
+
 from canonical.launchpad.readonly import (
-    is_read_only, read_only_file_exists, read_only_file_path)
+    is_read_only,
+    read_only_file_exists,
+    read_only_file_path,
+    READ_ONLY_MODE_ANNOTATIONS_KEY,
+    )
 
 
 def touch_read_only_file():
@@ -34,7 +42,7 @@ def touch_read_only_file():
 def remove_read_only_file(assert_mode_switch=True):
     """Remove the file named read-only.txt from the root of the tree.
 
-    May also assert that the mode switch actually happened (i.e. not 
+    May also assert that the mode switch actually happened (i.e. not
     is_read_only()). This assertion has to be conditional because some tests
     will use this during the processing of a request, when a mode change can't
     happen (i.e. is_read_only() will still return True during that request's
@@ -45,3 +53,15 @@ def remove_read_only_file(assert_mode_switch=True):
         # Assert that the switch succeeded and make sure the mode change is
         # logged.
         assert not is_read_only(), "Switching to read-write failed."
+
+
+@contextmanager
+def read_only_mode(flag=True):
+    request = get_current_browser_request()
+    current = request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY]
+    request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY] = flag
+    try:
+        assert is_read_only() == flag, 'Failed to set read-only mode'
+        yield
+    finally:
+        request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY] = current

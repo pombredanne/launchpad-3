@@ -16,27 +16,33 @@
   <div id="membership-summary" class="portletBody portletContent"
     style="margin-bottom: 1.5em;">
     <div>
-      <div id="membership-counts">
-        <img src="/@@/team" alt="team" />
-        <strong id="approved-member-count">
+      <div id="membership-counts"
+        tal:define="singular string:member; plural string:members">
+        <strong class="sprite team" id="approved-member-count">
           <tal:active content="context/all_member_count" />
         </strong>
         <a tal:attributes="href string:${context/fmt:url/+members}#active"
-          >active members</a><tal:invited
-            define="invited_member_count context/invited_member_count"
-            condition="invited_member_count">,
-          <strong id="invited-member-count">
-            <tal:invited_count content="context/invited_member_count" />
-          </strong>
-          <a tal:attributes="href string:${context/fmt:url/+members}#invited"
-            >invited members</a></tal:invited><tal:proposed
-              define="proposed_member_count context/proposed_member_count"
-              condition="proposed_member_count">,
-          <strong id="proposed-member-count">
-            <tal:proposed_count content="proposed_member_count" />
-          </strong>
-          <a tal:attributes="href string:${context/fmt:url/+members}#proposed"
-            >proposed members</a>
+          tal:define="count context/all_member_count">active
+          <tal:plural
+            metal:use-macro="context/@@+base-layout-macros/plural-message"
+            /></a><tal:invited
+          define="count context/invited_member_count" condition="count">,
+            <strong id="invited-member-count">
+              <tal:invited_count content="count" />
+            </strong>
+            <a tal:attributes="href string:${context/fmt:url/+members}#invited"
+              >invited
+              <tal:plural
+                metal:use-macro="context/@@+base-layout-macros/plural-message"
+              /></a></tal:invited><tal:proposed
+          define="count context/proposed_member_count" condition="count">,
+            <strong id="proposed-member-count">
+              <tal:proposed_count content="count" />
+            </strong>
+            <a tal:attributes="href string:${context/fmt:url/+members}#proposed"
+              >proposed
+              <tal:plural
+                metal:use-macro="context/@@+base-layout-macros/plural-message"/></a>
         </tal:proposed>
       </div>
     </div>
@@ -92,42 +98,39 @@
   <tal:can-view
     condition="context/@@+restricted-membership/userCanViewMembership"
     define="overview_menu context/menu:overview">
-  <table style="margin: 0px 0px .5em 0px;">
-    <tr>
-      <td style="padding: 0px 1em 1em 0px;"
-          tal:define="link context/menu:overview/add_member"
+  <ul class="horizontal">
+      <li
+          tal:define="link context/menu:overview/add_member;
+                      step_title view/add_member_step_title;"
           tal:condition="link/enabled">
         <script type="text/javascript"
                 tal:content="string:
-          YUI().use('registry.team', function(Y) {
+          LPS.use('lp.registry.team', function(Y) {
               Y.on('load',
                   function(e) {
-                      Y.registry.team.setup_add_member_handler();
+                      Y.lp.registry.team.setup_add_member_handler(
+                          '${step_title}');
                   },
                   window);
           });
-        "/>
+        "></script>
         <span id="add-member-spinner"
               class="unseen update-in-progress-message">
           Saving...
         </span>
         <tal:add-member replace="structure link/fmt:link-icon" />
-      </td>
-      <td colspan="2"
-          style="padding: 0px 0px 1em 0px;"
-          tal:define="link context/menu:overview/mugshots">
+      </li>
+      <li tal:define="link context/menu:overview/mugshots">
         <tal:mugshots replace="structure link/fmt:link-icon" />
-      </td>
-    </tr>
-  </table>
+      </li>
+  </ul>
   <table>
     <tr>
       <td id="recently-approved"
           style="padding-right: 1em"
           tal:attributes="class view/recently_approved_hidden">
-        <h3 style="color:black; font-weight:bold; margin: 0px">
-          Latest members
-        </h3>
+        <h3>Latest members</h3>
+
         <ul id="recently-approved-ul">
           <li tal:repeat="person view/recently_approved_members"
               tal:content="structure person/fmt:link" />
@@ -135,9 +138,8 @@
       </td>
       <td id="recently-proposed"
           tal:attributes="class view/recently_proposed_hidden">
-        <h3 style="color:black; font-weight:bold; margin: 0px">
-          Pending approval
-        </h3>
+        <h3>Pending approval</h3>
+
         <ul id="recently-proposed-ul">
           <li tal:repeat="person view/recently_proposed_members"
               tal:content="structure person/fmt:link" />
@@ -149,11 +151,11 @@
       </td>
     </tr>
   </table>
+
   <div id="recently-invited"
         tal:attributes="class view/recently_invited_hidden">
-    <h3 style="color:black; font-weight:bold; margin: 0px">
-      Latest invited
-    </h3>
+    <h3>Latest invited</h3>
+
     <ul id="recently-invited-ul">
       <li tal:repeat="person view/recently_invited_members"
           tal:content="structure person/fmt:link" />

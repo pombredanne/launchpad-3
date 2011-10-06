@@ -8,7 +8,8 @@ Project group overview page
     >>> login('test@canonical.com')
     >>> productset = getUtility(IProductSet)
     >>> gnome_terminal = productset.getByName('gnome-terminal')
-    >>> milestone = factory.makeMilestone(name='2.30.0', product=gnome_terminal)
+    >>> milestone = factory.makeMilestone(
+    ...     name='2.30.0', product=gnome_terminal)
     >>> gnomebaker = productset.getByName('gnomebaker')
     >>> milestone = factory.makeMilestone(name='2.30.1', product=gnomebaker)
     >>> milestone = factory.makeMilestone(
@@ -21,18 +22,18 @@ The overview page for project groups is accessible to all users.
 
     >>> anon_browser.open('http://launchpad.dev/gnome')
     >>> anon_browser.title
-    'The GNOME Project in Launchpad'
+    'GNOME in Launchpad'
 
 The page lists the member projects, together with the releases/milestones of
 its development focus.
 
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'products'))
     Projects
-    Gnome Applets ...
-    Evolution ...
-    GNOME Terminal ...
-    gnomebaker ...
-    NetApplet ...
+    Evolution
+    GNOME Terminal
+    Gnome Applets
+    NetApplet
+    gnomebaker
     ...
 
 The projects are linked.
@@ -45,23 +46,24 @@ project. It is only available to users which have 'Admin' privileges on the
 project.
 
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> browser.getLink('Register a project in the Mozilla Project')
+    >>> browser.getLink('Register a project in The Mozilla Project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-    >>> browser.getLink('Register a project in the Mozilla Project')
+    >>> browser.getLink('Register a project in The Mozilla Project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> admin_browser.open('http://launchpad.dev/mozilla')
-    >>> admin_browser.getLink('Register a project in the Mozilla Project').url
+    >>> admin_browser.getLink('Register a project in The Mozilla Project').url
     'http://launchpad.dev/mozilla/+newproduct'
 
 
-== Empty Project Groups ==
+Empty Project Groups
+--------------------
 
 An empty project group needs to be set up first...
 
@@ -133,9 +135,12 @@ the new product form for the project group.
     >>> print admin_browser.title
     Register a project in Launchpad...
 
-== Products of a project ==
 
-The home page of a project contains a list of all products which are part of that project.
+Products of a project
+---------------------
+
+The home page of a project contains a list of all products which are part of
+that project.
 
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> products = find_tags_by_class(browser.contents, 'sprite product')
@@ -150,6 +155,12 @@ Inactive products are not included in that list, though.
     # (i.e. login()) and bypass the security proxy.
     >>> from lp.registry.model.product import Product
     >>> firefox = Product.byName('firefox')
+
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> login('admin@canonical.com')
+    >>> unlink_source_packages(firefox)
+    >>> logout()
     >>> firefox.active = False
     >>> firefox.syncUpdate()
 
@@ -163,9 +174,10 @@ Inactive products are not included in that list, though.
     >>> firefox.syncUpdate()
 
 
-== Project bug subscriptions ==
+Project Group bug subscriptions
+-------------------------------
 
-To receive email notifications about bugs pertaining to a project, we
+To receive email notifications about bugs pertaining to a project group, we
 can create structural bug subscriptions.
 
     >>> user_browser.open('http://launchpad.dev/mozilla')

@@ -1,6 +1,5 @@
-===========================
-Appointing a Project Driver
-===========================
+Appointing a ProjectGroup Driver
+================================
 
 Appoint Sample Person as the driver of the GNOME Project.
 

@@ -4,20 +4,24 @@
 __metaclass__ = type
 
 from datetime import timedelta
-import transaction
 import unittest
+
+import transaction
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import ZopelessDatabaseLayer
-from lp.translations.browser.sourcepackage import (
-    SourcePackageTranslationsExportView)
-from lp.translations.browser.productseries import (
-    ProductSeriesTranslationsExportView)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.model.poexportrequest import POExportRequest
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
+from lp.translations.browser.productseries import (
+    ProductSeriesTranslationsExportView,
+    )
+from lp.translations.browser.sourcepackage import (
+    SourcePackageTranslationsExportView,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
+from lp.translations.model.poexportrequest import POExportRequest
 
 
 def wipe_queue(queue):
@@ -131,6 +135,7 @@ class BaseExportViewMixin(TestCaseWithFactory):
             [pofile_sr.id, pofile_es.id, pofile_sr2.id],
             translations)
 
+
 class TestProductSeries(BaseExportViewMixin):
     """Test implementation of BaseExportView on ProductSeries."""
 
@@ -196,7 +201,7 @@ class TestPOExportQueueStatusDescriptions(TestCaseWithFactory):
 
         backlog = timedelta(hours=2)
         self.assertEqual(
-            "The backlog is approximately two hours.",
+            "The backlog is approximately 2 hours.",
             self.view.describeBacklog(backlog).strip())
 
     def test_export_queue_status(self):

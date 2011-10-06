@@ -1,8 +1,186 @@
-launchpad-buildd (59) karmic; urgency=low
+launchpad-buildd (80) hardy-cat; urgency=low
 
+  * binfmt-support demonstrated umount ordering issues for us.  LP: #851934
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 19 Sep 2011 04:56:58 -0600
+
+launchpad-buildd (79) hardy-cat; urgency=low
+
+  * Fix sudoers.d/buildd permissions
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 19 Aug 2011 07:31:54 -0600
+
+launchpad-buildd (78) hardy-cat; urgency=low
+
+  * Correctly update sudoers files when needed.  LP: #742881
+
+ -- LaMont Jones <lamont@canonical.com>  Wed, 06 Apr 2011 22:20:17 -0600
+
+launchpad-buildd (77) hardy-cat; urgency=low
+
+  * Add back in ultimate-backstop umask() correction.
+
+ -- LaMont Jones <lamont@canonical.com>  Wed, 06 Apr 2011 13:34:05 -0600
+
+launchpad-buildd (76) hardy-cat; urgency=low
+
+  [ various ]
+  * ProjectGroup.products sort order and remove Author: comments.
+  * Fix some tests to not print stuff
+  * Make buildd pointer check regexes work on natty
+  * merge before rollout + text conflict patch by wgrant
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 15 Mar 2011 16:59:36 -0600
+
+launchpad-buildd (74) hardy-cat; urgency=low
+
+  [ Aaron Bentley]
+  * Memory-limit recipe builds. LP#676657
+
+  [ LaMont Jones]
+  * mount a tmpfs on /dev/shm in build chroots.  LP#671441
+
+  [Michael Bienia]
+  * Update regexes used for DEPWAIT.  LP#615286
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 23 Nov 2010 06:17:57 -0700
+
+launchpad-buildd (73) hardy-cat; urgency=low
+
+  * Revert to revision 70
+
+ -- LaMont Jones <lamont@canonical.com>  Thu, 28 Oct 2010 12:53:45 -0600
+
+launchpad-buildd (72) hardy-cat; urgency=low
+
+  * break out readyservice.py from tachandler.py. LP#663828
+
+ -- LaMont Jones <lamont@canonical.com>  Wed, 20 Oct 2010 13:03:23 -0600
+
+launchpad-buildd (71) hardy-cat; urgency=low
+
+  * Detect ppa hosts for build recipes.  LP#662664
+  * Better recipe builds. LP#599100, 627119, 479705
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 19 Oct 2010 13:48:33 -0600
+
+launchpad-buildd (70) hardy-cat; urgency=low
+
+  [ LaMont Jones ]
+  * Restore the rest of version 68.
+
+  [ James Westby ]
+  * buildrecipe: Specify BZR_EMAIL via sudo so that the called command
+    sees the environment variable.
+  * buildrecipe: call sudo -i -u instead of sudo -iu so that it works with
+    older versions of sudo.
+  * buildrecipe: flush stdout before calling another command so that
+    the build log has the output correctly interleaved.
+
+  [ William Grant ]
+  * correct arch_tag arguments.
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 20 Aug 2010 13:27:55 -0600
+
+launchpad-buildd (69) hardy-cat; urgency=low
+
+  * REVERT all of version 68 except for BZR_EMAIL LP#617072
+    (Not reflected in bzr.)
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 17 Aug 2010 10:40:03 -0600
+
+launchpad-buildd (68) hardy-cat; urgency=low
+
+  [ William Grant ]
+  * Take an 'arch_tag' argument, so the master can override the slave
+    architecture.
+
+  [ Jelmer Vernooij ]
+
+  * Explicitly use source format 1.0.
+  * Add LSB information to init script.
+  * Use debhelper >= 5 (available in dapper, not yet deprecated in
+    maverick).
+  * Fix spelling in description.
+  * Install example buildd configuration.
+
+  [ Paul Hummer ]
+  * Provide BZR_EMAIL for bzr 2.2 in the buildds LP#617072
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 16 Aug 2010 13:25:09 -0600
+
+launchpad-buildd (67) hardy-cat; urgency=low
+
+  * Force aptitude installation for recipe builds on maverick
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 23 Jul 2010 14:22:23 -0600
+
+launchpad-buildd (66) hardy-cat; urgency=low
+
+  * handle [linux-any] build-dependencies.  LP#604981
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 19 Jul 2010 12:13:31 -0600
+
+launchpad-buildd (65) hardy-cat; urgency=low
+
+  * Drop preinst check, since human time does not scale across a large
+    rollout.  soyuz just needs to deal with upgrades mid-build better.
+
+ -- LaMont Jones <lamont@canonical.com>  Thu, 08 Jul 2010 05:04:02 -0600
+
+launchpad-buildd (64) hardy-cat; urgency=low
+
+  * Pottery now strips quotes from variables.
+
+ -- Jeroen Vermeulen <jtv@canonical.com>  Wed, 30 Jun 2010 12:50:59 +0200
+
+launchpad-buildd (63) hardy-cat; urgency=low
+
+  * Drop apply-ogre-model, since override-sources-list replaced it three years
+    ago. Also clean up extra_args parsing a bit.
+
+ -- William Grant <wgrant@ubuntu.com>  Sat, 12 Jun 2010 11:33:11 +1000
+
+launchpad-buildd (62) hardy-cat; urgency=low
+
+  * Make the buildds cope with not having a sourcepackagename LP#587109
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 08 Jun 2010 13:02:31 -0600
+
+launchpad-buildd (61) hardy-cat; urgency=high
+
+  [ William Grant ]
+  * Fixed translation templates slave to return files properly. LP#549422
+
+  [ Danilo Segan ]
+  * Added more output to generate-translation-templates. LP#580345
+
+  [ Henning Eggers ]
+  * Improved output of build xmplrpc call, not returning None now. LP#581746
+  * Added apache2 dependency. LP#557634
+  * Added preinst script to prevent installation when a build is running.
+    LP#557347
+
+  [ LaMont Jones ]
+  * preinst needs to detect a stale buildlog as well.
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 21 May 2010 05:52:53 -0600
+
+launchpad-buildd (60) lucid-cat; urgency=low
+
+  * Depends: lsb-release, which is ubuntu-minimal, but not essential.
+
+ -- LaMont Jones <lamont@ubuntu.com>  Thu, 01 Apr 2010 08:54:48 -0600
+
+launchpad-buildd (59) lucid-cat; urgency=low
+
+  [ Henning Eggers ]
   * Added translation template generation code (pottery).
 
- -- Henning Eggers <henning@canonical.com>  Thu, 11 Mar 2010 12:59:25 +0100
+  [ LaMont Jones ]
+  * set umask for twisted where supported
+
+ -- LaMont Jones <lamont@canonical.com>  Wed, 31 Mar 2010 10:38:15 -0600
 
 launchpad-buildd (58~1) karmic; urgency=low
 
@@ -147,7 +325,7 @@ launchpad-buildd (44) dapper-cat; urgency=low
 launchpad-buildd (43) dapper-cat; urgency=low
 
   * unpack-chroot: Move the ntpdate calls below the bunzip/exec bit,
-    so we don't run ntpdate twice when unzipping tarballs, which 
+    so we don't run ntpdate twice when unzipping tarballs, which
     happens on every single build on Xen hosts (like the PPA hosts).
   * debian/control: We use adduser in postinst, depending on it helps.
   * debian/control: Set myself as the Maintainer, since I'm in here.
@@ -426,7 +604,7 @@ launchpad-buildd (12) unstable; urgency=low
   * If upgrading from < v12, will remove -A from sbuildargs and add in
     a default ogrepath to any buildd configs found in /etc/launchpad-buildd
   * Prevent launchpad-buildd init from starting ~ files
-  
+
  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Sun,  2 Oct 2005 23:20:08 +0100
 
 launchpad-buildd (11) unstable; urgency=low

@@ -12,8 +12,16 @@ __all__ = [
     'ICodeImportMachineSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.code.enums import CodeImportMachineState

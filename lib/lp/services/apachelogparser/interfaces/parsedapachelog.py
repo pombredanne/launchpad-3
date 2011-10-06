@@ -5,7 +5,11 @@ __metaclass__ = type
 __all__ = ['IParsedApacheLog']
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, TextLine
+from zope.schema import (
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 

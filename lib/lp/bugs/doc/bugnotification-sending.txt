@@ -1,4 +1,5 @@
-= Sending the Bug Notifications =
+Sending the Bug Notifications
+=============================
 
 As explained in bugnotifications.txt, a change to a bug causes a bug
 notification to be added. These notifications should be assembled into
@@ -11,7 +12,7 @@ be sent:
     >>> from datetime import datetime, timedelta
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> ten_minutes_ago = now - timedelta(minutes=10)
-    >>> from canonical.launchpad.interfaces import IBugNotificationSet
+    >>> from lp.bugs.interfaces.bugnotification import IBugNotificationSet
     >>> len(getUtility(IBugNotificationSet).getNotificationsToSend())
     0
 
@@ -20,14 +21,20 @@ easier.
 
     >>> def print_notification_headers(email_notification):
     ...     for header in ['To', 'From', 'Subject',
-    ...                    'X-Launchpad-Message-Rationale']:
-    ...         print "%s: %s" % (header, email_notification[header])
+    ...                    'X-Launchpad-Message-Rationale',
+    ...                    'X-Launchpad-Subscription']:
+    ...         if email_notification[header]:
+    ...             print "%s: %s" % (header, email_notification[header])
 
     >>> def print_notification(email_notification):
     ...     print_notification_headers(email_notification)
     ...     print
     ...     print email_notification.get_payload(decode=True)
     ...     print "-" * 70
+
+We'll also import a helper function to help us with database users.
+
+    >>> from lp.testing.dbuser import lp_dbuser
 
 You'll note that we are printing out an X-Launchpad-Message-Rationale
 header. This header is a simple string that allows people to filter
@@ -38,7 +45,8 @@ assigned to.
 Anyway, let's start our demonstration by adding a comment to a bug:
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet, IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> sample_person = getUtility(ILaunchBag).user
     >>> comment = getUtility(IMessageSet).fromText(
@@ -46,7 +54,8 @@ Anyway, let's start our demonstration by adding a comment to a bug:
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
 
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
     1
 
@@ -56,63 +65,44 @@ list of emails to send:
     >>> from lp.bugs.scripts.bugnotification import (
     ...     get_email_notifications)
     >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in Ubuntu)
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug assignee.
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a direct subscriber
-    of the bug.
-    <BLANKLINE>
     ----------------------------------------------------------------------
 
 You can see that the message above contains the bug's initial comment's
@@ -152,8 +142,7 @@ Let's define a helper function to do that for all pending notifications:
     ...         notification.date_emailed = utc_now
     ...     flush_database_updates()
 
-
-To every message that get sent out, [Bug $bugid] is prefixed to the
+To every message that gets sent out, [Bug $bugid] is prefixed to the
 subject. It gets prefixed only if it's not already present in the
 subject, though, which is often the case when someone replies via email.
 
@@ -164,7 +153,7 @@ subject, though, which is often the case when someone replies via email.
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -172,18 +161,13 @@ subject, though, which is often the case when someone replies via email.
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: Re: [Bug 1] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -192,19 +176,24 @@ subject, though, which is often the case when someone replies via email.
 
 Let's add a few changes and see how it looks like:
 
-    >>> bug_one.addChangeNotification(
-    ...     '** Summary changed to: New summary.', sample_person,
-    ...     when=ten_minutes_ago)
-    >>> bug_one.addChangeNotification(
-    ...     '** Visibility changed to: Private.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> from lp.bugs.adapters.bugchange import (
+    ...     BugTitleChange, BugVisibilityChange)
+
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Old summary", "New summary"))
+    >>> bug_one.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "private",
+    ...         False, True))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
     2
 
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -212,20 +201,18 @@ Let's add a few changes and see how it looks like:
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
-    ** Summary changed to: New summary.
+    ** Summary changed:
+    - Old summary
+    + New summary
     <BLANKLINE>
-    ** Visibility changed to: Private.
+    ** Visibility changed to: Private
     <BLANKLINE>
+    --
     ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -237,12 +224,14 @@ the constructed email:
     ...     'subject', 'a new comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
-    >>> bug_one.addChangeNotification(
-    ...     '** Summary changed to: Another summary.', sample_person,
-    ...     when=ten_minutes_ago)
-    >>> bug_one.addChangeNotification(
-    ...     '** Visibility changed to: Public.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "New summary", "Another summary"))
+    >>> bug_one.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "private",
+    ...         True, False))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -252,7 +241,7 @@ Notice how the comment is in the top of the email, and the changes are
 in the order they were added:
 
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -260,266 +249,46 @@ in the order they were added:
     To: mark@example.com
     ...
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
-    ** Summary changed to: New summary.
+    ** Summary changed:
+    - Old summary
+    + New summary
     <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ** Summary changed to: Another summary.
-    <BLANKLINE>
-    ** Visibility changed to: Public.
+    ** Summary changed:
+    - New summary
+    + Another summary
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
 
-If we insert yet another comment, it will be sent as a separate email.
+If you look carefully, there's a surprise in that output: the visibility
+changes are not reported.  This is because they are done and then undone
+within the same notification.  Undone changes like that are omitted.
+moreover, if the email only would have reported done/undone changes, it
+is not sent at all.  This is tested elsewhere (see
+lp/bugs/tests/test_bugnotification.py), and not demonstrated here.
 
-    >>> new_comment = getUtility(IMessageSet).fromText(
-    ...     'subject', 'another comment.', sample_person,
-    ...     datecreated=ten_minutes_ago)
-    >>> bug_one.addCommentNotification(new_comment)
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> len(pending_notifications)
-    6
+Another thing worth noting is that there's a blank line before the
+signature, and the signature marker has a trailing space.
 
-    >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
-    ...     for message in messages:
-    ...         print_notification(message)
-    To: foo.bar@canonical.com
-    ...
-    To: mark@example.com
-    ...
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    a new comment.
-    <BLANKLINE>
-    ** Summary changed to: New summary.
-    <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ** Summary changed to: Another summary.
-    <BLANKLINE>
-    ** Visibility changed to: Public.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: test@canonical.com
-    ...
-    To: foo.bar@canonical.com
-    ...
-    To: mark@example.com
-    ...
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    another comment.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: test@canonical.com
-    ...
-
-    >>> flush_notifications()
-
-If we add three comments, three notifications will be sent:
-
-    >>> new_comment = getUtility(IMessageSet).fromText(
-    ...     'subject', 'a comment.', sample_person,
-    ...     datecreated=ten_minutes_ago)
-    >>> bug_one.addCommentNotification(new_comment)
-    >>> new_comment = getUtility(IMessageSet).fromText(
-    ...     'subject', 'another comment.', sample_person,
-    ...     datecreated=ten_minutes_ago)
-    >>> bug_one.addCommentNotification(new_comment)
-    >>> new_comment = getUtility(IMessageSet).fromText(
-    ...     'subject', 'yet another comment.', sample_person,
-    ...     datecreated=ten_minutes_ago)
-    >>> bug_one.addCommentNotification(new_comment)
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> len(pending_notifications)
-    3
-
-    >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
-    ...     for message in messages:
-    ...         print_notification(message)
-    To: foo.bar@canonical.com
-    ...
-    To: mark@example.com
-    ...
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: test@canonical.com
-    ...
-    To: foo.bar@canonical.com
-    ...
-    To: mark@example.com
-    ...
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    another comment.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: test@canonical.com
-    ...
-    To: foo.bar@canonical.com
-    ...
-    To: mark@example.com
-    ...
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    yet another comment.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: test@canonical.com
-    ...
-
-    >>> flush_notifications()
-
-If Sample Person does a few changes, and Foo Bar steps in a does a
-change in between, three notifications will be sent:
-
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> comment = getUtility(IMessageSet).fromText(
-    ...     'subject', 'a comment.', sample_person,
-    ...     datecreated=ten_minutes_ago)
-    >>> bug_one.addCommentNotification(comment)
-    >>> bug_one.addChangeNotification(
-    ...     '** Summary changed to: New summary.', foo_bar,
-    ...     when=ten_minutes_ago)
-    >>> bug_one.addChangeNotification(
-    ...     '** Visibility changed to: Private.', sample_person,
-    ...     when=ten_minutes_ago)
-
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> len(pending_notifications)
-    3
-
-    >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
-    ...     for message in messages:
-    ...         print_notification(message)
-    To: foo.bar@canonical.com
-    ...
-    To: mark@example.com
-    ...
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: test@canonical.com
-    ...
-    To: foo.bar@canonical.com
-    ...
-    To: mark@example.com
-    ...
-    To: support@ubuntu.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    ** Summary changed to: New summary.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: test@canonical.com
-    ...
-    To: foo.bar@canonical.com
-    ...
-    To: mark@example.com
-    ...
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: test@canonical.com
-    ...
+    >>> message.get_payload(decode=True).splitlines()
+    [...,
+     '',
+     '-- ',
+     'You received this bug notification because you are subscribed to the bug',
+     'report.',
+     'http://bugs.launchpad.dev/bugs/1',
+     '',
+     'Title:',
+     '  Firefox does not support SVG'...]
 
     >>> flush_notifications()
 
@@ -528,9 +297,10 @@ for the last 5 minutes:
 
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> for minutes_ago in reversed(range(10)):
-    ...     bug_one.addChangeNotification(
-    ...         '** Visibility changed to: Private.', sample_person,
-    ...         when=now - timedelta(minutes=minutes_ago))
+    ...     bug_one.addChange(
+    ...         BugVisibilityChange(
+    ...             now - timedelta(minutes=minutes_ago), sample_person,
+    ...             "private", False, True))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -538,198 +308,46 @@ for the last 5 minutes:
 
     >>> flush_notifications()
 
-A more complicated example, Sample Person does a change every minute,
-but Foo Bar does a change in between:
-
-    >>> now = datetime.now(pytz.timezone('UTC'))
-    >>> for minutes_ago in reversed(range(10)):
-    ...     if minutes_ago == 6:
-    ...         bug_one.addChangeNotification(
-    ...             '** Visibility changed to: Public.', foo_bar,
-    ...             when=now - timedelta(minutes=minutes_ago))
-    ...     bug_one.addChangeNotification(
-    ...         '** Visibility changed to: Private.', sample_person,
-    ...         when=now - timedelta(minutes=minutes_ago))
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> len(pending_notifications)
-    4
-    >>> for notification in pending_notifications:
-    ...     print notification.id, notification.message.owner.displayname
-    25 Sample Person
-    26 Sample Person
-    27 Sample Person
-    28 Foo Bar
-
-    >>> flush_notifications()
-
-Let's take a more complete example, where we edit different bugs as
-well:
-
-    >>> bug_two = getUtility(IBugSet).get(2)
-    >>> long_comment = getUtility(IMessageSet).fromText(
-    ...     'subject',
-    ...     'This is a long comment, which is longer than 72 characters.'
-    ...     ' This should result in the lined being wrapped, so that it'
-    ...     " won't be displayed as a single long line. Let's add another"
-    ...     ' sentence just to make it longer.'
-    ...     '\r\n\r\n'
-    ...     "Let's add another paragraph to the comment as well, separating"
-    ...     " it with dos-style line endings.",
-    ...     foo_bar, datecreated=now - timedelta(minutes=6))
-    >>> for minutes_ago in reversed(range(10)):
-    ...     if minutes_ago == 6:
-    ...         bug_one.addChangeNotification(
-    ...             '** Visibility changed to: Public.', foo_bar,
-    ...             when=now - timedelta(minutes=minutes_ago))
-    ...         bug_one.addCommentNotification(long_comment)
-    ...         bug_two.addChangeNotification(
-    ...             '** Visibility changed to: Public.', foo_bar,
-    ...             when=now - timedelta(minutes=minutes_ago))
-    ...     bug_one.addChangeNotification(
-    ...         '** Visibility changed to: Private.', sample_person,
-    ...         when=now - timedelta(minutes=minutes_ago))
-    ...     bug_two.addChangeNotification(
-    ...         '** Visibility changed to: Private.', sample_person,
-    ...         when=now - timedelta(minutes=minutes_ago))
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> len(pending_notifications)
-    9
-
-    >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
-    ...     for message in messages:
-    ...         print_notification_headers(message)
-    ...         print
-    To: mark@example.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Debian)
-    <BLANKLINE>
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
-    <BLANKLINE>
-    To: test@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Assignee
-    <BLANKLINE>
-    To: mark@example.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Debian)
-    <BLANKLINE>
-    To: support@ubuntu.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
-    <BLANKLINE>
-    To: test@canonical.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Assignee
-    <BLANKLINE>
-    To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
-    <BLANKLINE>
-    To: mark@example.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Assignee
-    <BLANKLINE>
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    To: test@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber
-    <BLANKLINE>
-    To: foo.bar@canonical.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
-    <BLANKLINE>
-    To: mark@example.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Assignee
-    <BLANKLINE>
-    To: support@ubuntu.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    To: test@canonical.com
-    From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber
-    <BLANKLINE>
-
-There's a blank line before the signature, and the signature marker has
-a trailing space.
-
-    >>> message.get_payload(decode=True).splitlines()
-    ['This is a long comment, which is longer than 72 characters. This should',
-     "result in the lined being wrapped, so that it won't be displayed as a",
-     "single long line. Let's add another sentence just to make it longer.",
-     '',
-     "Let's add another paragraph to the comment as well, separating it with",
-     'dos-style line endings.',
-     '',
-     '** Visibility changed to: Public.',
-     '',
-     '-- ',
-     'Firefox does not support SVG',
-     'http://bugs.launchpad.dev/bugs/1',
-     'You received this bug notification because you are a direct subscriber',
-     'of the bug.']
-
-    >>> flush_notifications()
-
 If a team without a contact address is subscribed to the bug, the
 notification will be sent to all members individually.
 
-    >>> shipit_admins = getUtility(IPersonSet).getByName('shipit-admins')
-    >>> shipit_admins.preferredemail is None
+    >>> with lp_dbuser():
+    ...     owner = factory.makePerson(email='owner@example.com')
+    ...     addressless = factory.makeTeam(
+    ...         owner=owner, name='addressless',
+    ...         displayname='Addressless Team')
+    >>> addressless.preferredemail is None
     True
-    >>> for member in shipit_admins.activemembers:
+    >>> for member in addressless.activemembers:
     ...     print member.preferredemail.email
-    marilize@hbd.com
+    owner@example.com
 
-    >>> bug_one.subscribe(shipit_admins, shipit_admins)
-    <...>
+    >>> with lp_dbuser():
+    ...     ignored = bug_one.subscribe(addressless, addressless)
+    ...     comment = getUtility(IMessageSet).fromText(
+    ...         'subject', 'a comment.', sample_person,
+    ...         datecreated=ten_minutes_ago)
+    ...     bug_one.addCommentNotification(comment)
 
-    >>> comment = getUtility(IMessageSet).fromText(
-    ...     'subject', 'a comment.', sample_person,
-    ...     datecreated=ten_minutes_ago)
-    >>> bug_one.addCommentNotification(comment)
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
     1
 
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print message['To']
     foo.bar@canonical.com
-    marilize@hbd.com
     mark@example.com
+    owner@example.com
     support@ubuntu.com
     test@canonical.com
 
     >>> flush_notifications()
 
-
-== Duplicates ==
+Duplicates
+----------
 
 We will need some helper functions.
 
@@ -748,8 +366,8 @@ We will need some helper functions.
 
 We will also need a fresh new bug.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, CreateBugParams)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> description = getUtility(IMessageSet).fromText(
     ...     'subject', 'a description of the bug.', sample_person,
@@ -757,120 +375,52 @@ We will also need a fresh new bug.
     >>> params = CreateBugParams(
     ...     msg=description, owner=sample_person, title='new bug')
 
-    >>> switch_db_to_launchpad()
-    >>> new_bug = ubuntu.createBug(params)
-    >>> switch_db_to_bugnotification()
-
-    >>> flush_notifications()
+    >>> with lp_dbuser():
+    ...     new_bug = ubuntu.createBug(params)
 
 If a bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
 
-    >>> new_bug.duplicateof = bug_one
+    >>> flush_notifications()
+    >>> with lp_dbuser():
+    ...     new_bug.markAsDuplicate(bug_one)
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> new_bug.addCommentNotification(comment)
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
     1
 
-    >>> for bug_notifications, messages in get_email_notifications(notifications):
+    >>> for bug_notifications, omitted, messages in (
+    ...     get_email_notifications(notifications)):
     ...     for message in messages:
     ...         print_notification(message)
-    To: foo.bar@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu) via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu (via bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: marilize@hbd.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Subscriber @shipit-admins via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber (via bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: mark@example.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Assignee via Bug 1
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are a bug assignee (via
-    bug 1).
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <16@bugs.launchpad.net>
     Subject: [Bug 16] subject
     X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
         http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <16@bugs.launchpad.net>
     Subject: [Bug 16] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
         http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/16
-    You received this bug notification because you are a direct subscriber
-    of the bug.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
-
-Also note that notification was sent to Mark as well, since he's a
-subscriber of bug one.
 
     >>> flush_notifications()
 
 
-== Security Vulnerabilities ==
+Security Vulnerabilities
+------------------------
 
 When a new security related bug is filed, a small notification is
 inserted at the top of the message body.
@@ -879,12 +429,11 @@ inserted at the top of the message body.
     ...     'Zero-day on Frobulator', 'Woah.', sample_person,
     ...     datecreated=ten_minutes_ago)
 
-    >>> switch_db_to_launchpad()
-    >>> sec_vuln_bug = ubuntu.createBug(CreateBugParams(
+    >>> with lp_dbuser():
+    ...     sec_vuln_bug = ubuntu.createBug(CreateBugParams(
     ...         msg=sec_vuln_description, owner=sample_person,
     ...         title='Zero-day on Frobulator',
     ...         security_related=True, private=True))
-    >>> switch_db_to_bugnotification()
 
     >>> sec_vuln_bug.security_related
     True
@@ -894,11 +443,11 @@ inserted at the top of the message body.
     >>> notifications = (
     ...     getUtility(IBugNotificationSet).getNotificationsToSend())
     >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] [NEW] Zero-day on Frobulator
     X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
     <BLANKLINE>
@@ -918,11 +467,11 @@ The message is only inserted for new bugs, not for modified bugs:
     >>> notifications = (
     ...     getUtility(IBugNotificationSet).getNotificationsToSend())
     >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
     <BLANKLINE>
@@ -933,7 +482,8 @@ The message is only inserted for new bugs, not for modified bugs:
     >>> flush_notifications()
 
 
-== The cronscript ==
+The cronscript
+--------------
 
 There's a cronsript which does the sending of the email. Let's add a
 few notifications to show that it works.
@@ -942,29 +492,41 @@ few notifications to show that it works.
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
-    >>> bug_one.addChangeNotification(
-    ...     '** Summary changed to: New summary.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Another summary", "New summary"))
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'another comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
-    >>> bug_one.addChangeNotification(
-    ...     '** Summary changed to: Old summary.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Summary #431", "Summary bleugh I'm going mad"))
 
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_two.addCommentNotification(comment)
-    >>> bug_two.addChangeNotification(
-    ...     '** Summary changed to: New summary.', sample_person,
-    ...     when=ten_minutes_ago)
+    >>> bug_two.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Old summary", "New summary"))
+    >>> bug_two.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         False, True))
+    >>> bug_two.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         True, False))
 
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
-    6
+    8
 
 We need to commit the transaction so that the cronscript will see the
 notifications.
@@ -984,14 +546,12 @@ makes it write out the emails it sends.
     >>> process.returncode
     0
     >>> print err
-    INFO    creating lockfile
-    INFO    Notifying mark@example.com about bug 2.
-    ...
+    DEBUG   ...
     INFO    Notifying support@ubuntu.com about bug 2.
     ...
     INFO    Notifying test@canonical.com about bug 2.
     ...
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     To: test@canonical.com
     Reply-To: Bug 2 <2@bugs.launchpad.net>
     ...
@@ -1001,17 +561,17 @@ makes it write out the emails it sends.
     ...
     INFO    Notifying foo.bar@canonical.com about bug 1.
     ...
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     To: foo.bar@canonical.com
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     ...
     References: sdsdfsfd
     ...
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
-    ...
-    INFO    Notifying marilize@hbd.com about bug 1.
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in Ubuntu)
     ...
     INFO    Notifying mark@example.com about bug 1.
+    ...
+    INFO    Notifying owner@example.com about bug 1.
     ...
     INFO    Notifying support@ubuntu.com about bug 1.
     ...
@@ -1019,13 +579,13 @@ makes it write out the emails it sends.
     ...
     INFO    Notifying foo.bar@canonical.com about bug 1.
     ...
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     To: foo.bar@canonical.com
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     ...
     References: sdsdfsfd
     ...
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in Ubuntu)
     Errors-To: bounces@canonical.com
     Return-Path: bounces@canonical.com
     Precedence: bulk
@@ -1033,28 +593,60 @@ makes it write out the emails it sends.
     <BLANKLINE>
     another comment.
     <BLANKLINE>
-    ** Summary changed to: Old summary.
+    ** Summary changed:
+    - Summary #431
+    + Summary bleugh I'm going mad
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
-    <BLANKLINE>
-    INFO    Notifying marilize@hbd.com about bug 1.
-    ...
+    You received this bug notification because...
     INFO    Notifying mark@example.com about bug 1.
+    ...
+    INFO    Notifying owner@example.com about bug 1.
     ...
     INFO    Notifying support@ubuntu.com about bug 1.
     ...
     INFO    Notifying test@canonical.com about bug 1.
     ...
 
-    >>> flush_notifications()
+Note that the message omitted the undone visibility change.
+
+The cronscript has to be sure to mark all notifications, omitted and
+otherwise, as sent.  It also marks the omitted notifications with a status,
+so if there are any problems we can identify which notifications were omitted
+during analysis.  We'll commit a transaction to synchronize the database,
+and then look at the notifications available.
+
+    >>> transaction.commit()
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    0
+
+They have all been marked as sent, including the omitted ones.  Let's look
+more carefully at the notifications just to see that the status has
+been set properly.
+
+    >>> from lp.bugs.model.bugnotification import BugNotification
+    >>> for notification in BugNotification.select(orderBy='id')[-8:]:
+    ...     if notification.is_comment:
+    ...         identifier = 'comment'
+    ...     else:
+    ...         identifier = notification.activity.whatchanged
+    ...     print identifier, notification.status.title
+    comment Sent
+    summary Sent
+    comment Sent
+    summary Sent
+    comment Sent
+    summary Sent
+    visibility Omitted
+    visibility Omitted
 
 
-== The X-Launchpad-Bug header ==
+The X-Launchpad-Bug header
+--------------------------
 
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
@@ -1075,7 +667,7 @@ If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
 
     >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         sorted(message.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; distroseries=sarge;... milestone=3.1;...',
@@ -1092,7 +684,8 @@ specified:
     False
 
 
-== The X-Launchpad-Bug-Tags header ==
+The X-Launchpad-Bug-Tags header
+-------------------------------
 
 First, a helper function that triggers notifications by adding a
 comment to a given bug, another that returns a sorted list of new
@@ -1108,7 +701,7 @@ email messages, and a third that combines the first two.
 
     >>> def get_email_messages(notifications):
     ...     messages = (message
-    ...         for bug_notifications, messages in
+    ...         for bug_notifications, omitted, messages in
     ...             get_email_notifications(notifications)
     ...         for message in messages)
     ...     return sorted(messages, key=lambda message: message['To'])
@@ -1127,18 +720,13 @@ X-Launchpad-Bug-Tags header.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
     [u'layout-test']
-    [u'layout-test']
 
 If we add a tag to bug three that will also be included in the header.
 The tags will be space-separated to allow the list to be wrapped if it
 gets over-long.
 
-    >>> switch_db_to_launchpad()
-
-    >>> bug_three.unsubscribe(sample_person, sample_person)
-    >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
-
-    >>> switch_db_to_bugnotification()
+    >>> with lp_dbuser():
+    ...     bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
 
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> for message in trigger_and_get_email_messages(bug_three):
@@ -1148,16 +736,18 @@ gets over-long.
 If we remove the tags from the bug, the X-Launchpad-Bug-Tags header
 won't be included.
 
-    >>> switch_db_to_launchpad()
-    >>> bug_three.tags = []
-    >>> switch_db_to_bugnotification()
+    >>> with lp_dbuser():
+    ...     bug_three.tags = []
 
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
+    >>> #bug_three.unsubscribe(sample_person, sample_person)
 
-== The X-Launchpad-Bug-Private header ==
+
+The X-Launchpad-Bug-Private header
+----------------------------------
 
 When a notification is sent out about a bug, the
 X-Launchpad-Bug-Private header shows if the bug is marked as
@@ -1168,21 +758,23 @@ private. It can have the value "yes" or "no".
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    mark@example.com ['no']
+    test@canonical.com ['no']
 
 Predictably, private bugs are sent with a slightly different header:
 
-    >>> bug_three.setPrivate(True, sample_person)
+    >>> with lp_dbuser():
+    ...     bug_three.setPrivate(True, sample_person)
     True
     >>> bug_three.private
     True
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    mark@example.com ['yes']
+    test@canonical.com ['yes']
 
 
-== The X-Launchpad-Bug-Security-Vulnerability header ==
+The X-Launchpad-Bug-Security-Vulnerability header
+-------------------------------------------------
 
 When a notification is sent out about a bug, the
 X-Launchpad-Bug-Security-Vulnerability header records if the bug is a
@@ -1194,53 +786,71 @@ security vulnerability. It can have the value "yes" or "no".
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    mark@example.com ['no']
+    test@canonical.com ['no']
 
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
 
-    >>> bug_three.security_related = True
+    >>> with lp_dbuser():
+    ...     bug_three.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    True
     >>> bug_three.security_related
     True
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    mark@example.com ['yes']
+    test@canonical.com ['yes']
 
 
-== The X-Launchpad-Bug-Commenters header ==
+The X-Launchpad-Bug-Commenters header
+-------------------------------------
 
 The X-Launchpad-Bug-Recipient-Commented header lists all user IDs of
 people who have ever commented on the bug. It's a space-separated
 list.
 
-    >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message.get('X-Launchpad-Bug-Commenters')
+    >>> message = trigger_and_get_email_messages(bug_three)[0]
+    >>> print message.get('X-Launchpad-Bug-Commenters')
     name12
 
-    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
-    >>> getUtility(IBugMessageSet).createMessage(
-    ...     'Hungry', bug_three, foo_bar, "Make me a sandwich.")
-    <BugMessage ...>
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
-    >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message.get('X-Launchpad-Bug-Commenters')
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
+    >>> with lp_dbuser():
+    ...     ignored = getUtility(IBugMessageSet).createMessage(
+    ...         'Hungry', bug_three, foo_bar, "Make me a sandwich.")
+
+    >>> message = trigger_and_get_email_messages(bug_three)[0]
+    >>> print message.get('X-Launchpad-Bug-Commenters')
     name12 name16
 
 It only lists each user once, no matter how many comments they've
 made.
 
-    >>> getUtility(IBugMessageSet).createMessage(
-    ...     'Hungry', bug_three, foo_bar, "Make me a sandwich.")
-    <BugMessage ...>
+    >>> with lp_dbuser():
+    ...     ignored = getUtility(IBugMessageSet).createMessage(
+    ...         'Hungry', bug_three, foo_bar, "Make me a sandwich.")
 
-    >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message.get('X-Launchpad-Bug-Commenters')
+    >>> message = trigger_and_get_email_messages(bug_three)[0]
+    >>> print message.get('X-Launchpad-Bug-Commenters')
     name12 name16
 
 
-== Verbose bug notifications ==
+The X-Launchpad-Bug-Reporter header
+-----------------------------------
+
+The X-Launchpad-Bug-Reporter header contains information about the Launchpad
+user who originally reported the bug and opened the bug's first bug task.
+
+    >>> message = trigger_and_get_email_messages(bug_three)[0]
+    >>> print message.get('X-Launchpad-Bug-Reporter')
+    Foo Bar (name16)
+
+
+Verbose bug notifications
+-------------------------
 
 It is possible for users to have all the bug notifications which they
 receive include the bug description and status. This helps in those
@@ -1252,67 +862,66 @@ some very picky users to it. Verbose Person wants verbose emails, while
 Concise Person does not. We'll also create teams and give them members
 with different verbose_bugnotifications settings.
 
-    >>> switch_db_to_launchpad()
-    >>> bug = factory.makeBug(
-    ...     product=factory.makeProduct(title='Foo'), title='Foo is broken',
-    ...     description='desc')
-
-    >>> verbose_person = factory.makePerson(
-    ...     displayname='Verbose Person', email='verbose@example.com')
-    >>> verbose_person.verbose_bugnotifications = True
-    >>> bug.subscribe(verbose_person, verbose_person)
-    <BugSubscription...>
-
-    >>> concise_person = factory.makePerson(
-    ...     displayname='Concise Person', email='concise@example.com')
-    >>> concise_person.verbose_bugnotifications = False
-    >>> bug.subscribe(concise_person, concise_person)
-    <BugSubscription...>
+    >>> with lp_dbuser():
+    ...     bug = factory.makeBug(
+    ...         product=factory.makeProduct(title='Foo'),
+    ...         title='In the beginning, the universe was created. This '
+    ...             'has made a lot of people very angry and has been '
+    ...             'widely regarded as a bad move',
+    ...         description="This is a long description of the bug, which "
+    ...             "will be automatically wrapped by the BugNotification "
+    ...             "machinery. Ain't technology great?")
+    ...     verbose_person = factory.makePerson(
+    ...         displayname='Verbose Person', email='verbose@example.com',
+    ...         selfgenerated_bugnotifications=True)
+    ...     verbose_person.verbose_bugnotifications = True
+    ...     ignored = bug.subscribe(verbose_person, verbose_person)
+    ...     concise_person = factory.makePerson(
+    ...         displayname='Concise Person', email='concise@example.com')
+    ...     concise_person.verbose_bugnotifications = False
+    ...     ignored = bug.subscribe(concise_person, concise_person)
 
 
 Concise Team doesn't want verbose notifications, while Concise Team
 Person, a member, does.
 
-    >>> concise_team = factory.makeTeam(
-    ...     name='conciseteam', displayname='Concise Team')
-    >>> concise_team.verbose_bugnotifications = False
-    >>> concise_team_person = factory.makePerson(
-    ...     displayname='Concise Team Person',
-    ...     email='conciseteam@example.com')
-    >>> concise_team_person.verbose_bugnotifications = True
-    >>> ignored = concise_team.addMember(
-    ...     concise_team_person, concise_team_person)
-    >>> bug.subscribe(concise_team, concise_team_person)
-    <BugSubscription...>
+    >>> with lp_dbuser():
+    ...     concise_team = factory.makeTeam(
+    ...         name='conciseteam', displayname='Concise Team')
+    ...     concise_team.verbose_bugnotifications = False
+    ...     concise_team_person = factory.makePerson(
+    ...         displayname='Concise Team Person',
+    ...         email='conciseteam@example.com')
+    ...     concise_team_person.verbose_bugnotifications = True
+    ...     ignored = concise_team.addMember(
+    ...         concise_team_person, concise_team_person)
+    ...     ignored = bug.subscribe(concise_team, concise_team_person)
 
 Verbose Team wants verbose notifications, while Verbose Team Person, a
 member, does not.
 
-    >>> verbose_team = factory.makeTeam(
-    ...     name='verboseteam', displayname='Verbose Team')
-    >>> verbose_team.verbose_bugnotifications = True
-    >>> verbose_team_person = factory.makePerson(
-    ...     displayname='Verbose Team Person',
-    ...     email='verboseteam@example.com')
-    >>> verbose_team_person.verbose_bugnotifications = False
-    >>> ignored = verbose_team.addMember(
-    ...     verbose_team_person, verbose_team_person)
-    >>> bug.subscribe(verbose_team, verbose_team_person)
-    <BugSubscription...>
+    >>> with lp_dbuser():
+    ...     verbose_team = factory.makeTeam(
+    ...         name='verboseteam', displayname='Verbose Team')
+    ...     verbose_team.verbose_bugnotifications = True
+    ...     verbose_team_person = factory.makePerson(
+    ...         displayname='Verbose Team Person',
+    ...         email='verboseteam@example.com')
+    ...     verbose_team_person.verbose_bugnotifications = False
+    ...     ignored = verbose_team.addMember(
+    ...         verbose_team_person, verbose_team_person)
+    ...     ignored = bug.subscribe(verbose_team, verbose_team_person)
 
 We'll expire all existing notifications since we're not interested in
 them:
 
-    >>> switch_db_to_bugnotification()
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
     1
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> for notification in notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    ...     syncUpdate(notification)
 
 
 If we then add a comment to the bug, the subscribers will receive
@@ -1347,7 +956,7 @@ function.
 
     >>> from itertools import chain
     >>> collated_messages = collate_messages_by_recipient(
-    ...     chain(*(messages for bug_notifications, messages in
+    ...     chain(*(messages for bug_notifications, omitted, messages in
     ...             get_email_notifications(notifications))))
 
 We can see that Concise Person doesn't receive verbose notifications:
@@ -1361,15 +970,23 @@ We can see that Concise Person doesn't receive verbose notifications:
     a really simple comment.
     <BLANKLINE>
     --
-    Foo is broken
+    You received this bug notification because you are subscribed to the bug
+    report.
     http://bugs.launchpad.dev/bugs/...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
     <BLANKLINE>
+    Title:
+      In the beginning...
     ----------------------------------------------------------------------
 
-Neither does Verbose Team Person - while the team wants verbose emails,
-he wants concise ones.
+However, Concise Person does get an unsubscribe link.
+
+    >>> print_notification(collated_messages['concise@example.com'][0])
+    To: concise@example.com
+    ...
+    To manage notifications about this bug go to:...
+
+Verbose Team Person gets a concise email, even though they belong to a team
+that gets verbose email.
 
     >>> print_notification(collated_messages['verboseteam@example.com'][0])
     To: verboseteam@example.com
@@ -1380,11 +997,12 @@ he wants concise ones.
     a really simple comment.
     <BLANKLINE>
     --
-    Foo is broken
-    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a member of Verbose
-    Team, which is a direct subscriber.
+    Team, which is subscribed to the bug report.
+    http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
+    Title:
+      In the beginning...
     ----------------------------------------------------------------------
 
 Whereas Verbose Person does get the description and task status:
@@ -1398,22 +1016,26 @@ Whereas Verbose Person does get the description and task status:
     a really simple comment.
     <BLANKLINE>
     --
-    Foo is broken
+    You received this bug notification because you are subscribed to the bug
+    report.
     http://bugs.launchpad.dev/bugs/...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
     <BLANKLINE>
-    Status in Foo: New
+    Title:
+      In the beginning...
+    <BLANKLINE>
+    Status in Foo:
+      New
     <BLANKLINE>
     Bug description:
-    desc
+       This is a long description of the bug, which
+       will be automatically wrapped by the BugNotification
+       machinery. Ain't technology great?
     <BLANKLINE>
-    To unsubscribe from this bug, go to:
-    http://bugs.launchpad.dev/product-name4/+bug/.../+subscribe
-    <BLANKLINE>
+    To manage notifications about this bug go to:
+    http://bugs.launchpad.dev/.../+bug/.../+subscriptions
     ----------------------------------------------------------------------
 
-And Concise Team Person does too, even though his team doesn't want them: 
+And Concise Team Person does too, even though his team doesn't want them:
 
     >>> print_notification(collated_messages['conciseteam@example.com'][0])
     To: conciseteam@example.com
@@ -1424,44 +1046,101 @@ And Concise Team Person does too, even though his team doesn't want them:
     a really simple comment.
     <BLANKLINE>
     --
-    Foo is broken
-    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a member of Concise
-    Team, which is a direct subscriber.
+    Team, which is subscribed to the bug report.
+    http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
-    Status in Foo: New
+    Title:
+      In the beginning...
+    <BLANKLINE>
+    Status in Foo:
+      New
     <BLANKLINE>
     Bug description:
-    desc
+       This is a long description of the bug, which
+       will be automatically wrapped by the BugNotification
+       machinery. Ain't technology great?
     <BLANKLINE>
+    To manage notifications about this bug go to:
+    http://bugs.launchpad.dev/.../+bug/.../+subscriptions
     ----------------------------------------------------------------------
 
-== Notification Recipients ==
+It's important to note that the bug title and description are wrapped
+and indented correctly in verbose notifications.
+
+    >>> message = collated_messages['conciseteam@example.com'][0]
+    >>> payload = message.get_payload(decode=True)
+    >>> print payload.split('\n')
+    [...
+     'Title:',
+     '  In the beginning, the universe was created. This has made a lot of',
+     '  people very angry and has been widely regarded as a bad move',
+     ...
+     'Bug description:',
+     '  This is a long description of the bug, which will be automatically',
+     "  wrapped by the BugNotification machinery. Ain't technology great?"...]
+
+The title is also wrapped and indented in normal notifications.
+
+    >>> message = collated_messages['verboseteam@example.com'][0]
+    >>> payload = message.get_payload(decode=True)
+    >>> print payload.strip().split('\n')
+    [...
+     'Title:',
+     '  In the beginning, the universe was created. This has made a lot of',
+     '  people very angry and has been widely regarded as a bad move'...]
+
+Self-Generated Bug Notifications
+--------------------------------
+
+People (not teams) will have the choice to receive notifications from actions
+they generated.  For now, everyone receives these notifications whether they
+want them or not.
+
+    >>> with lp_dbuser():
+    ...     person = factory.makePerson()
+    >>> person.selfgenerated_bugnotifications
+    False
+    >>> with lp_dbuser():
+    ...     person.selfgenerated_bugnotifications = True
+
+Teams provide this attribute read-only.
+
+    >>> with lp_dbuser():
+    ...     team = factory.makeTeam()
+    >>> team.selfgenerated_bugnotifications
+    False
+    >>> with lp_dbuser():
+    ...     team.selfgenerated_bugnotifications = True
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: Teams do not support changing this attribute.
+
+Notification Recipients
+-----------------------
 
 Bug notifications are sent to direct subscribers of a bug as well as to
 structural subscribers. Structural subcribers can select the
 notification level of the subscription.
 
     >>> flush_notifications()
-    >>> switch_db_to_launchpad()
 
+    >>> from lp.bugs.enum import BugNotificationLevel
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.structuralsubscription import (
-    ...     BugNotificationLevel)
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')
-    >>> subscription_no_priv = firefox.addBugSubscription(
-    ...     mr_no_privs, mr_no_privs)
-
-    >>> switch_db_to_bugnotification()
+    >>> with lp_dbuser():
+    ...     subscription_no_priv = firefox.addBugSubscription(
+    ...         mr_no_privs, mr_no_privs)
 
 The notifications generated by addCommentNotification() are sent only to
-structural subscribers with the notification level COMMENTS or higher.
-The notification level of Sample Person is COMMENTS, hence he receives
-these notifications.
+structural subscribers with no filters, or with the notification level
+of COMMENTS or higher. Sample Person's subscription currently does not
+have any filters other than the initial catch-all one, so he receives these
+notifications.
 
-    >>> print subscription_no_priv.bug_notification_level.name
-    COMMENTS
+    >>> print subscription_no_priv.bug_filters.count()
+    1
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'another comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
@@ -1469,61 +1148,121 @@ these notifications.
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: marilize@hbd.com
+    mozilla-firefox in Ubuntu.
     ...
-    You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber.
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
     ...
     You received this bug notification because you are a bug assignee.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: no-priv@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
     <BLANKLINE>
     another comment.
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are subscribed to Mozilla
     Firefox.
-    <BLANKLINE>
+    ...
+    ----------------------------------------------------------------------
+    To: owner@example.com
+    ...
+    You received this bug notification because you are a member of
+    Addressless Team, which is subscribed to the bug report.
+    ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
+    ...
+    ----------------------------------------------------------------------
+
+If Sample Person gets a filter with an explicit notification level of
+COMMENTS, he also receives these notifications.
+
+
+    >>> flush_notifications()
+    >>> with lp_dbuser():
+    ...     filter = subscription_no_priv.newBugFilter()
+    ...     filter.bug_notification_level = BugNotificationLevel.COMMENTS
+    ...     filter.description = u"Allow-comments filter"
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'another comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, omitted, messages in email_notifications:
+    ...     for message in messages:
+    ...         print_notification(message)
+    To: foo.bar@canonical.com
+    ...
+    You received this bug notification because you are subscribed to
+    mozilla-firefox in Ubuntu.
+    ...
+    ----------------------------------------------------------------------
+    To: mark@example.com
+    ...
+    You received this bug notification because you are a bug assignee.
+    ...
+    ----------------------------------------------------------------------
+    To: no-priv@canonical.com
+    From: Sample Person <...@bugs.launchpad.net>
+    Subject: [Bug 1] subject
+    X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
+    X-Launchpad-Subscription: Allow-comments filter
     <BLANKLINE>
+    another comment.
+    <BLANKLINE>
+    --
+    You received this bug notification because you are subscribed to Mozilla
+    Firefox.
+    Matching subscriptions: Allow-comments filter
+    ...
+    ----------------------------------------------------------------------
+    To: owner@example.com
+    ...
+    You received this bug notification because you are a member of
+    Addressless Team, which is subscribed to the bug report.
+    ...
+    ----------------------------------------------------------------------
+    To: support@ubuntu.com
+    ...
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
+    ...
+    ----------------------------------------------------------------------
+    To: test@canonical.com
+    ...
+    You received this bug notification because you are subscribed to the bug
+    report.
+    ...
     ----------------------------------------------------------------------
 
 If Sample Person's notification level is set to METADATA, he receives
 no comment notifications.
 
     >>> flush_notifications()
-    >>> switch_db_to_launchpad()
-    >>> subscription_no_priv.bug_notification_level = (
-    ...     BugNotificationLevel.METADATA)
-    >>> switch_db_to_bugnotification()
+    >>> with lp_dbuser():
+    ...     filter.bug_notification_level = BugNotificationLevel.METADATA
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'no comment for no-priv.', sample_person,
@@ -1532,157 +1271,227 @@ no comment notifications.
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: marilize@hbd.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber @shipit-admins
-    <BLANKLINE>
-    no comment for no-priv.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber.
-    <BLANKLINE>
+    mozilla-firefox in Ubuntu.
+    ...
     ----------------------------------------------------------------------
     To: mark@example.com
     ...
     You received this bug notification because you are a bug assignee.
+    ...
+    ----------------------------------------------------------------------
+    To: owner@example.com
+    From: Sample Person <...@bugs.launchpad.net>
+    Subject: [Bug 1] subject
+    X-Launchpad-Message-Rationale: Subscriber @addressless
     <BLANKLINE>
+    no comment for no-priv.
+    <BLANKLINE>
+    --
+    You received this bug notification because you are a member of
+    Addressless Team, which is subscribed to the bug report.
+    ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
-    <BLANKLINE>
+    You received this bug notification because you are subscribed to the bug
+    report.
+    ...
     ----------------------------------------------------------------------
 
-The notifications generated by addChangeNotification() are sent only to
-structural subscribers with the notification level METADATA or higher.
-The notification level of Sample Person is currently METADATA, hence he
+The notifications generated by addChange() are sent only to structural
+subscribers with the notification level METADATA or higher. The
+notification level of Sample Person is currently METADATA, hence he
 receives these notifications.
 
-    >>> bug_one.addChangeNotification('** Summary changed to: whatever.',
-    ...     sample_person, when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "New summary", "Whatever"))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: marilize@hbd.com
+    mozilla-firefox in Ubuntu.
+    http://bugs.launchpad.dev/bugs/1
     ...
-    You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber.
-    <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@example.com
     ...
     You received this bug notification because you are a bug assignee.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: no-priv@canonical.com
-    From: Sample Person <test@canonical.com>
+    From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
+    X-Launchpad-Subscription: Allow-comments filter
     <BLANKLINE>
     no comment for no-priv.
     <BLANKLINE>
-    ** Summary changed to: whatever.
+    ** Summary changed:
+    - New summary
+    + Whatever
     <BLANKLINE>
     --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are subscribed to Mozilla
     Firefox.
-    <BLANKLINE>
+    Matching subscriptions: Allow-comments filter
+    ...
+    ----------------------------------------------------------------------
+    To: owner@example.com
+    ...
+    You received this bug notification because you are a member of
+    Addressless Team, which is subscribed to the bug report.
+    ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
-    <BLANKLINE>
+    You received this bug notification because you are subscribed to the bug
+    report.
+    ...
     ----------------------------------------------------------------------
 
 If Sample Person sets his notification level to LIFECYCLE, he receives
-no notifications created by addChangeNotification().
+no notifications created by addChange().
 
     >>> flush_notifications()
-    >>> switch_db_to_launchpad()
-    >>> subscription_no_priv.bug_notification_level = (
-    ...     BugNotificationLevel.LIFECYCLE)
-    >>> switch_db_to_bugnotification()
+    >>> with lp_dbuser():
+    ...     filter.bug_notification_level = BugNotificationLevel.LIFECYCLE
 
-    >>> bug_one.addChangeNotification('** Summary changed to: something.',
-    ...     sample_person, when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "Whatever", "Whatever else"))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
-    To: marilize@hbd.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Subscriber @shipit-admins
-    <BLANKLINE>
-    ** Summary changed to: something.
-    <BLANKLINE>
-    --
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a member of ShipIt
-    Administrators, which is a direct subscriber.
-    <BLANKLINE>
+    mozilla-firefox in Ubuntu.
+    ...
     ----------------------------------------------------------------------
     To: mark@example.com
     ...
     You received this bug notification because you are a bug assignee.
+    ...
+    ----------------------------------------------------------------------
+    To: owner@example.com
+    From: Sample Person <...@bugs.launchpad.net>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Subscriber @addressless
     <BLANKLINE>
+    ** Summary changed:
+    - Whatever
+    + Whatever else
+    <BLANKLINE>
+    --
+    You received this bug notification because you are a member of
+    Addressless Team, which is subscribed to the bug report.
+    http://bugs.launchpad.dev/bugs/1
+    ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     ...
     You received this bug notification because you are a member of Ubuntu
     Team, which is the registrant for Ubuntu.
-    <BLANKLINE>
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
+    ...
+    ----------------------------------------------------------------------
+
+Note that, if two filters exist and they both match the same bug, the
+more inclusive filter wins.  Therefore, while we saw before that the
+filter did not allow the change notification through, if we add another
+filter that includes metadata then the notification will be sent out
+after all.
+
+    >>> flush_notifications()
+    >>> with lp_dbuser():
+    ...     filter2 = subscription_no_priv.newBugFilter()
+    ...     filter2.bug_notification_level = BugNotificationLevel.METADATA
+
+    >>> bug_one.addChange(
+    ...     BugTitleChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         "I'm losing my", "Marbles"))
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, omitted, messages in email_notifications:
+    ...     for message in messages:
+    ...         print_notification(message)
+    To: foo.bar@canonical.com
+    ...
+    You received this bug notification because you are subscribed to
+    mozilla-firefox in Ubuntu.
+    http://bugs.launchpad.dev/bugs/1
+    ...
+    ----------------------------------------------------------------------
+    To: mark@example.com
+    ...
+    You received this bug notification because you are a bug assignee.
+    ...
+    ----------------------------------------------------------------------
+    To: no-priv@canonical.com
+    From: Sample Person <...@bugs.launchpad.net>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
     <BLANKLINE>
+    ** Summary changed:
+    - I'm losing my
+    + Marbles
+    <BLANKLINE>
+    --
+    You received this bug notification because you are subscribed to Mozilla
+    Firefox.
+    ...
+    ----------------------------------------------------------------------
+    To: owner@example.com
+    ...
+    You received this bug notification because you are a member of
+    Addressless Team, which is subscribed to the bug report.
+    ...
+    ----------------------------------------------------------------------
+    To: support@ubuntu.com
+    ...
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
+    ...
+    ----------------------------------------------------------------------
+    To: test@canonical.com
+    ...
+    You received this bug notification because you are subscribed to the bug
+    report.
+    ...
     ----------------------------------------------------------------------

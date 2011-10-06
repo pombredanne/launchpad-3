@@ -22,6 +22,14 @@ translation, and also reminds him that he has full editing privileges.
     >>> print_tag(admin_browser.contents, 'translation-access')
     You have full access to this translation.
 
+Users with full access will also have an option to switch between translator
+and reviewer working mode.
+
+    >>> switch_working_mode = find_tag_by_id(
+    ...     admin_browser.contents,
+    ...     'translation-switch-working-mode')
+    >>> switch_working_mode is not None
+    True
 
 == Displaying translation groups and reviewers ==
 
@@ -31,9 +39,9 @@ translation group of its own, that too is shown here.
     >>> import re
 
     >>> from canonical.database.constants import UTC_NOW
-    >>> from lp.services.worlddata.model.language import Language
     >>> from lp.registry.model.person import Person
     >>> from lp.registry.model.product import Product
+    >>> from lp.services.worlddata.model.language import Language
     >>> from lp.translations.model.translationgroup import (
     ...     TranslationGroup)
 
@@ -106,17 +114,34 @@ will be held for review by the translation's managers.
     Your suggestions will be held for review by the managers of this
     translation.
 
+Users without full access will not have an option to switch between translator
+and reviewer working mode.
+
+    >>> switch_working_mode = find_tag_by_id(
+    ...     user_browser.contents,
+    ...     'translation-switch-working-mode')
+    >>> switch_working_mode is not None
+    False
+
 If Evolution's translation is set to Closed mode, Joe will not be able
 to submit suggestions.
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> evolution.translationpermission = TranslationPermission.CLOSED
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
     >>> print_tag(user_browser.contents, 'translation-access')
     This template can be translated only by its managers.
+
+If users are not allowed to submit suggestions, they will also not have an
+option to switch between translator and reviewer working mode.
+
+    >>> switch_working_mode = find_tag_by_id(
+    ...     user_browser.contents,
+    ...     'translation-switch-working-mode')
+    >>> switch_working_mode is not None
+    False
 
 There is a special case where Joe visits a translation into a language
 that isn't covered by the translation group: Joe is told he cannot enter
@@ -138,7 +163,8 @@ up translation for this language.
 
 Finally, if there is no translation group at all and the permissions do
 not allow Joe to translate, the page shows that the translation is
-closed.
+closed and no option to switch between translator and reviewer working mode
+will be displayed.
 
     >>> evolution.translationpermission = TranslationPermission.CLOSED
     >>> evolution.translationgroup = None
@@ -147,3 +173,9 @@ closed.
     ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
     >>> print_tag(user_browser.contents, 'translation-access')
     This translation is not open for changes.
+
+    >>> switch_working_mode = find_tag_by_id(
+    ...     user_browser.contents,
+    ...     'translation-switch-working-mode')
+    >>> switch_working_mode is not None
+    False

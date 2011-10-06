@@ -1,8 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-import pytz
 import re
 import shutil
 import subprocess
@@ -10,31 +9,48 @@ import sys
 import tempfile
 import unittest
 
+import pytz
 import transaction
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from lp.bugs.externalbugtracker import (
-    ExternalBugTracker)
-from canonical.launchpad.database import BugNotification
+from lp.bugs.model.bugnotification import BugNotification
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.bugs.externalbugtracker import ExternalBugTracker
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
-from lp.bugs.scripts.checkwatches import BugWatchUpdater
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.bugs.scripts.checkwatches import (
+    CheckwatchesMaster,
+    core,
+    )
+from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.person import generate_nick
 from lp.testing import TestCaseWithFactory
-
-from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad.ftests import login, logout
 
 
 class UtilsTestCase(unittest.TestCase):
@@ -72,7 +88,6 @@ class UtilsTestCase(unittest.TestCase):
         node = ET.fromstring('<a>x<b/></a>')
         self.assertRaises(bugimport.BugXMLSyntaxError,
                           bugimport.get_text, node)
-
 
     def test_get_enum_value(self):
         # Test that the get_enum_value() function returns the
@@ -411,6 +426,25 @@ Another paragraph
       <contents>QSBwYXRjaA==</contents>
     </attachment>
   </comment>
+  <comment>
+    <!-- empty comment -->
+    <sender name="nobody"/>
+    <date>2005-01-01T14:00:00Z</date>
+    <text></text>
+  </comment>
+  <comment>
+    <!-- empty comment with attachment -->
+    <sender name="nobody"/>
+    <date>2005-01-01T15:00:00Z</date>
+    <text></text>
+    <attachment>
+      <type>UNSPECIFIED</type>
+      <filename>hello.txt</filename>
+      <title>Hello</title>
+      <mimetype>text/plain</mimetype>
+      <contents>SGVsbG8gd29ybGQ=</contents>
+    </attachment>
+  </comment>
 </bug>'''
 
 duplicate_bug = '''\
@@ -447,6 +481,7 @@ public_security_bug = '''\
   </comment>
 </bug>'''
 
+
 class ImportBugTestCase(unittest.TestCase):
     """Test importing of a bug from XML"""
     layer = LaunchpadZopelessLayer
@@ -475,50 +510,55 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertNotEqual(bug, None)
         # check bug attributes
         self.assertEqual(bug.owner.preferredemail.email, 'foo@example.com')
-        self.assertEqual(bug.datecreated.isoformat(),
-                         '2004-10-12T12:00:00+00:00')
+        self.assertEqual(
+            bug.datecreated.isoformat(), '2004-10-12T12:00:00+00:00')
         self.assertEqual(bug.title, 'A test bug')
         self.assertEqual(bug.description, 'A modified bug description')
         self.assertEqual(bug.private, True)
         self.assertEqual(bug.security_related, True)
         self.assertEqual(bug.name, 'some-bug')
-        self.assertEqual(sorted(cve.sequence for cve in bug.cves),
-                         ['2005-2730', '2005-2736', '2005-2737'])
+        self.assertEqual(
+            sorted(cve.sequence for cve in bug.cves),
+            ['2005-2730', '2005-2736', '2005-2737'])
         self.assertEqual(bug.tags, ['bar', 'foo'])
         self.assertEqual(len(bug.getDirectSubscribers()), 2)
-        self.assertEqual(sorted(person.preferredemail.email
-                                for person in bug.getDirectSubscribers()),
-                         ['foo@example.com', 'test@canonical.com'])
+        self.assertEqual(
+            sorted(person.preferredemail.email for person in
+                bug.getDirectSubscribers()),
+            ['foo@example.com', 'test@canonical.com'])
         # There are two bug watches
         self.assertEqual(bug.watches.count(), 2)
-        self.assertEqual(sorted(watch.url for watch in bug.watches),
-                         ['http://bugzilla.gnome.org/show_bug.cgi?id=43',
-                          'https://bugzilla.mozilla.org/show_bug.cgi?id=42'])
+        self.assertEqual(
+            sorted(watch.url for watch in bug.watches),
+            ['http://bugzilla.gnome.org/show_bug.cgi?id=43',
+            'https://bugzilla.mozilla.org/show_bug.cgi?id=42'])
 
         # There should only be one bug task (on netapplet):
         self.assertEqual(len(bug.bugtasks), 1)
         bugtask = bug.bugtasks[0]
         self.assertEqual(bugtask.product, product)
-        self.assertEqual(bugtask.datecreated.isoformat(),
-                         '2004-10-12T12:00:00+00:00')
+        self.assertEqual(
+            bugtask.datecreated.isoformat(), '2004-10-12T12:00:00+00:00')
         self.assertEqual(bugtask.importance, BugTaskImportance.HIGH)
         self.assertEqual(bugtask.status, BugTaskStatus.CONFIRMED)
-        self.assertEqual(bugtask.assignee.preferredemail.email,
-                         'bar@example.com')
+        self.assertEqual(
+            bugtask.assignee.preferredemail.email, 'bar@example.com')
         self.assertNotEqual(bugtask.milestone, None)
         self.assertEqual(bugtask.milestone.name, 'future')
 
-        # there are three comments:
-        self.assertEqual(bug.messages.count(), 3)
+        # there are five comments:
+        self.assertEqual(bug.messages.count(), 5)
         message1 = bug.messages[0]
         message2 = bug.messages[1]
         message3 = bug.messages[2]
+        message4 = bug.messages[3]
+        message5 = bug.messages[4]
 
         # Message 1:
-        self.assertEqual(message1.owner.preferredemail.email,
-                         'foo@example.com')
-        self.assertEqual(message1.datecreated.isoformat(),
-                         '2004-10-12T12:00:00+00:00')
+        self.assertEqual(
+            message1.owner.preferredemail.email, 'foo@example.com')
+        self.assertEqual(
+            message1.datecreated.isoformat(), '2004-10-12T12:00:00+00:00')
         self.assertEqual(message1.subject, 'A test bug')
         self.assertEqual(message1.text_contents, 'Original description')
         self.assertEqual(message1.bugattachments.count(), 1)
@@ -529,19 +569,19 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
 
         # Message 2:
-        self.assertEqual(message2.owner.preferredemail.email,
-                         'bug-importer@launchpad.net')
-        self.assertEqual(message2.datecreated.isoformat(),
-                         '2005-01-01T11:00:00+00:00')
+        self.assertEqual(
+            message2.owner.preferredemail.email, 'bug-importer@launchpad.net')
+        self.assertEqual(
+            message2.datecreated.isoformat(), '2005-01-01T11:00:00+00:00')
         self.assertEqual(message2.subject, 'Re: A test bug')
-        self.assertEqual(message2.text_contents,
-                         'A comment from an anonymous user')
+        self.assertEqual(
+            message2.text_contents, 'A comment from an anonymous user')
 
         # Message 3:
-        self.assertEqual(message3.owner.preferredemail.email,
-                         'mark@example.com')
-        self.assertEqual(message3.datecreated.isoformat(),
-                         '2005-01-01T13:00:00+00:00')
+        self.assertEqual(
+            message3.owner.preferredemail.email, 'mark@example.com')
+        self.assertEqual(
+            message3.datecreated.isoformat(), '2005-01-01T13:00:00+00:00')
         self.assertEqual(message3.subject, 'Re: A test bug')
         self.assertEqual(
             message3.text_contents,
@@ -564,6 +604,29 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(attachment2.libraryfile.filename, 'foo.patch')
         # mime type forced to text/plain because we have a patch
         self.assertEqual(attachment2.libraryfile.mimetype, 'text/plain')
+
+        # Message 4:
+        self.assertEqual(
+            message4.owner.preferredemail.email, 'bug-importer@launchpad.net')
+        self.assertEqual(
+            message4.datecreated.isoformat(), '2005-01-01T14:00:00+00:00')
+        self.assertEqual(message4.subject, 'Re: A test bug')
+        self.assertEqual(message4.text_contents, '<empty comment>')
+        self.assertEqual(message4.bugattachments.count(), 0)
+
+        # Message 5:
+        self.assertEqual(
+            message5.owner.preferredemail.email, 'bug-importer@launchpad.net')
+        self.assertEqual(
+            message5.datecreated.isoformat(), '2005-01-01T15:00:00+00:00')
+        self.assertEqual(message5.subject, 'Re: A test bug')
+        self.assertEqual(message5.text_contents, '')
+        self.assertEqual(message5.bugattachments.count(), 1)
+        attachment = message5.bugattachments[0]
+        self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
+        self.assertEqual(attachment.title, 'Hello')
+        self.assertEqual(attachment.libraryfile.filename, 'hello.txt')
+        self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
 
         self.assertNoPendingNotifications(bug)
 
@@ -669,9 +732,11 @@ class BugImportCacheTestCase(unittest.TestCase):
         fp.write('</launchpad-bugs>\n')
         fp.close()
         cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
+
         class MyBugImporter(bugimport.BugImporter):
             def importBug(self, bugnode):
                 raise bugnode.BugXMLSyntaxError('not imported')
+
         importer = MyBugImporter(product, xml_file, cache_filename)
         importer.importBugs(self.layer.txn)
         importer.loadCache()
@@ -690,9 +755,11 @@ class BugImportCacheTestCase(unittest.TestCase):
         fp.close()
         cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
         fail = self.fail
+
         class MyBugImporter(bugimport.BugImporter):
             def importBug(self, bugnode):
                 fail('Should not have imported bug')
+
         importer = MyBugImporter(product, xml_file, cache_filename)
         # Mark the bug as imported
         importer.bug_id_map = {42: 1}
@@ -762,6 +829,8 @@ class TestBugWatch:
     This bug watch is guaranteed to trigger a DB failure when `updateStatus`
     is called if its `failing` attribute is True."""
 
+    implements(IBugWatch)
+
     lastchecked = None
     unpushed_comments = FakeResultSet()
 
@@ -780,7 +849,7 @@ class TestBugWatch:
             if bugtask.conjoined_master is not None:
                 continue
             bugtask = removeSecurityProxy(bugtask)
-            bugtask.status = new_malone_status
+            bugtask._status = new_malone_status
         if self.failing:
             cur = cursor()
             cur.execute("""
@@ -796,12 +865,19 @@ class TestBugWatch:
         """Do nothing, just to provide the interface."""
         pass
 
+    def addActivity(self, result=None, message=None, oops_id=None):
+        """Do nothing, just to provide the interface."""
+        pass
+
 
 class TestResultSequence(list):
     """A mock `SelectResults` object.
 
     Returns a list with a `count` method.
     """
+
+    def config(self, limit):
+        return self.__class__(self[:limit])
 
     def count(self):
         """See `SelectResults`."""
@@ -821,7 +897,8 @@ class TestBugTracker:
         self.test_bug_one = test_bug_one
         self.test_bug_two = test_bug_two
 
-    def getBugWatchesNeedingUpdate(self, hours):
+    @property
+    def watches_needing_update(self):
         """Returns a sequence of teo bug watches for testing."""
         return TestResultSequence([
             TestBugWatch(1, self.test_bug_one, failing=True),
@@ -880,20 +957,17 @@ class TestExternalBugTracker(ExternalBugTracker):
         return BugTaskImportance.UNKNOWN
 
 
+class TestRemoteBugUpdater(RemoteBugUpdater):
 
-class TestBugWatchUpdater(BugWatchUpdater):
-    """A mock `BugWatchUpdater` object."""
+    def __init__(self, parent, external_bugtracker, remote_bug,
+                 bug_watch_ids, unmodified_remote_ids, server_time,
+                 bugtracker):
+        super(TestRemoteBugUpdater, self). __init__(
+            parent, external_bugtracker, remote_bug, bug_watch_ids,
+            unmodified_remote_ids, server_time)
+        self.bugtracker = bugtracker
 
-    def _updateBugTracker(self, bug_tracker):
-        # Save the current bug tracker, so _getBugWatch can reference it.
-        self.bugtracker = bug_tracker
-        super(TestBugWatchUpdater, self)._updateBugTracker(bug_tracker)
-
-    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
-        """See `BugWatchUpdater`."""
-        return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
-
-    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
+    def _getBugWatchesForRemoteBug(self):
         """Returns a list of fake bug watch objects.
 
         We override this method so that we always return bug watches
@@ -901,20 +975,44 @@ class TestBugWatchUpdater(BugWatchUpdater):
         """
         return [
             bug_watch for bug_watch in (
-                self.bugtracker.getBugWatchesNeedingUpdate(0))
-            if (bug_watch.remotebug == remote_bug_id and
-                bug_watch.id in bug_watch_ids)
+                self.bugtracker.watches_needing_update)
+            if (bug_watch.remotebug == self.remote_bug and
+                bug_watch.id in self.bug_watch_ids)
             ]
 
 
-class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
+class TestCheckwatchesMaster(CheckwatchesMaster):
+    """A mock `CheckwatchesMaster` object."""
+
+    def _updateBugTracker(self, bug_tracker):
+        # Save the current bug tracker, so _getBugWatch can reference it.
+        self.bugtracker = bug_tracker
+        reload = core.reload
+        try:
+            core.reload = lambda objects: objects
+            super(TestCheckwatchesMaster, self)._updateBugTracker(bug_tracker)
+        finally:
+            core.reload = reload
+
+    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
+        """See `CheckwatchesMaster`."""
+        return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
+
+    def remote_bug_updater_factory(self, parent, external_bugtracker,
+                                   remote_bug, bug_watch_ids,
+                                   unmodified_remote_ids, server_time):
+        return TestRemoteBugUpdater(
+            self, external_bugtracker, remote_bug, bug_watch_ids,
+            unmodified_remote_ids, server_time, self.bugtracker)
+
+
+class CheckwatchesErrorRecoveryTestCase(unittest.TestCase):
     """Test that errors in the bugwatch import process don't
     invalidate the entire run.
     """
     layer = LaunchpadZopelessLayer
 
-    def test_checkbugwatches_error_recovery(self):
-
+    def test_checkwatches_error_recovery(self):
         firefox = getUtility(IProductSet).get(4)
         foobar = getUtility(IPersonSet).get(16)
         params = CreateBugParams(
@@ -931,7 +1029,8 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
         # try and update two bug watches - the first will
         # trigger a DB error, the second updates successfully.
         bug_tracker = TestBugTracker(test_bug_one, test_bug_two)
-        bug_watch_updater = TestBugWatchUpdater(self.layer.txn)
+        bug_watch_updater = TestCheckwatchesMaster(self.layer.txn)
+        self.layer.txn.commit()
         bug_watch_updater._updateBugTracker(bug_tracker)
         # We verify that the first bug watch didn't update the status,
         # and the second did.
@@ -939,7 +1038,3 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
             self.assertNotEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
         for bugtask in test_bug_two.bugtasks:
             self.assertEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

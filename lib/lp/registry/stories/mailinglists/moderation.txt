@@ -8,7 +8,7 @@ member in good standing (as is the default).
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink(url='+mailinglist').click()
-    >>> admin_browser.getControl('Apply for Mailing List').click()
+    >>> admin_browser.getControl('Create new Mailing List').click()
 
     >>> from lp.registry.tests import mailinglists_helper
     >>> login('foo.bar@canonical.com')
@@ -22,7 +22,7 @@ member in good standing (as is the default).
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> login('foo.bar@canonical.com')
     >>> guadamen = getUtility(IMailingListSet).get('guadamen')
     >>> logout()
@@ -58,7 +58,7 @@ member in good standing.  He posts a message to the team's mailing list,
 and it is held for approval.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> message_set = getUtility(IMessageSet)
     >>> message = message_set.fromEmail("""\
     ... From: carlos@canonical.com
@@ -99,6 +99,21 @@ for moderation.  Now there are two messages waiting for review.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'legend'))
     2 messages have been posted to your mailing list...
     ...
+
+If there are more messages than the batch size, they get batched.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~guadamen/+mailinglist-moderate?batch=1')
+    >>> find_tag_by_id(admin_browser.contents, 'upper-batch-nav-batchnav-next')['class']
+    u'next'
+    >>> find_tag_by_id(admin_browser.contents, 'lower-batch-nav-batchnav-next')['class']
+    u'next'
+
+To test easily, we use the default batch size below.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~guadamen/+mailinglist-moderate')
+
 
 Each held message displays some details about what's being held.
 
@@ -168,7 +183,7 @@ discarded.
     >>> admin_browser.getControl('Moderate').click()
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<aardvark>')
@@ -189,7 +204,7 @@ on-topic, so he decides to decline this message.
     >>> admin_browser.getControl('Moderate').click()
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<bobcat>')
@@ -210,7 +225,7 @@ accept the message.
     >>> admin_browser.getControl('Moderate').click()
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> message_approval_set = getUtility(IMessageApprovalSet)
     >>> message_approval = message_approval_set.getMessageByMessageID(
     ...     '<caribou>')

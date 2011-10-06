@@ -15,14 +15,11 @@ In this example, we have a template with Dutch and German translations.
     >>> de_pofile = factory.makePOFile('de', potemplate=potemplate)
     >>> owner = potemplate.owner
 
-    >>> from datetime import datetime
-    >>> from pytz import timezone
     >>> def set_translation(message, pofile, text):
     ...     """Set text to be a translation for message in pofile."""
-    ...     return message.updateTranslation(
-    ...         pofile, pofile.potemplate.owner, {0: text},
-    ...         is_imported=False,
-    ...         lock_timestamp=datetime.now(timezone('UTC')))
+    ...     return factory.makeCurrentTranslationMessage(
+    ...         pofile, message, pofile.potemplate.owner,
+    ...         translations={0: text})
 
     >>> def print_pofile_contents(pofile):
     ...     """Return sorted list of (singular) translations in pofile."""
@@ -55,9 +52,9 @@ criteria).
 
     >>> nl_message = set_translation(
     ...     message, nl_pofile, "Maar dan in het Nederlands.")
-    >>> nl_message.is_current
+    >>> nl_message.is_current_upstream
     True
-    >>> nl_message.is_imported
+    >>> nl_message.is_current_ubuntu
     False
     >>> print nl_message.potmsgset.msgid_singular.msgid
     My goose is undercooked.
@@ -80,7 +77,7 @@ criteria).
     Und jetzt auf deutsch.
 
     >>> options = [
-    ...     '-vvv',
+    ...     '-v',
     ...     '--submitter=%s' % nl_message.submitter.id,
     ...     '--reviewer=%s' % nl_message.reviewer.id,
     ...     '--id=%s' % str(1),
@@ -89,8 +86,8 @@ criteria).
     ...     '--potemplate=%s' % str(potemplate.id),
     ...     '--not-language',
     ...     '--language=%s' % 'de',
-    ...     '--is-current=%s' % 'true',
-    ...     '--is-imported=%s' % 'false',
+    ...     '--is-current-ubuntu=%s' % 'false',
+    ...     '--is-current-upstream=%s' % 'true',
     ...     '--msgid=%s' % "My goose is undercooked.",
     ...     '--origin=%s' % 'ROSETTAWEB',
     ...     '--force',
@@ -101,9 +98,7 @@ criteria).
 
     # We're going to inspect these POFiles later; make sure we're not
     # gazing at an old cached copy from before the removal.
-    >>> from canonical.launchpad.ftests import sync
-    >>> sync(nl_pofile)
-    >>> sync(de_pofile)
+    >>> Store.of(nl_pofile).flush()
 
     >>> returncode
     0
@@ -112,6 +107,8 @@ The long list of matching options we gave above indicated exactly 1
 message.
 
     >>> print err
+    WARNING Deleting messages currently in use:
+    WARNING Message ... is a current translation in upstream
     DEBUG Sample of messages to be deleted follows.
     DEBUG   [message] [unmasks]
     DEBUG   ...       --
@@ -140,7 +137,7 @@ has a --dry-run option that stops it from committing its changes to the
 database.
 
     >>> (returncode, out, err) = run_script(script, [
-    ...     '-vvv',
+    ...     '-v',
     ...     '--potemplate=%s' % de_pofile.potemplate.id,
     ...     '--force',
     ...     '--dry-run',
@@ -155,6 +152,10 @@ database.
     >>> print err
     WARNING Safety override in effect.  Deleting translations for template ...
     INFO    Dry run only.  Not really deleting.
+    WARNING Deleting messages currently in use:
+    WARNING Message ... is a current translation in upstream
+    WARNING Message ... is a current translation in upstream
+    WARNING Message ... is a current translation in upstream
     DEBUG   Sample of messages to be deleted follows.
     DEBUG   [message] [unmasks]
     DEBUG   ...       --

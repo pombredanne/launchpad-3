@@ -4,9 +4,8 @@
 """Test harness for running tests agains IBugTarget implementations.
 
 This module runs the interface test against the Product, ProductSeries
-Project, DistributionSourcePackage, and DistroSeries implementations
-IBugTarget. It runs the bugtarget-bugcount.txt, and
-bugtarget-questiontarget.txt tests.
+ProjectGroup, DistributionSourcePackage, and DistroSeries implementations
+IBugTarget. It runs the bugtarget-questiontarget.txt test.
 """
 # pylint: disable-msg=C0103
 
@@ -15,20 +14,40 @@ __metaclass__ = type
 __all__ = []
 
 import random
+from testtools.matchers import Equals
 import unittest
 
+from storm.expr import LeftJoin
+from storm.store import Store
 from zope.component import getUtility
 
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
-from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    BugTaskStatus,
+    IBugTaskSet,
+    )
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import (
-    IDistribution, IDistributionSet)
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.registry.model.milestone import Milestone
+from lp.testing import (
+    person_logged_in,
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 def bugtarget_filebug(bugtarget, summary, status=None):
@@ -74,8 +93,7 @@ def productseries_filebug(productseries, summary, status=None):
     """
     bug = bugtarget_filebug(productseries.product, summary, status=status)
     getUtility(IBugTaskSet).createTask(
-        bug, getUtility(ILaunchBag).user, productseries=productseries,
-        status=status)
+        bug, getUtility(ILaunchBag).user, productseries, status=status)
     return bug
 
 
@@ -113,10 +131,12 @@ def distroseries_filebug(distroseries, summary, sourcepackagename=None,
     first be filed on its distribution, and then a series task will be
     added.
     """
+    target = distroseries
+    if sourcepackagename:
+        target = target.getSourcePackage(sourcepackagename)
     bug = bugtarget_filebug(distroseries.distribution, summary, status=status)
     getUtility(IBugTaskSet).createTask(
-        bug, getUtility(ILaunchBag).user, distroseries=distroseries,
-        sourcepackagename=sourcepackagename, status=status)
+        bug, getUtility(ILaunchBag).user, target, status=status)
     return bug
 
 
@@ -158,14 +178,129 @@ def sourcePackageSetUp(test):
     test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
-def sourcePackageForQuestionSetUp(test):
-    """Setup the `ISourcePackage` test for QuestionTarget testing."""
-    setUp(test)
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    warty = ubuntu.getSeries('warty')
-    test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
-    test.globs['filebug'] = sourcepackage_filebug_for_question
-    test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
+class BugTargetQuestionTargetTestCase(TestCaseWithFactory):
+    """Converting a bug into a question."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canBeAQuestion_does_not_use_bugs(self):
+        bug = self.factory.makeBug()
+        pillar = bug.bugtasks[0].pillar
+        with person_logged_in(pillar.owner):
+            pillar.official_malone = False
+            pillar.official_answers = True
+        self.assertFalse(bug.canBeAQuestion())
+
+    def test_canBeAQuestion_does_not_use_answers(self):
+        bug = self.factory.makeBug()
+        pillar = bug.bugtasks[0].pillar
+        with person_logged_in(pillar.owner):
+            pillar.official_malone = True
+            pillar.official_answers = False
+        self.assertFalse(bug.canBeAQuestion())
+
+    def test_canBeAQuestion_uses_answers_and_bugs(self):
+        bug = self.factory.makeBug()
+        pillar = bug.bugtasks[0].pillar
+        with person_logged_in(pillar.owner):
+            pillar.official_malone = True
+            pillar.official_answers = True
+        self.assertTrue(bug.canBeAQuestion())
+
+
+class TestBugTargetSearchTasks(TestCaseWithFactory):
+    """Tests of IHasBugs.searchTasks()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTargetSearchTasks, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.target = self.bug.default_bugtask.target
+        self.milestone = self.factory.makeMilestone(product=self.target)
+        with person_logged_in(self.target.owner):
+            self.bug.default_bugtask.transitionToMilestone(
+                self.milestone, self.target.owner)
+        self.store = Store.of(self.bug)
+        self.store.flush()
+        self.store.invalidate()
+
+    def test_preload_other_objects(self):
+        # We can prejoin objects in calls of searchTasks().
+
+        # Without prejoining the table Milestone, accessing the
+        # BugTask property milestone requires an extra query.
+        with StormStatementRecorder() as recorder:
+            params = BugTaskSearchParams(user=None)
+            found_tasks = self.target.searchTasks(params)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+        # When we prejoin Milestone, the milestone of our bugtask is
+        # already loaded during the main search query.
+        self.store.invalidate()
+        with StormStatementRecorder() as recorder:
+            params = BugTaskSearchParams(user=None)
+            prejoins = [(Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))]
+            found_tasks = self.target.searchTasks(params, prejoins=prejoins)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_preload_other_objects_for_person_search_no_params_passed(self):
+        # We can prejoin objects in calls of Person.searchTasks().
+        owner = self.bug.owner
+        with StormStatementRecorder() as recorder:
+            found_tasks = owner.searchTasks(None, user=None)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+        self.store.invalidate()
+        with StormStatementRecorder() as recorder:
+            prejoins = [(Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))]
+            found_tasks = owner.searchTasks(
+                None, user=None, prejoins=prejoins)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_preload_other_objects_for_person_search_no_keywords_passed(self):
+        # We can prejoin objects in calls of Person.searchTasks().
+        owner = self.bug.owner
+        params = BugTaskSearchParams(user=None, owner=owner)
+        with StormStatementRecorder() as recorder:
+            found_tasks = owner.searchTasks(params)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+        self.store.invalidate()
+        with StormStatementRecorder() as recorder:
+            prejoins = [(Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))]
+            found_tasks = owner.searchTasks(params, prejoins=prejoins)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_preload_other_objects_for_person_search_keywords_passed(self):
+        # We can prejoin objects in calls of Person.searchTasks().
+        owner = self.bug.owner
+        params = BugTaskSearchParams(user=None, owner=owner)
+        with StormStatementRecorder() as recorder:
+            found_tasks = owner.searchTasks(params, order_by=BugTask.id)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+        self.store.invalidate()
+        with StormStatementRecorder() as recorder:
+            prejoins = [(Milestone,
+                         LeftJoin(Milestone,
+                                  BugTask.milestone == Milestone.id))]
+            found_tasks = owner.searchTasks(params, prejoins=prejoins)
+            found_tasks[0].milestone
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
 
 
 def test_suite():
@@ -178,24 +313,13 @@ def test_suite():
         distributionSetUp,
         distributionSourcePackageSetUp,
         distributionSeriesSetUp,
-        sourcePackageForQuestionSetUp,
         ]
 
     for setUpMethod in setUpMethods:
         test = LayeredDocFileSuite('bugtarget-questiontarget.txt',
             setUp=setUpMethod, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer)
+            layer=DatabaseFunctionalLayer)
         suite.addTest(test)
 
-
-    setUpMethods.remove(sourcePackageForQuestionSetUp)
-    setUpMethods.append(sourcePackageSetUp)
-    setUpMethods.append(projectSetUp)
-
-    for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('bugtarget-bugcount.txt',
-            setUp=setUpMethod, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer)
-        suite.addTest(test)
-
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     return suite

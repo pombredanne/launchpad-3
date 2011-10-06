@@ -1,7 +1,8 @@
-= Personal Package Archive pages and work-flow =
+Personal Package Archive pages and work-flow
+============================================
 
-
-== Activating Personal Package Archives for Users ==
+Activating Personal Package Archives for Users
+----------------------------------------------
 
 Personal Package Archives have to be activated before they can be
 accessed, in this section we will cover the activation procedure for
@@ -10,11 +11,11 @@ an user-PPA by its own user.
 A section named 'Personal Package Archives' is presented in the
 user/team page.
 
-   >>> anon_browser.open("http://launchpad.dev/~cprov")
+    >>> anon_browser.open("http://launchpad.dev/~cprov")
 
-   >>> print_tag_with_id(anon_browser.contents, 'ppas')
-   Personal package archives
-   PPA for Celso Providelo
+    >>> print_tag_with_id(anon_browser.contents, 'ppas')
+    Personal package archives
+    PPA for Celso Providelo
 
 There is a link in the body page pointing to Celso's PPA.
 
@@ -36,7 +37,7 @@ can quickly activate one via the link in his PPA section.
     >>> sample_browser.getLink("Create a new PPA").click()
 
     >>> print sample_browser.title
-    Personal Package Archive Activation : Sample Person
+    Activate PPA : Sample Person
 
 This page presents a pointer to the current PPA-ToS (terms of service)
 with mandatory 'displayname' and checkbox ('accepted') fields. The
@@ -46,12 +47,14 @@ read and accepted the conditions. The is also an optional 'description'
 text-area.
 
 There is also a message, near the form actions, in which the user is
-warned about the fact the activating this PPA will block renaming of
-the context launchpad user.
+warned about the fact that if the user has any PPAs with published
+packages then they will not be able to rename their account.
 
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'actions'))
-    Activating this PPA will block future renaming of Sample Person
+    A PPA's URL cannot be changed once it has had packages
+    published. You will not be able to rename Sample Person (name12)
+    until all such PPAs are deleted.
     ...
 
 'PPA name' and 'Displayname' are required fields.  For the first activated
@@ -142,38 +145,20 @@ user can't have an emtpy displayname on his PPA.
     >>> sample_browser.getControl("Save").click()
 
     >>> print sample_browser.title
-    Edit Sample testing PPA...
+    Change details : Sample testing PPA...
 
     >>> for error in get_feedback_messages(sample_browser.contents):
     ...     print error
     There is 1 error.
     Required input is missing.
 
-Once the PPA is activated, the Sample user account cannot be renamed
-anymore. Changing the account name affects the PPA repository paths
-and we don't have infrastructure in place to support that yet. See
-more information about the feature in bug #87326.
 
-    >>> sample_browser.open("http://launchpad.dev/~name12/+edit")
-    >>> sample_browser.getControl(name='field.name').value = 'el-duderino'
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.name'
-
-    >>> print extract_text(
-    ...     first_tag_by_class(sample_browser.contents, 'form'))
-    Display Name:
-    ...
-    Name: name12
-    This user has a PPA and may not be renamed.
-    ...
-
-
-== Activating Personal Package Archives for Teams ==
+Activating Personal Package Archives for Teams
+----------------------------------------------
 
 Similarly to the user PPAs activation, team PPAs can be activated by
 anyone with 'launchpad.Edit' permission in the team in question:
-
+/
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
@@ -200,7 +185,7 @@ Let's proceed with the required permissions:
     >>> sample_browser.getLink('Create a new PPA').click()
 
     >>> print sample_browser.title
-    Personal Package Archive Activation : ...
+    Activate PPA : ...
 
     >>> sample_browser.getControl(
     ...     name="field.name").value = 'develppa'
@@ -215,7 +200,9 @@ will block renaming of the context team.
 
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'actions'))
-    Activating this PPA will block future renaming of Landscape Developers
+    A PPA's URL cannot be changed once it has had packages
+    published. You will not be able to rename Landscape Developers
+    (landscape-developers) until all such PPAs are deleted.
     ...
 
 That understood, the PPA gets activated.
@@ -236,7 +223,7 @@ exactly the same as for a user-PPA, see above:
     >>> sample_browser.getLink("Change details").click()
 
     >>> sample_browser.title
-    'Edit Devel PPA...
+    'Change details : Devel PPA...
 
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Yay, I can change it.')
@@ -256,7 +243,7 @@ page and discard the changes.
     >>> sample_browser.getLink("Change details").click()
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Discarded ...')
-    >>> sample_browser.getControl("Cancel").click()
+    >>> sample_browser.getLink("Cancel").click()
 
     >>> print sample_browser.title
     Devel PPA : “Landscape Developers” team
@@ -282,7 +269,8 @@ Similarly to users, teams with assigned PPAs cannot be renamed either.
     ...
 
 
-== Activating someone else's Personal Package Archives  ==
+Activating someone else's Personal Package Archives
+---------------------------------------------------
 
 We also allow LP-admins to create Personal Package Archives in the
 name of other users or teams:
@@ -327,7 +315,7 @@ they need to be able to make PPAs private.
     >>> admin_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> admin_browser.getLink("Administer archive").click()
     >>> print admin_browser.title
-    Administer Hack PPA...
+    Administer : Hack PPA...
 
     >>> commercial_browser = setupBrowser(
     ...     auth='Basic commercial-member@canonical.com:test')
@@ -364,6 +352,8 @@ build on a virtualized builder.
     True
     >>> admin_browser.getControl(name="field.private").value
     False
+    >>> admin_browser.getControl(name="field.commercial").value
+    False
     >>> admin_browser.getControl(name="field.require_virtualized").value
     True
     >>> admin_browser.getControl(name="field.relative_build_score").value
@@ -373,9 +363,10 @@ build on a virtualized builder.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.commercial").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl(
-    ...     name="field.require_virtualized").value = False
+    ...     name="field.require_virtualized").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(
     ...     name="field.relative_build_score").value = '199'
@@ -392,7 +383,7 @@ see some of the updated information.
 
     >>> for msg in get_feedback_messages(admin_browser.contents):
     ...     print msg
-    This archive has been disabled.
+    This PPA has been disabled.
 
 We need go back to the "Administer archive" page to see the build score and
 external dependencies changes that were made:
@@ -416,31 +407,23 @@ a sources.list entry.  If the field fails validation an error is displayed.
     'deb not_a_url' is not a complete and valid sources.list entry
 
 
-When the archive is private, the buildd secret must also be set, or an
-error is issued:
+Setting the buildd secret for non-private archives also generates
+an error.  Because the "commercial" flag is also currently set, removing
+privacy will also trigger a validation error because the commercial flag can
+only be set on private archives:
 
     >>> admin_browser.getControl(
     ...     name="field.external_dependencies").value = ""
-    >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = ""
-    >>> admin_browser.getControl("Save").click()
-
-    >>> for error in get_feedback_messages(admin_browser.contents):
-    ...     print error
-    There is 1 error.
-    Required for private archives.
-
-Conversely, setting the buildd secret for non-private archives also
-generates an error:
-
     >>> admin_browser.getControl(name="field.private").value = False
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
 
     >>> for error in get_feedback_messages(admin_browser.contents):
     ...     print error
-    There is 1 error.
+    There are 2 errors.
+    Can only set commericial for private archives.
     Do not specify for non-private archives
+
 
 There is a maximum value allowed for `IArchive.authorized_size`, it is
 currently 2147483647 and the unit used in code is MiB, so in practice
@@ -474,19 +457,20 @@ will result in an error:
 Cancelled changes in the administration form redirects the user to the
 PPA overview page and discards the changes.
 
-    >>> admin_browser.getControl("Cancel").click()
+    >>> admin_browser.getLink("Cancel").click()
 
     >>> print admin_browser.title
     Hack PPA : James Blackwell
 
     >>> admin_browser.getLink("Administer archive").click()
-    >>> admin_browser.getControl("Cancel").click()
+    >>> admin_browser.getLink("Cancel").click()
 
     >>> print admin_browser.title
     Hack PPA : James Blackwell
 
 
-== Double submission ==
+Double submission
+-----------------
 
 If two browser windows are open at the same time on the activation page
 then when the second activation is clicked after already
@@ -541,7 +525,8 @@ and the rendered form contains the 'name' field.
     boomppa
 
 
-== Activating an additional PPA ==
+Activating an additional PPA
+----------------------------
 
 Users who already have a PPA may activate a second one.  That's the case for
 Celso.
@@ -562,7 +547,7 @@ all his PPAs.
     >>> cprov_browser.getLink("Create a new PPA").click()
 
     >>> print cprov_browser.title
-    Personal Package Archive Activation : Celso Providelo
+    Activate PPA : Celso Providelo
 
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Existing PPAs
@@ -575,24 +560,15 @@ all his PPAs.
 
     >>> print extract_text(
     ...     first_tag_by_class(cprov_browser.contents, 'form'))
-    PPA name:
-      A unique name used to identify this PPA. It will form part of the URL
-      to the archive repository.
-    Displayname:
-      Displayname for this PPA. It will be used in the signing key's
-      description if this is the first PPA for a person.
-    PPA contents description: (Optional)
-      A short description of this PPA. URLs are allowed and will be rendered
-      as links.
-
-Note that, differently than the time when the first PPA was activated,
-this time there is no warning about the fact that the context renaming
-will be blocked. We assumed that, at this point, this is already a
-known aspect.
-
-    >>> print extract_text(
-    ...     first_tag_by_class(cprov_browser.contents, 'actions'))
-    or Cancel
+    URL:
+      http://ppa.launchpad.dev/cprov/
+      At least one lowercase letter or number, followed by letters, numbers,
+      dots, hyphens or pluses. Keep this name short; it is used in URLs.
+    Display name:
+      A short title for the archive.
+    Description: (Optional)
+      A short description of the archive. URLs are allowed and will be
+      rendered as links.
 
 The 'PPA name' field is not pre-filled and if Celso does not fill it then
 an error is raised.
@@ -609,15 +585,17 @@ an error is raised.
     There is 1 error.
     Required input is missing.
 
-An error is raised if Celso sets an invalid PPA name.
+An error is raised if Celso sets an invalid PPA name. Notice that the widget
+automatically lowercases its input, as valid names must be lowercase. This is
+also enforced by the widget in the browser.
 
-    >>> cprov_browser.getControl(name="field.name").value = 'ExPeRiMeNtAl'
+    >>> cprov_browser.getControl(name="field.name").value = 'ExPeRiMeNtAl!'
     >>> cprov_browser.getControl("Activate").click()
 
     >>> for error in get_feedback_messages(cprov_browser.contents):
     ...     print error
     There is 1 error.
-    Invalid name 'ExPeRiMeNtAl'. Names must be at least two characters ...
+    Invalid name 'experimental!'. Names must be at least two characters ...
 
 If Celso, by mistake, uses the same name of one of his existing PPAs
 (the default one is named 'ppa') an error is raised.
@@ -640,7 +618,7 @@ including the distribution name automatically.
     >>> for error in get_feedback_messages(cprov_browser.contents):
     ...     print error
     There is 1 error.
-    Archives cannot have the same name as its distribution.
+    A PPA cannot have the same name as its distribution.
 
 Providing a new name, 'edge', Celso can create a new PPA and it
 immediately sent to it.
@@ -670,33 +648,31 @@ requested it. An administrator can disable Celso's 'edge' PPA.
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl("Save").click()
 
-Anonymous access or users with no permission to view Celso's 'edge'
-ppa can see it listed in Celso's profile page.
+Anonymous users or others with no special permissions on the disabled PPA
+are unable to see it on Celso's profile page.
 
     >>> anon_browser.open("http://launchpad.dev/~cprov")
-    >>> browser.open("http://launchpad.dev/~cprov")
-
     >>> print_tag_with_id(anon_browser.contents, 'ppas')
     Personal package archives
-    Edge PPA
     PPA for Celso Providelo
 
+    >>> browser.open("http://launchpad.dev/~cprov")
     >>> print_tag_with_id(browser.contents, 'ppas')
+    Personal package archives
+    PPA for Celso Providelo
+
+Celso himself can see the PPA, and it's linked so he can reenable it if
+required.
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Personal package archives
     Edge PPA
     PPA for Celso Providelo
+    Create a new PPA
 
-However the reference to Celso's 'Edge PPA' is not linked.
-
-    >>> print anon_browser.getLink('Edge PPA')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> print browser.getLink('Edge PPA')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+    >>> print cprov_browser.getLink('Edge PPA')
+    <Link ...>
 
 And direct access to the PPA page is also denied.
 
@@ -711,14 +687,16 @@ And direct access to the PPA page is also denied.
     Unauthorized: ...
 
 
-== Enabling or disabling of PPAs by the owner ==
+Enabling or disabling of PPAs by the owner
+------------------------------------------
 
 Users with 'launchpad.Edit' permission for a PPA may disable or enable it.
 They may also change whether the PPA is published to disk or not.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
 
 Initially, the PPA is enabled and publishes.
 
@@ -734,11 +712,12 @@ After disabling the PPA a warning message is displayed on its page.
     >>> no_priv_browser.getControl('Save').click()
     >>> print extract_text(
     ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
-    This archive has been disabled.
+    This PPA has been disabled.
 
 Going back to the edit page, we can see the publish flag was cleared:
 
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
     >>> print no_priv_browser.getControl(name='field.publish').value
     False
 
@@ -753,4 +732,81 @@ Once we re-enable the PPA the "disabled" warning message will be gone.
     ...  is None)
     True
 
+
+Deleting a PPA
+--------------
+
+Users with launchpad.Edit permission see a "Delete PPA" link in the
+navigation menu.
+
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> print anon_browser.getLink("Delete PPA")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> no_priv_browser.getLink("Delete PPA").click()
+
+Clicking this link takes the user to a page that allows deletion of a PPA:
+
+    >>> print no_priv_browser.title
+    Delete “PPA for No Privileges Person” : PPA for No Privileges Person :
+        No Privileges Person
+
+The page contains a stern warning that this action is final and irreversible:
+
+    >>> print extract_text(find_main_content(no_priv_browser.contents))
+    Delete “PPA for No Privileges Person”
+    ...
+    Deleting a PPA will destroy all of its packages, files and the
+    repository area.
+    This deletion is PERMANENT and cannot be undone.
+    Are you sure ?
+    ...
+
+If the user changes his mind, he can click on the cancel link to go back
+a page:
+
+    >>> print no_priv_browser.getLink("Cancel").url
+    http://launchpad.dev/~no-priv/+archive/ppa
+
+Otherwise, he has a button to press to confirm the deletion.
+
+    >>> no_priv_browser.getControl("Permanently delete PPA").click()
+
+This action will redirect the user back to his profile page, which will
+contain a notification message that the deletion is in progress.
+
+    >>> print no_priv_browser.url
+    http://launchpad.dev/~no-priv
+
+    >>> for msg in get_feedback_messages(no_priv_browser.contents):
+    ...     print msg
+    Deletion of 'PPA for No Privileges Person' has been requested and
+    the repository will be removed shortly.
+
+The deleted PPA is still available to browse via a link on the profile page
+so you can see its build history, etc.:
+
+    >>> no_priv_browser.getLink("PPA for No Privileges Person").click()
+
+However, most of the action links are removed for deleted PPAs, so you can
+no longer "Delete packages", "Edit PPA dependencies", or "Change details".
+
+    >>> print no_priv_browser.getLink("Change details")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print no_priv_browser.getLink("Edit PPA dependencies")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> no_priv_browser.getLink("View package details").click()
+    >>> print no_priv_browser.getLink("Delete packages")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 

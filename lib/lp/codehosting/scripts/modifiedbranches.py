@@ -7,19 +7,24 @@ __metaclass__ = type
 __all__ = ['ModifiedBranchesScript']
 
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import os
 from time import strptime
 
 import pytz
 from zope.component import getUtility
 
-from lp.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.codehosting.vfs import branch_id_to_path
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ModifiedBranchesScript(LaunchpadScript):
@@ -29,11 +34,6 @@ class ModifiedBranchesScript(LaunchpadScript):
     returned.  It is possible that the branch will have been modified only in
     the web UI and not actually received any more revisions, and will be a
     false positive.
-
-    If the branch is REMOTE it is ignored.
-    If the branch is HOSTED, both the hosted and mirrored area are returned.
-    If the branch is an IMPORT or MIRROR branch, only the mirrored area is
-    shown.
     """
 
     description = (
@@ -89,12 +89,10 @@ class ModifiedBranchesScript(LaunchpadScript):
         # Make the datetime timezone aware.
         return last_modified.replace(tzinfo=pytz.UTC)
 
-    def branch_locations(self, branch):
-        """Return a list of branch paths for the given branch."""
+    def branch_location(self, branch):
+        """Return the  branch path for the given branch."""
         path = branch_id_to_path(branch.id)
-        yield os.path.join(config.codehosting.mirrored_branches_root, path)
-        if branch.branch_type == BranchType.HOSTED:
-            yield os.path.join(config.codehosting.hosted_branches_root, path)
+        return os.path.join(config.codehosting.mirrored_branches_root, path)
 
     def process_location(self, location):
         """Strip the defined prefix, and append the suffix as configured."""
@@ -122,8 +120,8 @@ class ModifiedBranchesScript(LaunchpadScript):
         collection = collection.scannedSince(last_modified)
         for branch in collection.getBranches():
             self.logger.info(branch.unique_name)
-            for location in self.branch_locations(branch):
-                self.update_locations(self.process_location(location))
+            location = self.branch_location(branch)
+            self.update_locations(self.process_location(location))
 
         for location in sorted(self.locations):
             print location

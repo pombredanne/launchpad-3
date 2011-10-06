@@ -3,17 +3,14 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-  <tal:message replace="structure view/body_text/fmt:obfuscate-email/fmt:nice_pre" />
+  <tal:message replace="structure view/comment/body_text/fmt:obfuscate-email/fmt:nice_pre" />
 
-  <tal:good-attachments repeat="attachment view/display_attachments">
+  <tal:good-attachments repeat="attachment view/comment/display_attachments">
     <div class="boardComment attachment">
       <div class="boardCommentDetails filename"><a tal:content="attachment/filename" tal:attributes="href attachment/getURL"/></div>
       <div class="boardCommentBody attachmentBody" tal:content="structure attachment/diff_text/fmt:diff"/>
     </div>
   </tal:good-attachments>
-  <tal:other-attachments repeat="attachment view/other_attachments">
-    <tal:comment replace="structure string:&lt;!-- '${attachment/filename}' '${attachment/mimetype}' --&gt;"/>
-  </tal:other-attachments>
 
   <div class="replyLink">
     <tal:reply tal:define="link context/menu:context/reply"

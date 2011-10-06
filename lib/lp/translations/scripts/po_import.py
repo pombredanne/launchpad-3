@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions used with the Rosetta PO import script."""
@@ -10,22 +10,26 @@ __all__ = [
     'TranslationsImport',
     ]
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import sys
 
 import pytz
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import errorlog
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.mail.sendmail import simple_sendmail
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 
 
 class TranslationsImport(LaunchpadCronScript):
@@ -115,13 +119,21 @@ class TranslationsImport(LaunchpadCronScript):
 
         return True
 
+    def _shouldNotify(self, person):
+        """Is `person` someone we should send notification emails?"""
+        # We don't notify the vcs-imports team, which owns all mirrored
+        # branches.  Templates generated in the build farm based on
+        # mirrored branches are uploaded in the name of this team, but
+        # there is no point in sending out notifications to them.
+        return person != getUtility(ILaunchpadCelebrities).vcs_imports
+
     def _importEntry(self, entry):
         """Perform the import of one entry, and notify the uploader."""
-        self.logger.info('Importing: %s' % entry.import_into.title)
         target = entry.import_into
+        self.logger.info('Importing: %s' % target.title)
         (mail_subject, mail_body) = target.importFromQueue(entry, self.logger)
 
-        if mail_subject is not None:
+        if mail_subject is not None and self._shouldNotify(entry.importer):
             # A `mail_subject` of None indicates that there
             # is no notification worth sending out.
             from_email = config.rosetta.admin_email

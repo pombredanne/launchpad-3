@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = [
     'PersistentIdentityView',
     'TestOpenIDApplicationNavigation',
-    'TestOpenIDIndexView'
+    'TestOpenIDIndexView',
     'TestOpenIDLoginView',
     'TestOpenIDRootUrlData',
     'TestOpenIDView',
@@ -14,6 +14,17 @@ __all__ = [
 
 from datetime import timedelta
 
+from openid import oidutil
+from openid.extensions.sreg import (
+    SRegRequest,
+    SRegResponse,
+    )
+from openid.server.server import (
+    CheckIDRequest,
+    ENCODE_HTML_FORM,
+    Server,
+    )
+from openid.store.memstore import MemoryStore
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
@@ -21,30 +32,55 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
-from openid.server.server import CheckIDRequest, Server
-from openid.store.memstore import MemoryStore
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
 from canonical.launchpad.webapp import (
-    action, LaunchpadFormView, LaunchpadView)
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IPlacelessLoginSource, UnexpectedFormData)
+    ICanonicalUrlData,
+    IPlacelessLoginSource,
+    )
 from canonical.launchpad.webapp.login import (
-    allowUnauthenticatedSession, logInPrincipal, logoutPerson)
-from canonical.launchpad.webapp.publisher import Navigation, stepthrough
-
+    allowUnauthenticatedSession,
+    logInPrincipal,
+    logoutPerson,
+    )
+from canonical.launchpad.webapp.publisher import (
+    Navigation,
+    stepthrough,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.errors import UnexpectedFormData
+from lp.registry.interfaces.person import IPerson
 from lp.services.openid.browser.openiddiscovery import (
-    XRDSContentNegotiationMixin)
+    XRDSContentNegotiationMixin,
+    )
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.testopenid.interfaces.server import (
-    get_server_url, ITestOpenIDApplication, ITestOpenIDLoginForm,
-    ITestOpenIDPersistentIdentity)
+    get_server_url,
+    ITestOpenIDApplication,
+    ITestOpenIDLoginForm,
+    ITestOpenIDPersistentIdentity,
+    )
 
 
 OPENID_REQUEST_SESSION_KEY = 'testopenid.request'
 SESSION_PKG_KEY = 'TestOpenID'
 openid_store = MemoryStore()
+
+
+# Shut up noisy OpenID library
+oidutil.log = lambda message, level=0: None
 
 
 class TestOpenIDRootUrlData:
@@ -111,7 +147,7 @@ class OpenIDMixin:
         return (self.openid_request.idSelect() or
                 self.openid_request.identity == self.user_identity_url)
 
-    @cachedproperty('_openid_parameters')
+    @cachedproperty
     def openid_parameters(self):
         """A dictionary of OpenID query parameters from request."""
         query = {}
@@ -134,8 +170,9 @@ class OpenIDMixin:
     def restoreRequestFromSession(self):
         """Get the OpenIDRequest from our session."""
         session = self.getSession()
+        cache = get_property_cache(self)
         try:
-            self._openid_parameters = session[OPENID_REQUEST_SESSION_KEY]
+            cache.openid_parameters = session[OPENID_REQUEST_SESSION_KEY]
         except KeyError:
             raise UnexpectedFormData("No OpenID request in session")
 
@@ -163,6 +200,10 @@ class OpenIDMixin:
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
         response.setStatus(webresponse.code)
+        # encodeResponse doesn't generate a content-type, help it out
+        if (webresponse.code == 200 and webresponse.body
+                and openid_response.whichEncoding() == ENCODE_HTML_FORM):
+            response.setHeader('content-type', 'text/html')
         for header, value in webresponse.headers.items():
             response.setHeader(header, value)
         return webresponse.body
@@ -191,6 +232,15 @@ class OpenIDMixin:
         else:
             response = self.openid_request.answer(True)
 
+        sreg_fields = dict(
+            nickname=IPerson(self.account).name,
+            email=self.account.preferredemail.email,
+            fullname=self.account.displayname)
+        sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
+        sreg_response = SRegResponse.extractResponse(
+            sreg_request, sreg_fields)
+        response.addExtension(sreg_response)
+
         return response
 
     def createFailedResponse(self):
@@ -211,7 +261,7 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
     This class implements an OpenID endpoint using the python-openid
     library.  In addition to the normal modes of operation, it also
     implements the OpenID 2.0 identifier select mode.
-    
+
     Note that the checkid_immediate mode is not supported.
     """
 

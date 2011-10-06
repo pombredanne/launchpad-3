@@ -234,7 +234,8 @@
 </metal:header>
 
 
-<metal:advanced_search_form define-macro="advanced_search_form">
+<metal:advanced_search_form define-macro="advanced_search_form"
+  tal:define="bugs_rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/bugs/rooturl">
 
   <form class="long" name="search" method="get" action="">
     <span tal:condition="view/current_package|nothing">
@@ -527,7 +528,7 @@
                          tal:content="structure view/widgets/tag/label">
                     Tag
                   </label>: <input tal:replace="structure view/widgets/tag" />
-                  <a href="/+help/tag-search.html"
+                  <a tal:attributes="href string:${bugs_rooturl}/+help/tag-search.html"
                       target="help">Tag search help</a>
                   <div
                     tal:condition="error"
@@ -629,6 +630,26 @@
             <span tal:content="structure view/widgets/has_no_branches" />
             <label style="font-weight: normal" for="field.has_no_branches">
               Show bugs without linked branches
+            </label>
+          </td>
+          <td>
+          </td>
+        </tr>
+        <tr>
+          <td style="white-space: nowrap">
+            <span tal:content="structure view/widgets/has_blueprints" />
+            <label style="font-weight: normal" for="field.has_blueprints">
+              Show bugs with linked blueprints
+            </label>
+          </td>
+          <td>
+          </td>
+        </tr>
+        <tr>
+          <td style="white-space: nowrap">
+            <span tal:content="structure view/widgets/has_no_blueprints" />
+            <label style="font-weight: normal" for="field.has_no_blueprints">
+              Show bugs without linked blueprints
             </label>
           </td>
           <td>

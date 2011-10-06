@@ -16,30 +16,34 @@ __all__ = [
     'POParser',
     ]
 
-import datetime
-import re
 import codecs
-import logging
-import pytz
+import datetime
 from email.Utils import parseaddr
-from zope.interface import implements
-from zope import datetime as zope_datetime
+import logging
+import re
 
+import pytz
+from zope import datetime as zope_datetime
+from zope.interface import implements
+
+from lp.app.versioninfo import revno
+from lp.translations.interfaces.translationcommonformat import (
+    ITranslationHeaderData,
+    )
 from lp.translations.interfaces.translationimporter import (
     TooManyPluralFormsError,
     TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
-from lp.translations.interfaces.translationcommonformat import (
-    ITranslationHeaderData)
-from lp.translations.interfaces.translations import (
-    TranslationConstants)
+    TranslationFormatSyntaxError,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.utilities.pluralforms import (
+    make_plurals_identity_map,
+    plural_form_mapper,
+    )
 from lp.translations.utilities.translation_common_format import (
     TranslationFileData,
-    TranslationMessageData)
-from canonical.launchpad.versioninfo import revno
-from lp.translations.utilities.pluralforms import (make_plurals_identity_map,
-    plural_form_mapper)
-
+    TranslationMessageData,
+    )
 
 
 class POSyntaxWarning(Warning):
@@ -512,7 +516,7 @@ class POParser(object):
 
     def parse(self, content_text):
         """Parse string as a PO file."""
-        # Initialise the parser.
+        # Initialize the parser.
         self._translation_file = TranslationFileData()
         self._messageids = set()
         self._pending_chars = content_text

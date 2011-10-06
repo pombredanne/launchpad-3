@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0213
@@ -34,10 +34,8 @@ class ILinkedBranchTraverser(Interface):
     def traverse(path):
         """Traverse to the linked object referred to by 'path'.
 
-        :raises NoSuchBranch: If we can't find a branch that matches the
-            branch component of the path.
-        :raises NoSuchPerson: If we can't find a person who matches the person
-            component of the path.
+        :raises InvalidProductName: If the first segment of the path is not a
+            valid name.
         :raises NoSuchProduct: If we can't find a product that matches the
             product component of the path.
         :raises NoSuchProductSeries: If the series component doesn't match an
@@ -68,7 +66,7 @@ class IBranchLookup(Interface):
         Return None if no match was found.
         """
 
-    def getIdAndTrailingPath(self, path, from_slave=False):
+    def getIdAndTrailingPath(path, from_slave=False):
         """Return id of and path within the branch identified by the `path`.
 
         To explain by example, if the branch with id 5 has unique name

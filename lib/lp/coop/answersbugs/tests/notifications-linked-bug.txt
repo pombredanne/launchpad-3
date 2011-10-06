@@ -1,40 +1,41 @@
-= Linked Bug Status Changed Notification =
+Linked Bug Status Changed Notification
+======================================
 
 While a bug is linked to a question , its subscribers will be notified
 of changes to the bug status:
 
     >>> from zope.event import notify
     >>> from zope.interface import providedBy
-    >>> from canonical.launchpad.interfaces import BugTaskStatus, IPersonSet
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.answers.tests.test_question_notifications import (
+    ...     pop_questionemailjobs)
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bugtask = get_bugtask_linked_to_question()
     >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
     >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED, no_priv)
-    >>> bugtask.statusexplanation = 'This bug really happened to me.'
+    >>> ignore = pop_questionemailjobs()
     >>> notify(ObjectModifiedEvent(
-    ...     bugtask, original_bugtask, ['status', 'statusexplanation'],
+    ...     bugtask, original_bugtask, ['status'],
     ...     user=no_priv))
 
-    >>> from lp.testing.mail_helpers import pop_notifications
-    >>> notifications = pop_notifications()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
-    2
-    >>> [notification['To'] for notification in notifications]
-    ['support@ubuntu.com', 'test@canonical.com']
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notifications[0]['Subject']
+    1
+
+    >>> print notifications[0].metadata['recipient_set']
+    ASKER_SUBSCRIBER
+
+    >>> print notifications[0].subject
     [Question #...]: Status of bug #... changed to 'Confirmed' in Ubuntu
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+
+    >>> print notifications[0].body
     Bug #... status changed in Ubuntu:
     <BLANKLINE>
         New => Confirmed
-    <BLANKLINE>
-    Status change explanation given by No Privileges Person:
-    <BLANKLINE>
-    This bug really happened to me.
     <BLANKLINE>
     http://.../ubuntu/+bug/...
     "Installer fails on a Mac PPC"
@@ -42,20 +43,18 @@ of changes to the bug status:
     This bug is linked to #15.
     Can't install Ubuntu
     http://.../ubuntu/+question/...
-    <BLANKLINE>
-    --...
-    You received this question notification because you are a member of
-    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Only a change in status triggers a notification.
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> from lp.testing import login_person
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> login_person(sample_person)
     >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
     >>> bugtask.transitionToAssignee(sample_person)
     >>> notify(ObjectModifiedEvent(
     ...     bugtask, original_bugtask, ['assignee', 'dateassigned'],
     ...     user=sample_person))
 
-    >>> len(pop_notifications())
+    >>> len(pop_questionemailjobs())
     0
-

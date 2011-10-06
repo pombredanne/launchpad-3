@@ -37,12 +37,15 @@ http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus
 
 >>> admin_browser.getLink('New').click()
 >>> print extract_text(admin_browser.contents)
-Bug #1 in Mozilla Firefox...
+Edit status...
 ...
 Affecting: Mozilla Firefox
 Filed here by: Sample Person
 When: 2004-01-02
 Assigned: 2005-01-02
+Target
+Distribution
+...
 Project (Find&hellip;)
 Status  Importance  Milestone
 New...  Low...      (no value)...

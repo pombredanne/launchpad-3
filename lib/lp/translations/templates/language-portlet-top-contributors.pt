@@ -7,7 +7,7 @@
   <h2>Top contributors</h2>
   <div class="portletBody portletContent">
     <p>
-      These are the top 20 translation contributors who have stated they have
+      These are the top translation contributors who have stated they have
       a particular interest in
       <tal:language_name replace="view/language_name">
         Espa&ntilde;ol

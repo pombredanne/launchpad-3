@@ -9,9 +9,6 @@ people, a team and its team mailing list.
     # and change their mailing list auto-subscription settings.
     >>> login('foo.bar@canonical.com')
 
-    # We'll need this throughout the test script.
-    >>> from canonical.launchpad.ftests import syncUpdate
-
     >>> from lp.registry.tests.mailinglists_helper import (
     ...     get_alternative_email, print_addresses)
     >>> anne = factory.makePersonByName('Anne')
@@ -125,7 +122,7 @@ they've confirmed with Launchpad.
 However, should Anne register a new, but not-validated email address, she may
 not post from it.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> address_set = getUtility(IEmailAddressSet)
     >>> alternative = address_set.new(
     ...     'anne.x.person@example.net', anne, account=anne.account)
@@ -139,7 +136,7 @@ not post from it.
 
 Once Anne validates her new address, she can post from it.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     >>> alternative.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
 
@@ -158,7 +155,6 @@ Once Anne validates her new address, she can post from it.
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
-    >>> syncUpdate(alternative)
 
 
 MailingListSubscription objects
@@ -169,7 +165,7 @@ address (if any) a user is subscribed. That information is available
 as the email_address member.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IMailingListSubscription
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSubscription
     >>> subscription = list_one.getSubscription(bart)
     >>> verifyObject(IMailingListSubscription, subscription)
     True
@@ -196,7 +192,7 @@ we first create team-two as a subteam of team-one.
     >>> team_two = factory.makeTeam(name='team-two', owner=team_owner)
     >>> team_names.append(team_two.name)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> team_two.join(team_one, salgado)
     >>> sorted(member.displayname for member in team_one.allmembers)
@@ -378,7 +374,7 @@ Dirk) who have no other indirect membership in the superteam will be
 unsubscribed from the superteam's mailing list.
 
     >>> dirk.leave(team_two)
-    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> team_one.setMembershipData(team_three,
     ...     TeamMembershipStatus.DEACTIVATED, salgado)
     >>> transaction.commit()
@@ -805,7 +801,7 @@ list are dropped.
     # Deactivation isn't complete until the list's status is transitioned to
     # INACTIVE.
     >>> list_one.deactivate()
-    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
     >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
     >>> transaction.commit()
 
@@ -1077,6 +1073,7 @@ emails from it.
     >>> team_names.append(team_seven.name)
 
     >>> sam = factory.makePersonByName('Samuel')
+    >>> transaction.commit()
 
     >>> list_seven.subscribe(sam)
     >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
@@ -1419,17 +1416,14 @@ DEACTIVATED state.
     # the security context in order to set it.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.MODIFIED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     >>> list_seven.unsubscribe(teri)
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.UPDATING
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     >>> list_seven.unsubscribe(teri)
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.MOD_FAILED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     >>> list_seven.unsubscribe(teri)
 
@@ -1438,35 +1432,30 @@ to.
 
     # We don't need to test the INACTIVE state, as that's represented above.
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.REGISTERED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not usable: Team 7
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.APPROVED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not usable: Team 7
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.DECLINED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not usable: Team 7
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.CONSTRUCTING
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not usable: Team 7
 
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.FAILED
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...
@@ -1474,7 +1463,6 @@ to.
 
     >>> removeSecurityProxy(list_seven).status = (
     ...     MailingListStatus.DEACTIVATING)
-    >>> syncUpdate(list_seven)
     >>> list_seven.subscribe(teri)
     Traceback (most recent call last):
     ...

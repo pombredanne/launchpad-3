@@ -9,14 +9,19 @@ __all__ = [
     'MeLink',
     ]
 
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    ITopLevelEntryLink,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.interfaces import IPerson, IPersonSet
 
-from lazr.restful.interfaces import (
-    IJSONRequestCache, ITopLevelEntryLink)
 
 class IMeLink(ITopLevelEntryLink, ICanonicalUrlData):
     """A marker interface."""
@@ -40,7 +45,7 @@ class MeLink:
 def cache_me_link_when_principal_identified(event):
     """Insert the current user into the JSON request cache.
 
-    This ensures that the Javascript variable LP.client.links['me']
+    This ensures that the Javascript variable LP.links['me']
     will be set.
     """
     # XML-RPC requests and other non-browser requests don't have a

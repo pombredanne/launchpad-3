@@ -7,12 +7,15 @@
 import time
 
 from bzrlib import urlutils
-
 from zope.component import getUtility
 
 from canonical.config import config
-
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.utils import iter_split
 
@@ -93,22 +96,31 @@ class BranchRewriter:
         # Codebrowse generates references to its images and stylesheets
         # starting with "/static", so pass them on unthinkingly.
         T = time.time()
-        cached = None
-        if resource_location.startswith('/static/'):
-            r = self._codebrowse_url(resource_location)
-            cached = 'N/A'
-        else:
-            branch_id, trailing, cached = self._getBranchIdAndTrailingPath(
-                resource_location)
-            if branch_id is None:
+        # Tell the webapp adapter that we are in a request, so that DB
+        # statement timeouts will be applied.
+        set_request_started()
+        try:
+            cached = None
+            if resource_location.startswith('/static/'):
                 r = self._codebrowse_url(resource_location)
+                cached = 'N/A'
             else:
-                if trailing.startswith('/.bzr'):
-                    r = urlutils.join(
-                        config.codehosting.internal_branch_by_id_root,
-                        branch_id_to_path(branch_id), trailing[1:])
+                branch_id, trailing, cached = self._getBranchIdAndTrailingPath(
+                    resource_location)
+                if branch_id is None:
+                    if resource_location.startswith('/' + BRANCH_ID_ALIAS_PREFIX):
+                        r = 'NULL'
+                    else:
+                        r = self._codebrowse_url(resource_location)
                 else:
-                    r = self._codebrowse_url(resource_location)
+                    if trailing.startswith('/.bzr'):
+                        r = urlutils.join(
+                            config.codehosting.internal_branch_by_id_root,
+                            branch_id_to_path(branch_id), trailing[1:])
+                    else:
+                        r = self._codebrowse_url(resource_location)
+        finally:
+            clear_request_started()
         self.logger.info(
             "%r -> %r (%fs, cache: %s)",
             resource_location, r, time.time() - T, cached)

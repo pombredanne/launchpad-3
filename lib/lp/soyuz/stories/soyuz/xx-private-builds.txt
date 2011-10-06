@@ -18,12 +18,12 @@ reported as NOT OK (meaning it's unavailable).
 We'll make a private archive and add a new build to it to demonstrate this.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBuilderSet, IPersonSet)
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -45,6 +45,7 @@ We'll make a private archive and add a new build to it to demonstrate this.
     >>> frog.builderok = True
     >>> private_build.builder = frog
     >>> private_build.buildqueue_record.builder = frog
+    >>> private_build_id = private_build.id
 
 We'll also make name12 a member of the launchpad-buildd-admins team, so we
 can use him to see builds from a buildd-admin perspective.
@@ -109,7 +110,7 @@ users:
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
-    ...     private_build.id)
+    ...     private_build_id)
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -118,7 +119,7 @@ But it is fine for authorised users:
 
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
-    ...     private_build.id)
+    ...     private_build_id)
     >>> print cprov_browser.url
     http://launchpad.dev/~cprov/+archive/p3a/+build/...
 
@@ -253,7 +254,7 @@ users:
     >>> try:
     ...     anon_browser.open(
     ...         "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
-    ...         private_build.id)
+    ...         private_build_id)
     ... except Unauthorized:
     ...     print "Got expected exception"
     ... else:
@@ -264,7 +265,7 @@ users:
     >>> try:
     ...     browser.open(
     ...         "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
-    ...         private_build.id)
+    ...         private_build_id)
     ... except Unauthorized:
     ...     print "Got expected exception"
     ... else:
@@ -319,13 +320,13 @@ Accessing the build page will now also work:
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
-    ...     private_build.id)
+    ...     private_build_id)
     >>> print anon_browser.title
     i386 build of privacy-test 666 : PPA named p3a for Celso Providelo : Celso Providelo
 
     >>> browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
-    ...     private_build.id)
+    ...     private_build_id)
     >>> print browser.title
     i386 build of privacy-test 666 : PPA named p3a for Celso Providelo : Celso Providelo
 

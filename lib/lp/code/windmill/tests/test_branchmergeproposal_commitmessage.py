@@ -7,26 +7,26 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
-import unittest
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.windmill.testing.constants import (
-    FOR_ELEMENT, PAGE_LOAD, SLEEP)
-from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill.constants import (
+    FOR_ELEMENT,
+    PAGE_LOAD,
+    SLEEP,
+    )
 
 
 EDIT_COMMIT_LINK = u'//a[contains(@href, "+edit-commit-message")]'
-# There seem to be two textareas rendered for the yui-ieditor-input for some
+# There seem to be two textareas rendered for the yui3-ieditor-input for some
 # reason.
 EDIT_COMMENT_TEXTBOX = (
-    u'//div[@id="edit-commit_message"]//textarea[@class="yui-ieditor-input"][1]')
+    u'//div[@id="edit-commit_message"]//textarea[@class="yui3-ieditor-input"][1]')
 EDIT_COMMENT_SUBMIT = (
     u'//div[@id="edit-commit_message"]//'
-    'button[contains(@class, "yui-ieditor-submit_button")]')
+    'button[contains(@class, "yui3-ieditor-submit_button")]')
 COMMIT_MESSAGE_TEXT = (
-    u'//div[@id="edit-commit_message"]//div[@class="yui-editable_text-text"]')
+    u'//div[@id="edit-commit_message"]//div[@class="yui3-editable_text-text"]')
 
 
 class TestCommitMessage(WindmillTestCase):
@@ -42,12 +42,7 @@ class TestCommitMessage(WindmillTestCase):
         bmp = self.factory.makeBranchMergeProposal(registrant=eric)
         transaction.commit()
 
-        client = self.client
-
-        login_person(eric, "test", client)
-
-        client.open(url=canonical_url(bmp))
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientForPerson(bmp, eric)
 
         # Click on the element containing the branch status.
         client.click(xpath=EDIT_COMMIT_LINK)
@@ -63,7 +58,7 @@ class TestCommitMessage(WindmillTestCase):
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
 
         # Confirm that the change was saved.
-        client.open(url=canonical_url(bmp))
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.asserts.assertText(
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
@@ -85,26 +80,21 @@ class TestQueueStatus(WindmillTestCase):
         merge_proposal = second_branch.addLandingTarget(mike, branch)
         transaction.commit()
 
-        client = self.client
-
-        merge_url = canonical_url(merge_proposal)
-        client.open(url=merge_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(mike, "test", client)
+        client, start_url = self.getClientForPerson(merge_proposal, mike)
 
         # Click on the element containing the branch status.
         client.waits.forElement(
             id=u'branchmergeproposal-status-value', timeout=PAGE_LOAD)
         client.click(id=u'branchmergeproposal-status-value')
         client.waits.forElement(
-            xpath=u'//div[contains(@class, "yui-ichoicelist-content")]')
+            xpath=u'//div[contains(@class, "yui3-ichoicelist-content")]')
 
         # Change the status to experimental.
         client.click(link=u'Approved')
         client.waits.sleep(milliseconds=SLEEP)
 
         client.asserts.assertText(
-            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             validator=u'Approved')
 
         client.asserts.assertText(
@@ -112,15 +102,11 @@ class TestQueueStatus(WindmillTestCase):
             validator=u'5')
 
         # Reload the page and make sure the change sticks.
-        client.open(url=merge_url)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
-            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             timeout=FOR_ELEMENT)
         client.asserts.assertText(
-            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             validator=u'Approved')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

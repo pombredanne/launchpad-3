@@ -11,6 +11,26 @@
   <metal:block fill-slot="head_epilogue">
     <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
+    <style type="text/css">
+      dl.horizontal dt {
+          display: inline;
+          margin-right: .5em;
+          }
+      dl.horizontal dd {
+           display: inline;
+           margin-right: 2em;
+           }
+      dl.horizontal dd ul.horizontal {
+           display: inline;
+           }
+      dl + p {
+            margin-top: 1em;
+            }
+      .scrolled {
+            max-height: 6em;
+            overflow: auto;
+            }
+    </style>
   </metal:block>
 
 <div metal:fill-slot="main"
@@ -23,15 +43,8 @@
     <tal:navigation replace="structure batch/@@+navigation-links-upper" />
     <table id="product-listing" class="listing">
       <thead>
-        <th>Project</th>
-        <th>Active</th>
-        <th>Reviewed</th>
-        <th>License<br />approved</th>
-        <th>Registered by</th>
-        <th>Licenses</th>
-        <th style="width: 40%">License info</th>
-        <th>Commercial<br />Subscription<br />expiration</th>
-        <th style="width: 40%">Reviewer<br />whiteboard</th>
+        <th style="width: 45em">Project information</th>
+        <th>Status and Licenses</th>
       </thead>
       <tbody>
         <div tal:repeat="product batch/currentBatch"

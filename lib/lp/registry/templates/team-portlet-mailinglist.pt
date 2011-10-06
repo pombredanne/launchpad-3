@@ -19,37 +19,43 @@
       <strong>Policy:</strong>
       You must be a team member to subscribe to the team mailing list.
       <br/>
-      <tal:member condition="view/user_is_active_member">
+      <tal:member condition="view/userIsParticipant">
         <tal:can-subscribe-to-list
             condition="view/user_can_subscribe_to_list">
-          <a class="sprite add"
+          <a id="link-list-subscribe" class="sprite add"
               href="/people/+me/+editemails">Subscribe to mailing list</a>
           <br />
         </tal:can-subscribe-to-list>
         <tal:subscribed-to-list
             condition="view/user_is_subscribed_to_list">
-          <form id="form.list.unsubscribe" name="unsubscribe"
+          <form id="form-list-unsubscribe" name="unsubscribe"
             action="" method="post">
             <input type="submit" name="unsubscribe" value="Unsubscribe" />
           </form>
           </tal:subscribed-to-list>
       </tal:member>
-      <img src="/@@/mail" alt="email" /> <a id="mailing-list-archive"
-              tal:attributes="href archive_url">View archive</a>
+      <img src="/@@/mail" alt="email" />
+      <a id="mailing-list-archive"
+        tal:attributes="href archive_url">View <tal:visibility
+          replace="context/visibility/title/fmt:lower" /> archive</a>
       <br /><img src="/@@/team" alt="team" /> <a id="mailing-list-subscribers"
               tal:attributes="href context/fmt:url/+mailing-list-subscribers"
               >View subscribers</a>
     </div>
     <div tal:condition="not: view/archive_url">
-      This team does not have a mailing list.
+      This team does not use Launchpad to host a mailing list.
     </div>
-    <div tal:condition="context/menu:overview/configure_mailing_list/enabled">
-      <tal:configure_mailing_list
-        replace="structure context/menu:overview/configure_mailing_list/fmt:link-icon" />
-      &nbsp;
-      <tal:moderate_mailing_list
-        replace="structure context/menu:overview/moderate_mailing_list/fmt:link-icon" />
-    </div>
+    <ul class="horizontal"
+      tal:condition="context/menu:overview/configure_mailing_list/enabled">
+      <li>
+        <tal:configure_mailing_list
+          replace="structure context/menu:overview/configure_mailing_list/fmt:link-icon" />
+      </li>
+      <li>
+        <tal:moderate_mailing_list
+          replace="structure context/menu:overview/moderate_mailing_list/fmt:link-icon" />
+      </li>
+    </ul>
   </div>
 </div>
 </tal:root>

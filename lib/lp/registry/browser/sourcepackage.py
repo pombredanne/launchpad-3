@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
@@ -6,60 +6,145 @@
 __metaclass__ = type
 
 __all__ = [
+    'PackageUpstreamTracking',
     'SourcePackageAssociationPortletView',
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
-    'SourcePackageHelpView',
     'SourcePackageNavigation',
+    'SourcePackageOverviewMenu',
     'SourcePackageRemoveUpstreamView',
     'SourcePackageUpstreamConnectionsView',
     'SourcePackageView',
     ]
 
-from apt_pkg import ParseSrcDepends
-from cgi import escape
+import string
+import urllib
+
+from apt_pkg import (
+    ParseSrcDepends,
+    upstream_version,
+    VersionCompare,
+    )
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from lazr.restful.interface import copy_field
+from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
-from zope.component import getUtility, getMultiAdapter
+from zope.component import (
+    adapter,
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.formlib.form import Fields
-from zope.interface import Interface
-from zope.schema import Choice, TextLine
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
+    getVocabularyRegistry,
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from lazr.restful.interface import copy_field
-
-from canonical.widgets import LaunchpadRadioWidget
-
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.multistep import MultiStepView, StepView
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
+from canonical.launchpad.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    GetitemNavigation,
+    Link,
+    StandardLaunchpadFacets,
+    stepto,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import IBreadcrumb
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    ReturnToReferrerMixin,
+    )
+from lp.app.browser.tales import CustomizableFormatter
+from lp.app.enums import ServiceUsage
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.packagerelationship import (
-    relationship_builder)
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.packaging import IPackaging, IPackagingUtil
+from lp.registry.browser.product import ProjectAddStepOne
+from lp.registry.interfaces.packaging import (
+    IPackaging,
+    IPackagingUtil,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.soyuz.browser.packagerelationship import relationship_builder
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, Link, redirection,
-    StandardLaunchpadFacets, stepto)
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView, ReturnToReferrerMixin)
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
 
-from canonical.lazr.utils import smartquote
+
+def get_register_upstream_url(source_package):
+    displayname = string.capwords(source_package.name.replace('-', ' '))
+    distroseries_string = "%s/%s" % (
+        source_package.distroseries.distribution.name,
+        source_package.distroseries.name)
+    current_release = source_package.currentrelease
+    if current_release is not None and current_release.homepage is not None:
+        homepage = current_release.homepage
+    else:
+        homepage = ''
+    params = {
+        '_return_url': canonical_url(source_package),
+        'field.source_package_name': source_package.sourcepackagename.name,
+        'field.distroseries': distroseries_string,
+        'field.name': source_package.name,
+        'field.displayname': displayname,
+        'field.title': displayname,
+        'field.homepageurl': homepage,
+        'field.__visited_steps__': ProjectAddStepOne.step_name,
+        'field.actions.continue': 'Continue',
+        }
+    if len(source_package.releases) == 0:
+        params['field.summary'] = ''
+    else:
+        # This is based on the SourcePackageName.summary attribute, but
+        # it eliminates the binary.name and duplicate summary lines.
+        summary_set = set()
+        for binary in source_package.releases[0].sample_binary_packages:
+            summary_set.add(binary.summary)
+        params['field.summary'] = '\n'.join(sorted(summary_set))
+    query_string = urllib.urlencode(
+        sorted(params.items()), doseq=True)
+    return '/projects/+new?%s' % query_string
+
+
+class SourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapter for ISourcePackage objects to a formatted string."""
+
+    _link_permission = 'zope.Public'
+
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -86,29 +171,58 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepto('+filebug')
     def filebug(self):
         """Redirect to the IDistributionSourcePackage +filebug page."""
-        sourcepackage = self.context
-        distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
-            sourcepackage.name)
+        distro_sourcepackage = self.context.distribution_sourcepackage
 
         redirection_url = canonical_url(
             distro_sourcepackage, view_name='+filebug')
         if self.request.form.get('no-redirect') is not None:
             redirection_url += '?no-redirect'
-        return redirection(redirection_url)
+        return self.redirectSubTree(redirection_url, status=303)
+
+    @stepto('+gethelp')
+    def gethelp(self):
+        """Redirect to the IDistributionSourcePackage +gethelp page."""
+        dsp = self.context.distribution_sourcepackage
+        redirection_url = canonical_url(dsp, view_name='+gethelp')
+        return self.redirectSubTree(redirection_url, status=303)
 
 
+@adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
+    implements(IBreadcrumb)
 
     @property
     def text(self):
         return smartquote('"%s" source package') % (self.context.name)
 
 
-class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
+class SourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    enable_only = ['overview', 'bugs', 'branches', 'answers', 'translations']
+    enable_only = ['overview', 'bugs', 'branches', 'translations']
+
+    def overview(self):
+        text = 'Overview'
+        summary = 'General information about {0}'.format(
+            self.context.displayname)
+        return Link('', text, summary)
+
+    def bugs(self):
+        text = 'Bugs'
+        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def branches(self):
+        text = 'Code'
+        summary = 'Branches for {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def translations(self):
+        text = 'Translations'
+        summary = 'Translations of {0} in Launchpad'.format(
+            self.context.displayname)
+        return Link('', text, summary)
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
@@ -117,7 +231,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'distribution_source_package', 'edit_packaging', 'remove_packaging',
-        'changelog', 'builds', 'set_upstream',
+        'changelog', 'copyright', 'builds', 'set_upstream',
         ]
 
     def distribution_source_package(self):
@@ -129,30 +243,33 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
 
+    def copyright(self):
+        return Link('+copyright', 'View copyright', icon='info')
+
     def edit_packaging(self):
-        return Link('+edit-packaging', 'Change upstream link', icon='edit')
+        return Link(
+            '+edit-packaging', 'Change upstream link', icon='edit',
+            enabled=self.userCanDeletePackaging())
 
     def remove_packaging(self):
         return Link(
-            '+remove-packaging', 'Remove upstream link', icon='remove')
+            '+remove-packaging', 'Remove upstream link', icon='remove',
+            enabled=self.userCanDeletePackaging())
 
     def set_upstream(self):
-        return Link("+edit-packaging", "Set upstream link", icon="add")
+        return Link(
+            "+edit-packaging", "Set upstream link", icon="add",
+            enabled=self.userCanDeletePackaging())
 
     def builds(self):
         text = 'Show builds'
         return Link('+builds', text, icon='info')
 
-
-class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
-
-    usedfor = ISourcePackage
-    facet = 'answers'
-
-    links = QuestionTargetAnswersMenu.links + ['gethelp']
-
-    def gethelp(self):
-        return Link('+gethelp', 'Help and support options', icon='info')
+    def userCanDeletePackaging(self):
+        packaging = self.context.direct_packaging
+        if packaging is None:
+            return True
+        return packaging.userCanDelete()
 
 
 class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
@@ -187,6 +304,10 @@ class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
         self.next_step = SourcePackageChangeUpstreamStepTwo
         self.request.form['product'] = data['product']
 
+    @property
+    def register_upstream_url(self):
+        return get_register_upstream_url(self.context)
+
 
 class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
     """A view to set the `IProductSeries` of a sourcepackage."""
@@ -217,8 +338,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
         self.product = getUtility(IProductSet)[product_name]
         series_list = [
             series for series in self.product.series
-            if series.status != SeriesStatus.OBSOLETE
-            ]
+            if series.status != SeriesStatus.OBSOLETE]
 
         # If the product is not being changed, then the current
         # productseries can be the default choice. Otherwise,
@@ -240,8 +360,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
             series_list.remove(dev_focus)
         vocab_terms = [
             SimpleTerm(series, series.name, series.name)
-            for series in series_list
-            ]
+            for series in series_list]
         dev_focus_term = SimpleTerm(
             dev_focus, dev_focus.name, "%s (Recommended)" % dev_focus.name)
         vocab_terms.insert(0, dev_focus_term)
@@ -273,6 +392,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
     next_url = None
 
     main_action_label = u'Change'
+
     def main_action(self, data):
         productseries = data['productseries']
         # Because it is part of a multistep view, the next_url can't
@@ -305,16 +425,20 @@ class SourcePackageRemoveUpstreamView(ReturnToReferrerMixin,
     @action('Unlink')
     def unlink(self, action, data):
         old_series = self.context.productseries
-        getUtility(IPackagingUtil).deletePackaging(
-            self.context.productseries,
-            self.context.sourcepackagename,
-            self.context.distroseries)
-        self.request.response.addInfoNotification(
-            'Removed upstream association between %s and %s.' % (
-            old_series.title, self.context.distroseries.displayname))
+        if self.context.direct_packaging is not None:
+            getUtility(IPackagingUtil).deletePackaging(
+                self.context.productseries,
+                self.context.sourcepackagename,
+                self.context.distroseries)
+            self.request.response.addInfoNotification(
+                'Removed upstream association between %s and %s.' % (
+                old_series.title, self.context.distroseries.displayname))
+        else:
+            self.request.response.addInfoNotification(
+                'The packaging link has already been deleted.')
 
 
-class SourcePackageView:
+class SourcePackageView(LaunchpadView):
     """A view for (distro series) source packages."""
 
     def initialize(self):
@@ -342,7 +466,7 @@ class SourcePackageView:
     def processForm(self):
         # look for an update to any of the things we track
         form = self.request.form
-        if form.has_key('packaging'):
+        if 'packaging' in form:
             if self.productseries_widget.hasValidInput():
                 new_ps = self.productseries_widget.getInputValue()
                 # we need to create or update the packaging
@@ -373,7 +497,7 @@ class SourcePackageView:
         all_arch = sorted([arch.architecturetag for arch in
                            self.context.distroseries.architectures])
         for bin in self.context.currentrelease.binaries:
-            distroarchseries = bin.build.distroarchseries
+            distroarchseries = bin.build.distro_arch_series
             if bin.name not in results:
                 results[bin.name] = []
 
@@ -426,12 +550,6 @@ class SourcePackageView:
         return list(self.context.getCurrentTranslationTemplates())
 
 
-class SourcePackageHelpView:
-    """A View to show Answers help."""
-
-    page_title = 'Help and support options'
-
-
 class SourcePackageAssociationPortletView(LaunchpadFormView):
     """A view for linking to an upstream package."""
 
@@ -439,6 +557,10 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
     custom_widget(
         'upstream', LaunchpadRadioWidget, orientation='vertical')
     product_suggestions = None
+    initial_focus_widget = None
+    max_suggestions = 9
+    other_upstream = object()
+    register_upstream = object()
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -452,30 +574,79 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         # term descriptions that include a link to the product.
         self.product_suggestions = []
         vocab_terms = []
-        for item in matches:
+        for item in matches[:self.max_suggestions]:
             product = item.value
             self.product_suggestions.append(product)
             item_url = canonical_url(product)
-            description = """<a href="%s">%s</a>""" % (
-                item_url, escape(product.displayname))
+            description = structured(
+                '<a href="%s">%s</a>', item_url, product.displayname)
             vocab_terms.append(SimpleTerm(product, product.name, description))
+        # Add an option to represent the user's decision to choose a
+        # different project. Note that project names cannot be uppercase.
+        vocab_terms.append(
+            SimpleTerm(self.other_upstream, 'OTHER_UPSTREAM',
+                       'Choose another upstream project'))
+        vocab_terms.append(
+            SimpleTerm(self.register_upstream, 'REGISTER_UPSTREAM',
+                       'Register the upstream project'))
         upstream_vocabulary = SimpleVocabulary(vocab_terms)
 
         self.form_fields = Fields(
             Choice(__name__='upstream',
                    title=_('Registered upstream project'),
-                   default=None,
+                   default=self.other_upstream,
                    vocabulary=upstream_vocabulary,
                    required=True))
 
     @action('Link to Upstream Project', name='link')
     def link(self, action, data):
         upstream = data.get('upstream')
+        if upstream is self.other_upstream:
+            # The user wants to link to an alternate upstream project.
+            self.next_url = canonical_url(
+                self.context, view_name="+edit-packaging")
+            return
+        elif upstream is self.register_upstream:
+            # The user wants to create a new project.
+            url = get_register_upstream_url(self.context)
+            self.request.response.redirect(url)
+            return
         self.context.setPackaging(upstream.development_focus, self.user)
         self.request.response.addInfoNotification(
             'The project %s was linked to this source package.' %
             upstream.displayname)
         self.next_url = self.request.getURL()
+
+
+class PackageUpstreamTracking(EnumeratedType):
+    """The state of the package's tracking of the upstream version."""
+
+    NONE = Item("""
+        None
+
+        There is not enough information to compare the current package version
+        to the upstream version.
+        """)
+
+    CURRENT = Item("""
+        Current version
+
+        The package version is the current upstream version.
+        """)
+
+    OLDER = Item("""
+        Older upstream version
+
+        The upstream version is older than the package version. Launchpad
+        Launchpad is missing upstream data.
+        """)
+
+    NEWER = Item("""
+        Newer upstream version
+
+        The upstream version is newer than the package version. The package
+        can be updated to the upstream version.
+        """)
 
 
 class SourcePackageUpstreamConnectionsView(LaunchpadView):
@@ -487,7 +658,7 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         if self.context.productseries is None:
             return False
         product = self.context.productseries.product
-        if product.official_malone:
+        if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return True
         bugtracker = product.bugtracker
         if bugtracker is None:
@@ -496,3 +667,24 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         if bugtracker is None:
             return False
         return True
+
+    @property
+    def current_release_tracking(self):
+        """The PackageUpstreamTracking state for the current release."""
+        upstream_release = self.context.productseries.getLatestRelease()
+        current_release = self.context.currentrelease
+        if upstream_release is None or current_release is None:
+            # Launchpad is missing data. There is not enough information to
+            # track releases.
+            return PackageUpstreamTracking.NONE
+        # Compare the base version contained in the full debian version
+        # to upstream release's version.
+        base_version = upstream_version(current_release.version)
+        age = VersionCompare(upstream_release.version, base_version)
+        if age > 0:
+            return PackageUpstreamTracking.NEWER
+        elif age < 0:
+            return PackageUpstreamTracking.OLDER
+        else:
+            # age == 0:
+            return PackageUpstreamTracking.CURRENT

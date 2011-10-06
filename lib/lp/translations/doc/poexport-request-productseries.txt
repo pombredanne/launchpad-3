@@ -7,8 +7,8 @@
 
 This is a dummy logger class to capture the export's log messages.
 
-    >>> from canonical.launchpad.ftests.logger import MockLogger
     >>> from lp.registry.model.person import Person
+    >>> from lp.services.log.logger import FakeLogger
     >>> person = Person.selectOneBy(name='name12')
 
 An arbitrary logged-in user requests an export of all translations for
@@ -37,15 +37,14 @@ Now we request that the queue be processed.
     >>> import logging
     >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
-    >>> logger = MockLogger()
-    >>> logger.setLevel(logging.DEBUG)
+    >>> logger = FakeLogger()
     >>> transaction.commit()
     >>> process_queue(transaction, logger)
-    log> Exporting objects for ..., related to template evolution-2.2 in
+    DEBUG Exporting objects for ..., related to template evolution-2.2 in
     Evolution trunk
-    log> Exporting objects for ..., related to template evolution-2.2-test in
+    DEBUG Exporting objects for ..., related to template evolution-2.2-test in
     Evolution trunk
-    log> Stored file at http://.../launchpad-export.tar.gz
+    INFO Stored file at http://.../launchpad-export.tar.gz
 
 The user receives a confirmation email.
 
@@ -61,7 +60,7 @@ The user receives a confirmation email.
     The translation files you requested from Launchpad are ready for
     download from the following location:
     <BLANKLINE>
-      http://localhost:58000/.../launchpad-export.tar.gz
+      http://.../launchpad-export.tar.gz
     <BLANKLINE>
     Note: this link will expire in about 1 week.  If you want to
     download these translations again, you will have to request
@@ -90,10 +89,12 @@ Let's download it and make sure the contents look ok.
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
-    ...   print name
-    evolution-2.2/
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
+    ...     print name.rstrip('/')
+    evolution-2.2
     evolution-2.2/evolution-2.2-es.po
-    po/
+    po
     po/evolution-2.2-test-pt_BR.po
     po/evolution-2.2-test.pot
     po/evolution-2.2.pot

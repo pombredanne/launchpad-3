@@ -1,20 +1,36 @@
-= BuildFarmJob =
-
-    >>> from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-    >>> from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-
-BuildFarmJob provides a basic implementation of IBuildFarmJob.  The
-specific build farm job classes should inherit from it.
-
-    >>> buildfarmjob = BuildFarmJob()
-    >>> verifyObject(IBuildFarmJob, buildfarmjob) 
-    True
-
-As a class, it also provides ISpecificBuildFarmJobClass so that
-BuildQueue can find the instance of a specific build-farm job
-implementation associated with a given Job instance.
+BuildFarmJob
+============
 
     >>> from lp.buildmaster.interfaces.buildfarmjob import (
-    ...     ISpecificBuildFarmJobClass)
-    >>> verifyObject(ISpecificBuildFarmJobClass, BuildFarmJob)
+    ...     IBuildFarmJob)
+    >>> from lp.buildmaster.enums import BuildFarmJobType
+    >>> from lp.buildmaster.model.buildfarmjob import (
+    ...     BuildFarmJob, BuildFarmJobDerived)
+
+BuildFarmJob provides a basic implementation of IBuildFarmJob.  The
+specific build farm job classes will automatically delegate to
+BuildFarmJob by inheriting BuildFarmJobDerived.
+
+    >>> buildfarmjob = BuildFarmJob(BuildFarmJobType.PACKAGEBUILD)
+    >>> verifyObject(IBuildFarmJob, buildfarmjob)
     True
+
+The BuildFarmJob class provides many of the common attributes used by
+different types of build farm jobs, as well as default implementations
+for the common methods.  The BuildFarmJob class provides default
+implementations for many build-related methods.
+
+    >>> print buildfarmjob.getLogFileName()
+    buildlog.txt
+
+    >>> buildfarmjob.getName()
+    Traceback (most recent call last):
+    ...
+    NotImplementedError
+
+For more details, please refer to lp.buildmaster.tests.test_buildfarmjob.
+
+This class also includes the getByJob() class method used to find the
+instance of a specific build-farm job implementation associated with a
+given Job instance which must be called in the context of a concrete
+derived class. See lp.buildmaster.tests.test_buildqueue for examples.

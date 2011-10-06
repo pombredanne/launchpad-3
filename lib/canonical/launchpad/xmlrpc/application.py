@@ -18,19 +18,29 @@ __all__ = [
 import xmlrpclib
 
 from zope.component import getUtility
-from zope.interface import Interface, implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.launchpad.interfaces import (
-    IAuthServerApplication, ILaunchBag,
-    IMailingListApplication, IPrivateApplication,
-    IPrivateMaloneApplication)
-from lp.code.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
-from lp.code.interfaces.codeimportscheduler import (
-    ICodeImportSchedulerApplication)
+from canonical.launchpad.interfaces.launchpad import (
+    IAuthServerApplication,
+    IPrivateApplication,
+    IPrivateMaloneApplication,
+    )
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.code.interfaces.codehosting import ICodehostingApplication
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication,
+    )
+from lp.registry.interfaces.mailinglist import IMailingListApplication
+from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
+from lp.services.features.xmlrpc import IFeatureFlagApplication
 
 
+# NOTE: If you add a traversal here, you should update
+# the regular expression in utilities/page-performance-report.ini
 class PrivateApplication:
     implements(IPrivateApplication)
 
@@ -45,14 +55,9 @@ class PrivateApplication:
         return getUtility(IAuthServerApplication)
 
     @property
-    def branch_puller(self):
+    def codehosting(self):
         """See `IPrivateApplication`."""
-        return getUtility(IBranchPullerApplication)
-
-    @property
-    def branchfilesystem(self):
-        """See `IPrivateApplication`."""
-        return getUtility(IBranchFileSystemApplication)
+        return getUtility(ICodehostingApplication)
 
     @property
     def codeimportscheduler(self):
@@ -63,6 +68,16 @@ class PrivateApplication:
     def bugs(self):
         """See `IPrivateApplication`."""
         return getUtility(IPrivateMaloneApplication)
+
+    @property
+    def softwarecenteragent(self):
+        """See `IPrivateApplication`."""
+        return getUtility(ISoftwareCenterAgentApplication)
+
+    @property
+    def featureflags(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IFeatureFlagApplication)
 
 
 class ISelfTest(Interface):
@@ -118,4 +133,3 @@ class RosettaSelfTest(LaunchpadXMLRPCView):
 
     def run_test(self):
         return "OK"
-

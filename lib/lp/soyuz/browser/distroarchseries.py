@@ -13,20 +13,30 @@ __all__ = [
     'DistroArchSeriesView',
     ]
 
-from zope.interface import implements, Interface
+from lazr.restful.utils import smartquote
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from canonical.launchpad.webapp.publisher import canonical_url
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadEditFormView)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadFormView)
-from canonical.launchpad.webapp.menu import (
-    enabled_with_permission, Link, NavigationMenu)
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.lazr.utils import smartquote
 
 
 class DistroArchSeriesNavigation(GetitemNavigation):
@@ -114,7 +124,8 @@ class DistroArchSeriesAdminView(LaunchpadEditFormView):
     schema = IDistroArchSeries
 
     field_names = [
-        'architecturetag', 'official', 'supports_virtualized'
+        'architecturetag', 'official', 'supports_virtualized',
+        'enabled',
         ]
 
     @action(_('Change'), name='update')

@@ -1,0 +1,345 @@
+Security Teams
+==============
+
+Responsibility for security-related bugs, are modelled in Launchpad with
+a "security contact" on a Distribution or a Product.
+
+    >>> from itertools import chain
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+
+    >>> personset = getUtility(IPersonSet)
+    >>> productset = getUtility(IProductSet)
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> firefox = productset.get(4)
+
+    >>> IHasSecurityContact.providedBy(ubuntu)
+    True
+    >>> IHasSecurityContact.providedBy(firefox)
+    True
+
+    >>> mark = personset.get(1)
+    >>> ubuntu_team = personset.get(17)
+
+Security contacts are set through properties.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> ubuntu.security_contact = mark
+    >>> firefox.security_contact = ubuntu_team
+
+    >>> print ubuntu.security_contact.name
+    mark
+
+    >>> print firefox.security_contact.name
+    ubuntu-team
+
+When creating a bug, use the security_related flag to indicate that the
+bug is a security vulnerability, and the security contact should be
+subscribed to the bug, even when it's marked private.
+
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> params = CreateBugParams(
+    ...     owner=getUtility(ILaunchBag).user,
+    ...     title="a security bug",
+    ...     comment="this is an example security bug",
+    ...     security_related=True, private=True)
+    >>> bug = ubuntu.createBug(params)
+
+    >>> bug.security_related
+    True
+    >>> bug.private
+    True
+
+The reporter, Foo Bar, and the Ubuntu security contact, Mark
+Shuttleworth are both subscribed to the bug.
+
+    >>> def subscriber_names(bug):
+    ...     subscribers = chain(
+    ...         bug.getDirectSubscribers(),
+    ...         bug.getIndirectSubscribers())
+    ...     return sorted(subscriber.name for subscriber in subscribers)
+
+    >>> subscriber_names(bug)
+    [u'mark', u'name16']
+
+If the bug were not reported as security-related, only Foo Bar would
+have been subscribed:
+
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> params = CreateBugParams(
+    ...     owner=getUtility(ILaunchBag).user,
+    ...     title="a security bug",
+    ...     comment="this is an example security bug",
+    ...     security_related=False)
+    >>> bug = ubuntu.createBug(params)
+
+    >>> bug.security_related
+    False
+
+    >>> subscriber_names(bug)
+    [u'name16', u'ubuntu-team']
+
+Likewise, filing a security-related bug on Firefox will subscribe the
+security contact, the Ubuntu team, to the bug.
+
+    >>> params = CreateBugParams(
+    ...     owner=getUtility(ILaunchBag).user,
+    ...     title="another security bug",
+    ...     comment="this is another security bug",
+    ...     security_related=True, private=True)
+    >>> bug = firefox.createBug(params)
+
+    >>> bug.security_related
+    True
+    >>> bug.private
+    True
+
+    >>> subscriber_names(bug)
+    [u'name16', u'ubuntu-team']
+
+Again, if the bug were not reported as security-related, the security
+contact, the Ubuntu Team, would not have been subscribed:
+
+    >>> params = CreateBugParams(
+    ...     owner=getUtility(ILaunchBag).user,
+    ...     title="another security bug",
+    ...     comment="this is another security bug",
+    ...     security_related=False)
+    >>> bug = firefox.createBug(params)
+
+    >>> bug.security_related
+    False
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16']
+
+When no security contact exists, only the reporter and product
+registrant get subscribed.
+
+    >>> firefox.security_contact = None
+
+    >>> print firefox.owner.name
+    name12
+
+    >>> params = CreateBugParams(
+    ...     owner=getUtility(ILaunchBag).user,
+    ...     title="another security bug",
+    ...     comment="this is another security bug",
+    ...     security_related=True, private=True)
+
+    >>> bug = firefox.createBug(params)
+
+    >>> bug.security_related
+    True
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16']
+
+When a bug is reported in another package or upstream, the security
+contact for that package or upstream is automatically subscribed to the
+bug, *if the bug is public*. Malone never auto-subscribes anyone to
+private bugs, except when the user chooses that option when filing a
+security bug.
+
+Let's first demonstrate adding a task to a public bug causing the
+security contact of the new product to be subscribed.
+
+    >>> evolution = productset.get(5)
+
+We'll set lifeless as the security_contact for evolution.
+
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+
+(Make the bug public to ensure the security contact will get
+subscribed.)
+
+    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
+
+    >>> lifeless = personset.get(2)
+    >>> print lifeless.name
+    lifeless
+    >>> evolution.security_contact = lifeless
+
+    >>> foobar = personset.get(16)
+    >>> print foobar.name
+    name16
+
+    >>> bugtaskset = getUtility(IBugTaskSet)
+    >>> bug_in_evolution = bugtaskset.createTask(bug, foobar, evolution)
+
+lifeless is subscribed to the public security bug when a task is added
+for evolution.
+
+    >>> subscriber_names(bug)
+    [u'lifeless', u'name12', u'name16']
+
+But if we repeat the process, using a private bug, he won't be
+subscribed.
+
+    >>> params = CreateBugParams(
+    ...     owner=getUtility(ILaunchBag).user,
+    ...     title="another security bug",
+    ...     comment="this is private security bug",
+    ...     private=True, security_related=True)
+    >>> bug = firefox.createBug(params)
+
+    >>> bug.security_related
+    True
+
+    >>> bug.private
+    True
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16']
+
+    >>> bug_in_evolution = bugtaskset.createTask(bug, foobar, evolution)
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16']
+
+Finally, reassigning a public bug to a different product will subscribe
+the new security contact, if present and if the original bug was marked
+as a security issue. Let's set stub to the security contact for
+thunderbird to see how this works.
+
+    >>> thunderbird = productset.get(8)
+    >>> print thunderbird.name
+    thunderbird
+
+    >>> stub = personset.get(22)
+    >>> print stub.name
+    stub
+
+    >>> thunderbird.security_contact = stub
+
+    >>> from zope.event import notify
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
+
+    >>> old_state = Snapshot(bug_in_evolution, providing=IBugTask)
+    >>> bug_in_evolution.transitionToTarget(thunderbird)
+    >>> bug_product_changed = ObjectModifiedEvent(
+    ...     bug_in_evolution, old_state, ["product"])
+
+First, let's set the bug to non security related with the bug still marked,
+private and notice that the subscription list doesn't change:
+
+    >>> bug.private
+    True
+
+    >>> bug.setSecurityRelated(False, getUtility(ILaunchBag).user)
+    True
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16']
+
+Now the bug is marked as security related, when also marked public does cause
+stub to get subscribed:
+
+    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
+
+    >>> bug.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    True
+
+    >>> bug.security_related
+    True
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16', u'stub']
+
+But if it is not a security issue originally, stub does not get
+subscribed when moving it to the new project.
+
+    >>> bug.unsubscribe(stub, stub)
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16']
+
+    >>> bug.setSecurityRelated(False, getUtility(ILaunchBag).user)
+    True
+
+    >>> bug.security_related
+    False
+
+    >>> notify(bug_product_changed)
+
+    >>> subscriber_names(bug)
+    [u'name12', u'name16']
+
+
+When a bug becomes security-related, the security contacts for the pillars it
+affects are subscribed to it. This happens regardless of whether the feature
+flag is set.
+
+We current use a feature flag to control who is subscribed when a bug is made
+security related.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
+    >>> from zope.event import notify
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
+
+    >>> product = factory.makeProduct()
+    >>> product.security_contact = factory.makePerson(
+    ...     displayname='Product Security Contact')
+    >>> distribution = factory.makeDistribution()
+    >>> distribution.security_contact = factory.makePerson(
+    ...     displayname='Distribution Security Contact')
+    >>> reporter = factory.makePerson(displayname=u'Bug Reporter')
+    >>> bug = factory.makeBug(product=product, owner=reporter)
+    >>> bug.addTask(owner=reporter, target=distribution)
+    <BugTask ...>
+    >>> old_state = Snapshot(bug, providing=IBug)
+    >>> bug.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    True
+    >>> notify(ObjectModifiedEvent(bug, old_state, ['security_related']))
+    >>> for subscriber_name in sorted(
+    ...     s.displayname for s in bug.getDirectSubscribers()):
+    ...         print subscriber_name
+    Bug Reporter
+    Distribution Security Contact
+    Product Security Contact
+
+Clean up the feature flag.
+
+    >>> flags.cleanUp()
+
+And once more without the feature flag.
+
+    >>> product = factory.makeProduct()
+    >>> product.security_contact = factory.makePerson(
+    ...     displayname='Product Security Contact')
+    >>> distribution = factory.makeDistribution()
+    >>> distribution.security_contact = factory.makePerson(
+    ...     displayname='Distribution Security Contact')
+    >>> reporter = factory.makePerson(displayname=u'Bug Reporter')
+    >>> bug = factory.makeBug(product=product, owner=reporter)
+    >>> bug.addTask(owner=reporter, target=distribution)
+    <BugTask ...>
+    >>> old_state = Snapshot(bug, providing=IBug)
+    >>> bug.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    True
+    >>> notify(ObjectModifiedEvent(bug, old_state, ['security_related']))
+    >>> for subscriber_name in sorted(
+    ...     s.displayname for s in bug.getDirectSubscribers()):
+    ...         print subscriber_name
+    Bug Reporter
+    Distribution Security Contact
+    Product Security Contact

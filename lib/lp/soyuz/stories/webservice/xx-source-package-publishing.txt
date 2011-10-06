@@ -11,10 +11,10 @@ We need to insert some dependent fake data before continuing.
     >>> from lp.archiveuploader.tests import (
     ...     insertFakeChangesFileForAllPackageUploads)
     >>> insertFakeChangesFileForAllPackageUploads()
-    >>> from lp.registry.model.gpgkey import GPGKey
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.gpgkey import GPGKey
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
     >>> ppa = getUtility(IPersonSet).getByName('cprov').archive
@@ -45,7 +45,8 @@ Search by name and version using an exact match:
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
-    ...     source_name="iceweasel", version="1.0", exact_match=True).jsonBody()
+    ...     source_name="iceweasel", version="1.0",
+    ...     exact_match=True).jsonBody()
     >>> print_publications(pubs)
     iceweasel 1.0 in warty
 
@@ -73,6 +74,7 @@ Search by distroseries and pocket:
 
     >>> distros = webservice.get("/distros").jsonBody()
     >>> ubuntu = distros['entries'][0]
+    >>> ubuntutest = distros['entries'][2]
     >>> warty = webservice.named_get(
     ...     ubuntu['self_link'], 'getSeries',
     ...     name_or_version='warty').jsonBody()
@@ -92,33 +94,38 @@ publication to play with first.
     ...     SoyuzTestPublisher)
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
+    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from zope.component import getUtility
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> warty_series = ubuntu.getSeries('warty')
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
-    >>> discard = stp.getPubSource(
-    ...     archive=cprov_ppa, sourcename="testwebservice",
-    ...     distroseries=warty_series)
+    >>> source = stp.getPubSource(
+    ...     archive=cprov_ppa, sourcename="testwebservice")
+    >>> binaries = stp.getPubBinaries(
+    ...     binaryname="testwebservice-bin", pub_source=source,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> logout()
 
+    >>> breezy = webservice.named_get(
+    ...     ubuntutest['self_link'], 'getSeries',
+    ...     name_or_version='breezy-autotest').jsonBody()
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
-    ...     distro_series=warty['self_link'],
+    ...     distro_series=breezy['self_link'],
     ...     source_name="testwebservice").jsonBody()
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
     component_name: u'main'
+    creator_link: u'http://api.launchpad.dev/beta/~name16'
     date_created: ...
     date_made_pending: None
     date_published: None
     date_removed: None
     date_superseded: None
-    display_name: u'testwebservice 666 in warty'
-    distro_series_link: u'http://.../ubuntu/warty'
+    display_name: u'testwebservice 666 in breezy-autotest'
+    distro_series_link: u'http://.../ubuntutest/breezy-autotest'
     package_creator_link: u'http://.../beta/~name16'
     package_maintainer_link: u'http://.../beta/~name16'
     package_signer_link: u'http://.../beta/~name16'
@@ -152,11 +159,13 @@ Make cprov's PPA packages unsigned:
     ...     pub.sourcepackagerelease.dscsigningkey = None
     >>> logout()
 
+    >>> ws_uncache(pub)
+
 Query the source again:
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
-    ...     distro_series=warty['self_link'],
+    ...     distro_series=breezy['self_link'],
     ...     source_name="testwebservice").jsonBody()
 
     >>> print pubs['entries'][0]['package_signer_link']
@@ -211,20 +220,28 @@ After removal, the package is marked as such:
     >>> print pubs['entries'][0]['removal_comment']
     No longer needed
 
+The package's binaries are also marked for deletion:
+
+    >>> login("admin@canonical.com")
+    >>> for bin in cprov_ppa.getAllPublishedBinaries(
+    ...     name="testwebservice-bin"):
+    ...     if bin.status != PackagePublishingStatus.DELETED:
+    ...         print "%s is not deleted when it should be" % bin.displayname
+    ...     else:
+    ...         print "%s deleted OK." % bin.displayname
+    testwebservice-bin 666 in breezy-autotest i386 deleted OK.
+    testwebservice-bin 666 in breezy-autotest hppa deleted OK.
+
+
 Privacy
 =======
 
 Create a private PPA for Celso with some binaries.
 
-    >>> login("foo.bar@canonical.com")
-
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     PackagePublishingStatus)
     >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
     >>> cprov_private_ppa_db = factory.makeArchive(
@@ -354,6 +371,13 @@ and a list of all the relevant builds for the summary:
     Source ID 27: FAILEDTOBUILD ([u'i386'])
     Source ID 28: FULLYBUILT_PENDING ([u'i386'])
 
+
+Associated Files In The Librarian
+=================================
+
+sourceFileUrls() is a custom method to return the URLs of the source files
+for this package:
+
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
     >>> for pub_link in sorted(
@@ -366,6 +390,8 @@ and a list of all the relevant builds for the summary:
     []
     [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666.dsc']
 
+binaryFileUrls() is similar:
+
     >>> for pub_link in sorted(
     ...     entry['self_link'] for entry in pubs['entries']):
     ...     binary_urls = webservice.named_get(
@@ -374,5 +400,55 @@ and a list of all the relevant builds for the summary:
     []
     [u'http://launchpad.dev/~cprov/+archive/ppa/+files/mozilla-firefox_0.9_i386.deb']
     []
-    []
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice-bin_666_all.deb']
 
+The debdiff to a particular version can also be retrieved using the
+packageDiffUrl() method.  It takes one parameter, 'to_version' which
+specifies the version of the package you want a diff against.  If there
+is no diff available for that version, None is returned, otherwise a
+librarian URL is returned.
+
+We need to create a fake package diff to show this:
+
+    >>> login("admin@canonical.com")
+    >>> to_pub = test_publisher.getPubSource(
+    ...     sourcename='difftest', version='1.0', archive=cprov.archive)
+    >>> from_pub = test_publisher.getPubSource(
+    ...     sourcename='difftest', version='1.1', archive=cprov.archive)
+    >>> new_diff = factory.makePackageDiff(
+    ...     from_source=from_pub.sourcepackagerelease,
+    ...     to_source=to_pub.sourcepackagerelease,
+    ...     diff_content="test diff")
+    >>> import transaction
+    >>> transaction.commit()
+    >>> logout()
+
+Using the web service, grab the new publishing record:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="difftest", version="1.0",
+    ...     exact_match=True).jsonBody()
+    >>> source_pub = pubs['entries'][0]
+
+And then obtain the URL to the diff:
+
+    >>> diff_url = webservice.named_get(
+    ...     source_pub['self_link'], 'packageDiffUrl',
+    ...     to_version='1.0').jsonBody()
+
+The URL is a standard proxied URL in case the file is private:
+
+    >>> print diff_url
+    http://launchpad.dev/~cprov/+archive/ppa/+files/...
+
+It will match the fake content we added earlier:
+
+    >>> login("admin@canonical.com")
+    >>> from canonical.launchpad.browser.librarian import (
+    ...     ProxiedLibraryFileAlias)
+    >>> diff_url == ProxiedLibraryFileAlias(
+    ...     new_diff.diff_content, cprov.archive).http_url
+    True
+
+    >>> logout()

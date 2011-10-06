@@ -1,4 +1,5 @@
-= Exporting translations to a bzr branch =
+Exporting translations to a bzr branch
+======================================
 
 The translations-export-to-branch script visits all ProductSeries with a
 translations_branch set, and for each, exports the series' translations
@@ -12,9 +13,10 @@ to that branch.
     >>> stdout
     ''
     >>> print stderr
-    INFO creating lockfile
+    INFO Creating lockfile:
+    /var/lock/launchpad-translations-export-to-branch.lock
     INFO Exporting to translations branches.
-    INFO Processed 0 item(s); 0 failure(s).
+    INFO Processed 0 item(s); 0 failure(s), 0 unpushed branch(es).
 
     >>> from lp.translations.scripts.translations_to_branch import (
     ...     ExportTranslationsToBranch)
@@ -52,12 +54,13 @@ files into the branches.  We mock it up here.
     ...     def unlock(self):
     ...         self.logger.info("Unlock.")
 
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
 
     >>> class MockExportTranslationsToBranch(ExportTranslationsToBranch):
     ...     """Test version of ExportTranslationsToBranch."""
     ...     simulate_race = False
     ...     simulated_latest_commit = None
+    ...     config_name = "translations_export_to_branch"
     ...
     ...     def __init__(self, *args, **kwargs):
     ...         super(MockExportTranslationsToBranch, self).__init__(
@@ -76,10 +79,11 @@ The Gazblachko project is set up to export its trunk translations to a
 branch.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.app.enums import ServiceUsage
 
     >>> gazblachko = removeSecurityProxy(factory.makeProduct(
     ...     name='gazblachko', displayname='Gazblachko'))
-    >>> gazblachko.official_rosetta = True
+    >>> gazblachko.translations_usage = ServiceUsage.LAUNCHPAD
 
     >>> branch = removeSecurityProxy(factory.makeBranch(
     ...     name='gazpo', owner=gazblachko.owner, product=gazblachko))
@@ -105,7 +109,7 @@ have Dutch translations.
     ...     pofile = factory.makePOFile(
     ...         'nl', potemplate=template, owner=gazblachko.owner)
     ...
-    ...     factory.makeTranslationMessage(
+    ...     factory.makeCurrentTranslationMessage(
     ...         pofile=pofile, potmsgset=potmsgset,
     ...         translator=gazblachko.owner, reviewer=gazblachko.owner,
     ...         translations=['%s msgstr' % name])
@@ -157,18 +161,18 @@ translations to the DirectBranchCommit.
     DEBUG ...
     INFO Committed 2 file(s).
     INFO Unlock.
-    INFO Processed 1 item(s); 0 failure(s).
+    INFO Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).
 
 When Gazblachko stops using Launchpad for Translations, the exports stop
 also.
 
-    >>> gazblachko.official_rosetta = False
+    >>> gazblachko.translations_usage = ServiceUsage.NOT_APPLICABLE
     >>> transaction.commit()
     >>> script.main()
     INFO Exporting to translations branches.
-    INFO Processed 0 item(s); 0 failure(s).
+    INFO Processed 0 item(s); 0 failure(s), 0 unpushed branch(es).
 
-    >>> gazblachko.official_rosetta = True
+    >>> gazblachko.translations_usage = ServiceUsage.LAUNCHPAD
     >>> transaction.commit()
 
 
@@ -184,6 +188,8 @@ the time it last exported them, it won't export them again.
     >>> script.simulated_latest_commit = now
     >>> main_pofile.date_changed = now - timedelta(days=3)
     >>> module_pofile.date_changed = now - timedelta(days=4)
+    >>> module_pofile.potemplate.date_last_updated = now - timedelta(days=5)
+    >>> transaction.commit()
     >>> old_pofile.date_changed = now - timedelta(days=5)
 
     >>> script.main()
@@ -192,7 +198,7 @@ the time it last exported them, it won't export them again.
     DEBUG ....
     DEBUG Last commit was at ....
     INFO Unlock.
-    INFO Processed 1 item(s); 0 failure(s).
+    INFO Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).
 
 If one of the files is updated, it is exported again.  Unchanged files
 are not.
@@ -207,7 +213,60 @@ are not.
     INFO ...
     INFO Committed 1 file(s).
     INFO Unlock.
-    INFO Processed 1 item(s); 0 failure(s).
+    INFO Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).
+
+
+Unpushed branches
+-----------------
+
+The Launchpad UI allows users to register branches in the Launchpad
+database without populating them in bzr.  Exporting to such a branch
+won't work, so we email a notification to the branch owner.
+
+    >>> from email import message_from_string
+    >>> from lp.codehosting.vfs import get_rw_server
+    >>> from lp.services.mail import stub
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
+    >>> productseries = factory.makeProductSeries()
+    >>> naked_productseries = remove_security_proxy_and_shout_at_engineer(
+    ...     productseries)
+    >>> naked_productseries.translations_branch = factory.makeBranch()
+    >>> template = factory.makePOTemplate(productseries=productseries)
+    >>> potmsgset = factory.makePOTMsgSet(template)
+    >>> pofile = removeSecurityProxy(
+    ...     factory.makePOFile('nl', potemplate=template))
+    >>> tm = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner)
+
+    >>> server = get_rw_server(direct_database=True)
+    >>> server.start_server()
+    >>> real_script = ExportTranslationsToBranch(
+    ...     'export-to-branch', test_args=[])
+    >>> real_script.logger = FakeLogger()
+    >>> try:
+    ...     real_script._exportToBranches([productseries])
+    ... finally:
+    ...     server.destroy()
+    INFO Exporting ...
+    INFO Processed 1 item(s); 0 failure(s), 1 unpushed branch(es).
+
+    # Give the email a chance to arrive in the test mailbox.
+    >>> transaction.commit()
+
+    >>> sender, recipients, body = stub.test_emails.pop()
+    >>> message = message_from_string(body)
+    >>> print message['Subject']
+    Launchpad: translations branch has not been set up.
+
+    >>> print message.get_payload()
+    Hello,
+    There was a problem with translations branch synchronization for
+    ...
+    Branch synchronization for this release series has been set up to
+    commit translations snapshots to the bzr branch at lp://...
+
+For the full message text, see emailtemplates/unpushed-branch.txt.
 
 
 Race conditions
@@ -218,7 +277,8 @@ overwrite translations committed to the branch that hadn't been
 collected for import yet.
 
 
-=== Branch races ===
+Branch races
+............
 
 Any translations coming in through a branch push are safe once they're
 in the translations import queue.  So the race window spans from the
@@ -243,10 +303,11 @@ refuse to commit to the branch.
     DEBUG ...
     INFO Unlock.
     ERROR Failure: ConcurrentUpdateError(...Simulated race condition...)
-    INFO Processed 1 item(s); 1 failure(s).
+    INFO Processed 1 item(s); 1 failure(s), 0 unpushed branch(es).
 
 
-=== Pending imports from same branch ===
+Pending imports from same branch
+................................
 
 Another race condition is detected by the script itself: there may be
 pending translations BranchJobs on the branch.
@@ -264,7 +325,7 @@ pending translations BranchJobs on the branch.
     ERROR Failure: ConcurrentUpdateError(...Translations branch for
     Gazblachko trunk series has pending translations changes.
     Not committing...)
-    INFO Processed 1 item(s); 1 failure(s).
+    INFO Processed 1 item(s); 1 failure(s), 0 unpushed branch(es).
 
 There is one problem with detecting this race condition.  Jobs are never
 cleaned up.  So if the job failed for whatever reason, an unfinished job
@@ -282,4 +343,4 @@ old enough that they must have completed one way or another.
     INFO Writing file 'po/main/nl.po':
     INFO ...
     INFO Unlock.
-    INFO Processed 1 item(s); 0 failure(s).
+    INFO Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).

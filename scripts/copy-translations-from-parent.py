@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -98,7 +98,7 @@ class TranslationsCopier(LaunchpadCronScript):
 if __name__ == '__main__':
 
     script = TranslationsCopier(
-        'copy-missing-translations', dbuser=config.poimport.dbuser)
+        'copy-missing-translations', dbuser='translations_distroseries_copy')
 
     script.lock_and_run()
 

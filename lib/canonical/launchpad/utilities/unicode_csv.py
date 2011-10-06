@@ -16,9 +16,9 @@ __all__ = ['UnicodeReader',
            'UnicodeDictWriter']
 
 
-import csv
 import codecs
 import cStringIO
+import csv
 
 
 class UTF8Recoder:

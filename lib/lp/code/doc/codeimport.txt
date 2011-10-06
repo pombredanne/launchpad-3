@@ -21,19 +21,21 @@ Code import set utility
 CodeImports are created and found using the ICodeImportSet interface,
 which is registered as a utility.
 
+    >>> from lp.code.interfaces.branchtarget import IBranchTarget
     >>> from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> code_import_set = getUtility(ICodeImportSet)
     >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
     True
 
-CodeImports record who created them, and we're going to pretend that
-this is done by 'No Privileges Person'.
+CodeImports record who created them, so we're going to create a new
+person with no special privileges.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> nopriv = factory.makePerson(
+    ...     displayname="Code Import Person", email="import@example.com",
+    ...     name="import-person")
 
 
 CodeImport events
@@ -60,6 +62,7 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
     Subversion via bzr-svn
     Git
     Mercurial
+    Bazaar
 
 
 Import from CVS
@@ -71,10 +74,9 @@ in the repository, known as the "module".
     >>> cvs = RevisionControlSystems.CVS
     >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
     >>> cvs_module = 'hello'
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> product = getUtility(IProductSet).getByName('firefox')
+    >>> target = IBranchTarget(factory.makeProduct(name='widget'))
     >>> cvs_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-cvs',
+    ...     registrant=nopriv, target=target, branch_name='trunk-cvs',
     ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
@@ -88,24 +90,25 @@ three members of the vcs-imports team.
     >>> len(stub.test_emails)
     3
     >>> from canonical.launchpad.helpers import get_contact_email_addresses
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     >>> len(get_contact_email_addresses(vcs_imports))
     3
     >>> import email
     >>> message = email.message_from_string(stub.test_emails[0][2])
     >>> print message['subject']
-    New code import: firefox/trunk-cvs
+    New code import: widget/trunk-cvs
     >>> print message['X-Launchpad-Message-Rationale']
     Operator @vcs-imports
     >>> print message.get_payload(decode=True)
-    A new CVS code import has been requested by No Privileges Person:
-        http://code.launchpad.dev/~no-priv/firefox/trunk-cvs
+    A new CVS code import has been requested by Code Import Person:
+        http://code.launchpad.dev/~import-person/widget/trunk-cvs
     from
         :pserver:anonymous@cvs.example.com:/cvsroot, hello
     <BLANKLINE>
-    -- 
-    You are getting this email because you are a member of the vcs-imports team.
+    --
+    You are getting this email because you are a member of the vcs-imports
+    team.
 
 Creating a CodeImport object creates a corresponding CodeImportEvent.
 
@@ -131,7 +134,7 @@ retrieve the tree to import.
     >>> svn = RevisionControlSystems.SVN
     >>> svn_url = 'svn://svn.example.com/trunk'
     >>> svn_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-svn',
+    ...     registrant=nopriv, target=target, branch_name='trunk-svn',
     ...     rcs_type=svn, url=svn_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
@@ -160,7 +163,7 @@ imports are similar to the Subversion via cscvs imports.
     >>> bzr_svn = RevisionControlSystems.BZR_SVN
     >>> bzr_svn_url = 'svn://svn.example.com/for-bzr-svn/trunk'
     >>> bzr_svn_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-bzr-svn',
+    ...     registrant=nopriv, target=target, branch_name='trunk-bzr-svn',
     ...     rcs_type=bzr_svn, url=bzr_svn_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
@@ -182,7 +185,7 @@ retrieve the branch to import.
     >>> git = RevisionControlSystems.GIT
     >>> git_url = 'git://git.example.com/hello.git'
     >>> git_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-git',
+    ...     registrant=nopriv, target=target, branch_name='trunk-git',
     ...     rcs_type=git, url=git_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(git_import))
     True
@@ -209,7 +212,7 @@ retrieve the branch to import.
     >>> hg = RevisionControlSystems.HG
     >>> hg_url = 'http://hg.example.com/metallic'
     >>> hg_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-hg',
+    ...     registrant=nopriv, target=target, branch_name='trunk-hg',
     ...     rcs_type=hg, url=hg_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(hg_import))
     True
@@ -237,10 +240,10 @@ the review status.  This is done using the code import method
 'updateFromData'.  updateFromData returns a MODIFY CodeImportEvent if
 any changes were made, or None if not.
 
-    >>> code_import = factory.makeCodeImport(
+    >>> code_import = factory.makeProductCodeImport(
     ...     svn_branch_url='http://svn.example.com/project')
     >>> print code_import.review_status.title
-    Pending Review
+    Reviewed
 
 When an import operator updates the code import emails are sent out to
 the branch subscribers and members of VCS Imports that describe the
@@ -257,7 +260,7 @@ created if done through the web UI, so we'll add nopriv here.
     ...     nopriv,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, nopriv)
 
     >>> from lp.testing.mail_helpers import (
     ...     pop_notifications, print_emails)
@@ -268,11 +271,9 @@ created if done through the web UI, so we'll add nopriv here.
     ...      'url': 'http://svn.example.com/project/trunk'},
     ...     nopriv)
     >>> print_emails(group_similar=True)
-    From: No Privileges Person <no-priv@canonical.com>
+    From: Code Import Person <import@example.com>
     To: david.allouche@canonical.com, ...
     Subject: Code import product.../name... status: Reviewed
-    <BLANKLINE>
-    The import has been approved and an import will start shortly.
     <BLANKLINE>
     ... is now being imported from:
         http://svn.example.com/project/trunk
@@ -286,11 +287,9 @@ created if done through the web UI, so we'll add nopriv here.
     team.
     <BLANKLINE>
     ----------------------------------------
-    From: No Privileges Person <no-priv@canonical.com>
-    To: no-priv@canonical.com
+    From: Code Import Person <import@example.com>
+    To: import@example.com
     Subject: Code import product.../name... status: Reviewed
-    <BLANKLINE>
-    The import has been approved and an import will start shortly.
     <BLANKLINE>
     ... is now being imported from:
         http://svn.example.com/project/trunk
@@ -324,7 +323,7 @@ from a 'noreply' address.
     Subject: Code import product.../name... status: Reviewed
     ...
     From: noreply@launchpad.net
-    To: no-priv@canonical.com
+    To: import@example.com
     Subject: Code import product.../name... status: Reviewed
     ...
 
@@ -338,8 +337,8 @@ code import can specify a custom update interval, or use a default value.
 There is a separate default update interval for each version control system,
 set in the Launchpad configuration system.
 
-    >>> from datetime import timedelta
     >>> from canonical.config import config
+    >>> from datetime import timedelta
     >>> default_interval_cvs = timedelta(
     ...     seconds=config.codeimport.default_interval_cvs)
     >>> default_interval_subversion = timedelta(
@@ -449,8 +448,7 @@ to present the import's details on the page of the branch.
     u':pserver:anonymous@cvs.example.com:/cvsroot'
 
 When you ask for an id that is not present ICodeImportSet.get() raises
-canonical.launchpad.interfaces.NotFoundError, rather than some
-internal database exception.
+lp.app.errors.NotFoundError, rather than some internal database exception.
 
     >>> code_import_set.get(-10)
     Traceback (most recent call last):
@@ -473,9 +471,9 @@ the branches, though they cannot currently be viewed that way in the webapp,
 only over the API.
 
     >>> print canonical_url(svn_import.branch)
-    http://code.launchpad.dev/~no-priv/firefox/trunk-svn
+    http://code.launchpad.dev/~import-person/widget/trunk-svn
     >>> print canonical_url(svn_import)
-    http://code.launchpad.dev/~no-priv/firefox/trunk-svn/+code-import
+    http://code.launchpad.dev/~import-person/widget/trunk-svn/+code-import
 
 
 Modifying CodeImports
@@ -532,7 +530,7 @@ CVS details are displayed in a similar way.
     >>> modify_event = cvs_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(
     ...     cvs_import, modify_event, None)
-    ~no-priv/firefox/trunk-cvs is now being imported from:
+    ~import-person/widget/trunk-cvs is now being imported from:
         hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     instead of:
         hello from :pserver:anonymous@cvs.example.com:/cvsroot
@@ -543,7 +541,7 @@ For Git.
     >>> modify_event = git_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(
     ...     git_import, modify_event, None)
-    ~no-priv/firefox/trunk-git is now being imported from:
+    ~import-person/widget/trunk-git is now being imported from:
         git://git.example.com/goodbye.git
     instead of:
         git://git.example.com/hello.git
@@ -554,7 +552,7 @@ Imports via bzr-svn are also similar.
     >>> modify_event = bzr_svn_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(
     ...     bzr_svn_import, modify_event, None)
-    ~no-priv/firefox/trunk-bzr-svn is now being imported from:
+    ~import-person/widget/trunk-bzr-svn is now being imported from:
         http://svn.example.com/for-bzr-svn/trunk
     instead of:
         svn://svn.example.com/for-bzr-svn/trunk
@@ -565,7 +563,7 @@ And for Mercurial.
     >>> modify_event = hg_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(
     ...     hg_import, modify_event, None)
-    ~no-priv/firefox/trunk-hg is now being imported from:
+    ~import-person/widget/trunk-hg is now being imported from:
         http://metal.example.com/byebye.hg
     instead of:
         http://hg.example.com/metallic

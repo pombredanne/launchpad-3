@@ -8,45 +8,34 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveSubscriberStatus',
     'ArchiveSubscriptionError',
     'IArchiveSubscriber',
     'IArchiveSubscriberSet',
-    'IPersonalArchiveSubscription'
+    'IPersonalArchiveSubscription',
     ]
 
-from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Text, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
-from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.person import IPerson
-from lazr.restful.declarations import export_as_webservice_entry, exported
-from lazr.restful.fields import Reference
-
-
-class ArchiveSubscriberStatus(DBEnumeratedType):
-    """The status of an `ArchiveSubscriber`."""
-
-    CURRENT = DBItem(1, """
-        Active
-
-        The subscription is current.
-        """)
-
-    EXPIRED = DBItem(2, """
-        Expired
-
-        The subscription has expired.
-        """)
-
-    CANCELLED = DBItem(3, """
-        Cancelled
-
-        The subscription was cancelled.
-        """)
+from lp.services.fields import PersonChoice
+from lp.soyuz.enums import ArchiveSubscriberStatus
+from lp.soyuz.interfaces.archive import IArchive
 
 
 class ArchiveSubscriptionError(Exception):
@@ -71,10 +60,11 @@ class IArchiveSubscriberView(Interface):
         title=_("Date Created"), required=True, readonly=True,
         description=_("The timestamp when the subscription was created.")))
 
-    subscriber = exported(ParticipatingPersonChoice(
+    subscriber = exported(PersonChoice(
         title=_("Subscriber"), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who is subscribed.")))
+    subscriber_id = Attribute('database ID of the subscriber.')
 
     date_expires = exported(Datetime(
         title=_("Date of Expiration"), required=False,
@@ -103,11 +93,14 @@ class IArchiveSubscriberView(Interface):
     def getNonActiveSubscribers():
         """Return the people included in this subscription.
 
-        :return: a storm `ResultSet` of all the people who are included in
-            this subscription who do not yet have an active token for the
-            corresponding archive.
+        :return: a storm `ResultSet` of all the people and their preferred
+            email address who are included in this subscription who do not
+            yet have an active token for the corresponding archive.
+
+            Persons with no preferred email addresses are not included.
         :rtype: `storm.store.ResultSet`
         """
+
 
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
@@ -139,9 +132,6 @@ class IArchiveSubscriberSet(Interface):
             the results to that particular archive.
         :param current_only: Whether the result should only include current
             subscriptions (which is the default).
-        :param return_tokens: Indicates whether the tokens for the given
-            subscribers subscriptions should be included in the resultset.
-            By default the tokens are not included in the resultset.
         """
 
     def getBySubscriberWithActiveToken(subscriber, archive=None):

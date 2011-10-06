@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'HasBranchesMixin',
+    'HasCodeImportsMixin',
     'HasMergeProposalsMixin',
     'HasRequestedReviewsMixin',
     ]
@@ -15,14 +16,17 @@ from zope.component import getUtility
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import (
-    IAllBranches, IBranchCollection)
+    IAllBranches,
+    IBranchCollection,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
 
 
 class HasBranchesMixin:
     """A mixin implementation for `IHasBranches`."""
 
     def getBranches(self, status=None, visible_by_user=None,
-                    modified_since=None):
+                    modified_since=None, eager_load=False):
         """See `IHasBranches`."""
         if status is None:
             status = DEFAULT_BRANCH_STATUS_IN_LISTING
@@ -31,7 +35,7 @@ class HasBranchesMixin:
         collection = collection.withLifecycleStatus(*status)
         if modified_since is not None:
             collection = collection.modifiedSince(modified_since)
-        return collection.getBranches()
+        return collection.getBranches(eager_load=eager_load)
 
 
 class HasMergeProposalsMixin:
@@ -59,5 +63,17 @@ class HasRequestedReviewsMixin:
 
         visible_branches = getUtility(IAllBranches).visibleByUser(
             visible_by_user)
-        proposals = visible_branches.getMergeProposalsForReviewer(self, status)
+        proposals = visible_branches.getMergeProposalsForReviewer(
+            self, status)
         return proposals
+
+
+class HasCodeImportsMixin:
+
+    def newCodeImport(self, registrant=None, branch_name=None,
+            rcs_type=None, url=None, cvs_root=None, cvs_module=None,
+            owner=None):
+        """See `IHasCodeImports`."""
+        return IBranchTarget(self).newCodeImport(registrant, branch_name,
+                rcs_type, url=url, cvs_root=cvs_root, cvs_module=cvs_module,
+                owner=owner)

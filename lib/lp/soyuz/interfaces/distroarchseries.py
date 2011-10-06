@@ -13,17 +13,28 @@ __all__ = [
     'IPocketChroot',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
-
-from lp.registry.interfaces.role import IHasOwner
-from canonical.launchpad import _
-from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
 
+from canonical.launchpad import _
+from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IHasOwner
+
 
 class IDistroArchSeries(IHasOwner):
     """DistroArchSeries Table Interface"""
@@ -46,7 +57,8 @@ class IDistroArchSeries(IHasOwner):
                 "identifies this architecture. All binary packages in the "
                 "archive will use this tag in their filename. Please get it "
                 "correct. It should really never be changed!"),
-            required=True),
+            required=True,
+            constraint=name_validator),
         exported_as="architecture_tag")
     official = exported(
         Bool(
@@ -73,6 +85,12 @@ class IDistroArchSeries(IHasOwner):
             description=_("Indicate whether or not this port has support "
                           "for building PPA packages."),
             required=False))
+    enabled = Bool(
+        title=_("Enabled"),
+        description=_(
+            "Whether or not this DistroArchSeries is enabled for build "
+            "creation and publication."),
+        required=False, readonly=False)
 
     # Joins.
     packages = Attribute('List of binary packages in this port.')

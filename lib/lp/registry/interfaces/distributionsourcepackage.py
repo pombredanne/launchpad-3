@@ -11,28 +11,47 @@ __all__ = [
     'IDistributionSourcePackage',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Int, TextLine
-
-from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_operation_as, export_read_operation,
-    exported, operation_parameters, operation_returns_collection_of,
-    rename_parameters_as)
+    export_as_webservice_entry,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    rename_parameters_as,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasOfficialBugTags,
+    )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.code.interfaces.hasbranches import (
+    IHasBranches,
+    IHasMergeProposals,
+    )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+from lp.soyuz.enums import ArchivePurpose
 
 
 class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
+                                 IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
-                                 IHasOfficialBugTags):
+                                 IQuestionTarget):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
@@ -63,6 +82,15 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             # interfaces/product.py.
             schema=Interface))
 
+    is_official = Attribute(
+        'Is this source package officially in the distribution?')
+
+    summary = Attribute(
+        'The summary of binary packages built from this package')
+
+    binary_names = Attribute(
+        'A list of binary package names built from this package.')
+
     currentrelease = Attribute(
         "The latest published `IDistributionSourcePackageRelease` of a "
         "source package with this name in the distribution or distroseries, "
@@ -78,9 +106,25 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         "no such package -- this occurs when there is no current series for "
         "the distribution.")
 
+    total_bug_heat = Attribute(
+        "Sum of the bug heat for all the bugs matching the distribution "
+        "and sourcepackagename of the IDistributionSourcePackage.")
+
+    max_bug_heat = Attribute(
+        "Maximum bug heat for a single bug matching the distribution "
+        "and sourcepackagename of the IDistributionSourcePackage.")
+
+    bug_count = Attribute(
+        "Number of bugs matching the distribution and sourcepackagename "
+        "of the IDistributionSourcePackage.")
+
+    po_message_count = Attribute(
+        "Number of translations matching the distribution and "
+        "sourcepackagename of the IDistributionSourcePackage.")
+
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this
-        distribution and their correspodning publishing history.
+        distribution and their corresponding publishing history.
 
         Items in the list are tuples comprised of a
         DistributionSourcePackage and a list of
@@ -140,7 +184,7 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             - The latest distroseries wins
             - updates > security > release
 
-        See https://bugs.edge.launchpad.net/soyuz/+bug/236922 for a plan
+        See https://bugs.launchpad.net/soyuz/+bug/236922 for a plan
         on how this criteria will be centrally encoded.
         """)
 
@@ -169,7 +213,12 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     def __ne__(other):
         """IDistributionSourcePackage comparison method.
 
-        Distro sourcepackages compare not equal if either of their distribution
-        or sourcepackagename compare not equal.
+        Distro sourcepackages compare not equal if either of their
+        distribution or sourcepackagename compare not equal.
         """
 
+    def delete():
+        """Delete the persistent DSP if it exists.
+
+        :return: True if a persistent object was removed, otherwise False.
+        """

@@ -7,11 +7,26 @@ Run the doctests and pagetests.
 
 import os
 
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from canonical.testing.layers import (
+    BaseLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
 
 
+special = {
+    'limitedlist.txt': LayeredDocFileSuite(
+        '../doc/limitedlist.txt',
+        layer=BaseLayer),
+    'propertycache.txt': LayeredDocFileSuite(
+        '../doc/propertycache.txt',
+        layer=LaunchpadZopelessLayer),
+    }
+
+
 def test_suite():
-    return build_test_suite(here)
+    return build_test_suite(here, special)

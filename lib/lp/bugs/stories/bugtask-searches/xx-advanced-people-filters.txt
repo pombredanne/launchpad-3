@@ -28,6 +28,10 @@ To search bugs by assignee, we can select from two options: `Nobody`
 Let's test the advanced form for a distribution.  We get the search
 results when we use a valid assignee.
 
+    >>> # Debian must enable the Launchpad bug tracker to access bugs.
+    >>> from lp.testing.service_usage_helpers import set_service_usage
+    >>> set_service_usage('debian', bug_tracking_usage='LAUNCHPAD')
+
     >>> anon_browser.open('http://bugs.launchpad.dev/debian/+bugs?advanced=1')
     >>> anon_browser.getControl(name='field.assignee').value = 'name12'
     >>> anon_browser.getControl('Search', index=0).click()
@@ -172,7 +176,7 @@ subscribed to any bugs. In this case, no bugs are found:
     >>> anon_browser.getControl('Bug subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Mozilla Firefox ...
+    Bugs in Mozilla Firefox ...
     No results for search
 
 We'll continue by subscribing the same user to a couple of bugs. However,
@@ -185,21 +189,23 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
     Report a bug...
     >>> report_bug_url = browser.url
 
-    >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Summary', index=0).value = 'Test Bug 1'
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Thank you for your bug report...
     >>> bug_1_url = browser.url
 
     >>> browser.open(report_bug_url)
-    >>> browser.getControl('Summary').value = 'Test Bug 2'
+    >>> browser.getControl('Summary', index=0).value = 'Test Bug 2'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Thank you for your bug report...
     >>> bug_2_url = browser.url
 
@@ -212,7 +218,8 @@ Next we'll subscribe our user to the first bug we've just registered:
 
     >>> browser.getControl('Person').value = subscriber
     >>> browser.getControl('Subscribe user').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     No Privileges Person has been subscribed to this bug...
 
 Now if we repeat our earlier search for bugs our user is subscribed to, we'll
@@ -235,7 +242,8 @@ Next we'll subscribe our user to the second bug we've just registered:
 
     >>> browser.getControl('Person').value = subscriber
     >>> browser.getControl('Subscribe user').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     No Privileges Person has been subscribed to this bug...
 
 Finally, if we repeat our earlier search for bugs our user is subscribed to,

@@ -25,6 +25,22 @@ country.
     Germany: 1 mirror(s)
     United Kingdom: 1 mirror(s)
 
+Lists of archive mirrors
+------------------------
+
+    >>> ubuntu_archivemirrors = create_view(ubuntu, name="+archivemirrors")
+    >>> country_and_mirrors = (
+    ...     ubuntu_archivemirrors.getMirrorsGroupedByCountry())
+    >>> for country_and_mirror in country_and_mirrors:
+    ...     country = country_and_mirror['country']
+    ...     mirrors = country_and_mirror['mirrors']
+    ...     for mirror in mirrors:
+    ...         assert mirror.country.name == country
+    ...     print "%s: %d mirror(s)" % (country, len(mirrors))
+    Antarctica: 1 mirror(s)
+    France: 2 mirror(s)
+    United Kingdom: 1 mirror(s)
+
 
 Distribution modification views
 ===============================
@@ -51,8 +67,8 @@ The view accepts the basic fields to register a distribution.
 
     >>> view.field_names
     ['name', 'displayname', 'title', 'summary', 'description', 'domainname',
-     'members', 'official_malone', 'official_blueprints', 'official_rosetta',
-     'official_answers']
+     'members', 'official_malone', 'blueprints_usage', 'official_rosetta',
+     'answers_usage']
 
     >>> login("admin@canonical.com")
     >>> form = {
@@ -63,6 +79,8 @@ The view accepts the basic fields to register a distribution.
     ...     'field.description': 'description',
     ...     'field.domainname': 'youbuntu.me',
     ...     'field.members': 'landscape-developers',
+    ...     'field.require_virtualized': 'on',
+    ...     'field.enabled_restricted_families': [],
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(distributionset, '+add', form=form)
@@ -106,14 +124,16 @@ a label, page_title, and cancel_url.
 
 The view accepts most of the distribution fields.
 
-    >>> distribution.official_malone
-    False
+    >>> distribution.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
 
     >>> view.field_names
     ['displayname', 'title', 'summary', 'description',
-     'bug_reporting_guidelines', 'icon', 'logo', 'mugshot', 'official_malone',
-     'enable_bug_expiration', 'official_blueprints', 'official_rosetta',
-     'official_answers', 'translation_focus']
+     'bug_reporting_guidelines', 'bug_reported_acknowledgement',
+     'package_derivatives_email', 'icon',
+     'logo', 'mugshot', 'official_malone', 'enable_bug_expiration',
+     'blueprints_usage', 'official_rosetta', 'answers_usage',
+     'translation_focus']
 
     >>> del form['field.name']
     >>> del form['field.actions.save']
@@ -129,8 +149,8 @@ The view accepts most of the distribution fields.
     >>> print distribution.bug_reporting_guidelines
     guidelines
 
-    >>> distribution.official_malone
-    True
+    >>> distribution.bug_tracking_usage
+    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
 
 Only admins and owners can access the view.
 
@@ -272,8 +292,13 @@ not appear.
 
 If the distribution officially uses the application, its portlet does appear.
 
-    >>> distribution.official_answers = True
-    >>> distribution.official_blueprints = True
+    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.app.enums import ServiceUsage
+
+    # When the cache regenerated, all users will see the change.
+    >>> MemcachedLayer.purge()
+    >>> distribution.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.official_malone = True
 
     >>> view = create_view(distribution, name='+index', principal=owner)
@@ -292,7 +317,7 @@ Distribution +series
 --------------------
 
 The +series view provides a page title and list of dicts that represent
-the series and the CSS class to present them wth.
+the series and the CSS class to present them with.
 
     >>> view = create_view(ubuntu, name='+series')
     >>> print view.label
@@ -300,10 +325,28 @@ the series and the CSS class to present them wth.
 
     >>> for styled_series in view.styled_series:
     ...     print styled_series['series'].name, styled_series['css_class']
-    breezy-autotest unhighlighted
-    grumpy unhighlighted
-    hoary highlighted
-    warty unhighlighted
+    breezy-autotest
+    grumpy
+    hoary highlight
+    warty
+
+
+Distribution +derivatives
+-------------------------
+
+The +derivatives view provides a page title and list of dicts that represent
+the derivatives and the CSS class to present them with.
+
+    >>> view = create_view(ubuntu, name='+derivatives')
+    >>> print view.label
+    Derivatives
+
+    >>> for styled_series in view.styled_series:
+    ...     print styled_series['series'].name, styled_series['css_class']
+    hoary-test
+    krunch
+    breezy-autotest
+    2k5 highlight
 
 
 Distribution +ppas

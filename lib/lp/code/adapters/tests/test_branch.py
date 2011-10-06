@@ -1,15 +1,18 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for branch-related components"""
 
-from unittest import TestLoader, TestCase
+from lazr.lifecycle.event import ObjectModifiedEvent
 
-from canonical.testing import LaunchpadFunctionalLayer
-
+from canonical.launchpad.ftests import login
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchMergeProposalStatus
-from canonical.launchpad.ftests import login
+from lp.testing import (
+    EventRecorder,
+    TestCase,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -60,6 +63,26 @@ class TestBranchMergeProposalDelta(TestCase):
             'new': BranchMergeProposalStatus.MERGED},
             delta.queue_status)
 
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    def test_monitor(self):
+        """\
+        `monitor` observes changes to a given merge proposal and issues
+        `ObjectModifiedEvent` events if there are any.
+        """
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        with EventRecorder() as event_recorder:
+            # No event is issued when nothing is changed.
+            with BranchMergeProposalDelta.monitor(merge_proposal):
+                pass  # Don't make changes.
+            self.assertEqual(0, len(event_recorder.events))
+            # When one or more properties (of interest to
+            # BranchMergeProposalDelta) are changed, a single event is issued.
+            with BranchMergeProposalDelta.monitor(merge_proposal):
+                merge_proposal.commit_message = "foo"
+                merge_proposal.whiteboard = "bar"
+            self.assertEqual(1, len(event_recorder.events))
+            [event] = event_recorder.events
+            self.assertIsInstance(event, ObjectModifiedEvent)
+            self.assertEqual(merge_proposal, event.object)
+            self.assertContentEqual(
+                ["commit_message", "whiteboard"],
+                event.edited_fields)

@@ -8,17 +8,20 @@ in test_tachandler.py.  It fails with a CannotListenError.
 
 __metaclass__ = type
 
-from twisted.application import service, internet, strports
+from twisted.application import (
+    internet,
+    service,
+    )
 from twisted.internet import protocol
 
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 
 
 application = service.Application('CannotListen')
 serviceCollection = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(serviceCollection)
+readyservice.ReadyService().setServiceParent(serviceCollection)
 
 # We almost certainly can't listen on port 1 (usually it requires root
 # permissions), so this should fail.
@@ -26,4 +29,3 @@ internet.TCPServer(1, protocol.Factory()).setServiceParent(serviceCollection)
 
 # Just in case we can, try listening on port 1 *again*.  This will fail.
 internet.TCPServer(1, protocol.Factory()).setServiceParent(serviceCollection)
-

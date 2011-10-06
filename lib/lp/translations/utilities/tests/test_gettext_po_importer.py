@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gettext PO importer tests."""
@@ -6,21 +6,25 @@
 __metaclass__ = type
 
 import unittest
+
 import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationFormatImporter)
+    ITranslationFormatImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from canonical.testing import LaunchpadZopelessLayer
+    ITranslationImportQueue,
+    )
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
+
 
 test_template = r'''
 msgid ""
@@ -53,20 +57,20 @@ class GettextPOImporterTestCase(unittest.TestCase):
         # Add a new entry for testing purposes. It's a template one.
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         template_path = 'po/testing.pot'
-        is_published = True
+        by_maintainer = True
         personset = getUtility(IPersonSet)
         importer = personset.getByName('carlos')
         productset = getUtility(IProductSet)
         firefox = productset.getByName('firefox')
         productseries = firefox.getSeries('trunk')
         template_entry = self.translation_import_queue.addOrUpdateEntry(
-            template_path, test_template, is_published, importer,
+            template_path, test_template, by_maintainer, importer,
             productseries=productseries)
 
         # Add another one, a translation file.
         pofile_path = 'po/es.po'
         translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            pofile_path, test_translation_file, is_published, importer,
+            pofile_path, test_translation_file, by_maintainer, importer,
             productseries=productseries)
 
         transaction.commit()
@@ -89,10 +93,3 @@ class GettextPOImporterTestCase(unittest.TestCase):
         self.failUnless(
             format == TranslationFileFormat.PO,
             'GettextPOImporter format expected PO but got %s' % format.name)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPOImporterTestCase))
-    return suite
-

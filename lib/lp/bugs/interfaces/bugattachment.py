@@ -15,20 +15,31 @@ __all__ = [
     'IBugAttachmentIsPatchConfirmationForm',
     ]
 
-from zope.interface import Interface
-from zope.schema import Bool, Bytes, Choice, Int, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
-
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.launchpad import IHasBug
-
-from canonical.launchpad.fields import Title
-from canonical.launchpad import _
-
-from lazr.restful.fields import Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_write_operation, exported,
-    REQUEST_USER)
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Bytes,
+    Choice,
+    Int,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.services.messages.interfaces.message import IMessage
+from lp.services.fields import Title
 
 
 class BugAttachmentType(DBEnumeratedType):
@@ -55,7 +66,34 @@ class BugAttachmentType(DBEnumeratedType):
 
 
 class IBugAttachment(IHasBug):
-    """A file attachment to an IBug."""
+    """A file attachment to an IBug.
+
+    Launchpadlib example of accessing content of an attachment::
+
+        for attachment in bug.attachments:
+            buffer = attachment.data.open()
+            for line in buffer:
+                print line
+            buffer.close()
+
+    Launchpadlib example of accessing metadata about an attachment::
+
+        attachment = bug.attachments[0]
+        print "title:", attachment.title
+        print "ispatch:", attachment.type
+
+    For information about the file-like object returned by
+    attachment.data.open() see lazr.restfulclient's documentation of the
+    HostedFile object.
+
+    Details about the message associated with an attachment can be found on
+    the "message" attribute::
+
+        message = attachment.message
+        print "subject:", message.subject.encode('utf-8')
+        print "owner:", message.owner.display_name.encode('utf-8')
+        print "created:", message.date_created
+    """
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -98,6 +136,14 @@ class IBugAttachment(IHasBug):
 
         The library file content for this attachment is set to None.
         """
+
+    def getFileByName(filename):
+        """Return the `ILibraryFileAlias for the given file name.
+
+        NotFoundError is raised if the given filename does not match
+        libraryfile.filename.
+        """
+
 
 # Need to do this here because of circular imports.
 IMessage['bugattachments'].value_type.schema = IBugAttachment

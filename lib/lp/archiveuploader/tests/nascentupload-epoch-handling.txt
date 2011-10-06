@@ -1,4 +1,5 @@
-= NascentUpload Epoch Handling =
+NascentUpload Epoch Handling
+============================
 
 NascentUpload class supports 'epoch' on versions as specified by:
 
@@ -20,7 +21,8 @@ pocket.
     DEVELOPMENT
 
 
-== Epoch Version Conflicts ==
+Epoch Version Conflicts
+-----------------------
 
 Debian-like archives don't include epochs in the version specified in
 the filename of pool files.
@@ -38,7 +40,8 @@ In Soyuz we try to catch such situations by performing a file lookup in the
 archive against the proposed source files before 'accepting' it.
 
 
-=== Collision in Upload-Time ===
+Collision in Upload-Time
+........................
 
 When the 'non-epoched' version is already published before uploading
 the candidate, we need to detect collisions at upload-time, returning
@@ -78,11 +81,12 @@ storing the respective SourcePackageRelease.
 
 Clean up this change and carry on:
 
-    >>> from canonical.database.sqlbase import rollback
-    >>> rollback()
+    >>> import transaction
+    >>> transaction.abort()
 
 
-=== Collision in queue DONE ===
+Collision in queue DONE
+.......................
 
 When the 'non-epoched' version is still in queue, we need to identify
 collisions when publishing the new candidate:
@@ -149,7 +153,8 @@ When publishing the 'epoched' bar source the collision is detected:
     >>> bar_src_queue_epoch.realiseUpload()
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: bar_1.0-1.diff.gz is already published in archive for hoary
+    QueueInconsistentStateError: bar_1.0-1.diff.gz is already published in
+    archive for hoary
     >>> bar_src_queue_epoch.status.name
     'ACCEPTED'
 
@@ -167,7 +172,10 @@ published in 'non-epoched' version:
     >>> bar_src_queue_epoch2.realiseUpload()
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: bar_1.0.orig.tar.gz is already published in archive for hoary with a different SHA1 hash (e918d6f5ec2184ae1d795a130da36c9a82c4beaf != 73a04163fee97fd2257ab266bd48f1d3d528e012)
+    QueueInconsistentStateError: bar_1.0.orig.tar.gz is already published in
+    archive for hoary with a different SHA1 hash
+    (e918d6f5ec2184ae1d795a130da36c9a82c4beaf !=
+    73a04163fee97fd2257ab266bd48f1d3d528e012)
 
     >>> bar_src_queue_epoch2.status.name
     'ACCEPTED'
@@ -182,10 +190,11 @@ item should be rejected:
 
 Clean up this change and carry on:
 
-    >>> rollback()
+    >>> transaction.abort()
 
 
-== Dealing with Epochs and diverging binary versions ==
+Dealing with Epochs and diverging binary versions
+-------------------------------------------------
 
 Let's process an source upload and ensure that the resulting
 SourcePackageRelease record store a proper 'version':
@@ -208,6 +217,14 @@ For source uploads, Changes.version == DSC.version == SPR.version:
     >>> bar_spr.version
     u'1:1.0-9'
 
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.interfaces.publishing import IPublishingSet
+    >>> getUtility(IPublishingSet).newSourcePublication(
+    ...     bar_src_upload.policy.distro.main_archive, bar_spr,
+    ...     bar_src_upload.policy.distroseries, bar_spr.component,
+    ...     bar_spr.section, PackagePublishingPocket.RELEASE)
+    <SourcePackagePublishingHistory at ...>
+
 Let's accept the source and claim 'build from accepted' to process the
 respective binary:
 
@@ -216,9 +233,6 @@ respective binary:
     >>> bar_src_queue.setAccepted()
     >>> bar_src_queue.status.name
     'ACCEPTED'
-
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(bar_src_queue)
 
 For a binary upload we expect the same, a BinaryPackageRelease
 'version' that includes 'epoch':

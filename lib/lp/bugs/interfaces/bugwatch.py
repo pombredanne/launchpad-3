@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,28 +8,48 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugWatchErrorType',
+    'BUG_WATCH_ACTIVITY_SUCCESS_STATUSES',
+    'BugWatchActivityStatus',
+    'BugWatchCannotBeRescheduled',
     'IBugWatch',
+    'IBugWatchActivity',
     'IBugWatchSet',
     'NoBugTrackerFound',
     'UnrecognizedBugTrackerURL',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, TextLine, Text
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from lp.bugs.interfaces.bugtracker import IBugTracker
-
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lp.services.fields import StrippedTextLine
 
 
-class BugWatchErrorType(DBEnumeratedType):
+class BugWatchActivityStatus(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
 
     UNKNOWN = DBItem(999, """
@@ -92,15 +112,53 @@ class BugWatchErrorType(DBEnumeratedType):
         Launchpad cannot import the status of private remote bugs.
         """)
 
+    SYNC_SUCCEEDED = DBItem(9, """
+        Synchronisation succeeded
+
+        The remote bug's status was successfully synchronized to Launchpad.
+        """)
+
+    COMMENT_IMPORT_FAILED = DBItem(10, """
+        Unable to import comments
+
+        The remote bug's status was synchronized successfully but
+        comments could not be imported from the remote bug.
+        """)
+
+    COMMENT_PUSH_FAILED = DBItem(11, """
+        Unable to push comments
+
+        The remote bug's status was synchronized successfully and
+        its comments were successfully imported but Launchpad was unable
+        to push comments back to the remote bug.
+        """)
+
+    BACKLINK_FAILED = DBItem(12, """
+        Unable to set link remote bug to Launchpad
+
+        The remote bug's status and comments were synchronized
+        sucessfully with Launchpad but Launchpad was unable to set the
+        remote bug's link back to the relevant Launchpad bug.
+        """)
+
+
+# The set of BugWatchActivityStatuses that are considered to indicate
+# success.
+BUG_WATCH_ACTIVITY_SUCCESS_STATUSES = [
+    BugWatchActivityStatus.SYNC_SUCCEEDED,
+    ]
+
 
 class IBugWatch(IHasBug):
     """A bug on a remote system."""
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
+
+    # Actually refers to Bug; redefined in bug.py.
     bug = exported(
-        Reference(title=_('Bug'), schema=Interface, # Redefined in bug.py
-                  required=True, readonly=True))
+        Reference(
+            title=_('Bug'), schema=Interface, required=True, readonly=True))
     bugtracker = exported(
         ReferenceChoice(
             title=_('Bug System'), required=True,
@@ -127,13 +185,17 @@ class IBugWatch(IHasBug):
         Datetime(title=_('Last Checked')),
         exported_as='date_last_checked')
     last_error_type = exported(
-        Choice(title=_('Last Error Type'), vocabulary=BugWatchErrorType))
+        Choice(title=_('Last Error Type'), vocabulary=BugWatchActivityStatus))
     datecreated = exported(
         Datetime(title=_('Date Created'), required=True, readonly=True),
         exported_as='date_created')
     owner = exported(
         Reference(title=_('Owner'), required=True,
                   readonly=True, schema=Interface))
+    activity = Attribute('The activity history of this BugWatch.')
+    next_check = exported(
+        Datetime(title=_('Next Check')),
+        exported_as='date_next_checked')
 
     # Useful joins.
     bugtasks = exported(
@@ -168,6 +230,10 @@ class IBugWatch(IHasBug):
         Text(title=_('The URL at which to view the remote bug.'),
              readonly=True))
 
+    can_be_rescheduled = Attribute(
+        "A True or False indicator of whether or not this watch can be "
+        "rescheduled.")
+
     def updateImportance(remote_importance, malone_importance):
         """Update the importance of the bug watch and any linked bug task.
 
@@ -182,9 +248,6 @@ class IBugWatch(IHasBug):
 
     def destroySelf():
         """Delete this bug watch."""
-
-    def getLastErrorMessage():
-        """Return a string describing the contents of last_error_type."""
 
     def hasComment(comment_id):
         """Return True if a comment has been imported for the BugWatch.
@@ -204,6 +267,27 @@ class IBugWatch(IHasBug):
 
     def getImportedBugMessages():
         """Return all the `IBugMessage`s that have been imported."""
+
+    def addActivity(result=None, message=None, oops_id=None):
+        """Add an `IBugWatchActivity` record for this BugWatch."""
+
+    def setNextCheck(next_check):
+        """Set the next_check time of the watch.
+
+        :raises: `BugWatchCannotBeRescheduled` if
+                 `IBugWatch.can_be_rescheduled` is False.
+        """
+    def reset():
+        """Completely reset the watch.
+
+        When called, the following attributes are reset:
+         * last_error_type -> None
+         * lastchanged -> None
+         * lastchecked -> None
+         * nextcheck -> now
+         * remoteimportance -> None
+         * remotestatus -> None
+        """
 
 
 # Defined here because of circular imports.
@@ -267,7 +351,7 @@ class IBugWatchSet(Interface):
         If no bug tracker type can be guessed, None is returned.
         """
 
-    def getBugWatchesForRemoteBug(self, remote_bug, bug_watch_ids=None):
+    def getBugWatchesForRemoteBug(remote_bug, bug_watch_ids=None):
         """Returns bug watches referring to the given remote bug.
 
         Returns a set of those bug watches, optionally limited to
@@ -278,6 +362,39 @@ class IBugWatchSet(Interface):
 
         :param bug_watch_ids: A collection of `BugWatch` IDs.
         :type bug_watch_ids: An iterable of `int`s, or `None`.
+        """
+
+    # XXX: GavinPanella bug=570277 2010-04-26: In bulkSetError() the
+    # last_error_type argument accepts the same values as the result
+    # argument to bulkAddActivity(). Using different terms for
+    # essentially the same thing is confusing.
+
+    def bulkSetError(references, last_error_type=None):
+        """Efficiently update the status of the given bug watches.
+
+        Sets the `last_error_type` field as instructed, updates
+        `lastchecked` to now and resets `next_check` to None, all in
+        the most efficient way possible.
+
+        :param references: An iterable of `IBugWatch` objects or
+            primary keys for the same.
+        :param last_error_type: A member of `BugWatchActivityStatus`
+            or None.
+        """
+
+    def bulkAddActivity(references,
+                        result=BugWatchActivityStatus.SYNC_SUCCEEDED,
+                        message=None, oops_id=None):
+        """Efficiently add activity for the given bug watches.
+
+        Add `BugWatchActivity` records for the given bug watches in
+        the most efficient way possible.
+
+        :param references: An iterable of `IBugWatch` objects or
+            primary keys for the same.
+        :param result: See `IBugWatch.addActivity`.
+        :param message: See `IBugWatch.addActivity`.
+        :param oops_id: See `IBugWatch.addActivity`.
         """
 
 
@@ -293,3 +410,31 @@ class NoBugTrackerFound(Exception):
 
 class UnrecognizedBugTrackerURL(Exception):
     """The given URL isn't used by any bug tracker we support."""
+
+
+class IBugWatchActivity(Interface):
+    """A record of a single BugWatch update."""
+
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The unique id of this activity record."))
+    bug_watch = Reference(
+        title=_('Bug watch'), required=True, readonly=True, schema=IBugWatch,
+        description=_(
+            "The BugWatch whose activity is recorded in this record"))
+    activity_date = Datetime(
+        title=_('Activity date'), required=True, readonly=True,
+        description=_("The date on which this activity occurred."))
+    result = Choice(
+        title=_('Result'), vocabulary=BugWatchActivityStatus, readonly=True,
+        description=_("The result of the activity."))
+    message = Text(
+        title=_('Message'), readonly=True,
+        description=_("The message associated with this activity."))
+    oops_id = Text(
+        title=_('OOPS ID'), readonly=True,
+        description=_("The OOPS ID associated with this activity."))
+
+
+class BugWatchCannotBeRescheduled(Exception):
+    """The current `IBugWatch` can't be rescheduled."""

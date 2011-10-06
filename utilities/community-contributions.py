@@ -106,6 +106,7 @@ known_canonical_lp_devs = \
                               u'Abel Deuring',
                               u'Andrew Bennetts',
                               u'Barry Warsaw',
+                              u'Benji York',
                               u'Bjorn Tillenius',
                               u'Björn Tillenius',
                               u'Brad Bollenbach',
@@ -122,6 +123,7 @@ known_canonical_lp_devs = \
                               u'Curtis Hovey',
                               u'Dafydd Harries',
                               u'Danilo Šegan',
+                              u'Danilo Segan',
                               u'david <david {_AT_} marvin>',
                               u'Данило Шеган',
                               u'данило шеган',
@@ -140,12 +142,19 @@ known_canonical_lp_devs = \
                               u'Guilherme Salgado',
                               u'Henning Eggers',
                               u'Herb McNew',
+                              u'Huw Wilkins',
+                              u'Ian Booth',
                               u'James Henstridge',
+                              u'j.c.sackett',
+                              u'jc',
                               u'Jelmer Vernooij',
                               u'Jeroen Vermeulen',
                               u'Jeroen T. Vermeulen',
                               u'Joey Stanford',
+                              u'Jon Sackett',
                               u'Jonathan Lange',
+                              u'j.c.sackett',
+                              u'jonathan.sackett {_AT_} canonical.com',
                               u'jml {_AT_} canonical.com',
                               u'jml {_AT_} mumak.net',
                               u'Jonathan Knowles',
@@ -162,7 +171,6 @@ known_canonical_lp_devs = \
                               u'Maris Fogels',
                               u'Mark Shuttleworth',
                               u'Martin Albisetti',
-                              u'Martin Pool',
                               u'Matt Zimmerman',
                               u'Matthew Paul Thomas',
                               u'Matthew Thomas',
@@ -175,9 +183,14 @@ known_canonical_lp_devs = \
                               u'muharem {_AT_} canonical.com',
                               u'Patch Queue Manager',
                               u'Paul Hummer',
+                              u'Raphael Badin',
+                              u'Raphaël Badin',
                               u'Robert Collins',
+                              u'root <root {_AT_} ubuntu>',
+                              u'rvb',
                               u'Stuart Bishop',
                               u'Steve Alexander',
+                              u'Steve Kowalik',
                               u'Steve McInerney',
                               u'<steve {_AT_} stedee.id.au>',
                               u'test {_AT_} canonical.com',
@@ -186,6 +199,7 @@ known_canonical_lp_devs = \
                               u'Tom Berger',
                               u'ubuntu <ubuntu {_AT_} lp-dev>',
                               u'Ursula Junque',
+                              u'William Grant <william.grant {_AT_} canonical.com>',
                               )]
 
 # People known to work for Canonical but not on the Launchpad team.
@@ -200,22 +214,28 @@ known_canonical_non_lp_devs = \
                               u'Cody Somerville',
                               u'Cody A.W. Somerville',
                               u'David Murphy',
+                              u'Didier Roche',
                               u'Elliot Murphy',
                               u'Gabriel Neuman gneuman {_AT_} async.com',
                               u'Gustavo Niemeyer',
                               u'James Henstridge',
+                              u'James Westby',
                               u'John Lenton',
                               u'Kees Cook',
                               u'LaMont Jones',
+                              u'Loïc Minier',
+                              u'Martin Pitt',
                               u'Martin Pool',
                               u'Matt Zimmerman',
+                              u'mbp {_AT_} sourcefrog.net',
                               u'Michael Casadevall',
                               u'Michael Vogt',
                               u'Sidnei da Silva',
-                              u'Steve Kowalik',
+                              u'Dustin Kirkland',
+                              u'John Arbash Meinel',
                               )]
 
-# Some people have made commits using various names and/or email 
+# Some people have made commits using various names and/or email
 # addresses, so this map will be used to merge them accordingly.
 # The map is initialized from this list of pairs, where each pair is
 # of the form (CONTRIBUTOR_AS_SEEN, UNIFYING_IDENTITY_FOR_CONTRIBUTOR).
@@ -244,6 +264,34 @@ merge_names_pairs = (
      u'Adam Conrad <adconrad {_AT_} 0c3.net>'),
     (u'Adam Conrad <adconrad {_AT_} cthulhu>',
      u'Adam Conrad <adconrad {_AT_} 0c3.net>'),
+    (u'James Westby <james.westby {_AT_} linaro.org>',
+     u'James Westby <james.westby {_AT_} canonical.com>'),
+    (u'Bryce Harrington <bryce {_AT_} canonical.com>',
+     u'Bryce Harrington <bryce.harrington {_AT_} canonical.com>'),
+    (u'Dustin Kirkland <kirkland {_AT_} x200>',
+     u'Dustin Kirkland <kirkland {_AT_} canonical.com>'),
+    (u'Anthony Lenton <antoniolenton {_AT_} gmail.com>',
+     u'Anthony Lenton <anthony.lenton {_AT_} canonical.com>'),
+    (u'Steve Kowalik <steven {_AT_} quelled>',
+     u'Steve Kowalik <steve.kowalik {_AT_} canonical.com>'),
+    (u'Steve Kowalik <stevenk {_AT_} ubuntu.com>',
+     u'Steve Kowalik <steve.kowalik {_AT_} canonical.com>'),
+    (u'jc <jc {_AT_} launchpad>',
+     u'j.c.sackett <jonathan.sackett {_AT_} canonical.com>'),
+    (u'Jon Sackett <jc {_AT_} jabberwocky>',
+     u'j.c.sackett <jonathan.sackett {_AT_} canonical.com>'),
+    (u'John Arbash Meinel <jameinel {_AT_} falco-lucid>',
+     u'John Arbash Meinel <john {_AT_} arbash-meinel.com>'),
+    (u'Martin Pool <mbp {_AT_} sourcefrog.net>',
+     u'Martin Pool <mbp {_AT_} canonical.com>'),
+    (u'mbp {_AT_} sourcefrog.net',
+     u'Martin Pool <mbp {_AT_} canonical.com>'),
+    (u'mbp {_AT_} canonical.com',
+     u'Martin Pool <mbp {_AT_} canonical.com>'),
+    (u'Andrea Corbellini <corbellini.andrea {_AT_} gmail.com>',
+     u'Andrea Corbellini <andrea.corbellini {_AT_} beeseek.org>'),
+    (u'Luke Faraone <luke {_AT_} faraone.cc',
+     u'Luke Faraone <luke {_AT_} faraone.cc>'),
     )
 # Then put it in dictionary form with the correct encodings.
 merge_names_map = dict((wiki_encode(a), wiki_encode(b))
@@ -273,7 +321,6 @@ class ContainerRevision():
         timezone = self.top_rev.rev.timezone
         message = self.top_rev.rev.message or "(NO LOG MESSAGE)"
         rev_id = self.top_rev.rev.revision_id or "(NO REVISION ID)"
-        inventory_sha1 = self.top_rev.rev.inventory_sha1
         if timestamp:
             date_str = format_date(timestamp, timezone or 0, 'original')
         else:
@@ -316,16 +363,16 @@ class ContainerRevision():
         text = [
             " * [[%s|r%s%s]] -- %s\n" % (
                 rev_id_url, self.top_rev.revno,
-                ' (%s)' % name if name else '',
+                ' (%s)' % name.encode('utf-8') if name else '',
                 date_str),
-            " {{{\n%s\n}}}\n" % message,
+            " {{{\n%s\n}}}\n" % message.encode('utf-8'),
             " '''Commits:'''\n ",
             commits_block,
             "\n",
             ]
         return ''.join(text)
-  
-  
+
+
 # "ExternalContributor" is too much to type, so I guess we'll just use this.
 class ExCon():
     """A contributor to Launchpad from outside Canonical's Launchpad team."""
@@ -569,8 +616,8 @@ developers not on the Launchpad team at Canonical.
 It lists all changes that have landed in the Launchpad ''devel'' \
 or ''db-devel'' trees (see the [[Trunk|trunk explanation]] for more).
 
-~-''Note for maintainers: this page is updated every 10 minutes by a \
-cron job running as kfogel on devpad (though if there are no new \
+~-''Note for maintainers: this page is updated every hour by a \
+cron job running as wgrant on devpad (though if there are no new \
 contributions, the page's timestamp won't change).  The code that \
 generates this page is \
 [[http://bazaar.launchpad.net/%7Elaunchpad-pqm/launchpad/devel/annotate/head%3A/utilities/community-contributions.py|utilities/community-contributions.py]] \

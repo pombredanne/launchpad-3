@@ -12,36 +12,76 @@ __all__ = [
     'RevisionProperty',
     'RevisionSet']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import email
 
+from bzrlib.revision import NULL_REVISION
 import pytz
-from storm.expr import And, Asc, Desc, Exists, Join, Not, Or, Select
-from storm.locals import Bool, DateTime, Int, Min, Reference, Storm
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Asc,
+    Desc,
+    Join,
+    Not,
+    Or,
+    Select,
+    )
+from storm.locals import (
+    Bool,
+    Int,
+    Min,
+    Reference,
+    Storm,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
-from sqlobject import (
-    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
-    SQLMultipleJoin)
 
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IMasterStore)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.revision import (
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
-    IRevisionSet)
+    IRevision,
+    IRevisionAuthor,
+    IRevisionParent,
+    IRevisionProperty,
+    IRevisionSet,
+    )
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.person import ValidPersonCache
 
 
 class Revision(SQLBase):
@@ -53,8 +93,9 @@ class Revision(SQLBase):
     log_body = StringCol(notNull=True)
     gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
 
-    revision_author = ForeignKey(
-        dbName='revision_author', foreignKey='RevisionAuthor', notNull=True)
+    revision_author_id = Int(name='revision_author', allow_none=False)
+    revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
+
     revision_id = StringCol(notNull=True, alternateID=True,
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
@@ -77,6 +118,13 @@ class Revision(SQLBase):
         present in the database, using the RevisionSet Zope utility.
         """
         return [parent.parent_id for parent in self.parents]
+
+    def getLefthandParent(self):
+        if len(self.parent_ids) == 0:
+            parent_id = NULL_REVISION
+        else:
+            parent_id = self.parent_ids[0]
+        return RevisionSet().getByRevisionId(parent_id)
 
     def getProperties(self):
         """See `IRevision`."""
@@ -111,10 +159,10 @@ class Revision(SQLBase):
         store = Store.of(self)
 
         query = And(
-            self.id == BranchRevision.revisionID,
-            BranchRevision.branchID == Branch.id)
+            self.id == BranchRevision.revision_id,
+            BranchRevision.branch_id == Branch.id)
         if not allow_private:
-            query = And(query, Not(Branch.private))
+            query = And(query, Not(Branch.transitively_private))
         if not allow_junk:
             query = And(
                 query,
@@ -123,7 +171,7 @@ class Revision(SQLBase):
                 Or(
                     (Branch.product != None),
                     And(
-                        Branch.sourcepackagename != None, 
+                        Branch.sourcepackagename != None,
                         Branch.distroseries != None)))
         result_set = store.find(Branch, query)
         if self.revision_author.person is None:
@@ -297,7 +345,7 @@ class RevisionSet:
         # author per revision, so we use the first on the assumption that
         # this is the primary author.
         try:
-            author = bzr_revision.get_apparent_authors()[0]
+            author = authors[0]
         except IndexError:
             author = None
         return self.new(
@@ -374,31 +422,30 @@ class RevisionSet:
             BranchRevision.branch == Branch.id,
             Branch.product == product,
             Branch.lifecycle_status.is_in(DEFAULT_BRANCH_STATUS_IN_LISTING),
-            BranchRevision.revisionID >= revision_subselect)
+            BranchRevision.revision_id >= revision_subselect)
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getRevisionsNeedingKarmaAllocated():
+    def getRevisionsNeedingKarmaAllocated(limit=None):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.code.model.branchrevision import BranchRevision
-        from lp.registry.model.person import ValidPersonCache
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        store = IStore(Revision)
+        results_with_dupes = store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
             RevisionAuthor.person == ValidPersonCache.id,
             Not(Revision.karma_allocated),
-            Exists(
-                Select(True,
-                       And(BranchRevision.revision == Revision.id,
-                           BranchRevision.branch == Branch.id,
-                           Or(Branch.product != None,
-                              Branch.distroseries != None)),
-                       (Branch, BranchRevision))))
+            BranchRevision.revision == Revision.id,
+            BranchRevision.branch == Branch.id,
+            Or(Branch.product != None, Branch.distroseries != None))[:limit]
+        # Eliminate duplicate rows, returning <= limit rows
+        return store.find(
+            Revision, Revision.id.is_in(
+                results_with_dupes.get_select_expr(Revision.id)))
 
     @staticmethod
     def getPublicRevisionsForPerson(person, day_limit=30):
@@ -431,13 +478,13 @@ class RevisionSet:
             Revision,
             And(revision_time_limit(day_limit),
                 person_condition,
-                Not(Branch.private)))
+                Not(Branch.transitively_private)))
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
     def _getPublicRevisionsHelper(obj, day_limit):
-        """Helper method for Products and Projects."""
+        """Helper method for Products and ProjectGroups."""
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.registry.model.product import Product
@@ -450,7 +497,7 @@ class RevisionSet:
             ]
 
         conditions = And(revision_time_limit(day_limit),
-                         Not(Branch.private))
+                         Not(Branch.transitively_private))
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)
@@ -472,7 +519,7 @@ class RevisionSet:
         return cls._getPublicRevisionsHelper(product, day_limit)
 
     @classmethod
-    def getPublicRevisionsForProject(cls, project, day_limit=30):
+    def getPublicRevisionsForProjectGroup(cls, project, day_limit=30):
         """See `IRevisionSet`."""
         return cls._getPublicRevisionsHelper(project, day_limit)
 
@@ -569,8 +616,7 @@ class RevisionCache(Storm):
     revision_author_id = Int(name='revision_author', allow_none=False)
     revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
 
-    revision_date = DateTime(
-        name='revision_date', allow_none=False, tzinfo=pytz.UTC)
+    revision_date = UtcDateTimeCol(notNull=True)
 
     product_id = Int(name='product', allow_none=True)
     product = Reference(product_id, 'Product.id')

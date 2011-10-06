@@ -17,32 +17,40 @@ __all__ = [
     'MINUTES',
     ]
 
-from BeautifulSoup import BeautifulSoup
-from datetime import datetime
-import pytz
 import operator
 import os
 import time
 from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
 
-from zope.datetime import rfc1123_date
+from BeautifulSoup import BeautifulSoup
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.datetime import rfc1123_date
 from zope.interface import implements
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 # XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
 # from canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.
-from canonical.launchpad.interfaces import ILaunchpadRoot
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import (
-    LaunchpadView, canonical_url, urlappend, urlparse)
+    canonical_url,
+    LaunchpadView,
+    urlappend,
+    urlparse,
+    )
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
-    IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
+    IFeed,
+    IFeedEntry,
+    IFeedPerson,
+    IFeedTypedData,
+    UnsupportedFeedFormat,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.utils import utc_now
+
 
 SUPPORTED_FEEDS = ('.atom', '.html')
 MINUTES = 60 # Seconds in a minute.
@@ -172,7 +180,7 @@ class FeedBase(LaunchpadView):
             # datetime.isoformat() doesn't place the necessary "+00:00"
             # for the feedvalidator's check of the iso8601 date format
             # unless a timezone is specified with tzinfo.
-            return datetime.utcnow().replace(tzinfo=pytz.utc)
+            return utc_now()
         last_modified = sorted_items[0].last_modified
         if last_modified is None:
             raise AssertionError, 'All feed entries require a date updated.'
@@ -248,8 +256,6 @@ class FeedEntry:
         if authors is None:
             authors = []
         self.authors = authors
-        if contributors is None:
-            contribuors = []
         self.contributors = contributors
         if id_ is None:
             self.id = self.construct_id()

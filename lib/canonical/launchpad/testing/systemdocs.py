@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'default_optionflags',
     'LayeredDocFileSuite',
-    'SpecialOutputChecker',
     'setUp',
     'setGlobs',
     'stop',
@@ -15,6 +14,8 @@ __all__ = [
     'tearDown',
     ]
 
+import doctest
+from functools import partial
 import logging
 import os
 import pdb
@@ -23,18 +24,27 @@ import sys
 
 import transaction
 from zope.component import getUtility
-from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 
-from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
-from lp.testing import ANONYMOUS, login, login_person, logout
+from lp.testing import (
+    ANONYMOUS,
+    launchpadlib_credentials_for,
+    launchpadlib_for,
+    login,
+    login_person,
+    logout,
+    oauth_access_token_for,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.views import create_view, create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -56,12 +66,11 @@ def strip_prefix(path):
 
 class FilePrefixStrippingDocTestParser(doctest.DocTestParser):
     """A DocTestParser that strips a prefix from doctests."""
-    def get_doctest(self, string, globs, name, filename, lineno,
-                    optionflags=0):
+
+    def get_doctest(self, string, globs, name, filename, lineno):
         filename = strip_prefix(filename)
         return doctest.DocTestParser.get_doctest(
-            self, string, globs, name, filename, lineno,
-            optionflags=optionflags)
+            self, string, globs, name, filename, lineno)
 
 
 default_parser = FilePrefixStrippingDocTestParser()
@@ -80,7 +89,7 @@ class StdoutHandler(Handler):
             record.levelname, record.name, self.format(record))
 
 
-def LayeredDocFileSuite(*args, **kw):
+def LayeredDocFileSuite(*paths, **kw):
     """Create a DocFileSuite, optionally applying a layer to it.
 
     In addition to the standard DocFileSuite arguments, the following
@@ -125,31 +134,20 @@ def LayeredDocFileSuite(*args, **kw):
         kw['tearDown'] = tearDown
 
     layer = kw.pop('layer', None)
-    suite = doctest.DocFileSuite(*args, **kw)
+    suite = doctest.DocFileSuite(*paths, **kw)
     if layer is not None:
         suite.layer = layer
+
+    for test in suite:
+        # doctest._module_relative_path() does not normalize paths. To make
+        # test selection simpler and reporting easier to read, normalize here.
+        test._dt_test.filename = os.path.normpath(test._dt_test.filename)
+        # doctest.DocFileTest insists on using the basename of the file as the
+        # test ID. This causes conflicts when two doctests have the same
+        # filename, so we patch the id() method on the test cases.
+        test.id = partial(lambda test: test._dt_test.filename, test)
+
     return suite
-
-
-class SpecialOutputChecker(doctest.OutputChecker):
-    """An OutputChecker that runs the 'chunkydiff' checker if appropriate."""
-    def output_difference(self, example, got, optionflags):
-        if config.canonical.chunkydiff is False:
-            return doctest.OutputChecker.output_difference(
-                self, example, got, optionflags)
-
-        if optionflags & doctest.ELLIPSIS:
-            normalize_whitespace = optionflags & doctest.NORMALIZE_WHITESPACE
-            newgot = elided_source(example.want, got,
-                                   normalize_whitespace=normalize_whitespace)
-            if newgot == example.want:
-                # There was no difference.  May be an error in
-                # elided_source().  In any case, return the whole thing.
-                newgot = got
-        else:
-            newgot = got
-        return doctest.OutputChecker.output_difference(
-            self, example, newgot, optionflags)
 
 
 def ordered_dict_as_string(dict):
@@ -199,6 +197,9 @@ def setGlobs(test):
     test.globs['verifyObject'] = verifyObject
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['stop'] = stop
+    test.globs['launchpadlib_for'] = launchpadlib_for
+    test.globs['launchpadlib_credentials_for'] = launchpadlib_credentials_for
+    test.globs['oauth_access_token_for'] = oauth_access_token_for
 
 
 def setUp(test):

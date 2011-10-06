@@ -3,7 +3,6 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-export DH_COMPAT=4
 export DH_OPTIONS
 
 # This is an incomplete debian rules file for making the launchpad-buildd deb
@@ -24,8 +23,8 @@ pytarget = $(targetshare)/canonical/buildd
 pyfiles = debian.py slave.py binarypackage.py utils.py __init__.py \
     sourcepackagerecipe.py translationtemplates.py
 slavebins = unpack-chroot mount-chroot update-debian-chroot sbuild-package \
-scan-for-processes umount-chroot remove-build apply-ogre-model \
-override-sources-list buildrecipe generate-translation-templates
+    scan-for-processes umount-chroot remove-build override-sources-list \
+    buildrecipe generate-translation-templates
 
 BUILDDUID=65500
 BUILDDGID=65500
@@ -41,11 +40,12 @@ install:
 	  etc/launchpad-buildd \
 	  usr/share/launchpad-buildd/canonical/launchpad/daemons \
 	  usr/share/doc/launchpad-buildd
+	dh_installexamples
 
 	# Do installs here
 	touch $(pytarget)/../launchpad/__init__.py
 	touch $(pytarget)/../launchpad/daemons/__init__.py
-	cp launchpad-files/tachandler.py $(pytarget)/../launchpad/daemons/
+	cp launchpad-files/readyservice.py $(pytarget)/../launchpad/daemons/
 	install -m644 launchpad-files/buildd-slave.tac $(targetshare)/buildd-slave.tac
 	cp -r pottery $(pytarget)
 	for pyfile in $(pyfiles); do \
@@ -60,7 +60,6 @@ install:
 	install -m755 buildd-config.py $(target)/usr/bin/buildd-genconfig
 	install -m644 sbuildrc $(targetshare)/sbuildrc
 	install -m644 sbuild.conf $(target)/etc/sbuild.conf
-	install -m644 example.chroot debian/launchpad-buildd/usr/share/doc/launchpad-buildd/
 	install -m755 debian/upgrade-config $(targetshare)/upgrade-config
 	install -m755 check-implicit-pointer-functions $(target)/usr/bin/check-implicit-pointer-functions
 	# Okay, that's installed all the slave-related files
@@ -90,10 +89,11 @@ binary: binary-indep
 clean:
 	dh_clean
 
-package:
-	mkdir -p launchpad-files
+prepare:
 	install -m644 $(daemons)/buildd-slave.tac launchpad-files/buildd-slave.tac
-	cp ../launchpad/daemons/tachandler.py launchpad-files/tachandler.py
+	cp ../launchpad/daemons/readyservice.py launchpad-files/readyservice.py
+
+package: prepare
 	debuild -uc -us -S
 
 build:

@@ -6,7 +6,11 @@
   metal:use-macro="view/macro:page/searchless"
   i18n:domain="launchpad"
 >
-
+  <head>
+    <tal:head_epilogue metal:fill-slot="head_epilogue">
+      <meta name="robots" content="noindex,nofollow" />
+    </tal:head_epilogue>
+  </head>
   <body>
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="view/page_heading">
@@ -97,11 +101,16 @@
                       Project summary
                   </div>
                   <div>
-                    Registered by <a
-                      tal:replace="structure view/pillar/owner/fmt:link">Foo Bar</a>
+                    Registered
+                    <tal:registrant
+                      define="registrant view/pillar/registrant|nothing"
+                      condition="registrant">
+                      by
+                      <a tal:replace="structure registrant/fmt:link">Foo Bar</a>
+                    </tal:registrant>
                     <tal:XXX condition="nothing">
                       # XXX sinzui 2008-05-27:
-                      # Product and Project still use the wrong name for
+                      # Product and ProjectGroup still use the wrong name for
                       # date_created.
                     </tal:XXX>
                     <span

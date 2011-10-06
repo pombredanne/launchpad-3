@@ -1,8 +1,21 @@
 Launchpad and Email
 ===================
 
+Quicker interactive testing
+---------------------------
+
+There is a script ``process-one-mail.py`` which reads a single mail
+message from a file (or stdin), processes it as if it had been received by
+Launchpad, and then prints out any mail generated in response.  For
+quasi-interactive testing of email processing this may be your best bet.
+
 Quickstart
 ----------
+
+Otherwise, you can configure Launchpad with an incoming mailbox and an
+outgoing mailer, in a way somewhat similar to what is used in production.
+This lets you catch mail sent other than in response to an incoming
+message.
 
 Create the file override-includes/+mail-configure.zcml with contents
 similar to the following::
@@ -113,16 +126,15 @@ development.
 API
 ---
 
-Launchpad code should use the methods defined in canonical.launchpad.mail
+Launchpad code should use the methods defined in lp.services.mail.sendmail
 to send emails (`simple_sendmail`, `sendmail` or possibly `raw_sendmail`)
 
 
 Functional Tests
 ----------------
 
-The functional test harness is configured to allow easy testing of
-emails.  See `canonical/launchpad/mail/ftests/test_stub.py` for example
-code.
+The functional test harness is configured to allow easy testing of emails.
+See `lp/services/mail/tests/test_stub.py` for example code.
 
 
 Details
@@ -133,10 +145,10 @@ defines a single `send` method. There are two standard `IMailDelivery`
 implementations:
 
     1. `QueuedDelivery` -- email is delivered in a seperate thread. We use
-        this for production.
+       this for production.
 
     2. `DirectDelivery` -- email is send synchronously during transaction
-        commit.  We use this for tests.
+       commit.  We use this for tests.
 
 Both implementations will send no email if the transaction is aborted.  Both
 implementations use events to notify anything that cares to subscribe if
@@ -154,14 +166,14 @@ In addition to these two, there are three more `IMailer` implementations
 for use with Launchpad development (production instances will just use
 `SMTPMailer` or `SendmailMailer`):
 
-    3. StubMailer -- rewrites the envelope headers and optionally the RFC 2822
-       To and From headers before handing on to a different `IMailer`.
+    3. `StubMailer` -- rewrites the envelope headers and optionally the RFC
+       2822 To and From headers before handing on to a different `IMailer`.
 
-    4. TestMailer -- stores the email in memory in a Python list object called
-       `canonical.launchpad.mail.stub.test_email` for easy access by unit
+    4. `TestMailer` -- stores the email in memory in a Python list object
+       called `lp.services.mail.stub.test_email` for easy access by unit
        tests.
 
-    5. MboxMailer -- stores the email in a Unix mbox file before optionally
+    5. `MboxMailer` -- stores the email in a Unix mbox file before optionally
        handing the message off to another `IMailer`.
 
 Developers (and production and dogfood server, until we are confident
@@ -173,5 +185,5 @@ developers or innocent civilians.  Or you can use the MboxMailer.
 The functional test suite is already configured to use the TestMailer.
 However, if you use a StubMailer or MboxMailer and want the test suite to
 work, you must hook it up to a TestMailer explicitly.  See
-`canonical/launchpad/mail/ftests/test_stub.py` for an example showing how
-functional tests can check that notifications are being sent correctly.
+`lp/services/mail/tests/test_stub.py` for an example showing how functional
+tests can check that notifications are being sent correctly.

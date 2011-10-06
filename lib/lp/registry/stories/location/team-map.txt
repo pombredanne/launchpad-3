@@ -1,26 +1,5 @@
-== The map of a team's members ==
-
-If a team has members that have locations, then you should see a portlet
-with their locations displayed.
-
-    >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> nopriv_browser.open('http://launchpad.dev/~guadamen')
-    >>> body = find_main_content(nopriv_browser.contents)
-    >>> mapdiv = find_tag_by_id(str(body), 'team_map_div')
-    >>> 'lp.mapping.renderTeamMapSmall(' in str(body)
-    True
-    >>> markup = str(nopriv_browser.contents)
-    >>> 'src="http://maps.google.com/maps' in markup
-    True
-    >>> 'build/lp/mapping.js' in markup
-    True
-
-You should also be able to see a map of the team.
-
-    >>> maplink = nopriv_browser.getLink('View map and time zones')
-    >>> maplink.click()
-    >>> nopriv_browser.url
-    'http://launchpad.dev/~guadamen/+map'
+The map of a team's members
+===========================
 
 The map depends on a stream of XML-formatted data, giving the locations of
 all members of the team. We show that this stream works for teams with, and
@@ -37,7 +16,9 @@ without, mapped members.
       <participant
         displayname="Colin Watson"
         name="kamion"
-        logo_html="&lt;img alt=&quot;&quot; width=&quot;64&quot; height=&quot;64&quot; src=&quot;/@@/person-logo&quot; /&gt;"
+        logo_html="&lt;img alt=&quot;&quot;
+            width=&quot;64&quot; height=&quot;64&quot;
+            src=&quot;/@@/person-logo&quot; /&gt;"
         url="/~kamion"
         local_time="..."
         lat="52.2"
@@ -72,7 +53,9 @@ test.
       <participant
         displayname="Colin Watson"
         name="kamion"
-        logo_html="&lt;img alt=&quot;&quot; width=&quot;64&quot; height=&quot;64&quot; src=&quot;/@@/person-logo&quot; /&gt;"
+        logo_html="&lt;img alt=&quot;&quot;
+            width=&quot;64&quot; height=&quot;64&quot;
+                src=&quot;/@@/person-logo&quot; /&gt;"
         url="/~kamion"
         local_time="..."
         lat="52.2"
@@ -81,27 +64,23 @@ test.
     <BLANKLINE>
 
 
-It doesn't make sense to edit the location of the team itself, not even
-if we are an admin, so a team's +editlocation page will simply redirect
-to +map.
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen/+editlocation')
-    >>> print admin_browser.url
-    http://launchpad.dev/~guadamen/+map
-
-
-== +mapdata ==
++mapdata
+--------
 
 The display name of all team participants will be escaped to prevent
 XSS attacks on any callsite of +mapdata.
+
+    >>> from canonical.testing.layers import MemcachedLayer
 
     >>> admin_browser.open('http://launchpad.dev/~kamion/+edit')
     >>> admin_browser.getControl('Display Name').value = (
     ...     "<script>alert('Colin \"nasty\"');</script>")
     >>> admin_browser.getControl('Save Changes').click()
 
+    >>> MemcachedLayer.purge()
     >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdata')
     >>> print anon_browser.contents
     <?xml version="1.0"...
-    ...displayname="&amp;lt;script&amp;gt;alert('Colin &amp;quot;nasty&amp;quot;');&amp;lt;/script&amp;gt;"
+    ...displayname="&amp;lt;script&amp;gt;alert('Colin
+        &amp;quot;nasty&amp;quot;');&amp;lt;/script&amp;gt;"
     ...

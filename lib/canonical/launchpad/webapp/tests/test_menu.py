@@ -3,15 +3,21 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.management import newInteraction
 
 from canonical.launchpad.webapp.menu import (
-    Link, MENU_ANNOTATION_KEY, MenuBase)
+    Link,
+    MENU_ANNOTATION_KEY,
+    MenuBase,
+    )
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import ANONYMOUS, login, logout, TestCase
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    logout,
+    TestCase,
+    )
 
 
 class TestMenu(MenuBase):
@@ -77,7 +83,3 @@ class TestMenuBaseLinkCaching(TestCase):
         self.assertEquals(len(cache.keys()), 1)
         self.assertContentEqual(
             cache.keys()[0], (menu.__class__, context, 'test_link'))
-
-    
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

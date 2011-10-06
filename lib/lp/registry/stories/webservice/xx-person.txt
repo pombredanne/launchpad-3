@@ -1,4 +1,5 @@
-= People and teams =
+People and teams
+================
 
 Since we use a single class (Person) to represent a person or a team,
 representations of people and teams are supposed to have nearly the
@@ -10,17 +11,21 @@ for teams (as they're defined in the ITeam interface).
     >>> pprint_entry(salgado)
     admins_collection_link: u'http://.../~salgado/admins'
     archive_link: None
-    confirmed_email_addresses_collection_link: u'http://.../~salgado/confirmed_email_addresses'
+    confirmed_email_addresses_collection_link:
+        u'http://.../~salgado/confirmed_email_addresses'
     date_created: u'2005-06-06T08:59:51.596025+00:00'
-    deactivated_members_collection_link: u'http://.../~salgado/deactivated_members'
+    deactivated_members_collection_link:
+        u'http://.../~salgado/deactivated_members'
     display_name: u'Guilherme Salgado'
     expired_members_collection_link: u'http://.../~salgado/expired_members'
     gpg_keys_collection_link: u'http://.../~salgado/gpg_keys'
-    hardware_submissions_collection_link: u'http://.../~salgado/hardware_submissions'
+    hardware_submissions_collection_link:
+        u'http://.../~salgado/hardware_submissions'
     hide_email_addresses: False
     homepage_content: None
     invited_members_collection_link: u'http://.../~salgado/invited_members'
     irc_nicknames_collection_link: u'http://.../~salgado/irc_nicknames'
+    is_merge_pending: False
     is_probationary: True
     is_team: False
     is_ubuntu_coc_signer: False
@@ -34,42 +39,53 @@ for teams (as they're defined in the ITeam interface).
     mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
     members_collection_link: u'http://.../~salgado/members'
     members_details_collection_link: u'http://.../~salgado/members_details'
-    memberships_details_collection_link: u'http://.../~salgado/memberships_details'
+    memberships_details_collection_link:
+        u'http://.../~salgado/memberships_details'
     mugshot_link: u'http://.../~salgado/mugshot'
     name: u'salgado'
-    open_membership_invitations_collection_link: u'http://.../~salgado/open_membership_invitations'
+    open_membership_invitations_collection_link:
+        u'http://.../~salgado/open_membership_invitations'
     participants_collection_link: u'http://.../~salgado/participants'
-    pending_gpg_keys_collection_link: u'http://.../~salgado/pending_gpg_keys'
     ppas_collection_link: u'http://.../~salgado/ppas'
-    preferred_email_address_link: u'http://.../~salgado/+email/guilherme.salgado@canonical.com'
+    preferred_email_address_link:
+        u'http://.../~salgado/+email/guilherme.salgado@canonical.com'
     private: False
     proposed_members_collection_link: u'http://.../~salgado/proposed_members'
+    recipes_collection_link: u'http://.../~salgado/recipes'
     resource_type_link: u'http://.../#person'
     self_link: u'http://.../~salgado'
+    sshkeys_collection_link: u'http://.../~salgado/sshkeys'
     sub_teams_collection_link: u'http://.../~salgado/sub_teams'
     super_teams_collection_link: u'http://.../~salgado/super_teams'
     team_owner_link: None
     time_zone: None
     visibility: u'Public'
+    web_link: u'http://launchpad.../~salgado'
     wiki_names_collection_link: u'http://.../~salgado/wiki_names'
 
     >>> ubuntu_team = webservice.get("/~ubuntu-team").jsonBody()
     >>> pprint_entry(ubuntu_team)
     admins_collection_link: u'http://.../~ubuntu-team/admins'
     archive_link: None
-    confirmed_email_addresses_collection_link: u'http://.../~ubuntu-team/confirmed_email_addresses'
+    confirmed_email_addresses_collection_link:
+        u'http://.../~ubuntu-team/confirmed_email_addresses'
     date_created: u'2005-06-06T08:59:51.605760+00:00'
-    deactivated_members_collection_link: u'http://.../~ubuntu-team/deactivated_members'
+    deactivated_members_collection_link:
+        u'http://.../~ubuntu-team/deactivated_members'
     default_membership_period: None
     default_renewal_period: None
     display_name: u'Ubuntu Team'
-    expired_members_collection_link: u'http://.../~ubuntu-team/expired_members'
+    expired_members_collection_link:
+        u'http://.../~ubuntu-team/expired_members'
     gpg_keys_collection_link: u'http://.../~ubuntu-team/gpg_keys'
-    hardware_submissions_collection_link: u'http://.../~ubuntu-team/hardware_submissions'
+    hardware_submissions_collection_link:
+        u'http://.../~ubuntu-team/hardware_submissions'
     hide_email_addresses: False
     homepage_content: None
-    invited_members_collection_link: u'http://.../~ubuntu-team/invited_members'
+    invited_members_collection_link:
+        u'http://.../~ubuntu-team/invited_members'
     irc_nicknames_collection_link: u'http://.../~ubuntu-team/irc_nicknames'
+    is_merge_pending: False
     is_probationary: False
     is_team: True
     is_ubuntu_coc_signer: False
@@ -82,20 +98,26 @@ for teams (as they're defined in the ITeam interface).
     longitude: None
     mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
     members_collection_link: u'http://.../~ubuntu-team/members'
-    members_details_collection_link: u'http://.../~ubuntu-team/members_details'
-    memberships_details_collection_link: u'http://.../~ubuntu-team/memberships_details'
+    members_details_collection_link:
+        u'http://.../~ubuntu-team/members_details'
+    memberships_details_collection_link:
+        u'http://.../~ubuntu-team/memberships_details'
     mugshot_link: u'http://.../~ubuntu-team/mugshot'
     name: u'ubuntu-team'
-    open_membership_invitations_collection_link: u'http://.../~ubuntu-team/open_membership_invitations'
+    open_membership_invitations_collection_link:
+        u'http://.../~ubuntu-team/open_membership_invitations'
     participants_collection_link: u'http://.../~ubuntu-team/participants'
-    pending_gpg_keys_collection_link: u'http://.../~ubuntu-team/pending_gpg_keys'
     ppas_collection_link: u'http://.../~ubuntu-team/ppas'
-    preferred_email_address_link: u'http://.../~ubuntu-team/+email/support@ubuntu.com'
+    preferred_email_address_link:
+        u'http://.../~ubuntu-team/+email/support@ubuntu.com'
     private: False
-    proposed_members_collection_link: u'http://.../~ubuntu-team/proposed_members'
+    proposed_members_collection_link:
+        u'http://.../~ubuntu-team/proposed_members'
+    recipes_collection_link: u'http://.../~ubuntu-team/recipes'
     renewal_policy: u'invite them to apply for renewal'
     resource_type_link: u'http://.../#team'
     self_link: u'http://.../~ubuntu-team'
+    sshkeys_collection_link: u'http://.../~ubuntu-team/sshkeys'
     sub_teams_collection_link: u'http://.../~ubuntu-team/sub_teams'
     subscription_policy: u'Moderated Team'
     super_teams_collection_link: u'http://.../~ubuntu-team/super_teams'
@@ -103,6 +125,7 @@ for teams (as they're defined in the ITeam interface).
     team_owner_link: u'http://.../~mark'
     time_zone: None
     visibility: u'Public'
+    web_link: u'http://launchpad.../~ubuntu-team'
     wiki_names_collection_link: u'http://.../~ubuntu-team/wiki_names'
 
     >>> sorted(set(ubuntu_team.keys()).difference(salgado.keys()))
@@ -113,13 +136,15 @@ for teams (as they're defined in the ITeam interface).
     []
 
 
-== Links to related things ==
+Links to related things
+-----------------------
 
 As seen above, many attributes of a person are actually links to other
 things (or collections).
 
 
-=== Email addresses ===
+Email addresses
+...............
 
 Apart from the link to the preferred email, there is a link to the
 collection of other confirmed email addresses of that person/team.
@@ -151,8 +176,50 @@ traversed to, obviously.
     HTTP/1.1 404 Not Found
     ...
 
+SSH keys
+........
 
-=== GPG keys ===
+People have SSH keys which we can manipulate over the API.
+
+The sample person "ssh-user" doesn't have any keys to begin with:
+
+    >>> login('test@canonical.com')
+    >>> person = factory.makePerson(name="ssh-user")
+    >>> logout()
+    >>> sample_person = webservice.get("/~ssh-user").jsonBody()
+    >>> sshkeys = sample_person['sshkeys_collection_link']
+    >>> print sshkeys
+    http://.../~ssh-user/sshkeys
+    >>> print_self_link_of_entries(webservice.get(sshkeys).jsonBody())
+
+Let's give "ssh-user" a key via the back door of our internal Python APIs:
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login(ANONYMOUS)
+    >>> ssh_user = getUtility(IPersonSet).getByName('ssh-user')
+    >>> ssh_key = factory.makeSSHKey(ssh_user)
+    >>> logout()
+
+Now when we get the sshkey collection for 'sssh-user' again, the key should
+show up:
+
+    >>> keys = webservice.get(sshkeys).jsonBody()
+    >>> print_self_link_of_entries(keys)
+    http://.../~ssh-user/+ssh-keys/...
+
+
+And then we can actually retrieve the key:
+
+    >>> pprint_entry(keys['entries'][0])
+    comment: u'unique-...'
+    keytext: u'unique-...'
+    keytype: u'RSA'
+    resource_type_link: u'http://.../#ssh_key'
+    self_link: u'http://.../~ssh-user/+ssh-keys/...'
+
+GPG keys
+........
 
 People have GPG keys which we can manipulate over the API.
 
@@ -176,9 +243,9 @@ Let's give "name12" a key via the back door of our internal Python APIs:
 Now when we get the gpgkey collection for 'name12' again, the key should show
 up:
 
-    >>> keys = webservice.get(gpgkeys).jsonBody()
+    >>> keys = anon_webservice.get(gpgkeys).jsonBody()
     >>> print_self_link_of_entries(keys)
-    http://api.launchpad.dev/beta/~name12/+gpg-keys/00000001
+    http://.../~name12/+gpg-keys/...
 
 
 And then we can actually retrieve the key:
@@ -190,7 +257,8 @@ And then we can actually retrieve the key:
     self_link: u'http://.../~name12/+gpg-keys/...'
 
 
-=== Team memberships ===
+Team memberships
+................
 
 A person is linked to their team memberships.
 
@@ -208,7 +276,8 @@ Similarly, a team is linked to the team memberships of its members.
 And to all membership invitations sent to it.
 
     >>> lp_team = webservice.get("/~launchpad").jsonBody()
-    >>> lp_invitations = lp_team['open_membership_invitations_collection_link']
+    >>> lp_invitations = lp_team[
+    ...     'open_membership_invitations_collection_link']
     >>> lp_invitations
     u'http://.../~launchpad/open_membership_invitations'
 
@@ -229,7 +298,8 @@ Team memberships also have data fields.
     >>> sorted(salgado_landscape)
     [u'date_expires', u'date_joined', u'http_etag',
      u'last_change_comment', u'last_changed_by_link', u'member_link',
-     u'resource_type_link', u'self_link', u'status', u'team_link']
+     u'resource_type_link', u'self_link', u'status', u'team_link',
+     u'web_link']
 
 Each team membership links to the person who approved the link.
 
@@ -291,7 +361,7 @@ To change its status, use setStatus(status).
     >>> print webservice.get(
     ...     salgado_landscape['self_link']).jsonBody()['status']
     Deactivated
-    
+
     >>> print webservice.named_post(
     ...     salgado_landscape['self_link'], 'setStatus', {},
     ...     status='Approved', silent=True)
@@ -301,7 +371,7 @@ To change its status, use setStatus(status).
     >>> print webservice.get(
     ...     salgado_landscape['self_link']).jsonBody()['status']
     Approved
-    
+
     >>> print webservice.named_post(
     ...     salgado_landscape['self_link'], 'setStatus', {},
     ...     status='Deactivated', silent=True)
@@ -317,7 +387,8 @@ To change its status, use setStatus(status).
     ...
 
 
-=== Members ===
+Members
+.......
 
 A list of team memberships is distinct from a list of a team's
 members. Members are people; memberships are TeamMemberships. You've
@@ -387,7 +458,8 @@ members.
     http://.../~karl
 
 
-=== Sub-teams and super-teams ===
+Sub-teams and super-teams
+.........................
 
 Teams can be members of other teams, and sometimes it's useful to know
 which teams are members of any given team as well as the ones it is a
@@ -402,7 +474,8 @@ member of.
     http://.../~guadamen
 
 
-=== Wiki names ===
+Wiki names
+..........
 
 All wiki names associated to a person/team are also linked to that
 person/team.
@@ -421,7 +494,8 @@ They can be listed by anonymous clients.
 Wiki names are first-class objects with their own URLs and
 representations too.
 
-    >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
+    >>> wiki_name = sorted(
+    ...     webservice.get(wikis_link).jsonBody()['entries'])[0]
     >>> pprint_entry(wiki_name)
     person_link: u'http://.../~salgado'
     resource_type_link: u'http://.../#wiki_name'
@@ -445,7 +519,8 @@ Wiki names can be modified.
     ...    u'wikiname': 'MrExample'}
     >>> response = webservice.patch(
     ...     wiki_name['self_link'], 'application/json', dumps(patch))
-    >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
+    >>> wiki_name = sorted(
+    ...     webservice.get(wikis_link).jsonBody()['entries'])[0]
     >>> print wiki_name['url']
     http://www.example.com/MrExample
 
@@ -463,7 +538,8 @@ But only if we supply valid data.
     Only URIs with the following schemes may be used: http, https
 
 
-=== Jabber IDs ===
+Jabber IDs
+..........
 
 Jabber IDs of a person are also linked.
 
@@ -494,7 +570,8 @@ to, obviously.
     ...
 
 
-=== IRC nicknames ===
+IRC nicknames
+.............
 
 The same for IRC nicknames
 
@@ -506,7 +583,8 @@ The same for IRC nicknames
 
 Anonymous listing is possible.
 
-    >>> print_self_link_of_entries(anon_webservice.get(irc_ids_link).jsonBody())
+    >>> print_self_link_of_entries(
+    ...     anon_webservice.get(irc_ids_link).jsonBody())
     http://.../~mark/+ircnick/1
 
 IRC IDs are first-class objects with their own URLs and representations
@@ -528,7 +606,8 @@ to, obviously.
     ...
 
 
-=== PPAs ===
+PPAs
+....
 
 We can get to the person's default PPA via the 'archive' property:
 
@@ -555,14 +634,14 @@ named-operation on IPerson.
     ...     name='ppa').jsonBody()['self_link']
     http://.../~mark/+archive/ppa
 
-In cases where a PPA with a given name cannot be found, None is
+In cases where a PPA with a given name cannot be found, a Not Found error is
 returned.
 
     >>> print webservice.named_get(
     ...     mark['self_link'], 'getPPAByName', name='boing')
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
-    NoSuchPPA: No such ppa: 'boing'.
+    No such ppa: 'boing'.
 
 The method doesn't even bother to execute the lookup if the given
 'name' doesn't match the constraints for PPA names. An error message
@@ -575,13 +654,64 @@ indicating what was wrong is returned.
     name:
     Invalid name 'XpTo@#$%'. Names must be at least two characters ...
 
+The 'getArchiveSubscriptionURLs' named operation will return a list of
+all the URLs to the private archives that the person can access.
 
-== Custom operations ==
+    >>> login("mark@example.com")
+    >>> mark_person = getUtility(IPersonSet).getByName("mark")
+    >>> mark_private_ppa = factory.makeArchive(
+    ...     owner=mark_person, distribution=mark_person.archive.distribution,
+    ...     private=True, name='p3a')
+    >>> new_sub_to_mark_ppa = mark_private_ppa.newSubscription(
+    ...     mark_person, mark_person, description=u"testing")
+    >>> token = mark_private_ppa.newAuthToken(mark_person, u"testtoken")
+    >>> logout()
+
+    >>> launchpad = launchpadlib_for(
+    ...     'person test', 'mark', 'WRITE_PUBLIC')
+    >>> print launchpad.me.getArchiveSubscriptionURLs()
+    [u'http://mark:testtoken@private-ppa.launchpad.dev/mark/p3a/ubuntu']
+
+
+Custom operations
+-----------------
 
 IPerson supports a bunch of operations.
 
+Teams can subscribe to source packages:
 
-=== Team membership operations ===
+    >>> login('admin@canonical.com')
+    >>> pythons_db = factory.makeTeam(name='pythons')
+    >>> package_db = factory.makeDistributionSourcePackage(
+    ...     sourcepackagename="fooix")
+    >>> ignored = package_db.addSubscription(None, pythons_db)
+    >>> logout()
+
+Subscribed packages can be listed with getBugSubscriberPackages:
+
+    >>> from lazr.restful.testing.webservice import pprint_collection
+    >>> subscriptions = webservice.named_get("/~pythons",
+    ...     "getBugSubscriberPackages").jsonBody()
+    >>> pprint_collection(subscriptions)
+    start: 0
+    total_size: 1
+    ---
+    bug_reported_acknowledgement: None
+    bug_reporting_guidelines: None
+    display_name: u'...'
+    distribution_link: u'...'
+    name: u'fooix'
+    official_bug_tags: []
+    resource_type_link: u'...'
+    self_link: u'...'
+    title: u'...'
+    upstream_product_link: None
+    web_link: u'...'
+    ---
+
+
+Team membership operations
+..........................
 
 Joining and leaving teams:
 
@@ -607,10 +737,10 @@ Though it is not possible through the Launchpad UI, some users of the
 REST API propose other people (as opposed to teams) as part of a
 mentoring process (Bug 498181).
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from zope.component import getUtility
     >>> login(ANONYMOUS)
     >>> owner = getUtility(IPersonSet).getByName('owner')
     >>> logout()
@@ -661,6 +791,18 @@ Accepting or declining a membership invitation:
     >>> webservice.get("/~ubuntu-team/+member/name20").jsonBody()['status']
     u'Invitation declined'
 
+The retractTeamMembership method allows a team admin to remove his team from
+another team.
+
+    >>> print webservice.named_post(
+    ...     landscape_developers['self_link'], 'retractTeamMembership',
+    ...     {}, team=ubuntu_team['self_link'], comment='bye bye')
+    HTTP/1.1 200 Ok
+    ...
+    >>> webservice.get("/~ubuntu-team/+member/landscape-developers"
+    ...     ).jsonBody()['status']
+    u'Deactivated'
+
 To check whether or not a given person is a participant in a team, use the
 'inTeam' custom operation.
 
@@ -691,14 +833,15 @@ participant, use the 'findPathToTeam' custom operation.
     # http://.../~mailing-list-experts
 
 
-== Restrictions ==
+Restrictions
+------------
 
 A team can't be its own owner.
 
-  >>> import simplejson
-  >>> doc = {'team_owner_link' : webservice.getAbsoluteUrl("/~admins")}
-  >>> print webservice.patch(
-  ...    "/~admins", 'application/json', simplejson.dumps(doc))
-  HTTP/1.1 400 Bad Request
-  ...
-  team_owner_link: Constraint not satisfied.
+    >>> import simplejson
+    >>> doc = {'team_owner_link' : webservice.getAbsoluteUrl("/~admins")}
+    >>> print webservice.patch(
+    ...    "/~admins", 'application/json', simplejson.dumps(doc))
+    HTTP/1.1 400 Bad Request
+    ...
+    team_owner_link: Constraint not satisfied.

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -10,14 +10,13 @@ Apply all outstanding schema patches to an existing launchpad database
 __metaclass__ = type
 
 # pylint: disable-msg=W0403
-import _pythonpath # Sort PYTHONPATH
+import _pythonpath  # Sort PYTHONPATH
 
 from cStringIO import StringIO
 import glob
 import os.path
 from optparse import OptionParser
 import re
-import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
@@ -31,18 +30,120 @@ SCHEMA_DIR = os.path.dirname(__file__)
 
 
 def main():
-    con = connect(options.dbuser)
+    con = connect()
+    patches = get_patchlist(con)
+
     if replication.helpers.slony_installed(con):
         con.close()
         if options.commit is False:
             parser.error("--dry-run does not make sense with replicated db")
         log.info("Applying patches to Slony-I environment.")
         apply_patches_replicated()
+        con = connect()
     else:
         log.info("Applying patches to unreplicated environment.")
         apply_patches_normal(con)
 
+    report_patch_times(con, patches)
+
+    # Commit changes
+    if options.commit:
+        log.debug("Committing changes")
+        con.commit()
+
     return 0
+
+
+# When we apply a number of patches in a transaction, they all end up
+# with the same start_time (the transaction start time). This SQL fixes
+# that up by setting the patch start time to the previous patches end
+# time when there are patches that share identical start times. The
+# FIX_PATCH_TIMES_PRE_SQL stores the start time of patch application,
+# which is probably not the same as the transaction timestamp because we
+# have to apply trusted.sql before applying patches (in addition to
+# other preamble time such as Slony-I grabbing locks).
+# FIX_PATCH_TIMES_POST_SQL does the repair work.
+FIX_PATCH_TIMES_PRE_SQL = dedent("""\
+    CREATE TEMPORARY TABLE _start_time AS (
+        SELECT statement_timestamp() AT TIME ZONE 'UTC' AS start_time);
+    """)
+FIX_PATCH_TIMES_POST_SQL = dedent("""\
+    UPDATE LaunchpadDatabaseRevision
+    SET start_time = prev_end_time
+    FROM (
+        SELECT
+            LDR1.major, LDR1.minor, LDR1.patch,
+            max(LDR2.end_time) AS prev_end_time
+        FROM
+            LaunchpadDatabaseRevision AS LDR1,
+            LaunchpadDatabaseRevision AS LDR2
+        WHERE
+            (LDR1.major, LDR1.minor, LDR1.patch)
+                > (LDR2.major, LDR2.minor, LDR2.patch)
+            AND LDR1.start_time = LDR2.start_time
+        GROUP BY LDR1.major, LDR1.minor, LDR1.patch
+        ) AS PrevTime
+    WHERE
+        LaunchpadDatabaseRevision.major = PrevTime.major
+        AND LaunchpadDatabaseRevision.minor = PrevTime.minor
+        AND LaunchpadDatabaseRevision.patch = PrevTime.patch
+        AND LaunchpadDatabaseRevision.start_time <> prev_end_time;
+
+    UPDATE LaunchpadDatabaseRevision
+    SET start_time=_start_time.start_time
+    FROM _start_time
+    WHERE
+        LaunchpadDatabaseRevision.start_time
+            = transaction_timestamp() AT TIME ZONE 'UTC';
+    """)
+
+
+def to_seconds(td):
+    """Convert a timedelta to seconds."""
+    return td.days * (24 * 60 * 60) + td.seconds + td.microseconds / 1000000.0
+
+
+def report_patch_times(con, todays_patches):
+    """Report how long it took to apply the given patches."""
+    cur = con.cursor()
+
+    todays_patches = [patch_tuple for patch_tuple, patch_file
+        in todays_patches]
+
+    cur.execute("""
+        SELECT
+            major, minor, patch, start_time, end_time - start_time AS db_time
+        FROM LaunchpadDatabaseRevision
+        WHERE start_time > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('1 month' AS interval)
+        ORDER BY major, minor, patch
+        """)
+    for major, minor, patch, start_time, db_time in cur.fetchall():
+        if (major, minor, patch) in todays_patches:
+            continue
+        db_time = to_seconds(db_time)
+        start_time = start_time.strftime('%Y-%m-%d')
+        log.info(
+            "%d-%02d-%d applied %s in %0.1f seconds"
+            % (major, minor, patch, start_time, db_time))
+
+    for major, minor, patch in todays_patches:
+        cur.execute("""
+            SELECT end_time - start_time AS db_time
+            FROM LaunchpadDatabaseRevision
+            WHERE major = %s AND minor = %s AND patch = %s
+            """, (major, minor, patch))
+        db_time = cur.fetchone()[0]
+        # Patches before 2208-01-1 don't have timing information.
+        # Ignore this. We can remove this code the next time we
+        # create a new database baseline, as all patches will have
+        # timing information.
+        if db_time is None:
+            log.debug('%d-%d-%d no application time', major, minor, patch)
+            continue
+        log.info(
+            "%d-%02d-%d applied just now in %0.1f seconds",
+            major, minor, patch, to_seconds(db_time))
 
 
 def apply_patches_normal(con):
@@ -51,18 +152,19 @@ def apply_patches_normal(con):
     # be required for patches to apply correctly so must be run first.
     apply_other(con, 'trusted.sql')
 
+    # Prepare to repair patch timestamps if necessary.
+    con.cursor().execute(FIX_PATCH_TIMES_PRE_SQL)
+
     # Apply the patches
     patches = get_patchlist(con)
     for (major, minor, patch), patch_file in patches:
         apply_patch(con, major, minor, patch, patch_file)
 
+    # Repair patch timestamps if necessary.
+    con.cursor().execute(FIX_PATCH_TIMES_POST_SQL)
+
     # Update comments.
     apply_comments(con)
-
-    # Commit changes
-    if options.commit:
-        log.debug("Committing changes")
-        con.commit()
 
 
 def apply_patches_replicated():
@@ -70,13 +172,13 @@ def apply_patches_replicated():
 
     # Get an autocommit connection. We use autocommit so we don't have to
     # worry about blocking locks needed by Slony-I.
-    con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
     # We use three slonik scripts to apply our DB patches.
     # The first script applies the DB patches to all nodes.
 
     # First make sure the cluster is synced.
-    log.info("Waiting for cluster to sync.")
+    log.info("Waiting for cluster to sync, pre-update.")
     replication.helpers.sync(timeout=600)
 
     outf = StringIO()
@@ -84,18 +186,20 @@ def apply_patches_replicated():
     # Start a transaction block.
     print >> outf, "try {"
 
+    sql_to_run = []
+
     def run_sql(script):
         if os.path.isabs(script):
             full_path = script
         else:
             full_path = os.path.abspath(os.path.join(SCHEMA_DIR, script))
         assert os.path.exists(full_path), "%s doesn't exist." % full_path
-        print >> outf, dedent("""\
-            execute script (
-                set id = @lpmain_set, event node = @master_node,
-                filename='%s'
-                );
-            """ % full_path)
+        sql_to_run.append(full_path)
+
+    # We are going to generate some temporary files using
+    # NamedTempoararyFile. Store them here so we can control when
+    # they get closed and cleaned up.
+    temporary_files = []
 
     # Apply trusted.sql
     run_sql('trusted.sql')
@@ -105,35 +209,45 @@ def apply_patches_replicated():
     # they get closed and cleaned up.
     temporary_files = []
 
-    # Apply DB patches.
+    # Apply DB patches as one big hunk.
+    combined_script = NamedTemporaryFile(prefix='patch', suffix='.sql')
+    temporary_files.append(combined_script)
+
+    # Prepare to repair the start timestamps in
+    # LaunchpadDatabaseRevision.
+    print >> combined_script, FIX_PATCH_TIMES_PRE_SQL
+
     patches = get_patchlist(con)
     for (major, minor, patch), patch_file in patches:
-        run_sql(patch_file)
-        # Cause a failure if the patch neglected to update
-        # LaunchpadDatabaseRevision.
-        assert_script = NamedTemporaryFile(prefix='assert', suffix='.sql')
-        print >> assert_script, dedent("""
-            SELECT assert_patch_applied(%d, %d, %d);
-            """ % (major, minor, patch))
-        assert_script.flush()
-        run_sql(assert_script.name)
-        temporary_files.append(assert_script)
+        print >> combined_script, open(patch_file, 'r').read()
 
-    # Apply comments.sql. Default slonik refuses to run it as one
-    # 'execute script' because it contains too many statements, so chunk
-    # it (we don't want to rebuild slony with a higher limit).
-    comments_path = os.path.join(os.path.dirname(__file__), 'comments.sql')
-    comments = re.findall(
-            "(?ms).*?'\s*;\s*$", open(comments_path, 'r').read())
-    while comments:
-        comment_file = NamedTemporaryFile(prefix="comments", suffix=".sql")
-        print >> comment_file, '\n'.join(comments[:1000])
-        del comments[:1000]
-        comment_file.flush()
-        run_sql(comment_file.name)
-        # Store a reference so it doesn't get garbage collected before our
-        # slonik script is run.
-        temporary_files.append(comment_file)
+        # Trigger a failure if the patch neglected to update
+        # LaunchpadDatabaseRevision.
+        print >> combined_script, (
+            "SELECT assert_patch_applied(%d, %d, %d);"
+            % (major, minor, patch))
+
+    # Fix the start timestamps in LaunchpadDatabaseRevision.
+    print >> combined_script, FIX_PATCH_TIMES_POST_SQL
+
+    combined_script.flush()
+    run_sql(combined_script.name)
+
+    # Now combine all the written SQL (probably trusted.sql and
+    # patch*.sql) into one big file, which we execute with a single
+    # slonik execute_script statement to avoid multiple syncs.
+    single = NamedTemporaryFile(prefix='single', suffix='.sql')
+    for path in sql_to_run:
+        print >> single, open(path, 'r').read()
+        print >> single, ""
+    single.flush()
+
+    print >> outf, dedent("""\
+        execute script (
+            set id = @lpmain_set, event node = @master_node,
+            filename='%s'
+            );
+        """ % single.name)
 
     # Close transaction block and abort on error.
     print >> outf, dedent("""\
@@ -145,8 +259,11 @@ def apply_patches_replicated():
         """)
 
     # Execute the script with slonik.
+    log.info("slonik(1) schema upgrade script generated. Invoking.")
     if not replication.helpers.execute_slonik(outf.getvalue()):
         log.fatal("Aborting.")
+        raise SystemExit(4)
+    log.info("slonik(1) schema upgrade script completed.")
 
     # Cleanup our temporary files - they applied successfully.
     for temporary_file in temporary_files:
@@ -154,6 +271,7 @@ def apply_patches_replicated():
     del temporary_files
 
     # Wait for replication to sync.
+    log.info("Waiting for patches to apply to slaves and cluster to sync.")
     replication.helpers.sync(timeout=0)
 
     # The db patches have now been applied to all nodes, and we are now
@@ -246,26 +364,35 @@ def apply_patches_replicated():
             print >> outf, dedent("""\
                 echo 'Subscribing holding set to @node%d_node.';
                 subscribe set (
-                    id=@holding_set,
-                    provider=@master_node, receiver=@node%d_node, forward=yes);
-                echo 'Waiting for sync';
-                sync (id=1);
+                    id=@holding_set, provider=@master_node,
+                    receiver=@node%d_node, forward=yes);
                 wait for event (
-                    origin=ALL, confirmed=ALL, wait on=@master_node, timeout=0
-                    );
+                    origin=@master_node, confirmed=all,
+                    wait on=@master_node, timeout=0);
+                echo 'Waiting for sync';
+                sync (id=@master_node);
+                wait for event (
+                    origin=@master_node, confirmed=ALL,
+                    wait on=@master_node, timeout=0);
                 """ % (slave_node.node_id, slave_node.node_id))
 
         print >> outf, dedent("""\
             echo 'Merging holding set to lpmain';
             merge set (
-                id=@lpmain_set, add id=@holding_set, origin=@master_node
-                );
+                id=@lpmain_set, add id=@holding_set, origin=@master_node);
             """)
 
         # Execute the script and sync.
+        log.info(
+            "Generated slonik(1) script to replicate new objects. Invoking.")
         if not replication.helpers.execute_slonik(outf.getvalue()):
             log.fatal("Aborting.")
+        log.info(
+            "slonik(1) script to replicate new objects completed.")
+        log.info("Waiting for sync.")
         replication.helpers.sync(timeout=0)
+    else:
+        log.info("No new tables or sequences to replicate.")
 
     # We also scan for tables and sequences we want to drop and do so using
     # a final slonik script. Instead of dropping tables in the DB patch,
@@ -281,7 +408,7 @@ def apply_patches_replicated():
         (fqn(nspname, relname), tab_id)
         for nspname, relname, tab_id in cur.fetchall())
 
-    # Generate a slonik script to remove tables from the replication set, 
+    # Generate a slonik script to remove tables from the replication set,
     # and a DROP TABLE/DROP SEQUENCE sql script to run after.
     if tabs_to_drop:
         log.info("Dropping tables: %s" % ', '.join(
@@ -308,8 +435,10 @@ def apply_patches_replicated():
                 exit 1;
                 }
             """ % sql.name)
+        log.info("Generated slonik(1) script to drop tables. Invoking.")
         if not replication.helpers.execute_slonik(sk.getvalue()):
             log.fatal("Aborting.")
+        log.info("slonik(1) script to drop tables completed.")
         sql.close()
 
     # Now drop sequences. We don't do this at the same time as the tables,
@@ -352,8 +481,11 @@ def apply_patches_replicated():
                 exit 1;
                 }
             """ % sql.name)
+        log.info("Generated slonik(1) script to drop sequences. Invoking.")
         if not replication.helpers.execute_slonik(sk.getvalue()):
             log.fatal("Aborting.")
+        log.info("slonik(1) script to drop sequences completed.")
+    log.info("Waiting for final sync.")
     replication.helpers.sync(timeout=0)
 
 
@@ -372,11 +504,11 @@ def get_patchlist(con):
         m = re.search('patch-(\d+)-(\d+)-(\d).sql$', patch_file)
         if m is None:
             log.fatal('Invalid patch filename %s' % repr(patch_file))
-            sys.exit(1)
+            raise SystemExit(1)
 
         major, minor, patch = [int(i) for i in m.groups()]
         if (major, minor, patch) in dbpatches:
-            continue # This patch has already been applied
+            continue  # This patch has already been applied
         log.debug("Found patch %d.%d.%d -- %s" % (
             major, minor, patch, patch_file
             ))
@@ -393,26 +525,7 @@ def applied_patches(con):
 
 
 def apply_patch(con, major, minor, patch, patch_file):
-    log.info("Applying %s" % patch_file)
-    cur = con.cursor()
-    full_sql = open(patch_file).read()
-
-    # Strip comments
-    full_sql = re.sub('(?xms) \/\* .*? \*\/', '', full_sql)
-    full_sql = re.sub('(?xm) ^\s*-- .*? $', '', full_sql)
-
-    # Regular expression to extract a single statement.
-    # A statement may contain semicolons if it is a stored procedure
-    # definition, which requires a disgusting regexp or a parser for
-    # PostgreSQL specific SQL.
-    statement_re = re.compile(
-            r"( (?: [^;$] | \$ (?! \$) | \$\$.*? \$\$)+ )",
-            re.DOTALL | re.MULTILINE | re.VERBOSE
-            )
-    for sql in statement_re.split(full_sql):
-        sql = sql.strip()
-        if sql and sql != ';':
-            cur.execute(sql) # Will die on a bad patch.
+    apply_other(con, patch_file, no_commit=True)
 
     # Ensure the patch updated LaunchpadDatabaseRevision. We could do this
     # automatically and avoid the boilerplate, but then we would lose the
@@ -420,7 +533,7 @@ def apply_patch(con, major, minor, patch, patch_file):
     if (major, minor, patch) not in applied_patches(con):
         log.fatal("%s failed to update LaunchpadDatabaseRevision correctly"
                 % patch_file)
-        sys.exit(2)
+        raise SystemExit(2)
 
     # Commit changes if we allow partial updates.
     if options.commit and options.partial:
@@ -428,14 +541,21 @@ def apply_patch(con, major, minor, patch, patch_file):
         con.commit()
 
 
-def apply_other(con, script):
+def apply_other(con, script, no_commit=False):
     log.info("Applying %s" % script)
     cur = con.cursor()
     path = os.path.join(os.path.dirname(__file__), script)
     sql = open(path).read()
+    if not sql.rstrip().endswith(';'):
+        # This is important because patches are concatenated together
+        # into a single script when we apply them to a replicated
+        # environment.
+        log.fatal(
+            "Last non-whitespace character of %s must be a semicolon", script)
+        raise SystemExit(3)
     cur.execute(sql)
 
-    if options.commit and options.partial:
+    if not no_commit and options.commit and options.partial:
         log.debug("Committing changes")
         con.commit()
 
@@ -453,7 +573,7 @@ if __name__ == '__main__':
             action="store_false", help="Don't actually commit changes"
             )
     parser.add_option(
-            "-p", "--partial", dest="partial", default=False,
+            "--partial", dest="partial", default=False,
             action="store_true",
             help="Commit after applying each patch",
             )

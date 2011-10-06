@@ -22,14 +22,15 @@ about the bug.
     ...         print "Getting Launchpad id for bug %s" % remote_bug
     ...         return self.last_launchpad_bug_id
     ...
-    ...     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+    ...     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id,
+    ...                           launchpad_bug_url):
     ...         self.last_launchpad_bug_id = launchpad_bug_id
     ...         print "Setting Launchpad id for bug %s" % remote_bug
 
-The methods are called by the BugWatchUpdater class:
+The methods are called by the CheckwatchesMaster class:
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> txn = transaction
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
@@ -45,12 +46,14 @@ The methods are called by the BugWatchUpdater class:
     >>> txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('checkwatches')
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> checkwatches_master = CheckwatchesMaster(txn)
+    >>> txn.commit()
+
     >>> external_bugtracker = BackLinkingExternalBugTracker(
     ...     'http://example.com/')
 
-    >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
+    >>> checkwatches_master.updateBugWatches(external_bugtracker, [bug_watch])
     Getting Launchpad id for bug 42
     Setting Launchpad id for bug 42
 
@@ -60,7 +63,7 @@ The methods are called by the BugWatchUpdater class:
 For comment syncing and back-linking to be attempted, bug watches must
 be related to a bug task, not just a bug.
 
-    >>> bug_watch_updater.updateBugWatches(
+    >>> checkwatches_master.updateBugWatches(
     ...     external_bugtracker, [bug_watch_without_bugtask])
 
 
@@ -86,8 +89,16 @@ be called on our BackLinkingExternalBugTracker.
     >>> bug_watch.bug.id == bug_watch_2.bug.id
     False
 
-    >>> bug_watch_updater.linkLaunchpadBug(
-    ...     external_bugtracker, bug_watch_2)
+    >>> transaction.commit()
+
+    >>> from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
+    >>> from lp.bugs.scripts.checkwatches.tests.test_bugwatchupdater import (
+    ...     make_bug_watch_updater)
+
+    >>> bug_watch_updater = make_bug_watch_updater(
+    ...     CheckwatchesMaster(transaction), bug_watch,
+    ...     external_bugtracker)
+    >>> bug_watch_updater.linkLaunchpadBug()
     Getting Launchpad id for bug 42
 
 However, if we set the current Launchpad bug ID on our
@@ -110,7 +121,9 @@ fact link to it.
 Calling linkLaunchpadBug() with a bug watch that actually does link to
 bug 42 will correct the error.
 
-    >>> bug_watch_updater.linkLaunchpadBug(external_bugtracker, bug_watch)
+    >>> transaction.commit()
+
+    >>> bug_watch_updater.linkLaunchpadBug()
     Getting Launchpad id for bug 42
     Setting Launchpad id for bug 42
 
@@ -120,6 +133,6 @@ The remote bug's Launchpad bug ID will be overwritten to correct the
 error.
 
     >>> external_bugtracker.last_launchpad_bug_id = 0
-    >>> bug_watch_updater.linkLaunchpadBug(external_bugtracker, bug_watch)
+    >>> bug_watch_updater.linkLaunchpadBug()
     Getting Launchpad id for bug 42
     Setting Launchpad id for bug 42

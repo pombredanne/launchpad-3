@@ -5,6 +5,8 @@
 # Hopefully this decision will be reversed before 3.3 is released causing
 # this to become a load of spurious exceptions. Bug 39883.
 import warnings
+
+
 warnings.filterwarnings(
         'ignore', r'.*Use explicit i18n:translate=""', DeprecationWarning
         )
@@ -13,7 +15,3 @@ warnings.filterwarnings(
 # their own MessageFactory
 from zope.i18nmessageid import MessageFactory
 _ = MessageFactory("launchpad")
-
-# Load versioninfo.py so that we get errors on start-up rather than waiting
-# for first page load.
-import canonical.launchpad.versioninfo

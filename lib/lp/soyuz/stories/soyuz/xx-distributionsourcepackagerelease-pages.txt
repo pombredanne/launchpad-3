@@ -48,7 +48,7 @@ they all point to the `DistributionSourcePackage` (parent) url.
     Hierarchy: ubuntutest > ?testing-dspr? package > 1.0
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntutest/+source/testing-dspr
-    * Branches - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
+    * Code - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
     * Bugs - http://bugs.launchpad.dev/ubuntutest/+source/testing-dspr
     * Blueprints - not linked
     * Translations - not linked
@@ -164,12 +164,12 @@ of this source in the context distribution are listed.
 
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> print backslashreplace(anon_browser.title)
-    Publishing history : 1.0 : \u201ctesting-dspr\u201d package : ubuntutest
+    Publishing history : 1.0 : ...testing-dspr... package : ubuntutest
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Publishing history of “testing-dspr” 1.0 source package in ubuntutest
+    Publishing history of ...testing-dspr... 1.0 source package in ubuntutest
     ubuntutest
-    “testing-dspr” package
+    ...testing-dspr... package
     1.0
     Publishing history
     Date  Status     Target     Pocket   Component  Section  Version
@@ -223,7 +223,7 @@ are available.
     File                  Size      MD5 Checksum
     testing-dspr_1.0.dsc  28 bytes  5913c3ad52c14a62e6ae7eef51f9ef42
     Available diffs
-    0.9 to 1.0 (7 bytes)
+    diff from 0.9 to 1.0 (7 bytes)
 
     >>> print anon_browser.getLink('0.9 to 1.0').url
     http://.../101/testing-dspr_0.9_1.0.diff.gz
@@ -249,17 +249,19 @@ package caches (see doc/package-cache.txt).
     # Update the binary package caches to include the testing publication.
     >>> from zope.component import getUtility
     >>> from canonical.config import config
-    >>> from canonical.launchpad.scripts.logger import BufferLogger
+    >>> from lp.services.log.logger import BufferLogger
     >>> from canonical.testing.layers import reconnect_stores
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.model.distroseriespackagecache import (
+    ...     DistroSeriesPackageCache)
     >>> login('foo.bar@canonical.com')
     >>> transaction.commit()
     >>> reconnect_stores(config.statistician.dbuser)
     >>> logger = BufferLogger()
     >>> ubuntutest = getUtility(IDistributionSet).getByName('ubuntutest')
     >>> breezy_autotest = ubuntutest.getSeries('breezy-autotest')
-    >>> unused = breezy_autotest.updateCompletePackageCache(
-    ...     ubuntutest.main_archive, logger, transaction)
+    >>> unused = DistroSeriesPackageCache.updateAll(
+    ...     breezy_autotest, ubuntutest.main_archive, logger, transaction)
     >>> transaction.commit()
     >>> reconnect_stores('launchpad')
     >>> logout()
@@ -287,9 +289,9 @@ The full change log can be viewed as follows:
     celso.providelo@canonical.com
 
     >>> print extract_text(find_main_content(user_browser.contents))
-    Change log for “testing-dspr” package in ubuntutest
+    Change log for ...testing-dspr... package in ubuntutest
     ubuntutest
-    “testing-dspr” package
+    ...testing-dspr... package
     Change log
     0.9
     Pending in breezy-autotest-release
@@ -303,5 +305,5 @@ The full change log can be viewed as follows:
     LP: #1234
     celso.providelo@canonical.com
     Available diffs
-    0.9 to 1.0
+    diff from 0.9 to 1.0
     (7 bytes)

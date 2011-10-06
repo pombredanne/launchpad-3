@@ -6,14 +6,21 @@
 __metaclass__ = type
 
 from difflib import unified_diff
-import unittest
 
 from storm.store import Store
+from testtools.matchers import Equals
+from zope.component import queryAdapter
 from zope.security.proxy import removeSecurityProxy
+from zope.traversing.interfaces import IPathAdapter
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing import LaunchpadFunctionalLayer
-from lp.testing import login, TestCaseWithFactory, test_tales
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing import (
+    login,
+    person_logged_in,
+    test_tales,
+    TestCaseWithFactory,
+    )
 
 
 class TestPreviewDiffFormatter(TestCaseWithFactory):
@@ -170,6 +177,34 @@ class TestDiffFormatter(TestCaseWithFactory):
             diff.diff_text.getURL(), test_tales('diff/fmt:url', diff=diff))
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestSourcePackageRecipeBuild(TestCaseWithFactory):
+    """Test the formatter for SourcePackageRecipeBuilds."""
 
+    layer = LaunchpadFunctionalLayer
+
+    def test_link(self):
+        eric = self.factory.makePerson(name='eric')
+        ppa = self.factory.makeArchive(owner=eric, name='ppa')
+        build = self.factory.makeSourcePackageRecipeBuild(
+            archive=ppa)
+        adapter = queryAdapter(build, IPathAdapter, 'fmt')
+        self.assertThat(
+            adapter.link(None),
+            Equals(
+                '<a href="%s">%s recipe build [eric/ppa]</a>'
+                % (canonical_url(build, path_only_if_possible=True),
+                   build.recipe.base_branch.unique_name)))
+
+    def test_link_no_recipe(self):
+        eric = self.factory.makePerson(name='eric')
+        ppa = self.factory.makeArchive(owner=eric, name='ppa')
+        build = self.factory.makeSourcePackageRecipeBuild(
+            archive=ppa)
+        with person_logged_in(build.recipe.owner):
+            build.recipe.destroySelf()
+        adapter = queryAdapter(build, IPathAdapter, 'fmt')
+        self.assertThat(
+            adapter.link(None),
+            Equals(
+                '<a href="%s">build for deleted recipe [eric/ppa]</a>'
+                % (canonical_url(build, path_only_if_possible=True), )))

@@ -21,27 +21,35 @@ get this picked up by the process email cronscript, you need to copy it to the
 directory above the working tree and call it +testing-mailbox.zcml (actually
 you could call it anything that matches +*.zcml loaded from script.zcml).
 
-There is a helper function create_mail_for_directoryMailBox that has been
-added to the globs in `make harness`, and can be found in the file
-lib/canonical/launchpad/testing/mail.py.
+There is a helper function create_mail_for_directoryMailBox that can be
+run with something like this::
+
+    make harness
+    from lp.testing import mail
+    mail.create_mail_for_directoryMailBox(
+        'me@example.com',
+        'new@bugs.launchpad.net',
+        'help',
+        'message body',
+        )
 
 Let's look at the one we use in tests:
 
-    >>> from canonical.launchpad.interfaces import IMailBox
+    >>> from lp.services.mail.mailbox import IMailBox
     >>> mailbox = getUtility(IMailBox)
 
 Now it's empty, so let's add some mails to it by using simple_sendmail:
 
     >>> import transaction
-    >>> from canonical.launchpad.mail import simple_sendmail
+    >>> from lp.services.mail.sendmail import simple_sendmail
     >>> msgid = simple_sendmail('test@canonical.com',
-    ...                         '123@bugs.canonical.com', 
+    ...                         '123@bugs.canonical.com',
     ...                         'Hello',
     ...                         'bla bla bla',
     ...                         headers={'Message-ID': '<test1>'})
     >>> transaction.commit()
     >>> msgid = simple_sendmail('test@canonical.com',
-    ...                         '456@bugs.canonical.com', 
+    ...                         '456@bugs.canonical.com',
     ...                         'Hello',
     ...                         'bla bla bla',
     ...                         headers={'Message-ID': '<test2>'})
@@ -64,7 +72,7 @@ before:
 
     >>> mails = list(mailbox.items())
     >>> len(mails)
-    2 
+    2
     >>> id, raw_mail = mails[0]
     >>> import email
     >>> mail = email.message_from_string(raw_mail)
@@ -80,7 +88,7 @@ Since we didn't delete the mail, it's still in there:
     >>> mailbox.open()
     >>> mails = list(mailbox.items())
     >>> len(mails)
-    2 
+    2
     >>> id, raw_mail = mails[0]
     >>> mail = email.message_from_string(raw_mail)
     >>> print mail['Message-ID']

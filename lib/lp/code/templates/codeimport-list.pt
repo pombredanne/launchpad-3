@@ -60,8 +60,8 @@
           <td>
             <a href="code-import"
                tal:attributes="href codeimport/branch/fmt:url">
-              <span tal:replace="codeimport/product/name">
-                product-name
+              <span tal:replace="codeimport/branch/target/name">
+                target-name
               </span>/<span tal:replace="codeimport/branch/name">
                 branch-name
               </span>

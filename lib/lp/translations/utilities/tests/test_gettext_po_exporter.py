@@ -1,27 +1,31 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
 from textwrap import dedent
+
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.helpers import test_diff
-from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.translationexporter import (
+    ITranslationFormatExporter,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
 from lp.translations.utilities.gettext_po_exporter import (
-    comments_text_representation, strip_last_newline)
-from lp.translations.utilities.gettext_po_exporter import (
-    GettextPOExporter)
-from lp.translations.utilities.gettext_po_parser import (
-    POParser)
+    comments_text_representation,
+    GettextPOExporter,
+    strip_last_newline,
+    )
+from lp.translations.utilities.gettext_po_parser import POParser
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
-from canonical.testing import LaunchpadZopelessLayer
+    TranslationMessageData,
+    )
+from lp.translations.utilities.translation_export import ExportFileStorage
 
 
 class GettextPOExporterTestCase(TestCaseWithFactory):
@@ -46,11 +50,16 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
             if (not line.startswith('"X-Launchpad-Export-Date:') and
                 not line.startswith('"X-Generator: Launchpad'))]
 
-        for i in range(len(import_lines)):
+        line_pairs = zip(export_lines, import_lines)
+        debug_diff = test_diff(import_lines, export_lines)
+        for export_line, import_line in line_pairs:
             self.assertEqual(
-                export_lines[i], import_lines[i],
-                "Output doesn't match:\n\n %s" % test_diff(
-                    import_lines, export_lines))
+                export_line, import_line,
+                "Output doesn't match:\n\n %s" % debug_diff)
+
+        self.assertEqual(
+            len(export_lines), len(import_lines),
+            "Output has excess lines:\n\n %s" % debug_diff)
 
     def testInterface(self):
         """Check whether the object follows the interface."""
@@ -67,7 +76,7 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
             "Expected GettextPOExporter to provide PO format "
             "but got %r instead." % self.translation_exporter.format)
         self.failUnlessEqual(
-            self.translation_exporter.supported_source_formats ,
+            self.translation_exporter.supported_source_formats,
             [TranslationFileFormat.PO, TranslationFileFormat.KDEPO],
             "Expected GettextPOExporter to support PO and KDEPO source "
             "formats but got %r instead." % (
@@ -121,11 +130,12 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         cy_translation_file.language_code = 'cy'
         cy_translation_file.path = 'po/cy.po'
         cy_translation_file.translation_domain = 'testing'
-        exported_cy_file = self.translation_exporter.exportTranslationFiles(
-            [cy_translation_file])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            cy_translation_file, storage)
 
         self._compareImportAndExport(
-            pofile_cy.strip(), exported_cy_file.read().strip())
+            pofile_cy.strip(), storage.export().read().strip())
 
     def testObsoleteExport(self):
         """Check how obsoleted messages are exported."""
@@ -176,11 +186,12 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         eo_translation_file.path = 'po/eo.po'
         eo_translation_file.translation_domain = 'testing'
         eo_translation_file.messages[0].is_obsolete = True
-        exported_eo_file = self.translation_exporter.exportTranslationFiles(
-            [eo_translation_file])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            eo_translation_file, storage)
 
         self._compareImportAndExport(
-            pofile_eo_obsolete.strip(), exported_eo_file.read().strip())
+            pofile_eo_obsolete.strip(), storage.export().read().strip())
 
     def testEncodingExport(self):
         """Test that PO headers specifying character sets are respected."""
@@ -202,11 +213,12 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
                 translation_file.messages[0].translations,
                 [nihongo_unicode])
 
-            exported_file = self.translation_exporter.exportTranslationFiles(
-                [translation_file])
+            storage = ExportFileStorage()
+            self.translation_exporter.exportTranslationFile(
+                translation_file, storage)
 
             self._compareImportAndExport(
-                pofile.strip(), exported_file.read().strip())
+                pofile.strip(), storage.export().read().strip())
 
         # File representing the same PO file three times. Each is identical
         # except for the charset declaration in the header.
@@ -258,7 +270,7 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
 
                 msgid "Japanese"
                 msgstr "\xc6\xfc\xcb\xdc\xb8\xec"
-                ''')
+                '''),
             ]
         for pofile in pofiles:
             compare(self, pofile)
@@ -274,13 +286,14 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         # translation is not available in that encoding and thus, we should
         # get an export in UTF-8.
         translation_file.header.charset = 'ASCII'
-        exported_file = self.translation_exporter.exportTranslationFiles(
-            [translation_file])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            translation_file, storage)
 
         self._compareImportAndExport(
             pofile_content.strip() % {
                 'charset': 'UTF-8', 'special': '\xc3\xa1'},
-            exported_file.read().strip())
+            storage.export().read().strip())
 
     def testBrokenEncodingExport(self):
         """Test what happens when the content and the encoding don't agree.
@@ -363,11 +376,12 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         translation_file.language_code = 'es'
         translation_file.path = 'po/es.po'
         translation_file.translation_domain = 'testing'
-        exported_file = self.translation_exporter.exportTranslationFiles(
-            [translation_file])
+        storage = ExportFileStorage()
+        self.translation_exporter.exportTranslationFile(
+            translation_file, storage)
 
         self._compareImportAndExport(
-            pofile.strip() % 'msgstr[1] ""', exported_file.read().strip())
+            pofile.strip() % 'msgstr[1] ""', storage.export().read().strip())
 
     def testClashingSingularMsgIds(self):
         # We don't accept it in gettext imports directly, since it's not
@@ -410,10 +424,10 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         pofile = self.factory.makePOFile(
             potemplate=template, language_code='nl')
 
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=obsolete_message,
             translations=['%d splut', '%d splutjes'])
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=current_message,
             translations=['%d gargl', '%d garglii'])
 
@@ -431,7 +445,7 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
             """).strip()
 
         body = exported_file.split('\n\n', 1)[1].strip()
-        self.assertEqual(body, expected_output)
+        self.assertEqual(expected_output, body)
 
     def test_strip_last_newline(self):
         # `strip_last_newline` strips only the last newline.
@@ -471,9 +485,9 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         self.assertEqual("#. Line One\n#. Line Two",
                          comments_text_representation(data))
 
-
-def test_suite():
-    # Run gettext po exporter doc tests.
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPOExporterTestCase))
-    return suite
+    def test_export_handles_empty_files(self):
+        # Exporting an empty gettext file does not break the exporter.
+        # The output does contain one message: the header.
+        output = self.factory.makePOFile('nl').export()
+        self.assertTrue(output.startswith('# Dutch translation for '))
+        self.assertEqual(1, output.count('msgid'))

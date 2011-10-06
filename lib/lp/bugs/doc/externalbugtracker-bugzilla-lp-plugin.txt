@@ -56,7 +56,7 @@ _handleLoginToken() method of TestBugzillaXMLRPCTransport so that it can
 work with the right database user.
 
     >>> from canonical.config import config
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestInternalXMLRPCTransport)
 
@@ -334,8 +334,8 @@ BugzillaLPPlugin implments the ISupportsCommentImport interface, which
 means that we can use it to import comments from the remote Bugzilla
 instance.
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
 
@@ -376,8 +376,11 @@ getCommentIds()
 ISupportsCommentImport.getCommentIds() is the method used to get all the
 comment IDs for a given bug on a remote bugtracker.
 
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
-    >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch.remotebug)
+    >>> bug_comment_ids = bugzilla.getCommentIds(remote_bug)
     CALLED Launchpad.comments({'bug_ids': [1], 'include_fields': ['id']})
 
     >>> print sorted(bug_comment_ids)
@@ -386,7 +389,10 @@ comment IDs for a given bug on a remote bugtracker.
 getCommentIds() can only be called if initializeRemoteBugDB() has been
 called and the bug exists locally.
 
-    >>> bugzilla.getCommentIds(bug_watch_broken.remotebug)
+    >>> remote_bug = bug_watch_broken.remotebug
+    >>> transaction.commit()
+
+    >>> bugzilla.getCommentIds(remote_bug)
     Traceback (most recent call last):
       ...
     BugNotFound: 42
@@ -399,8 +405,11 @@ ISupportsCommentImport.fetchComments() is the method used to fetch a
 given set of comments from the remote bugtracker. It takes a remote
 bug ID and a list of the comment IDs to retrieve for that bug watch.
 
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> bugzilla.fetchComments(bug_watch.remotebug, ['1', '3'])
+    >>> bugzilla.fetchComments(remote_bug, ['1', '3'])
 
 The comments will be stored in the bugs dict as a dict of comment id =>
 comment dict mappings under the key 'comments'.
@@ -465,13 +474,18 @@ authorization cookie so that it gets regenerated.
 
 The comment will be stored on the remote server with the other comments.
 
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> print sorted(bugzilla.getCommentIds(bug_watch.remotebug))
+    >>> print sorted(bugzilla.getCommentIds(remote_bug))
     ['1', '3', '5']
 
-    >>> bugzilla.fetchComments(bug_watch.remotebug, ['5'])
+    >>> transaction.commit()
+
+    >>> bugzilla.fetchComments(remote_bug, ['5'])
     >>> message = bugzilla.getMessageForComment(
-    ...     bug_watch.remotebug, '5', sample_person)
+    ...     remote_bug, '5', sample_person)
     >>> print message.text_contents
     This is a new remote comment.
     <BLANKLINE>
@@ -515,13 +529,16 @@ set.
 setLaunchpadBugId() is used to set the Launchpad bug ID for a given
 remote bug.
 
+    >>> transaction.commit()
+
 setLaunchpadBugId() requires authentication.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
     >>> bugzilla.xmlrpc_transport.expireCookie(
     ...     bugzilla.xmlrpc_transport.auth_cookie)
 
-    >>> bugzilla.setLaunchpadBugId(1, 10)
+    >>> bugzilla.setLaunchpadBugId(
+    ...     1, 10, 'http://bugs.launchpad.dev/bugs/xxx')
     Using XML-RPC to generate token.
     CALLED Launchpad.login({'token': '...'})
     Successfully validated the token.

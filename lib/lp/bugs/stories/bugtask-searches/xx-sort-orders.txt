@@ -33,6 +33,10 @@ Newest:
 
 Default view:
 
+    >>> # Debian must enable the Launchpad bug tracker to access bugs.
+    >>> from lp.testing.service_usage_helpers import set_service_usage
+    >>> set_service_usage('debian', bug_tracking_usage='LAUNCHPAD')
+
     >>> anon_browser.open("http://launchpad.dev/debian/+bugs")
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
@@ -55,10 +59,10 @@ By most recently changed:
     1 Firefox does not support SVG
     mozilla-firefox Low Confirmed
 
-By least recently changed:
+By not recently changed:
 
     >>> anon_browser.getControl(name="orderby").displayValue = [
-    ...     "least recently changed"]
+    ...     "not recently changed"]
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG

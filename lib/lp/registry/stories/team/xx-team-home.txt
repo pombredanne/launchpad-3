@@ -47,7 +47,7 @@ The page contains a few interesting details about team membership.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    10 active members, 1 invited members, 2 proposed members...
+    10 active members, 1 invited member, 2 proposed members...
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-email'))

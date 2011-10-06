@@ -14,8 +14,7 @@ We call such a transport a "Twisted Transport".
 
 __metaclass__ = type
 __all__ = [
-    'AvatarToSFTPAdapter',
-    'FileTransferServer',
+    'avatar_to_sftp_server',
     'TransportSFTPServer',
     ]
 
@@ -25,31 +24,29 @@ import errno
 import os
 import stat
 
-from bzrlib import errors as bzr_errors
-from bzrlib import osutils, urlutils
+from bzrlib import (
+    errors as bzr_errors,
+    osutils,
+    urlutils,
+    )
 from bzrlib.transport.local import LocalTransport
-from twisted.conch.ssh import filetransfer
+from twisted.conch.interfaces import (
+    ISFTPFile,
+    ISFTPServer,
+    )
 from twisted.conch.ls import lsLine
-from twisted.conch.interfaces import ISFTPFile, ISFTPServer
+from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
 from twisted.python import util
-
-from zope.event import notify
 from zope.interface import implements
 
-from lp.codehosting.vfs import AsyncLaunchpadTransport, LaunchpadServer
-from lp.codehosting.sshserver import accesslog
 from canonical.config import config
-from canonical.twistedsupport import gatherResults
-
-
-class FileIsADirectory(bzr_errors.PathError):
-    """Raised when writeChunk is called on a directory.
-
-    This exists mainly to be translated into the appropriate SFTP error.
-    """
-
-    _fmt = 'File is a directory: %(path)r%(extra)s'
+from lp.codehosting.vfs import (
+    AsyncLaunchpadTransport,
+    LaunchpadServer,
+    )
+from lp.services.sshserver.sftp import FileIsADirectory
+from lp.services.twistedsupport import gatherResults
 
 
 class FatLocalTransport(LocalTransport):
@@ -245,34 +242,13 @@ def _get_transport_for_dir(directory):
 
 def avatar_to_sftp_server(avatar):
     user_id = avatar.user_id
-    hosted_transport = _get_transport_for_dir(
-        config.codehosting.hosted_branches_root)
-    mirror_transport = _get_transport_for_dir(
+    branch_transport = _get_transport_for_dir(
         config.codehosting.mirrored_branches_root)
     server = LaunchpadServer(
-        avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
+        avatar.codehosting_proxy, user_id, branch_transport)
     server.start_server()
     transport = AsyncLaunchpadTransport(server, server.get_url())
-    notify(accesslog.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
-
-
-class FileTransferServer(filetransfer.FileTransferServer):
-
-    def __init__(self, data=None, avatar=None):
-        filetransfer.FileTransferServer.__init__(self, data, avatar)
-        self.avatar = avatar
-
-    def connectionLost(self, reason):
-        # This method gets called twice: once from `SSHChannel.closeReceived`
-        # when the client closes the channel and once from `SSHSession.closed`
-        # when the server closes the session. We change the avatar attribute
-        # to avoid logging the `SFTPClosed` event twice.
-        filetransfer.FileTransferServer.connectionLost(self, reason)
-        if self.avatar is not None:
-            avatar = self.avatar
-            self.avatar = None
-            notify(accesslog.SFTPClosed(avatar))
 
 
 class TransportSFTPServer:

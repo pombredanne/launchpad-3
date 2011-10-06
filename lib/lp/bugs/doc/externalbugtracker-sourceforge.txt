@@ -12,9 +12,9 @@ externalbugtracker.SourceForge, which implements IExternalBugTracker.
 
     >>> from lp.bugs.externalbugtracker import (
     ...     SourceForge)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> verifyObject(IExternalBugTracker,
     ...     SourceForge('http://example.com'))
     True
@@ -96,7 +96,7 @@ resolution, to demonstrate this:
     >>> sourceforge.initializeRemoteBugDB([0])
     Traceback (most recent call last):
       ...
-    UnparseableBugData: Remote bug 0 does not define a status.
+    UnparsableBugData: Remote bug 0 does not define a status.
 
 Some SourceForge bugs are marked private. Although we can't import a
 status from them, we don't raise an error when trying to initialize the
@@ -136,13 +136,13 @@ a PrivateRemoteBug error.
 First, we create some bug watches to test with. Example.com hosts a
 SourceForge instance which has several bugs that we wish to watch:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> example_bug = getUtility(IBugSet).get(10)
@@ -159,10 +159,12 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 Our SourceForge ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> transaction.commit()
+
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> sourceforge = TestSourceForge(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)
@@ -173,7 +175,7 @@ remote status for, the bug watch that we have created.
 We now add some more watches against remote bugs in the example.com bug
 tracker with a variety of statuses.
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     sourceforge.convertRemoteStatus)
     Remote bug 1722250: New
@@ -203,6 +205,8 @@ even if we pass it 10 bug watches to update only one will actually be
 updated. In this case it will be the first bug watch that hasn't yet
 been checked.
 
+    >>> transaction.commit()
+
     >>> sourceforge.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, sorted(example_bug_tracker.watches))
@@ -212,9 +216,6 @@ been checked.
 For the sake of this test we can set the bug tracker's batch_size to
 None so that it will process all the updates at once:
 
-    >>> from canonical.launchpad.ftests import sync
-    >>> for bug_watch in example_bug_tracker.watches:
-    ...     sync(bug_watch)
     >>> sourceforge.batch_size = None
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)

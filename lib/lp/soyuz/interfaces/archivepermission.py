@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0213
@@ -8,53 +8,40 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchivePermissionType',
     'IArchivePermission',
     'IArchivePermissionSet',
     'IArchiveUploader',
     'IArchiveQueueAdmin',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.services.fields import PublicPersonChoice
+from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.component import IComponent
 from lp.soyuz.interfaces.packageset import IPackageset
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName)
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
-
-
-class ArchivePermissionType(DBEnumeratedType):
-    """Archive Permission Type.
-
-    The permission being granted, such as upload rights, or queue
-    manipulation rights.
-    """
-
-    UPLOAD = DBItem(1, """
-        Archive Upload Rights
-
-        This permission allows a user to upload.
-        """)
-
-    QUEUE_ADMIN = DBItem(2, """
-        Queue Administration Rights
-
-        This permission allows a user to administer the distroseries
-        upload queue.
-        """)
 
 
 class IArchivePermission(Interface):
     """The interface for `ArchivePermission`."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Attribute("The archive permission ID.")
 
@@ -141,6 +128,15 @@ class IArchiveQueueAdmin(IArchivePermission):
 
 class IArchivePermissionSet(Interface):
     """The interface for `ArchivePermissionSet`."""
+
+    # Do not export this utility directly on the webservice.  There is
+    # no reasonable security model we can implement for it because it
+    # requires the archive context to be able to make an informed
+    # security decision.
+    #
+    # For this reason, the security declaration in the zcml is
+    # deliberately permissive.  We don't expect anything to access this
+    # utility except the IArchive code, which is appropriately protected.
 
     def checkAuthenticated(person, archive, permission, item):
         """The `ArchivePermission` records that authenticate the person.
@@ -415,7 +411,7 @@ class IArchivePermissionSet(Interface):
         :param component: An `IComponent` or a string package name.
         """
 
-    def deleteQueueAdmin(self, archive, person, component):
+    def deleteQueueAdmin(archive, person, component):
         """Revoke queue admin permissions for a person.
 
         :param archive: The context `IArchive` for the permission check.

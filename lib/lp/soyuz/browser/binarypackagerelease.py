@@ -10,10 +10,10 @@ __all__ = [
 
 from apt_pkg import ParseDepends
 
-from canonical.launchpad.browser.packagerelationship import (
-    relationship_builder)
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
 from canonical.launchpad.webapp import Navigation
+from lp.soyuz.browser.packagerelationship import relationship_builder
+from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
+
 
 class BinaryPackageReleaseNavigation(Navigation):
     usedfor = IBinaryPackageRelease
@@ -32,7 +32,7 @@ class BinaryPackageView:
         Define apt_pkg.ParseDep as a relationship 'parser' and
         IDistroArchSeries.getBinaryPackage as 'getter'.
         """
-        getter = self.context.build.distroarchseries.getBinaryPackage
+        getter = self.context.build.distro_arch_series.getBinaryPackage
         parser = ParseDepends
         return relationship_builder(content, parser=parser, getter=getter)
 

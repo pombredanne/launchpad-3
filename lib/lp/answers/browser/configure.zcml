@@ -14,7 +14,7 @@
        IQuestionCollection. -->
   <browser:defaultView
     for="lp.answers.interfaces.questioncollection.IQuestionCollection"
-    layer="canonical.launchpad.layers.AnswersLayer"
+    layer="lp.answers.publisher.AnswersLayer"
     name="+tickets"
     />
   <browser:page
@@ -88,9 +88,16 @@
   <browser:page
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+portlet-answercontacts"
+    class=".questiontarget.QuestionTargetPortletAnswerContacts"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-answercontacts.pt"
     />
+  <browser:page
+      for="lp.answers.interfaces.question.IQuestionTarget"
+      name="+portlet-answercontacts-details"
+      class="
+        lp.answers.browser.questiontarget.QuestionTargetPortletAnswerContactsWithDetails"
+      permission="zope.Public"/>
   <browser:page
     name="+addquestion"
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
@@ -114,7 +121,7 @@
     classes="QuestionCollectionAnswersMenu QuestionTargetAnswersMenu"
     />
   <browser:menus
-    module="canonical.launchpad.browser"
+    module="lp.answers.browser.faq"
     classes="FAQNavigationMenu"
     />
   <browser:menus
@@ -133,6 +140,13 @@
     for="lp.answers.interfaces.question.IQuestion"
     path_expression="string:+question/${id}"
     attribute_to_parent="target"
+    rootsite="answers"
+    />
+
+  <browser:url
+    for="lp.answers.interfaces.questionsubscription.IQuestionSubscription"
+    path_expression="string:subscriptions/${person}"
+    attribute_to_parent="question"
     rootsite="answers"
     />
 
@@ -172,6 +186,13 @@
   </browser:pages>
 
   <browser:page
+      for="lp.answers.interfaces.question.IQuestion"
+      name="+portlet-subscribers-details"
+      class="
+        lp.answers.browser.questionsubscription.QuestionPortletSubscribersWithDetails"
+      permission="zope.Public"/>
+
+  <browser:page
     name="+index"
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionWorkflowView"
@@ -199,7 +220,7 @@
     name="+reject"
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionRejectView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../templates/question-reject.pt"
     />
 
@@ -239,8 +260,15 @@
     name="+createfaq"
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionCreateFAQView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../../app/templates/generic-edit.pt"
+    />
+
+  <browser:url
+    for="lp.answers.interfaces.question.IQuestionMessage"
+    path_expression="string:messages/${display_index}"
+    attribute_to_parent="question"
+    rootsite="answers"
     />
 
   <browser:page
@@ -260,7 +288,7 @@
   <browser:url
     for="lp.answers.interfaces.questioncollection.IQuestionSet"
     path_expression="string:questions"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     rootsite="answers"
     />
 
@@ -286,7 +314,7 @@
 
   <browser:page
     for="lp.answers.interfaces.questioncollection.IQuestionSet"
-    class="canonical.launchpad.browser.SearchAllQuestionsView"
+    class="lp.answers.browser.question.SearchAllQuestionsView"
     name="+questions"
     permission="zope.Public"
     />
@@ -308,7 +336,7 @@
     name="+createfaq"
     for="lp.answers.interfaces.faqtarget.IFAQTarget"
     class=".faqtarget.FAQCreateView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../../app/templates/generic-edit.pt"
     />
 
@@ -350,13 +378,13 @@
     permission="zope.Public"/>
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IPerson"
-    layer="canonical.launchpad.layers.AnswersLayer"
+    for="lp.registry.interfaces.person.IPerson"
+    layer="lp.answers.publisher.AnswersLayer"
     name="+questions"
     />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IPerson"
+        for="lp.registry.interfaces.person.IPerson"
         name="+ask-a-question-button"
         template="../templates/null.pt"
         permission="zope.Public"

@@ -8,10 +8,12 @@ mirrors:
     >>> distro = distros['entries'][0]
     >>> ubuntu = webservice.get(distro['self_link']).jsonBody()
     >>> ubuntu_archive_mirrors = webservice.get(ubuntu['archive_mirrors_collection_link']).jsonBody()
-    >>> canonical_archive = ubuntu_archive_mirrors['entries'][0]
-    >>> canonical_archive_json = webservice.get(canonical_archive['self_link']).jsonBody()
-    >>> pprint_entry(canonical_archive_json)
+    >>> canonical_archive = webservice.named_get(
+    ...     ubuntu['self_link'], 'getMirrorByName',
+    ...     name='canonical-archive').jsonBody()
+    >>> pprint_entry(canonical_archive)
     content: u'Archive'
+    country_dns_mirror: False
     country_link: u'http://.../+countries/GB'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
     date_reviewed: None
@@ -30,6 +32,7 @@ mirrors:
     self_link: u'http://.../ubuntu/+mirror/canonical-archive'
     speed: u'100 Mbps'
     status: u'Official'
+    web_link: u'http://launchpad.../ubuntu/+mirror/canonical-archive'
     whiteboard: None
 
 And CD image mirrors:
@@ -39,6 +42,7 @@ And CD image mirrors:
     >>> canonical_releases_json = webservice.get(canonical_releases['self_link']).jsonBody()
     >>> pprint_entry(canonical_releases_json)
     content: u'CD Image'
+    country_dns_mirror: False
     country_link: u'http://.../+countries/GB'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
     date_reviewed: None
@@ -57,6 +61,7 @@ And CD image mirrors:
     self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
     status: u'Official'
+    web_link: u'http://launchpad.../ubuntu/+mirror/canonical-releases'
     whiteboard: None
 
 = Security checks =
@@ -64,21 +69,21 @@ And CD image mirrors:
 People who are not mirror listing admins or the mirrors registrar may not
 change the owner's of mirrors:
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from simplejson import dumps
     >>> login(ANONYMOUS)
     >>> karl_db = getUtility(IPersonSet).getByName('karl')
     >>> test_db = getUtility(IPersonSet).getByName('name12')
     >>> no_priv_db = getUtility(IPersonSet).getByName('no-priv')
-    >>> karl_webservice = webservice_for_person(karl_db,
-    ...     permission=OAuthPermission.WRITE_PUBLIC)
-    >>> test_webservice = webservice_for_person(test_db,
-    ...     permission=OAuthPermission.WRITE_PUBLIC)
-    >>> no_priv_webservice = webservice_for_person(no_priv_db,
-    ...     permission=OAuthPermission.READ_PUBLIC)
+    >>> karl_webservice = webservice_for_person(
+    ...     karl_db, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> test_webservice = webservice_for_person(
+    ...     test_db, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> no_priv_webservice = webservice_for_person(
+    ...     no_priv_db, permission=OAuthPermission.READ_PUBLIC)
     >>> logout()
 
 Ensure that anonymous API sessions can view mirror listings; archive/releases.
@@ -97,7 +102,9 @@ Ensure that anonymous API sessions can view mirror listings; archive/releases.
 
 One must have special permissions to access certain attributes:
 
-    >>> archive_404_mirror = ubuntu_archive_mirrors['entries'][1]
+    >>> archive_404_mirror = webservice.named_get(
+    ...     ubuntu['self_link'], 'getMirrorByName',
+    ...     name="archive-404-mirror").jsonBody()
     >>> response = no_priv_webservice.get(
     ...     archive_404_mirror['self_link']).jsonBody()
     >>> pprint_entry(response)
@@ -128,6 +135,7 @@ Mirror listing admins may see all:
     ...     archive_404_mirror['self_link']).jsonBody()
     >>> pprint_entry(response)
     content: u'Archive'
+    country_dns_mirror: False
     country_link: u'http://.../+countries/FR'
     date_created: u'2006-10-16T18:31:43.438573+00:00'
     date_reviewed: None
@@ -146,6 +154,7 @@ Mirror listing admins may see all:
     self_link: u'http://.../ubuntu/+mirror/archive-404-mirror'
     speed: u'512 Kbps'
     status: u'Official'
+    web_link: u'http://launchpad.../ubuntu/+mirror/archive-404-mirror'
     whiteboard: None
 
 Now trying to set the owner using Sample Person's webservice is not authorized.
@@ -209,6 +218,7 @@ While others can be set with the appropriate authorization:
     ...     canonical_releases['self_link'], 'application/json', dumps(patch)).jsonBody()
     >>> pprint_entry(response)
     content: u'CD Image'
+    country_dns_mirror: False
     country_link: u'http://.../+countries/GL'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
     date_reviewed: None
@@ -227,6 +237,7 @@ While others can be set with the appropriate authorization:
     self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
     status: u'Unofficial'
+    web_link: u'http://launchpad.../ubuntu/+mirror/canonical-releases'
     whiteboard: u'This mirror is too shiny to be true'
 
 = Distribution Mirror Custom Operations =
@@ -244,7 +255,9 @@ or not.
 "getOverallFreshness" returns the freshness of the mirror determined by the
 mirror prober from the mirror's last probe.
 
-    >>> releases_mirror2 = ubuntu_cd_mirrors['entries'][2]
+    >>> releases_mirror2 = webservice.named_get(
+    ...     ubuntu['self_link'], 'getMirrorByName',
+    ...     name='releases-mirror2').jsonBody()
     >>> freshness = webservice.named_get(releases_mirror2['self_link'],
     ...     'getOverallFreshness').jsonBody()
     >>> print freshness

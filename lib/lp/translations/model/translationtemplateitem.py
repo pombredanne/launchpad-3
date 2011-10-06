@@ -6,12 +6,18 @@ __all__ = [
     'TranslationTemplateItem',
     ]
 
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    )
 from zope.interface import implements
-from sqlobject import ForeignKey, IntCol
 
 from canonical.database.sqlbase import SQLBase
 from lp.translations.interfaces.translationtemplateitem import (
-    ITranslationTemplateItem)
+    ITranslationTemplateItem,
+    )
+
+
 class TranslationTemplateItem(SQLBase):
     """See `ITranslationTemplateItem`."""
     implements(ITranslationTemplateItem)

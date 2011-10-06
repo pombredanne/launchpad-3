@@ -68,7 +68,7 @@ provided link.
 
     >>> jblack_browser.getLink('Create a new PPA').click()
     >>> print jblack_browser.title
-    Personal Package Archive Activation : James Blackwell
+    Activate PPA : James Blackwell
 
     >>> jblack_browser.getControl(
     ...     name="field.displayname").value = 'PPA for James Blackwell'
@@ -104,12 +104,12 @@ We have to do some preparation in grumpy's sampledata to make it ready
 for packages. This is certainly not part of the doctest story.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, logout
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILibraryFileAliasSet)
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.model.processor import ProcessorFamily
 
     >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
@@ -202,7 +202,7 @@ default form value for 'Destination PPA'.
 
     >>> print jblack_browser.getControl(
     ...     'Destination PPA').displayOptions
-    ['PPA for James Blackwell (jblack/ppa)']
+    ['PPA for James Blackwell']
 
     >>> print jblack_browser.getControl(
     ...     'Destination PPA').value
@@ -299,8 +299,10 @@ build created during the copy is ready to be dispatched.
     James Blackwell
     PPA for James Blackwell
     i386 build of pmount 0.1-1
+    ...
     Build status Needs building
-    Start (2505) What's this?
+    Start
+    Build score:...
     Build details
     Source: pmount - 0.1-1
     Archive: PPA for James Blackwell
@@ -463,7 +465,7 @@ has unpublished binaries.
 We will build and publish the architecture independent binary for
 pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
 
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> login('foo.bar@canonical.com')
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
@@ -511,8 +513,6 @@ hppa support.
 After the binary package go from PENDING->PUBLISHED, the page reflects the
 changes:
 
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     PackagePublishingStatus)
     >>> login('foo.bar@canonical.com')
     >>> for binary in pmount_binaries:
     ...     binary.setPublished()
@@ -549,7 +549,7 @@ broken package.
 James uses the 'delete-packages' interface in his PPA to delete the
 'pmount' source in hoary.
 
-    >>> jblack_browser.getLink('PPA').click()
+    >>> jblack_browser.getLink('Cancel').click()
     >>> jblack_browser.getLink('Delete packages').click()
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -699,7 +699,7 @@ allows him to select one of them.
 
     >>> print jblack_browser.getControl(
     ...     'Destination PPA').displayOptions
-    ['PPA for James Blackwell (jblack/ppa)', 'PPA for James Blackwell Friends (jblack-friends/ppa)']
+    ['PPA for James Blackwell', 'PPA for James Blackwell Friends']
 
 James wants to populate the PPA for James Blackwell Friends, he
 selects that.
@@ -936,7 +936,7 @@ different version of foo_1.0 in Mark's and Celso's PPAs and a foo_2.0
 in No Privileges' PPA.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
@@ -973,8 +973,8 @@ in No Privileges' PPA.
     ...     archive=jblack_friends.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> [build] = jblack_friends_foo_src.createMissingBuilds()
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> from lp.buildmaster.enums import BuildStatus
+    >>> build.status = BuildStatus.FAILEDTOBUILD
 
     >>> flush_database_updates()
     >>> logout()

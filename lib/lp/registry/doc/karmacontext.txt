@@ -10,8 +10,10 @@ categories.
     >>> import operator
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSet, IDistributionSet, IKarmaContext)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.karma import IKarmaContext
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

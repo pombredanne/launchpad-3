@@ -16,23 +16,28 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import helpers
 from canonical.launchpad.webapp import action
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
-    Link, NavigationMenu, enabled_with_permission)
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView)
-
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.errors import TranslationUnavailable
+from lp.app.enums import service_uses_launchpad
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.translations.browser.translations import TranslationsMixin
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
+from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguageSet)
+    IDistroSeriesLanguageSet,
+    )
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
@@ -43,11 +48,9 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite="translations")
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+    next_url = cancel_url
 
     @action("Change")
     def change_action(self, action, data):
@@ -111,16 +114,44 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
 
     @cachedproperty
     def unused_language_packs(self):
-        unused_language_packs = helpers.shortlist(self.context.language_packs)
+        unused_language_packs = list(self.context.language_packs)
 
-        if self.context.language_pack_base is not None:
+        if self.context.language_pack_base in unused_language_packs:
             unused_language_packs.remove(self.context.language_pack_base)
-        if self.context.language_pack_delta is not None:
+        if self.context.language_pack_delta in unused_language_packs:
             unused_language_packs.remove(self.context.language_pack_delta)
-        if self.context.language_pack_proposed is not None:
+        if self.context.language_pack_proposed in unused_language_packs:
             unused_language_packs.remove(self.context.language_pack_proposed)
 
         return unused_language_packs
+
+    @property
+    def have_latest_full_pack(self):
+        """Checks if this distribution series has a full language pack newer
+        than the current one."""
+
+        current = self.context.language_pack_base
+        latest = self.context.last_full_language_pack_exported
+        if (current is None or
+            latest is None or
+            current.file.http_url == latest.file.http_url):
+            return False
+        else:
+            return True
+
+    @property
+    def have_latest_delta_pack(self):
+        """Checks if this distribution series has a delta language pack newer
+        than the current one."""
+
+        current = self.context.language_pack_delta
+        latest = self.context.last_delta_language_pack_exported
+        if (current is None or
+            latest is None or
+            current.file.http_url == latest.file.http_url):
+            return False
+        else:
+            return True
 
     def _request_full_export(self):
         if (self.old_request_value !=
@@ -135,9 +166,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
                     "Your request has been noted. Next language pack "
                     "export will be made relative to the current base "
                     "language pack.")
-        else:
-            self.request.response.addInfoNotification(
-                "You didn't change anything.")
 
     @action("Change Settings", condition=is_translations_admin)
     def change_action(self, action, data):
@@ -149,14 +177,17 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         self._request_full_export()
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
-        self.next_url = '%s/+language-packs' % canonical_url(self.context)
+        self.next_url = canonical_url(
+            self.context, rootsite='translations',
+            view_name='+language-packs')
 
     @action("Request", condition=is_langpack_admin)
     def request_action(self, action, data):
         self.updateContextFromData(data)
         self._request_full_export()
-        self.next_url = '/'.join(
-            [canonical_url(self.context), '+language-packs'])
+        self.next_url = canonical_url(
+            self.context, rootsite='translations',
+            view_name='+language-packs')
 
 
 class DistroSeriesTemplatesView(BaseSeriesTemplatesView):
@@ -165,6 +196,11 @@ class DistroSeriesTemplatesView(BaseSeriesTemplatesView):
     def initialize(self):
         super(DistroSeriesTemplatesView, self).initialize(
             series=self.context, is_distroseries=True)
+
+    def constructTemplateURL(self, template):
+        """See `BaseSeriesTemplatesView`."""
+        return '+source/%s/+pots/%s' % (
+            template.sourcepackagename.name, template.name)
 
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):
@@ -226,30 +262,57 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
         """Is this DistroSeries the translation focus."""
         return self.context.distribution.translation_focus == self.context
 
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (service_uses_launchpad(self.context.translations_usage) or
+               self.is_translations_admin)
+
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.Edit", self.context)
+
+    def is_translations_admin(self):
+        """Whether or not the user is a translations admin."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
+
 
 class DistroSeriesTranslationsMenu(NavigationMenu):
 
     usedfor = IDistroSeries
     facet = 'translations'
     links = [
-        'translations', 'templates', 'admin', 'language_packs', 'imports']
+        'translations', 'templates', 'admin', 'language_packs',
+        'latest_full_language_pack', 'latest_delta_language_pack', 'imports']
 
     def translations(self):
-        return Link('', 'Overview')
+        return Link('', 'Overview', site='translations')
 
     def imports(self):
-        return Link('+imports', 'Import queue')
+        return Link('+imports', 'Import queue', site='translations')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
-        return Link('+admin', 'Settings')
+        return Link('+admin', 'Settings', site='translations')
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
-        return Link('+templates', 'Templates')
+        return Link('+templates', 'Templates', site='translations')
 
     def language_packs(self):
-        return Link('+language-packs', 'Language packs')
+        return Link('+language-packs', 'Language packs', site='translations')
+
+    def latest_full_language_pack(self):
+        return Link(
+            '+latest-full-language-pack',
+            'Latest full language pack',
+            site='translations')
+
+    def latest_delta_language_pack(self):
+        return Link(
+            '+latest-delta-language-pack',
+            'Latest delta language pack',
+            site='translations')
 
 
 def check_distroseries_translations_viewable(distroseries):

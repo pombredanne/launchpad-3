@@ -6,17 +6,18 @@ given. Specifically, the _getRemoteIdsToCheck() method is responsible
 for batching up operations.
 
     >>> import transaction
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from pprint import pprint
 
-    >>> updater = BugWatchUpdater(transaction)
+    >>> updater = CheckwatchesMaster(transaction)
+    >>> transaction.commit()
 
 
 Basics
 ------
 
     >>> class BasicRemoteSystem:
-    ...     pass
+    ...     sync_comments = False
 
     >>> remote = BasicRemoteSystem()
 
@@ -35,6 +36,7 @@ bug IDs given.
     ...     factory.makeBugWatch(remote_bug='a'),
     ...     factory.makeBugWatch(remote_bug='b'),
     ...     ]
+    >>> transaction.commit()
 
     >>> pprint(updater._getRemoteIdsToCheck(
     ...     remote, bug_watches, batch_size=2))
@@ -50,6 +52,7 @@ of the remote bug IDs given.
     ...     factory.makeBugWatch(remote_bug='b'),
     ...     factory.makeBugWatch(remote_bug='c'),
     ...     ]
+    >>> transaction.commit()
 
     >>> pprint(updater._getRemoteIdsToCheck(
     ...     remote, bug_watches, batch_size=2))
@@ -64,11 +67,12 @@ Querying the remote system for modified bugs
 For bug watches that have been checked before, the remote system is
 asked which of a list of bugs have been modified since a given date.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime
     >>> from pytz import UTC
-    >>> from zope.security.proxy import removeSecurityProxy
 
     >>> class QueryableRemoteSystem:
+    ...     sync_comments = False
     ...     def getModifiedRemoteBugs(self, remote_bug_ids, timestamp):
     ...         print "getModifiedRemoteBugs(%r, %r)" % (
     ...             remote_bug_ids, timestamp)
@@ -99,6 +103,7 @@ queried once, and we are advised to check only one of the watches.
     ...     ]
     >>> for bug_watch in bug_watches:
     ...     removeSecurityProxy(bug_watch).lastchecked = now
+    >>> transaction.commit()
 
     >>> ids_to_check = updater._getRemoteIdsToCheck(
     ...     remote, bug_watches, batch_size=2,
@@ -121,6 +126,7 @@ watches.
     ...     ]
     >>> for bug_watch in bug_watches:
     ...     removeSecurityProxy(bug_watch).lastchecked = now
+    >>> transaction.commit()
 
     >>> ids_to_check = updater._getRemoteIdsToCheck(
     ...     remote, bug_watches, batch_size=2,
@@ -129,6 +135,6 @@ watches.
     getModifiedRemoteBugs([u'c'], datetime.datetime(...))
 
     >>> pprint(ids_to_check)
-    {'all_remote_ids': [u'a', u'c', u'b'],
+    {'all_remote_ids': [u'a', u'b', u'c'],
      'remote_ids_to_check': [u'a', u'c'],
      'unmodified_remote_ids': [u'b']}

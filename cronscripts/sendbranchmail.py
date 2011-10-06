@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -16,7 +16,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.codehosting.vfs import get_scanner_server
+from lp.codehosting.vfs import get_ro_server
 from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
@@ -32,7 +32,7 @@ class RunRevisionMailJobs(LaunchpadCronScript):
         jobs = list(getUtility(IRevisionMailJobSource).iterReady())
         jobs.extend(getUtility(IRevisionsAddedJobSource).iterReady())
         runner = JobRunner(jobs, self.logger)
-        server = get_scanner_server()
+        server = get_ro_server()
         server.start_server()
         try:
             runner.runAll()

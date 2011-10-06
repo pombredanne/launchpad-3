@@ -4,9 +4,10 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugLinkTarget, IBugSet, ICveSet)
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
+    >>> from lp.bugs.interfaces.cve import ICveSet
 
     >>> bugset = getUtility(IBugSet)
     >>> cve = getUtility(ICveSet)['2005-2730']
@@ -31,7 +32,7 @@ The +linkbug view is used to link bugs to IBugLinkTarget.
     Link a bug report
 
     >>> print view.cancel_url
-    http://launchpad.dev/bugs/cve/2005-2730
+    http://bugs.launchpad.dev/bugs/cve/2005-2730
 
 It has a simple widget to enter the bug number or nickname of the bug to link
 to. After it links the bug, it sends a ObjectModifiedEvent.
@@ -85,7 +86,7 @@ IBugLinkTarget.
     Remove links to bug reports
 
     >>> print view.cancel_url
-    http://launchpad.dev/bugs/cve/2005-2730
+    http://bugs.launchpad.dev/bugs/cve/2005-2730
 
 After removing the bugs, it sends a SQLObjectModified event.
 

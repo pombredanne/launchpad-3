@@ -13,7 +13,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.librarian.storage import LibrarianStorage
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class LibrarianStorageTestCase(unittest.TestCase):
@@ -144,10 +144,3 @@ class StubLibrary:
     def add(self, digest, size):
         self.id += 1
         return self.id
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(LibrarianStorageTestCase))
-    return suite
-

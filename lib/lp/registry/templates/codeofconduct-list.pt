@@ -11,7 +11,7 @@
 <div metal:fill-slot="main"
      tal:define="user view/user;
                  is_ubuntu_coc_signer user/is_ubuntu_coc_signer|nothing;
-                 gpgkeys user/gpg_keys|nothing">
+                 gpg_keys user/gpg_keys|nothing">
 
       <h1>Ubuntu Codes of Conduct</h1>
       <p>
@@ -32,20 +32,22 @@
         <ol style="margin-left: 4em">
             <li>
               <tal:logged_in condition="user">
-                 <a tal:attributes="href string:${user/fmt:url}/+editpgpkeys">Register
-                an OpenPGP key</a>.</tal:logged_in>
+                 <a tal:attributes="href string:${user/fmt:url}/+editpgpkeys">
+                 Register an OpenPGP key</a>.</tal:logged_in>
               <tal:not_logged_in tal:condition="not: user">
                 <a href="+login">Log in</a> and register an OpenPGP key.
               </tal:not_logged_in>
-              <p class="informational message" tal:condition="gpgkeys">
-                It appears you have already done this; 
+              <p tal:condition="gpg_keys"
+                 class="informational message"
+                 style="margin-top: 20px">
+                It appears you have already done this.
 
-                <tal:multiple_keys condition="python: gpgkeys.count() > 1">
-                <span tal:replace="user/gpgkeys/count" /> keys are
+                <tal:multiple_keys condition="python: gpg_keys.count() > 1">
+                <span tal:replace="gpg_keys/count" /> keys are
                 </tal:multiple_keys>
 
-                <tal:single_key condition="python: gpgkeys.count() == 1">
-                the key <code tal:content="python: gpgkeys[0].keyid" /> is
+                <tal:single_key condition="python: gpg_keys.count() == 1">
+                The key <code tal:content="python: gpg_keys[0].keyid" /> is
                 </tal:single_key>
 
                 registered on your account. You can skip to the next step if
@@ -54,15 +56,16 @@
               </p>
             </li>
             <li><a tal:attributes="href
-                string:${context/current_code_of_conduct/fmt:url}/+download">Download</a>
-                the current Code of Conduct.</li>
+                string:${context/current_code_of_conduct/fmt:url}/+download">
+                Download</a> the current Code of Conduct.</li>
             <li><a tal:attributes="href
-                string:${context/current_code_of_conduct/fmt:url}/+sign">Sign it!</a></li>
+                string:${context/current_code_of_conduct/fmt:url}/+sign">
+                Sign it!</a></li>
         </ol>
       </div>
 
       <p tal:condition="is_ubuntu_coc_signer">
-        Congratulations; you have already <a tal:attributes="href
+        Congratulations, you have already <a tal:attributes="href
         string:${user/fmt:url}/+codesofconduct">signed</a> the Ubuntu Code
         of Conduct.
       </p>
@@ -77,7 +80,7 @@
             </tal:not_current>
          </tal:codes>
       </ul>
-      
+
       <br />
       <p>
         <a tal:replace="structure context/menu:overview/admin/render" />

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -16,23 +16,33 @@ __all__ = [
     'IPackageUploadCustom',
     'IPackageUploadSet',
     'NonBuildableSourceUploadError',
-    'PackageUploadStatus',
-    'PackageUploadCustomFormat',
     'QueueBuildAcceptError',
     'QueueInconsistentStateError',
     'QueueSourceAcceptError',
     'QueueStateWriteProtectedError',
     ]
 
-from zope.schema import Choice, Datetime, Int, List, TextLine
-from zope.interface import Interface, Attribute
+from lazr.enum import DBEnumeratedType
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
-from lazr.restful.fields import Reference
+from lp.soyuz.enums import PackageUploadStatus
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -78,70 +88,15 @@ class IPackageUploadQueue(Interface):
     """Used to establish permission to a group of package uploads.
 
     Recieves an IDistroSeries and a PackageUploadStatus dbschema
-    on initialisation.
+    on initialization.
     No attributes exposed via interface, only used to check permissions.
     """
-
-
-class PackageUploadStatus(DBEnumeratedType):
-    """Distro Release Queue Status
-
-    An upload has various stages it must pass through before becoming part
-    of a DistroSeries. These are managed via the Upload table
-    and related tables and eventually (assuming a successful upload into the
-    DistroSeries) the effects are published via the PackagePublishing and
-    SourcePackagePublishing tables.
-    """
-
-    NEW = DBItem(0, """
-        New
-
-        This upload is either a brand-new source package or contains a
-        binary package with brand new debs or similar. The package must sit
-        here until someone with the right role in the DistroSeries checks
-        and either accepts or rejects the upload. If the upload is accepted
-        then entries will be made in the overrides tables and further
-        uploads will bypass this state. """)
-
-    UNAPPROVED = DBItem(1, """
-        Unapproved
-
-        If a DistroSeries is frozen or locked out of ordinary updates then
-        this state is used to mean that while the package is correct from a
-        technical point of view; it has yet to be approved for inclusion in
-        this DistroSeries. One use of this state may be for security
-        releases where you want the security team of a DistroSeries to
-        approve uploads.""")
-
-    ACCEPTED = DBItem(2, """
-        Accepted
-
-        An upload in this state has passed all the checks required of it and
-        is ready to have its publishing records created.""")
-
-    DONE = DBItem(3, """
-        Done
-
-        An upload in this state has had its publishing records created if it
-        needs them and is fully processed into the DistroSeries. This state
-        exists so that a logging and/or auditing tool can pick up accepted
-        uploads and create entries in a journal or similar before removing
-        the queue item.""")
-
-    REJECTED = DBItem(4, """
-        Rejected
-
-        An upload which reaches this state has, for some reason or another
-        not passed the requirements (technical or human) for entry into the
-        DistroSeries it was targetting. As for the 'done' state, this state
-        is present to allow logging tools to record the rejection and then
-        clean up any subsequently unnecessary records.""")
 
 
 class IPackageUpload(Interface):
     """A Queue item for the archive uploader."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
@@ -181,6 +136,17 @@ class IPackageUpload(Interface):
                             "associated with this upload")
 
     signing_key = Attribute("Changesfile Signing Key.")
+
+    package_copy_job = Reference(
+        schema=IPackageCopyJob,
+        description=_("The PackageCopyJob for this upload, if it has one."),
+        title=_("Raw Package Copy Job"), required=False, readonly=True)
+
+    concrete_package_copy_job = Reference(
+        schema=IPackageCopyJob,
+        description=_("Concrete IPackageCopyJob implementation, if any."),
+        title=_("Package Copy Job"), required=False, readonly=True)
+
     archive = exported(
         Reference(
             # Really IArchive, patched in _schema_circular_imports.py
@@ -207,7 +173,7 @@ class IPackageUpload(Interface):
         exported_as="display_name")
     displayversion = exported(
         TextLine(
-            title=_("The source package version for this item"),
+            title=_("This item's displayable source package version"),
             readonly=True),
         exported_as="display_version")
     displayarchs = exported(
@@ -217,6 +183,15 @@ class IPackageUpload(Interface):
 
     sourcepackagerelease = Attribute(
         "The source package release for this item")
+
+    package_name = TextLine(
+        title=_("Name of the uploaded source package"), readonly=True)
+
+    package_version = TextLine(
+        title=_("Source package version"), readonly=True)
+
+    component_name = TextLine(
+        title=_("Source package component name"), readonly=True)
 
     contains_source = Attribute("whether or not this upload contains sources")
     contains_build = Attribute("whether or not this upload contains binaries")
@@ -241,13 +216,8 @@ class IPackageUpload(Interface):
         on all the binarypackagerelease records arising from the build.
         """)
 
-    def isAutoSyncUpload(changed_by_email):
-        """Return True if this is a (Debian) auto sync upload.
-
-        Sync uploads are source-only, unsigned and not targeted to
-        the security pocket.  The Changed-By field is also the Katie
-        user (archive@ubuntu.com).
-        """
+    section_name = TextLine(
+        title=_("Source package sectio name"), readonly=True)
 
     def setNew():
         """Set queue state to NEW."""
@@ -288,7 +258,7 @@ class IPackageUpload(Interface):
             has no sources associated to it.
         """
 
-    def acceptFromQueue(announce_list, logger=None, dry_run=False):
+    def acceptFromQueue(logger=None, dry_run=False):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
          * Grant karma to people involved with the upload.
@@ -330,14 +300,11 @@ class IPackageUpload(Interface):
         committed to have some updates actually written to the database.
         """
 
-    def notify(announce_list=None, summary_text=None,
-        changes_file_object=None, logger=None):
+    def notify(summary_text=None, changes_file_object=None, logger=None):
         """Notify by email when there is a new distroseriesqueue entry.
 
         This will send new, accept, announce and rejection messages as
         appropriate.
-
-        :param announce_list: The email address of the distro announcements
 
         :param summary_text: Any additional text to append to the auto-
             generated summary.  This is also the only text used if there is
@@ -402,7 +369,6 @@ class IPackageUploadBuild(Interface):
             title=_("ID"), required=True, readonly=True,
             )
 
-
     packageupload = Int(
             title=_("PackageUpload"), required=True,
             readonly=False,
@@ -431,13 +397,13 @@ class IPackageUploadBuild(Interface):
         process will be logged to it.
         """
 
+
 class IPackageUploadSource(Interface):
     """A Queue item's related sourcepackagereleases."""
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
             )
-
 
     packageupload = Int(
             title=_("PackageUpload"), required=True,
@@ -559,7 +525,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_DEBIAN_INSTALLER(logger=None):
+    def publishDebianInstaller(logger=None):
         """Publish this custom item as a raw installer tarball.
 
         This will write the installer tarball out to the right part of
@@ -569,7 +535,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_DIST_UPGRADER(logger=None):
+    def publishDistUpgrader(logger=None):
         """Publish this custom item as a raw dist-upgrader tarball.
 
         This will write the dist-upgrader tarball out to the right part of
@@ -579,7 +545,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_DDTP_TARBALL(logger=None):
+    def publishDdtpTarball(logger=None):
         """Publish this custom item as a raw ddtp-tarball.
 
         This will write the ddtp-tarball out to the right part of
@@ -589,7 +555,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_ROSETTA_TRANSLATIONS(logger=None):
+    def publishRosettaTranslations(logger=None):
         """Publish this custom item as a rosetta tarball.
 
         Essentially this imports the tarball into rosetta.
@@ -598,11 +564,22 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_STATIC_TRANSLATIONS(logger):
+    def publishStaticTranslations(logger):
         """Publish this custom item as a static translations tarball.
 
         This is currently a no-op as we don't publish these files, they only
         reside in the librarian for later retrieval using the webservice.
+        """
+
+    def publishMetaData(logger):
+        """Publish this custom item as a meta-data file.
+
+        This method writes the meta-data custom file to the archive in
+        the location matching this schema:
+        /<person>/meta/<ppa_name>/<filename>
+
+        It's not written to the main archive location because that could be
+        protected by htaccess in the case of private archives.
         """
 
 
@@ -638,15 +615,24 @@ class IPackageUploadSet(Interface):
         """
 
     def getAll(distroseries, created_since_date=None, status=None,
-               archive=None, pocket=None, custom_type=None):
+               archive=None, pocket=None, custom_type=None,
+               name=None, version=None, exact_match=False):
         """Get package upload records for a series with optional filtering.
 
+        :param distroseries: the `IDistroSeries` to consider.
+        :param status: Filter results by this `PackageUploadStatus`, or list
+            of statuses.
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
-        :param status: Filter results by this `PackageUploadStatus`
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :param name: Filter results by this package or file name.
+        :param version: Filter results by this version number string.
+        :param exact_match: If True, look for exact string matches on the
+            `name` and `version` filters.  If False, look for a substring
+            match so that e.g. a package "kspreadsheetplusplus" would match
+            the search string "spreadsheet".  Defaults to False.
         :return: A result set containing `IPackageUpload`s
         """
 
@@ -661,11 +647,32 @@ class IPackageUploadSet(Interface):
         :return: a matching `IPackageUpload` object.
         """
 
+    def getBuildsForSources(distroseries, status=None, pockets=None,
+                            names=None):
+        """Return binary package upload records for a series with optional
+        filtering.
+
+        :param distroseries: the `IDistroSeries` to consider.
+        :param status: Filter results by this list of `PackageUploadStatus`s.
+        :param pockets: Filter results by this list of
+            `PackagePublishingPocket`s.
+        :param names: Filter results by this list of package names.
+
+        :return: A result set containing `IPackageUpload`s.
+        """
+
     def getBuildByBuildIDs(build_ids):
         """Return `PackageUploadBuilds`s for the supplied build IDs."""
 
     def getSourceBySourcePackageReleaseIDs(spr_ids):
         """Return `PackageUploadSource`s for the sourcepackagerelease IDs."""
+
+    def getByPackageCopyJobIDs(pcj_ids):
+        """Return `PackageUpload`s using `PackageCopyJob`s.
+
+        :param pcj_ids: A list of `PackageCopyJob` IDs.
+        :return: all the `PackageUpload`s that reference the supplied IDs.
+        """
 
 
 class IHasQueueItems(Interface):
@@ -673,72 +680,3 @@ class IHasQueueItems(Interface):
 
     def getPackageUploadQueue(state):
         """Return an IPackageUploadeQueue occording the given state."""
-
-    def getQueueItems(status=None, name=None, version=None,
-                      exact_match=False, pocket=None, archive=None):
-        """Get the union of builds, sources and custom queue items.
-
-        Returns builds, sources and custom queue items in a given state,
-        matching a give name and version terms.
-
-        If 'status' is not supplied, return all items in the queues,
-        it supports multiple statuses as a list.
-
-        If 'name' and 'version' are supplied only items which match (SQL LIKE)
-        the sourcepackage name, binarypackage name or the filename will be
-        returned.  'name' can be supplied without supplying 'version'.
-        'version' has no effect on custom queue items.
-
-        If 'pocket' is specified return only queue items inside it, otherwise
-        return all pockets.  It supports multiple pockets as a list.
-
-        If 'archive' is specified return only queue items targeted to this
-        archive, if not restrict the results to the IDistribution.main_archive.
-
-        Use 'exact_match' argument for precise results.
-        """
-
-# If you change this (add items, change the meaning, whatever) search for
-# the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
-# update the stuff marked with it.
-class PackageUploadCustomFormat(DBEnumeratedType):
-    """Custom formats valid for the upload queue
-
-    An upload has various files potentially associated with it, from source
-    package releases, through binary builds, to specialist upload forms such
-    as a debian-installer tarball or a set of translations.
-    """
-
-    DEBIAN_INSTALLER = DBItem(0, """
-        raw-installer
-
-        A raw-installer file is a tarball. This is processed as a version
-        of the debian-installer to be unpacked into the archive root.
-        """)
-
-    ROSETTA_TRANSLATIONS = DBItem(1, """
-        raw-translations
-
-        A raw-translations file is a tarball. This is passed to the rosetta
-        import queue to be incorporated into that package's translations.
-        """)
-
-    DIST_UPGRADER = DBItem(2, """
-        raw-dist-upgrader
-
-        A raw-dist-upgrader file is a tarball. It is simply published into
-        the archive.
-        """)
-
-    DDTP_TARBALL = DBItem(3, """
-        raw-ddtp-tarball
-
-        A raw-ddtp-tarball contains all the translated package description
-        indexes for a component.
-        """)
-
-    STATIC_TRANSLATIONS = DBItem(4, """
-        raw-translations-static
-
-        A tarball containing raw (Gnome) help file translations.
-        """)

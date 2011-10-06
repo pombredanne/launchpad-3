@@ -15,24 +15,47 @@ __all__ = [
     'PollView',
     'PollVoteView',
     'PollBreadcrumb',
+    'TeamPollsView',
     ]
 
-from zope.event import notify
-from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.lifecycleevent import ObjectCreatedEvent
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
+from zope.component import getUtility
+from zope.event import notify
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, Link,
-    Navigation, NavigationMenu, stepthrough)
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
-from lp.registry.interfaces.poll import (
-    IPoll, IPollOption, IPollOptionSet, IPollSubset, IVoteSet, PollAlgorithm,
-    PollSecrecy)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    )
+from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.registry.browser.person import PersonView
+from lp.registry.interfaces.poll import (
+    IPoll,
+    IPollOption,
+    IPollOptionSet,
+    IPollSubset,
+    IVoteSet,
+    PollAlgorithm,
+    PollSecrecy,
+    )
 
 
 class PollEditLinksMixin:
@@ -201,11 +224,8 @@ class PollView(BasePollView):
         request = self.request
         if (self.userCanVote() and self.context.isOpen() and
             self.context.getActiveOptions()):
-            context_url = canonical_url(self.context)
-            if self.isSimple():
-                request.response.redirect("%s/+vote-simple" % context_url)
-            elif self.isCondorcet():
-                request.response.redirect("%s/+vote-condorcet" % context_url)
+            vote_url = canonical_url(self.context, view_name='+vote')
+            request.response.redirect(vote_url)
 
     def getVotesByOption(self, option):
         """Return the number of votes the given option received."""
@@ -237,6 +257,20 @@ class PollVoteView(BasePollView):
     If the user already voted, the current vote is displayed and the user can
     change it. Otherwise he can register his vote.
     """
+
+    default_template = ViewPageTemplateFile(
+        '../templates/poll-vote-simple.pt')
+    condorcet_template = ViewPageTemplateFile(
+        '../templates/poll-vote-condorcet.pt')
+
+    page_title = 'Vote'
+
+    @property
+    def template(self):
+        if self.isCondorcet():
+            return self.condorcet_template
+        else:
+            return self.default_template
 
     def initialize(self):
         """Process the form, if it was submitted."""
@@ -363,6 +397,8 @@ class PollAddView(LaunchpadFormView):
     field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
                    "datecloses"]
 
+    page_title = 'New poll'
+
     @property
     def cancel_url(self):
         """See `LaunchpadFormView`."""
@@ -386,6 +422,7 @@ class PollEditView(LaunchpadEditFormView):
     implements(IPollEditMenu)
     schema = IPoll
     label = "Edit poll details"
+    page_title = 'Edit'
     field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
                    "datecloses"]
 
@@ -405,6 +442,7 @@ class PollOptionEditView(LaunchpadEditFormView):
 
     schema = IPollOption
     label = "Edit option details"
+    page_title = 'Edit option'
     field_names = ["name", "title"]
     custom_widget("title", TextWidget, width=30)
 
@@ -424,6 +462,7 @@ class PollOptionAddView(LaunchpadFormView):
 
     schema = IPollOption
     label = "Create new poll option"
+    page_title = "New option"
     field_names = ["name", "title"]
     custom_widget("title", TextWidget, width=30)
 
@@ -437,3 +476,8 @@ class PollOptionAddView(LaunchpadFormView):
         polloption = self.context.newOption(data['name'], data['title'])
         self.next_url = canonical_url(self.context)
         notify(ObjectCreatedEvent(polloption))
+
+
+class TeamPollsView(PersonView):
+
+    page_title = 'Polls'

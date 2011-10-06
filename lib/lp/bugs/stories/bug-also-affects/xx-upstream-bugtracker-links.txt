@@ -28,11 +28,12 @@ general.
 If we link Thunderbird to an upstream bug tracker, the text will change
 to reflect this.
 
-    >>> admin_browser.open('http://launchpad.dev/thunderbird/+edit')
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/thunderbird/+configure-bugtracker')
     >>> admin_browser.getControl(
     ...     name='field.bugtracker').value = ['external']
     >>> admin_browser.getControl(
-    ...     name='field.bugtracker.bugtracker').value = ['1']
+    ...     name='field.bugtracker.bugtracker').value = 'mozilla.org'
     >>> admin_browser.getControl('Change').click()
 
     >>> user_browser.open('http://launchpad.dev/bugs/13/')
@@ -89,12 +90,12 @@ link back to bug 13, the place where it was originally filed.
 If the remote bug tracker is one for which Launchpad doesn't offer a bug
 filing link, such as Debbugs, only a search link will be displayed.
 
-    >>> admin_browser.open('http://launchpad.dev/gnome-terminal/+edit')
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/gnome-terminal/+configure-bugtracker')
     >>> admin_browser.getControl(
     ...     'In a registered bug tracker:').selected = True
     >>> admin_browser.getControl(
-    ...     name='field.bugtracker.bugtracker').displayValue = [
-    ...         'Debian Bug tracker']
+    ...     name='field.bugtracker.bugtracker').value = 'debbugs'
     >>> admin_browser.getControl('Change').click()
 
     >>> user_browser.open('http://launchpad.dev/bugs/13/')
@@ -110,3 +111,21 @@ filing link, such as Debbugs, only a search link will be displayed.
     If you want to search for this bug on Debian Bug tracker
     before adding the link to Launchpad you can use the Debian Bug
     tracker search form...
+
+
+Setting the remote project
+==========================
+
+The remote_product field, which stores a Product's ID on the remote bug
+tracker, can be set from the +configure-bugtracker page, too.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/thunderbird/+configure-bugtracker')
+    >>> admin_browser.getControl(name='field.remote_product').value = (
+    ...     'Thunderbird')
+    >>> admin_browser.getControl('Change').click()
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/thunderbird/+configure-bugtracker')
+    >>> print admin_browser.getControl(name='field.remote_product').value
+    Thunderbird

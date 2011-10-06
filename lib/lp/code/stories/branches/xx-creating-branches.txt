@@ -1,17 +1,32 @@
-= Creating Branches =
+Creating Branches
+=================
 
-In the past, there were two very distinct ways of creating branches
-in Launchpad.  The first was to use the UI, and the other was to
-push the branch to Launchpad.  The first method only created MIRRORED
-branches, and the second only HOSTED.
+In the past, there were two very distinct ways of creating branches in
+Launchpad.  The first was to use the UI, and the other was to push the
+branch to Launchpad.  The first method only created MIRRORED branches,
+and the second only HOSTED.
 
 Many users were confused with this, and tried to create HOSTED branches
 using the user interface.  Now they can.
 
 
-== Creating a hosted branch ==
+Creating a hosted branch
+------------------------
 
 Hosted branches use Launchpad as their primary location.
+
+    >>> from zope.component import getUtility
+    >>> from lp.code.enums import BranchType
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login(ANONYMOUS)
+    >>> redfish = getUtility(IProductSet).getByName('redfish')
+    >>> branch = factory.makeProductBranch(
+    ...     product=redfish, branch_type=BranchType.HOSTED)
+    >>> productseries = factory.makeProductSeries(
+    ...     product=redfish, branch=branch)
+    >>> login_person(redfish.owner)
+    >>> redfish.development_focus = productseries
+    >>> logout()
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open('http://code.launchpad.dev/redfish')
@@ -39,23 +54,24 @@ Branch URLs are not valid for hosted branches.
     >>> print_branch_info(browser)
     Branch information
     Owner: Sample Person
-    Project: Redfish (Unspecified)
+    Project: Redfish
     Status: Development
 
 
-== Creating a mirrored branch ==
+Creating a mirrored branch
+--------------------------
 
-Mirrored branches are primarily hosted outside of Launchpad, and Launchpad
-mirrors the branch.
+Mirrored branches are primarily hosted outside of Launchpad, and
+Launchpad mirrors the branch.
 
     >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink("Register a branch").click()
 
-    >>> # Show that mirrored is selected by default.
     >>> print_radio_button_field(browser.contents, 'branch_type')
     ( ) Hosted
     (*) Mirrored
     ( ) Remote
+
     >>> browser.getControl('Name').value = 'mirrored-branch'
 
 Branch URLs are required for mirrored branches.
@@ -73,14 +89,15 @@ Branch URLs are required for mirrored branches.
     >>> print_branch_info(browser)
     Branch information
     Owner: Sample Person
-    Project: Redfish (Unspecified)
+    Project: Redfish
     Status: Development
     Location: http://example.com/mirrored-branch
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
 
 
-== Creating a remote branch ==
+Creating a remote branch
+------------------------
 
 The contents of Remote branches are not accessible through Launchpad.
 
@@ -98,12 +115,13 @@ A remote branch may have a URL, but doesn't have to.
     >>> print_branch_info(browser)
     Branch information
     Owner: Sample Person
-    Project: Redfish (Unspecified)
+    Project: Redfish
     Status: Development
     Location: http://example.com/remote-branch
 
 
-== Finding product/+addbranch ==
+Finding product/+addbranch
+--------------------------
 
 We should be able to create a new branch from a product.
 
@@ -117,18 +135,42 @@ facet page.
 Let's make sure we can load the branch creation form on a product.
 
     >>> user_browser.getLink("Register a branch").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+The link is not there because the product has not been configured to
+do code hosting yet.  The development focus must be set with a branch first.
+
+    >>> owner_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> owner_browser.open('http://code.launchpad.dev/applets')
+    >>> owner_browser.getLink('Configure code hosting').click()
+    >>> print owner_browser.url
+    http://code.launchpad.dev/applets/trunk/+setbranch
+
+    >>> owner_browser.getControl(
+    ...     'Create a new, empty branch').click()
+    >>> owner_browser.getControl('Branch name').value = 'trunk'
+    >>> owner_browser.getControl('Update').click()
+
+Now that code hosting has been configured, a regular user will be able
+to register a branch.
+
+    >>> user_browser.open('http://code.launchpad.dev/applets')
+    >>> user_browser.getLink("Register a branch").click()
     >>> print user_browser.url
     http://code.launchpad.dev/applets/+addbranch
 
 
-== Adding a branch to a product ==
+Adding a branch to a product
+----------------------------
 
 Now, post the branch creation form for the product.
 
-    >>> user_browser.open('http://launchpad.dev/applets/+addbranch')
+    >>> user_browser.open('http://code.launchpad.dev/applets/+addbranch')
 
-The specified URL has a trailing slash. In the next test, we will check that it
-has been stripped.
+The specified URL has a trailing slash. In the next test, we will check
+that it has been stripped.
 
     >>> user_browser.getControl('Branch URL').value = (
     ...     'http://example.com/applets/main/')
@@ -138,8 +180,8 @@ has been stripped.
     >>> user_browser.getControl('Register Branch').click()
 
 Posting the form should succeed and redirect to the page of the newly
-registered branch. We check that the final slash of the URL was stripped by
-matching for the angle brackets of an enclosing tag.
+registered branch. We check that the final slash of the URL was stripped
+by matching for the angle brackets of an enclosing tag.
 
     >>> user_browser.url
     'http://code.launchpad.dev/~no-priv/applets/main'
@@ -147,16 +189,18 @@ matching for the angle brackets of an enclosing tag.
     >>> content = find_tag_by_id(user_browser.contents, 'document')
     >>> print extract_text(find_tag_by_id(content, 'registration'))
     Created by No Privileges Person on ... and last modified on ...
+
     >>> print extract_text(find_tag_by_id(content, 'privacy'))
     This branch is public
+
     >>> print extract_text(content.h1)
     lp://dev/~no-priv/applets/main
+
     >>> print extract_text(find_tag_by_id(content, 'mirror-location'))
     Location: http://example.com/applets/main
 
-
-This page includes a link to other branches associated
-with that product, and a link to other branches maintained by that person.
+This page includes a link to other branches associated with that
+product, and a link to other branches maintained by that person.
 
     >>> print extract_text(find_tags_by_class(
     ...     user_browser.contents, 'related', only_first=True))
@@ -175,7 +219,7 @@ A user can register a branch from the project series page using the
     >>> browser.open('http://launchpad.dev/gnome-terminal/trunk')
     >>> browser.getLink('registering a mirrored branch').click()
     >>> print browser.title
-    Register a branch : Series trunk : GNOME Terminal
+    Register a branch : Code : GNOME Terminal
 
 The user sees that he is registering a branch for the series' project.
 
@@ -190,18 +234,19 @@ After posting the form, he sees the registered branch page.
     >>> browser.getControl('Experimental').click()
     >>> browser.getControl('Register Branch').click()
     >>> print browser.title
-    master : Branches : GNOME Terminal
+    master : Code : GNOME Terminal
 
 
-== Finding person/+addbranch ==
+Finding person/+addbranch
+-------------------------
 
 The user is only able to register a branch where either they or a team
 that they are a member of are the owner, so the 'Register branch' option
 is only shown on the code pages for teams that the user is a member of,
 and their own code page.
 
-Since no-priv is not a member of lifeless, the Register branch link is not
-shown.
+Since no-priv is not a member of lifeless, the Register branch link is
+not shown.
 
     >>> user_browser.open('http://code.launchpad.dev/~lifeless')
     >>> user_browser.getLink("Register a branch")
@@ -214,8 +259,8 @@ shown.
     >>> print browser.getControl('Owner').displayValue
     ['Landscape Developers (landscape-developers)']
 
-The user is able to change the owner of the branch to any team that
-the user is a member of, or to themselves.
+The user is able to change the owner of the branch to any team that the
+user is a member of, or to themselves.
 
     >>> for option in browser.getControl('Owner').displayOptions:
     ...     print option
@@ -227,11 +272,12 @@ the user is a member of, or to themselves.
     Warty Security Team (name20)
 
 
-== Conflict on unique name ==
+Conflict on unique name
+-----------------------
 
-Trying to register a branch with a product and that matches an existing branch
-owned by the user would cause a database integrity error, because the triplet
-owner-product-name is unique for all branches.
+Trying to register a branch with a product and that matches an existing
+branch owned by the user would cause a database integrity error, because
+the triplet owner-product-name is unique for all branches.
 
 For this example, we will use ~name12/gnome-terminal/main. Check that it
 already exists.
@@ -241,18 +287,19 @@ already exists.
 
 Try a adding a conflicting branch from the product/+addbranch form.
 
-    >>> browser.open('http://launchpad.dev/gnome-terminal/+addbranch')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+addbranch')
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/gnome-terminal/main-dup')
 
-Trying to post the form without filling a name at all should not cause an oops!
+Trying to post the form without filling a name at all should not cause
+an oops!
 
     >>> browser.getControl('Register Branch').click()
     >>> browser.url
-    'http://launchpad.dev/gnome-terminal/+addbranch'
+    'http://code.launchpad.dev/gnome-terminal/+addbranch'
 
-Now, complete the form, but give a name that is alredy in use for that owner
-and product.
+Now, complete the form, but give a name that is alredy in use for that
+owner and product.
 
     >>> browser.getControl('Name').value = 'main'
     >>> browser.getControl('Register Branch').click()
@@ -260,16 +307,17 @@ and product.
 That should give us the form back with an error message.
 
     >>> browser.url
-    'http://launchpad.dev/gnome-terminal/+addbranch'
+    'http://code.launchpad.dev/gnome-terminal/+addbranch'
+
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
     There is 1 error.
     You already have a branch for GNOME Terminal called main.
 
-If the user is trying to add a branch for a team that conflicts,
-then the team name is given in the error message.
+If the user is trying to add a branch for a team that conflicts, then
+the team name is given in the error message.
 
-    >>> browser.open('http://launchpad.dev/gnome-terminal/+addbranch')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+addbranch')
     >>> browser.getControl('Owner').displayValue = [
     ...     'Landscape Developers']
     >>> browser.getControl('Name').value = 'main'
@@ -277,12 +325,13 @@ then the team name is given in the error message.
     >>> browser.getControl('Register Branch').click()
     >>> print browser.url
     http://code.launchpad.dev/~landscape-developers/gnome-terminal/main
+
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
 
 Now registering again with the same name.
 
-    >>> browser.open('http://launchpad.dev/gnome-terminal/+addbranch')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+addbranch')
     >>> browser.getControl('Owner').displayValue = [
     ...     'Landscape Developers']
     >>> browser.getControl('Name').value = 'main'
@@ -294,11 +343,13 @@ Now registering again with the same name.
     Landscape Developers already has a branch for GNOME Terminal called main.
 
 
-== Checking URLs ==
+Checking URLs
+-------------
 
-URL validation should check that the entered URL is not the root of a site.
+URL validation should check that the entered URL is not the root of a
+site.
 
-    >>> user_browser.open('http://code.launchpad.dev/firefox')
+    >>> user_browser.open('http://code.launchpad.dev/applets')
     >>> user_browser.getLink("Register a branch").click()
     >>> user_browser.getControl('Branch URL').value = 'http://example.com'
     >>> user_browser.getControl('Name').value = 'unique-name'
@@ -309,10 +360,9 @@ URL validation should check that the entered URL is not the root of a site.
     There is 1 error.
     URLs for branches cannot point to the root of a site.
 
-
 URL validation should check that the entered URL is not from Launchpad.
 
-    >>> user_browser.open('http://code.launchpad.dev/firefox')
+    >>> user_browser.open('http://code.launchpad.dev/applets')
     >>> user_browser.getLink("Register a branch").click()
     >>> user_browser.getControl('Branch URL').value = (
     ...     'http://code.launchpad.dev/~testuser/')
@@ -324,10 +374,10 @@ URL validation should check that the entered URL is not from Launchpad.
     For Launchpad to mirror a branch, the original branch cannot be on
     launchpad.dev.
 
-As well as checking against the root site set in the config, a check
-is also done against the value stored as a database constraint.
+As well as checking against the root site set in the config, a check is
+also done against the value stored as a database constraint.
 
-    >>> user_browser.open('http://code.launchpad.dev/firefox')
+    >>> user_browser.open('http://code.launchpad.dev/applets')
     >>> user_browser.getLink("Register a branch").click()
     >>> user_browser.getControl('Branch URL').value = (
     ...     'http://bazaar.launchpad.net/foo/bar/')
@@ -352,15 +402,24 @@ Trailing slashes on URLs are removed.
     ...
 
 
-== Attempting to create a branch in a forbidden project ==
+Attempting to create a branch in a forbidden project
+----------------------------------------------------
 
 The branch visibility policy for a product may specify that certain
 groups of people cannot create branches.  An example of this in the
 sample data is the landscape project.  Only landscape developers can
 create branches for landscape.
 
-When registering a branch from the product pages, there is no product widget,
-so errors are set at the page level.
+When registering a branch from the product pages, there is no product
+widget, so errors are set at the page level.
+
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> owner_browser.open('http://code.launchpad.dev/landscape')
+    >>> owner_browser.getLink('Configure code hosting').click()
+    >>> owner_browser.getControl(
+    ...     'Create a new, empty branch').click()
+    >>> owner_browser.getControl('Branch name').value = 'trunk'
+    >>> owner_browser.getControl('Update').click()
 
     >>> user_browser.open('http://code.launchpad.dev/landscape')
     >>> user_browser.getLink("Register a branch").click()
@@ -372,3 +431,5 @@ so errors are set at the page level.
     ...     print element.renderContents()
     There is 1 error.
     You are not allowed to create branches in The Landscape Project.
+
+

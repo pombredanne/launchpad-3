@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -16,11 +16,16 @@
         provides="lazr.restful.interfaces.IWebServiceConfiguration">
     </utility>
 
+    <utility
+        factory="lp.services.memcache.restful.MemcachedStormRepresentationCache"
+        provides="lazr.restful.interfaces.IRepresentationCache">
+    </utility>
+
     <securedutility
         class="canonical.launchpad.systemhomes.WebServiceApplication"
-        provides="canonical.launchpad.interfaces.IWebServiceApplication">
+        provides="canonical.launchpad.interfaces.launchpad.IWebServiceApplication">
         <allow
-            interface="canonical.launchpad.interfaces.IWebServiceApplication" />
+            interface="canonical.launchpad.interfaces.launchpad.IWebServiceApplication" />
         <allow interface='lazr.restful.interfaces.IServiceRootResource' />
         <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
@@ -31,35 +36,42 @@
         for="lazr.restful.interfaces.IEntry
              zope.schema.interfaces.IField"
         provides="lazr.restful.interfaces.IByteStorage"
-        factory="canonical.launchpad.rest.LibraryBackedByteStorage"
+        factory="canonical.launchpad.rest.bytestorage.LibraryBackedByteStorage"
         />
 
-    <class class="canonical.launchpad.rest.LibraryBackedByteStorage">
+    <class class="canonical.launchpad.rest.bytestorage.LibraryBackedByteStorage">
         <allow interface='lazr.restful.interfaces.IByteStorage' />
     </class>
 
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
-        for="canonical.launchpad.interfaces.IWebServiceApplication"
+        for="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"
         type="canonical.launchpad.layers.WebServiceLayer"
-        factory="canonical.launchpad.browser.LaunchpadRootNavigation"
+        factory="lp.app.browser.launchpad.LaunchpadRootNavigation"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBugComment
+        for="lp.bugs.interfaces.bugmessage.IBugComment
              lazr.restful.interfaces.IWebServiceClientRequest"
         provides="lazr.restful.interfaces.IEntry"
-        factory="canonical.launchpad.rest.bugcomment_to_entry"
+        factory="lp.bugs.adapters.bug.bugcomment_to_entry"
         />
 
    <grok:grok package="lazr.restful.directives" />
    <grok:grok package="canonical.launchpad.rest" />
 
-   <webservice:register module="canonical.launchpad.interfaces" />
+   <webservice:register module="canonical.launchpad.interfaces.webservice" />
 
    <adapter
        for="zope.schema.interfaces.IChoice
+            zope.publisher.interfaces.http.IHTTPRequest
+            canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
+       provides="lazr.restful.interfaces.IFieldMarshaller"
+       factory="canonical.launchpad.webapp.marshallers.choiceMarshallerError"
+       />
+   <adapter
+       for="lazr.restful.interfaces.IReferenceChoice
             zope.publisher.interfaces.http.IHTTPRequest
             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
        provides="lazr.restful.interfaces.IFieldMarshaller"
@@ -70,7 +82,7 @@
     <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+apidoc"
-      class="canonical.launchpad.browser.launchpad.LaunchpadAPIDocFolder"
+      class="lp.app.browser.launchpad.LaunchpadAPIDocFolder"
       attribute="__call__"
       permission="zope.Public"
       />

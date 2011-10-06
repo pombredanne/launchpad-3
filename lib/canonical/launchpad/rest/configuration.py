@@ -8,16 +8,16 @@ __all__ = [
     'LaunchpadWebServiceConfiguration',
 ]
 
+from lazr.restful.simple import BaseWebServiceConfiguration
 from zope.component import getUtility
 
-from lazr.restful.simple import BaseWebServiceConfiguration
-
 from canonical.config import config
+from lp.app import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import (
-    WebServiceClientRequest, WebServicePublication)
-
-from canonical.launchpad import versioninfo
+    WebServiceClientRequest,
+    WebServicePublication,
+    )
 
 
 class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
@@ -25,8 +25,10 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
     path_override = "api"
     active_versions = ["beta", "1.0", "devel"]
     last_version_with_mutator_named_operations = "beta"
+    first_version_with_total_size_link = "devel"
     view_permission = "launchpad.View"
-    set_hop_by_hop_headers = True
+    require_explicit_versions = True
+    compensate_for_mod_compress_etag_modification = True
 
     service_description = """The Launchpad web service allows automated
         clients to access most of the functionality available on the
@@ -58,9 +60,17 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
     def createRequest(self, body_instream, environ):
         """See `IWebServiceConfiguration`."""
+        # The request is going to try to decode the 'PATH_INFO' using utf-8,
+        # so if it is currently unicode, encode it.
+        if isinstance(environ.get('PATH_INFO'), unicode):
+            environ['PATH_INFO'] = environ['PATH_INFO'].encode('utf-8')
         request = WebServiceClientRequest(body_instream, environ)
         request.setPublication(WebServicePublication(None))
         return request
+
+    @property
+    def enable_server_side_representation_cache(self):
+        return config.vhost.api.enable_server_side_representation_cache
 
     @property
     def default_batch_size(self):

@@ -4,7 +4,7 @@ Tests for the team '+join' page's raw view objects.
 
 == Joining and Subscribing to the List ==
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
 
     # Set up a harness to make form submission testing easier.
@@ -22,14 +22,14 @@ Tests for the team '+join' page's raw view objects.
     # policy.
     >>> from lp.registry.tests.mailinglists_helper import (
     ...     new_list_for_team)
-    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
+    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
     >>> def make_team(teamname, subscription_policy):
     ...     creator = personset.getByName('no-priv')
     ...     team = personset.newTeam(creator, teamname, teamname,
     ...         subscriptionpolicy=subscription_policy)
     ...     return team
 
-    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> subscribers = getUtility(IMailingListSet)
 
 Attempting to post a mailing list subscription request to a team that has no list

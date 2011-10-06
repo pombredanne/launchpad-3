@@ -1,18 +1,19 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
-from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
 
-BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/15'
-MAIN_FORM_ELEMENT = u'//div[@id="privacy-form-container"]/table'
+
+MAIN_FORM_ELEMENT = u'//div[@id="privacy-form-container"]/div'
 FORM_NOT_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") != -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") != -1')
 FORM_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") == -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") == -1')
 FIELD_PRIVATE = u'field.private'
 FIELD_SECURITY_RELATED = u'field.security_related'
 CHANGE_BUTTON = (
@@ -33,6 +34,7 @@ IS_PRIVATE_CLASS = (
 
 
 class TestSecurityOverlay(WindmillTestCase):
+    """XXX: This should be split between YUI test and selnium."""
 
     layer = BugsWindmillLayer
     suite_name = "Bug privacy settings test"
@@ -44,13 +46,10 @@ class TestSecurityOverlay(WindmillTestCase):
         is public[private]" on a bug page uses the formoverlay to update the
         flags "private" and "security vulnerability".
          """
-        client = self.client
 
         # Open a bug page and wait for it to finish loading.
-        client.open(url=BUG_URL)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
-
+        client, start_url = self.getClientFor(
+            '/bugs/15', user=lpuser.SAMPLE_PERSON)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
 
@@ -95,7 +94,7 @@ class TestSecurityOverlay(WindmillTestCase):
         # we get the same text in the HTML data sent by the server,
         # so that we can be sure that the security settings are correctly
         # updated.
-        client.open(url=BUG_URL)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
@@ -133,7 +132,7 @@ class TestSecurityOverlay(WindmillTestCase):
         client.asserts.assertChecked(id=FIELD_SECURITY_RELATED)
 
         # When we reload the page, we get the same texts.
-        client.open(url=BUG_URL)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
@@ -153,7 +152,7 @@ class TestSecurityOverlay(WindmillTestCase):
 
         # When we reload the page, the <div> for the security message
         # does not exist either.
-        client.open(url=BUG_URL)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
@@ -171,6 +170,3 @@ class TestSecurityOverlay(WindmillTestCase):
         client.click(xpath=CANCEL_BUTTON)
         client.asserts.assertElemJS(
             xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -9,14 +9,11 @@
     <script type="text/javascript"
             tal:condition="devmode"
             tal:content="string:var yui_base='${yui}';"></script>
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:define="lp_js string:${icingroot}/build"
-            tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
     <script type="text/javascript">
-      LPS.use('base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
+      LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
+      function(Y) {
           Y.on('domready', function() {
-              Y.bugs.setup_dupes();
+              Y.lp.bugs.filebug_dupefinder.setup_dupes();
           });
       });
     </script>
@@ -42,7 +39,7 @@
           <p tal:condition="not: view/similar_bugs">
             No similar bug reports were found.
           </p>
-          <div id="bug_reporting_form" tal:condition="not: view/similar_bugs">
+          <div id="bug-reporting-form" tal:condition="not: view/similar_bugs">
             <metal:form use-macro="context/@@launchpad_form/form">
               <metal:widgets metal:fill-slot="widgets">
                 <table class="form">

@@ -9,18 +9,19 @@ Adding a product release
 
 A new ProductRelease can be created using ProductReleaseAddView.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> owner = factory.makePerson(name='app-owner')
     >>> product = factory.makeProduct(name='app', owner=owner)
-    >>> series = factory.makeSeries(name='simple', product=product)
-    >>> milestone = series.newMilestone('0.1')
-    >>> print milestone.active
+    >>> series = factory.makeProductSeries(name='simple', product=product)
+    >>> naked_milestone = removeSecurityProxy(series).newMilestone('0.1')
+    >>> print naked_milestone.active
     True
 
 The view explains what that the user is creating a release, and lists
 the other releases for the series. There are no other releases yet.
 
     >>> login_person(owner)
-    >>> view = create_initialized_view(milestone, '+addrelease')
+    >>> view = create_initialized_view(naked_milestone, '+addrelease')
     >>> print view.label
     Create a new release for App
     >>> print view.page_title
@@ -43,14 +44,14 @@ milestone.
     ...     'field.actions.create': 'Create release',
     ...     'field.keep_milestone_active.used': '', # false
     ...     }
-    >>> view = create_initialized_view(milestone, '+addrelease', form=form)
+    >>> view = create_initialized_view(naked_milestone, '+addrelease', form=form)
     >>> print view.errors
     []
 
     >>> print view.widget_errors
     {}
 
-    >>> print milestone.active
+    >>> print naked_milestone.active
     False
 
     >>> for release in series.releases:
@@ -61,7 +62,7 @@ milestone.
 
 Only one release can be created for the milestone.
 
-    >>> view = create_initialized_view(milestone, '+addrelease', form=form)
+    >>> view = create_initialized_view(naked_milestone, '+addrelease', form=form)
     >>> for notice in view.request.response.notifications:
     ...     print notice.message
     A project release already exists for this milestone.
@@ -124,7 +125,7 @@ show a formoverlay that updates the milestone_for_release field.
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        LPS.use(... 'registry.milestoneoverlay'...
+        LPS.use(... 'lp.registry.milestoneoverlay'...
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
             var series_uri = '/app/simple';
             ...

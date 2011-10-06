@@ -10,7 +10,7 @@ Standards-Version: 3.6.1.0
 Format: 1.0
 Directory: pool/main/f/foo
 Files:
- bf8ef0ec49274621a72c941fbd1d70ed 1326 foo.dsc
+ bf8ef0ec49274621a72c941fbd1d70ed 1326 foo_1.dsc
  ea140e23ae50a61a79902aa67da5214e 15134701 binutils_2.15.orig.tar.gz
  2cf84daeca019220f5f3753121f012bb 36466 binutils_2.15-4.diff.gz
 

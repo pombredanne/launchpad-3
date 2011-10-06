@@ -14,7 +14,7 @@ enabling faster searches, faster readings and model constraints.
 
 Let's get one from the database:
 
-   >>> from canonical.launchpad.database import SourcePackageRelease
+   >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
    >>> spr = SourcePackageRelease.get(14)
    >>> spr.name
    u'mozilla-firefox'
@@ -60,11 +60,16 @@ if the 'age' result looks sane:
 Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
 property only returns the non-PPA builds.
 
-   >>> from canonical.launchpad.interfaces import IPersonSet
-   >>> from lp.soyuz.model.build import Build
+   >>> from lp.buildmaster.model.packagebuild import PackageBuild
+   >>> from lp.registry.interfaces.person import IPersonSet
+   >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+   >>> from storm.store import Store
    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
-   >>> ff_ppa_build = Build.selectBy(
-   ...     archive=cprov_ppa, sourcepackagerelease=spr)
+   >>> ff_ppa_build = Store.of(cprov_ppa).find(
+   ...     BinaryPackageBuild,
+   ...     BinaryPackageBuild.source_package_release == spr,
+   ...     BinaryPackageBuild.package_build == PackageBuild.id,
+   ...     PackageBuild.archive == cprov_ppa)
    >>> ff_ppa_build.count()
    1
    >>> ff_ppa_build[0].archive.purpose.name
@@ -94,7 +99,7 @@ which it was uploaded:
    >>> print spr.sourcepackage.displayname
    mozilla-firefox in Ubuntu Warty
    >>> print spr.distrosourcepackage.displayname
-   mozilla-firefox in ubuntu
+   mozilla-firefox in Ubuntu
 
 It should also work when the version has a dash and packaging revision
 after it:
@@ -128,8 +133,8 @@ Check ISourcePackageRelease.override() behaviour:
    >>> spr.component.name, spr.section.name
    (u'main', u'editors')
 
-   >>> from canonical.launchpad.interfaces import (
-   ...     IComponentSet, ISectionSet)
+   >>> from lp.soyuz.interfaces.component import IComponentSet
+   >>> from lp.soyuz.interfaces.section import ISectionSet
    >>> new_comp = getUtility(IComponentSet)['universe']
    >>> new_sec = getUtility(ISectionSet)['mail']
 
@@ -150,9 +155,10 @@ Abort transaction to avoid error propagation of the new attributes:
 Verify the creation of a new ISourcePackageRelease based on the
 IDistroSeries API:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
-  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.gpg import IGPGKeySet
+  >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+  >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
   >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
@@ -168,6 +174,7 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
   >>> arg_recipebuild = factory.makeSourcePackageRecipeBuild()
+  >>> changelog = None
 
 The other argurments are strings:
 
@@ -191,7 +198,7 @@ ISourcePackageRelease, it will automatically set the
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog_entry, dsc, arg_key, arg_sect,
+  ...     arg_urgency, changelog, changelog_entry, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright,
   ...     build_conflicts=None, build_conflicts_indep=None,
@@ -270,7 +277,7 @@ the same permission on it.
 
     >>> login('foo.bar@canonical.com')
     >>> cprov_private_ppa = factory.makeArchive(
-    ...     owner=cprov, private=True)
+    ...     owner=cprov, private=True, name='pppa')
 
     >>> private_publication = test_publisher.getPubSource(
     ...     archive=cprov_private_ppa)
@@ -282,7 +289,7 @@ the same permission on it.
     >>> published_archives = test_sourcepackagerelease.published_archives
     >>> for archive in published_archives:
     ...     print archive.displayname
-    PPA for Celso Providelo
+    PPA named pppa for Celso Providelo
 
 'foo - 666' sourcepackagerelease is only published in Celso's Private
 PPA. So, Only Celso and administrators can get 'launchpad.View' on it.
@@ -319,7 +326,7 @@ primary archive, which is public.
     >>> for archive in published_archives:
     ...     print archive.displayname
     Primary Archive for Ubuntu Linux
-    PPA for Celso Providelo
+    PPA named pppa for Celso Providelo
 
 And we can see it's publicly available now, as expected.
 
@@ -365,5 +372,5 @@ published_archives shows the superseded/deleted publications still:
     >>> for archive in published_archives:
     ...     print archive.displayname
     Primary Archive for Ubuntu Linux
-    PPA for Celso Providelo
+    PPA named pppa for Celso Providelo
 

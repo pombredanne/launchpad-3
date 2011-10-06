@@ -1,0 +1,83 @@
+Team Reassignment
+=================
+
+There are many restrictions for setting the owner of a team.
+
+
+Existing Team Error
+-------------------
+
+The ObjectReassignmentView displays radio buttons that give you the
+option to create a team as opposed to using an existing team. If the
+user tries to create a new team with the same name as an existing team,
+an error is displayed.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> operator = person_set.getByName('name12')
+    >>> login_person(operator)
+    >>> a_team = factory.makeTeam(
+    ...     owner=operator, name='a-team', displayname='A-Team')
+    >>> b_team = factory.makeTeam(
+    ...     owner=operator, name='b-team', displayname='B-Team')
+    >>> c_team = factory.makeTeam(
+    ...     owner=operator, name='c-team', displayname='C-Team')
+    >>> a_team.addMember(b_team, operator)
+    (True...
+    >>> b_team.addMember(c_team, operator)
+    (True...
+    >>> transaction.commit()
+
+    >>> view = create_initialized_view(
+    ...     c_team, '+reassign', principal=operator)
+    >>> print list(w.name for w in view.widgets)
+    ['field.owner', 'field.existing']
+
+    >>> form = {
+    ...     'field.owner': 'a-team',
+    ...     'field.existing': 'new',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     a_team, '+reassign', form=form, principal=operator)
+    >>> print view.errors
+    [u"There's already a person/team with the name 'a-team' in Launchpad.
+    Please choose a different name or select the option to make that
+    person/team the new owner, if that's what you want."]
+
+
+Cyclical Team Membership Error
+------------------------------
+
+When a person or team becomes the owner of another team, they are also
+added as a member. Team memberships cannot be cyclical; therefore, the
+team can't have its owner be a team of which it is a direct or indirect
+member.
+
+    >>> form = {
+    ...     'field.owner': 'b-team',
+    ...     'field.existing': 'existing',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     c_team, '+reassign', form=form, principal=operator)
+    >>> print view.widget_errors
+    {'owner': u'Circular team memberships are not allowed.
+    B-Team cannot be the new team owner, since C-Team is a direct member
+    of B-Team. <...><...>'}
+
+If there is an indirect membership between the teams, the path between
+the teams is displayed so that the user has a better idea how to resolve
+the issue.
+
+    >>> form = {
+    ...     'field.owner': 'a-team',
+    ...     'field.existing': 'existing',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     c_team, '+reassign', form=form, principal=operator)
+    >>> print view.widget_errors
+    {'owner': u'Circular team memberships are not allowed.
+    A-Team cannot be the new team owner, since C-Team is an
+    indirect member of A-Team. <...>(C-Team&rArr;B-Team&rArr;A-Team)<...>'}

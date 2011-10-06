@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -15,13 +15,20 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int, List, TextLine
+from zope.schema import (
+    Choice,
+    Int,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
 from lp.translations.interfaces.translationcommonformat import (
-    TranslationImportExportBaseException)
+    TranslationImportExportBaseException,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
 
 
 class UnknownTranslationExporterError(TranslationImportExportBaseException):
@@ -51,6 +58,23 @@ class ITranslationExporter(Interface):
             it.
         """
 
+    def exportTranslationFiles(translation_files, target_format=None,
+                               ignore_obsolete=False, force_utf8=False):
+        """Return an `IExportedTranslationFile` representing the export.
+
+        :param translation_files: A sequence of `ITranslationFileData` objects
+            to export.
+        :param target_format: Optional `TranslationFileFormat` to export
+            to.  Defaults to the files' native formats.
+        :param ignore_obsolete: A flag indicating whether obsolete messages
+            should be exported.
+        :param force_utf8: A flag indicating whether the export should be
+            forced to use UTF-8 encoding. This argument is only useful if the
+            file format allows different encodings.
+        :return: An `IExportedTranslationFile` representing the export.
+        """
+
+
 
 class ITranslationFormatExporter(Interface):
     """Translation file format exporter."""
@@ -68,6 +92,8 @@ class ITranslationFormatExporter(Interface):
             '''),
         required=True, readonly=True)
 
+    mime_type = TextLine(title=_("MIME type for this file format."))
+
     def exportTranslationMessageData(translation_message):
         """Export the string for the given translation message.
 
@@ -75,18 +101,19 @@ class ITranslationFormatExporter(Interface):
         :return: Unicode string representing given `ITranslationMessageData`.
         """
 
-    def exportTranslationFiles(translation_files, ignore_obsolete=False,
-                               force_utf8=False):
+    def exportTranslationFile(translation_files, export_storage,
+                              ignore_obsolete=False, force_utf8=False):
         """Return an `IExportedTranslationFile` representing the export.
 
-        :param translation_files: A sequence of `ITranslationFileData` objects
-            to export.
+        :param translation_file: An `ITranslationFileData` object to
+            export.
+        :param export-storage: An `IExportedTranslationFile` that will
+            receive the export.
         :param ignore_obsolete: A flag indicating whether obsolete messages
             should be exported.
         :param force_utf8: A flag indicating whether the export should be
             forced to use UTF-8 encoding. This argument is only useful if the
             file format allows different encodings.
-        :return: An `IExportedTranslationFile` representing the export.
         """
 
 

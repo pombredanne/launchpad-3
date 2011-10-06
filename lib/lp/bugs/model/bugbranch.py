@@ -10,20 +10,33 @@ __metaclass__ = type
 __all__ = ["BugBranch",
            "BugBranchSet"]
 
-from sqlobject import ForeignKey, IN, StringCol
-
+from sqlobject import (
+    ForeignKey,
+    IN,
+    IntCol,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Exists,
+    Or,
+    Select,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.enumcol import EnumCol
-
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.interfaces.bugbranch import (
+    IBugBranch,
+    IBugBranchSet,
+    )
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.teammembership import TeamParticipation
 
 
 class BugBranch(SQLBase):
@@ -32,6 +45,7 @@ class BugBranch(SQLBase):
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
+    branch_id = IntCol(dbName="branch", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
     revision_hint = StringCol(default=None)
 
@@ -62,41 +76,46 @@ class BugBranchSet:
         "See `IBugBranchSet`."
         return BugBranch.selectOneBy(bugID=bug.id, branchID=branch.id)
 
-    def getBugBranchesForBranches(self, branches, user):
-        "See IBugBranchSet."
-        branch_ids = [branch.id for branch in branches]
-        if not branch_ids:
-            return []
-        where_clauses = []
+    def getBranchesWithVisibleBugs(self, branches, user):
+        """See `IBugBranchSet`."""
+        # Avoid circular imports.
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugsubscription import BugSubscription
 
-        # Select only bug branch links for the branches specified,
-        # and join with the Bug table.
-        where_clauses.append("""
-            BugBranch.branch in %s AND
-            BugBranch.bug = Bug.id""" % sqlvalues(branch_ids))
+        branch_ids = [branch.id for branch in branches]
+        if branch_ids == []:
+            return []
 
         admins = getUtility(ILaunchpadCelebrities).admin
-        if user:
-            if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users,
-                # so that they can only see the private bugs that they're
-                # allowed to see.
-                where_clauses.append("""
-                    (Bug.private = FALSE OR
-                     Bug.id in (
-                         SELECT Bug.id
-                         FROM Bug, BugSubscription, TeamParticipation
-                         WHERE Bug.id = BugSubscription.bug AND
-                             TeamParticipation.person = %(personid)s AND
-                             BugSubscription.person = TeamParticipation.team))
-                             """ % sqlvalues(personid=user.id))
+        if user is None:
+            # Anonymous visitors only get to know about public bugs.
+            visible = And(
+                Bug.id == BugBranch.bugID,
+                Bug.private == False)
+        elif user.inTeam(admins):
+            # Administrators know about all bugs.
+            visible = True
         else:
-            # Anonymous user; filter to include only public bugs in
-            # the search results.
-            where_clauses.append("Bug.private = FALSE")
+            # Anyone else can know about public bugs plus any private
+            # ones they may be directly or indirectly subscribed to.
+            subscribed = And(
+                TeamParticipation.teamID == BugSubscription.person_id,
+                TeamParticipation.personID == user.id,
+                Bug.id == BugSubscription.bug_id)
 
-        return BugBranch.select(
-            ' AND '.join(where_clauses), clauseTables=['Bug'])
+            visible = And(
+                Bug.id == BugBranch.bugID,
+                Or(
+                    Bug.private == False,
+                    Exists(Select(
+                        columns=[True],
+                        tables=[BugSubscription, TeamParticipation],
+                        where=subscribed))))
+
+        return IStore(BugBranch).find(
+            BugBranch.branchID,
+            BugBranch.branch_id.is_in(branch_ids),
+            visible).config(distinct=True)
 
     def getBugBranchesForBugTasks(self, tasks):
         "See IBugBranchSet."

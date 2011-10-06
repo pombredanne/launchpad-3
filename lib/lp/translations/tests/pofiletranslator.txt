@@ -6,7 +6,7 @@ This table is read only to most users, but for this test we connect
 as a superuser so we can poke at it directly.
 
     >>> from canonical.database.sqlbase import connect
-    >>> connection = connect('testadmin')
+    >>> connection = connect(user='testadmin')
     >>> cur = connection.cursor()
     >>> def pofiletranslator(person_id, pofile_id):
     ...     cur.execute("""
@@ -24,32 +24,20 @@ as a superuser so we can poke at it directly.
     >>> language_id = 387
     >>> potmsgset_id = 1
 
-
-Note that our oldest TranslationMessage references pofile #1
-
-    >>> cur.execute("""
-    ...     SELECT pofile
-    ...     FROM TranslationMessage
-    ...     ORDER BY date_created
-    ...     LIMIT 1""")
-    >>> cur.fetchone()[0]
-    1
-
+Note that our oldest TranslationMessage belongs to pofile #1.
 
 Stub has so far not translated anything in this pofile
 
     >>> pofiletranslator(stub_id, pofile_id) is None
     True
 
-
 If we add a message, the cache is updated
 
     >>> cur.execute("""
     ...     INSERT INTO TranslationMessage(
-    ...         pofile, potmsgset, msgstr1, origin, submitter, language
+    ...         potmsgset, msgstr1, origin, submitter, language
     ...       ) VALUES (
-    ...         %(pofile_id)s, %(potmsgset_id)s, 1, 1, %(stub_id)s,
-    ...         %(language_id)s)
+    ...         %(potmsgset_id)s, 1, 1, %(stub_id)s, %(language_id)s)
     ...     """, vars())
     >>> posubmission_id, date_touched = pofiletranslator(stub_id, pofile_id)
 
@@ -70,10 +58,9 @@ the last touched timestamp.
 
     >>> cur.execute("""
     ...     INSERT INTO TranslationMessage(
-    ...         pofile, potmsgset, msgstr1, origin, submitter, language
+    ...         potmsgset, msgstr1, origin, submitter, language
     ...       ) VALUES (
-    ...         %(pofile_id)s, %(potmsgset_id)s, 2, 1, %(stub_id)s,
-    ...         %(language_id)s)
+    ...         %(potmsgset_id)s, 2, 1, %(stub_id)s, %(language_id)s)
     ...     """, vars())
     >>> new_posubmission_id, new_date_touched = pofiletranslator(
     ...     stub_id, pofile_id)
@@ -99,7 +86,8 @@ If we update the submissin, the cache is updated
     ...     """, vars())
     >>> mark_posubmission_id, date_touched = pofiletranslator(
     ...     mark_id, pofile_id)
-    >>> stub_posubmission_id, date_touched = pofiletranslator(stub_id, pofile_id)
+    >>> stub_posubmission_id, date_touched = pofiletranslator(
+    ...     stub_id, pofile_id)
     >>> mark_posubmission_id == stub_posubmission_id
     False
 

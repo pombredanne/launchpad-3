@@ -9,7 +9,7 @@ the specified email address.
 The BugTrackerType enumeration defines an EMAILADDRESS bug tracker
 type.
 
-    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> BugTrackerType.EMAILADDRESS.title
     'Email Address'
 
@@ -33,8 +33,11 @@ mailto:<email-address>.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTracker, IBugTrackerSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bugtracker import (
+    ...     IBugTracker,
+    ...     IBugTrackerSet,
+    ...     )
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
@@ -69,14 +72,14 @@ fashion. For email addresses, we record the message ID of the mail sent
 to the remote email address, if it is known. The presence of a bug watch
 means that a message has been sent to the upstream tracker.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> example_bug = getUtility(IBugSet).get(15)
 
 If the message ID of the email sent to the remote tracker is not known,
 we record a remotebug value of '' for the bugwatch (we can't use None
 because BugWatch.remotebug is a NOT NULL field).
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> bug_watch = example_bug.addWatch(bugtracker=email_tracker,
     ...     remotebug='', owner=getUtility(ILaunchpadCelebrities).janitor)
     >>> bug_watch.bugtracker.name, bug_watch.remotebug, bug_watch.bug.id

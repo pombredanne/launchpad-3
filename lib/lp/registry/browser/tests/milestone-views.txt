@@ -10,7 +10,7 @@ Users can directly see and edit milestones through the milestone views.
 
 The default url for a milestone is to the main site.
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://bugs.launchpad.net')
@@ -37,8 +37,8 @@ Milestone defines several menus.
 The MilestoneView used can be adapted to a MilestoneInlineNavigationMenu
 for use with inline presentation of milestones.
 
-    >>> from canonical.lazr.canonicalurl import nearest_adapter
     >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+    >>> from canonical.lazr.canonicalurl import nearest_adapter
 
     >>> view = create_view(milestone, name='+productseries-table-row')
     >>> nearest_adapter(view, INavigationMenu, name='overview')
@@ -127,7 +127,6 @@ is used by the decorator.
     ...         print '%s: %s' % (key, badge_dict[key])
     <BugTask ...>
         has_branch: False
-        has_mentoring_offer: False
         has_patch: False
         has_specification: False
 
@@ -139,10 +138,10 @@ formatted text descriptions of the bugtasks and specifications. The text
 supports plural descriptions.
 
     >>> print view.bugtask_count_text
-    <strong>1 bug</strong>
+    1 bug
 
     >>> print view.specification_count_text
-    <strong>1 blueprint</strong>
+    1 blueprint
 
     >>> bug = factory.makeBug(title="emo")
     >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
@@ -154,10 +153,10 @@ supports plural descriptions.
 
     >>> view = create_view(milestone, '+index')
     >>> print view.bugtask_count_text
-    <strong>2 bugs</strong>
+    2 bugs
 
     >>> print view.specification_count_text
-    <strong>2 blueprints</strong>
+    2 blueprints
 
 Bugtasks are ordered by status (fix released last), and importance
 (critical first).
@@ -171,8 +170,7 @@ Bugtasks are ordered by status (fix released last), and importance
 The view provides a list of StatusCounts that summarise the targeted
 specifications and bugtasks.
 
-    >>> from lp.blueprints.interfaces.specification import (
-    ...     SpecificationImplementationStatus)
+    >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
     >>> bugtask.transitionToAssignee(person)
     >>> engineer = factory.makePerson(name='engineer')
@@ -301,8 +299,8 @@ not have edit permission.
     >>> login_person(person)
 
 
-Project milestones
-------------------
+ProjectGroup milestones
+-----------------------
 
 The projectgroup milestones are virtual and cannot be modified. The template
 generates CSS that hides the space occupied by the side portlets.
@@ -330,8 +328,8 @@ Persons with launchpad.Edit permissions for milestones may edit them.
 The MilestoneEditView is responsible for controlling the fields that the
 user may edit.
 
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login_person(firefox.owner)
@@ -579,8 +577,9 @@ Distroseries driver and milestones
 The driver of a series that belongs to an `IDerivativeDistribution` is a
 release manager and can create milestones.
 
-    >>> distroseries = factory.makeDistroRelease(name='pumpkin')
+    >>> distroseries = factory.makeDistroSeries(name='pumpkin')
     >>> driver = factory.makePerson(name='a-driver')
+    >>> login_person(distroseries.distribution.owner)
     >>> distroseries.driver = driver
     >>> login_person(driver)
 
@@ -683,7 +682,7 @@ milestone.
     >>> bugtask.milestone = milestone
     >>> subscription = milestone.addSubscription(owner, owner)
     >>> [subscription for subscription in owner.structural_subscriptions]
-    [<StructuralSubscription ...>]
+    [<...StructuralSubscription ...>]
 
     >>> view = create_initialized_view(milestone, '+delete')
     >>> [bugtask.milestone.name for bugtask in view.bugtasks]
@@ -726,3 +725,26 @@ project owner or series driver..
     >>> view = create_initialized_view(milestone, '+delete')
     >>> check_permission('launchpad.Edit', view)
     False
+
+Milestones with private bugs can be deleted. There is one caveate, the person
+deleting the milestone must have permssion to access the bug for it to be
+untargeted. It is possible for the owner or release manager to not have access
+to a private bug that was targeted to a milestone by a driver.
+
+    >>> login_person(owner)
+    >>> milestone = firefox_1_0.newMilestone('1.0.13')
+    >>> private_bug = factory.makeBug(product=firefox, private=True)
+    >>> private_bugtask = bug.bugtasks[0]
+    >>> private_bugtask.milestone = milestone
+    >>> view = create_initialized_view(milestone, '+delete')
+    >>> [bugtask.milestone.name for bugtask in view.bugtasks]
+    [u'1.0.13']
+
+    >>> view = create_initialized_view(milestone, '+delete', form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Milestone 1.0.13 deleted.
+
+    >>> transaction.commit()
+    >>> print private_bugtask.milestone
+    None

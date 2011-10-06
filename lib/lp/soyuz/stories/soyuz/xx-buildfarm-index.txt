@@ -22,7 +22,7 @@ containing the build queue status summary for each build domain.
     frog  386        Disabled
     Official distributions build status
     Processor  Builders  Queue
-    386        1         1 job (a minute)
+    386        1         1 job (1 minute)
     PPA build status
     Processor  Builders  Queue
     386        0         empty
@@ -44,7 +44,7 @@ supported processor on each separated build domain, 'official'
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
     Processor  Builders  Queue
-    386        1         1 job (a minute)
+    386        1         1 job (1 minute)
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status',))
@@ -60,7 +60,7 @@ the corresponding portlet with their estimated duration as well.
     >>> import datetime
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -77,13 +77,15 @@ the corresponding portlet with their estimated duration as well.
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status'))
     PPA build status
     Processor  Builders  Queue
-    386        0         1 job (a minute)
+    386        0         1 job (1 minute)
 
 If the archive for the build does not require virtual builders, then
-the pending job will appear in the 'official' queue:
+the pending job will appear in the 'official' queue. Since the build
+record already exists, we must manually set it to non-virtualized too.
 
     >>> login('foo.bar@canonical.com')
     >>> cprov.archive.require_virtualized = False
+    >>> removeSecurityProxy(bq).virtualized = False
     >>> logout()
 
     >>> anon_browser.reload()
@@ -97,7 +99,7 @@ the pending job will appear in the 'official' queue:
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
     Processor  Builders  Queue
-    386        1         2 jobs (two minutes)
+    386        1         2 jobs (2 minutes)
 
 From this page, users with the appropriate permission can register new
 builders.
@@ -142,12 +144,12 @@ to the builder or simply proceed with the default (i386).
     >>> admin_browser.getControl(name='field.processor').displayValue
     ['Intel 386']
 
-By default, builders are created as 'active', although the
+By default, builders are created as 'Publicly Visible', although the
 administrator can change this value during creation time.
 
-    >>> print admin_browser.getControl('Active').selected
+    >>> print admin_browser.getControl('Publicly Visible').selected
     True
-    >>> admin_browser.getControl('Active').selected = False
+    >>> admin_browser.getControl('Publicly Visible').selected = False
 
 Builder as created as 'non-virtual' by default, but the administrator
 can also modify that while creating a builder.

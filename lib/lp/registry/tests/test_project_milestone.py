@@ -5,24 +5,42 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import unittest
 
-from datetime import datetime
-
 from storm.store import Store
-
 from zope.component import getUtility
+import pytz
 
+from canonical.launchpad.ftests import (
+    login,
+    )
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    DatabaseFunctionalLayer,
+    )
+from lazr.restfulclient.errors import ClientError
+
+from lp.blueprints.enums import (
+    SpecificationDefinitionStatus,
+    SpecificationPriority,
+    )
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, BugTaskStatus, IBugTaskSet)
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet, SpecificationDefinitionStatus, SpecificationPriority)
+    BugTaskSearchParams,
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from canonical.launchpad.ftests import login, syncUpdate
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.registry.model.milestone import MultipleProductReleases
+from lp.testing import (
+    launchpadlib_for,
+    TestCaseWithFactory,
+    )
 
 
 class ProjectMilestoneTest(unittest.TestCase):
@@ -121,12 +139,10 @@ class ProjectMilestoneTest(unittest.TestCase):
         self.assertEqual(gnome_milestone.dateexpected, None)
 
         evolution_milestone.dateexpected = datetime(2007, 4, 2)
-        syncUpdate(evolution_milestone)
         gnome_milestone = gnome.getMilestone('1.1')
         self.assertEqual(gnome_milestone.dateexpected, datetime(2007, 4, 2))
 
         gnomebaker_milestone.dateexpected = datetime(2007, 4, 1)
-        syncUpdate(gnomebaker_milestone)
         gnome_milestone = gnome.getMilestone('1.1')
         self.assertEqual(gnome_milestone.dateexpected, datetime(2007, 4, 1))
 
@@ -145,12 +161,10 @@ class ProjectMilestoneTest(unittest.TestCase):
         self.assertEqual(gnome_milestone.active, True)
 
         gnomebaker_milestone.active = False
-        syncUpdate(gnomebaker_milestone)
         gnome_milestone = gnome.getMilestone('1.1')
         self.assertEqual(gnome_milestone.active, True)
 
         evolution_milestone.active = False
-        syncUpdate(evolution_milestone)
         gnome_milestone = gnome.getMilestone('1.1')
         self.assertEqual(gnome_milestone.active, False)
 
@@ -190,14 +204,13 @@ class ProjectMilestoneTest(unittest.TestCase):
         spec = specset.new(
             name='%s-specification' % product_name,
             title='Title %s specification' % product_name,
-            specurl='http://www.example.com/spec/%s' %product_name ,
+            specurl='http://www.example.com/spec/%s' % product_name,
             summary='summary',
             definition_status=SpecificationDefinitionStatus.APPROVED,
             priority=SpecificationPriority.HIGH,
             owner=sample_person,
             product=product)
         spec.milestone = product.getMilestone(milestone_name)
-        syncUpdate(spec)
         return spec
 
     def test_milestone_specifications(self):
@@ -235,7 +248,6 @@ class ProjectMilestoneTest(unittest.TestCase):
         bug = product.createBug(params)
         [bugtask] = bug.bugtasks
         bugtask.milestone = milestone
-        syncUpdate(bugtask)
 
     def _createProductSeriesBugtask(self, product_name, product_series_name,
                                     milestone_name):
@@ -251,12 +263,10 @@ class ProjectMilestoneTest(unittest.TestCase):
             owner=sample_person,
             status=BugTaskStatus.CONFIRMED)
         bug = product.createBug(params)
-        getUtility(IBugTaskSet).createTask(bug, owner=sample_person,
-                                           productseries=series)
+        getUtility(IBugTaskSet).createTask(bug, sample_person, series)
         for bugtask in bug.bugtasks:
             if bugtask.productseries is not None:
                 bugtask.milestone = milestone
-                syncUpdate(bugtask)
 
     def test_milestone_bugtasks(self):
         """Bugtasks and project milestones.
@@ -291,7 +301,6 @@ class ProjectMilestoneTest(unittest.TestCase):
         gnomebaker_milestone = self.createProductMilestone(
             '1.2', 'gnomebaker', datetime(2011, 4, 2))
         gnomebaker_milestone.active = False
-        syncUpdate(gnomebaker_milestone)
 
         evolution_milestone = self.createProductMilestone(
             '1.3', 'evolution', datetime(2012, 4, 1))
@@ -299,8 +308,6 @@ class ProjectMilestoneTest(unittest.TestCase):
         gnomebaker_milestone = self.createProductMilestone(
             '1.3', 'gnomebaker', datetime(2012, 4, 2))
         gnomebaker_milestone.active = False
-        syncUpdate(evolution_milestone)
-        syncUpdate(gnomebaker_milestone)
 
         self.createSpecification('1.1', 'evolution')
         self.createSpecification('1.1', 'gnomebaker')
@@ -308,6 +315,48 @@ class ProjectMilestoneTest(unittest.TestCase):
         self._createProductBugtask('evolution', '1.1')
         self._createProductBugtask('gnomebaker', '1.1')
         self._createProductSeriesBugtask('evolution', 'trunk', '1.1')
+
+
+class TestDuplicateProductReleases(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_inappropriate_release_raises(self):
+        # A milestone that already has a ProductRelease can not be given
+        # another one.
+        login('foo.bar@canonical.com')
+        product_set = getUtility(IProductSet)
+        product = product_set['evolution']
+        series = product.getSeries('trunk')
+        milestone = series.newMilestone(name='1.1', dateexpected=None)
+        now = datetime.now(pytz.UTC)
+        milestone.createProductRelease(1, now)
+        self.assertRaises(MultipleProductReleases,
+            milestone.createProductRelease, 1, now)
+        try:
+            milestone.createProductRelease(1, now)
+        except MultipleProductReleases, e:
+            self.assert_(
+                str(e), 'A milestone can only have one ProductRelease.')
+
+    def test_inappropriate_deactivation_does_not_cause_an_OOPS(self):
+        # Make sure a 400 error and not an OOPS is returned when an exception
+        # is raised when trying to create a product release when a milestone
+        # already has one.
+        last_oops = globalErrorUtility.getLastOopsReport()
+        launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
+
+        project = launchpad.projects['evolution']
+        milestone = project.getMilestone(name='2.1.6')
+        now = datetime.now(pytz.UTC)
+
+        e = self.assertRaises(
+            ClientError, milestone.createProductRelease, date_released=now)
+
+        # no OOPS was generated as a result of the exception
+        self.assertNoNewOops(last_oops)
+        self.assertEqual(400, e.response.status)
+        self.assertIn(
+            'A milestone can only have one ProductRelease.', e.content)
 
 
 def test_suite():

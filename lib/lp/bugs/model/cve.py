@@ -12,24 +12,34 @@ __all__ = [
 
 import re
 
+# SQL imports
+from sqlobject import (
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
 # Zope
 from zope.interface import implements
 
-# SQL imports
-from sqlobject import (
-    StringCol, SQLRelatedJoin, SQLMultipleJoin, SQLObjectNotFound)
-
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.app.validators.cve import valid_cve
 from lp.bugs.interfaces.buglink import IBugLinkTarget
-from lp.bugs.interfaces.cve import CveStatus, ICve, ICveSet
-from canonical.launchpad.validators.cve import valid_cve
-from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.bugs.interfaces.cve import (
+    CveStatus,
+    ICve,
+    ICveSet,
+    )
 from lp.bugs.model.bugcve import BugCve
+from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.bugs.model.cvereference import CveReference
+
 
 cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
 

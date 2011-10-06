@@ -1,20 +1,8 @@
 Private team participation
 ==========================
 
-During the transitional period between having only public and private
-membership team visibility until the end goal of having only public
-and private team visibility, there will be a time when teams can have a
-visibility set to one of the three: public, private membership, and
-private.
-
-Public teams can perform any role in Launchpad.  Private membership
-teams are very restricted in the roles they may play.  Private teams
-can play more roles.  Private membership teams were originally
-implemented in this manner since it was the most expedient way to
-provide the required functionality and nothing more.  With the advent
-of truly private teams their utility is increased but with more
-safeguards to prevent potential data leakage.
-
+Public teams can perform any role in Launchpad.  Private teams
+have some restrictions in the roles they can perform.
 
 Bugs
 ====
@@ -30,48 +18,25 @@ Bug subscriptions
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=team_owner,
     ...     visibility=PersonVisibility.PRIVATE)
-    >>> pm_team = factory.makeTeam(name='private-membership-team',
-    ...     owner=team_owner,
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
 
 A private team can be subscribed to a bug.
 
     >>> bug = factory.makeBug()
     >>> priv_subscription = bug.subscribe(priv_team, team_owner)
 
-But a private membership team cannot.
-
-    >>> pm_subscription = bug.subscribe(pm_team, team_owner)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <BugSubscription...
-
 A private team can subscribe others to a bug (the `subscribed_by`
 person).
 
     >>> priv_subscription = bug.subscribe(team_owner, priv_team)
 
-The same team cannot unsubscribe the person, though.
+The same team can also unsubscribe the person.
 
     >>> bug.unsubscribe(team_owner, priv_team)
-    Traceback (most recent call last):
-    ...
-    UserCannotUnsubscribePerson: ...
 
 Only the person can unsubscribe him or her self.
 
+    >>> priv_subscription = bug.subscribe(team_owner, priv_team)
     >>> bug.unsubscribe(team_owner, team_owner)
-
-A private membership team cannot subscribe others to a bug.
-
-    >>> pm_subscription = bug.subscribe(team_owner, pm_team)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <BugSubscription...
 
 
 Bug task assignee
@@ -84,16 +49,6 @@ A private team can be the assignee for a bug task.
     >>> print bugtask.assignee.name
     private-team
 
-However a private membership team is not allowed to be a bugtask assignee.
-
-    >>> bugtask.transitionToAssignee(pm_team)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <BugTask...
-
-
 Branches
 ========
 
@@ -104,17 +59,6 @@ Private teams can be assigned as the owner of a branch
 
     >>> branch = factory.makeBranch()
     >>> branch.setOwner(priv_team, user=admin_user)
-
-But private membership teams cannot own a branch.
-
-    >>> branch = factory.makeBranch()
-    >>> branch.setOwner(pm_team, user=admin_user)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <Branch...
-
 
 Branch subscriptions
 --------------------
@@ -130,23 +74,10 @@ Private teams can subscribe to branches.
     ...     priv_team,
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
-    ...     CodeReviewNotificationLevel.STATUS)
+    ...     CodeReviewNotificationLevel.STATUS, team_owner)
     >>> print subscription.person.name
     private-team
 
-Private membership teams cannot subscribe to branches.
-
-    >>> branch = factory.makeBranch()
-    >>> subscription = branch.subscribe(
-    ...     pm_team,
-    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
-    ...     BranchSubscriptionDiffSize.WHOLEDIFF,
-    ...     CodeReviewNotificationLevel.STATUS)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <BranchSubscription at...
 
 Branch visibility policies
 --------------------------
@@ -171,16 +102,6 @@ Private teams can have branch visibility policies.
     >>> print_team_policies(evolution)
     Private Team: Private
 
-But private membership teams cannot.
-
-    >>> evolution.setBranchVisibilityTeamPolicy(
-    ...     pm_team, BranchVisibilityRule.PRIVATE)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <BranchVisibilityTeamPolicy at...
-
 
 PPAs
 ====
@@ -191,8 +112,8 @@ PPA ownership
 
 Private teams can own PPAs.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -201,18 +122,6 @@ Private teams can own PPAs.
     ...     owner=priv_team, purpose=ArchivePurpose.PPA,
     ...     distribution=ubuntu, name='private-team-archive',
     ...     require_virtualized=False)
-
-Alas, Private Membership Teams cannot own PPAs.
-
-    >>> noarchive = archive_set.new(
-    ...     owner=pm_team, purpose=ArchivePurpose.PPA,
-    ...     distribution=ubuntu, name='pmt-archive',
-    ...     require_virtualized=False)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <Archive at...
 
 
 PPA subscriptions
@@ -230,18 +139,7 @@ Private teams can be subscribed to private PPAs.
     >>> subscription = private_archive.newSubscription(
     ...     subscriber=another_priv_team,
     ...     registrant=team_owner)
-
-Private Membership Teams cannot subscribe to private PPAs.
-
-    >>> nosubscription = private_archive.newSubscription(subscriber=pm_team,
-    ...     registrant=team_owner)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <...ArchiveSubscriber object at...
-    >>> import transaction
-    >>> transaction.abort()
+    >>> transaction.commit()
 
 
 Structural Subscriptions
@@ -257,18 +155,6 @@ Private teams can have structural subscriptions to products.
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
     <Product at ...>
-    >>> sub.bug_notification_level
-    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
-
-Private membership teams cannot.
-
-    >>> sub = firefox.addSubscription(
-    ...     subscriber=pm_team, subscribed_by=team_owner)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <...StructuralSubscription at...
 
 
 Structural Subscription to Distributions
@@ -281,18 +167,6 @@ Private teams can have structural subscriptions to distros.
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
     <Distribution 'Ubuntu' (ubuntu)>
-    >>> sub.bug_notification_level
-    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
-
-Private membership teams cannot.
-
-    >>> sub = ubuntu.addSubscription(
-    ...     subscriber=pm_team, subscribed_by=team_owner)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <...StructuralSubscription at...
 
 
 Project Roles
@@ -318,63 +192,33 @@ or private, can be the project registrant.
     (name=private-team, visibility=PRIVATE) to
     <Product at...
 
-    >>> product = factory.makeProduct(registrant=pm_team)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <Product at...
-
 
 Maintainer/Owner
 ----------------
 
-A public team and a private team can be a project owner but a private
-membership team cannot.
+A public team and a private team can be a project owner.
 
     >>> # The registrant must be specified or it will default to the owner.
     >>> product = factory.makeProduct(registrant=admin_user)
     >>> product.owner = public_team
     >>> product.owner = priv_team
-    >>> product.owner = pm_team
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <Product at...
 
 Driver
 ------
 
-A public team and a private team can be a project driver but a private
-membership team cannot.
+A public team and a private team can be a project driver.
 
     >>> product = factory.makeProduct()
     >>> product.driver = priv_team
 
-    >>> product.driver = pm_team
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <Product at...
-
-
 Bug Supervisor
 --------------
 
-A public team and a private team can be a project bug supervisor but a
-private membership team cannot.
+A public team and a private team can be a project bug supervisor.
 
     >>> product = factory.makeProduct()
     >>> product.setBugSupervisor(public_team, admin_user)
     >>> product.setBugSupervisor(priv_team, admin_user)
-    >>> product.setBugSupervisor(pm_team, admin_user)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <Product at...
 
 
 Product Series Roles
@@ -384,39 +228,24 @@ Product Series Roles
 Owner
 -----
 
-A public team and a private team can be a product series owner but a
-private membership team cannot.
+A public team and a private team can be a product series owner.
 
     >>> product = factory.makeProduct(registrant=admin_user,
     ...                               owner=public_team)
     >>> product_series = factory.makeProductSeries(product, owner=public_team)
     >>> product_series = factory.makeProductSeries(product, owner=priv_team)
 
-    >>> product_series = factory.makeProductSeries(product, owner=pm_team)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <ProductSeries at...
-
 
 Driver
 ------
 
-A public team and a private team can be a product series driver but a
-private membership team cannot.
+A public team and a private team can be a product series driver.
 
     >>> product = factory.makeProduct(registrant=admin_user,
     ...                               owner=public_team)
     >>> product_series = factory.makeProductSeries(product, owner=public_team)
     >>> product_series.driver = public_team
     >>> product_series.driver = priv_team
-    >>> product_series.driver = pm_team
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <ProductSeries at...
 
 
 Product Release Roles
@@ -425,8 +254,7 @@ Product Release Roles
 Owner
 -----
 
-A public team and a private team can be a product series owner but a
-private membership team cannot.
+A public team and a private team can be a product series owner.
 
     >>> product = factory.makeProduct(registrant=admin_user,
     ...                               owner=public_team)
@@ -437,12 +265,6 @@ private membership team cannot.
     ...     product=product, milestone=product_milestone)
     >>> product_release.owner = public_team
     >>> product_release.owner = priv_team
-    >>> product_release.owner = pm_team
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <ProductRelease at...
 
 Some artifacts of a product change ownership when the product owner
 changes.  The artifacts are product series, product release, and
@@ -460,12 +282,6 @@ translation import queue entries.
     ...      productseries=product_series)
     >>> product.owner = public_team
     >>> product.owner = priv_team
-    >>> product.owner = pm_team
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <Product at...
 
 
 Team Membership
@@ -491,22 +307,16 @@ Not every type of team can become a member of other types.
 
     >>> public = PersonVisibility.PUBLIC
     >>> private = PersonVisibility.PRIVATE
-    >>> private_membership = PersonVisibility.PRIVATE_MEMBERSHIP
 
-    >>> visibility_list = [public, private, private_membership]
-    >>> for joined in PersonVisibility.items:
-    ...     for joiner in PersonVisibility.items:
+    >>> visibility_list = list(PersonVisibility.items)
+
+    >>> for joined in visibility_list:
+    ...     for joiner in visibility_list:
     ...         join_team(joined, joiner)
     ...     print "---"
     Public <- Public:  Allowed
-    Public <- Private Membership:  Not Allowed
     Public <- Private:  Not Allowed
     ---
-    Private Membership <- Public:  Allowed
-    Private Membership <- Private Membership:  Not Allowed
-    Private Membership <- Private:  Not Allowed
-    ---
     Private <- Public:  Allowed
-    Private <- Private Membership:  Not Allowed
     Private <- Private:  Not Allowed
     ---

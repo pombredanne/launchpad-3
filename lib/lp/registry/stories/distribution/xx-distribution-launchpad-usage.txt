@@ -1,18 +1,18 @@
-= Distribution Launchpad usage =
+Distribution Launchpad usage
+============================
 
-The distribution overview page indicates for what usage the
-distribution officially uses Launchpad.
-
-    >>> anon_browser.open('http://launchpad.dev/ubuntu')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'uses'))
-    Uses Launchpad for:
-        Answers, Blueprints, Bug Tracking, and Translations.
+The distribution overview page has links to allow you to configure which
+services use Launchpad.
 
 Unprivileged Launchpad users cannot access the page for changing these
 details.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu')
     >>> user_browser.getLink('Change details')
+    Traceback (most recent call last):
+      ...
+    LinkNotFound...
+    >>> user_browser.getLink('Configure publisher')
     Traceback (most recent call last):
       ...
     LinkNotFound...
@@ -35,16 +35,18 @@ The distribution's registrant can access the page and change the usage.
     True
     >>> print registrant.getControl(name='field.enable_bug_expiration').value
     True
-    >>> print registrant.getControl(name='field.official_blueprints').value
-    True
-    >>> print registrant.getControl(name='field.official_answers').value
-    True
+    >>> print registrant.getControl(name='field.blueprints_usage').value[0]
+    LAUNCHPAD
+    >>> print registrant.getControl(name='field.answers_usage').value[0]
+    LAUNCHPAD
+    >>> print registrant.getControl(name='field.require_virtualized').value
+    False
+    >>> print registrant.getControl(
+    ...     name='field.enabled_restricted_families').value
+    ['arm']
 
     >>> registrant.getControl(name='field.official_rosetta').value = False
     >>> registrant.getControl('Change', index=3).click()
-
-    >>> print extract_text(find_tag_by_id(registrant.contents, 'uses'))
-    Uses Launchpad for: Answers, Blueprints, and Bug Tracking.
 
 Just like Launchpad administrators can.
 
@@ -59,26 +61,43 @@ Just like Launchpad administrators can.
     >>> print admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value
     True
-    >>> print admin_browser.getControl(name='field.official_blueprints').value
-    True
-    >>> print admin_browser.getControl(name='field.official_answers').value
-    True
+    >>> print admin_browser.getControl(name='field.blueprints_usage').value[0]
+    LAUNCHPAD
+    >>> print admin_browser.getControl(name='field.answers_usage').value[0]
+    LAUNCHPAD
 
     >>> admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value = False
     >>> admin_browser.getControl(name='field.official_malone').value = False
-    >>> admin_browser.getControl(name='field.official_blueprints').value = (
-    ... False)
-    >>> admin_browser.getControl(name='field.official_answers').value = False
+    >>> admin_browser.getControl(name='field.blueprints_usage').value = (
+    ... ['UNKNOWN'])
+    >>> admin_browser.getControl(
+    ...     name='field.answers_usage').value = ['UNKNOWN']
     >>> admin_browser.getControl('Change', index=3).click()
 
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
-    Does not use Launchpad for development.
+
+Only administators can configure the publisher for the distribution:
+
+    >>> admin_browser.getLink('Configure publisher').click()
+    >>> print admin_browser.title
+    Publisher configuration for...
+
+    >>> admin_browser.getControl(
+    ...     name='field.root_dir').value = "/tmp/root_dir"
+    >>> admin_browser.getControl(
+    ...     name='field.base_url').value = "http://base.url/"
+    >>> admin_browser.getControl(
+    ...     name='field.copy_base_url').value = "http://copy.base.url/"
+    >>> admin_browser.getControl('Save').click()
+
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu
 
 
-== enable_bug_expiration and JavaScript ==
+enable_bug_expiration and JavaScript
+====================================
 
 JavaScript is used to constrain enable_bug_expiration to distributions
 that use Launchpad to track bugs. If the form is submitted before the
@@ -97,9 +116,6 @@ bug expiration.
 
     >>> content = find_main_content(admin_browser.contents)
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
-    Uses Launchpad for: Bug Tracking.
-
 Foo Bar chooses to switch the bug tracker again, but this time he
 does not change the expiration check box, and he does the whole
 operation before the page complete loading.
@@ -116,16 +132,3 @@ operation before the page complete loading.
     >>> admin_browser.getControl('Change', index=3).click()
 
     >>> content = find_main_content(admin_browser.contents)
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))
-    Does not use Launchpad for development.
-
-Returning to the edit page, Foo Bar can see that bug expiration was
-also disabled.
-
-    >>> admin_browser.getLink('Change details').click()
-    >>> print admin_browser.getControl(name='field.official_malone').value
-    False
-
-    >>> print admin_browser.getControl(
-    ...     name='field.enable_bug_expiration').value
-    False

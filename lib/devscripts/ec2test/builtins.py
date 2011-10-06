@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The command classes for the 'ec2' utility."""
@@ -6,26 +6,40 @@
 __metaclass__ = type
 __all__ = []
 
+from datetime import datetime
 import os
 import pdb
-import subprocess
+import socket
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
-from bzrlib.errors import BzrCommandError
+from bzrlib.errors import (
+    BzrCommandError,
+    ConnectionError,
+    NoSuchFile,
+    )
 from bzrlib.help import help_commands
-from bzrlib.option import ListOption, Option
-
-import socket
+from bzrlib.option import (
+    ListOption,
+    Option,
+    )
+from bzrlib.transport import get_transport
+from pytz import UTC
+import simplejson
 
 from devscripts import get_launchpad_root
-
+from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
-    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+    AVAILABLE_INSTANCE_TYPES,
+    DEFAULT_INSTANCE_TYPE,
+    EC2Instance,
+    )
 from devscripts.ec2test.session import EC2SessionName
-from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
-
+from devscripts.ec2test.testrunner import (
+    EC2TestRunner,
+    TRUNK_BRANCH,
+    )
 
 # Options accepted by more than one command.
 
@@ -109,6 +123,12 @@ postmortem_option = Option(
           'and/or of this script.'))
 
 
+attached_option = Option(
+    'attached',
+    help=("Remain attached, i.e. do not go headless. Implied by --postmortem "
+          "and --file."))
+
+
 def filename_type(filename):
     """An option validator for filenames.
 
@@ -133,6 +153,12 @@ def filename_type(filename):
         raise BzrCommandError(
             'you do not have permission to write %s' % (filename,))
     return filename
+
+
+def set_trace_if(enable_debugger=False):
+    """If `enable_debugger` is True, drop into the debugger."""
+    if enable_debugger:
+        pdb.set_trace()
 
 
 class EC2Command(Command):
@@ -182,6 +208,9 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
     return branches, test_branch
 
 
+DEFAULT_TEST_OPTIONS = '--subunit -vvv'
+
+
 class cmd_test(EC2Command):
     """Run the test suite in ec2."""
 
@@ -197,8 +226,8 @@ class cmd_test(EC2Command):
             'email', short_name='e', argname='EMAIL', type=str,
             help=('Email address to which results should be mailed.  '
                   'Defaults to the email address from `bzr whoami`. May be '
-                  'supplied multiple times. The first supplied email address '
-                  'will be used as the From: address.')),
+                  'supplied multiple times. `bzr whoami` will be used as '
+                  'the From: address.')),
         Option(
             'noemail', short_name='n',
             help=('Do not try to email results.')),
@@ -240,11 +269,7 @@ class cmd_test(EC2Command):
                 'consulted; for remote branches "Launchpad PQM '
                 '<launchpad@pqm.canonical.com>" is used by default.')),
         postmortem_option,
-        Option(
-            'headless',
-            help=('After building the instance and test, run the remote '
-                  'tests headless.  Cannot be used with postmortem '
-                  'or file.')),
+        attached_option,
         debug_option,
         Option(
             'open-browser',
@@ -256,21 +281,18 @@ class cmd_test(EC2Command):
 
     def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE,
-            file=None, email=None, test_options='-vv', noemail=False,
-            submit_pqm_message=None, pqm_public_location=None,
+            file=None, email=None, test_options=DEFAULT_TEST_OPTIONS,
+            noemail=False, submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
-            headless=False, debug=False, open_browser=False,
+            attached=False, debug=False, open_browser=False,
             include_download_cache_changes=False):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if branch is None:
             branch = []
         branches, test_branch = _get_branches_and_test_branch(
             trunk, branch, test_branch)
-        if ((postmortem or file) and headless):
-            raise BzrCommandError(
-                'Headless mode currently does not support postmortem or file '
-                ' options.')
+        if (postmortem or file):
+            attached = True
         if noemail:
             if email:
                 raise BzrCommandError(
@@ -279,23 +301,23 @@ class cmd_test(EC2Command):
             if email == []:
                 email = True
 
-        if headless and not (email or submit_pqm_message):
+        if not attached and not (email or submit_pqm_message):
             raise BzrCommandError(
                 'You have specified no way to get the results '
                 'of your headless test run.')
 
-        if test_options != '-vv' and submit_pqm_message is not None:
+        if (test_options != DEFAULT_TEST_OPTIONS
+            and submit_pqm_message is not None):
             raise BzrCommandError(
                 "Submitting to PQM with non-default test options isn't "
                 "supported")
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
-        instance = EC2Instance.make(
-            session_name, instance_type, machine)
+        instance = EC2Instance.make(session_name, instance_type, machine)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
-            test_options=test_options, headless=headless,
+            test_options=test_options, headless=(not attached),
             branches=branches, pqm_message=submit_pqm_message,
             pqm_public_location=pqm_public_location,
             pqm_submit_location=pqm_submit_location,
@@ -304,7 +326,7 @@ class cmd_test(EC2Command):
             instance=instance, launchpad_login=instance._launchpad_login,
             timeout=480)
 
-        instance.set_up_and_run(postmortem, not headless, runner.run_tests)
+        instance.set_up_and_run(postmortem, attached, runner.run_tests)
 
 
 class cmd_land(EC2Command):
@@ -316,7 +338,18 @@ class cmd_land(EC2Command):
         Option('print-commit', help="Print the full commit message."),
         Option(
             'testfix',
-            help="Include the [testfix] prefix in the commit message."),
+            help="This is a testfix (tags commit with [testfix])."),
+        Option(
+            'no-qa',
+            help="Does not require QA (tags commit with [no-qa])."),
+        Option(
+            'incremental',
+            help="Incremental to other bug fix (tags commit with [incr])."),
+        Option(
+            'rollback', type=int,
+            help=(
+                "Rollback given revision number. (tags commit with "
+                "[rollback=revno]).")),
         Option(
             'commit-text', short_name='s', type=str,
             help=(
@@ -325,9 +358,7 @@ class cmd_land(EC2Command):
         Option(
             'force',
             help="Land the branch even if the proposal is not approved."),
-        Option(
-            'attached',
-            help="Remain attached, i.e. do not go headless."),
+        attached_option,
         ]
 
     takes_args = ['merge_proposal?']
@@ -337,8 +368,8 @@ class cmd_land(EC2Command):
         """Return the command that would need to be run to submit with ec2."""
         ec2_path = os.path.join(get_launchpad_root(), 'utilities', 'ec2')
         command = [ec2_path, 'test']
-        if not attached:
-            command.extend(['--headless'])
+        if attached:
+            command.extend(['--attached'])
         command.extend(['--email=%s' % email for email in emails])
         # 'ec2 test' has a bug where you cannot pass full URLs to branches to
         # the -b option. It has special logic for 'launchpad' branches, so we
@@ -352,10 +383,12 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            print_commit=False, force=False, attached=False):
+            no_qa=False, incremental=False, rollback=None, print_commit=False,
+            force=False, attached=False):
         try:
             from devscripts.autoland import (
-                LaunchpadBranchLander, MissingReviewError)
+                LaunchpadBranchLander, MissingReviewError, MissingBugsError,
+                MissingBugsIncrementalError)
         except ImportError:
             self.outf.write(
                 "***************************************************\n\n"
@@ -366,8 +399,7 @@ class cmd_land(EC2Command):
                 "wide because this will break the rest of Launchpad.\n\n"
                 "***************************************************\n")
             raise
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if print_commit and dry_run:
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
@@ -392,26 +424,67 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
+        if rollback and (no_qa or incremental):
+            print (
+                "--rollback option used. Ignoring --no-qa and --incremental.")
         try:
-            commit_message = mp.get_commit_message(commit_text, testfix)
+            commit_message = mp.build_commit_message(
+                commit_text, testfix, no_qa, incremental, rollback=rollback)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "
                 "reviews. Get an 'Approved' vote so we can fill in the "
                 "[r=REVIEWER] section.")
+        except MissingBugsError:
+            raise BzrCommandError(
+                "Branch doesn't have linked bugs and doesn't have no-qa "
+                "option set. Use --no-qa, or link the related bugs to the "
+                "branch.")
+        except MissingBugsIncrementalError:
+            raise BzrCommandError(
+                "--incremental option requires bugs linked to the branch. "
+                "Link the bugs or remove the --incremental option.")
+
+        # Override the commit message in the MP with the commit message built
+        # with the proper tags.
+        try:
+            mp.set_commit_message(commit_message)
+        except Exception, e:
+            raise BzrCommandError(
+                "Unable to set the commit message in the merge proposal.\n"
+                "Got: %s" % e)
+
         if print_commit:
             print commit_message
             return
 
+        emails = mp.get_stakeholder_emails()
+
+        target_branch_name = mp.target_branch.split('/')[-1]
+        branches = [('launchpad', target_branch_name)]
+
         landing_command = self._get_landing_command(
             mp.source_branch, mp.target_branch, commit_message,
-            mp.get_stakeholder_emails(), attached)
+            emails, attached)
+
         if dry_run:
             print landing_command
-        else:
-            # XXX: JonathanLange 2009-09-24 bug=439348: Call EC2 APIs
-            # directly, rather than spawning a subprocess.
-            return subprocess.call(landing_command)
+            return
+
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        instance = EC2Instance.make(
+            session_name, instance_type, machine)
+
+        runner = EC2TestRunner(
+            mp.source_branch, email=emails,
+            headless=(not attached),
+            branches=branches, pqm_message=commit_message,
+            instance=instance,
+            launchpad_login=instance._launchpad_login,
+            test_options=DEFAULT_TEST_OPTIONS,
+            timeout=480)
+
+        instance.set_up_and_run(postmortem, attached, runner.run_tests)
 
 
 class cmd_demo(EC2Command):
@@ -438,8 +511,7 @@ class cmd_demo(EC2Command):
     def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
             include_download_cache_changes=False, demo=None):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if branch is None:
             branch = []
         branches, test_branch = _get_branches_and_test_branch(
@@ -514,11 +586,17 @@ class cmd_update_image(EC2Command):
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=None,
             public=False):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
 
         if extra_update_image_command is None:
             extra_update_image_command = []
+
+        # These environment variables are passed through ssh connections to
+        # fresh Ubuntu images and cause havoc if the locales they refer to are
+        # not available. We kill them here to ease bootstrapping, then we
+        # later modify the image to prevent sshd from accepting them.
+        for variable in ['LANG', 'LC_ALL', 'LC_TIME']:
+            os.environ.pop(variable, None)
 
         credentials = EC2Credentials.load_from_file()
 
@@ -526,8 +604,8 @@ class cmd_update_image(EC2Command):
         instance = EC2Instance.make(
             session_name, instance_type, machine,
             credentials=credentials)
-        instance.check_bundling_prerequisites()
-
+        instance.check_bundling_prerequisites(
+            ami_name, credentials)
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
             extra_update_image_command, ami_name, credentials, public)
@@ -552,7 +630,16 @@ class cmd_update_image(EC2Command):
         :param public: If true, remove proprietary code from the sourcecode
             directory before bundling.
         """
+        # Do NOT accept environment variables via ssh connections.
         user_connection = instance.connect()
+        user_connection.perform('sudo apt-get -qqy update')
+        user_connection.perform('sudo apt-get -qqy upgrade')
+        user_connection.perform(
+            'sudo sed -i "s/^AcceptEnv/#AcceptEnv/" /etc/ssh/sshd_config')
+        user_connection.perform(
+            'sudo kill -HUP $(< /var/run/sshd.pid)')
+        # Reconnect to ensure that the environment is clean.
+        user_connection.reconnect()
         user_connection.perform(
             'bzr launchpad-login %s' % (instance._launchpad_login,))
         for cmd in extra_update_image_command:
@@ -573,6 +660,128 @@ class cmd_update_image(EC2Command):
             'rm -rf .ssh/known_hosts .bazaar .bzr.log')
         user_connection.close()
         instance.bundle(ami_name, credentials)
+
+
+class cmd_images(EC2Command):
+    """Display all available images.
+
+    The first in the list is the default image.
+    """
+
+    def run(self):
+        credentials = EC2Credentials.load_from_file()
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        account = credentials.connect(session_name)
+        format = "%5s  %-12s  %-12s  %-12s %s\n"
+        self.outf.write(
+            format % ("Rev", "AMI", "Owner ID", "Owner", "Description"))
+        for revision, images in account.find_images():
+            for image in images:
+                self.outf.write(format % (
+                    revision, image.id, image.ownerId,
+                    VALID_AMI_OWNERS.get(image.ownerId, "unknown"),
+                    image.description or ''))
+
+
+class cmd_list(EC2Command):
+    """List all your current EC2 test runs.
+
+    If an instance is publishing an 'info.json' file with 'description' and
+    'failed-yet' fields, this command will list that instance, whether it has
+    failed the test run and how long it has been up for.
+
+    [FAILED] means that the has been a failing test. [OK] means that the test
+    run has had no failures yet, it's not a guarantee of a successful run.
+    """
+
+    aliases = ["ls"]
+
+    takes_options = [
+        Option('show-urls',
+               help="Include more information about each instance"),
+        Option('all', short_name='a',
+               help="Show all instances, not just ones with ec2test data."),
+        ]
+
+    def iter_instances(self, account):
+        """Iterate through all instances in 'account'."""
+        for reservation in account.conn.get_all_instances():
+            for instance in reservation.instances:
+                yield instance
+
+    def get_uptime(self, instance):
+        """How long has 'instance' been running?"""
+        expected_format = '%Y-%m-%dT%H:%M:%S.000Z'
+        launch_time = datetime.strptime(instance.launch_time, expected_format)
+        return (
+            datetime.utcnow().replace(tzinfo=UTC)
+            - launch_time.replace(tzinfo=UTC))
+
+    def get_http_url(self, instance):
+        hostname = instance.public_dns_name
+        if not hostname:
+            return
+        return 'http://%s/' % (hostname,)
+
+    def get_ec2test_info(self, instance):
+        """Load the ec2test-specific information published by 'instance'."""
+        url = self.get_http_url(instance)
+        if url is None:
+            return
+        try:
+            json = get_transport(url).get_bytes('info.json')
+        except (ConnectionError, NoSuchFile):
+            # Probably not an ec2test instance, or not ready yet.
+            return None
+        return simplejson.loads(json)
+
+    def format_instance(self, instance, data, verbose):
+        """Format 'instance' for display.
+
+        :param instance: The EC2 instance to display.
+        :param data: Launchpad-specific data.
+        :param verbose: Whether we want verbose output.
+        """
+        uptime = self.get_uptime(instance)
+        if data is None:
+            description = instance.id
+            current_status = 'unknown '
+        else:
+            description = data['description']
+            if data['failed-yet']:
+                current_status = '[FAILED]'
+            else:
+                current_status = '[OK]    '
+        output = '%s  %s (up for %s)' % (description, current_status, uptime)
+        if verbose:
+            url = self.get_http_url(instance)
+            if url is None:
+                url = "No web service"
+            output += '\n  %s' % (url,)
+        return output
+
+    def format_summary(self, by_state):
+        return ', '.join(
+            ': '.join((state, str(num)))
+            for (state, num) in sorted(list(by_state.items())))
+
+    def run(self, show_urls=False, all=False):
+        credentials = EC2Credentials.load_from_file()
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        account = credentials.connect(session_name)
+        instances = list(self.iter_instances(account))
+        if len(instances) == 0:
+            print "No instances running."
+            return
+
+        by_state = {}
+        for instance in instances:
+            by_state[instance.state] = by_state.get(instance.state, 0) + 1
+            data = self.get_ec2test_info(instance)
+            if data is None and not all:
+                continue
+            print self.format_instance(instance, data, show_urls)
+        print 'Summary: %s' % (self.format_summary(by_state),)
 
 
 class cmd_help(EC2Command):

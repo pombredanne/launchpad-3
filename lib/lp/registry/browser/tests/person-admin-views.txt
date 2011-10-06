@@ -3,12 +3,13 @@
 Admistrators can access a subset of any IPerson's fields from the UI.
 The PersonAdministerView is registered under the +review name.
 
-    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
     >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
     >>> login('foo.bar@canonical.com')
     >>> admin = getUtility(IOpenLaunchBag).user
-    >>> user = factory.makePerson(name='a-user')
+    >>> user = factory.makePerson(
+    ...     name='a-user', email="zaphod@example.place")
     >>> view = create_initialized_view(user, '+review')
     >>> check_permission('launchpad.Admin', view)
     True
@@ -92,7 +93,7 @@ The view displays non-editable user information too so that the admin does
 not need to look in the db.
 
     >>> view.email_addresses
-    [u'email1@example.com']
+    [u'zaphod@example.place']
 
 The admin can change the user's account information.
 
@@ -119,7 +120,7 @@ password is changed too.
     >>> user.account_status
     <DBItem AccountStatus.ACTIVE, ...>
     >>> print user.account_status_comment
-    Activated when the preferred email was set.
+    None
 
     >>> old_password = user.password
     >>> form = {
@@ -141,7 +142,7 @@ password is changed too.
     >>> print user.preferredemail
     None
 
-An admin can reactive a disabled user's account too. Unlike the act of
+An admin can reactivate a disabled user's account too. Unlike the act of
 suspension, reactivation does not change the user's password or email
 addresses; the user must use the reset password feature to restore these.
 
@@ -163,4 +164,3 @@ addresses; the user must use the reset password feature to restore these.
     True
     >>> print user.preferredemail
     None
-

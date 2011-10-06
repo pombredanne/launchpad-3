@@ -5,145 +5,83 @@
 
 __metaclass__ = type
 __all__ = [
-    'BranchFileSystem',
-    'BranchPuller',
+    'CodehostingAPI',
     'datetime_from_tuple',
     ]
 
 
 import datetime
 
+from bzrlib.urlutils import (
+    escape,
+    unescape,
+    )
 import pytz
-
-from bzrlib.urlutils import escape, unescape
-
+import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
+from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person, logout
-from lp.code.errors import UnknownBranchTypeError
-from lp.code.enums import BranchType
-from lp.code.interfaces.branch import BranchCreationException
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import (
-    InvalidNamespace, lookup_branch_namespace, split_unique_name)
-from lp.code.interfaces import branchpuller
-from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
-    LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
-from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
-from lp.registry.interfaces.product import NoSuchProduct
-from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
-from lp.services.utils import iter_split
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    NameLookupFailed, NotFoundError)
+from canonical.launchpad.webapp.interaction import setupInteractionForPerson
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
-from canonical.launchpad.webapp.interaction import Participation
+from lp.app.errors import (
+    NameLookupFailed,
+    NotFoundError,
+    )
+from lp.app.validators import LaunchpadValidationError
+from lp.code.enums import BranchType
+from lp.code.errors import (
+    BranchCreationException,
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    UnknownBranchTypeError,
+    )
+from lp.code.interfaces.branch import get_db_branch_info
+from lp.code.interfaces import branchpuller
+from lp.code.interfaces.branchlookup import (
+    IBranchLookup,
+    ILinkedBranchTraverser,
+    )
+from lp.code.interfaces.branchnamespace import (
+    lookup_branch_namespace,
+    split_unique_name,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
+    branch_id_alias,
+    BRANCH_ID_ALIAS_PREFIX,
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    ICodehostingAPI,
+    LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES,
+    )
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.errors import (
+    InvalidName,
+    NoSuchSourcePackageName,
+    )
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    NoSuchPerson,
+    )
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    NoSuchProduct,
+    )
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.utils import iter_split
 
 
 UTC = pytz.timezone('UTC')
-
-
-class BranchPuller(LaunchpadXMLRPCView):
-    """See `IBranchPuller`."""
-
-    implements(IBranchPuller)
-
-    def acquireBranchToPull(self, branch_type_names):
-        """See `IBranchPuller`."""
-        branch_types = []
-        for branch_type_name in branch_type_names:
-            try:
-                branch_types.append(BranchType.items[branch_type_name])
-            except KeyError:
-                raise UnknownBranchTypeError(
-                    'Unknown branch type: %r' % (branch_type_name,))
-        branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull(
-            *branch_types)
-        if branch is not None:
-            branch = removeSecurityProxy(branch)
-            default_branch = branch.target.default_stacked_on_branch
-            if default_branch is None:
-                default_branch_name = ''
-            elif (branch.branch_type == BranchType.MIRRORED
-                  and default_branch.private):
-                default_branch_name = ''
-            else:
-                default_branch_name = '/' + default_branch.unique_name
-            return (branch.id, branch.getPullURL(), branch.unique_name,
-                    default_branch_name, branch.branch_type.name)
-        else:
-            return ()
-
-    def mirrorComplete(self, branch_id, last_revision_id):
-        """See `IBranchPuller`."""
-        branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        # See comment in startMirroring.
-        branch = removeSecurityProxy(branch)
-        branch.mirrorComplete(last_revision_id)
-        branches = branch.getStackedBranchesWithIncompleteMirrors()
-        for stacked_branch in branches:
-            stacked_branch.requestMirror()
-        return True
-
-    def mirrorFailed(self, branch_id, reason):
-        """See `IBranchPuller`."""
-        branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        # See comment in startMirroring.
-        removeSecurityProxy(branch).mirrorFailed(reason)
-        return True
-
-    def recordSuccess(self, name, hostname, started_tuple, completed_tuple):
-        """See `IBranchPuller`."""
-        date_started = datetime_from_tuple(started_tuple)
-        date_completed = datetime_from_tuple(completed_tuple)
-        getUtility(IScriptActivitySet).recordSuccess(
-            name=name, date_started=date_started,
-            date_completed=date_completed, hostname=hostname)
-        return True
-
-    def startMirroring(self, branch_id):
-        """See `IBranchPuller`."""
-        branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        # The puller runs as no user and may pull private branches. We need to
-        # bypass Zope's security proxy to set the mirroring information.
-        removeSecurityProxy(branch).startMirroring()
-        return True
-
-    def setStackedOn(self, branch_id, stacked_on_location):
-        """See `IBranchPuller`."""
-        # We don't want the security proxy on the branch set because this
-        # method should be able to see all branches and set stacking
-        # information on any of them.
-        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
-        if stacked_on_location == '':
-            stacked_on_branch = None
-        else:
-            if stacked_on_location.startswith('/'):
-                stacked_on_branch = branch_set.getByUniqueName(
-                    stacked_on_location.strip('/'))
-            else:
-                stacked_on_branch = branch_set.getByUrl(
-                    stacked_on_location.rstrip('/'))
-            if stacked_on_branch is None:
-                return faults.NoSuchBranch(stacked_on_location)
-        stacked_branch = branch_set.get(branch_id)
-        if stacked_branch is None:
-            return faults.NoBranchWithID(branch_id)
-        stacked_branch.stacked_on = stacked_on_branch
-        return True
 
 
 def datetime_from_tuple(time_tuple):
@@ -179,35 +117,105 @@ def run_with_login(login_id, function, *args, **kwargs):
         requester = getUtility(IPersonSet).get(login_id)
     if requester is None:
         raise NotFoundError("No person with id %s." % login_id)
-    # XXX gary 21-Oct-2008 bug 285808
-    # We should reconsider using a ftest helper for production code.  For now,
-    # we explicitly keep the code from using a test request by using a basic
-    # participation.
-    login_person(requester, Participation())
+    setupInteractionForPerson(requester)
     try:
         return function(requester, *args, **kwargs)
     finally:
-        logout()
+        endInteraction()
 
 
-class BranchFileSystem(LaunchpadXMLRPCView):
-    """See `IBranchFileSystem`."""
+class CodehostingAPI(LaunchpadXMLRPCView):
+    """See `ICodehostingAPI`."""
 
-    implements(IBranchFileSystem)
+    implements(ICodehostingAPI)
+
+    def acquireBranchToPull(self, branch_type_names):
+        """See `ICodehostingAPI`."""
+        branch_types = []
+        for branch_type_name in branch_type_names:
+            try:
+                branch_types.append(BranchType.items[branch_type_name])
+            except KeyError:
+                raise UnknownBranchTypeError(
+                    'Unknown branch type: %r' % (branch_type_name,))
+        branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull(
+            *branch_types)
+        if branch is not None:
+            branch = removeSecurityProxy(branch)
+            default_branch = branch.target.default_stacked_on_branch
+            if default_branch is None:
+                default_branch_name = ''
+            elif (branch.branch_type == BranchType.MIRRORED
+                  and default_branch.private):
+                default_branch_name = ''
+            else:
+                default_branch_name = '/' + default_branch.unique_name
+            return (branch.id, branch.getPullURL(), branch.unique_name,
+                    default_branch_name, branch.branch_type.name)
+        else:
+            return ()
+
+    def mirrorFailed(self, branch_id, reason):
+        """See `ICodehostingAPI`."""
+        branch = getUtility(IBranchLookup).get(branch_id)
+        if branch is None:
+            return faults.NoBranchWithID(branch_id)
+        # The puller runs as no user and may pull private branches. We need to
+        # bypass Zope's security proxy to set the mirroring information.
+        removeSecurityProxy(branch).mirrorFailed(reason)
+        return True
+
+    def recordSuccess(self, name, hostname, started_tuple, completed_tuple):
+        """See `ICodehostingAPI`."""
+        date_started = datetime_from_tuple(started_tuple)
+        date_completed = datetime_from_tuple(completed_tuple)
+        getUtility(IScriptActivitySet).recordSuccess(
+            name=name, date_started=date_started,
+            date_completed=date_completed, hostname=hostname)
+        return True
+
+    def _getBranchNamespaceExtras(self, path, requester):
+        """Get the branch namespace, branch name and callback for the path.
+
+        If the path defines a full branch path including the owner and branch
+        name, then the namespace that is returned is the namespace for the
+        owner and the branch target specified.
+
+        If the path uses an lp short name, then we only allow the requester to
+        create a branch if they have permission to link the newly created
+        branch to the short name target.  If there is an existing branch
+        already linked, then BranchExists is raised.  The branch name that is
+        used is determined by the namespace as the first unused name starting
+        with 'trunk'.
+        """
+        if path.startswith(BRANCH_ALIAS_PREFIX + '/'):
+            path = path[len(BRANCH_ALIAS_PREFIX) + 1:]
+            if not path.startswith('~'):
+                context = getUtility(ILinkedBranchTraverser).traverse(path)
+                target = IBranchTarget(context)
+                namespace = target.getNamespace(requester)
+                branch_name = namespace.findUnusedName('trunk')
+
+                def link_func(new_branch):
+                    link = ICanHasLinkedBranch(context)
+                    link.setBranch(new_branch, requester)
+                return namespace, branch_name, link_func, path
+        namespace_name, branch_name = split_unique_name(path)
+        namespace = lookup_branch_namespace(namespace_name)
+        return namespace, branch_name, None, path
 
     def createBranch(self, login_id, branch_path):
-        """See `IBranchFileSystem`."""
+        """See `ICodehostingAPI`."""
         def create_branch(requester):
             if not branch_path.startswith('/'):
                 return faults.InvalidPath(branch_path)
             escaped_path = unescape(branch_path.strip('/'))
             try:
-                namespace_name, branch_name = split_unique_name(escaped_path)
+                namespace, branch_name, link_func, path = (
+                    self._getBranchNamespaceExtras(escaped_path, requester))
             except ValueError:
                 return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
-            try:
-                namespace = lookup_branch_namespace(namespace_name)
             except InvalidNamespace:
                 return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
@@ -217,6 +225,12 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             except NoSuchProduct, e:
                 return faults.NotFound(
                     "Project '%s' does not exist." % e.name)
+            except NoSuchSourcePackageName as e:
+                try:
+                    getUtility(ISourcePackageNameSet).new(e.name)
+                except InvalidName:
+                    return faults.InvalidSourcePackageName(e.name)
+                return self.createBranch(login_id, branch_path)
             except NameLookupFailed, e:
                 return faults.NotFound(str(e))
             try:
@@ -229,8 +243,17 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 return faults.PermissionDenied(msg)
             except BranchCreationException, e:
                 return faults.PermissionDenied(str(e))
-            else:
-                return branch.id
+
+            if link_func:
+                try:
+                    link_func(branch)
+                except Unauthorized:
+                    # We don't want to keep the branch we created.
+                    transaction.abort()
+                    return faults.PermissionDenied(
+                        "Cannot create linked branch at '%s'." % path)
+
+            return branch.id
         return run_with_login(login_id, create_branch)
 
     def _canWriteToBranch(self, requester, branch):
@@ -241,7 +264,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 and check_permission('launchpad.Edit', branch))
 
     def requestMirror(self, login_id, branchID):
-        """See `IBranchFileSystem`."""
+        """See `ICodehostingAPI`."""
         def request_mirror(requester):
             branch = getUtility(IBranchLookup).get(branchID)
             # We don't really care who requests a mirror of a branch.
@@ -249,7 +272,30 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             return True
         return run_with_login(login_id, request_mirror)
 
-    def _serializeBranch(self, requester, branch, trailing_path):
+    def branchChanged(self, login_id, branch_id, stacked_on_location,
+                      last_revision_id, control_string, branch_string,
+                      repository_string):
+        """See `ICodehostingAPI`."""
+        def branch_changed(requester):
+            branch_set = getUtility(IBranchLookup)
+            branch = branch_set.get(branch_id)
+            if branch is None:
+                return faults.NoBranchWithID(branch_id)
+
+            if requester == LAUNCHPAD_SERVICES:
+                branch = removeSecurityProxy(branch)
+
+            info = get_db_branch_info(
+                stacked_on_location, last_revision_id, control_string,
+                branch_string, repository_string)
+            branch.branchChanged(**info)
+
+            return True
+
+        return run_with_login(login_id, branch_changed)
+
+    def _serializeBranch(self, requester, branch, trailing_path,
+                         force_readonly=False):
         if requester == LAUNCHPAD_SERVICES:
             branch = removeSecurityProxy(branch)
         try:
@@ -258,10 +304,13 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             raise faults.PermissionDenied()
         if branch.branch_type == BranchType.REMOTE:
             return None
+        if force_readonly:
+            writable = False
+        else:
+            writable = self._canWriteToBranch(requester, branch)
         return (
             BRANCH_TRANSPORT,
-            {'id': branch_id,
-             'writable': self._canWriteToBranch(requester, branch)},
+            {'id': branch_id, 'writable': writable},
             trailing_path)
 
     def _serializeControlDirectory(self, requester, product_path,
@@ -277,25 +326,71 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         if default_branch is None:
             return
         try:
-            unique_name = default_branch.unique_name
+            path = branch_id_alias(default_branch)
         except Unauthorized:
             return
         return (
             CONTROL_TRANSPORT,
-            {'default_stack_on': escape('/' + unique_name)},
+            {'default_stack_on': escape(path)},
             trailing_path)
 
+    def _translateBranchIdAlias(self, requester, path):
+        # If the path isn't a branch id alias, nothing more to do.
+        stripped_path = unescape(path.strip('/'))
+        if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            return None
+        try:
+            parts = stripped_path.split('/', 2)
+            branch_id = int(parts[1])
+        except (ValueError, IndexError):
+            raise faults.PathTranslationError(path)
+        branch = getUtility(IBranchLookup).get(branch_id)
+        if branch is None:
+            raise faults.PathTranslationError(path)
+        try:
+            trailing = parts[2]
+        except IndexError:
+            trailing = ''
+        return self._serializeBranch(requester, branch, trailing, True)
+
     def translatePath(self, requester_id, path):
-        """See `IBranchFileSystem`."""
+        """See `ICodehostingAPI`."""
         @return_fault
         def translate_path(requester):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
+            branch = self._translateBranchIdAlias(requester, path)
+            if branch is not None:
+                return branch
             stripped_path = path.strip('/')
             for first, second in iter_split(stripped_path, '/'):
                 first = unescape(first)
                 # Is it a branch?
-                branch = getUtility(IBranchLookup).getByUniqueName(first)
+                if first.startswith(BRANCH_ALIAS_PREFIX + '/'):
+                    try:
+                        # translatePath('/+branch/.bzr') *must* return not
+                        # found, otherwise bzr will look for it and we don't
+                        # have a global bzr dir.
+                        lp_path = first[len(BRANCH_ALIAS_PREFIX + '/'):]
+                        if lp_path == '.bzr' or lp_path.startswith('.bzr/'):
+                            raise faults.PathTranslationError(path)
+                        branch, trailing = getUtility(
+                            IBranchLookup).getByLPPath(lp_path)
+                    except (InvalidProductName, NoLinkedBranch,
+                            CannotHaveLinkedBranch):
+                        # If we get one of these errors, then there is no
+                        # point walking back through the path parts.
+                        break
+                    except (NameLookupFailed, InvalidNamespace):
+                        # The reason we're doing it is that getByLPPath thinks
+                        # that 'foo/.bzr' is a request for the '.bzr' series
+                        # of a product.
+                        continue
+                    if trailing is None:
+                        trailing = ''
+                    second = '/'.join([trailing, second]).strip('/')
+                else:
+                    branch = getUtility(IBranchLookup).getByUniqueName(first)
                 if branch is not None:
                     branch = self._serializeBranch(requester, branch, second)
                     if branch is None:
@@ -308,4 +403,3 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                     return product
             raise faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
-

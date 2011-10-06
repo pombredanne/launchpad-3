@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specific models for uploaded files"""
@@ -19,42 +19,51 @@ __all__ = [
     'splitComponentAndSection',
     ]
 
-import apt_inst
-import apt_pkg
 import hashlib
 import os
 import subprocess
 import sys
 import time
 
+import apt_inst
+import apt_pkg
+from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from lp.archiveuploader.utils import (
-    prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
-    re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
-    re_extract_src_version, determine_source_file_type)
-from canonical.encoding import guess as guess_encoding
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.queue import (
-    PackageUploadCustomFormat, PackageUploadStatus)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority)
+from canonical.librarian.utils import filechunks
+from lp.app.errors import NotFoundError
+from lp.archiveuploader.utils import (
+    determine_source_file_type,
+    prefix_multi_line_string,
+    re_extract_src_version,
+    re_isadeb,
+    re_issource,
+    re_no_epoch,
+    re_no_revision,
+    re_taint_free,
+    re_valid_pkg_name,
+    re_valid_version,
+    )
+from lp.buildmaster.enums import BuildStatus
+from lp.services.encoding import guess as guess_encoding
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackageUploadCustomFormat,
+    )
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import SourceFileMixin
-from canonical.librarian.utils import filechunks
 
 
 apt_pkg.InitSystem()
 
+
 class UploadError(Exception):
     """All upload errors are returned in this form."""
+
 
 class UploadWarning(Warning):
     """All upload warnings are returned in this form."""
@@ -65,6 +74,7 @@ class TarFileDateChecker:
 
     This was taken from jennifer in the DAK suite.
     """
+
     def __init__(self, future_cutoff, past_cutoff):
         """Setup timestamp limits """
         self.reset()
@@ -119,7 +129,7 @@ class NascentUploadFile:
         ".deb": "application/x-debian-package",
         ".udeb": "application/x-micro-debian-package",
         ".diff.gz": "application/gzipped-patch",
-        ".tar.gz": "application/gzipped-tar"
+        ".tar.gz": "application/gzipped-tar",
         }
 
     def __init__(self, filepath, digest, size, component_and_section,
@@ -139,7 +149,6 @@ class NascentUploadFile:
     #
     # Helpers used quen inserting into queue
     #
-
     @property
     def content_type(self):
         """The content type for this file.
@@ -165,7 +174,6 @@ class NascentUploadFile:
         """Return the NascentUpload filename."""
         return os.path.dirname(self.filepath)
 
-
     @property
     def exists_on_disk(self):
         """Whether or not the file is present on disk."""
@@ -174,7 +182,6 @@ class NascentUploadFile:
     #
     # DB storage helpers
     #
-
     def storeInDatabase(self):
         """Implement this to store this representation in the database."""
         raise NotImplementedError
@@ -182,7 +189,6 @@ class NascentUploadFile:
     #
     # Verification
     #
-
     def verify(self):
         """Implemented locally.
 
@@ -260,6 +266,8 @@ class CustomUploadFile(NascentUploadFile):
         'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
         'raw-translations-static':
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
+        'raw-meta-data':
+            PackageUploadCustomFormat.META_DATA,
         }
 
     @property
@@ -319,7 +327,6 @@ class PackageUploadFile(NascentUploadFile):
                 "%s: Unknown component %r" % (
                 self.filename, self.component_name))
 
-
     @property
     def component(self):
         """Return an IComponent for self.component.name."""
@@ -329,6 +336,21 @@ class PackageUploadFile(NascentUploadFile):
     def section(self):
         """Return an ISection for self.section_name."""
         return getUtility(ISectionSet)[self.section_name]
+
+    def checkBuild(self, build):
+        """Check the status of the build this file is part of.
+
+        :param build: an `IPackageBuild` instance
+        """
+        raise NotImplementedError(self.checkBuild)
+
+    def extractUserDefinedFields(self, control):
+        """Extract the user defined fields out of a control file list.
+        """
+        return [
+            (field, contents)
+            for (field, contents) in
+            control if field not in self.known_fields]
 
 
 class SourceUploadFile(SourceFileMixin, PackageUploadFile):
@@ -365,14 +387,52 @@ class SourceUploadFile(SourceFileMixin, PackageUploadFile):
             yield UploadError("%s: should be %s according to changes file."
                 % (filename_version, version_chopped))
 
+    def checkBuild(self, build):
+        """See PackageUploadFile."""
+        # The master verifies the status to confirm successful upload.
+        build.status = BuildStatus.FULLYBUILT
+        # If this upload is successful, any existing log is wrong and
+        # unuseful.
+        build.upload_log = None
+
+        # Sanity check; raise an error if the build we've been
+        # told to link to makes no sense.
+        if (build.pocket != self.policy.pocket or
+            build.distroseries != self.policy.distroseries or
+            build.archive != self.policy.archive):
+            raise UploadError(
+                "Attempt to upload source specifying "
+                "recipe build %s, where it doesn't fit." % build.id)
+
 
 class BaseBinaryUploadFile(PackageUploadFile):
     """Base methods for binary upload modeling."""
 
     format = None
+    ddeb_file = None
 
     # Capitalised because we extract these directly from the control file.
     mandatory_fields = set(["Package", "Architecture", "Version"])
+
+    known_fields = mandatory_fields.union(set([
+        "Depends",
+        "Conflicts",
+        "Breaks",
+        "Recommends",
+        "Suggests",
+        "Replaces",
+        "Provides",
+        "Pre-Depends",
+        "Enhances",
+        "Essential",
+        "Description",
+        "Installed-Size",
+        "Priority",
+        "Section",
+        "Maintainer",
+        "Source",
+        "Homepage",
+        ]))
 
     # Map priorities to their dbschema valuesa
     # We treat a priority of '-' as EXTRA since some packages in some distros
@@ -383,7 +443,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         "standard": PackagePublishingPriority.STANDARD,
         "optional": PackagePublishingPriority.OPTIONAL,
         "extra": PackagePublishingPriority.EXTRA,
-        "-": PackagePublishingPriority.EXTRA
+        "-": PackagePublishingPriority.EXTRA,
         }
 
     # These are divined when parsing the package file in verify(), and
@@ -416,7 +476,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
     #
     # Useful properties.
     #
-
     @property
     def is_archindep(self):
         """Check if the binary is targeted to architecture 'all'.
@@ -489,12 +548,15 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 yield UploadError(
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
+        control = {}
+        for key in control_lines.keys():
+            control[key] = control_lines.Find(key)
+        self.parseControl(control)
 
+    def parseControl(self, control):
         # XXX kiko 2007-02-15: We never use the Maintainer information in
         # the control file for anything. Should we? --
-        self.control = {}
-        for key in control_lines.keys():
-            self.control[key] = control_lines.Find(key)
+        self.control = control
 
         control_source = self.control.get("Source", None)
         if control_source is not None:
@@ -644,10 +706,53 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError(
                 "%s: second chunk is %s, expected control.tar.gz." % (
                 self.filename, control_tar))
-        if data_tar not in ("data.tar.gz", "data.tar.bz2", "data.tar.lzma"):
+        if data_tar not in ("data.tar.gz", "data.tar.bz2", "data.tar.lzma",
+                            "data.tar.xz"):
             yield UploadError(
                 "%s: third chunk is %s, expected data.tar.gz, "
-                "data.tar.bz2 or data.tar.lzma." % (self.filename, data_tar))
+                "data.tar.bz2, data.tar.lzma or data.tar.xz." %
+                (self.filename, data_tar))
+
+        # xz-compressed debs must pre-depend on dpkg >= 1.15.6.
+        XZ_REQUIRED_DPKG_VER = '1.15.6'
+        if data_tar == "data.tar.xz":
+            parsed_deps = []
+            try:
+                parsed_deps = apt_pkg.ParseDepends(
+                    self.control['Pre-Depends'])
+            except (ValueError, TypeError):
+                yield UploadError(
+                    "Can't parse Pre-Depends in the control file.")
+                return
+            except KeyError:
+                # Go past the for loop and yield the error below.
+                pass
+
+            for token in parsed_deps:
+                try:
+                    name, version, relation = token[0]
+                except ValueError:
+                    yield("APT error processing token '%r' from Pre-Depends.")
+                    return
+
+                if name == 'dpkg':
+                    # VersionCompare returns values similar to cmp;
+                    # negative if first < second, zero if first ==
+                    # second and positive if first > second.
+                    if apt_pkg.VersionCompare(
+                        version, XZ_REQUIRED_DPKG_VER) >= 0:
+                        # Pre-Depends dpkg is fine.
+                        return
+                    else:
+                        yield UploadError(
+                            "Pre-Depends dpkg version should be >= %s "
+                            "when using xz compression." %
+                            XZ_REQUIRED_DPKG_VER)
+                        return
+
+            yield UploadError(
+                "Require Pre-Depends: dpkg (>= %s) when using xz "
+                "compression." % XZ_REQUIRED_DPKG_VER)
 
     def verifyDebTimestamp(self):
         """Check specific DEB format timestamp checks."""
@@ -665,7 +770,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
                                 "control.tar.gz")
             # Only one of these files is present in the archive, so loop
             # until we find one of them, otherwise fail.
-            data_files = ("data.tar.gz", "data.tar.bz2", "data.tar.lzma")
+            data_files = ("data.tar.gz", "data.tar.bz2", "data.tar.lzma",
+                          "data.tar.xz")
             for file in data_files:
                 deb_file.seek(0)
                 try:
@@ -713,16 +819,13 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError("%s: deb contents timestamp check failed: %s"
                  % (self.filename, error))
 
-
-#
-#   Database relationship methods
-#
-
+    #
+    #   Database relationship methods
+    #
     def findSourcePackageRelease(self):
-        """Return the respective ISourcePackagRelease for this binary upload.
+        """Return the respective ISourcePackageRelease for this binary upload.
 
-        It inspect publication in the targeted DistroSeries and also the
-        ACCEPTED queue for sources matching stored (source_name, source_version).
+        It inspect publication in the targeted DistroSeries.
 
         It raises UploadError if the source was not found.
 
@@ -730,43 +833,20 @@ class BaseBinaryUploadFile(PackageUploadFile):
         mixed_uploads (source + binary) we do not have the source stored
         in DB yet (see verifySourcepackagerelease).
         """
+        assert self.source_name is not None
+        assert self.source_version is not None
         distroseries = self.policy.distroseries
-        spphs = distroseries.getPublishedReleases(
+        spphs = distroseries.getPublishedSources(
             self.source_name, version=self.source_version,
             include_pending=True, archive=self.policy.archive)
-
-        sourcepackagerelease = None
-        if spphs:
-            # We know there's only going to be one release because
-            # version is unique.
-            assert len(spphs) == 1, "Duplicated ancestry"
-            sourcepackagerelease = spphs[0].sourcepackagerelease
-        else:
-            # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is
-            # special condition, not really used in production. We should
-            # remove the support for this use case.
-            self.logger.debug(
-                "No source published, checking the ACCEPTED queue")
-
-            queue_candidates = distroseries.getQueueItems(
-                status=PackageUploadStatus.ACCEPTED,
-                name=self.source_name, version=self.source_version,
-                archive=self.policy.archive, exact_match=True)
-
-            for queue_item in queue_candidates:
-                if queue_item.sources.count():
-                    sourcepackagerelease = queue_item.sourcepackagerelease
-
-        if sourcepackagerelease is None:
-            # At this point, we can't really do much more to try
-            # building this package. If we look in the NEW queue it is
-            # possible that multiple versions of the package exist there
-            # and we know how bad that can be. Time to give up!
+        # Workaround storm bug in EmptyResultSet.
+        spphs = list(spphs[:1])
+        try:
+            return spphs[0].sourcepackagerelease
+        except IndexError:
             raise UploadError(
                 "Unable to find source package %s/%s in %s" % (
                 self.source_name, self.source_version, distroseries.name))
-
-        return sourcepackagerelease
 
     def verifySourcePackageRelease(self, sourcepackagerelease):
         """Check if the given ISourcePackageRelease matches the context."""
@@ -795,57 +875,57 @@ class BaseBinaryUploadFile(PackageUploadFile):
         in this case, change this build to be FULLYBUILT.
         - Create a new build in FULLYBUILT status.
 
-        If by any chance an inconsistent build was found this method will
-        raise UploadError resulting in a upload rejection.
         """
-        build_id = getattr(self.policy.options, 'buildid', None)
         dar = self.policy.distroseries[self.archtag]
 
-        if build_id is None:
-            # Check if there's a suitable existing build.
-            build = sourcepackagerelease.getBuildByArch(
-                dar, self.policy.archive)
-            if build is not None:
-                build.buildstate = BuildStatus.FULLYBUILT
-                self.logger.debug("Updating build for %s: %s" % (
-                    dar.architecturetag, build.id))
-            else:
-                # No luck. Make one.
-                # Usually happen for security binary uploads.
-                build = sourcepackagerelease.createBuild(
-                    dar, self.policy.pocket, self.policy.archive,
-                    status=BuildStatus.FULLYBUILT)
-                self.logger.debug("Build %s created" % build.id)
+        # Check if there's a suitable existing build.
+        build = sourcepackagerelease.getBuildByArch(
+            dar, self.policy.archive)
+        if build is not None:
+            build.status = BuildStatus.FULLYBUILT
+            self.logger.debug("Updating build for %s: %s" % (
+                dar.architecturetag, build.id))
         else:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
-            self.logger.debug("Build %s found" % build.id)
-            # Ensure gathered binary is related to a FULLYBUILT build
-            # record. It will be check in slave-scanner procedure to
-            # certify that the build was processed correctly.
-            build.buildstate = BuildStatus.FULLYBUILT
-            # Also purge any previous failed upload_log stored, so its
-            # content can be garbage-collected since it's not useful
-            # anymore.
-            build.upload_log = None
+            # No luck. Make one.
+            # Usually happen for security binary uploads.
+            build = sourcepackagerelease.createBuild(
+                dar, self.policy.pocket, self.policy.archive,
+                status=BuildStatus.FULLYBUILT)
+            self.logger.debug("Build %s created" % build.id)
+        return build
+
+    def checkBuild(self, build):
+        """See PackageUploadFile."""
+        try:
+            dar = self.policy.distroseries[self.archtag]
+        except NotFoundError:
+            raise UploadError(
+                "Upload to unknown architecture %s for distroseries %s" %
+                (self.archtag, self.policy.distroseries))
+
+        # Ensure gathered binary is related to a FULLYBUILT build
+        # record. It will be check in slave-scanner procedure to
+        # certify that the build was processed correctly.
+        build.status = BuildStatus.FULLYBUILT
+        # Also purge any previous failed upload_log stored, so its
+        # content can be garbage-collected since it's not useful
+        # anymore.
+        build.upload_log = None
 
         # Sanity check; raise an error if the build we've been
-        # told to link to makes no sense (ie. is not for the right
-        # source package).
-        if (build.sourcepackagerelease != sourcepackagerelease or
-            build.pocket != self.policy.pocket or
-            build.distroarchseries != dar or
+        # told to link to makes no sense.
+        if (build.pocket != self.policy.pocket or
+            build.distro_arch_series != dar or
             build.archive != self.policy.archive):
             raise UploadError(
                 "Attempt to upload binaries specifying "
                 "build %s, where they don't fit." % build.id)
 
-        return build
-
     def storeInDatabase(self, build):
         """Insert this binary release and build into the database."""
         # Reencode everything we are supplying, because old packages
         # contain latin-1 text and that sucks.
-        encoded = {}
+        encoded = Deb822Dict()
         for key, value in self.control.items():
             encoded[key] = guess_encoding(value)
 
@@ -858,9 +938,18 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         is_essential = encoded.get('Essential', '').lower() == 'yes'
         architecturespecific = not self.is_archindep
-        installedsize = int(self.control.get('Installed-Size','0'))
+        installedsize = int(self.control.get('Installed-Size', '0'))
         binary_name = getUtility(
             IBinaryPackageNameSet).getOrCreateByName(self.package)
+
+        if self.ddeb_file:
+            debug_package = build.getBinaryPackageFileByName(
+                self.ddeb_file.filename).binarypackagerelease
+        else:
+            debug_package = None
+
+        user_defined_fields = self.extractUserDefinedFields(
+            [(field, encoded[field]) for field in self.control.iterkeys()])
 
         binary = build.createBinaryPackageRelease(
             binarypackagename=binary_name,
@@ -881,9 +970,12 @@ class BaseBinaryUploadFile(PackageUploadFile):
             pre_depends=encoded.get('Pre-Depends', ''),
             enhances=encoded.get('Enhances', ''),
             breaks=encoded.get('Breaks', ''),
+            homepage=encoded.get('Homepage'),
             essential=is_essential,
             installedsize=installedsize,
-            architecturespecific=architecturespecific)
+            architecturespecific=architecturespecific,
+            user_defined_fields=user_defined_fields,
+            debug_package=debug_package)
 
         library_file = self.librarian.create(self.filename,
              self.size, open(self.filepath, "rb"), self.content_type,
@@ -930,22 +1022,6 @@ class DebBinaryUploadFile(BaseBinaryUploadFile):
 
 
 class DdebBinaryUploadFile(DebBinaryUploadFile):
-    """Represents an uploaded binary package file in ddeb format.
-
-    DDEBs are never considered 'NEW', they don't require review since
-    they are automatically generated.
-    """
+    """Represents an uploaded binary package file in ddeb format."""
     format = BinaryPackageFormat.DDEB
-
-    # Override the 'new' flag in a way any values set are ignored and
-    # it always return False.
-    def _get_new(self):
-        """DDEBs are never considered NEW."""
-        return False
-
-    def _set_new(self, value):
-        """DDEBs cannot be made NEW."""
-        pass
-
-    new = property(
-        _get_new, _set_new, doc="DDEBs are never flagged as NEW.")
+    deb_file = None

@@ -11,9 +11,14 @@
 <div metal:fill-slot="main">
 
   <div class="top-portlet">
-    <tal:permissions replace="
-        structure
-        context/product/@@+portlet-not-using-launchpad"/>
+    <tal:not-using-launchpad
+      condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
+      <tal:message
+        replace="structure context/@@+portlet-not-using-launchpad"/>
+      <tal:translations-configuration
+        condition="view/can_configure_translations"
+        replace="structure context/product/@@+portlet-configuration"/>
+    </tal:not-using-launchpad>
   </div>
 
   <p>
@@ -24,7 +29,7 @@
 
   <p>
     <strong>Note:</strong> it's quicker and easier to <a tal:attributes="
-    href string:${context/fmt:url}/+translations-settings">import from a
+    href context/fmt:url:translations/+translations-settings">import from a
     Bazaar branch</a> instead (<a href="/+help/importing-from-bzr.html"
     target="help">More about importing from Bazaar</a>)
   </p>

@@ -13,9 +13,9 @@ IExternalBugTracker.
     >>> from lp.bugs.externalbugtracker import Trac
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> trac = Trac('http://example.com/')
     >>> verifyObject(IExternalBugTracker, trac)
     True
@@ -33,7 +33,7 @@ to validate the token.
 
     >>> import urllib2
     >>> class TracHavingLPPlugin401(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         raise urllib2.HTTPError(
     ...             url, 401, "Unauthorized", None, None)
@@ -55,18 +55,18 @@ from a Trac with the plugin installed (when we've accidentally passed
 a valid token, which is very unlikely), is that the broken Trac will
 not include a "trac_auth" cookie.
 
+    >>> from StringIO import StringIO
     >>> from httplib import HTTPMessage
     >>> from urllib import addinfourl
-    >>> from StringIO import StringIO
 
     >>> class TracReturning200ForPageNotFound(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         return addinfourl(
     ...             StringIO(''), HTTPMessage(StringIO('')), url)
 
     >>> class TracHavingLPPlugin200(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         return addinfourl(
     ...             StringIO(''), HTTPMessage(
@@ -99,11 +99,26 @@ the external bug tracker that groks the plugin is selected:
 If a 404 is returned, the normal Trac instance is returned.
 
     >>> class TracNotHavingLPPlugin(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         raise urllib2.HTTPError(
     ...             url, 404, "Not found", None, None)
     >>> trac = TracNotHavingLPPlugin('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> chosen_trac is trac
+    True
+
+In the event that a connection error is returned, we return a normal Trac
+instance. It will deal with the connection error later, if the situation
+persists.
+
+    >>> class TracWithConnectionError(Trac):
+    ...     def urlopen(self, url, data=None):
+    ...         print url
+    ...         raise urllib2.URLError("Connection timed out")
+    >>> trac = TracWithConnectionError('http://example.com/')
     >>> chosen_trac = trac.getExternalBugTrackerToUse()
     http://example.com/launchpad-auth/check
 
@@ -139,6 +154,8 @@ Trac.convertRemoteStatus() handles the conversion.
     'Confirmed'
     >>> trac.convertRemoteStatus('worksforme').title
     'Invalid'
+    >>> trac.convertRemoteStatus('fixverified').title
+    'Fix Released'
 
 If the status isn't one that our Trac ExternalBugTracker can understand
 an UnknownRemoteStatusError will be raised.
@@ -155,7 +172,7 @@ Calling initializeRemoteBugDB() on our Trac instance and passing it a set of
 remote bug IDs will fetch those bug IDs from the server and file them in a
 local variable for later use.
 
-We use a test-oriented implementation for the purposes of these tests, which 
+We use a test-oriented implementation for the purposes of these tests, which
 overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
 working network connection.
 
@@ -165,7 +182,7 @@ working network connection.
     >>> sorted(trac.bugs.keys())
     [1]
 
-If we initialise with a different set of keys we overwrite the first set:
+If we initialize with a different set of keys we overwrite the first set:
 
     >>> trac.initializeRemoteBugDB([6,7,8,9,10,11,12])
     >>> sorted(trac.bugs.keys())
@@ -206,7 +223,7 @@ doesn't support CSV exports of individual tickets:
     CALLED urlopen(u'http://test.trac/query?id=6&id=7...&format=csv')
 
 If, when using the batch export method, the Trac instance comes across
-invalid data, it will raise an UnparseableBugData exception. We will
+invalid data, it will raise an UnparsableBugData exception. We will
 force our trac instance to use invalid data for the purposes of this
 test.
 
@@ -214,7 +231,7 @@ test.
     >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
     Traceback (most recent call last):
       ...
-    UnparseableBugData: External bugtracker http://test.trac does not
+    UnparsableBugData: External bugtracker http://test.trac does not
     define all the necessary fields for bug status imports (Defined
     field names: ['<html>']).
 
@@ -224,7 +241,7 @@ This is also true of the single bug export mode.
     >>> trac.initializeRemoteBugDB([6])
     Traceback (most recent call last):
       ...
-    UnparseableBugData: External bugtracker http://test.trac does not
+    UnparsableBugData: External bugtracker http://test.trac does not
     define all the necessary fields for bug status imports (Defined
     field names: ['<html>']).
 
@@ -259,13 +276,13 @@ the IDs returned are nothing like the ones we asked for:
     [1, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153]
 
 If _fetchBugData() receives a response that isn't a valid Trac CSV
-export, it will raise an UnparseableBugData error.
+export, it will raise an UnparsableBugData error.
 
     >>> trac.csv_export_file = 'trac_example_broken_ticket_export.csv'
     >>> trac._fetchBugData(query_url)
     Traceback (most recent call last):
       ...
-    UnparseableBugData: External bugtracker http://test.trac does not
+    UnparsableBugData: External bugtracker http://test.trac does not
     define all the necessary fields for bug status imports (Defined
     field names: ['<html>']).
 
@@ -274,13 +291,15 @@ export, it will raise an UnparseableBugData error.
 
 First, we create some bug watches to test with:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.TRAC)
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1',
@@ -295,10 +314,12 @@ Collect the Example.com watches:
 
 And have a Trac instance process them:
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> transaction.commit()
+
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> trac = TestTrac(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
     INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
@@ -309,7 +330,7 @@ And have a Trac instance process them:
 
 We'll add some more watches now.
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> bug_watches = dict(
@@ -369,7 +390,7 @@ updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
     >>> flush_database_updates()
-    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
+    >>> example_bug_tracker.watches_needing_update.count()
     0
 
 If the status isn't different, the lastchanged attribute doesn't get

@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+  <title>Multicheckbox Widget</title>
+
+  <!-- YUI and test setup -->
+  <script type="text/javascript"
+          src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
+  </script>
+  <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+  <script type="text/javascript"
+          src="../../../app/javascript/testing/testrunner.js"></script>
+
+  <!-- Some required dependencies -->
+  <script type="text/javascript" src="../client.js"></script>
+  <script type="text/javascript" src="../activator/activator.js"></script>
+  <script type="text/javascript" src="../lazr/lazr.js"></script>
+  <script type="text/javascript" src="../overlay/overlay.js"></script>
+  <!-- The module under test -->
+  <script type="text/javascript" src="../multicheckbox.js"></script>
+
+  <!-- The test suite -->
+  <script type="text/javascript" src="test_multicheckboxwidget.js"></script>
+</head>
+<body class="yui3-skin-sam">
+  <div class="yui3-widget yui3-activator yui3-activator-focused">
+      <span id="edit-test" class="yui3-activator-content yui3-activator-success">
+        <span id="multicheckboxtest">
+          <span>
+            A multicheckbox widget test
+            <button id="edit-multicheckboxtest-btn"
+                    class="lazr-btn yui3-activator-act yui3-activator-hidden">
+              Edit
+            </button>
+          </span>
+           <span class="yui3-activator-data-box">
+               <span id="edit-test-items"></span>
+           </span>
+          <div class="yui3-activator-message-box yui3-activator-hidden"/>
+        </span>
+      </span>
+  </div>
+</body>
+</html>

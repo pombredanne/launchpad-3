@@ -3,7 +3,7 @@ processor families. This allows a user to specify (or limit) what
 processors the source packages in a certain archives will be built
 for.
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> rebuild_archive = factory.makeArchive(
     ...     purpose=ArchivePurpose.COPY, name='archivearch-test')
 

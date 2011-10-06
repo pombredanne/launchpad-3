@@ -7,6 +7,7 @@ import os
 
 from canonical.buildd.debian import DebianBuildManager, DebianBuildState
 
+
 class TranslationTemplatesBuildState(DebianBuildState):
     INSTALL = "INSTALL"
     GENERATE = "GENERATE"
@@ -26,6 +27,8 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
         super(TranslationTemplatesBuildManager, self).__init__(slave, buildid)
         self._generatepath = slave._config.get(
             "translationtemplatesmanager", "generatepath")
+        self._resultname = slave._config.get(
+            "translationtemplatesmanager", "resultarchive")
 
     def initiate(self, files, chroot, extra_args):
         """See `BuildManager`."""
@@ -52,8 +55,21 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
 
     def doGenerate(self):
         """Generate templates."""
-        command = [self._generatepath, self._buildid, self._branch_url]
+        command = [
+            self._generatepath,
+            self._buildid, self._branch_url, self._resultname]
         self.runSubProcess(self._generatepath, command)
+
+    def gatherResults(self):
+        """Gather the results of the build and add them to the file cache."""
+        # The file is inside the chroot, in the home directory of the buildd
+        # user. Should be safe to assume the home dirs are named identically.
+        assert self.home.startswith('/'), "home directory must be absolute."
+
+        path = os.path.join(
+            self._chroot_path, self.home[1:], self._resultname)
+        if os.access(path, os.F_OK):
+            self._slave.addWaitingFile(path)
 
     def iterate_INSTALL(self, success):
         """Installation was done."""
@@ -68,7 +84,10 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
             self.doUnmounting()
 
     def iterate_GENERATE(self, success):
+        """Template generation finished."""
         if success == 0:
+            # It worked! Now let's bring in the harvest.
+            self.gatherResults()
             self._state = TranslationTemplatesBuildState.REAP
             self.doReapProcesses()
         else:

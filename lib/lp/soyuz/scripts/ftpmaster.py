@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """FTPMaster utilities."""
@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveCruftChecker',
-    'ArchiveCruftCheckerError',
     'ChrootManager',
     'ChrootManagerError',
     'LpQueryDistro',
@@ -19,449 +17,54 @@ __all__ = [
     'SyncSourceError',
     ]
 
-import apt_pkg
 import commands
 import hashlib
 import os
 import stat
 import sys
 import tempfile
+import time
 
+import apt_pkg
+from debian.deb822 import Changes
 from zope.component import getUtility
 
-from lp.archiveuploader.utils import re_extract_src_version
-from lp.soyuz.adapters.packagelocation import (
-    PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.librarian.interfaces import (
+    ILibrarianClient,
+    UploadFailed,
+    )
+from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import (
-    determine_source_file_type)
+    determine_source_file_type,
+    re_extract_src_version,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.services.browser_helpers import get_plural_text
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+from lp.soyuz.adapters.packagelocation import (
+    build_package_location,
+    PackageLocationError,
+    )
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed)
-from canonical.librarian.utils import copy_and_close
-
-
-class ArchiveCruftCheckerError(Exception):
-    """ArchiveCruftChecker specific exception.
-
-    Mostly used to describe errors in the initialisation of this object.
-    """
-
-class TagFileNotFound(Exception):
-    """Raised when an archive tag file could not be found."""
-
-
-class ArchiveCruftChecker:
-    """Perform overall checks to identify and remove obsolete records.
-
-    Use initialize() method to validate passed parameters and build the
-    infrastructure variables. It will raise ArchiveCruftCheckerError if
-    something goes wrong.
-    """
-
-    # XXX cprov 2006-05-15: the default archive path should come
-    # from the IDistroSeries.lucilleconfig. But since it's still
-    # not optimal and we have real plans to migrate it from DB
-    # text field to default XML config or a more suitable/reliable
-    # method it's better to not add more obsolete code to handle it.
-    def __init__(self, logger, distribution_name='ubuntu', suite=None,
-                 archive_path='/srv/launchpad.net/ubuntu-archive'):
-        """Store passed arguments.
-
-        Also Initialize empty variables for storing preliminar results.
-        """
-        self.distribution_name = distribution_name
-        self.suite = suite
-        self.archive_path = archive_path
-        self.logger = logger
-        # initialize a group of variables to store temporary results
-        # available versions of published sources
-        self.source_versions = {}
-        # available binaries produced by published sources
-        self.source_binaries = {}
-        # 'Not Build From Source' binaries
-        self.nbs = {}
-        # 'All superseded by Any' binaries
-        self.asba = {}
-        # published binary package names
-        self.bin_pkgs = {}
-        # Architecture specific binary packages
-        self.arch_any = {}
-        # proposed NBS (before clean up)
-        self.dubious_nbs = {}
-        # NBS after clean up
-        self.real_nbs = {}
-        # definitive NBS organized for clean up
-        self.nbs_to_remove = []
-
-    @property
-    def architectures(self):
-        return dict([(a.architecturetag, a)
-                     for a in self.distroseries.architectures])
-    @property
-    def components(self):
-        return dict([(c.name, c) for c in self.distroseries.components])
-
-    @property
-    def components_and_di(self):
-        components_and_di = []
-        for component in self.components:
-            components_and_di.append(component)
-            components_and_di.append('%s/debian-installer' % (component))
-        return components_and_di
-
-    @property
-    def dist_archive(self):
-        return os.path.join(
-            self.archive_path, self.distro.name, 'dists',
-            self.distroseries.name + pocketsuffix[self.pocket])
-
-    def gunzipTagFileContent(self, filename):
-        """Gunzip the contents of passed filename.
-
-        Check filename presence, if not present in the filesystem,
-        raises ArchiveCruftCheckerError. Use an tempfile.mkstemp()
-        to store the uncompressed content. Invoke system available
-        gunzip`, raises ArchiveCruftCheckError if it fails.
-
-        This method doesn't close the file descriptor used and does not
-        remove the temporary file from the filesystem, those actions
-        are required in the callsite. (apt_pkg.ParseTagFile is lazy)
-
-        Return a tuple containing:
-         * temp file descriptor
-         * temp filename
-         * the contents parsed by apt_pkg.ParseTagFile()
-        """
-        if not os.path.exists(filename):
-            raise TagFileNotFound("File does not exist: %s" % filename)
-
-        temp_fd, temp_filename = tempfile.mkstemp()
-        (result, output) = commands.getstatusoutput(
-            "gunzip -c %s > %s" % (filename, temp_filename))
-        if result != 0:
-            raise ArchiveCruftCheckerError(
-                "Gunzip invocation failed!\n%s" % output)
-
-        temp_file = os.fdopen(temp_fd)
-        # XXX cprov 2006-05-15: maybe we need some sort of data integrity
-        # check at this point, and maybe keep the uncrompressed file
-        # for debug purposes, let's see how it behaves in real conditions.
-        parsed_contents = apt_pkg.ParseTagFile(temp_file)
-
-        return temp_file, temp_filename, parsed_contents
-
-    def processSources(self):
-        """Process archive sources index.
-
-        Build source_binaries, source_versions and bin_pkgs lists.
-        """
-        self.logger.debug("Considering Sources:")
-        for component in self.components:
-            filename = os.path.join(
-                self.dist_archive, "%s/source/Sources.gz" % component)
-
-            self.logger.debug("Processing %s" % filename)
-            try:
-                temp_fd, temp_filename, parsed_sources = (
-                    self.gunzipTagFileContent(filename))
-            except TagFileNotFound, warning:
-                self.logger.warn(warning)
-                return
-            try:
-                while parsed_sources.Step():
-                    source = parsed_sources.Section.Find("Package")
-                    source_version = parsed_sources.Section.Find("Version")
-                    architecture = parsed_sources.Section.Find("Architecture")
-                    binaries = parsed_sources.Section.Find("Binary")
-                    for binary in [
-                        item.strip() for item in binaries.split(',')]:
-                        self.bin_pkgs.setdefault(binary, [])
-                        self.bin_pkgs[binary].append(source)
-
-                    self.source_binaries[source] = binaries
-                    self.source_versions[source] = source_version
-            finally:
-                # close fd and remove temporary file used to store
-                # uncompressed tag file content from the filesystem.
-                temp_fd.close()
-                os.unlink(temp_filename)
-
-    def buildNBS(self):
-        """Build the group of 'not build from source' binaries"""
-        # Checks based on the Packages files
-        self.logger.debug("Building not build from source list (NBS):")
-        for component in self.components_and_di:
-            for architecture in self.architectures:
-                self.buildArchNBS(component, architecture)
-
-
-    def buildArchNBS(self, component, architecture):
-        """Build NBS per architecture.
-
-        Store results in self.nbs, also build architecture specific
-        binaries group (stored in self.arch_any)
-        """
-        filename = os.path.join(
-            self.dist_archive,
-            "%s/binary-%s/Packages.gz" % (component, architecture))
-
-        self.logger.debug("Processing %s" % filename)
-        try:
-            temp_fd, temp_filename, parsed_packages = (
-                self.gunzipTagFileContent(filename))
-        except TagFileNotFound, warning:
-            self.logger.warn(warning)
-            return
-
-        try:
-            while parsed_packages.Step():
-                package = parsed_packages.Section.Find('Package')
-                source = parsed_packages.Section.Find('Source', "")
-                version = parsed_packages.Section.Find('Version')
-                architecture = parsed_packages.Section.Find('Architecture')
-
-                if source == "":
-                    source = package
-
-                if source.find("(") != -1:
-                    m = re_extract_src_version.match(source)
-                    source = m.group(1)
-                    version = m.group(2)
-
-                if not self.bin_pkgs.has_key(package):
-                    self.nbs.setdefault(source, {})
-                    self.nbs[source].setdefault(package, {})
-                    self.nbs[source][package][version] = ""
-
-                if architecture != "all":
-                    self.arch_any.setdefault(package, "0")
-                    if apt_pkg.VersionCompare(
-                        version,self.arch_any[package]) < 1:
-                        self.arch_any[package] = version
-        finally:
-            # close fd and remove temporary file used to store uncompressed
-            # tag file content from the filesystem.
-            temp_fd.close()
-            os.unlink(temp_filename)
-
-
-    def buildASBA(self):
-        """Build the group of 'all superseded by any' binaries."""
-        self.logger.debug("Building all superseded by any list (ASBA):")
-        for component in self.components_and_di:
-            for architecture in self.architectures:
-                self.buildArchASBA(component, architecture)
-
-
-    def buildArchASBA(self, component, architecture):
-        """Build ASBA per architecture.
-
-        Store the result in self.asba, require self.arch_any to be built
-        previously.
-        """
-        filename = os.path.join(
-            self.dist_archive,
-            "%s/binary-%s/Packages.gz" % (component, architecture))
-
-        try:
-            temp_fd, temp_filename, parsed_packages = (
-                self.gunzipTagFileContent(filename))
-        except TagFileNotFound, warning:
-            self.logger.warn(warning)
-            return
-
-        try:
-            while parsed_packages.Step():
-                package = parsed_packages.Section.Find('Package')
-                source = parsed_packages.Section.Find('Source', "")
-                version = parsed_packages.Section.Find('Version')
-                architecture = parsed_packages.Section.Find('Architecture')
-
-                if source == "":
-                    source = package
-
-                if source.find("(") != -1:
-                    m = re_extract_src_version.match(source)
-                    source = m.group(1)
-                    version = m.group(2)
-
-                if architecture == "all":
-                    if (self.arch_any.has_key(package) and
-                        apt_pkg.VersionCompare(
-                        version, self.arch_any[package]) > -1):
-                        self.asba.setdefault(source, {})
-                        self.asba[source].setdefault(package, {})
-                        self.asba[source][package].setdefault(version, {})
-                        self.asba[source][package][version][architecture] = ""
-        finally:
-            # close fd and remove temporary file used to store uncompressed
-            # tag file content from the filesystem.
-            temp_fd.close()
-            os.unlink(temp_filename)
-
-    def addNBS(self, nbs_d, source, version, package):
-        """Add a new entry in given organized nbs_d list
-
-        Ensure the package is still published in the suite before add.
-        """
-        bpr = getUtility(IBinaryPackageReleaseSet)
-        result = bpr.getByNameInDistroSeries(
-            self.distroseries, package)
-
-        if len(list(result)) == 0:
-            return
-
-        nbs_d.setdefault(source, {})
-        nbs_d[source].setdefault(version, {})
-        nbs_d[source][version][package] = ""
-
-    def refineNBS(self):
-        """ Distinguish dubious from real NBS.
-
-        They are 'dubious' if the version numbers match and 'real'
-        if the versions don't match.
-        It stores results in self.dubious_nbs and self.real_nbs.
-        """
-        for source in self.nbs.keys():
-            for package in self.nbs[source].keys():
-                versions = self.nbs[source][package].keys()
-                versions.sort(apt_pkg.VersionCompare)
-                latest_version = versions.pop()
-
-                source_version = self.source_versions.get(source, "0")
-
-                if apt_pkg.VersionCompare(latest_version,
-                                          source_version) == 0:
-                    self.addNBS(self.dubious_nbs, source, latest_version,
-                                package)
-                else:
-                    self.addNBS(self.real_nbs, source, latest_version,
-                                package)
-
-    def outputNBS(self):
-        """Properly display built NBS entries.
-
-        Also organize the 'real' NBSs for removal in self.nbs_to_remove
-        attribute.
-        """
-        output = "Not Built from Source\n"
-        output += "---------------------\n\n"
-
-        nbs_keys = self.real_nbs.keys()
-        nbs_keys.sort()
-
-        for source in nbs_keys:
-            proposed_bin = self.source_binaries.get(
-                source, "(source does not exist)")
-            porposed_version = self.source_versions.get(source, "??")
-            output += (" * %s_%s builds: %s\n"
-                       % (source, porposed_version, proposed_bin))
-            output += "\tbut no longer builds:\n"
-            versions = self.real_nbs[source].keys()
-            versions.sort(apt_pkg.VersionCompare)
-
-            for version in versions:
-                packages = self.real_nbs[source][version].keys()
-                packages.sort()
-
-                for pkg in packages:
-                    self.nbs_to_remove.append(pkg)
-
-                output += "        o %s: %s\n" % (
-                    version, ", ".join(packages))
-
-            output += "\n"
-
-        if self.nbs_to_remove:
-            self.logger.info(output)
-        else:
-            self.logger.debug("No NBS found")
-
-    def initialize(self):
-        """Initialise and build required lists of obsolete entries in archive.
-
-        Check integrity of passed parameters and store organised data.
-        The result list is the self.nbs_to_remove which should contain
-        obsolete packages not currently able to be built from again.
-        Another preliminary lists can be inspected in order to have better
-        idea of what was computed.
-        If anything goes wrong mid-process, it raises ArchiveCruftCheckError,
-        otherwise a list of packages to be removes is printed.
-        """
-        if self.distribution_name is None:
-            self.distro = getUtility(ILaunchpadCelebrities).ubuntu
-        else:
-            try:
-                self.distro = getUtility(IDistributionSet)[
-                    self.distribution_name]
-            except NotFoundError:
-                raise ArchiveCruftCheckerError(
-                    "Invalid distribution: '%s'" % self.distribution_name)
-
-        if not self.suite:
-            self.distroseries = self.distro.currentseries
-            self.pocket = PackagePublishingPocket.RELEASE
-        else:
-            try:
-                self.distroseries, self.pocket = (
-                    self.distro.getDistroSeriesAndPocket(self.suite))
-            except NotFoundError:
-                raise ArchiveCruftCheckerError(
-                    "Invalid suite: '%s'" % self.suite)
-
-        if not os.path.exists(self.dist_archive):
-            raise ArchiveCruftCheckerError(
-                "Invalid archive path: '%s'" % self.dist_archive)
-
-        apt_pkg.init()
-        self.processSources()
-        self.buildNBS()
-        self.buildASBA()
-        self.refineNBS()
-        self.outputNBS()
-
-    def doRemovals(self):
-        """Perform the removal of the obsolete packages found.
-
-        It iterates over the previously build list (self.nbs_to_remove)
-        and mark them as 'superseded' in the archive DB model. They will
-        get removed later by the archive sanity check run each cycle
-        of the cron.daily.
-        """
-        for package in self.nbs_to_remove:
-
-            for distroarchseries in self.distroseries.architectures:
-                binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-                dasbp = distroarchseries.getBinaryPackage(binarypackagename)
-                dasbpr = dasbp.currentrelease
-                try:
-                    sbpph = dasbpr.current_publishing_record.supersede()
-                    # We're blindly removing for all arches, if it's not there
-                    # for some, that's fine ...
-                except NotFoundError:
-                    pass
-                else:
-                    version = sbpph.binarypackagerelease.version
-                    self.logger.info ("Removed %s_%s from %s/%s ... "
-                                      % (package, version,
-                                         self.distroseries.name,
-                                         distroarchseries.architecturetag))
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 
 
 class PubBinaryContent:
@@ -469,6 +72,7 @@ class PubBinaryContent:
 
     Currently used for auxiliary storage in PubSourceChecker.
     """
+
     def __init__(self, name, version, arch, component, section, priority):
         self.name = name
         self.version = version
@@ -507,6 +111,7 @@ class PubBinaryContent:
 
         return "\n".join(report)
 
+
 class PubBinaryDetails:
     """Store the component, section and priority of binary packages and, for
     each binary package the most frequent component, section and priority.
@@ -523,6 +128,7 @@ class PubBinaryDetails:
     - correct_sections: same as correct_components, but for sections
     - correct_priorities: same as correct_components, but for priorities
     """
+
     def __init__(self):
         self.components = {}
         self.sections = {}
@@ -577,6 +183,7 @@ class PubSourceChecker:
     Receive the source publication data and its binaries and perform
     a group of heuristic consistency checks.
     """
+
     def __init__(self, name, version, component, section, urgency):
         self.name = name
         self.version = version
@@ -641,7 +248,8 @@ class PubSourceChecker:
     def renderReport(self):
         """Render a formatted report for the publication group.
 
-        Return None if no issue was annotated or an formatted string including:
+        Return None if no issue was annotated or an formatted string
+        including:
 
           SourceName_Version Component/Section/Urgency | # bin
           <BINREPORTS>
@@ -705,7 +313,7 @@ class ChrootManager:
         ftype = filenameToContentType(filename)
 
         try:
-            alias_id  = getUtility(ILibrarianClient).addFile(
+            alias_id = getUtility(ILibrarianClient).addFile(
                 filename, flen, fd, contentType=ftype)
         except UploadFailed, info:
             raise ChrootManagerError("Librarian upload failed: %s" % info)
@@ -831,7 +439,8 @@ class SyncSource:
         origin: a dictionary similar to 'files' but where the values
                 contain information for download files to be synchronized
         logger: a logger
-        downloader: a callable that fetchs URLs, 'downloader(url, destination)'
+        downloader: a callable that fetchs URLs,
+                    'downloader(url, destination)'
         todistro: target distribution object
         """
         self.files = files
@@ -855,8 +464,8 @@ class SyncSource:
         if it wasn't.
         """
         try:
-            libraryfilealias = self.todistro.getFileByName(
-                filename, source=True, binary=False)
+            libraryfilealias = self.todistro.main_archive.getFileByName(
+                filename)
         except NotFoundError:
             return None
 
@@ -883,10 +492,13 @@ class SyncSource:
             file_type = determine_source_file_type(filename)
             # set the return code if an orig was, in fact,
             # fetched from Librarian
-            if not file_type in (SourcePackageFileType.ORIG_TARBALL,
-                                 SourcePackageFileType.COMPONENT_ORIG_TARBALL):
+            orig_types = (
+                SourcePackageFileType.ORIG_TARBALL,
+                SourcePackageFileType.COMPONENT_ORIG_TARBALL)
+            if file_type not in orig_types:
                 raise SyncSourceError(
-                    'Oops, only orig tarball can be retrieved from librarian.')
+                    'Oops, only orig tarball can be retrieved from '
+                    'librarian.')
             retrieved.append(filename)
 
         return retrieved
@@ -939,9 +551,9 @@ class LpQueryDistro(LaunchpadScript):
     """Main class for scripts/ftpmaster-tools/lp-query-distro.py."""
 
     def __init__(self, *args, **kwargs):
-        """Initialise dynamic 'usage' message and LaunchpadScript parent.
+        """Initialize dynamic 'usage' message and LaunchpadScript parent.
 
-        Also initialise the list 'allowed_arguments'.
+        Also initialize the list 'allowed_arguments'.
         """
         self.allowed_actions = [
             'current', 'development', 'supported', 'pending_suites', 'archs',
@@ -988,7 +600,7 @@ class LpQueryDistro(LaunchpadScript):
         print result
 
     def runAction(self, presenter=None):
-        """Run a given initialised action (self.action_name).
+        """Run a given initialized action (self.action_name).
 
         It accepts an optional 'presenter' which will be used to
         store/present the action result.
@@ -1036,23 +648,6 @@ class LpQueryDistro(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 "Action does not accept defined suite.")
 
-    # XXX cprov 2007-04-20 bug=113563.: Should be implemented in
-    # IDistribution.
-    def getSeriesByStatus(self, status):
-        """Query context distribution for a distroseries in a given status.
-
-        I may raise LaunchpadScriptError if no suitable distroseries in a
-        given status was found.
-        """
-        # XXX sabdfl 2007-05-27: Isn't this a bit risky, if there are
-        # multiple series with the desired status?
-        for series in self.location.distribution.series:
-            if series.status == status:
-                return series
-        raise NotFoundError(
-                "Could not find a %s distroseries in %s"
-                % (status.name, self.location.distribution.name))
-
     @property
     def current(self):
         """Return the name of the CURRENT distroseries.
@@ -1063,12 +658,12 @@ class LpQueryDistro(LaunchpadScript):
         command-line or if not CURRENT distroseries was found.
         """
         self.checkNoSuiteDefined()
-        try:
-            series = self.getSeriesByStatus(SeriesStatus.CURRENT)
-        except NotFoundError, err:
-            raise LaunchpadScriptFailure(err)
+        series = self.location.distribution.getSeriesByStatus(
+            SeriesStatus.CURRENT)
+        if not series:
+            raise LaunchpadScriptFailure("No CURRENT series.")
 
-        return series.name
+        return series[0].name
 
     @property
     def development(self):
@@ -1090,17 +685,14 @@ class LpQueryDistro(LaunchpadScript):
         wanted_status = (SeriesStatus.DEVELOPMENT,
                          SeriesStatus.FROZEN)
         for status in wanted_status:
-            try:
-                series = self.getSeriesByStatus(status)
-            except NotFoundError:
-                pass
-
-        if series is None:
+            series = self.location.distribution.getSeriesByStatus(status)
+            if series.count() > 0:
+                break
+        else:
             raise LaunchpadScriptFailure(
                 'There is no DEVELOPMENT distroseries for %s' %
                 self.location.distribution.name)
-
-        return series.name
+        return series[0].name
 
     @property
     def supported(self):
@@ -1261,10 +853,10 @@ class PackageRemover(SoyuzScript):
 
         self.logger.info("Removing candidates:")
         for removable in removables:
-            self.logger.info('\t%s' % removable.displayname)
+            self.logger.info('\t%s', removable.displayname)
 
-        self.logger.info("Removed-by: %s" % removed_by.displayname)
-        self.logger.info("Comment: %s" % self.options.removal_comment)
+        self.logger.info("Removed-by: %s", removed_by.displayname)
+        self.logger.info("Comment: %s", self.options.removal_comment)
 
         removals = []
         for removable in removables:
@@ -1273,14 +865,12 @@ class PackageRemover(SoyuzScript):
                 removal_comment=self.options.removal_comment)
             removals.append(removable)
 
-        if len(removals) == 1:
-            self.logger.info(
-                "%s package successfully removed." % len(removals))
-        elif len(removals) > 1:
-            self.logger.info(
-                "%s packages successfully removed." % len(removals))
-        else:
+        if len(removals) == 0:
             self.logger.info("No package removed (bug ?!?).")
+        else:
+            self.logger.info(
+                "%d %s successfully removed.", len(removals),
+                get_plural_text(len(removals), "package", "packages"))
 
         # Information returned mainly for the benefit of the test harness.
         return removals
@@ -1392,7 +982,6 @@ class ManageChrootScript(SoyuzScript):
 
         [action] = self.args
 
-        distribution = self.location.distribution
         series = self.location.distroseries
 
         try:
@@ -1405,7 +994,7 @@ class ManageChrootScript(SoyuzScript):
         self.options.confirm_all = True
 
         self.logger.debug(
-            "Initialising ChrootManager for '%s'" % (distroarchseries.title))
+            "Initializing ChrootManager for '%s'" % (distroarchseries.title))
         chroot_manager = ChrootManager(
             distroarchseries, filepath=self.options.filepath)
 
@@ -1424,3 +1013,56 @@ class ManageChrootScript(SoyuzScript):
             # Collect extra debug messages from chroot_manager.
             for debug_message in chroot_manager._messages:
                 self.logger.debug(debug_message)
+
+
+def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
+                     lp_closes, section, priority, description,
+                     files_from_librarian, requested_by, origin):
+    """Generate a Changes object.
+
+    :param dsc: A `Dsc` instance for the related source package.
+    :param suite: Distribution name
+    :param changelog: Relevant changelog data
+    :param urgency: Urgency string (low, medium, high, etc)
+    :param closes: Sequence of Debian bug numbers (as strings) fixed by
+        this upload.
+    :param section: Debian section
+    :param priority: Package priority
+    """
+
+    # XXX cprov 2007-07-03:
+    # Changed-By can be extracted from most-recent changelog footer,
+    # but do we care?
+
+    changes = Changes()
+    changes["Origin"] = "%s/%s" % (origin["name"], origin["suite"])
+    changes["Format"] = "1.7"
+    changes["Date"] = time.strftime("%a,  %d %b %Y %H:%M:%S %z")
+    changes["Source"] = dsc["source"]
+    changes["Binary"] = dsc["binary"]
+    changes["Architecture"] = "source"
+    changes["Version"] = dsc["version"]
+    changes["Distribution"] = suite
+    changes["Urgency"] = urgency
+    changes["Maintainer"] = dsc["maintainer"]
+    changes["Changed-By"] = requested_by
+    if description:
+        changes["Description"] = "\n %s" % description
+    if closes:
+        changes["Closes"] = " ".join(closes)
+    if lp_closes:
+        changes["Launchpad-bugs-fixed"] = " ".join(lp_closes)
+    files = []
+    for filename in dsc_files:
+        if filename in files_from_librarian:
+            continue
+        files.append({"md5sum": dsc_files[filename]["md5sum"],
+                      "size": dsc_files[filename]["size"],
+                      "section": section,
+                      "priority": priority,
+                      "name": filename,
+                     })
+
+    changes["Files"] = files
+    changes["Changes"] = "\n%s" % changelog
+    return changes

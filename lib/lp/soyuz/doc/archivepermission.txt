@@ -1,4 +1,5 @@
-= Archive Permissions =
+Archive Permissions
+===================
 
 The ArchivePermission table gives us a way of looking up permissions for
 operations in the archive context.  The IArchivePermission utility adds
@@ -7,8 +8,9 @@ an easy way of accessing the data through convenient helpers.
 Two main operations are supported: upload and queue administration.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.soyuz.enums import ArchivePermissionType
     >>> from lp.soyuz.interfaces.archivepermission import (
-    ...     ArchivePermissionType, IArchivePermission, IArchivePermissionSet)
+    ...     IArchivePermission, IArchivePermissionSet)
     >>> from lp.soyuz.model.archivepermission import ArchivePermission
 
     >>> permission_set = getUtility(IArchivePermissionSet)
@@ -24,8 +26,9 @@ It's possible to make a direct permission enquiry using the method
 'checkAuthenticated'.  The "Ubuntu Team" has a few permissions set in
 the sample data that we can check.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IComponentSet, IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> main_component = getUtility(IComponentSet)['main']
@@ -68,7 +71,8 @@ permission on a SourcePackageName, which gives a smaller radius of
 permission than allowing access to the whole component.  Just pass
 a SourcePacakgeName as the "item" parameter:
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> alsa_utils = getUtility(ISourcePackageNameSet)['alsa-utils']
     >>> alsa_permissions = permission_set.checkAuthenticated(
     ...     ubuntu_team, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
@@ -108,7 +112,7 @@ passing a type that it does not know about results in an AssertionError:
     ...     ubuntu)
     Traceback (most recent call last):
     ...
-    AssertionError: 'item' is not an IComponent, IPackageset or an
+    AssertionError: 'item' ... is not an IComponent, IPackageset or an
     ISourcePackageName
 
 IArchivePermissionSet also has some helpers to make it very easy to
@@ -144,7 +148,7 @@ If the string is not a valid component, a NotFound exception is thrown:
     ...     ubuntu.main_archive, "badcomponent")
     Traceback (most recent call last):
     ...
-    ComponentNotFound: 'badcomponent'
+    ComponentNotFound: No such component: 'badcomponent'.
 
 If the component argument is not passed, it will return
 ArchivePermission records for all matching components:
@@ -258,50 +262,13 @@ enumeration of archives.
     multiverse
 
 
-== Amending Permissions ==
+Amending Permissions
+~~~~~~~~~~~~~~~~~~~~
 
 There are some methods that will enable the caller to add and delete
-PackageSet based permissions.  They currently require launchpad.Edit
-permission to use, which enforces the user to be an admin or a member
-of the "techboard" (Ubuntu Technical Board) team.
-
-Set up a helper function to check access:
-
-    >>> from zope.security.checker import canAccess
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> restricted_methods = (
-    ...     'newPackagesetUploader',
-    ...     'deletePackagesetUploader',
-    ... )
-    >>> def checkAccess(true_or_false):
-    ...     for method in restricted_methods:
-    ...         assert(canAccess(permission_set, method) == true_or_false)
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.teammembership import (
-    ...     TeamMembershipStatus)
-    >>> personset = getUtility(IPersonSet)
-    >>> techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
-    >>> techboard = removeSecurityProxy(techboard)
-
-Ordinary users have no access:
-
-    >>> login("test@canonical.com")
-    >>> checkAccess(False)
-
-Admins have access:
-
-    >>> login("foo.bar@canonical.com")
-    >>> checkAccess(True)
-
-Now add "test@canonical.com" to the techboard team and log in as him.
-
-    >>> person = personset.getByEmail("test@canonical.com")
-    >>> ignored = techboard.addMember(
-    ...     person, reviewer=person, status=TeamMembershipStatus.APPROVED,
-    ...     force_team_add=True)
-    >>> login_person(person)
+PackageSet based permissions.  They require no special permission to use
+because these methods should only ever be called from inside other security
+proxied objects like IArchive.
 
 newPackageUploader() creates a permission for a person to upload to a
 specific package:

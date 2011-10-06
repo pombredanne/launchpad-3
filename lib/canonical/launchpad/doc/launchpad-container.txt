@@ -7,8 +7,8 @@ the context of an OAuth token must have ILaunchpadContainer adapters, so
 that we have an easy way of finding whether or not any given object is
 within the scope of a token's context and grant or deny access to it.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
@@ -80,8 +80,8 @@ provide ILaunchpadContainer as well.
 Bugs are associated to our pillars through their bug tasks, so a bug is
 said to be within any of its bugtasks' targets.
 
-    >>> from operator import attrgetter
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from operator import attrgetter
     >>> bug_1 = getUtility(IBugSet).get(1)
     >>> bugtasks = bug_1.bugtasks
     >>> targets = [task.target for task in bug_1.bugtasks]

@@ -2,7 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  define="milestone_menu view/menu:navigation;
+  define="milestone_menu view/milestone/menu:overview;
           milestone view/milestone;
           release view/release">
   <tr>
@@ -58,7 +58,7 @@
           not yet released
         </tal:cannot-edit>
         <tal:can-edit
-          define="link view/milestone/menu:overview/create_release"
+          define="link milestone_menu/create_release"
           condition="link/enabled">
           <a style="white-space: nowrap"
             tal:attributes="href link/fmt:url;

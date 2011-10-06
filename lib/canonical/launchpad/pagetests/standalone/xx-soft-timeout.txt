@@ -39,9 +39,9 @@ If we set soft_request_timeout to some value, the page will take
 slightly longer then the soft_request_timeout value to generate, thus
 causing a soft timeout to be logged.
 
-    >>> from textwrap import dedent
     >>> from canonical.launchpad.webapp.errorlog import globalErrorUtility
-    >>> old_lastid = globalErrorUtility.lastid
+    >>> from textwrap import dedent
+    >>> old_lastid = globalErrorUtility.getLastOopsReport().id
     >>> test_data = (dedent("""
     ...     [database]
     ...     soft_request_timeout: 1
@@ -58,7 +58,7 @@ causing a soft timeout to be logged.
 
 We can now see that an error was logged since lastid has changed:
 
-    >>> old_lastid != globalErrorUtility.lastid
+    >>> old_lastid != globalErrorUtility.getLastOopsReport().id
     True
 
 Since the page rendered correctly, we assume it's a soft timeout error,

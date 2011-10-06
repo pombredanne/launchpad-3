@@ -10,14 +10,19 @@ import os
 import unittest
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    commit, ISOLATION_LEVEL_READ_COMMITTED)
+from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import logout
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, setGlobs, tearDown)
-from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -37,8 +42,8 @@ def lobotomize_stevea():
     code that did not use the ValidPersonOrTeamCache to determine
     validity.
     """
-    from canonical.launchpad.database import EmailAddress
-    from canonical.launchpad.interfaces import EmailAddressStatus
+    from canonical.launchpad.database.emailaddress import EmailAddress
+    from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
     stevea_emailaddress.status = EmailAddressStatus.NEW
@@ -50,20 +55,14 @@ def uploaderSetUp(test):
     setUp(test)
     LaunchpadZopelessLayer.switchDbUser('uploader')
 
-def uploaderTearDown(test):
-    """Tear down the package uploader script tests."""
-    # XXX sinzui 2007-11-14:
-    # This function is not needed. The test should be switched to tearDown.
-    tearDown(test)
-
 
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
     test_dbuser = config.builddmaster.dbuser
     test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.alterConnection(
-        dbuser=test_dbuser, isolation=ISOLATION_LEVEL_READ_COMMITTED)
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setGlobs(test)
+
 
 def statisticianSetUp(test):
     test_dbuser = config.statistician.dbuser
@@ -71,8 +70,10 @@ def statisticianSetUp(test):
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
 
+
 def statisticianTearDown(test):
     tearDown(test)
+
 
 def distroseriesqueueSetUp(test):
     setUp(test)
@@ -86,9 +87,11 @@ def distroseriesqueueSetUp(test):
     # Save the old umask so we can reset it in the tearDown().
     test.old_umask = os.umask(022)
 
+
 def distroseriesqueueTearDown(test):
     os.umask(test.old_umask)
     tearDown(test)
+
 
 def uploadQueueSetUp(test):
     lobotomize_stevea()
@@ -96,6 +99,7 @@ def uploadQueueSetUp(test):
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
+
 
 def uploaderBugsSetUp(test):
     """Set up a test suite using the 'uploader' db user.
@@ -110,11 +114,14 @@ def uploaderBugsSetUp(test):
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
+
 def uploaderBugsTearDown(test):
     logout()
 
+
 def uploadQueueTearDown(test):
     logout()
+
 
 def manageChrootSetup(test):
     """Set up the manage-chroot.txt test."""
@@ -123,28 +130,6 @@ def manageChrootSetup(test):
 
 
 special = {
-    'nascentupload.txt': LayeredDocFileSuite(
-        '../doc/nascentupload.txt',
-        setUp=uploaderSetUp, tearDown=uploaderTearDown,
-        layer=LaunchpadZopelessLayer,
-        ),
-    'build-notification.txt': LayeredDocFileSuite(
-        '../doc/build-notification.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        ),
-    'buildd-slavescanner.txt': LayeredDocFileSuite(
-        '../doc/buildd-slavescanner.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        stdout_logging_level=logging.WARNING
-        ),
-    'buildd-slave.txt': LayeredDocFileSuite(
-        '../doc/buildd-slave.txt',
-        setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadZopelessLayer,
-        stdout_logging_level=logging.WARNING
-        ),
     'buildd-scoring.txt': LayeredDocFileSuite(
         '../doc/buildd-scoring.txt',
         setUp=builddmasterSetUp,
@@ -181,6 +166,9 @@ special = {
         '../doc/soyuz-set-of-uploads.txt',
         layer=LaunchpadZopelessLayer,
         ),
+    'package-relationship.txt': LayeredDocFileSuite(
+        '../doc/package-relationship.txt',
+        stdout_logging=False, layer=None),
     'publishing.txt': LayeredDocFileSuite(
         '../doc/publishing.txt',
         setUp=setUp,
@@ -195,15 +183,16 @@ special = {
         setUp=manageChrootSetup,
         layer=LaunchpadZopelessLayer,
         ),
-    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
-        '../doc/build-estimated-dispatch-time.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        ),
     'package-arch-specific.txt': LayeredDocFileSuite(
         '../doc/package-arch-specific.txt',
         setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
+        ),
+    'queuebuilder.txt': LayeredDocFileSuite(
+        '../doc/queuebuilder.txt',
+        setUp=builddmasterSetUp,
+        layer=LaunchpadZopelessLayer,
+        stdout_logging_level=logging.WARNING,
         ),
     }
 
@@ -227,8 +216,7 @@ def test_suite():
         suite.addTest(special_suite)
 
     testsdir = os.path.abspath(
-        os.path.normpath(os.path.join(here, os.path.pardir, 'doc'))
-        )
+        os.path.normpath(os.path.join(here, os.path.pardir, 'doc')))
 
     # Add tests using default setup/teardown
     filenames = [filename
@@ -242,8 +230,7 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            )
+            stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 
     return suite

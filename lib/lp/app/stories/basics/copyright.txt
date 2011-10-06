@@ -5,11 +5,11 @@ The tour pages.
   >>> browser.open('http://launchpad.dev/')
   >>> browser.getLink('Take the tour').click()
   >>> print extract_text(find_tag_by_id(browser.contents, 'footer-navigation'))
-  Next...&copy; 2004-2010 Canonical Ltd...
+  Next...&copy; 2004-2011 Canonical Ltd...
 
 The main template.
 
   >>> browser.open('http://launchpad.dev')
   >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  &copy; 2004-2010 Canonical Ltd.
+  &copy; 2004-2011 Canonical Ltd.
   ...

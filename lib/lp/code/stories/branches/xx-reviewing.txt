@@ -8,7 +8,9 @@ team review the proposal on behalf of the team.
     >>> eric = factory.makePerson(
     ...     name='eric', email='eric@example.com', password='test')
     >>> vikings = factory.makeTeam(owner=eric, name='vikings')
-    >>> bmp = factory.makeBranchMergeProposal()
+    >>> from lp.code.tests.helpers import (
+    ...     make_merge_proposal_without_reviewers)
+    >>> bmp = make_merge_proposal_without_reviewers(factory)
     >>> login_person(bmp.registrant)
     >>> ignored = bmp.nominateReviewer(vikings, bmp.registrant)
     >>> url = canonical_url(bmp)

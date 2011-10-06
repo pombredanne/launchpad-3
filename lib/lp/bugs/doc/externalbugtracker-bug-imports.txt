@@ -6,7 +6,7 @@ this by implementing ISupportsBugImport, and implement all the specified
 methods.
 
     >>> from zope.interface import implements
-    >>> from canonical.launchpad.interfaces import ISupportsBugImport
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBugImport
     >>> from lp.bugs.externalbugtracker import (
     ...     ExternalBugTracker)
     >>> class BugImportingExternalBugTracker(ExternalBugTracker):
@@ -24,8 +24,8 @@ methods.
     ...     def getBugTargetName(self, remote_bug):
     ...         return self._bugs[remote_bug]['package']
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IDistributionSet)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> bugtracker = new_bugtracker(BugTrackerType.BUGZILLA)
@@ -35,7 +35,7 @@ methods.
 When importing bugs, the reporter is automatically created in Launchpad,
 if he doesn't exist.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> print getUtility(IPersonSet).getByEmail('joe.bloggs@example.com')
     None
 
@@ -45,13 +45,26 @@ IBugTracker in Launchpad, and the bug target, in which the bug should be
 imported into, and the remote bug number. At the moment only
 distributions are supported as the bug target.
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    # Make sane data to play this test.
+    >>> from canonical.config import config
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> evolution_dsp = debian.getSourcePackage('evolution')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=debian.currentseries,
+    ...     sourcepackagename=evolution_dsp.sourcepackagename)
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> external_bugtracker._bugs['3'] =  {
     ...     'package': 'evolution',
     ...     'reporter': ("Joe Bloggs", "joe.bloggs@example.com")}
-    >>> bug_watch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
+    >>> transaction.commit()
+    >>> bug_watch_updater = CheckwatchesMaster(LaunchpadZopelessLayer.txn)
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '3')
 
@@ -75,7 +88,7 @@ Since he didn't have a Launchpad account before, he doesn't have a
 preferred e-mail address, and the one that is associated with his
 account is marked as NEW, since we don't know whether it's valid.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> reporter_email_addresses = getUtility(IEmailAddressSet).getByPerson(
     ...     bug.owner)
     >>> for email_address in reporter_email_addresses:

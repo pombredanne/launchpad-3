@@ -1,35 +1,37 @@
-= Builder Class =
+XXX Julian 2010-08-03 bug=613096
+Most of this doctest is really a unit test in disguise.  It should get
+re-written and unit tests moved to buildmaster/tests/test_builder.py
 
-This test aims to meet the requirements of
-<https://launchpad.canonical.com/BasicTestCoverage> for the Builder class,
-which represents the Buildd Slave entity.
 
-Need auxiliar methods from zope toolchain:
+=============
+Builder Class
+=============
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from zope.component import getUtility
+The Builder class represents a slave machine in the build farm. These
+slaves are used to execute untrusted code -- for example when building
+packages.
 
-Importing Builder content class and its interface:
+There are several builders in the sample data. Let's examine the first.
 
     >>> from lp.buildmaster.model.builder import Builder
-    >>> from lp.buildmaster.interfaces.builder import IBuilder
-
-Get an instance of Builder from the current sampledata:
-
     >>> builder = Builder.get(1)
 
-Test some attributes:
+As expected, it implements IBuilder.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> print builder.name
     bob
+    >>> print builder.builderok
+    True
+    >>> print builder.failnotes
+    None
 
-    >>> builder.builderok = True
-    >>> builder.failnotes = None
-
-A builder provides a current_build_behavior attribute to which all the
-build-type specific behavior for the current build is delegated. For
-our sample data, the behavior is specifically a behavior for dealing
-with binary packages
+Builders can take on different behaviors depending on the type of build
+they are currently processing. Each builder provides an attribute
+(current_build_behavior) to which all the build-type specific behavior
+for the current build is delegated. In the sample data, bob's current
+behavior is dealing with binary packages.
 
     >>> from zope.security.proxy import isinstance
     >>> from lp.soyuz.model.binarypackagebuildbehavior import (
@@ -38,109 +40,85 @@ with binary packages
     ...     builder.current_build_behavior, BinaryPackageBuildBehavior)
     True
 
-Confirm we can get the slave xmlrpc interface
 
-    >>> s = builder.slave
+BuilderSet
+==========
 
-Confirm that the urlbase is correct in that slave. (If the protocol changes,
-this may change too)
+Builders and groups thereof are managed through a utility, IBuilderSet.
 
-    >>> s.urlbase == builder.url
-    True
-
-Check if the instance corresponds to the declared interface:
-
-    >>> verifyObject(IBuilder, builder)
-    True
-
-
-== BuilderSet ==
-
-Now perform the tests for the Builder ContentSet class, BuilderSet.
-
-Check if it can be imported:
-
+    >>> from zope.component import getUtility
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
-
-Check we can use the set as a utility:
-
     >>> builderset = getUtility(IBuilderSet)
-
-Check if the instance returned as utility corresponds to its
-respective interface:
-
     >>> verifyObject(IBuilderSet, builderset)
     True
 
-Check if the instance is iterable:
+Iterating over a BuilderSet yields all registered builders.
 
     >>> for b in builderset:
-    ...     b.id
-    1
+    ...     print b.name
+    bob
+    frog
+
+count() return the number of builders registered:
+
+    >>> builderset.count()
     2
 
-Check if the __getitem__ method:
+Builders can be retrieved by name.
 
-    >>> builderset['bob'].name
-    u'bob'
+    >>> print builderset['bob'].name
+    bob
+    >>> print builderset['bad']
+    None
 
-Check now the specific method in the utility as new():
+And also by ID.
 
-    >>> bnew = builderset.new(1, 'http://dummy.com:8221/', 'dummy',
-    ...	                   'Dummy Title', 'eh ?', 1)
-    >>> bnew.name
-    u'dummy'
-
-Check get() which returns a correspondent Builder instance to a given id:
-
-    >>> builderset.get(bnew.id).name
-    u'dummy'
-
-Or raises an SQLObjectNotFound exception:
-
-    >>> builderset.get(100)
+    >>> print builderset.get(2).name
+    frog
+    >>> print builderset.get(100).name
     Traceback (most recent call last):
     ...
     SQLObjectNotFound: Object not found
 
-count() return the number of builder instance we have stored:
+The 'new' method will create a new builder in the database.
 
-    >>> builderset.count()
-    3
+    >>> bnew = builderset.new(1, 'http://dummy.com:8221/', 'dummy',
+    ...                    'Dummy Title', 'eh ?', 1)
+    >>> bnew.name
+    u'dummy'
 
-getBuilder() method returns all the builders available. It seems the
-same than the own instance but we have plans to turn it aware of some
-attributes of builder instance as: builderok and trust.
+'getBuilders' returns builders with the 'active' flag set, ordered by
+virtualization status, architecture, then name.
 
     >>> for b in builderset.getBuilders():
-    ...     b.name
-    u'bob'
-    u'dummy'
-    u'frog'
+    ...     print b.name
+    bob
+    dummy
+    frog
+    >>> login('foo.bar@canonical.com')
+    >>> bnew.active = False
+    >>> login(ANONYMOUS)
+    >>> for b in builderset.getBuilders():
+    ...     print b.name
+    bob
+    frog
 
-'getBuildQueueSizeForProcessor' returns the number of pending builds
-for a given Processor. The callsites can also control which build-farm
-they are interested via the 'virtualized' argument.
+'getBuildQueueSizes' returns the number of pending builds for each
+Processor/virtualization.
 
-    >>> from lp.soyuz.model.processor import Processor
-    >>> p386 = Processor.selectOneBy(name='386')
-    >>> amd64 = Processor.selectOneBy(name='amd64')
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> queue_sizes['nonvirt']['386']
+    (1L, datetime.timedelta(0, 60))
 
-'virtualized' defaults to False, so if not passed, it will return the
-size and estimated duration of the non-virtualized (trusted) build queue.
+There are no 'amd64' build queue entries.
 
-    >>> builderset.getBuildQueueSizeForProcessor(p386)
-    (1, datetime.timedelta(0, 60))
-
-The 'amd64' build queue is empty.
-
-    >>> builderset.getBuildQueueSizeForProcessor(amd64)
-    (0, None)
+    >>> queue_sizes['nonvirt'].keys()
+    [u'386']
 
 The virtualized build queue for 386 is also empty.
 
-    >>> builderset.getBuildQueueSizeForProcessor(p386, virtualized=True)
-    (0, None)
+    >>> queue_sizes['virt'].keys()
+    []
 
 The queue size is not affect by builds target to disabled
 archives. Builds for disabled archive are not dispatched as well, this
@@ -152,81 +130,58 @@ We will temporarily disable the ubuntu primary archive.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu.main_archive.disable()
+    >>> import transaction
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 That done, the non-virtualized queue for i386 becomes empty.
 
-    >>> builderset.getBuildQueueSizeForProcessor(p386)
-    (0, None)
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> queue_sizes['nonvirt'].keys()
+    []
 
 Let's re-enable the ubuntu primary archive.
 
     >>> login('foo.bar@canonical.com')
     >>> ubuntu.main_archive.enable()
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 The build for the ubuntu primary archive shows up again.
 
-    >>> builderset.getBuildQueueSizeForProcessor(p386)
-    (1, datetime.timedelta(0, 60))
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> queue_sizes['nonvirt']['386']
+    (1L, datetime.timedelta(0, 60))
 
+All job types are included. If we create a recipe build job, it will
+show up in the calculated queue size.
 
-== Resuming buildd slaves ==
+    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
+    >>> # XXX wgrant 20100625 bug=598397: The factory erroneously creates
+    >>> # architecture-independent jobs.
+    >>> print recipe_bq.processor
+    None
 
-Virtual slaves are resumed using a command specified in the
-configuration profile. Production configuration uses a SSH trigger
-account accessed via a private key available in the builddmaster
-machine (which used ftpmaster configuration profile) as in:
+    >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
+    >>> i386_family = getUtility(IProcessorFamilySet).getByName('x86')
+    >>> recipe_bq.processor = i386_family.processors[0]
+    >>> recipe_bq.virtualized = True
+    >>> transaction.commit()
 
-{{{
-ssh ~/.ssh/ppa-reset-key ppa@%(vm_host)s
-}}}
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> print queue_sizes['virt']['386']
+    (1L, datetime.timedelta(0, 64))
 
-The test configuration uses a fake command that can be performed in
-development machine and allow us to tests the important features used
-in production, as 'vm_host' variable replacement.
+Any BuildQueues with a null `virtualized` property are considered virtual
+by default.
 
-    >>> from canonical.config import config
-    >>> config.builddmaster.vm_resume_command
-    'echo %(vm_host)s'
+    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
+    >>> recipe_bq.virtualized = None
+    >>> recipe_bq.processor = i386_family.processors[0]
+    >>> transaction.commit()
+    >>> queue_sizes = builderset.getBuildQueueSizes()
 
-Before performing the command, it checks if the builder is indeed
-virtual and raises CannotResumeHost if it isn't.
+The virtual queue size has increased accordingly:
 
-    >>> bob = getUtility(IBuilderSet)['bob']
-    >>> bob.resumeSlaveHost()
-    Traceback (most recent call last):
-    ...
-    CannotResumeHost: Builder is not virtualized.
-
-For testing purposes resumeSlaveHost returns the stdout and stderr
-buffer resulted from the command.
-
-    >>> frog = getUtility(IBuilderSet)['frog']
-    >>> out, err = frog.resumeSlaveHost()
-    >>> print out.strip()
-    localhost-host.ppa
-
-If the specified command fails, resumeSlaveHost also raises
-CannotResumeHost exception with the results stdout and stderr.
-
-    # The command must have a vm_host dict key and when executed,
-    # have a returncode that is not 0.
-    >>> vm_resume_command = """
-    ...     [builddmaster]
-    ...     vm_resume_command: test "%(vm_host)s = 'false'"
-    ...     """
-    >>> config.push('vm_resume_command', vm_resume_command)
-    >>> frog.resumeSlaveHost()
-    Traceback (most recent call last):
-    ...
-    CannotResumeHost: Resuming failed:
-    OUT:
-    <BLANKLINE>
-    ERR:
-    <BLANKLINE>
-
-Restore default value for resume command.
-
-    >>> config_data = config.pop('vm_resume_command')
-
+    >>> print queue_sizes['virt']['386']
+    (2L, datetime.timedelta(0, 128))

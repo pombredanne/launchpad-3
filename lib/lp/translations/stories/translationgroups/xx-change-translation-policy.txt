@@ -4,31 +4,35 @@ Translations policy settings
 A product owner, Rosetta expert, and Ubuntu translations coordinator
 browser is created.
 
+    >>> from lp.app.enums import ServiceUsage
+
     >>> login('admin@canonical.com')
     >>> product_owner = factory.makePerson(
     ...     email="po@ex.com", password="test")
     >>> chestii = factory.makeProduct(
-    ...     name='chestii', owner=product_owner, official_rosetta=True)
+    ...     name='chestii',
+    ...     owner=product_owner,
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> logout()
     >>> dtc_browser = setupDTCBrowser()
     >>> re_browser = setupRosettaExpertBrowser()
     >>> po_browser = setupBrowser("Basic po@ex.com:test")
 
 Visiting the main products translations page, product owners and Rosetta
-administrators sees the "Change permissions" link, leading to the
+administrators sees the "Configure translations" link, leading to the
 translations settings page.
 
     >>> re_browser.open(
     ...     'http://translations.launchpad.dev/chestii')
-    >>> re_browser.getLink('Change permissions').click()
+    >>> re_browser.getLink('Configure translations').click()
     >>> print re_browser.url
-    http://translations.launchpad.dev/chestii/+settings
+    http://translations.launchpad.dev/chestii/+configure-translations
 
     >>> po_browser.open(
     ...     'http://translations.launchpad.dev/chestii')
-    >>> po_browser.getLink('Change permissions').click()
+    >>> po_browser.getLink('Configure translations').click()
     >>> print po_browser.url
-    http://translations.launchpad.dev/chestii/+settings
+    http://translations.launchpad.dev/chestii/+configure-translations
 
 From the settings page, translations group and translation permissions
 can be changed.
@@ -54,7 +58,7 @@ to translations policy page.
 
     >>> dtc_browser.open(
     ...     'http://translations.launchpad.dev/chestii')
-    >>> dtc_browser.getLink('Change permissions')
+    >>> dtc_browser.getLink('Configure translations')
     Traceback (most recent call last):
     ...
     LinkNotFoundError...
@@ -62,7 +66,8 @@ to translations policy page.
 An attempt to access the translations policy url will not be authorized.
 
     >>> browser.open(
-    ...     'http://translations.launchpad.dev/chestii/+settings')
+    ...     'http://translations.launchpad.dev/'
+    ...     'chestii/+configure-translations')
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -76,9 +81,9 @@ for Ubuntu and will be able to change it.
 
     >>> dtc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu')
-    >>> dtc_browser.getLink('Change permissions').click()
+    >>> dtc_browser.getLink('Configure translations').click()
     >>> print dtc_browser.url
-    http://translations.launchpad.dev/ubuntu/+settings
+    http://translations.launchpad.dev/ubuntu/+configure-translations
 
     >>> dtc_browser.getControl('Translation group').value = [
     ...     'ubuntu-translators']

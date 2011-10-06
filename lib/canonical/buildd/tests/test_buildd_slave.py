@@ -20,8 +20,10 @@ import os
 import shutil
 import urllib2
 import unittest
+import xmlrpclib
 
-from canonical.buildd.tests.harness import BuilddTestCase
+from canonical.buildd.tests.harness import (
+    BuilddSlaveTestSetup, BuilddTestCase)
 
 
 def read_file(path):
@@ -170,5 +172,27 @@ class LaunchpadBuilddSlaveTests(BuilddTestCase):
         self.assertEqual(len(log_tail), 0)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class XMLRPCBuildDSlaveTests(unittest.TestCase):
+
+    def setUp(self):
+        super(XMLRPCBuildDSlaveTests, self).setUp()
+        self.slave = BuilddSlaveTestSetup()
+        self.slave.setUp()
+        self.server = xmlrpclib.Server('http://localhost:8221/rpc/')
+
+    def tearDown(self):
+        self.slave.tearDown()
+        super(XMLRPCBuildDSlaveTests, self).tearDown()
+
+    def test_build_unknown_builder(self):
+        # If a bogus builder name is passed into build, it returns an
+        # appropriate error message and not just 'None'.
+        buildername = 'nonexistentbuilder'
+        status, info = self.server.build('foo', buildername, 'sha1', {}, {})
+
+        self.assertEqual('BuilderStatus.UNKNOWNBUILDER', status)
+        self.assertTrue(
+            info is not None, "UNKNOWNBUILDER returns 'None' info.")
+        self.assertTrue(
+            info.startswith("%s not in [" % buildername),
+            'UNKNOWNBUILDER info is "%s"' % info)

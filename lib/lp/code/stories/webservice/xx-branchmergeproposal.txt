@@ -75,6 +75,7 @@ Branch merge proposals can be created through the API.
     target_branch_link: u'http://api.launchpad.dev/devel/~...'
     votes_collection_link:
         u'http://api.launchpad.dev/devel/~.../+merge/.../votes'
+    web_link: u'http://code.../~.../+merge/...'
 
 If we try and create the merge proposal again, we should get a ValueError.
 
@@ -84,9 +85,10 @@ If we try and create the merge proposal again, we should get a ValueError.
     ...     initial_comment='Merge\nit!', needs_review=True,
     ...     commit_message='It was merged!\n', reviewers=[reviewer_url],
     ...     review_types=['green'])
-    HTTP/1.1 500 Internal Server Error ...
-    BranchMergeProposalExists: There is already a branch merge proposal
-    registered for branch ... to land on ... that is still active.
+    HTTP/1.1 400 Bad Request
+    ...
+    There is already a branch merge proposal registered for branch
+    ... to land on ... that is still active.
 
 Our review request is listed in the votes collection.
 
@@ -103,13 +105,14 @@ Our review request is listed in the votes collection.
     reviewer_link: u'http://api.launchpad.dev/devel/~person-name...'
     self_link: u'http://api.launchpad.dev/devel/~...'
 
-
 == Get an existing merge proposal ==
 
 Branch merge proposals can be fetched through the API.
 
     >>> login('admin@canonical.com')
-    >>> fixit_proposal = factory.makeBranchMergeProposal()
+    >>> from lp.code.tests.helpers import (
+    ...     make_merge_proposal_without_reviewers)
+    >>> fixit_proposal = make_merge_proposal_without_reviewers(factory)
     >>> fixit_proposal.source_branch.owner.name = 'source'
     >>> fixit_proposal.source_branch.name = 'fix-it'
     >>> fixit_proposal.target_branch.owner.name = 'target'
@@ -125,6 +128,7 @@ Branch merge proposals can be fetched through the API.
     ...     subject='Not really', body='This is mediocre work.',
     ...     vote=CodeReviewVote.ABSTAIN, parent=comment,
     ...     merge_proposal=fixit_proposal)
+    >>> transaction.commit()
 
     >>> proposal_url = fix_url(canonical_url(
     ...     fixit_proposal, request=request, rootsite='api'))
@@ -167,6 +171,7 @@ We use the webservice as an unrelated, unprivileged user.
     supersedes_link: None
     target_branch_link: u'http://.../~target/fooix/trunk'
     votes_collection_link: u'http://.../~source/fooix/fix-it/+merge/.../votes'
+    web_link: u'http://code.../~source/fooix/fix-it/+merge/...'
 
 
 == Read the comments ==
@@ -179,7 +184,9 @@ The comments on a branch merge proposal are exposed through the API.
     2
     >>> pprint_entry(all_comments['entries'][0])
     as_quoted_email: u'> This is great work'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
@@ -187,12 +194,15 @@ The comments on a branch merge proposal are exposed through the API.
     title: u'Comment on proposed merge of lp://dev/~source/fooix/fix-it into lp://dev/~target/fooix/trunk'
     vote: u'Approve'
     vote_tag: u'code'
+    web_link: u'http://code.../~source/fooix/fix-it/+merge/.../comments/...'
 
     >>> comment_2 = webservice.named_get(
     ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
     >>> pprint_entry(comment_2)
     as_quoted_email: u'> This is mediocre work.'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is mediocre work.'
     resource_type_link: u'http://.../#code_review_comment'
@@ -200,6 +210,7 @@ The comments on a branch merge proposal are exposed through the API.
     title: ...
     vote: u'Abstain'
     vote_tag: None
+    web_link: u'http://code.../~source/fooix/fix-it/+merge/.../comments/...'
 
 
 == Check the votes ==
@@ -263,7 +274,9 @@ Now the code review should be made.
     >>> comment = reviewer_webservice.get(comment_link).jsonBody()
     >>> pprint_entry(comment)
     as_quoted_email: u'> This is great work'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
@@ -271,7 +284,7 @@ Now the code review should be made.
     title: ...
     vote: u'Approve'
     vote_tag: u'code'
-
+    web_link: u'http://code.../~source/fooix/fix-it/+merge/.../comments/...'
 
 In fact, now that the votes indicate approval, we might as well set the merge
 proposal status to "Approved" as well.
@@ -405,7 +418,7 @@ If the branch is private it is not visible to an unpriveleged user.
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(fixit_proposal.source_branch).private = True
+    >>> removeSecurityProxy(fixit_proposal.source_branch).explicitly_private = True
     >>> branch_owner = fixit_proposal.source_branch.owner
     >>> logout()
 
@@ -424,7 +437,7 @@ the proposal if they have allowed the API to access private bits.
     http://.../~source/fooix/fix-it/+merge/... - Approved
 
     >>> login('admin@canonical.com')
-    >>> removeSecurityProxy(fixit_proposal.source_branch).private = False
+    >>> removeSecurityProxy(fixit_proposal.source_branch).explicitly_private = False
     >>> logout()
 
 

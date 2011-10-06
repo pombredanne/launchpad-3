@@ -4,7 +4,7 @@ The Publishing History page hangs off a distribution source page and
 shows the complete history of a package in all series.
 
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> stp = SoyuzTestPublisher()
     >>> login('foo.bar@canonical.com')

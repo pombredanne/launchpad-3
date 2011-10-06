@@ -9,7 +9,6 @@ import unittest
 
 from lp.codehosting.bzrutils import identical_formats
 
-
 # Define a bunch of different fake format classes to pass to identical_formats
 
 class BzrDirFormatA:
@@ -79,7 +78,3 @@ class IdenticalFormatsTestCase(unittest.TestCase):
             identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatB())))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

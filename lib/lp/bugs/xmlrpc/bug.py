@@ -7,21 +7,22 @@ __metaclass__ = type
 __all__ = ["FileBugAPI", "ExternalBugTrackerTokenAPI"]
 
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import implements
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadXMLRPCView,
+    )
+from canonical.launchpad.xmlrpc import faults
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
-from canonical.launchpad.xmlrpc import faults
+
 
 class FileBugAPI(LaunchpadXMLRPCView):
     """The XML-RPC API for filing bugs in Malone."""
@@ -69,7 +70,8 @@ class FileBugAPI(LaunchpadXMLRPCView):
 
             if package:
                 try:
-                    spname, bpname = distro_object.guessPackageNames(package)
+                    spname = distro_object.guessPublishedSourcePackageName(
+                        package)
                 except NotFoundError:
                     return faults.NoSuchPackage(package)
 

@@ -54,8 +54,8 @@ We get a nice error message
 Give up on change, nothing should have changed with Colin:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
@@ -204,62 +204,56 @@ Team Participation page
 =======================
 
 The team participation page shows the team in which a person is a direct
-member, as well as the teams in which they are an indirect member. We will
-just make sure that this page is displaying without errors in several cases:
+member, as well as the teams in which they are an indirect member.
 
- - for a person with no memberships at all
- - for a person with direct memberships only
- - for a person with some indirect memberships
- - for a team with direct memberships only
+Kiko has not joined any teams:
 
-First, Kiko has not joined any teams:
-
-    >>> browser = setupBrowser()
-    >>> browser.open('http://launchpad.dev/~kiko/+participation')
-    >>> 'has not yet joined any teams' in browser.contents
-    True
-    >>> direct = find_portlet(browser.contents, 'Direct membership')
-    >>> print direct
-    None
-    >>> indirect = find_portlet(browser.contents, 'Indirect membership')
-    >>> print indirect
+    >>> anon_browser.open('http://launchpad.dev/~kiko/+participation')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'no-participation'))
+    Christian Reis has not yet joined any teams.
+    >>> print find_tag_by_id(anon_browser.contents, 'participation')
     None
 
+Sample Person has both direct and indirect memberships:
 
-Next, Marilize Coetzee is only a direct member:
-
-    >>> browser.open('http://launchpad.dev/~marilize/+participation')
-    >>> 'has not yet joined any teams' in browser.contents
-    False
-    >>> print extract_text(find_portlet(browser.contents, 'Direct membership'))
-    Direct membership
-    ShipIt Administrators
-    Joined on ...
-    >>> print find_portlet(browser.contents, 'Indirect membership')
+    >>> anon_browser.open('http://launchpad.dev/~name12/+participation')
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print find_tag_by_id(content, 'no-participation')
     None
 
+    >>> print extract_text(
+    ...     find_tag_by_id(content, 'participation'))
+    Team                  Joined      Role    Via                 Mailing List
+    HWDB Team             2009-07-09  Member  &mdash;              &mdash;
+    Landscape Developers  2006-07-11  Owner   &mdash;              &mdash;
+    Launchpad Users       2008-11-26  Owner   &mdash;              &mdash;
+    Ubuntu Gnome Team     &mdash;     Member  Warty Security Team  &mdash;
+    Warty Security Team   2007-01-26  Member  &mdash;              &mdash;
 
-Next, Sample Person has both direct and indirect memberships:
+User can see links to register teams and change their mailing list
+subscriptions on their own participation page.
 
-    >>> browser.open('http://launchpad.dev/~name12/+participation')
-    >>> 'has not yet joined any teams' in browser.contents
-    False
-    >>> direct = find_portlet(browser.contents, 'Direct membership')
-    >>> 'Landscape Developers' in direct.renderContents()
-    True
-    >>> indirect = find_portlet(browser.contents, 'Indirect membership')
-    >>> 'Ubuntu Gnome Team' in indirect.renderContents()
-    True
-
-
-The Ubuntu Team is only a direct member of other teams:
-
-    >>> browser.open('http://launchpad.dev/~ubuntu-team/+participation')
-    >>> 'has not yet joined any teams' in browser.contents
-    False
-    >>> direct = find_portlet(browser.contents, 'Direct membership')
-    >>> 'GuadaMen' in direct.renderContents()
-    True
-    >>> indirect = find_portlet(browser.contents, 'Indirect membership')
-    >>> print indirect
+    >>> print find_tag_by_id(content, 'participation-actions')
     None
+
+    >>> user_browser.open('http://launchpad.dev/~no-priv/+participation')
+    >>> actions = find_tag_by_id(
+    ...     user_browser.contents, 'participation-actions')
+    >>> print extract_text(actions)
+    Register a team
+    Change mailing list subscriptions
+
+    >>> user_browser.getLink('Register a team')
+    <Link ... url='http://.../people/+newteam'>
+    >>> user_browser.getLink('Change mailing list subscriptions')
+    <Link ... url='http://.../~no-priv/+editemails'>
+
+Teams also have a participation page, but it does not include a mailing
+list column.
+
+    >>> admin_browser.open('http://launchpad.dev/~admins/+participation')
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'participation'))
+    Team                  Joined      Role    Via
+    Mailing List Experts  2007-10-04  Owner   &mdash;

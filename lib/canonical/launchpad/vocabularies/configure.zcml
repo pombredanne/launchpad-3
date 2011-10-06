@@ -13,45 +13,6 @@
   </class>
 
   <securedutility
-    name="Branch"
-    component="canonical.launchpad.vocabularies.BranchVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.BranchVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="HostedBranchRestrictedOnOwner"
-    component="canonical.launchpad.vocabularies.HostedBranchRestrictedOnOwnerVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.HostedBranchRestrictedOnOwnerVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="BranchRestrictedOnProduct"
-    component="canonical.launchpad.vocabularies.BranchRestrictedOnProductVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.BranchRestrictedOnProductVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
     name="Bug"
     component="canonical.launchpad.vocabularies.BugVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
@@ -93,6 +54,18 @@
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+
+  <securedutility
+    name="WebBugTracker"
+    component="canonical.launchpad.vocabularies.WebBugTrackerVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="canonical.launchpad.vocabularies.WebBugTrackerVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
   <securedutility
     name="BugWatch"
@@ -199,19 +172,6 @@
 
 
   <securedutility
-    name="FutureSprint"
-    component="canonical.launchpad.vocabularies.FutureSprintVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.FutureSprintVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
     name="Language"
     component="canonical.launchpad.vocabularies.LanguageVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
@@ -270,59 +230,6 @@
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
-
-
-  <securedutility
-    name="Specification"
-    component="canonical.launchpad.vocabularies.SpecificationVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.SpecificationVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="SpecificationDependencies"
-    component="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="SpecificationDepCandidates"
-    component="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
-
-  <securedutility
-    name="Sprint"
-    component="canonical.launchpad.vocabularies.SprintVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="canonical.launchpad.vocabularies.SprintVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-  </class>
-
 
   <securedutility
     name="TranslationGroup"

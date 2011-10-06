@@ -18,7 +18,8 @@
       location.
     </div>
 
-    <div>
+    <div
+      tal:content="cache:public, 1 hour">
       <tal:some_mapped condition="view/has_mapped_participants">
         <div id="team_map_div"
            style="width: 75%; height: 250px; border: 1px; float: left;

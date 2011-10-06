@@ -6,30 +6,59 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
-from zope.component import getAdapter, getUtility
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-from zope.security.management import newInteraction, endInteraction
-from zope.session.interfaces import ISession, IClientIdManager
-
 from lazr.restful.interfaces import IWebServiceConfiguration
-from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.security.management import (
+    endInteraction,
+    newInteraction,
+    )
+from zope.session.interfaces import (
+    IClientIdManager,
+    ISession,
+    )
+
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
 from canonical.launchpad.layers import (
-    FeedsLayer, setFirstLayer, WebServiceLayer)
+    FeedsLayer,
+    setFirstLayer,
+    WebServiceLayer,
+    )
 from canonical.launchpad.tests.readonly import (
-    remove_read_only_file, touch_read_only_file)
-from lp.testing import TestCase
+    remove_read_only_file,
+    touch_read_only_file,
+    )
 from canonical.launchpad.webapp.dbpolicy import (
-    BaseDatabasePolicy, LaunchpadDatabasePolicy, MasterDatabasePolicy,
-    ReadOnlyLaunchpadDatabasePolicy, SlaveDatabasePolicy,
-    SlaveOnlyDatabasePolicy)
+    BaseDatabasePolicy,
+    LaunchpadDatabasePolicy,
+    MasterDatabasePolicy,
+    ReadOnlyLaunchpadDatabasePolicy,
+    SlaveDatabasePolicy,
+    SlaveOnlyDatabasePolicy,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore,
-    SLAVE_FLAVOR)
+    ALL_STORES,
+    DEFAULT_FLAVOR,
+    DisallowedStore,
+    IDatabasePolicy,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    ReadOnlyModeDisallowedStore,
+    SLAVE_FLAVOR,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.testing import TestCase
 
 
 class ImplicitDatabasePolicyTestCase(TestCase):
@@ -46,9 +75,6 @@ class ImplicitDatabasePolicyTestCase(TestCase):
         store_selector = getUtility(IStoreSelector)
         main_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
         self.failUnlessEqual(self.getDBUser(main_store), 'launchpad_main')
-
-        auth_store = store_selector.get(AUTH_STORE, DEFAULT_FLAVOR)
-        self.failUnlessEqual(self.getDBUser(auth_store), 'launchpad_auth')
 
     def getDBUser(self, store):
         return store.execute(
@@ -154,7 +180,7 @@ class LayerDatabasePolicyTestCase(TestCase):
 
     def test_FeedsLayer_uses_SlaveDatabasePolicy(self):
         """FeedsRequest should use the SlaveDatabasePolicy since they
-        are read-only in nature. Also we don't want to send session cookies 
+        are read-only in nature. Also we don't want to send session cookies
         over them.
         """
         request = LaunchpadTestRequest(
@@ -264,7 +290,3 @@ class ReadOnlyLaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
             self.assertRaises(
                 ReadOnlyModeDisallowedStore,
                 store_selector.get, store, MASTER_FLAVOR)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

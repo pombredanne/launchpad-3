@@ -5,8 +5,8 @@ abstracts a single bug comment, has an index, and can be rendered
 independently.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
 
 == Handling of the bug's first comment ==
@@ -14,7 +14,7 @@ independently.
 The bug's description starts out identical to its first comment. In the course
 of a bug's life, the description may be updated, but the first comment stays
 intact. To improve readability, we never display the first comment in the bug
-page, and this is why visible_comments_for_display doesn't include it:
+page, and this is why the event stream elides it doesn't include it:
 
     >>> bug_ten = getUtility(IBugSet).get(10)
     >>> bug_ten_bugtask = bug_ten.bugtasks[0]
@@ -22,8 +22,10 @@ page, and this is why visible_comments_for_display doesn't include it:
     >>> bug_view = getMultiAdapter(
     ...     (bug_ten_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
-    >>> rendered_comments = bug_view.visible_comments_for_display
-    >>> [bug_comment.index for bug_comment in rendered_comments]
+    >>> def bug_comments(bug_view):
+    ...     return [event.get('comment') for event in 
+    ...         bug_view.activity_and_comments if event.get('comment')]
+    >>> [bug_comment.index for bug_comment in bug_comments(bug_view)]
     [1]
 
 In the case of bug 10, the first comment is identical to the bug's
@@ -42,24 +44,23 @@ submitted via the email interface can have file attachments, which are
 stored as bug attchments of the first comment. Similary, the first
 comment of bugs imported from other bug trackers may have attachments.
 We display these attachments in the comment section of the Web UI,
-hence visible_comments_for_display contains the first comment, if it
-has attachments.
+hence the activity stream contains the first comment, if it has attachments.
 
 Currently, the first comment of bug 11 has no attachments, hence
-BugTaskView.visible_comments_for_display does not return the first
-comment.
+BugTaskView.activity_and_comments does not return the
+first comment.
 
     >>> bug_11 = getUtility(IBugSet).get(11)
     >>> bug_11_bugtask = bug_11.bugtasks[0]
     >>> bug_11_view = getMultiAdapter(
     ...     (bug_11_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_11_view.initialize()
-    >>> rendered_comments = bug_11_view.visible_comments_for_display
+    >>> rendered_comments = bug_comments(bug_11_view)
     >>> [bug_comment.index for bug_comment in rendered_comments]
     [1, 2, 3, 4, 5, 6]
 
 If we add an attachment to the first comment, this comment is included
-in visible_comments_for_display...
+in activity_and_comments...
 
     >>> import StringIO
     >>> login("test@canonical.com")
@@ -71,7 +72,7 @@ in visible_comments_for_display...
     >>> bug_11_view = getMultiAdapter(
     ...     (bug_11_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_11_view.initialize()
-    >>> rendered_comments = bug_11_view.visible_comments_for_display
+    >>> rendered_comments = bug_comments(bug_11_view)
     >>> [bug_comment.index for bug_comment in rendered_comments]
     [0, 1, 2, 3, 4, 5, 6]
     >>>
@@ -112,13 +113,13 @@ If we get the bug comments from the view we can see that the two additional
 comments have been truncated:
 
     >>> [(bug_comment.index, bug_comment.was_truncated)
-    ...  for bug_comment in bug_view.visible_comments_for_display]
+    ...  for bug_comment in bug_comments(bug_view)]
     [(1, True), (2, True)]
 
 Let's take a closer look at one of the truncated comments. We can
 display the truncated text using text_for_display:
 
-    >>> comment_one = bug_view.visible_comments_for_display[0]
+    >>> comment_one = bug_comments(bug_view)[0]
     >>> print comment_one.text_for_display #doctest: -ELLIPSIS
     This would be a real...
 
@@ -185,7 +186,8 @@ If a comment made by the same user is strictly identical to its previous
 comment in sequence, it will be omitted. Let's add some comments and
 attachments to a bug to see this in action:
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> import StringIO
     >>> user = getUtility(ILaunchBag).user
     >>> different_user = getUtility(IPersonSet).getByName('name16')
@@ -221,7 +223,7 @@ hidden.
     ...     (bug_three_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
     >>> [(c.index, c.title, c.text_for_display)
-    ...  for c in bug_view.visible_comments_for_display]
+    ...  for c in bug_comments(bug_view)]
     [(1, u'Hi', u'Hello there'),
      (3, u'Ho', u'Hello there'),
      (5, u'Ho', u'Hello there'),
@@ -235,19 +237,21 @@ BugTaskView has another property for helping render bugs with lots of
 comments: visible_comments_truncated_for_display.
 
 This is normally false, but for bugs with lots of comments, the
-visible_comments_truncated_for_display property becomes True and the
-visible_comments_for_display list is truncated.
+visible_comments_truncated_for_display property becomes True and the activity
+stream has the middle comments elided.
 
-The configuration keys comments_list_max_length and
-comments_list_truncate_to control the thresholds. If there are more
-comments than comments_list_max_length, the list is truncated to
-comments_list_truncate_to.
+The configuration keys comments_list_max_length,
+comments_list_truncate_oldest_to, and comments_list_truncate_newest_to
+control the thresholds. If there are more comments than
+comments_list_max_length, the list is truncated to show the oldest and
+newest bugs, with a visual break in between.
 
     >>> from canonical.config import config
     >>> config.push('malone', '''
     ... [malone]
     ... comments_list_max_length: 10
-    ... comments_list_truncate_to: 8
+    ... comments_list_truncate_oldest_to: 3
+    ... comments_list_truncate_newest_to: 5
     ... ''')
 
 We'll create an example bug with 9 comments.
@@ -268,19 +272,15 @@ We'll create an example bug with 9 comments.
     >>> bug = factory.makeBug()
     >>> add_comments(bug, 9)
 
-If we create a view for this, we can see that all 9 comments are
-visible, and we can see that the list has not been truncated.
+If we create a view for this, we can see that truncation is disabled.
 
     >>> bug_view = getMultiAdapter(
     ...     (bug.default_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
-
-    >>> len(bug_view.visible_comments_for_display)
-    9
     >>> bug_view.visible_comments_truncated_for_display
     False
 
-Add two more comments, and the list will be truncated to only 8.
+Add two more comments, and the list will be truncated to only 8 total.
 
     >>> add_comments(bug, 2)
 
@@ -288,10 +288,12 @@ Add two more comments, and the list will be truncated to only 8.
     ...     (bug.default_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
 
-    >>> len(bug_view.visible_comments_for_display)
-    8
     >>> bug_view.visible_comments_truncated_for_display
     True
+    >>> bug_view.visible_initial_comments
+    3
+    >>> bug_view.visible_recent_comments
+    5
 
 The display of all comments can be requested with a form parameter.
 
@@ -300,8 +302,6 @@ The display of all comments can be requested with a form parameter.
     ...     (bug.default_bugtask, request), name='+index')
     >>> bug_view.initialize()
 
-    >>> len(bug_view.visible_comments_for_display)
-    11
     >>> bug_view.visible_comments_truncated_for_display
     False
 
@@ -327,7 +327,7 @@ doc/bugactivity.txt for details of the BugActivityItem class).
 
     >>> from lp.bugs.browser.bugcomment import BugComment
     >>> from lp.bugs.browser.bugtask import BugActivityItem
-    >>> from canonical.launchpad.interfaces import IBugActivitySet
+    >>> from lp.bugs.interfaces.bugactivity import IBugActivitySet
 
     >>> user = factory.makePerson(displayname="Arthur Dent")
     >>> message = factory.makeMessage(
@@ -341,7 +341,7 @@ doc/bugactivity.txt for details of the BugActivityItem class).
 
     >>> bug_comment = BugComment(
     ...     index=0, message=message, bugtask=bug_task,
-    ...     display_if_from_bugwatch=True, activity=[activity_item])
+    ...     activity=[activity_item])
 
     >>> for activity in bug_comment.activity:
     ...     print "%s: %s" % (

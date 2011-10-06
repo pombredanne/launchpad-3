@@ -4,6 +4,16 @@ Not all suggestions that are made for a translation do become the current
 translation of a message. If the current translation is good enough, new
 suggestions can be dismissed to keep them off the page.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.testing.pages import extract_url_parameter
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+
+    >>> login(ANONYMOUS)
+    >>> utility = getUtility(IPOTemplateSet)
+    >>> dummy = utility.populateSuggestivePOTemplatesCache()
+    >>> logout()
+
+
 First the admin (or anybody with edit rights) adds a translation.
 
     >>> admin_browser.open('http://translations.launchpad.dev/alsa-utils'

@@ -4,10 +4,10 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-subscribers">
   <div class="portletBody portletContent"
-       tal:define="context_menu context/menu:context">
+       tal:define="context_menu view/context/menu:context">
 
     <div>
-      <div class="actions">
+      <div class="section">
       <div
         tal:define="link context_menu/subscription"
         tal:condition="link/enabled"

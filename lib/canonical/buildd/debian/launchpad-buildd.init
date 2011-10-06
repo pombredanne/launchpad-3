@@ -5,8 +5,16 @@
 #
 # launchpad-buildd
 #               This file is used to start and stop launchpad buildds
-#
-# Author:       Daniel Silverstone <daniel.silverstone@canonical.com>
+
+### BEGIN INIT INFO
+# Provides:          launchpad_buildd
+# Required-Start:    $local_fs $network $syslog $time
+# Required-Stop:     $local_fs $network $syslog $time
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     false
+# Short-Description: Start/stop launchpad buildds
+### END INIT INFO
 
 set -e
 
@@ -29,7 +37,13 @@ d_start() {
     CONF=$1
     PIDFILE="$PIDROOT"/"$CONF".pid
     LOGFILE="$LOGROOT"/"$CONF".log
-    su - buildd -c "BUILDD_SLAVE_CONFIG=$CONFROOT/$CONF PYTHONPATH=/usr/share/launchpad-buildd twistd --no_save --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE --umask 022"
+    # prior to karmic, twisted didn't support --umask, and defaulted it well.
+    # we need it to be 022, not 077.
+    case $(lsb_release -sc) in
+	[a-j]*)	UMASK="";;
+	[k-z]*)	UMASK="--umask 022";;
+    esac
+    su - buildd -c "BUILDD_SLAVE_CONFIG=$CONFROOT/$CONF PYTHONPATH=/usr/share/launchpad-buildd twistd --no_save --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE $UMASK"
 }
 
 #

@@ -1,12 +1,15 @@
-= Commercial Subscriptions =
+========================
+Commercial Subscriptions
+========================
 
 The CommercialSubscription class is used to track whether a project,
 which does not qualify for free hosting, has an unexpired subscription.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     ICommercialSubscription, IProductSet)
+    >>> from lp.registry.interfaces.commercialsubscription import (
+    ...     ICommercialSubscription)
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login('no-priv@canonical.com')
 
@@ -32,6 +35,42 @@ attribute is correct.
     >>> print bzr.commercial_subscription.sales_system_id
     asdf123
 
+Commercial subscriptions have zope.Public permissions for reading.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(ANONYMOUS)
+    >>> check_permission('zope.Public', bzr.commercial_subscription)
+    True
+    >>> print bzr.commercial_subscription.product.name
+    bzr
+
+For modification, launchpad.Commerical is required.  Anonymous users,
+regular users, and the project owner all are denied.
+
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    False
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    False
+
+    >>> login_person(owner)
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    False
+
+A member of the commercial admins team does have modification privileges.
+
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> commercial_admin = celebs.commercial_admin
+    >>> login('commercial-member@canonical.com')
+    >>> commercial_member = getUtility(ILaunchBag).user
+    >>> commercial_member.inTeam(commercial_admin)
+    True
+    >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
+    True
+
+
 The expiration date can be extended by redeeming another voucher.  In
 real life this would be done nearer to the expiration date.  For
 testing consistency, let's force the start and expiry dates to a known
@@ -40,6 +79,7 @@ date and use a known time as the current time.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import date, datetime, timedelta
     >>> from pytz import UTC
+    >>> login('no-priv@canonical.com')
     >>> now = datetime(2008, 1, 10, tzinfo=UTC)
     >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
     >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
@@ -213,7 +253,7 @@ Make the subscription no longer active.
 The qualifies_for_free_hosting attribute is False
 if the product has License.OTHER_PROPRIETARY.
 
-    >>> from canonical.launchpad.interfaces import License
+    >>> from lp.registry.interfaces.product import License
     >>> bzr.licenses = [License.OTHER_PROPRIETARY]
     >>> bzr.qualifies_for_free_hosting
     False
@@ -228,22 +268,22 @@ can only be set on a product that does not have OTHER_PROPRIETARY
 included as one of the licenses.
 
     >>> bzr.license_info = 'bar'
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.license_approved = True
 
     >>> bzr.license_info
     u'bar'
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     True
     >>> bzr.license_approved
     True
 
 Setting license_approved implies that the license has been reviewed,
-so license_reviewed is set automatically.
+so project_reviewed is set automatically.
 
-    >>> bzr.license_reviewed = False
+    >>> bzr.project_reviewed = False
     >>> bzr.license_approved = True
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     True
 
 Set the bzr license to Other/Open Source and Other/Proprietary.  It
@@ -251,37 +291,38 @@ may not be approved because Other/Proprietary requires a commercial
 subscription.
 
     >>> bzr.licenses = [License.OTHER_OPEN_SOURCE, License.OTHER_PROPRIETARY]
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.license_approved = True
     Traceback (most recent call last):
     ...
-    AssertionError: Projects with 'Other/Proprietary' licenses may not be...
+    ValueError: Projects without a license or have 'Other/Proprietary'
+    may not be approved.
 
 A project with an Other/Open Source license or additional license info that
 is reviewed, but not approved requires a commercial subscription.
 
     >>> bzr.licenses = [License.OTHER_OPEN_SOURCE]
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.qualifies_for_free_hosting
     False
 
 If the licenses or license_info attributes are changed, the
-license_reviewed and license_approved attributes are reset to false.
+project_reviewed and license_approved attributes are reset to false.
 
     >>> bzr.license_approved = True
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.license_info = 'foo'
     >>> bzr.license_approved
     False
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     False
 
     >>> bzr.license_approved = True
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.licenses = [License.BSD]
     >>> bzr.license_approved
     False
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     False
 
 When the products license is OTHER_OPEN_SOURCE or the license_info
@@ -291,7 +332,7 @@ attribute is false for products that have licenses that required
 approval, but were not approved.
 
 However, qualifies_for_free_hosting remains true until
-it has been reviewed (license_reviewed is set to true). The
+it has been reviewed (project_reviewed is set to true). The
 OTHER_PROPRIETARY license does not need to be reviewed as do the
 OTHER_OPEN_SOURCE license or an unknown license in license_info.
 
@@ -301,7 +342,7 @@ OTHER_OPEN_SOURCE license or an unknown license in license_info.
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
 
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (False, True)
 
@@ -310,7 +351,7 @@ OTHER_OPEN_SOURCE license or an unknown license in license_info.
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
 
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (False, True)
 
@@ -321,22 +362,26 @@ hosting; there is no commercial subscription due.
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
 
-= Product License Reviews =
+=======================
+Product License Reviews
+=======================
 
 The forReview() method allows searching for products whose license needs to
-be reviewed. You can search by text in the Product table's full text index.
+be reviewed. You can search by text in the Product table's full text index
+as well as the license_info field. The results are ordered by date ceated
+then display name.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from datetime import timedelta
     >>> bzr.licenses = [License.GNU_GPL_V2, License.ECLIPSE]
     >>> flush_database_updates()
     >>> for product in product_set.forReview(search_text='gnome'):
-    ...     print product.name
-    evolution
-    gnome-terminal
-    applets
+    ...     print product.displayname
+    python gnome2 dev
+    Evolution
+    GNOME Terminal
+    Gnome Applets
     gnomebaker
-    python-gnome2-dev
 
 You can search for whether the product is active or not.
 
@@ -347,13 +392,12 @@ You can search for whether the product is active or not.
 
 You can search for whether the product is marked reviewed or not.
 
-    >>> for product in product_set.forReview(license_reviewed=True):
+    >>> for product in product_set.forReview(project_reviewed=True):
     ...     print product.name
-    rosetta
-    obsolete-junk
-    alsa-utils
     python-gnome2-dev
     unassigned
+    alsa-utils
+    obsolete-junk
 
 You can search for products by license. This will match products with
 any one of the licenses listed.
@@ -386,30 +430,12 @@ This OR the licenses search field must match.
 
     >>> for product in product_set.forReview(license_info_is_empty=True):
     ...     print product.name
-    aptoncd
-    arch-mirrors
-    bazaar
-    bzr
-    derby
-    evolution
-    gnome-terminal
-    applets
-    jokosher
-    launchpad
-    rosetta
-    firefox
-    thunderbird
-    netapplet
-    redfish
-    landscape
     tomcat
-    upstart
-    a52dec
-    alsa-utils
-    gnomebaker
-    iso-codes
     python-gnome2-dev
     unassigned
+    arch-mirrors
+    firefox
+    ...
     >>> for product in product_set.forReview(license_info_is_empty=False):
     ...     print product.name
     mega-money-maker
@@ -425,12 +451,11 @@ It is possible to search for problem project that have been reviewed, but
 not approved
 
     >>> for product in product_set.forReview(
-    ...     license_reviewed=True, license_approved=False):
+    ...     project_reviewed=True, license_approved=False):
     ...     print product.name
-    rosetta
-    alsa-utils
     python-gnome2-dev
     unassigned
+    alsa-utils
 
 You can search for products based on a date range in which the product
 was created.
@@ -486,8 +511,6 @@ the web form delivers.
     ...     print product.name
     bzr
 
-
-
 You can search for products based on the date of that
 its commercial subscription was modified, which only
 happens when a voucher is redeemed.
@@ -518,66 +541,71 @@ The license_info_is_empty parameter only accepts True, False, or None.
     ...
     AssertionError...
 
-The use of 'forReview' is limited to users with launchpad.Commercial permission.
+The full text search will not match strings with dots in their name
+but a clause is included to search specifically for the name.
+
+    >>> new_product = factory.makeProduct(name="abc.com")
+    >>> for product in product_set.forReview(search_text="abc.com"):
+    ...     print product.name
+    abc.com
+
+The use of 'forReview' is limited to users with launchpad.Commercial
+permission.
 
 Anonymous users cannot access 'forReview'.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> login(ANONYMOUS)
-    >>> check_permission('launchpad.Commercial', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     False
     >>> gnome = product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized:... 'forReview', 'launchpad.ProjectReview'...
+    Unauthorized:... 'forReview', 'launchpad.Moderate'...
 
 No Privileges Person cannot access 'forReview'.
 
     >>> login('no-priv@canonical.com')
-    >>> check_permission('launchpad.ProjectReview', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     False
     >>> gnome =  product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized:... 'forReview', 'launchpad.ProjectReview'...
+    Unauthorized:... 'forReview', 'launchpad.Moderate'...
 
 But if we add No Privileges Person to the Registry Experts team he can
 access it.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
     >>> registry_member = factory.makePerson()
-    >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
     ...     print product.name
+    python-gnome2-dev
     evolution
     gnome-terminal
     applets
     gnomebaker
-    python-gnome2-dev
 
 An admin can access 'forReview'.
 
     >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.ProjectReview', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
     ...     print product.name
+    python-gnome2-dev
     evolution
     gnome-terminal
     applets
     gnomebaker
-    python-gnome2-dev
 
 Members of the registry experts celebrity have permission to review
 IProduct and IProjectGroup objects and access an IProjectGroupSet.
@@ -589,9 +617,9 @@ IProduct and IProjectGroup objects and access an IProjectGroupSet.
     >>> project = factory.makeProject(name='cat')
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', project_set)
+    >>> check_permission('launchpad.Moderate', project_set)
     True
-    >>> check_permission('launchpad.ProjectReview', project)
+    >>> check_permission('launchpad.Moderate', project)
     True
-    >>> check_permission('launchpad.ProjectReview', product)
+    >>> check_permission('launchpad.Moderate', product)
     True

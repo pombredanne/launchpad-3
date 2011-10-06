@@ -5,17 +5,23 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestCase
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from lp.registry.interfaces.product import IProductSet
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
+from lp.code.vocabularies.branch import (
+    BranchRestrictedOnProductVocabulary,
+    BranchVocabulary,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.registry.interfaces.product import IProductSet
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.vocabularies.dbobjects import (
-    BranchRestrictedOnProductVocabulary, BranchVocabulary)
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class BranchVocabTestCase(TestCase):
@@ -211,7 +217,3 @@ class TestRestrictedBranchVocabularyOnBranch(
         """Restrict using a branch on widget."""
         return getUtility(IBranchLookup).getByUniqueName(
             '~spotty/widget/hill')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

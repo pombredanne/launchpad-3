@@ -1,10 +1,13 @@
-= The Launchpad Answer Tracker =
+The Launchpad Answer Tracker
+============================
 
 Launchpad has an 'Answer Tracker' built in to it. So you can have your
 community answers user questions about any upstream application, or any
 distribution.
 
-== Products ==
+
+Products
+--------
 
 Creating a new question is possible directly from the main page of a
 product. Users simply click the 'Ask a question' buttion.
@@ -31,6 +34,7 @@ available from the 'Answers' facet.
     >>> soup = find_main_content(browser.contents)
     >>> print soup.first('h1').renderContents()
     Questions for Mozilla Firefox
+
     >>> browser.getLink('Firefox loses focus and gets stuck').url
     '.../firefox/+question/4'
 
@@ -43,8 +47,10 @@ There are links to some common listing of questions:
 
     >>> browser.getLink('Open').url
     '.../firefox/+questions?...'
+
     >>> browser.getLink('Answered').url
     '.../firefox/+questions?...'
+
     >>> browser.getLink('My questions').url
     '.../firefox/+myquestions'
 
@@ -54,10 +60,13 @@ question page.
     >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
     >>> print browser.title
     Question #2 : ...
+
     >>> print find_main_content(browser.contents).first('h1').renderContents()
     Problem showing the SVG demo on W3C site
 
-== Distributions ==
+
+Distributions
+-------------
 
 Distributions have an 'Ask a question' link on the front page:
 
@@ -78,9 +87,11 @@ The distribution home page also has a link to the 'Answers' facet:
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/ubuntu'
+
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions : Ubuntu
+
     >>> browser.getLink('Ask a question')
     <Link...>
 
@@ -88,34 +99,41 @@ On that facet, we will find the same common listings:
 
     >>> browser.getLink('Open').url
     '.../ubuntu/+questions?...'
+
     >>> browser.getLink('Answered').url
     '.../ubuntu/+questions?...'
+
     >>> browser.getLink('My questions').url
     '.../ubuntu/+myquestions'
 
 
-== Source packages ==
+Distribution Source packages
+----------------------------
 
-On a source package, the 'Ask a question' link is accessible through
-the Answers facet.
+On a source package, the 'Ask a question' link is accessible through the
+Answers facet.
 
-    >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution')
+    >>> browser.open('http://launchpad.dev/ubuntu/+source/evolution')
     >>> browser.getLink('Answers').url
-    'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution'
+    'http://answers.launchpad.dev/ubuntu/+source/evolution'
+
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions : ...evolution... source package : Hoary (5.04) : Ubuntu
+    Questions : ...evolution... package : Ubuntu
+
     >>> browser.getLink('Ask a question').url
-    '.../ubuntu/hoary/+source/evolution/+addquestion'
+    '.../ubuntu/+source/evolution/+addquestion'
 
 As are the common listings:
 
     >>> browser.getLink('Open').url
-    '.../ubuntu/hoary/+source/evolution/+questions?...'
+    '.../ubuntu/+source/evolution/+questions?...'
+
     >>> browser.getLink('Answered').url
-    '.../ubuntu/hoary/+source/evolution/+questions?...'
+    '.../ubuntu/+source/evolution/+questions?...'
+
     >>> browser.getLink('My questions').url
-    '.../ubuntu/hoary/+source/evolution/+myquestions'
+    '.../ubuntu/+source/evolution/+myquestions'
 
 The 'Answers' facet is also available on the distribution source package
 page:
@@ -123,22 +141,29 @@ page:
     >>> browser.open('http://launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
+
     >>> browser.getLink('Answers').click()
     >>> browser.title
     'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/+source/mozilla-firefox/+addquestion'
+
     >>> browser.getLink('Open').url
     '.../ubuntu/+source/mozilla-firefox/+questions?...'
+
     >>> browser.getLink('Answered').url
     '.../ubuntu/+source/mozilla-firefox/+questions?...'
+
     >>> browser.getLink('My questions').url
     '.../ubuntu/+source/mozilla-firefox/+myquestions'
 
-== Project ==
 
-Project also have the 'Latest questions' portlet and the
-'Ask a question' button on their overview page.
+ProjectGroups
+-------------
+
+ProjectGroups also have the 'Latest questions' portlet and the 'Ask a
+question' button on their overview page.
 
     >>> user_browser.open('http://launchpad.dev/mozilla')
 
@@ -157,7 +182,9 @@ Project also have the 'Latest questions' portlet and the
     >>> print user_browser.title
     Ask a question about...
 
-== Persons ==
+
+Persons
+-------
 
 The 'Answers' facet link will display a page listing all the questions
 involving a person.
@@ -165,34 +192,41 @@ involving a person.
     >>> browser.open('http://launchpad.dev/~name16')
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/~name16'
+
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions : Foo Bar
+
     >>> print find_main_content(browser.contents).first('h1').renderContents()
     Questions for Foo Bar
+
     >>> browser.getLink('Slow system').url
     '.../ubuntu/+question/7'
 
     # One of them is not on this batch, so we'll have to first go to the next
     # batch.
+
     >>> browser.getLink('Next').click()
     >>> browser.getLink('Firefox loses focus').url
     '.../firefox/+question/4'
 
-== Accessing a question directly ==
+
+Accessing a question directly
+-----------------------------
 
 You can access any question by its ID using the URL
-http://answers.launchpad.dev/questions/<id>. This URL will redirect
-to the proper context where the question can be found:
+http://answers.launchpad.dev/questions/<id>. This URL will redirect to
+the proper context where the question can be found:
 
     >>> browser.open('http://answers.launchpad.dev/questions/1')
     >>> print browser.url
     http://answers.launchpad.dev/firefox/+question/1
+
     >>> print find_main_content(browser.contents).find('h1').renderContents()
     Firefox cannot render Bank Site
 
-Asking for a non-existent question or an invalid ID will still
-raise a 404 though:
+Asking for a non-existent question or an invalid ID will still raise a
+404 though:
 
     >>> browser.open('http://answers.launchpad.dev/questions/255')
     Traceback (most recent call last):
@@ -205,8 +239,8 @@ raise a 404 though:
     NotFound: ...
 
 Also If you access a question through the wrong context, you'll be
-redirected to the question in the proper context. (For example, this
-is useful after a question was retargeted.)
+redirected to the question in the proper context. (For example, this is
+useful after a question was retargeted.)
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/1')
     >>> print browser.url
@@ -231,3 +265,5 @@ But again, an invalid ID still raises a 404:
     Traceback (most recent call last):
       ...
     NotFound: ...
+
+

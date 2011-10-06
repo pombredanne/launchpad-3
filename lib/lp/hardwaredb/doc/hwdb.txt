@@ -118,8 +118,8 @@ Limitations:
 The system fingerprint is stored in a separate table, HWSystemFingerprint.
 IHWSystemFingerPrintSet.createFingerprint creates a new row in this table.
 
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSystemFingerprintSet
     >>> from storm.store import Store
-    >>> from canonical.launchpad.interfaces import IHWSystemFingerprintSet
     >>> hw_fingerprint_set = getUtility(IHWSystemFingerprintSet)
     >>> fp = hw_fingerprint_set.createFingerprint(u'IBM T41')
     >>> fp.fingerprint
@@ -153,10 +153,12 @@ IHWSubmissionSet.createSubmission creates a new entry in the
 HWSubmission table.
 
     >>> import pytz
-    >>> from datetime import datetime
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces import (
-    ...     HWSubmissionFormat, IHWSubmissionSet)
+    >>> from datetime import datetime
+    >>> from lp.hardwaredb.interfaces.hwdb import (
+    ...     HWSubmissionFormat,
+    ...     IHWSubmissionSet,
+    ...     )
     >>> date_created = datetime(2007, 04, 01, tzinfo=pytz.timezone('UTC'))
     >>> date_submitted = datetime(2007, 04, 02, tzinfo=pytz.timezone('UTC'))
     >>> submission_data = 'submission data'
@@ -202,7 +204,7 @@ submitted emailaddress belongs to an existing Launchpad account.
 If no Person record is yet known for the submitter's email address,
 the field `owner` is None.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> beeblebrox = getUtility(IPersonSet).getByEmail(
     ...     'beeblebrox@example.com')
     >>> print beeblebrox
@@ -366,8 +368,8 @@ to the method, or if the passed parameter is neither the owner nor an admin.
 When an anonymous submitter later registers a Launchpad account, the field
 `owner` is updated.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IEmailAddressSet, PersonCreationRationale)
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> user = getUtility(IPersonSet).ensurePerson(
     ...     u'beeblebrox@example.com', u'Beeblebrox',
     ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
@@ -375,9 +377,9 @@ When an anonymous submitter later registers a Launchpad account, the field
     ...     u'beeblebrox@example.com')
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> transaction.commit()
-    >>> from canonical.launchpad.scripts.garbo import HWSubmissionEmailLinker
-    >>> from canonical.launchpad.ftests.logger import MockLogger
-    >>> HWSubmissionEmailLinker(log=MockLogger()).run()
+    >>> from lp.scripts.garbo import HWSubmissionEmailLinker
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> HWSubmissionEmailLinker(log=DevNullLogger()).run()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -411,7 +413,7 @@ the field `owner` is updated.
     >>> login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> transaction.commit()
-    >>> HWSubmissionEmailLinker(log=MockLogger()).run()
+    >>> HWSubmissionEmailLinker(log=DevNullLogger()).run()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -511,8 +513,7 @@ submissions...
 
 ...as well as for the janitor.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> new_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED, user=janitor)
@@ -716,7 +717,7 @@ are returned.
 
 It is also possible to search for a distroseries and architecture.
 
-    >>> from canonical.launchpad.interfaces import IProcessorFamilySet
+    >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
     >>> amd64 = getUtility(IProcessorFamilySet).getByName('amd64')
     >>> warty_amd64 = factory.makeDistroArchSeries(
     ...     distroseries=warty, architecturetag='amd64',
@@ -730,7 +731,7 @@ It is also possible to search for a distroseries and architecture.
 
 And we can also search for submissions from a particular user.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> owner = getUtility(IPersonSet).getByName('name12')
     >>> set(submission.owner.name for submission
     ...     in hw_submission_set.search(owner=owner))

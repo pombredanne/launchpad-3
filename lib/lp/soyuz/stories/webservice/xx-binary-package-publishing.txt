@@ -65,6 +65,7 @@ Each binary publication exposes a number of properties:
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
+    architecture_specific: True
     archive_link: u'http://.../~cprov/+archive/ppa'
     binary_package_name: u'mozilla-firefox'
     binary_package_version: u'1.0'
@@ -93,13 +94,12 @@ Security
 Create a private PPA for Celso with some binaries.
 
     >>> login("foo.bar@canonical.com")
-
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
@@ -141,3 +141,111 @@ also fail in their quest.
     >>> print response
     HTTP/1.1 401 Unauthorized
     ...
+
+
+Download counts
+===============
+
+We can retrieve the total download count for a binary in this archive.
+
+    >>> webservice.named_get(
+    ...     pubs['entries'][0]['self_link'], 'getDownloadCount').jsonBody()
+    0
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> from datetime import date
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> australia = getUtility(ICountrySet)['AU']
+
+    >>> firefox_db = cprov_db.archive.getAllPublishedBinaries(
+    ...     name='mozilla-firefox')[0]
+    >>> firefox_db.archive.updatePackageDownloadCount(
+    ...     firefox_db.binarypackagerelease, date(2010, 2, 21), australia, 10)
+    >>> firefox_db.archive.updatePackageDownloadCount(
+    ...     firefox_db.binarypackagerelease, date(2010, 2, 23), None, 8)
+
+    >>> logout()
+
+    >>> firefox = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedBinaries', 
+    ...     binary_name='mozilla-firefox').jsonBody()['entries'][0]
+    >>> webservice.named_get(
+    ...     firefox['self_link'], 'getDownloadCount').jsonBody()
+    18
+    
+Detailed download counts are also available from the getDownloadCounts method.
+
+    >>> counts = webservice.named_get(
+    ...     firefox['self_link'], 'getDownloadCounts').jsonBody()['entries']
+    >>> len(counts)
+    2
+
+A detailed count object can be retrieved by its URL.
+
+    >>> pprint_entry(webservice.get(counts[1]['self_link']).jsonBody())
+    archive_link: u'http://.../~cprov/+archive/ppa'
+    binary_package_name: u'mozilla-firefox'
+    binary_package_version: u'1.0'
+    count: 10
+    country_link: u'http://.../+countries/AU'
+    day: u'2010-02-21'
+    resource_type_link: u'http://.../#binary_package_release_download_count'
+    self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-21/AU'
+
+We can also filter by date.
+
+    >>> counts = webservice.named_get(
+    ...     firefox['self_link'], 'getDownloadCounts',
+    ...     start_date='2010-02-22').jsonBody()['entries']
+    >>> len(counts)
+    1
+
+    >>> pprint_entry(webservice.get(counts[0]['self_link']).jsonBody())
+    archive_link: u'http://.../~cprov/+archive/ppa'
+    binary_package_name: u'mozilla-firefox'
+    binary_package_version: u'1.0'
+    count: 8
+    country_link: None
+    day: u'2010-02-23'
+    resource_type_link: u'http://.../#binary_package_release_download_count'
+    self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-23/unknown'
+
+But other URLs result in a 404.
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/moz')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/phoenix/1.0/hppa/2010-02-23/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.1/hppa/2010-02-23/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/foo/2010-02-23/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-25/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-23/XX')
+    HTTP/1.1 404 Not Found
+    ...
+
+getDailyDownloadTotals returns a dict mapping dates to total counts.
+
+    >>> webservice.named_get(
+    ...     firefox['self_link'], 'getDailyDownloadTotals').jsonBody()
+    {u'2010-02-21': 10, u'2010-02-23': 8}
+

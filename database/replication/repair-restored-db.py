@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -45,7 +45,7 @@ def main():
 
     log = logger(options)
 
-    con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
     if not replication.helpers.slony_installed(con):
         log.info("Slony-I not installed. Nothing to do.")

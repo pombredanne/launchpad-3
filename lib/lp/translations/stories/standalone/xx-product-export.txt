@@ -1,4 +1,5 @@
-= Downloading Product Series Translations =
+Downloading Product Series Translations
+=======================================
 
 Products and product series that use Translations offer complete
 translation downloads.
@@ -33,16 +34,18 @@ it for source packages (tested and documented separately).
     Your request has been received.  Expect to receive an email shortly.
 
 
-== Use of Launchpad Translations ==
+Use of Launchpad Translations
+-----------------------------
 
 The Download link is not shown if the product does not use Launchpad
 Translations.
 
     # Use the DB classes directly to avoid having to setup a zope interaction
     # (i.e. login()) and bypass the security proxy.
+    >>> from lp.app.enums import ServiceUsage
     >>> from lp.registry.model.product import Product
     >>> product = Product.byName('evolution')
-    >>> product.official_rosetta = False
+    >>> product.translations_usage = ServiceUsage.NOT_APPLICABLE
     >>> product.sync()
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
     >>> user_browser.getLink('download')
@@ -51,14 +54,15 @@ Translations.
     LinkNotFoundError
 
     >>> # Restore previous state for subsequent tests, and verify
-    >>> product.official_rosetta = True
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> product.sync()
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
     >>> user_browser.getLink('download') is not None
     True
 
 
-== Authorization ==
+Authorization
+-------------
 
 Only logged-in users get the option to request downloads.
 

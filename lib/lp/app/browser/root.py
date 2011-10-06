@@ -1,6 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 """Browser code for the Launchpad root page."""
 
 __metaclass__ = type
@@ -11,40 +10,49 @@ __all__ = [
 
 
 import re
-import sys
 import time
 
+import feedparser
+from lazr.batchnavigator.z3batching import batch
+from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
+from zope.interface import Interface
+from zope.schema import TextLine
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
-
-from canonical.cachedproperty import cachedproperty
-from lp.registry.browser.announcement import HasAnnouncementsView
+from canonical.config import config
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.publisher import canonical_url
-from lp.code.interfaces.branchcollection import IAllBranches
-from lp.bugs.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.searchservice import (
-    GoogleResponseError, ISearchService)
-from lp.blueprints.interfaces.specification import ISpecificationSet
-from canonical.launchpad.validators.name import sanitize_name
-from canonical.launchpad.webapp import (
-    action, LaunchpadFormView, LaunchpadView, safe_action)
+    ILaunchpadStatisticSet,
+    )
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lazr.batchnavigator.z3batching import batch
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vhosts import allvhosts
-
+from canonical.lazr.timeout import urlfetch
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators.name import sanitize_name
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.code.interfaces.branchcollection import IAllBranches
+from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.googlesearch.interfaces import (
+    GoogleResponseError,
+    ISearchService,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
@@ -53,9 +61,9 @@ shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
 
+    page_title = 'Launchpad'
     featured_projects = []
     featured_projects_top = None
-
 
     # Used by the footer to display the lp-arcana section.
     is_root_page = True
@@ -129,6 +137,41 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         """The total blueprint count in all of Launchpad."""
         return getUtility(ILaunchpadStatisticSet).value('question_count')
 
+    def getRecentBlogPosts(self):
+        """Return the parsed feed of the most recent blog posts.
+
+        It returns a list of dict with keys title, description, link and date.
+
+        The date is formatted and the description which may contain HTML is
+        sanitized.
+
+        The number of blog posts to display is controlled through
+        launchpad.homepage_recent_posts_count. The posts are fetched
+        from the feed specified in launchpad.homepage_recent_posts_feed.
+
+        Since the feed is parsed everytime, the template should cache this
+        through memcached.
+
+        FeedParser takes care of sanitizing the HTML contained in the feed.
+        """
+        # Use urlfetch which supports timeout
+        try:
+            data = urlfetch(config.launchpad.homepage_recent_posts_feed)
+        except IOError:
+            return []
+        feed = feedparser.parse(data)
+        posts = []
+        max_count = config.launchpad.homepage_recent_posts_count
+        # FeedParser takes care of HTML sanitisation.
+        for entry in feed.entries[:max_count]:
+            posts.append({
+                'title': entry.title,
+                'description': entry.description,
+                'link': entry.link,
+                'date': time.strftime('%d %b %Y', entry.updated_parsed),
+                })
+        return posts
+
 
 class LaunchpadSearchFormView(LaunchpadView):
     """A view to display the global search form in any page."""
@@ -187,6 +230,13 @@ class LaunchpadPrimarySearchFormView(LaunchpadSearchFormView):
         if self.error:
             return 'error'
         return None
+
+
+class ILaunchpadSearch(Interface):
+    """The Schema for performing searches across all Launchpad."""
+
+    text = TextLine(
+        title=_('Search text'), required=False, max_length=250)
 
 
 class LaunchpadSearchView(LaunchpadFormView):
@@ -356,7 +406,12 @@ class LaunchpadSearchView(LaunchpadFormView):
         """See `LaunchpadFormView`"""
         errors = list(self.errors)
         for error in errors:
-            if (error.field_name == 'text'
+            if isinstance(error, ConversionError):
+                self.setFieldError(
+                    'text', 'Can not convert your search term.')
+            elif isinstance(error, unicode):
+                continue
+            elif (error.field_name == 'text'
                 and isinstance(error.errors, TooLong)):
                 self.setFieldError(
                     'text', 'The search text cannot exceed 250 characters.')
@@ -389,7 +444,7 @@ class LaunchpadSearchView(LaunchpadFormView):
             name_token = self._getNameToken(self.text)
             if name_token is not None:
                 self._person_or_team = self._getPersonOrTeam(name_token)
-                self._pillar = self._getDistributionOrProductOrProject(
+                self._pillar = self._getDistributionOrProductOrProjectGroup(
                     name_token)
 
         self._pages = self.searchPages(self.text, start=self.start)
@@ -421,11 +476,11 @@ class LaunchpadSearchView(LaunchpadFormView):
             return person_or_team
         return None
 
-    def _getDistributionOrProductOrProject(self, name):
+    def _getDistributionOrProductOrProjectGroup(self, name):
         """Return the matching distribution, product or project, or None."""
         vocabulary_registry = getVocabularyRegistry()
         vocab = vocabulary_registry.get(
-            None, 'DistributionOrProductOrProject')
+            None, 'DistributionOrProductOrProjectGroup')
         try:
             return vocab.getTermByToken(name).value
         except LookupError:
@@ -445,8 +500,8 @@ class LaunchpadSearchView(LaunchpadFormView):
             page_matches = google_search.search(
                 terms=query_terms, start=start)
         except GoogleResponseError:
-            error_utility = getUtility(IErrorReportingUtility)
-            error_utility.raising(sys.exc_info(), self.request)
+            # There was a connectivity or Google service issue that means
+            # there is no data available at this moment.
             self.has_page_service = False
             return None
         if len(page_matches) == 0:
@@ -518,6 +573,7 @@ class WindowedListBatch(batch._Batch):
 class GoogleBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
+    _batch_factory = WindowedListBatch
     # Searches generally don't show the 'Last' link when there is a
     # good chance of getting over 100,000 results.
     show_last_link = False
@@ -525,7 +581,9 @@ class GoogleBatchNavigator(BatchNavigator):
     singular_heading = 'page'
     plural_heading = 'pages'
 
-    def __init__(self, results, request, start=0, size=20, callback=None):
+    def __init__(self, results, request, start=0, size=20, callback=None,
+                 transient_parameters=None, force_start=False,
+                 range_factory=None):
         """See `BatchNavigator`.
 
         :param results: A `PageMatches` object that contains the matching
@@ -536,25 +594,13 @@ class GoogleBatchNavigator(BatchNavigator):
         :param size: The batch size is fixed to 20, The param is not used.
         :param callback: Not used.
         """
-        # We do not want to call super() because it will use the batch
-        # size from the URL.
-        # pylint: disable-msg=W0231
         results = WindowedList(results, start, results.total)
-        self.request = request
-        request_start = request.get(self.start_variable_name, None)
-        if request_start is None:
-            self.start = start
-        else:
-            try:
-                self.start = int(request_start)
-            except (ValueError, TypeError):
-                self.start = start
+        super(GoogleBatchNavigator, self).__init__(results, request,
+            start=start, size=size, callback=callback,
+            transient_parameters=transient_parameters,
+            force_start=force_start, range_factory=range_factory)
 
+    def determineSize(self, size, batch_params_source):
+        # Force the default and users requested sizes to 20.
         self.default_size = 20
-
-        self.transient_parameters = [self.start_variable_name]
-
-        self.batch = WindowedListBatch(
-            results, start=self.start, size=self.default_size)
-        self.setHeadings(
-            self.default_singular_heading, self.default_plural_heading)
+        return 20

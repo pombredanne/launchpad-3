@@ -1,17 +1,19 @@
-= Person and Account =
+Person and Account
+==================
 
 The Person object is responsible for updating the status of its
 Account object.
 
 
-== Activating user accounts ==
+Activating user accounts
+------------------------
 
 A user may activate their account that was created by an automated
 process. Matsubara's account was created during a code import.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IEmailAddressSet)
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> emailset = getUtility(IEmailAddressSet)
     >>> emailaddress = emailset.getByEmail('matsubara@async.com.br')
@@ -54,7 +56,8 @@ as arguments.
     u'matsubara@async.com.br'
 
 
-== Deactivating user accounts ==
+Deactivating user accounts
+--------------------------
 
 Any user can deactivate his own account, in case they don't want it
 anymore or they don't want to be shown as Launchpad users.
@@ -72,12 +75,12 @@ will cause this spec to be reassigned.
     >>> foobar.specifications().count() > 0
     True
 
-    >>> from lp.registry.model.person import Person
     >>> from lp.blueprints.model.specification import Specification
+    >>> from lp.registry.model.person import Person
     >>> spec = Specification.selectFirst("assignee IS NULL", orderBy='id')
     >>> spec.assignee = foobar
 
-    >>> [membership.team.name for membership in foobar.myactivememberships]
+    >>> [membership.team.name for membership in foobar.team_memberships]
     [u'canonical-partner-dev', u'guadamen', u'hwdb-team', u'admins',
      u'launchpad-buildd-admins', u'launchpad', u'testing-spanish-team',
      u'name18', u'ubuntu-team', u'vcs-imports']
@@ -94,7 +97,7 @@ will cause this spec to be reassigned.
     >>> [coc.active for coc in foobar.signedcocs]
     [True]
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> params = BugTaskSearchParams(foobar, assignee=foobar)
     >>> foobar.searchTasks(params).count() > 0
     True
@@ -149,7 +152,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...to have no team memberships...
 
-    >>> [membership.team.name for membership in foobar.myactivememberships]
+    >>> [membership.team.name for membership in foobar.team_memberships]
     []
 
 ...and no validated/preferred email addresses...
@@ -194,7 +197,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 It's also important to note that the teams/pillars owned/driven by Foo
 Bar are now owned/driven by the registry admins team.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
 
     >>> registry_pillars = set(registry_experts.getOwnedOrDrivenPillars())
@@ -206,28 +209,18 @@ Bar are now owned/driven by the registry admins team.
     True
 
 
-== Reactivating user accounts ==
+Reactivating user accounts
+--------------------------
 
-Accounts can be reactivated. A comment is required to log why this was
-done, and a password is required too. There are two preconditions before
-this method can be called on an Account: The password and the preferred
-email address cannot not be None.
-
-    >>> foobar.account.reactivate(
-    ...     'This will raise an error.', password=None, preferred_email=None)
-    Traceback (most recent call last):
-     ...
-    AssertionError: Account ... cannot be reactivated without a password.
+Accounts can be reactivated. A comment and a non-None preferred email address
+are required to reactivate() an account, though.
 
     >>> foobar.account.reactivate(
-    ...     'This will raise an error.', password='ok', preferred_email=None)
+    ...     'This will raise an error.', password='', preferred_email=None)
     Traceback (most recent call last):
      ...
     AssertionError: Account ... cannot be activated without a preferred
                     email address.
-
-The account can be reactivated after the password and preferred email
-address are set.
 
     >>> foobar.reactivate(
     ...     'User reactivated the account using reset password.',

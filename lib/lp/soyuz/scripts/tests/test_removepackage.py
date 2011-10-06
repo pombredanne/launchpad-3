@@ -17,18 +17,23 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory,
-    BinaryPackagePublishingHistory)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingStatus, active_publishing_status)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.scripts import FakeLogger
+from lp.services.log.logger import DevNullLogger
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import (
+    active_publishing_status,
+    )
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.scripts.ftpmaster import (
-    SoyuzScriptError, PackageRemover)
+    PackageRemover,
+    SoyuzScriptError,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestRemovePackageScript(unittest.TestCase):
@@ -157,10 +162,7 @@ class TestPackageRemover(unittest.TestCase):
         remover = PackageRemover(
             name='lp-remove-package', test_args=test_args)
         # Swallowing all log messages.
-        remover.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        remover.logger.message = message
+        remover.logger = DevNullLogger()
         remover.setupLocation()
         return remover
 
@@ -437,7 +439,3 @@ class TestPackageRemover(unittest.TestCase):
         remover = self.getRemover()
         remover.args = []
         self.assertRaises(SoyuzScriptError, remover.mainTask)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

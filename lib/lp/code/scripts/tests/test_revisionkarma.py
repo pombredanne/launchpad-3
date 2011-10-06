@@ -7,18 +7,16 @@ __metaclass__ = type
 
 from storm.store import Store
 import transaction
-from unittest import TestLoader
 
 from canonical.config import config
 from canonical.launchpad.database.emailaddress import EmailAddressSet
-from canonical.launchpad.ftests.logger import MockLogger
-from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
-
+from lp.scripts.garbo import RevisionAuthorEmailLinker
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 from lp.registry.model.karma import Karma
+from lp.services.log.logger import DevNullLogger
+from lp.testing import TestCaseWithFactory
 
 
 class TestRevisionKarma(TestCaseWithFactory):
@@ -77,7 +75,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson(email=email)
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
-        RevisionAuthorEmailLinker(log=MockLogger()).run()
+        RevisionAuthorEmailLinker(log=DevNullLogger()).run()
         LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
@@ -109,7 +107,7 @@ class TestRevisionKarma(TestCaseWithFactory):
             EmailAddressSet().new(email, author, account=author.account))
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
-        RevisionAuthorEmailLinker(log=MockLogger()).run()
+        RevisionAuthorEmailLinker(log=DevNullLogger()).run()
 
         # Now that the revision author is linked to the person, the revision
         # needs karma allocated.
@@ -123,7 +121,3 @@ class TestRevisionKarma(TestCaseWithFactory):
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
         self.assertOneKarmaEvent(author, b2.product)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

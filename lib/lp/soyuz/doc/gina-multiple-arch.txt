@@ -3,15 +3,16 @@ Gina over Multiple Architectures (and Pockets, and Components)
 
 Get the current counts of stuff in the database:
 
-    >>> from canonical.launchpad.database import (
-    ...     SourcePackageRelease,
-    ...     SourcePackagePublishingHistory,
-    ...     BinaryPackagePublishingHistory,
-    ...     EmailAddress,
-    ...     BinaryPackageRelease,
-    ...     Build)
+    >>> from canonical.launchpad.database.emailaddress import EmailAddress
     >>> from lp.registry.model.person import Person, WikiName
     >>> from lp.registry.model.teammembership import TeamParticipation
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+    >>> from lp.soyuz.model.publishing import (
+    ...     BinaryPackagePublishingHistory,
+    ...     SourcePackagePublishingHistory,
+    ...     )
+    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
     >>> SSPPH = SourcePackagePublishingHistory
     >>> SBPPH = BinaryPackagePublishingHistory
 
@@ -22,14 +23,14 @@ Get the current counts of stuff in the database:
     >>> orig_email_count = EmailAddress.select().count()
     >>> orig_wiki_count = WikiName.select().count()
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
-    >>> orig_build_count = Build.select().count()
+    >>> orig_build_count = BinaryPackageBuild.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
 
 Create a distribution series and an arch series for dapper:
 
-    >>> from canonical.launchpad.database import (
-    ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
+    >>> from lp.soyuz.model.processor import ProcessorFamily
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
     >>> hoary = ubuntu.getSeries("hoary")
@@ -91,6 +92,7 @@ Run gina without a powerpc processor for the powerpc family:
     ...              'dapper', 'dapper-updates']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
+    WARNING ...
     ERROR   Database setup required for run on powerpc
     -> http://... (Unable to find a processor...dapper/powerpc)
     <BLANKLINE>
@@ -101,7 +103,7 @@ Set up the processor, commit and run her again. Note that
 dapper-updates/universe doesn't include the powerpc architecture, but we
 just warn it and move right ahead.
 
-    >>> from canonical.launchpad.database import Processor
+    >>> from lp.soyuz.model.processor import Processor
     >>> p = Processor(name="powerpc", title="PowerPC", family=pf,
     ...     description="The little processor that could")
     >>> p == Processor.selectOneBy(familyID=pf.id)
@@ -112,6 +114,7 @@ just warn it and move right ahead.
     ...              'dapper', 'dapper-updates']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
+    WARNING ...
     WARNING No source package bdftopcf (0.99.0-1) listed for bdftopcf (0.99.0-1), scrubbing archive...
     WARNING The archive for dapper-updates/universe doesn't contain a directory for powerpc, skipping
     <BLANKLINE>
@@ -142,7 +145,7 @@ porridge):
 
     >>> print Person.select().count() - orig_person_count
     2
-    >>> print TeamParticipation.select().count() - orig_tp_count 
+    >>> print TeamParticipation.select().count() - orig_tp_count
     2
     >>> print EmailAddress.select().count() - orig_email_count
     2
@@ -153,15 +156,15 @@ distroarchseries:
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     4
-    >>> Build.select().count() - orig_build_count
+    >>> BinaryPackageBuild.select().count() - orig_build_count
     2
     >>> SBPPH.select().count() - orig_sbpph_count
     4
 
 Check that the source package was correctly imported:
 
+    >>> from lp.soyuz.model.binarypackagename import BinaryPackageName
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
-    >>> from canonical.launchpad.database import BinaryPackageName
     >>> n = SourcePackageName.selectOneBy(name="ekg")
     >>> ekg = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                        version="1:1.5-4ubuntu1.2")
@@ -188,7 +191,7 @@ Check that the package it generates in universe was successfully
 processed. In particular, its section should be stripped of the
 component name.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> n = BinaryPackageName.selectOneBy(name="ekg")
     >>> ekg = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
     ...                                        version="1:1.5-4ubuntu1.2")
@@ -212,11 +215,11 @@ DSC.
     x11
     >>> print ekg.component.name
     universe
-    >>> print ekg.build.sourcepackagerelease.sourcepackagename.name
+    >>> print ekg.build.source_package_release.sourcepackagename.name
     bdftopcf
-    >>> print ekg.build.sourcepackagerelease.component.name
+    >>> print ekg.build.source_package_release.component.name
     main
-    >>> print ekg.build.sourcepackagerelease.version
+    >>> print ekg.build.source_package_release.version
     0.99.0-1
 
 Check that we publishing bdftopcf into the correct distroarchseries:

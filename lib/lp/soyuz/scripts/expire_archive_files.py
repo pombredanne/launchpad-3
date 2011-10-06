@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -8,10 +8,13 @@
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
-
-from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.soyuz.enums import ArchivePurpose
 
 # PPAs that we never want to expire.
 BLACKLISTED_PPAS = """
@@ -56,9 +59,6 @@ class ArchiveExpirer(LaunchpadCronScript):
 
     def determineSourceExpirables(self, num_days):
         """Return expirable libraryfilealias IDs."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archive import ArchivePurpose
-
         stay_of_execution = '%d days' % num_days
         archive_types = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
@@ -111,9 +111,6 @@ class ArchiveExpirer(LaunchpadCronScript):
 
     def determineBinaryExpirables(self, num_days):
         """Return expirable libraryfilealias IDs."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archive import ArchivePurpose
-
         stay_of_execution = '%d days' % num_days
         archive_types = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 

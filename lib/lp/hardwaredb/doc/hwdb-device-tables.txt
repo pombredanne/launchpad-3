@@ -1,15 +1,17 @@
-= Hardware Database Device Tables =
+Hardware Database Device Tables
+===============================
 
 These tables represent devices and complete systems in the database. They
 allow look up of devices by their bus IDs and by their human readable
 vendor and product names. They also link devices to drivers.
 
-== HWVendorName ==
+HWVendorName
+------------
 
 HWVendorName is a simple list of vendor names. A new entry is created by
 IHWVendorNameSet.create().
 
-    >>> from canonical.launchpad.interfaces import IHWVendorNameSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWVendorNameSet
     >>> vendor_name_set = getUtility(IHWVendorNameSet)
     >>> intel_name = vendor_name_set.create(name='Intel')
     >>> print intel_name.name
@@ -20,7 +22,7 @@ row with the same name raises an IntegrityError error.
 
     >>> from storm.store import Store
     >>> store = Store.of(intel_name)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> vendor_name_set.create('Intel')
     <HWVendorName ...
@@ -144,14 +146,15 @@ returns None.
     None
 
 
-== HWVendorID ==
+HWVendorID
+----------
 
 HWVendorID associates a bus, as enumerated by HWBus, with a bus-specific
 vendor ID and a vendor name. We store the IDs as a string, because not all
 all busses use numeric IDs. Numbers are represented as strings with
 hexadecimal digits, prepended by '0x'.
 
-    >>> from canonical.launchpad.interfaces import HWBus, IHWVendorIDSet
+    >>> from lp.hardwaredb.interfaces.hwdb import HWBus, IHWVendorIDSet
     >>> vendor_id_set = getUtility(IHWVendorIDSet)
     >>> intel_pci_id = vendor_id_set.create(bus=HWBus.PCI,
     ...                                     vendor_id='0x8086',
@@ -467,7 +470,8 @@ HWVendorIDSet.idsForBus() returns all known HWVendorIDs for a given bus.
     PCI 0x8086
 
 
-== HWDevice ==
+HWDevice
+--------
 
 A HWDevice instance stores core data about a hardware device: The bus
 it can connect to, the vendor ID, the product ID, the human readable
@@ -482,7 +486,7 @@ like a hard disk controller that is soldered onto the main board.
 
 A new device record is created by IHWDeviceSet.create.
 
-    >>> from canonical.launchpad.interfaces import IHWDeviceSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDeviceSet
     >>> device_set = getUtility(IHWDeviceSet)
     >>> product_name='82801GBM/GHM (ICH7 Family) USB2 EHCI Controller'
     >>> usb_controller = device_set.create(bus=HWBus.PCI,
@@ -711,7 +715,8 @@ Strings with less than 16 characters are not allowed as SCSI product IDs...
     ParameterError: '12345678901234567' is not a valid product ID for SCSI
 
 
-=== Unknown Vendor IDs ===
+Unknown Vendor IDs
+..................
 
 If IHWDevice.create is called with a vendor ID that for which there
 is no IHWVendorID record, the latter is automatically created. Since
@@ -735,7 +740,9 @@ http://standards.ieee.org/regauth/oui/oui.txt
     >>> print new_vendor_device.bus_vendor.vendor_name.name
     Unknown
 
-=== Device Variants ===
+
+Device Variants
+...............
 
 While most devices can be uniquely identified by their vendor and product
 IDs, there are some cases, where different devices have identical IDs:
@@ -843,7 +850,8 @@ IntegrityError error.
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
-=== Retrieving HWDevice records ===
+Retrieving HWDevice records
+...........................
 
 Existing HWDevice records can be retrieved by calling
 HWDeviceSet.getByDeviceID()
@@ -1038,7 +1046,7 @@ distribution, which we want to access in this test.
 We can limit the results to a specific driver. (See below for details about
 HWDriver.)
 
-    >>> from canonical.launchpad.interfaces import IHWDriverSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> ahci_driver = getUtility(IHWDriverSet).getByPackageAndName(
     ...     'linux-image-2.6.24-19-generic', 'ahci')
     >>> for submission in sata_controller.getSubmissions(
@@ -1100,7 +1108,7 @@ We can even limit the results to a specific distro series and architecture.
 
 We can also search for submissions from a particular user.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> owner = getUtility(IPersonSet).getByName('name12')
     >>> for submission in sata_controller.getSubmissions(owner=owner):
     ...     print submission.submission_key
@@ -1110,6 +1118,8 @@ We can also search for submissions from a particular user.
     >>> sata_controller.getSubmissions(owner=not_owner).count()
     0
 
+    >>> import transaction
+    >>> transaction.abort()
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 HWDevice.drivers is the set of drivers that are associated via
@@ -1120,7 +1130,8 @@ HWDeviceDriverLink (see below) with this device.
     linux-image-2.6.24-19-generic ahci
 
 
-== HWDeviceNameVariant ==
+HWDeviceNameVariant
+-------------------
 
 Many OEM products are sold by more than one vendor under different
 product names; some manufacturers sell the same device under
@@ -1131,7 +1142,7 @@ nevertheless want to look up devices by the vendor and product name
 they see in a store. HWDeviceNameVariant allows us to assign alternative
 vendor and product names to a device.
 
-    >>> from canonical.launchpad.interfaces import IHWDeviceNameVariantSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDeviceNameVariantSet
     >>> device_name_variant_set = getUtility(IHWDeviceNameVariantSet)
     >>> variant = device_name_variant_set.create(device=optic_pro_ut16,
     ...                                          vendor_name='Medion',
@@ -1166,7 +1177,8 @@ IntegrityError error.
     >>> LaunchpadZopelessLayer.txn.abort()
 
 
-== HWDriver ==
+HWDriver
+--------
 
 If a device is reported as having problems, then we are more
 interested in which drivers are involved rather than the fact that
@@ -1178,7 +1190,7 @@ HWDeviceDriverLink (see below).
 The driver is not in every case a kernel driver, it may also be for
 example a Ghostscript driver of a printer or a Sane scanner backend.
 
-    >>> from canonical.launchpad.interfaces import IHWDriverSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> from lp.registry.interfaces.product import License
     >>> driver_set = getUtility(IHWDriverSet)
     >>> usb_driver = driver_set.create(package_name='linux-image-generic',
@@ -1410,6 +1422,7 @@ HWDriverSet.getByID() returns None if no record with the passed ID exists.
     >>> print driver
     None
 
+    >>> transaction.abort()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
 We can search all the submissions related to a driver.
@@ -1458,10 +1471,12 @@ And We can search for submissions from a particular user.
     >>> driver.getSubmissions(owner=not_owner).count()
     0
 
+    >>> transaction.abort()
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 
-== Driver names and package names ==
+Driver names and package names
+------------------------------
 
 The same driver names can appear multiple times in HWDriver.
 HWDriverSet.all_driver_names() returns a list of distinct driver
@@ -1498,11 +1513,12 @@ is not included.
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 
-== HWDeviceDriverLink ==
+HWDeviceDriverLink
+------------------
 
 This table links devices and drivers.
 
-    >>> from canonical.launchpad.interfaces import IHWDeviceDriverLinkSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDeviceDriverLinkSet
     >>> device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
     >>> usb_controller_usb_link = device_driver_link_set.create(
     ...     device=usb_controller, driver=usb_driver)
@@ -1639,7 +1655,8 @@ the given parameters or creates a new one, if no existing record matches.
     None
 
 
-== HWDeviceClass ==
+HWDeviceClass
+-------------
 
 This table specifies the class or classes of a device. A device class
 describes the capabilities of a device, i.e, if it is a printer,
@@ -1707,7 +1724,8 @@ IHWDevice.removeDeviceClass().
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 
-== HWSubmissionDevice ==
+HWSubmissionDevice
+------------------
 
 This table links devices listed in a submission to the
 HWDeviceDriverLink table. Additionally it links a device of a
@@ -1719,13 +1737,13 @@ too.
 
 We need a submission to which we can link HWSubmissionDevice entries.
 
-    >>> from canonical.launchpad.interfaces import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> sample_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'test_submission_id_1')
 
 A HWSubmissionDevice record for a system does not have any parent...
 
-    >>> from canonical.launchpad.interfaces import IHWSubmissionDeviceSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionDeviceSet
     >>> submission_device_set = getUtility(IHWSubmissionDeviceSet)
     >>> submitted_tuffbook_2600 = submission_device_set.create(
     ...     device_driver_link=tuffbook_2600_device_driver_link,
@@ -1846,7 +1864,8 @@ This method returns None if a nonexistent ID is passed.
     None
 
 
-== Statistical functions ==
+Statistical functions
+---------------------
 
 HWSubmissionDeviceSet.numDevicesInSubmissions() returns how often a
 device appears in HWDB submissions.
@@ -2262,7 +2281,8 @@ We can specify a distro target as well as a driver or package name.
     (0L, 2L)
 
 
-== Relations between bugs and HWDB submissions ==
+Relations between bugs and HWDB submissions
+-------------------------------------------
 
 We can query which owners of a device, or which people owning a device
 controlled by a given driver, are related to a set of bugs. We must
@@ -2310,7 +2330,7 @@ By setting the parameter subscribed_to_bug to True, we can also look
 for bug subscribers who own a given device.
 
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
-    <BugSubscription at ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True):
@@ -2342,9 +2362,11 @@ Foo Bar.
 Instead of passing a seqence of bug IDs, we can also specify one or
 more bug tags.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IBugTaskSet)
     >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
 
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> bugtasks = bugtask_set.search(
@@ -2420,7 +2442,7 @@ Owners of private submissions are only included if the optional parameter
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
-    <BugSubscription at ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):
@@ -2450,7 +2472,8 @@ Owners of private submissions are only included if the optional parameter
     Sample Person
 
 
-=== Searching for drivers instead of devices ===
+Searching for drivers instead of devices
+........................................
 
 We can also look for people using a given driver and being affected by a
 bug.
@@ -2474,7 +2497,7 @@ He is also listed, if he subscribes to bug 1.
 
     >>> bug_one.markUserAffected(foo_bar, False)
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
-    <BugSubscription at ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     driver_name='sd', bug_ids=[1], subscribed_to_bug=True):
     ...     print person.displayname
@@ -2664,7 +2687,7 @@ device owner is affected by the bug.
 We can also check for when the user is subscribed to the bug.
 
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
-    <BugSubscription ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], subscribed_to_bug=True):
@@ -2688,7 +2711,7 @@ Data from private submissions is not included by default.
 The owner of a private submission can see his or her submission.
 
     >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
-    <BugSubscription ...
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):

@@ -12,17 +12,24 @@ __all__ = [
     'ISeriesMixin',
     ]
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import exported
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.schema import Bool
 
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.declarations import exported
-
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary)
-from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IHasDrivers
+from lp.services.fields import (
+    PublicPersonChoice,
+    Summary,
+    )
 
 
 class SeriesStatus(DBEnumeratedType):

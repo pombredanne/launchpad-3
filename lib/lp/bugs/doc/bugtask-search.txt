@@ -4,13 +4,15 @@ BugTasks are usually searched through an IBugTarget's searchTasks()
 method, but they all delegate the search to IBugTaskSet.search(). That
 method accepts a single parameter; an BugTaskSearchParams instance.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> all_public = BugTaskSearchParams(user=None)
     >>> found_bugtasks = bugtask_set.search(all_public)
 
-    >>> from canonical.launchpad.database import BugTask
+    >>> from lp.bugs.model.bugtask import BugTask
     >>> all_public_bugtasks = BugTask.select(
     ...     "BugTask.bug = Bug.id AND Bug.private = false",
     ...     clauseTables=['Bug'])
@@ -25,7 +27,7 @@ person is responsible for. A person can be a bug supervisor for a product,
 a distribution, or a distribution source package. No Privileges Person
 isn't a bug supervisor, so no bugs are found for him:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> no_priv_bug_supervisor = BugTaskSearchParams(
     ...     user=None, bug_supervisor=no_priv)
@@ -37,7 +39,7 @@ isn't a bug supervisor, so no bugs are found for him:
 
 Firefox has a few bugs:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_bugs = firefox.searchTasks(all_public)
     >>> firefox_public_bugs = firefox_bugs.count()
@@ -48,7 +50,7 @@ Firefox has a few bugs:
 
 Ubuntu does too:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> all_public = BugTaskSearchParams(user=None)
     >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
@@ -67,7 +69,7 @@ and in particular, mozilla-firefox in Ubuntu has 'em:
 To get all related tasks to a person call searchTasks() on the person
 object:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> user = getUtility(IPersonSet).getByName('name16')
     >>> user_bugs = user.searchTasks(None, user=None)
     >>> user_bugs.count() > 0
@@ -92,13 +94,11 @@ and also series-targeted bugs:
 
 === Product bug supervisor ===
 
-If No Privileges is specified as Firefox' bug supervisor, searching for his
-bugs return all of Firefox' bugs.
+If No Privileges is specified as Firefox's bug supervisor, searching for his
+bugs return all of Firefox's bugs.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> firefox.setBugSupervisor(no_priv, no_priv)
-    >>> syncUpdate(firefox)
 
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count()
@@ -124,7 +124,6 @@ twice.
     True
 
     >>> ubuntu.setBugSupervisor(no_priv, no_priv)
-    >>> syncUpdate(ubuntu)
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True
@@ -148,7 +147,7 @@ For example, no Firefox bugs are found when searching for
 If we add a comment containing the search string to bug one, that bug
 will be returned by the search only if search_comments is True.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.newMessage(no_priv, 'No subject', 'some wordincomment')
     <Message at ...>
@@ -211,7 +210,6 @@ But if we put that word in the bug #4 description, it will be found.
     >>> bug_four.description += (
     ...     '\nThat happens pretty often with the Fnord Highlighter '
     ...     'extension installed.')
-    >>> syncUpdate(bug_four)
 
     >>> found_bugtasks = firefox.searchTasks(text_search)
     >>> for bugtask in found_bugtasks:
@@ -245,11 +243,11 @@ nominated_for parameter.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> warty = ubuntu.getSeries('warty')
 
-    >>> from canonical.launchpad.database import BugNomination
+    >>> from lp.bugs.model.bugnomination import BugNomination
     >>> print list(BugNomination.selectBy(distroseries=warty))
     []
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> nominated_for_warty = BugTaskSearchParams(
     ...     user=None, nominated_for=warty)
     >>> list(ubuntu.searchTasks(nominated_for_warty))
@@ -293,9 +291,11 @@ series.
 
 Add an Ubuntu bugtask for a bug that is confirmed upstream.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskImportance, BugTaskStatus)
-    >>> from lp.bugs.tests.test_bugtask_1 import (
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance,
+    ...     BugTaskStatus,
+    ...     )
+    >>> from lp.bugs.model.tests.test_bugtask import (
     ...     BugTaskSearchBugsElsewhereTest)
     >>> def bugTaskInfo(bugtask):
     ...     return '%i %i %s %s' % (
@@ -304,9 +304,8 @@ Add an Ubuntu bugtask for a bug that is confirmed upstream.
     >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
     >>> bug_twelve =  getUtility(IBugSet).get(12)
     >>> task_open_upstream = bugtask_set.createTask(
-    ...     bug=bug_twelve, distribution=ubuntu, owner=foo_bar,
-    ...     status=BugTaskStatus.NEW,
-    ...     importance=BugTaskImportance.MEDIUM)
+    ...     bug_twelve, foo_bar, ubuntu,
+    ...     status=BugTaskStatus.NEW, importance=BugTaskImportance.MEDIUM)
     >>> test_helper.assertBugTaskIsOpenUpstream(task_open_upstream)
 
 Pass the resolved_upstream flag to include only bugtasks linked to
@@ -381,7 +380,7 @@ of the single filters.
 
 The search filter can also return bugs that are related to CVE reports:
 
-    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from lp.bugs.interfaces.cve import ICveSet
     >>> def getCves(bugtask):
     ...     bugcve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
     ...     return bugcve.cve.sequence
@@ -400,7 +399,7 @@ The 'bug_commenter' parameter allows you to search bugtasks on which a certain
 person has commented. No Privileges Person hasn't commented on any bugs, so no
 bugs are found for him:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> import transaction
     >>> transaction.abort()
 
@@ -442,8 +441,8 @@ comments will produce eight found bug tasks (three for bug 1, five for bug 2).
 If No Privileges Person reports a bug and does not comment on it, that bug
 will not be included in the results returned by the bug commenter search.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.createBug(
@@ -490,7 +489,6 @@ for bugs of this milestone.
     >>> print bugTaskInfo(bugtask)
     2 1 Mozilla Firefox Firefox does not support SVG
     >>> bugtask.milestone = product_milestone
-    >>> syncUpdate(bugtask)
     >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
     >>> milestone_tasks = bugtask_set.search(params)
     >>> for bugtask in milestone_tasks:
@@ -511,9 +509,8 @@ same milestone...
 
     >>> firefox_1_0 = firefox.getSeries("1.0")
     >>> productseries_task = bugtask_set.createTask(
-    ...     owner=no_priv, bug=bug_one, productseries=firefox_1_0)
+    ...     bug_one, no_priv, firefox_1_0)
     >>> productseries_task.milestone = product_milestone
-    >>> syncUpdate(productseries_task)
     >>> print bugTaskInfo(productseries_task)
     40 1 Mozilla Firefox 1.0 Firefox does not support SVG
 
@@ -543,7 +540,7 @@ Bugs may also be targeted to partner packages.  First turn "cdrkit" into
 a partner package:
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> proxied_cdrkit = ubuntu.getSourcePackage("cdrkit")
     >>> cdrkit = removeSecurityProxy(proxied_cdrkit)
     >>> cdrkit.component = getUtility(IComponentSet)['partner']
@@ -558,7 +555,7 @@ It starts off with no bugs:
 
 We can file a bug against it and see that show up in a search:
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> bug = cdrkit.createBug(
     ...     CreateBugParams(owner=no_priv, title='Bug to be fixed in trunk',
     ...                     comment='Something'))
@@ -709,7 +706,7 @@ closed after a certain date.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> from canonical.launchpad.searchbuilder import greater_than
-    >>> product = factory.makeProductNoCommit()
+    >>> product = factory.makeProduct()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
     >>> bug_closed_a_day_ago = factory.makeBug(
@@ -736,10 +733,13 @@ closed after a certain date.
 It's possible to search for bugs with an attachment of a certain type.
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
-    ...     IMessageSet)
-    >>> product = factory.makeProductNoCommit()
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bugattachment import (
+    ...     BugAttachmentType,
+    ...     IBugAttachmentSet,
+    ...     )
+    >>> product = factory.makeProduct()
     >>> patch_bug = factory.makeBug(
     ...     product=product)
     >>> filecontent = 'Some diff data'
@@ -989,7 +989,7 @@ We can search for bugs having branches linked to them.
     4 2
     5 1
 
-Similary, we can search for bugs that do not have any linked branches.
+Similarly, we can search for bugs that do not have any linked branches.
 
     >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
     >>> search_params = BugTaskSearchParams(
@@ -1001,6 +1001,15 @@ Similary, we can search for bugs that do not have any linked branches.
     18 0
     20 0
     21 0
+
+And we can search for bugs linked to a specific branch.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=1)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id
+    4
+    5
 
 
 == Ordering search results ==
@@ -1037,7 +1046,7 @@ We mark bug #10 as a duplicate of bug #9.
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> bug_ten = getUtility(IBugSet).get(10)
-    >>> bug_ten.duplicateof = bug_nine
+    >>> bug_ten.markAsDuplicate(bug_nine)
     >>> flush_database_updates()
 
 Searching again reveals bug #9 at the top of the list, since it now has a duplicate.
@@ -1120,6 +1129,7 @@ If we add a patch attachment to bug 2 and bug 10, they are listed first.
 
     >>> patch_attachment_bug_2 = factory.makeBugAttachment(
     ...     bug=bug_two, is_patch=True)
+    >>> transaction.commit()
     >>> patch_attachment_bug_10 = factory.makeBugAttachment(
     ...     bug=bug_ten, is_patch=True)
     >>> params = BugTaskSearchParams(
@@ -1196,3 +1206,170 @@ relevant importance values.
     ...     importance=[BugTaskImportance.LOW, BugTaskImportance.MEDIUM]))
     4 Mozilla Firefox Reflow problems with complex page layouts NEW MEDIUM
     1 Mozilla Firefox Firefox does not support SVG NEW LOW
+
+
+== Searching by structural subscriber ==
+
+The 'structural_subscriber' search parameter allows one to search all the bug
+tasks to which a person is structurally subscribed. A person can be a
+structural subscriber for a product, a product series, a project, a milestone,
+a distribution, a distribution series and a distribution source package. No
+Privileges Person isn't a structural subscriber, so no bug tasks are found:
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv_struct_sub = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_struct_sub)
+    >>> found_bugtasks.count()
+    0
+
+Create a new person and make them a subscriber to all Firefox (product) bug
+reports.  Subsequently, we confirm that they are subscribed to all of the
+Firefox bug tasks.
+
+    >>> product_struct_subber = factory.makePerson(
+    ...     name='product-struct-subber')
+    >>> firefox.addBugSubscription(product_struct_subber,
+    ...     product_struct_subber)
+    <...StructuralSubscription object at ...>
+    >>> product_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=product_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(product_struct_sub_search)
+    >>> found_bugtasks.count()
+    7
+
+Create a new person and subscribe them to all of the bug tasks for a product
+series.  We then test to see that they are subscribed to all of the bug tasks
+for the product series in which they are interested.
+
+    >>> product_series = firefox.getSeries('1.0')
+    >>> all_targeted = BugTaskSearchParams(user=None, omit_targeted=False)
+    >>> series_tasks = product_series.searchTasks(all_targeted)
+    >>> series_struct_subber = factory.makePerson(
+    ...     name='series-struct-subber')
+    >>> product_series.addBugSubscription(series_struct_subber,
+    ...     series_struct_subber)
+    <...StructuralSubscription object at ...>
+    >>> series_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=series_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(series_struct_sub_search)
+    >>> found_bugtasks.count()
+    2
+
+Create a new product which will be a part of a project group.  A bug is
+created for the product which should then show up for structural subscribers
+of the project group.  Then a new person is created who is subscribed to all
+of the bug reports about the project. Search for bug tasks that this new
+person is subscribed.
+
+    >>> product = factory.makeProduct()
+    >>> bug = factory.makeBug(product=product)
+    >>> project = factory.makeProject()
+    >>> product.project = project
+    >>> project_struct_subber = factory.makePerson(
+    ...     name='project-struct-subber')
+    >>> project.addBugSubscription(project_struct_subber,
+    ...     project_struct_subber)
+    <...StructuralSubscription object at ...>
+    >>> project_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=project_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
+    >>> found_bugtasks.count()
+    1
+
+We will also subscribe this project subscriber to a product that is a part of
+the project and ensure that duplicate bug tasks do not appear in the search
+results.
+
+    >>> product2 = factory.makeProduct()
+    >>> bug = factory.makeBug(product=product2)
+    >>> product2.project = project
+    >>> product2.addBugSubscription(project_struct_subber,
+    ...     project_struct_subber)
+    <...StructuralSubscription object at ...>
+    >>> project_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=project_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
+    >>> found_bugtasks.count()
+    2
+
+Create a new person and subscribe them to all of bug tasks targeted to a
+milestone.  We then test to see that they are subscribed to all of the
+bug tasks for the milestone in which they are interested.
+
+    >>> milestone_struct_subber = factory.makePerson(
+    ...     name='milestone-struct-subber')
+    >>> product_milestone.addBugSubscription(milestone_struct_subber,
+    ...     milestone_struct_subber)
+    <...StructuralSubscription object at ...>
+    >>> milestone_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=milestone_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(milestone_struct_sub_search)
+    >>> found_bugtasks.count()
+    2
+
+Create another new person and subscribe them to all the Ubuntu bug reports -
+crazy I know.  Then test to see that this poor person is subscribed to all
+bugs with an Ubuntu bug task.
+
+    >>> distro_struct_subber = factory.makePerson(
+    ...     name='distro-struct-subber')
+    >>> ubuntu.addBugSubscription(distro_struct_subber,
+    ...     distro_struct_subber)
+    <...StructuralSubscription object at ...>
+    >>> distro_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=distro_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(distro_struct_sub_search)
+    >>> found_bugtasks.count()
+    5
+
+Create a new person who will only be subscribed to an Ubuntu series, which is
+something more reasonable than all of Ubuntu.  Test to ensure that this person
+is subscribed to all of the bug tasks about that distro series.
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> distro_series_struct_subber = factory.makePerson(
+    ...     name='distro-series-struct-subber')
+    >>> hoary.addBugSubscription(distro_series_struct_subber,
+    ...     distro_series_struct_subber)
+    <...StructuralSubscription object at ...>
+    >>> distro_series_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=distro_series_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(distro_series_struct_sub_search)
+    >>> all_targeted = BugTaskSearchParams(user=None, omit_targeted=False)
+    >>> hoary_bugtasks = hoary.searchTasks(all_targeted)
+    >>> found_bugtasks.count() == hoary_bugtasks.count()
+    True
+
+Create a new person and make them a subscriber to all Ubuntu Firefox (a
+distribution source package) bug reports.  Test to see that the new person is
+subscribed to all of the Ubuntu Firefox bug tasks.
+
+    >>> package_struct_subber = factory.makePerson(
+    ...     name='package-struct-subber')
+    >>> ubuntu_firefox.addBugSubscription(package_struct_subber,
+    ...     package_struct_subber)
+    <...StructuralSubscription object at ...>
+    >>> package_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=package_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)
+    >>> found_bugtasks.count()
+    1
+
+We'll also subscribe the person who is currently subscribed to a package's bug
+reports, package_struct_subber, to the bug reports of a product series to
+ensure that the structural_subscriber search is returning the set of both bug
+tasks.
+
+    >>> product_series.addBugSubscription(package_struct_subber,
+    ...     package_struct_subber)
+    <...StructuralSubscription object at ...>
+    >>> package_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=package_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)
+    >>> combined_bugtasks_count = (ubuntu_firefox_bugs.count () +
+    ...    series_tasks.count())
+    >>> found_bugtasks.count() == combined_bugtasks_count
+    True

@@ -21,22 +21,22 @@ The owner of Landscape Developers applies for a mailing list.
 He thinks for a second whether his mailing list is for Ubuntu or not.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'ubuntu-notice'))
-    Ubuntu mailing lists should not be created here. Create them
+    Ubuntu does not use Launchpad to host its mailing lists. Create them
     at lists.ubuntu.com instead.
     >>> print browser.getLink('lists.ubuntu.com')
     <Link text='lists.ubuntu.com' url='https://lists.ubuntu.com'>
 
-    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.getControl('Create new Mailing List').click()
     >>> print browser.title
     Landscape Developers in Launchpad
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    Mailing list requested and queued for approval.
+    The mailing list is being created and will be available for use in a few minutes.
 
-Once the mailing list is requested, the button to request its activation is
-not shown anymore.
+Once the mailing list is created, the button to create it is not shown
+anymore.
 
-    >>> browser.getControl('Apply for Mailing List')
+    >>> browser.getControl('Create new Mailing List')
     Traceback (most recent call last):
     ...
     LookupError: ...
@@ -45,7 +45,7 @@ not shown anymore.
     ...     """Find out if a mailing list is in an unusual state."""
     ...     tag = find_tag_by_id(contents, 'mailing_list_status_message')
     ...     if tag:
-    ...         return extract_text(tag.b)
+    ...         return extract_text(tag.strong)
     ...     else:
     ...         return ""
 
@@ -56,22 +56,11 @@ archive link yet.
     >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
     None
 
-Even after the list has been requested, it still cannot be used as the contact
+Even after the list has been created, it still cannot be used as the contact
 address until Mailman has acknowledged successful creation.
 
     >>> browser.reload()
-    >>> browser.getLink(url='+contactaddress').click()
-    >>> browser.getControl('The Launchpad mailing list')
-    Traceback (most recent call last):
-    ...
-    LookupError: ...
-
     >>> browser.getLink(url='+mailinglist').click()
-    >>> browser.getControl('Apply for Mailing List')
-    Traceback (most recent call last):
-    ...
-    LookupError: ...
-
     >>> print mailing_list_status_message(browser.contents)
     This team's mailing list will be available within a few minutes.
 
@@ -94,13 +83,6 @@ the archiver will display an informative message to that effect).
     ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/landscape-developers
 
-The archive link is clickable, though we won't click it because Mailman isn't
-running.
-
-    >>> browser.getLink('View archive')
-    <Link text='View archive'
-          url='http://lists.launchpad.dev/landscape-developers'>
-
 The team's overview page also displays the posting address.
 
     >>> print extract_text(
@@ -113,11 +95,6 @@ address.
     >>> from canonical.launchpad.testing.pages import strip_label
 
     >>> browser.getLink(url='+mailinglist').click()
-    >>> browser.getControl('Apply for Mailing List')
-    Traceback (most recent call last):
-    ...
-    LookupError: ...
-
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'mailing_list_not_contact_address'))
     The mailing list is not set as the team contact address. You can
@@ -136,15 +113,6 @@ The mailing list's configuration screen is also now available.
 
     >>> print browser.getLink(url='+mailinglist').url
     http://launchpad.dev/~landscape-developers/+mailinglist
-
-Although of course, it's not available to someone with no permission to
-manipulate the list.
-
-    >>> user_browser.open('http://launchpad.dev/~landscape-developers')
-    >>> user_browser.getLink(url='+mailinglist')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
 
 When the mailing list is not the team's contact address, the mailing
 list configuration screen displays a message to this effect.
@@ -191,7 +159,8 @@ An active mailing list can be deactivated. If the deactivated mailing
 list was the team contact method, the contact method will be changed
 to 'each user individually'.
 
-    >>> browser.open('http://launchpad.dev/~landscape-developers/+mailinglist')
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
     >>> browser.getLink(url='+contactaddress').click()
     >>> control = browser.getControl(name='field.contact_method')
@@ -199,7 +168,8 @@ to 'each user individually'.
     ['Each member individually']
 
     >>> act()
-    >>> browser.open('http://launchpad.dev/~landscape-developers/+mailinglist')
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+mailinglist')
     >>> print mailing_list_status_message(browser.contents)
     This team's mailing list has been deactivated.
 
@@ -247,7 +217,7 @@ and for private mailing lists for team members.
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> login('foo.bar@canonical.com')
     >>> bassists = mailinglists_helper.new_team('bassists')
-    >>> bassists.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> bassists.visibility = PersonVisibility.PRIVATE
     >>> bassists_list = mailinglists_helper.new_list_for_team(bassists)
     >>> logout()
 
@@ -258,8 +228,8 @@ The owner of the list can see archive link.
     ...     find_tag_by_id(user_browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/bassists
 
-Anonymous users cannot see the link, because they cannot even see the private
-membership team.
+Anonymous users cannot see the link, because they cannot even see the
+private team.
 
     >>> anon_browser.open('http://launchpad.dev/~bassists')
     Traceback (most recent call last):
@@ -314,18 +284,18 @@ to delete the archives of an INACTIVE list, this must be done manually.
     >>> team = mailinglists_helper.new_team('aardvarks')
     >>> logout()
 
-    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> def print_list_state(team_name='aardvarks'):
     ...     login('foo.bar@canonical.com')
     ...     mailing_list = getUtility(IMailingListSet).get(team_name)
     ...     print mailing_list.status.name
     ...     logout()
 
-The team owner cannot purge a mailing list.
+The team owner can see that he can purge or reactivate mailing list.
 
     >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> user_browser.getControl('Apply for Mailing List').click()
+    >>> user_browser.getControl('Create new Mailing List').click()
     >>> print user_browser.title
     Aardvarks in Launchpad
     >>> act()
@@ -343,13 +313,12 @@ The team owner cannot purge a mailing list.
 
     >>> user_browser.getLink(url='+mailinglist').click()
     >>> print purge_text(user_browser)
-    None
-
-But a Launchpad administrator can purge a list.
-
-    >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> print purge_text(admin_browser)
     You can purge this mailing list...
+
+    >>> user_browser.getControl('Reactivate this Mailing List')
+    <SubmitControl name='field.actions.reactivate_list' type='submit'>
+    >>> user_browser.getControl('Purge this Mailing List')
+    <SubmitControl name='field.actions.purge_list' type='submit'>
 
 Mailing list experts can also purge mailing lists.  Sample Person is
 trustworthy enough to become a mailing list expert, but not a Launchpad
@@ -357,12 +326,11 @@ administrator.  He's given mailing list expert authority so that he can
 purge mailing lists.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> test = person_set.getByName('name12')
-    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    >>> experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> ignored = experts.addMember(test, reviewer=experts.teamowner)
     >>> logout()
     >>> transaction.commit()
@@ -375,35 +343,12 @@ administrator, can purge a list.
     >>> print purge_text(expert_browser)
     You can purge this mailing list...
 
-Nobody can purge an active mailing list.
-
-    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> user_browser.getControl('Reactivate this Mailing List').click()
-    >>> act()
-    >>> print_list_state()
-    ACTIVE
-
-    >>> admin_browser.reload()
-    >>> expert_browser.reload()
-    >>> print find_tag_by_id(admin_browser.contents, 'mailing_list_purge')
-    None
-    >>> print find_tag_by_id(expert_browser.contents, 'mailing_list_purge')
-    None
-
-    >>> act()
-    >>> print_list_state()
-    ACTIVE
-    >>> admin_browser.reload()
-    >>> expert_browser.reload()
-    >>> print find_tag_by_id(admin_browser.contents, 'mailing_list_purge')
-    None
-    >>> print find_tag_by_id(expert_browser.contents, 'mailing_list_purge')
-    None
-
 A constructing, modified, updating, or deactivating or mod-failed list cannot
 be purged.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
+
     >>> def set_list_state(team_name, status):
     ...     login('foo.bar@canonical.com')
     ...     mailing_list = getUtility(IMailingListSet).get(team_name)
@@ -422,164 +367,18 @@ be purged.
     ...         expert_browser.open(url)
     ...         print purge_text(expert_browser)
 
-    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
-    >>> show_states(MailingListStatus.CONSTRUCTING,
-    ...             MailingListStatus.MODIFIED,
-    ...             MailingListStatus.UPDATING,
-    ...             MailingListStatus.DEACTIVATING,
-    ...             MailingListStatus.MOD_FAILED)
-    CONSTRUCTING
-    None
-    None
-    MODIFIED
-    None
-    None
-    UPDATING
-    None
-    None
-    DEACTIVATING
-    None
-    None
-    MOD_FAILED
-    None
-    None
-
-A declined or failed list can be purged.
-
-    >>> show_states(MailingListStatus.DECLINED, MailingListStatus.FAILED)
-    DECLINED
-    You can purge this mailing list...
-    You can purge this mailing list...
-    FAILED
-    You can purge this mailing list...
-    You can purge this mailing list...
-
 A purged list acts as if it doesn't even exist.
 
     >>> set_list_state('aardvarks', MailingListStatus.PURGED)
     >>> print_list_state()
     PURGED
     >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> admin_browser.getControl('Apply for Mailing List')
-    <SubmitControl name='field.actions.request_list_creation' type='submit'>
+    >>> admin_browser.getControl('Create new Mailing List')
+    <SubmitControl name='field.actions.create_list_creation' type='submit'>
     >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> expert_browser.getControl('Apply for Mailing List')
-    <SubmitControl name='field.actions.request_list_creation' type='submit'>
+    >>> expert_browser.getControl('Create new Mailing List')
+    <SubmitControl name='field.actions.create_list_creation' type='submit'>
 
-To the team owner, an inactive list can merely be reactivated, it still cannot
-be purged.
+The team owner can see that an inactive list can be reactivated or purged.
 
     >>> set_list_state('aardvarks', MailingListStatus.INACTIVE)
-
-    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> user_browser.getControl('Reactivate this Mailing List')
-    <SubmitControl name='field.actions.reactivate_list' type='submit'>
-    >>> print purge_text(user_browser)
-    None
-
-However to the LP administrator or mailing list expert, the list can also be
-purged.
-
-    >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> expert_browser.getControl('Reactivate this Mailing List')
-    <SubmitControl name='field.actions.reactivate_list' type='submit'>
-    >>> print purge_text(expert_browser)
-    You can purge this mailing list...
-
-    >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> admin_browser.getControl('Reactivate this Mailing List')
-    <SubmitControl name='field.actions.reactivate_list' type='submit'>
-    >>> print purge_text(admin_browser)
-    You can purge this mailing list...
-
-
-Actions on purged mailing lists
-===============================
-
-A mailing list expert purges the inactive list.
-
-    >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> expert_browser.getControl('Purge this Mailing List').click()
-
-Once purged, it's as if the mailing list never existed.
-
-    >>> print expert_browser.getLink('Mailing list archive')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-So now the team owner can re-register the mailing list.
-
-    >>> browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> browser.getControl('Apply for Mailing List').click()
-    >>> print browser.title
-    Aardvarks in Launchpad
-    >>> act()
-    >>> browser.open('http://launchpad.dev/~aardvarks')
-    >>> browser.getLink('View archive')
-    <Link text='View archive'
-          url='http://lists.launchpad.dev/aardvarks'>
-
-A team with an active mailing list cannot be renamed.
-
-    >>> user_browser.open('http://launchpad.dev/~aardvarks/+edit')
-    >>> user_browser.getControl(name='field.name').value = 'antelopes'
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.name'
-
-But once the mailing list has been purged, the team can be renamed.
-
-    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> user_browser.getControl('Deactivate this Mailing List').click()
-    >>> act()
-    >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> admin_browser.getControl('Purge this Mailing List').click()
-
-    >>> user_browser.open('http://launchpad.dev/~aardvarks/+edit')
-    >>> user_browser.getControl(name='field.name').value = 'antelopes'
-    >>> user_browser.getControl(name='field.displayname').value = 'Antelopes'
-    >>> user_browser.getControl('Save').click()
-    >>> print user_browser.title
-    Antelopes in Launchpad
-
-And of course, a mailing list for the newly renamed team can be created.
-
-    >>> user_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
-    >>> user_browser.getControl('Apply for Mailing List').click()
-    >>> print user_browser.title
-    Antelopes in Launchpad
-    >>> act()
-    >>> user_browser.open(user_browser.url) # A `reload` would resubmit.
-    >>> user_browser.getLink('View archive')
-    <Link text='View archive'
-          url='http://lists.launchpad.dev/antelopes'>
-
-A team with an active mailing list cannot be merged with another team.
-
-    >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
-    >>> admin_browser.getControl('Duplicated Team').value = 'antelopes'
-    >>> admin_browser.getControl('Target Team').value = 'guadamen'
-    >>> admin_browser.getControl('Merge').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    There is 1 error.
-    antelopes is associated with a Launchpad mailing list; we can't merge it.
-
-But if the mailing list for the team being merge has been purged, then the
-merge is allowed.
-
-    >>> user_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
-    >>> user_browser.getControl('Deactivate this Mailing List').click()
-    >>> act()
-    >>> admin_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
-    >>> admin_browser.getControl('Purge this Mailing List').click()
-
-    >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
-    >>> admin_browser.getControl('Duplicated Team').value = 'antelopes'
-    >>> admin_browser.getControl('Target Team').value = 'guadamen'
-    >>> admin_browser.getControl('Merge').click()
-    >>> admin_browser.getControl('Deactivate Members and Merge').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    Merge completed successfully.

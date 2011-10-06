@@ -1,4 +1,5 @@
-= Distribution Series =
+Distribution Series
+===================
 
 We can get a distroseries object via a distribution object in several ways:
 
@@ -60,8 +61,11 @@ For distroseries we publish a subset of its attributes.
     active_milestones_collection_link:
         u'http://.../ubuntu/hoary/active_milestones'
     all_milestones_collection_link: u'http://.../ubuntu/hoary/all_milestones'
+    architectures_collection_link: u'http://.../ubuntu/hoary/architectures'
+    bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     changeslist: u'hoary-changes@ubuntu.com'
+    component_names: [u'main', u'restricted']
     date_created: u'2006-10-16T18:31:43.483559+00:00'
     datereleased: None
     description: u'Hoary is the ...
@@ -70,18 +74,51 @@ For distroseries we publish a subset of its attributes.
     driver_link: None
     drivers_collection_link: u'http://.../ubuntu/hoary/drivers'
     fullseriesname: u'Ubuntu Hoary'
+    include_long_descriptions: True
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     name: u'hoary'
     official_bug_tags: []
-    owner_link: u'http://.../~mark'
+    owner_link: u'http://.../~ubuntu-team'
     parent_series_link: u'http://.../ubuntu/warty'
+    registrant_link: u'http://.../~mark'
     resource_type_link: ...
     self_link: u'http://.../ubuntu/hoary'
     status: u'Active Development'
+    suite_names:
+        [u'Release', u'Security', u'Updates', u'Proposed', u'Backports']
     summary: u'Hoary is the ...
     supported: False
     title: u'The Hoary Hedgehog Release'
     version: u'5.04'
+    web_link: u'http://launchpad.../ubuntu/hoary'
+
+
+Getting the previous series
+---------------------------
+
+In the beta version of the API the previous series is obtained via
+parent_series_link:
+
+    >>> current_series_beta = webservice.get(
+    ...     "/ubuntu/hoary", api_version="beta").jsonBody()
+    >>> current_series_beta["parent_series_link"]
+    u'http://.../ubuntu/warty'
+
+In the 1.0 version of the API the previous series is obtained via
+parent_series_link:
+
+    >>> current_series_1_0 = webservice.get(
+    ...     "/ubuntu/hoary", api_version="1.0").jsonBody()
+    >>> current_series_1_0["parent_series_link"]
+    u'http://.../ubuntu/warty'
+
+In the devel version of the API the previous series is obtained via
+parent_series_link:
+
+    >>> current_series_devel = webservice.get(
+    ...     "/ubuntu/hoary", api_version="devel").jsonBody()
+    >>> current_series_devel["previous_series_link"]
+    u'http://.../ubuntu/warty'
 
 
 Creating a milestone on the distroseries

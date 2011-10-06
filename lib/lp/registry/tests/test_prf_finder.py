@@ -4,24 +4,31 @@
 import logging
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 import unittest
-from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.schema import getFields
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer, reset_logging
-
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    reset_logging,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import (
-    IProductReleaseFile, UpstreamFileType)
-from lp.registry.scripts.productreleasefinder.filter import (
-    FilterPattern)
+    IProductReleaseFile,
+    UpstreamFileType,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.scripts.productreleasefinder.filter import FilterPattern
 from lp.registry.scripts.productreleasefinder.finder import (
-    extract_version, ProductReleaseFinder)
+    extract_version,
+    ProductReleaseFinder,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class FindReleasesTestCase(unittest.TestCase):
@@ -51,7 +58,7 @@ class FindReleasesTestCase(unittest.TestCase):
                          ('product2', ['filter3', 'filter4']))
 
 
-class GetFiltersTestCase(unittest.TestCase):
+class GetFiltersTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -86,6 +93,27 @@ class GetFiltersTestCase(unittest.TestCase):
         self.failUnless(evo_filters[0].match(
             'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/'
             'evolution-2.7.1.tar.gz'))
+
+    def test_getFilters_ignore_obsolete(self):
+        # Verify that obsolete series are ignnored.
+        ztm = self.layer.txn
+        ztm.begin()
+        product = self.factory.makeProduct(name="bunny")
+        active_series = product.getSeries('trunk')
+        active_series.releasefileglob  = 'http://eg.dom/bunny/trunk/*'
+        obsolete_series = self.factory.makeProductSeries(
+            product=product, name='rabbit')
+        obsolete_series.releasefileglob  = 'http://eg.dom/bunny/rabbit/*'
+        obsolete_series.status = SeriesStatus.OBSOLETE
+        ztm.commit()
+        logging.basicConfig(level=logging.CRITICAL)
+        prf = ProductReleaseFinder(ztm, logging.getLogger())
+        product_filters = prf.getFilters()
+        self.assertEqual(1, len(product_filters))
+        found_product, filters = product_filters[0]
+        self.assertEqual('bunny', found_product)
+        self.assertEqual(1, len(filters))
+        self.assertEqual(filters[0].key, 'trunk')
 
 
 class HandleProductTestCase(unittest.TestCase):
@@ -322,6 +350,17 @@ class ExtractVersionTestCase(unittest.TestCase):
         version = extract_version('bzr-1.15_beta1.tar.gz')
         self.assertEqual(version, '1.15-beta1')
 
+    def test_extract_version_ignores_uncommon_names(self):
+        """Unknown file extension is not included in version."""
+        # Bug #412015. If there is no filename extension that Launchpad
+        # understands after the version number, we have a dud match.
+        version = extract_version('bzr-1.15_beta1.tar.gz.asc')
+        self.assertEqual(version, None)
+        version = extract_version('bzr-1.15_beta1.tar.7z')
+        self.assertEqual(version, None)
+        version = extract_version('bzr-1.15_beta1.bckup')
+        self.assertEqual(version, None)
+
     def test_extract_version_debian_name(self):
         """Verify that the debian-style .orig suffix is handled."""
         version = extract_version('emacs-21.10.orig.tar.gz')
@@ -376,7 +415,3 @@ class ExtractVersionTestCase(unittest.TestCase):
         self.assertEqual(version, '0.2-rm-zomb-pre1')
         version = extract_version('warzone2100-2.0.5_rc1.tar.bz2')
         self.assertEqual(version, '2.0.5-rc1')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

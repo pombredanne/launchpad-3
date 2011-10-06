@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
 import stat
 
 from bzrlib import errors
@@ -15,9 +14,13 @@ from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryTransport
 from bzrlib.urlutils import escape
 
-from lp.codehosting.vfs.branchfs import LaunchpadServer
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import branch_id_alias
+from lp.codehosting.inmemory import (
+    InMemoryFrontend,
+    XMLRPCWrapper,
+    )
+from lp.codehosting.vfs.branchfs import LaunchpadServer
 
 
 class TestFilesystem(TestCaseWithTransport):
@@ -30,10 +33,10 @@ class TestFilesystem(TestCaseWithTransport):
         self.disable_directory_isolation()
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        endpoint = XMLRPCWrapper(frontend.getFilesystemEndpoint())
+        endpoint = XMLRPCWrapper(frontend.getCodehostingEndpoint())
         self.requester = self.factory.makePerson()
         self._server = LaunchpadServer(
-            endpoint, self.requester.id, MemoryTransport(), MemoryTransport())
+            endpoint, self.requester.id, MemoryTransport())
         self._server.start_server()
         self.addCleanup(self._server.stop_server)
 
@@ -136,9 +139,9 @@ class TestFilesystem(TestCaseWithTransport):
         control_file = transport.get_bytes(
             '~%s/%s/.bzr/control.conf'
             % (self.requester.name, product.name))
+        stacked_on = IBranchTarget(product).default_stacked_on_branch
         self.assertEqual(
-            'default_stack_on = /%s'
-            % IBranchTarget(product).default_stacked_on_branch.unique_name,
+            'default_stack_on = %s' % branch_id_alias(stacked_on),
             control_file.strip())
 
     def test_can_open_product_control_dir(self):
@@ -304,7 +307,3 @@ class TestFilesystem(TestCaseWithTransport):
         # returned_path is equivalent but not equal to escaped_path.
         [returned_path] = list(transport.list_dir('.'))
         self.assertEqual(content, transport.get_bytes(returned_path))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

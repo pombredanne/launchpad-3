@@ -9,9 +9,11 @@ __all__ = [
     ]
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.interfaces import (
-    IDistribution, IProduct, QuestionAction)
+from lp.answers.enums import QuestionAction
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
+
 
 def assignKarmaUsingQuestionContext(person, question, actionname):
     """Assign Karma with the given actionname to the given person.
@@ -52,7 +54,7 @@ QuestionAction2KarmaAction = {
     QuestionAction.SETSTATUS: None,
     QuestionAction.COMMENT: 'questioncommentadded',
     QuestionAction.ANSWER: 'questiongaveanswer',
-    QuestionAction.CONFIRM: None,# Handled in giveAnswer() and confirmAnswer()
+    QuestionAction.CONFIRM: None,
     QuestionAction.EXPIRE: None,
     QuestionAction.REJECT: 'questionrejected',
     QuestionAction.REOPEN: 'questionreopened',
@@ -69,10 +71,10 @@ def question_comment_added(questionmessage, event):
             questionmessage.owner, question, karma_action)
 
 
-# XXX flacoste 2007-07-13 bug=125849:
-# This should go away once bug #125849 is fixed.
 def get_karma_context_parameters(context):
     """Return the proper karma context parameters based on the object."""
+    # XXX flacoste 2007-07-13 bug=125849:
+    # This should go away once bug #125849 is fixed.
     params = dict(product=None, distribution=None)
     if IProduct.providedBy(context):
         params['product'] = context
@@ -99,4 +101,3 @@ def faq_edited(faq, event):
     context = get_karma_context_parameters(faq.target)
     if old_faq.content != faq.content or old_faq.title != faq.title:
         user.assignKarma('faqedited', **context)
-

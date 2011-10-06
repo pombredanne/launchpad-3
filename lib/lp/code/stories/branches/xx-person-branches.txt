@@ -1,4 +1,3 @@
-============================
 Person Views of Branch Lists
 ============================
 
@@ -9,7 +8,7 @@ First, check that the condensed branch listing page works:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> print browser.title
-    Branches : Sample Person
+    Code : Sample Person
 
 The heading in the main content is the same as the page title text.
 
@@ -19,7 +18,7 @@ The heading in the main content is the same as the page title text.
 
 
 Default view for a person on code root site
-===========================================
+-------------------------------------------
 
 The default view for a person on the code root site is the normal branch
 listing view for that person.
@@ -33,8 +32,21 @@ message.
     There are no branches related to Daniel Silverstone in Launchpad today.
 
 
+Junk branches
+-------------
+
+On the user's own code page, they will see directions on pushing a branch.
+
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'junk-branch-directions'))
+    You can push (upload) personal branches
+    (those not related to a project) with the following command:
+    bzr push lp:~name12/+junk/BRANCHNAME
+
+
 Owned Branches
-==============
+--------------
 
 A person's owned branches are shown on their code application overview page.
 
@@ -47,14 +59,14 @@ A person's owned branches are shown on their code application overview page.
 
 
 Registered Branches
-===================
+-------------------
 
 There is also a link which points to the registered branches page.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getLink('registered').click()
     >>> print browser.title
-    Registered : Branches : Sample Person
+    Registered : Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -63,7 +75,7 @@ There is also a link which points to the registered branches page.
 
 
 Subscribed branches
-===================
+-------------------
 
 From the persons main listing page, there is also a link to subscribed
 branches.
@@ -71,7 +83,7 @@ branches.
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getLink('subscribed').click()
     >>> print browser.title
-    Subscribed : Branches : Sample Person
+    Subscribed : Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -80,7 +92,7 @@ branches.
 
 
 Person branch summary
-=====================
+---------------------
 
 Each of the person branch listing pages has a brief summary at the
 top of the page with some branch counts.  These also contain the links
@@ -99,19 +111,41 @@ The summary is shown.
 
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
-    >>> print_tag_with_id(eric_browser.contents, 'page-summary')
-    1 owned branch, 1 registered branch, 1 subscribed branch
-    0 active reviews or unmerged proposals
+    >>> print_tag_with_id(eric_browser.contents, 'portlet-person-codesummary')
+    1 owned branch
+    1 registered branch
+    1 subscribed branch
+    0 active reviews
 
 Now we'll create another branch, and unsubscribe the owner from it.
 
     >>> login(ANONYMOUS)
     >>> b2 = factory.makeAnyBranch(owner=eric)
-    >>> ignored = b2.unsubscribe(eric)
+    >>> ignored = b2.unsubscribe(eric, eric)
     >>> logout()
 
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
-    >>> print_tag_with_id(eric_browser.contents, 'page-summary')
-    2 owned branches, 2 registered branches, 1 subscribed branch
-    0 active reviews or unmerged proposals
+    >>> print_tag_with_id(
+    ...     eric_browser.contents, 'portlet-person-codesummary')
+    2 owned branches
+    2 registered branches
+    1 subscribed branch
+    0 active reviews
 
+
+Teams do not show registered branches
+-------------------------------------
+
+For a team, showing registered branches does not make sense, so that
+line is omitted.
+
+    >>> browser.open('http://code.launchpad.dev/~landscape-developers')
+    >>> print_tag_with_id(
+    ...     browser.contents, 'portlet-person-codesummary')
+    1 owned branch
+    2 subscribed branches
+    0 active reviews
+
+    >>> browser.getLink('registered').click()
+    Traceback (most recent call last):
+    LinkNotFoundError

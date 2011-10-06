@@ -6,6 +6,7 @@ from bazaar branches in Launchpad. It operates either on a product series or
 sourcepackagename within a distroseries but the productseries is the only use
 case in this scenario.
 
+    >>> from lp.translations.model.approver import TranslationBranchApprover
     >>> series = factory.makeProductSeries()
 
 The goal of the approval process is to match the files in the import queue
@@ -15,47 +16,6 @@ visible) templates are taken into account.
 The matching is done by path first and then by template name if the path did
 not match. The template name of a queue entry is derived from the translation
 domain which in turn is derived from the path itself.
-TranslationBranchApprover provides static methods for these conversions. They
-also know how to detect xpi templates and generic template file names and
-will return an empty string if no conversion was possible. Here are some
-examples for makeDomain.
-
-    >>> from lp.translations.model.translationbranchapprover import (
-    ...     TranslationBranchApprover)
-    >>> print TranslationBranchApprover.makeDomain("my_domain.pot")
-    my_domain
-    >>> print TranslationBranchApprover.makeDomain("po/my_domain.pot")
-    my_domain
-    >>> print TranslationBranchApprover.makeDomain("messages.pot")
-    <BLANKLINE>
-    >>> print TranslationBranchApprover.makeDomain("po/messages.pot")
-    <BLANKLINE>
-    >>> print TranslationBranchApprover.makeDomain("my_domain/messages.pot")
-    my_domain
-    >>> print TranslationBranchApprover.makeDomain("po/my_domain/messages.pot")
-    my_domain
-    >>> print TranslationBranchApprover.makeDomain("my_module/po/messages.pot")
-    my_module
-    >>> print TranslationBranchApprover.makeDomain("en-US.xpi")
-    <BLANKLINE>
-    >>> print TranslationBranchApprover.makeDomain("my_domain/en-US.xpi")
-    my_domain
-
-The conversion from domain to template name currently simply replaces
-underscores (_) with dashes (-). It could also strip off version information
-of the domain but that is still subject to discussion.
-
-    >>> print TranslationBranchApprover.makeName("my_domain")
-    my-domain
-    >>> print TranslationBranchApprover.makeName("my-domain")
-    my-domain
-
-Finally, the convenience method makeNameFromPath chains the first two
-methods.
-
-    >>> print TranslationBranchApprover.makeNameFromPath(
-    ...     "po/my_domain/messages.pot")
-    my-domain
 
 The name is used for matching instead of the translation domain because the
 domain may change when the source tree is updated to a new version as

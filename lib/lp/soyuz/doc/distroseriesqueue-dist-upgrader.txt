@@ -1,208 +1,213 @@
-== DIST-UPGRADE upload ==
+DIST-UPGRADE upload
+===================
 
 This test will check the upload of dist-upgrade tarballs
 
-  >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
-  >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger)
+    >>> from lp.archiveuploader.nascentupload import NascentUpload
+    >>> from lp.archiveuploader.tests import datadir, getPolicy
 
-  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-  >>> breezy_autotest = ubuntutest['breezy-autotest']
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> breezy_autotest = ubuntutest['breezy-autotest']
 
-  >>> from canonical.launchpad.ftests import import_public_test_keys
-  >>> import_public_test_keys()
+    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> import_public_test_keys()
 
 Login as an admin.
 
-  >>> login('foo.bar@canonical.com')
+    >>> login('foo.bar@canonical.com')
 
 First, test the rejection of a missapplied changesfile name:
 
-  >>> sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntutest', distroseries=None)
+    >>> sync_policy = getPolicy(
+    ...     name='sync', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload(
-  ...     datadir('dist-upgrader/dist-upgrader_20060302.0120.changes'),
-  ...     sync_policy, mock_logger)
-  DEBUG: Changes file can be unsigned.
-  >>> upload.process()
-  Traceback (most recent call last):
-  ...
-  EarlyReturnUploadError: An error occurred that prevented further processing.
+    >>> from lp.services.log.logger import FakeLogger
+    >>> upload = NascentUpload.from_changesfile_path(
+    ...     datadir('dist-upgrader/dist-upgrader_20060302.0120.changes'),
+    ...     sync_policy, FakeLogger())
+    DEBUG dist-upgrader_20060302.0120.changes can be unsigned.
+    >>> upload.process()
+    Traceback (most recent call last):
+    ...
+    EarlyReturnUploadError: An error occurred that prevented further
+    processing.
 
 Now do a proper upload into the system.
 
-  >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntutest', distroseries=None)
+    >>> insecure_policy = getPolicy(
+    ...     name='insecure', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload(
-  ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
-  ...     insecure_policy, mock_logger)
-  DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
+    >>> upload = NascentUpload.from_changesfile_path(
+    ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
+    ...     insecure_policy, FakeLogger())
+    DEBUG Verifying signature on dist-upgrader_20060302.0120_all.changes
 
-  >>> upload.process()
-  DEBUG: Beginning processing.
-  DEBUG: Verifying the changes file.
-  DEBUG: Verifying files in upload.
-  DEBUG: Single Custom Upload detected.
-  DEBUG: Finished checking upload.
+    >>> upload.process()
+    DEBUG Beginning processing.
+    DEBUG Verifying the changes file.
+    DEBUG Verifying files in upload.
+    DEBUG Single Custom Upload detected.
+    DEBUG Finished checking upload.
 
 It was not rejected.
 
-  >>> upload.is_rejected
-  False
+    >>> upload.is_rejected
+    False
 
-  >>> success = upload.do_accept()
-  DEBUG: Creating queue entry
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
-  DEBUG: Sent a mail:
-  ...
-  DEBUG: signer of the above package.
+    >>> success = upload.do_accept()
+    DEBUG Creating queue entry
+    DEBUG Setting it to ACCEPTED
+    DEBUG Building recipients list.
+    DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+    DEBUG Sent a mail:
+    ...
+    DEBUG signer of the above package.
 
 And all things worked.
 
-  >>> success
-  True
+    >>> success
+    True
 
-  >>> print upload.rejection_message
+    >>> print upload.rejection_message
 
 We need to commit the transaction to be able to use the librarian files.
 XXX: flush_database_updates() shouldn't be needed. This seems to be
 Bug 3989 -- StuarBishop 20060713
 
-  >>> flush_database_updates()
-  >>> transaction.commit()
-
+    >>> flush_database_updates()
+    >>> transaction.commit()
 
 Let's check how queue tool handles dist_upgrader uploads:
 
-  >>> import subprocess
-  >>> import os
-  >>> import sys
-  >>> from canonical.config import config
+    >>> import subprocess
+    >>> import os
+    >>> import sys
+    >>> from canonical.config import config
 
-  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-  ...                       "queue")
+    >>> script = os.path.join(
+    ...     config.root, "scripts", "ftpmaster-tools", "queue")
 
 
 Rejecting item from accepted queue (very unlikely, normally it would
 be rejecting from unapproved or new, fix bug #54649):
 
-  >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
-  ...                             "-s", "breezy-autotest", "reject", "dist",
-  ...                             "-d", "ubuntutest", "-M"],
-  ...                            stderr=subprocess.PIPE,
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue accepted
-  ...
-  Rejecting dist-upgrader_20060302.0120_all.tar.gz
-  ...
+    >>> process = subprocess.Popen([
+    ...     sys.executable, script,
+    ...     "-Q", "accepted",
+    ...     "-s", "breezy-autotest", "reject", "dist",
+    ...     "-d", "ubuntutest", "-M"],
+    ...     stderr=subprocess.PIPE,
+    ...     stdout=subprocess.PIPE)
+    >>> stdout, stderr = process.communicate()
+    >>> process.returncode
+    0
+    >>> print stdout
+    Initializing connection to queue accepted
+    ...
+    Rejecting dist-upgrader_20060302.0120_all.tar.gz
+    ...
 
 
 Accepting from rejected queue (ressurecting an reject upload is also
 very unlikely, however it's only for testing purpose, fix #54649):
 
-  >>> process = subprocess.Popen([sys.executable, script, "-Q", "rejected",
-  ...                             "-s", "breezy-autotest", "accept", "dist",
-  ...                             "-d", "ubuntutest", "-M"],
-  ...                            stderr=subprocess.PIPE,
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue rejected
-  ...
-  Accepting dist-upgrader_20060302.0120_all.tar.gz
-  ...
+    >>> process = subprocess.Popen([sys.executable, script, "-Q", "rejected",
+    ...                             "-s", "breezy-autotest", "accept", "dist",
+    ...                             "-d", "ubuntutest", "-M"],
+    ...                            stderr=subprocess.PIPE,
+    ...                            stdout=subprocess.PIPE)
+    >>> stdout, stderr = process.communicate()
+    >>> process.returncode
+    0
+    >>> print stdout
+    Initializing connection to queue rejected
+    ...
+    Accepting dist-upgrader_20060302.0120_all.tar.gz
+    ...
 
 
 Let's use the script to fetch the dist-upgrader upload:
 
-  >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
-  ...                             "-s", "breezy-autotest", "fetch", "dist",
-  ...                             "-d", "ubuntutest"],
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue accepted
-  Running: "fetch dist"
-  Fetching ubuntutest/breezy-autotest (ACCEPTED) 1/1
-  ---------------------------------------------------------------------------
-  Constructing dist-upgrader_20060302.0120_all.changes
-  Constructing dist-upgrader_20060302.0120_all.tar.gz
-  ---------------------------------------------------------------------------
-                                                                 1/1 total
-  <BLANKLINE>
+    >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
+    ...                             "-s", "breezy-autotest", "fetch", "dist",
+    ...                             "-d", "ubuntutest"],
+    ...                            stdout=subprocess.PIPE)
+    >>> stdout, stderr = process.communicate()
+    >>> process.returncode
+    0
+    >>> print stdout
+    Initializing connection to queue accepted
+    Running: "fetch dist"
+    Fetching ubuntutest/breezy-autotest (ACCEPTED) 1/1
+    ---------------------------------------------------------------------------
+    Constructing dist-upgrader_20060302.0120_all.changes
+    Constructing dist-upgrader_20060302.0120_all.tar.gz
+    ---------------------------------------------------------------------------
+                                                                   1/1 total
+    <BLANKLINE>
 
 
 Check if the files were written:
 
-  >>> os.path.exists('dist-upgrader_20060302.0120_all.changes')
-  True
-  >>> os.path.exists('dist-upgrader_20060302.0120_all.tar.gz')
-  True
+    >>> os.path.exists('dist-upgrader_20060302.0120_all.changes')
+    True
+    >>> os.path.exists('dist-upgrader_20060302.0120_all.tar.gz')
+    True
 
 Cleanup the mess:
 
-  >>> os.remove('dist-upgrader_20060302.0120_all.changes')
-  >>> os.remove('dist-upgrader_20060302.0120_all.tar.gz')
+    >>> os.remove('dist-upgrader_20060302.0120_all.changes')
+    >>> os.remove('dist-upgrader_20060302.0120_all.tar.gz')
 
 
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
-  >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=PackageUploadStatus.ACCEPTED)[0]
-  >>> queue_item.customfiles[0].libraryfilealias.filename
-  u'dist-upgrader_20060302.0120_all.tar.gz'
+    >>> from lp.soyuz.enums import PackageUploadStatus
+    >>> queue_item = breezy_autotest.getPackageUploads(
+    ...      status=PackageUploadStatus.ACCEPTED)[0]
+    >>> queue_item.customfiles[0].libraryfilealias.filename
+    u'dist-upgrader_20060302.0120_all.tar.gz'
 
 Do the publish, i.e process the CustomUpload writing the tarball in
 the archive.  The umask must be 022 in order to perform the upload.
 
-  >>> old_mask = os.umask(022)
-  >>> pub_records = queue_item.realiseUpload()
-  >>> print '%03o' % os.umask(old_mask)
-  022
+    >>> old_mask = os.umask(022)
+    >>> pub_records = queue_item.realiseUpload()
+    >>> print '%03o' % os.umask(old_mask)
+    022
 
 Check what was published in the target directory:
 
-  >>> import os
-  >>> archive_dir = '/var/tmp/archive/'
-  >>> upgrade_dir = 'ubuntutest/dists/breezy-autotest/main/dist-upgrader-all'
-  >>> target_dir = os.path.join(archive_dir, upgrade_dir)
-  >>> content = sorted(os.listdir(target_dir))
-  >>> content
-  ['20060302.0120', 'current']
+    >>> import os
+    >>> archive_dir = '/var/tmp/archive/'
+    >>> upgrade_dir = (
+    ...     'ubuntutest/dists/breezy-autotest/main/dist-upgrader-all')
+    >>> target_dir = os.path.join(archive_dir, upgrade_dir)
+    >>> content = sorted(os.listdir(target_dir))
+    >>> content
+    ['20060302.0120', 'current']
 
 Check the content of the directories published and the integrity of
 the 'current' symbolic link.
 
-  >>> real_path = os.path.join(target_dir, '20060302.0120')
-  >>> current_path = os.path.join(target_dir, 'current')
+    >>> real_path = os.path.join(target_dir, '20060302.0120')
+    >>> current_path = os.path.join(target_dir, 'current')
 
-  >>> os.path.islink(current_path)
-  True
+    >>> os.path.islink(current_path)
+    True
 
-  >>> os.path.join(target_dir, os.readlink(current_path)) == real_path
-  True
+    >>> os.path.join(target_dir, os.readlink(current_path)) == real_path
+    True
 
-  >>> sorted(os.listdir(real_path))
-  ['ReleaseAnouncement', 'dapper.tar.gz']
+    >>> sorted(os.listdir(real_path))
+    ['ReleaseAnouncement', 'dapper.tar.gz']
 
 
-== Pre-publication version checks ==
+Pre-publication version checks
+------------------------------
 
 Dist-Upgrader version is checked before installing any files in the
 archive.
@@ -211,121 +216,122 @@ If any problem happen during the custom publication, the error will be
 printed and the queue item will remain in ACCEPTED queue waiting for
 manual intervention.
 
-  >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntutest', distroseries=None)
+    >>> insecure_policy = getPolicy(
+    ...     name='insecure', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload(
-  ...     datadir('dist-upgrader/dist-upgrader_20070219.1234_all.changes'),
-  ...     insecure_policy, mock_logger)
-  DEBUG: Verifying signature on dist-upgrader_20070219.1234_all.changes
+    >>> upload = NascentUpload.from_changesfile_path(
+    ...     datadir('dist-upgrader/dist-upgrader_20070219.1234_all.changes'),
+    ...     insecure_policy, FakeLogger())
+    DEBUG Verifying signature on dist-upgrader_20070219.1234_all.changes
 
-  >>> upload.process()
-  DEBUG: Beginning processing.
-  DEBUG: Verifying the changes file.
-  DEBUG: Verifying files in upload.
-  DEBUG: Single Custom Upload detected.
-  DEBUG: Finished checking upload.
+    >>> upload.process()
+    DEBUG Beginning processing.
+    DEBUG Verifying the changes file.
+    DEBUG Verifying files in upload.
+    DEBUG Single Custom Upload detected.
+    DEBUG Finished checking upload.
 
-  >>> success = upload.do_accept()
-  DEBUG: Creating queue entry
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
-  DEBUG: Sent a mail:
-  ...
-  DEBUG: signer of the above package.
+    >>> success = upload.do_accept()
+    DEBUG Creating queue entry
+    DEBUG Setting it to ACCEPTED
+    DEBUG Building recipients list.
+    DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+    DEBUG Sent a mail:
+    ...
+    DEBUG signer of the above package.
 
 Make the just-uploaded librarian file visible:
 
-  >>> transaction.commit()
+    >>> transaction.commit()
 
 Check current archive status:
 
-  >>> previous_content = sorted(os.listdir(target_dir))
-  >>> previous_content
-  ['20060302.0120', 'current']
+    >>> previous_content = sorted(os.listdir(target_dir))
+    >>> previous_content
+    ['20060302.0120', 'current']
 
 Publish the custom upload:
 
-  >>> pub_records = upload.queue_root.realiseUpload(mock_logger)
-  DEBUG: Publishing custom dist-upgrader_20070219.1234_all.tar.gz to ubuntutest/breezy-autotest
-  ERROR: Queue item ignored: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': ('Bad upstream version format', 'foobar')
+    >>> pub_records = upload.queue_root.realiseUpload(FakeLogger())
+    DEBUG Publishing custom dist-upgrader_20070219.1234_all.tar.gz to
+    ubuntutest/breezy-autotest
+    ERROR Queue item ignored: bad version found in
+    '.../dist-upgrader_20070219.1234_all.tar.gz': Could not parse version: Bad
+    upstream version format foobar
 
 Check if the queue item remained in ACCEPTED and not cruft was
 inserted in the archive:
 
-  >>> upload.queue_root.status.name
-  'ACCEPTED'
+    >>> upload.queue_root.status.name
+    'ACCEPTED'
 
-  >>> content = sorted(os.listdir(target_dir))
-  >>> content == previous_content
-  True
+    >>> content = sorted(os.listdir(target_dir))
+    >>> content == previous_content
+    True
 
 Remove the directory to keep the test working.
 
-  >>> import shutil
-  >>> shutil.rmtree(target_dir)
+    >>> import shutil
+    >>> shutil.rmtree(target_dir)
 
 
-== Dist Upgrader to PPA ==
+Dist Upgrader to PPA
+--------------------
 
 Custom uploads for PPAs should works as expected, i.e, publish its
 files in the respective PPA location.
 
-  >>> from lp.registry.interfaces.person import IPersonSet
-  >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-  >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
-  >>> beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-  >>> admin = getUtility(ILaunchpadCelebrities).admin
-  >>> name16 = getUtility(IPersonSet).getByName("name16")
-  >>> ignored = beta_testers.addMember(name16, admin)
+    >>> name16 = getUtility(IPersonSet).getByName("name16")
+    >>> foobar_archive = getUtility(IArchiveSet).new(
+    ...     distribution=ubuntutest, purpose=ArchivePurpose.PPA,
+    ...     owner=name16)
 
-  >>> foobar_archive = getUtility(IArchiveSet).new(
-  ...     distribution=ubuntutest, purpose=ArchivePurpose.PPA,
-  ...     owner=name16)
+    >>> insecure_policy.archive = foobar_archive
 
-  >>> insecure_policy.archive = foobar_archive
+    >>> ppa_upload = NascentUpload.from_changesfile_path(
+    ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
+    ...     insecure_policy, FakeLogger())
+    DEBUG Verifying signature on dist-upgrader_20060302.0120_all.changes
 
-  >>> ppa_upload = NascentUpload(
-  ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
-  ...     insecure_policy, mock_logger)
-  DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
+    >>> ppa_upload.process()
+    DEBUG Beginning processing.
+    DEBUG Verifying the changes file.
+    DEBUG Verifying files in upload.
+    DEBUG Single Custom Upload detected.
+    DEBUG Finished checking upload.
 
-  >>> ppa_upload.process()
-  DEBUG: Beginning processing.
-  DEBUG: Verifying the changes file.
-  DEBUG: Verifying files in upload.
-  DEBUG: Single Custom Upload detected.
-  DEBUG: Finished checking upload.
+    >>> success = ppa_upload.do_accept()
+    DEBUG Creating queue entry
+    DEBUG Setting it to ACCEPTED
+    DEBUG Building recipients list.
+    DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+    DEBUG Sent a mail:
+    ...
+    DEBUG PPA package.
 
-  >>> success = ppa_upload.do_accept()
-  DEBUG: Creating queue entry
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
-  DEBUG: Sent a mail:
-  ...
-  DEBUG: PPA package.
-
-  >>> transaction.commit()
+    >>> transaction.commit()
 
 The upload task requires that the umask be 022, otherwise things will end up
 with the wrong permission.
 
-  >>> old_mask = os.umask(022)
-  >>> pub_records = ppa_upload.queue_root.realiseUpload(mock_logger)
-  DEBUG: Publishing custom dist-upgrader_20060302.0120_all.tar.gz to ubuntutest/breezy-autotest
-  >>> ignore = os.umask(old_mask)
+    >>> old_mask = os.umask(022)
+    >>> pub_records = ppa_upload.queue_root.realiseUpload(FakeLogger())
+    DEBUG Publishing custom dist-upgrader_20060302.0120_all.tar.gz to
+    ubuntutest/breezy-autotest
+    >>> ignore = os.umask(old_mask)
 
-  >>> ppa_root = config.personalpackagearchive.root
-  >>> ppa_dir = os.path.join(ppa_root, 'name16', 'ppa')
-  >>> target_dir = os.path.join(ppa_dir, upgrade_dir)
-  >>> content = sorted(os.listdir(target_dir))
-  >>> content
-  ['20060302.0120', 'current']
+    >>> ppa_root = config.personalpackagearchive.root
+    >>> ppa_dir = os.path.join(ppa_root, 'name16', 'ppa')
+    >>> target_dir = os.path.join(ppa_dir, upgrade_dir)
+    >>> content = sorted(os.listdir(target_dir))
+    >>> content
+    ['20060302.0120', 'current']
 
 Remove the directory to keep the test working.
 
-  >>> import shutil
-  >>> shutil.rmtree(target_dir)
+    >>> import shutil
+    >>> shutil.rmtree(target_dir)

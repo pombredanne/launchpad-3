@@ -13,9 +13,19 @@ __all__ = [
     'PackagingType',
     ]
 
-from zope.schema import Choice, Datetime, Int
-from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.role import IHasOwner
@@ -83,6 +93,15 @@ class IPackaging(IHasOwner):
 
     sourcepackage = Attribute(_("A source package that is constructed from "
         "the distroseries and sourcepackagename of this packaging record."))
+
+    def userCanDelete():
+        """True, if the current user is allowed to delete this packaging,
+        else False.
+
+        People who created the packaging can delete it, as well as
+        people with upload rights for a source package, distribution
+        owners, members of the registry team and LP admin team.
+        """
 
 
 class IPackagingUtil(Interface):

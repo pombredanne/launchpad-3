@@ -10,8 +10,10 @@ Let's look at a bug that has no attachments:
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugAttachment, IBugSet, IMessageSet, IPersonSet)
+    >>> from lp.services.messages.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugattachment import IBugAttachment
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
     >>> bug_one.attachments.count()
@@ -211,7 +213,8 @@ must have at least one.
 
 If the request contains no attachment description the filename should be used.
 
-    >>> filecontent = StringIO("No, sir. That's one bonehead name, but that ain't me any more.")
+    >>> filecontent = StringIO(
+    ...     "No, sir. That's one bonehead name, but that ain't me any more.")
     >>> filecontent.filename = 'RA.txt'
     >>> add_request = LaunchpadTestRequest(
     ...     method="POST",
@@ -226,14 +229,13 @@ If the request contains no attachment description the filename should be used.
     Attachment added: u'RA.txt'
     >>> len(add_comment_view.errors)
     0
-    >>> bug_one.attachments[-1].title
+    >>> bug_one.attachments[bug_one.attachments.count()-1].title
     u'RA.txt'
-
 
 Since the ObjectCreatedEvent was generated, a notification about the
 attachment was added.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.text_contents
     ** Attachment added: "RA.txt"
@@ -259,9 +261,10 @@ Let's try uploading a file with some weird characters in them:
     Attachment added: u'fo\xf6 bar'
     >>> len(add_comment_view.errors)
     0
-    >>> bug_one.attachments[-1].libraryfile.filename
+    >>> attachments = bug_one.attachments
+    >>> attachments[bug_one.attachments.count()-1].libraryfile.filename
     u'fo\xf6 bar'
-    >>> bug_one.attachments[-1].libraryfile.http_url
+    >>> attachments[bug_one.attachments.count()-1].libraryfile.http_url
     'http://.../fo%C3%B6%20bar'
 
 If a filename contains a slash, it will be converted to a dash instead.
@@ -284,9 +287,9 @@ from the librarian.
     Attachment added: u'foo-bar-baz'
     >>> len(add_comment_view.errors)
     0
-    >>> bug_one.attachments[-1].libraryfile.filename
+    >>> attachments[bug_one.attachments.count()-1].libraryfile.filename
     u'foo-bar-baz'
-    >>> bug_one.attachments[-1].libraryfile.http_url
+    >>> attachments[bug_one.attachments.count()-1].libraryfile.http_url
     'http://.../foo-bar-baz'
 
     >>> config_data = config.pop('max_attachment_size')
@@ -381,8 +384,11 @@ Search for attachments
 
 We can search for attachment of a specific types:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugAttachmentType, BugTaskSearchParams, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugattachment import BugAttachmentType
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> attachmenttype = BugAttachmentType.UNSPECIFIED
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
@@ -476,7 +482,7 @@ The libraryfile of this bug attachment is marked as "deleted".
 Deleting an attachment causes a notification to be sent. It's worth
 noting that the notification still includes the URL to the attachment.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> latest_notification.is_comment
@@ -524,7 +530,12 @@ Linking existing LibraryFileAliases as attachments
 --------------------------------------------------
 
 It's possible to link an existing LibraryFileAliases to a bug as an
-attachment by calling the bug's linkAttachment() method.
+attachment by calling the bug's linkAttachment() method. Please note
+that this method must not be used to reference the same LibraryFileAlias
+record more than once. Doing this could cause inconsistencies between
+LibraryFileAlias.restricted and Bug.private. See also the section
+"Adding bug attachments to private bugs" below.
+
 
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
@@ -576,3 +587,78 @@ meaningful description.
 
     >>> print attachment.type.title
     Patch
+
+
+Attachments without library files
+---------------------------------
+
+It can happen that the LibraryFileContent record of a bug attachment is
+deleted, for example. because an admin deleted a privacy sensitive file.
+These attachments are not included in Bug.attachments. Our test bug has
+at present two attachments.
+
+    >>> [attachment.title for attachment in bug.attachments]
+    [u'foobar', u'An attachment of some sort']
+
+If we remove the content record from one attachment, it is no longer
+returned by Bug.attachments.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(attachment.libraryfile).content = None
+    >>> [attachment.title for attachment in bug.attachments]
+    [u'foobar']
+
+
+Adding bug attachments to private bugs
+--------------------------------------
+
+If an attachment is added to a private bug, the "restricted" flag of
+its Librarian file is set.
+
+    >>> private_bug_owner = factory.makePerson()
+    >>> login_person(private_bug_owner)
+    >>> private_bug = factory.makeBug(private=True, owner=private_bug_owner)
+    >>> private_attachment = private_bug.addAttachment(
+    ...     owner=private_bug_owner, data="secret", filename="baz.txt",
+    ...     comment="Some attachment")
+    >>> private_attachment.libraryfile.restricted
+    True
+
+But the "restricted" flag of Librarian files belonging to bug attachments
+of public bugs is not set.
+
+    >>> attachment.libraryfile.restricted
+    False
+
+If a private bug becomes public, the restricted flag of the related
+Librarian files are no longer set.
+
+    >>> changed = private_bug.setPrivate(False, private_bug.owner)
+    >>> private_attachment.libraryfile.restricted
+    False
+
+Similary, if a public bug becomes private, the "restricted" flag of
+its Librarian files are set.
+
+    >>> changed = bug.setPrivate(True, bug.owner)
+    >>> attachment.libraryfile.restricted
+    True
+
+
+Miscellaneous
+-------------
+
+The method IBugAttachment.getFileByName() returns the Librarian file.
+
+    >>> attachment.libraryfile.filename
+    u'foobar'
+    >>> attachment.getFileByName('foobar')
+    <LibraryFileAlias at...
+
+A NotFoundError is raised if the file name passed to getFileByName()
+does not match the file name of the Librarian file.
+
+    >>> attachment.getFileByName('nonsense')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'nonsense'

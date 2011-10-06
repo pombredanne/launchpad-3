@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 # pylint: disable-msg=W0403
 
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
@@ -22,7 +22,6 @@ __metaclass__ = type
 
 import _pythonpath
 
-from optparse import OptionParser
 import re
 import os
 import subprocess
@@ -37,14 +36,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from storm.store import Store
 
-from canonical.database.sqlbase import sqlvalues
-
-from canonical.lp import initZopeless
-
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities)
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.scripts.logger import logger, logger_options
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
@@ -52,13 +44,17 @@ from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
+from lp.services.scripts.base import LaunchpadScript
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet, SourcePackageFormat)
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -109,28 +105,6 @@ def check_preconditions(options):
             % current_config)
 
 
-def parse_args(arguments):
-    """Parse command-line arguments.
-
-    :return: (options, args, logger)
-    """
-    parser = OptionParser(
-        description="Set up fresh Ubuntu series and %s identity." % user_name)
-    parser.add_option('-f', '--force', action='store_true', dest='force',
-        help="DANGEROUS: run even if the database looks production-like.")
-    parser.add_option('-e', '--email', action='store', dest='email',
-        default=default_email,
-        help=(
-            "Email address to use for %s.  Should match your GPG key."
-            % user_name))
-
-    logger_options(parser)
-
-    options, args = parser.parse_args(arguments)
-
-    return options, args, logger(options)
-
-
 def get_person_set():
     """Return `IPersonSet` utility."""
     return getUtility(IPersonSet)
@@ -164,13 +138,6 @@ def retire_ppas(distribution):
     """Disable all PPAs for `distribution`."""
     for ppa in distribution.getAllPPAs():
         removeSecurityProxy(ppa).publish = False
-
-
-def set_lucille_config(distribution):
-    """Set lucilleconfig on all series of `distribution`."""
-    for series in distribution.series:
-        removeSecurityProxy(series).lucilleconfig = '''[publishing]
-components = main restricted universe multiverse'''
 
 
 def add_architecture(distroseries, architecture_name):
@@ -224,35 +191,20 @@ def create_components(distroseries, uploader):
 def create_series(parent, full_name, version, status):
     """Set up a `DistroSeries`."""
     distribution = parent.distribution
-    owner = parent.owner
+    registrant = parent.owner
     name = full_name.split()[0].lower()
     title = "The " + full_name
     displayname = full_name.split()[0]
     new_series = distribution.newSeries(name=name, title=title,
         displayname=displayname, summary='Ubuntu %s is good.' % version,
         description='%s is awesome.' % version, version=version,
-        parent_series=parent, owner=owner)
+        previous_series=None, registrant=registrant)
     new_series.status = status
     notify(ObjectCreatedEvent(new_series))
 
-    # This bit copied from scripts/ftpmaster-tools/initialise-from-parent.py.
-    assert new_series.architectures.count() == 0, (
-        "Cannot copy distroarchseries from parent; this series already has "
-        "distroarchseries.")
-
-    store = Store.of(parent)
-    store.execute("""
-        INSERT INTO DistroArchSeries
-          (distroseries, processorfamily, architecturetag, owner, official)
-        SELECT %s, processorfamily, architecturetag, %s, official
-        FROM DistroArchSeries WHERE distroseries = %s
-        """ % sqlvalues(new_series, owner, parent))
-
-    i386 = new_series.getDistroArchSeries('i386')
-    i386.supports_virtualized = True
-    new_series.nominatedarchindep = i386
-
-    new_series.initialiseFromParent()
+    new_series.previous_series = parent
+    ids = InitializeDistroSeries(new_series, [parent.id])
+    ids.initialize()
     return new_series
 
 
@@ -269,16 +221,33 @@ def create_sample_series(original_series, log):
         ('Feisty Fawn', SeriesStatus.OBSOLETE, '7.04'),
         ('Gutsy Gibbon', SeriesStatus.OBSOLETE, '7.10'),
         ('Hardy Heron', SeriesStatus.SUPPORTED, '8.04'),
-        ('Intrepid Ibex', SeriesStatus.SUPPORTED, '8.10'),
-        ('Jaunty Jackalope', SeriesStatus.SUPPORTED, '9.04'),
-        ('Karmic Koala', SeriesStatus.CURRENT, '9.10'),
-        ('Lucid Lynx', SeriesStatus.DEVELOPMENT, '10.04'),
+        ('Intrepid Ibex', SeriesStatus.OBSOLETE, '8.10'),
+        ('Jaunty Jackalope', SeriesStatus.OBSOLETE, '9.04'),
+        ('Karmic Koala', SeriesStatus.SUPPORTED, '9.10'),
+        ('Lucid Lynx', SeriesStatus.SUPPORTED, '10.04'),
+        ('Maverick Meerkat', SeriesStatus.CURRENT, '10.10'),
+        ('Natty Narwhal', SeriesStatus.DEVELOPMENT, '11.04'),
+        ('Onerous Ocelot', SeriesStatus.FUTURE, '11.10'),
         ]
 
     parent = original_series
     for full_name, status, version in series_descriptions:
         log.info('Creating %s...' % full_name)
         parent = create_series(parent, full_name, version, status)
+        # Karmic is the first series in which the 3.0 formats are
+        # allowed. Subsequent series will inherit them.
+        if version == '9.10':
+            spfss = getUtility(ISourcePackageFormatSelectionSet)
+            spfss.add(parent, SourcePackageFormat.FORMAT_3_0_QUILT)
+            spfss.add(parent, SourcePackageFormat.FORMAT_3_0_NATIVE)
+
+
+def add_series_component(series):
+    """Permit a component in the given series."""
+    component = getUtility(IComponentSet)['main']
+    get_store(MASTER_FLAVOR).add(
+        ComponentSelection(
+            distroseries=series, component=component))
 
 
 def clean_up(distribution, log):
@@ -299,6 +268,9 @@ def clean_up(distribution, log):
 
     retire_series(distribution)
 
+    # grumpy has no components, which upsets the publisher.
+    add_series_component(distribution['grumpy'])
+
 
 def set_source_package_format(distroseries):
     """Register a series' source package format selection."""
@@ -308,25 +280,21 @@ def set_source_package_format(distroseries):
         utility.add(distroseries, format)
 
 
-def populate(distribution, parent_series_name, uploader_name, options, log):
+def populate(distribution, previous_series_name, uploader_name, options, log):
     """Set up sample data on `distribution`."""
-    parent_series = distribution.getSeries(parent_series_name)
-
-    # Set up lucilleconfig on all series.  The sample data lacks this.
-    log.info("Setting lucilleconfig...")
-    set_lucille_config(distribution)
+    previous_series = distribution.getSeries(previous_series_name)
 
     log.info("Configuring sections...")
-    create_sections(parent_series)
-    add_architecture(parent_series, 'amd64')
+    create_sections(previous_series)
+    add_architecture(previous_series, 'amd64')
 
     log.info("Configuring components and permissions...")
     uploader = get_person_set().getByName(uploader_name)
-    create_components(parent_series, uploader)
+    create_components(previous_series, uploader)
 
-    set_source_package_format(parent_series)
+    set_source_package_format(previous_series)
 
-    create_sample_series(parent_series, log)
+    create_sample_series(previous_series, log)
 
 
 def sign_code_of_conduct(person, log):
@@ -351,10 +319,7 @@ def create_ppa_user(username, options, approver, log):
     if person is None:
         have_email = (options.email != default_email)
         command_line = [
-            'utilities/make-lp-user',
-            username,
-            'ubuntu-team'
-            ]
+            'utilities/make-lp-user', username, 'ubuntu-team']
         if have_email:
             command_line += ['--email', options.email]
 
@@ -378,45 +343,53 @@ def create_ppa(distribution, person, name):
     ppa = LaunchpadObjectFactory().makeArchive(
         distribution=distribution, owner=person, name=name, virtualized=False,
         description="Automatically created test PPA.")
-
-    series_name = distribution.currentseries.name
     ppa.external_dependencies = (
-        "deb http://archive.ubuntu.com/ubuntu %s "
-        "main restricted universe multiverse\n") % series_name
+        "deb http://archive.ubuntu.com/ubuntu %(series)s "
+        "main restricted universe multiverse\n")
 
 
-def main(argv):
-    options, args, log = parse_args(argv[1:])
+class SoyuzSampledataSetup(LaunchpadScript):
 
-    execute_zcml_for_scripts()
-    txn = initZopeless(dbuser='launchpad')
+    description = "Set up fresh Ubuntu series and %s identity." % user_name
 
-    check_preconditions(options.force)
+    def add_my_options(self):
+        self.parser.add_option(
+            '-f', '--force', action='store_true', dest='force',
+            help="DANGEROUS: run even if the database looks production-like.")
+        self.parser.add_option(
+            '-e', '--email', action='store', dest='email',
+            default=default_email,
+            help=(
+                "Email address to use for %s.  Should match your GPG key."
+                % user_name))
 
-    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    clean_up(ubuntu, log)
+    def main(self):
+        check_preconditions(self.options.force)
 
-    # Use Hoary as the root, as Breezy and Grumpy are broken.
-    populate(ubuntu, 'hoary', 'ubuntu-team', options, log)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        clean_up(ubuntu, self.logger)
 
-    admin = get_person_set().getByName('name16')
-    person = create_ppa_user(user_name, options, admin, log)
+        # Use Hoary as the root, as Breezy and Grumpy are broken.
+        populate(ubuntu, 'hoary', 'ubuntu-team', self.options, self.logger)
 
-    create_ppa(ubuntu, person, 'test-ppa')
-       
-    txn.commit()
-    log.info("Done.")
+        admin = get_person_set().getByName('name16')
+        person = create_ppa_user(user_name, self.options, admin, self.logger)
 
-    print dedent("""
-        Now start your local Launchpad with "make run_codehosting" and log
-        into https://launchpad.dev/ as "%(email)s" with "test" as the
-        password.
-        Your user name will be %(user_name)s."""
-        % {
-            'email': options.email,
-            'user_name': user_name,
-            })
+        create_ppa(ubuntu, person, 'test-ppa')
+
+        transaction.commit()
+        self.logger.info("Done.")
+
+        print dedent("""
+            Now start your local Launchpad with "make run_codehosting" and log
+            into https://launchpad.dev/ as "%(email)s" with "test" as the
+            password.
+            Your user name will be %(user_name)s."""
+            % {
+                'email': self.options.email,
+                'user_name': user_name,
+                })
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    SoyuzSampledataSetup('soyuz-sampledata-setup').lock_and_run()

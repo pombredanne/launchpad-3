@@ -3,10 +3,14 @@
 
 # pylint: disable-msg=E0211,E0213
 
+from zope.interface import Interface
+from zope.schema import (
+    Int,
+    Text,
+    )
+
 from canonical.launchpad import _
 
-from zope.interface import Interface
-from zope.schema import Int, Text
 
 __metaclass__ = type
 

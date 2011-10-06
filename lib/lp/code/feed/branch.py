@@ -15,29 +15,41 @@ __all__ = [
     'ProjectRevisionFeed',
     ]
 
-from storm.locals import Asc, Desc
-
+from storm.locals import (
+    Asc,
+    Desc,
+    )
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.webapp import canonical_url, LaunchpadView, urlparse
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    urlparse,
+    )
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.lazr.feed import (
-    FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+    FeedBase,
+    FeedEntry,
+    FeedPerson,
+    FeedTypedData,
+    MINUTES,
+    )
 from canonical.lazr.interfaces import IFeedPerson
-
-from z3c.ptcompat import ViewPageTemplateFile
-
 from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch,
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 def revision_feed_id(revision):
@@ -63,6 +75,7 @@ class BranchFeedContentView(BranchView):
         super(BranchFeedContentView, self).__init__(context, request)
         self.feed = feed
         self.template_ = template
+
     def render(self):
         """Render the view."""
         return ViewPageTemplateFile(self.template_)(self)
@@ -152,7 +165,7 @@ class BranchListingFeed(BranchFeedBase):
         from lp.code.model.branch import Branch
         collection = self._getCollection().visibleByUser(
             None).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
-        branches = collection.getBranches()
+        branches = collection.getBranches(eager_load=False)
         branches.order_by(
             Desc(Branch.date_last_modified),
             Asc(Branch.target_suffix),
@@ -364,7 +377,7 @@ class RevisionPerson:
 
     def __init__(self, person, rootsite):
 
-        no_email =  person.name_without_email
+        no_email = person.name_without_email
         if no_email:
             self.name = no_email
         else:
@@ -389,8 +402,25 @@ class BranchFeed(BranchFeedBase):
         """See `IFeed`."""
         # For a `BranchFeed` we must ensure that the branch is not private.
         super(BranchFeed, self).initialize()
-        if self.context.private:
-            raise Unauthorized("Feeds do not serve private branches")
+        try:
+            feed_allowed = not self.context.private
+            if not feed_allowed:
+                # We are logged in and can see the branch so redirect to the
+                # branch index page.
+                message_prefix = "This branch is private."
+                redirect_url = canonical_url(self.context)
+        except Unauthorized:
+            # Branch cannot be seen so redirect to the code index page.
+            feed_allowed = False
+            message_prefix = "The requested branch is private."
+            root = getUtility(ILaunchpadRoot)
+            redirect_url = canonical_url(root, rootsite='code')
+
+        if not feed_allowed:
+            self.request.response.addErrorNotification(
+                message_prefix +
+                " Feeds do not serve private branches.")
+            self.request.response.redirect(redirect_url)
 
     @property
     def title(self):

@@ -13,6 +13,8 @@
           <th>Launchpad bug</th>
           <th>Remote bug</th>
           <th>Status</th>
+          <th>Last check</th>
+          <th>Next check</th>
         </tr>
       </thead>
       <tbody>
@@ -43,6 +45,18 @@
                 </a>
               </td>
               <td><tal:status tal:replace="watch/remotestatus"/></td>
+              <td>
+                <span
+                  tal:attributes="title watch/lastchecked/fmt:datetime"
+                  tal:content="watch/lastchecked/fmt:approximatedate">
+                  13 Jan 2004
+                 </span>
+              </td>
+              <td>
+                <span tal:content="watch/next_check/fmt:datetime">
+                  13 Jan 2004
+                 </span>
+              </td>
             </tal:show-watch-details>
           </tr>
         </tal:watches>

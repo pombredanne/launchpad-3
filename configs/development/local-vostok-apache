@@ -1,0 +1,52 @@
+NameVirtualHost 127.0.0.77:80
+
+RewriteLock /var/tmp/vostok-rewrite-lock
+
+<VirtualHost 127.0.0.77:80>
+  ServerName archive.vostok.dev
+  LogLevel debug
+
+  DocumentRoot /var/tmp/vostok-archive
+  <Directory /var/tmp/vostok-archive/>
+    Order Deny,Allow
+    Deny from all
+    Allow from 127.0.0.0/255.0.0.0
+    Options Indexes
+  </Directory>
+</VirtualHost>
+
+<VirtualHost 127.0.0.77:443>
+  ServerName vostok.dev
+  ServerAlias *.vostok.dev
+  <Proxy *>
+    Order deny,allow
+    Allow from 127.0.0.0/255.0.0.0
+  </Proxy>
+  SSLEngine On
+  SSLCertificateFile /etc/apache2/ssl/launchpad.crt
+  SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
+
+  ProxyPreserveHost on
+  ProxyPass / http://localhost:8086/ retry=1
+
+  <Location />
+    # Insert filter
+    SetOutputFilter DEFLATE
+
+    # Don't compress images
+    SetEnvIfNoCase Request_URI \
+    \.(?:gif|jpe?g|png)$ no-gzip dont-vary
+
+    # Don't gzip anything that starts /@@/ and doesn't end .js (ie images)
+    SetEnvIfNoCase Request_URI ^/@@/ no-gzip dont-vary
+    SetEnvIfNoCase Request_URI ^/@@/.*\.js$ !no-gzip !dont-vary
+  </Location>
+
+</VirtualHost>
+
+<VirtualHost 127.0.0.77:80>
+  ServerName vostok.dev
+  ServerAlias *.vostok.dev
+  RewriteEngine On
+  RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</VirtualHost>

@@ -11,16 +11,37 @@ __all__ = [
     'IJob',
     'IJobSource',
     'IRunnableJob',
+    'ITwistedJobSource',
     'JobStatus',
     'LeaseHeld',
+    'SuspendJobException',
     ]
 
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, Text
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
+from lp.registry.interfaces.person import IPerson
+
+
+class SuspendJobException(Exception):
+    """Raised when a running job wants to suspend itself."""
+    pass
 
 
 class LeaseHeld(Exception):
@@ -87,6 +108,18 @@ class IJob(Interface):
     attempt_count = Int(title=_(
         'The number of attempts to perform this job that have been made.'))
 
+    max_retries = Int(title=_(
+        'The number of retries permitted before this job permanently fails.'))
+
+    requester = Reference(
+        IPerson, title=_("The person who requested the job"),
+        required=False, readonly=True
+        )
+
+    is_pending = Bool(
+        title=_("Whether or not this job's status is such that it "
+                "could eventually complete."))
+
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""
 
@@ -137,6 +170,9 @@ class IRunnableJob(IJob):
     user_error_types = Attribute(
         'A tuple of exception classes which result from user error.')
 
+    retry_error_types = Attribute(
+        'A tuple of exception classes which should cause a retry.')
+
     def notifyUserError(e):
         """Notify interested parties that this job encountered a user error.
 
@@ -150,8 +186,18 @@ class IRunnableJob(IJob):
 class IJobSource(Interface):
     """Interface for creating and getting jobs."""
 
+    memory_limit = Int(
+        title=_('Maximum amount of memory which may be used by the process.'))
+
     def iterReady():
         """Iterate through all jobs."""
 
     def contextManager():
         """Get a context for running this kind of job in."""
+
+
+class ITwistedJobSource(IJobSource):
+    """Interface for a job source that is usable by the TwistedJobRunner."""
+
+    def get(id):
+        """Get a job by its id."""

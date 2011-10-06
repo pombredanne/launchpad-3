@@ -13,30 +13,49 @@ __all__ = [
     'IBugMessageSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Bytes, Int, Object, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Bytes,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from canonical.launchpad.fields import Title
+from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.services.messages.interfaces.message import IMessage
+from lp.app.validators.attachment import attachment_size_constraint
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
-from canonical.launchpad.interfaces.launchpad import IHasBug
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.attachment import (
-    attachment_size_constraint)
+from lp.registry.interfaces.person import IPerson
+from lp.services.fields import Title
 
 
 class IBugMessage(IHasBug):
     """A link between a bug and a message."""
 
     bug = Object(schema=IBug, title=u"The bug.")
+    # The index field is being populated in the DB; once complete it will be
+    # made required. Whether to make it readonly or not is dependent on UI
+    # considerations. If, once populated, it becomes read-write, we probably
+    # want to ensure that only actions like bug import or spam hiding can
+    # change it, rather than arbitrary API scripts.
+    index = Int(title=u'The comment number', required=False, readonly=False,
+        default=None)
     messageID = Int(title=u"The message id.", readonly=True)
     message = Object(schema=IMessage, title=u"The message.")
     bugwatch = Object(schema=IBugWatch,
         title=u"A bugwatch to which the message pertains.")
+    bugwatchID = Int(title=u'The bugwatch id.', readonly=True)
     remote_comment_id = TextLine(
         title=u"The id this comment has in the bugwatch's bug tracker.")
-    visible = Bool(title=u"This message is visible or not.", required=False,
-        default=True)
+    ownerID = Attribute("The ID of the owner mirrored from the message")
+    owner = Object(schema=IPerson,
+        title=u"The Message owner mirrored from the message.", readonly=True)
 
 
 class IBugMessageSet(Interface):
@@ -104,9 +123,6 @@ class IBugComment(IMessage):
         to construct the correct URL.
         """)
     bugwatch = Attribute('The bugwatch to which the comment pertains.')
-    can_be_shown = Bool(
-        title=u'Whether or not the comment can be displayed',
-        readonly=True)
     show_for_admin = Bool(
         title=u'A hidden comment still displayed for admins.',
         readonly=True)
@@ -127,3 +143,5 @@ class IBugComment(IMessage):
         "Whether or not to show a footer for the comment.")
     patches = Attribute(
         "Patches attched to this comment.")
+    rendered_cache_time = Attribute(
+        "How long we can cache the rendered comment for.")

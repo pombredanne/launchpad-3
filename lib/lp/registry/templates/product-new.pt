@@ -239,22 +239,48 @@ LPS.use('node', 'lazr.effects', function(Y) {
 });
   </script>
 
-    <div style="font-size: larger; background: #e0f0d0;
+    <div id="staging-message" style="font-size: larger; background: #e0f0d0;
         padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
-       -webkit-border-radius: 5px; margin-bottom: 1em;">
-      <strong>Requesting Ubuntu CDs</strong> is done at <a
-      href="https://shipit.ubuntu.com/">shipit.ubuntu.com</a>
+       -webkit-border-radius: 5px; margin-bottom: 1em;"
+      tal:condition="not: is_demo">
+      You can <strong>test Launchpad's features</strong> at <a
+      href="https://staging.launchpad.net/">staging.launchpad.net</a>
       <form style="display: inline; font-size: smaller"
-            action="https://shipit.ubuntu.com/">
-        <input type="submit" value="Oh, I want Ubuntu CDs" />
+            action="https://staging.launchpad.net/">
+        <input type="submit" value="Oh, I want to create a test project" />
       </form>
     </div>
 
     <div metal:use-macro="context/@@launchpad_form/form">
       <metal:step fill-slot="extra_info">
-      <div style="text-align: right;">Not sure what to do?
+      <div style="float: right;">Not sure what to do?
         <a href="https://help.launchpad.net/Feedback">Contact us</a>
       </div>
+
+      <div tal:condition="view/is_step/1">
+        <p>
+          Launchpad projects are shared by all communities to encourage
+          collaboration between developers, translators, packagers, and other
+          contributors.
+        </p>
+
+        <p>
+          You do not need to register a project to:
+        </p>
+
+        <ul class="bulleted">
+          <li><a href="https://help.launchpad.net/Teams">Register
+            a team</a></li>
+          <li><a href="https://help.launchpad.net/Packaging/PPA">Activate
+            a PPA</a></li>
+          <li><a href="https://help.launchpad.net/Code/PersonalBranches">Access
+            your personal branches</a> (sandbox, repo)</li>
+          <li><a href="https://help.launchpad.net/Translations/YourProject">Translate
+            a project</a> that is already registered</li>
+          <li><a href="https://help.launchpad.net/ProjectGroups">Request a project group</a></li>
+        </ul>
+      </div>
+
       <h2 class="legend" id="step-title">Step
           <tal:step_number tal:replace="view/step_number"/>
           (of <tal:total_steps tal:replace="view/total_steps"/>):
@@ -274,8 +300,8 @@ LPS.use('node', 'lazr.effects', function(Y) {
           <img src="/@@/info" />
           There are similar projects already registered in Launchpad.
           Is project
-          <strong><tal:displayname tal:replace="view/request/displayname" />
-          (<tal:name  tal:replace="view/request/name" />)</strong>
+          <strong><tal:displayname tal:replace="view/request/field.displayname" />
+          (<tal:name  tal:replace="view/request/field.name" />)</strong>
           one of these?
           </div>
 
@@ -295,20 +321,19 @@ LPS.use('node', 'lazr.effects', function(Y) {
 
         <div id="registration-details-title"
              style="font-size: larger; max-width: 60em;"
-             tal:condition="python: view.step_number == 2">
+             tal:condition="view/is_step/2">
           <h3 id="registration-separator"
               style="margin-top: 3em;"
               tal:condition="view/search_results_count"
               >Registration details</h3>
           Select the licenses for project
-          <strong><tal:displayname tal:replace="view/request/displayname" />
-          (<tal:name  tal:replace="view/request/name" />)</strong>
+          <strong><tal:displayname tal:replace="view/request/field.displayname" />
+          (<tal:name  tal:replace="view/request/field.name" />)</strong>
           and complete the registration.  You may also update the project's
           title and summary.
         </div>
       </metal:extra>
     </div>
-
   </div>
 </body>
 </html>

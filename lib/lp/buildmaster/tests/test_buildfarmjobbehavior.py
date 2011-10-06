@@ -3,18 +3,17 @@
 
 """Unit tests for BuildFarmJobBehaviorBase."""
 
-from unittest import TestLoader
-
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import ZopelessDatabaseLayer
-from lp.testing import TestCaseWithFactory
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.builder import CorruptBuildID
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import CorruptBuildCookie
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class FakeBuildFarmJob:
@@ -31,7 +30,14 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         """Create a `BuildFarmJobBehaviorBase`."""
         if buildfarmjob is None:
             buildfarmjob = FakeBuildFarmJob()
+        else:
+            buildfarmjob = removeSecurityProxy(buildfarmjob)
         return BuildFarmJobBehaviorBase(buildfarmjob)
+
+    def _changeBuildFarmJobName(self, buildfarmjob):
+        """Manipulate `buildfarmjob` so that its `getName` changes."""
+        name = buildfarmjob.getName() + 'x'
+        removeSecurityProxy(buildfarmjob).getName = FakeMethod(result=name)
 
     def _makeBuild(self):
         """Create a `Build` object."""
@@ -69,45 +75,69 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         self.assertRaises(
             AssertionError, behavior.extractBuildStatus, slave_status)
 
-    def test_getVerifiedBuild_success(self):
-        build = self._makeBuild()
-        behavior = self._makeBehavior()
-        raw_id = str(build.id)
+    def test_cookie_baseline(self):
+        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
 
-        self.assertEqual(build, behavior.getVerifiedBuild(raw_id))
+        cookie = buildfarmjob.generateSlaveBuildCookie()
 
-    def test_getVerifiedBuild_malformed(self):
-        behavior = self._makeBehavior()
-        self.assertRaises(CorruptBuildID, behavior.getVerifiedBuild, 'hi!')
+        self.assertNotEqual(None, cookie)
+        self.assertNotEqual(0, len(cookie))
+        self.assertTrue(len(cookie) > 10)
 
-    def test_getVerifiedBuild_notfound(self):
-        build = self._makeBuild()
-        behavior = self._makeBehavior()
-        nonexistent_id = str(build.id + 99)
+        self.assertEqual(cookie, buildfarmjob.generateSlaveBuildCookie())
 
-        self.assertRaises(
-            CorruptBuildID, behavior.getVerifiedBuild, nonexistent_id)
+    def test_verifySlaveBuildCookie_good(self):
+        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
+        behavior = self._makeBehavior(buildfarmjob)
 
-    def test_getVerifiedBuildQueue_success(self):
-        buildqueue = self._makeBuildQueue()
-        behavior = self._makeBehavior()
-        raw_id = str(buildqueue.id)
+        cookie = buildfarmjob.generateSlaveBuildCookie()
 
-        self.assertEqual(buildqueue, behavior.getVerifiedBuildQueue(raw_id))
+        # The correct cookie validates successfully.
+        behavior.verifySlaveBuildCookie(cookie)
 
-    def test_getVerifiedBuildQueue_malformed(self):
-        behavior = self._makeBehavior()
-        self.assertRaises(
-            CorruptBuildID, behavior.getVerifiedBuildQueue, 'bye!')
+    def test_verifySlaveBuildCookie_bad(self):
+        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
+        behavior = self._makeBehavior(buildfarmjob)
 
-    def test_getVerifiedBuildQueue_notfound(self):
-        buildqueue = self._makeBuildQueue()
-        behavior = self._makeBehavior()
-        nonexistent_id = str(buildqueue.id + 99)
+        cookie = buildfarmjob.generateSlaveBuildCookie()
 
         self.assertRaises(
-            CorruptBuildID, behavior.getVerifiedBuildQueue, nonexistent_id)
+            CorruptBuildCookie,
+            behavior.verifySlaveBuildCookie,
+            cookie + 'x')
 
+    def test_cookie_includes_job_name(self):
+        # The cookie is a hash that includes the job's name.
+        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
+        buildfarmjob = removeSecurityProxy(buildfarmjob)
+        behavior = self._makeBehavior(buildfarmjob)
+        cookie = buildfarmjob.generateSlaveBuildCookie()
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+        self._changeBuildFarmJobName(buildfarmjob)
+
+        self.assertRaises(
+            CorruptBuildCookie,
+            behavior.verifySlaveBuildCookie,
+            cookie)
+
+        # However, the name is not included in plaintext so as not to
+        # provide a compromised slave a starting point for guessing
+        # another slave's cookie.
+        self.assertNotIn(buildfarmjob.getName(), cookie)
+
+    def test_cookie_includes_more_than_name(self):
+        # Two build jobs with the same name still get different cookies.
+        buildfarmjob1 = self.factory.makeTranslationTemplatesBuildJob()
+        buildfarmjob1 = removeSecurityProxy(buildfarmjob1)
+        buildfarmjob2 = self.factory.makeTranslationTemplatesBuildJob(
+            branch=buildfarmjob1.branch)
+        buildfarmjob2 = removeSecurityProxy(buildfarmjob2)
+
+        name_factory = FakeMethod(result="same-name")
+        buildfarmjob1.getName = name_factory
+        buildfarmjob2.getName = name_factory
+
+        self.assertEqual(buildfarmjob1.getName(), buildfarmjob2.getName())
+        self.assertNotEqual(
+            buildfarmjob1.generateSlaveBuildCookie(),
+            buildfarmjob2.generateSlaveBuildCookie())

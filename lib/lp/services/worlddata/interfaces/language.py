@@ -13,14 +13,34 @@ __all__ = [
     'TextDirection',
     ]
 
-from zope.schema import TextLine, Int, Choice, Bool, Field, Set
-from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
-
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    collection_default_content, exported, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation,
-    operation_returns_collection_of)
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_returns_collection_of,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
+from zope.schema import (
+    Bool,
+    Choice,
+    Field,
+    Int,
+    Set,
+    TextLine,
+    )
 
 
 class TextDirection(DBEnumeratedType):
@@ -67,6 +87,10 @@ class ILanguage(Interface):
             required=False),
         exported_as='plural_forms')
 
+    guessed_pluralforms = Int(
+        title=u"Number of plural forms, or a reasonable guess",
+        required=False, readonly=True)
+
     pluralexpression = exported(
         TextLine(
             title=u'Plural form expression',
@@ -75,9 +99,9 @@ class ILanguage(Interface):
             required=False),
         exported_as='plural_expression')
 
-    translators = Field(
+    translators = doNotSnapshot(Field(
         title=u'List of Person/Team that translate into this language.',
-        required=True)
+        required=True))
 
     translators_count = exported(
         Int(
@@ -142,25 +166,33 @@ class ILanguage(Interface):
         required=True,
         readonly=True)
 
-    def getFullCode(variant=None):
-        """Compose full language code for this language."""
-
-    def getFullEnglishName(variant=None):
-        """Compose full English name for this language."""
+    @invariant
+    def validatePluralData(form_language):
+        pair = (form_language.pluralforms, form_language.pluralexpression)
+        if None in pair and pair != (None, None):
+            raise Invalid(
+                'The number of plural forms and the plural form expression '
+                'must be set together, or not at all.')
 
 
 class ILanguageSet(Interface):
-    """The collection of languages."""
+    """The collection of languages.
+
+    The standard get method will return only the visible languages.
+    If you want to access all languages known to Launchpad, use
+    the getAllLanguages method.
+    """
 
     export_as_webservice_collection(ILanguage)
 
     @export_read_operation()
     @operation_returns_collection_of(ILanguage)
-    def getAllLanguages():
+    @call_with(want_translators_count=True)
+    def getAllLanguages(want_translators_count=False):
         """Return a result set of all ILanguages from Launchpad."""
 
-    @collection_default_content()
-    def getDefaultLanguages():
+    @collection_default_content(want_translators_count=True)
+    def getDefaultLanguages(want_translators_count=False):
         """An API wrapper for `common_languages`"""
 
     common_languages = Attribute(
@@ -192,12 +224,6 @@ class ILanguageSet(Interface):
         """Convert a list of ISO language codes to language objects.
 
         Unrecognised language codes are ignored.
-        """
-
-    def getLanguageAndVariantFromString(language_string):
-        """Return the ILanguage and variant that language_string represents.
-
-        If language_string doesn't represent a know language, return None.
         """
 
     def createLanguage(code, englishname, nativename=None, pluralforms=None,

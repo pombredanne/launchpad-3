@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Useful helper functions used for testing."""
@@ -10,8 +10,11 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IMailBox
-from canonical.launchpad.mail import get_msgid, MailController
+from lp.services.mail.mailbox import IMailBox
+from lp.services.mail.sendmail import (
+    get_msgid,
+    MailController,
+    )
 
 
 def create_mail_for_directoryMailBox(from_addr, to_addrs, subject, body,

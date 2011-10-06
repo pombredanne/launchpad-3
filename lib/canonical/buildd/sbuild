@@ -540,6 +540,8 @@ $main::chroot_apt_options = "";
 $main::component="";
 $main::nr_processors = $ENV{'NR_PROCESSORS'} if $ENV{'NR_PROCESSORS'};
 
+umask(022);
+
 $main::new_dpkg = 0;
 check_dpkg_version();
 
@@ -563,6 +565,9 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	elsif (/^-s$/ || /^--source$/) {
 		$main::build_source++;
 		$conf::purge_build_directory = "never";
+	}
+        elsif (/^--architecture=(.)/) {
+                $conf::arch=$1.$';
 	}
 	elsif (/^--archive=(.)/) {
 		$main::archive=$1.$';
@@ -905,10 +910,18 @@ sub fetch_source_files {
 		print PLOG "$dscbase has no Architecture: field -- skipping arch check!\n";
 	}
 	else {
-		if ($dscarchs ne "any" && $dscarchs !~ /\b$main::arch\b/ &&
+		my $valid_arch;
+		for my $a (split(/\s+/, $dscarchs)) {
+			if (system('dpkg-architecture', '-a' . $main::arch, '-i' . $a) eq 0) {
+				$valid_arch = 1;
+				last;
+			}
+		}
+		if ($dscarchs ne "any" && !($valid_arch) &&
 		    !($dscarchs eq "all" && $main::build_arch_all) ) {
-			print PLOG "$dscbase: $main::arch not in arch list: $dscarchs -- ".
-				 "skipping\n";
+			my $msg = "$dscbase: $main::arch not in arch list or does not match any arch ";
+			$msg .= "wildcards: $dscarchs -- skipping\n";
+			print PLOG $msg;
 			$main::pkg_fail_stage = "arch-check";
 			return( "ERROR", @made );
 		}
@@ -2788,11 +2801,13 @@ sub parse_one_srcdep {
 				my @archs = split( /\s+/, $archlist );
 				my ($use_it, $ignore_it, $include) = (0, 0, 0);
 				foreach (@archs) {
+					# Use 'dpkg-architecture' to support architecture
+					# wildcards.
 					if (/^!/) {
-						$ignore_it = 1 if substr($_, 1) eq $main::arch;
+						$ignore_it = 1 if system('dpkg-architecture', '-a' . $main::arch, '-i' . substr($_, 1)) eq 0;
 					}
 					else {
-						$use_it = 1 if $_ eq $main::arch;
+						$use_it = 1 if system('dpkg-architecture', '-a' . $main::arch, '-i' . $_) eq 0;
 						$include = 1;
 					}
 				}

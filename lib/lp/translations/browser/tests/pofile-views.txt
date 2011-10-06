@@ -1,27 +1,29 @@
-= POFileTranslateView =
+POFileTranslateView
+===================
 
 On this section, we are going to test the view class for an IPOFile.
 
 First, we need some imports.
 
-    >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
+    >>> from StringIO import StringIO
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage, DummyTranslationMessage)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
-    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> from lp.translations.publisher import TranslationsLayer
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
-    >>> from canonical.launchpad.layers import TranslationsLayer
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
 
 All the tests will be submitted as coming from the No Privilege person.
 
     >>> login('no-priv@canonical.com')
 
-Now it's time to test the initialisation of the view class.
+Now it's time to test the initialization of the view class.
 
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
@@ -57,7 +59,8 @@ We know that we want all messages.
 This time, we are going to see what happens if we get an IPOFile without
 the plural form information.
 
-    >>> pofile_tlh = potemplate.getDummyPOFile('tlh')
+    >>> language_tlh = getUtility(ILanguageSet).getLanguageByCode('tlh')
+    >>> pofile_tlh = potemplate.getDummyPOFile(language_tlh)
     >>> form = {'show': 'all' }
     >>> pofile_view = create_view(
     ...     pofile_tlh, '+translate', form=form, layer=TranslationsLayer)
@@ -114,7 +117,7 @@ The id for this message set is the one we expected.
 
 And as it's the first entry, its sequence number is also the right one.
 
-    >>> potmsgset.getSequence(potmsgset.potemplate)
+    >>> potmsgset.getSequence(pofile_es.potemplate)
     1
 
 Test that the associated text to translate is the one we want. We initialize
@@ -167,16 +170,11 @@ update.
 
 But first, let's see current values.
 
-    >>> pofile_es.updateStatistics()
-    (6, 1, 1, 1)
-    >>> pofile_es.currentCount()
-    6
+    >>> stats = pofile_es.updateStatistics()
     >>> pofile_es.updatesCount()
-    1
+    0
     >>> pofile_es.rosettaCount()
-    1
-    >>> pofile_es.unreviewedCount()
-    1
+    7
 
 Now we do a submission with new translations:
 
@@ -206,14 +204,17 @@ Now we do a submission with new translations:
 
 And check again.
 
-    >>> pofile_es.updateStatistics()
-    (5, 2, 3, 1)
+    >>> stats = pofile_es.updateStatistics()
+    >>> pofile_es.updatesCount()
+    1
+    >>> pofile_es.rosettaCount()
+    8
 
 The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
 
     >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
-    ...     print potmsgset.getSequence(potmsgset.potemplate)
+    ...     print potmsgset.getSequence(pofile_es.potemplate)
     1
     2
     3
@@ -240,7 +241,7 @@ their POTMsgSets' sequence numbers.
 Also, we get redirected to the next batch.
 
     >>> pofile_view.request.response.getHeader('Location')
-    'http://127.0.0.1?start=10'
+    'http://127.0.0.1?memo=10&start=10'
 
 The messsage's sequence is the position of that message in latest imported
 template. We are going to test now what happens when we submit a potmsgset
@@ -258,7 +259,7 @@ their sequence is 0.
 
     >>> from lp.translations.model.potmsgset import POTMsgSet
     >>> potmsgset = POTMsgSet.get(161)
-    >>> potmsgset.setSequence(pofile_es.potemplate, 0)
+    >>> item = potmsgset.setSequence(pofile_es.potemplate, 0)
     >>> potmsgset.getSequence(pofile_es.potemplate)
     0
     >>> form = {
@@ -279,8 +280,9 @@ their sequence is 0.
 
 And we can see that we didn't get errors.
 
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.potemplate, pofile_es.language)
+    >>> translationmessage = potmsgset.getCurrentTranslation(
+    ...     pofile_es.potemplate, pofile_es.language,
+    ...     pofile_es.potemplate.translation_side)
     >>> translationmessage.translations
     [u'Foo']
     >>> pofile_view.errors
@@ -363,7 +365,8 @@ Now, we are going to check the alternative language submission.
 #    >>> pofile_view.second_lang_code
 #    'fr'
 
-= POFileUploadView =
+POFileUploadView
+================
 
 Let's check that the upload form sets the right fields.
 
@@ -418,7 +421,8 @@ given POFile instead of the one given with the submit.
 
     >>> transaction.commit()
 
-= POFileNavigation =
+POFileNavigation
+================
 
 This class is used to traverse from IPOFile objects to ITranslationMessage
 ones.
@@ -480,7 +484,8 @@ object, we will get a TranslationMessage.
 #    True
 
 
-= POExportView =
+POExportView
+============
 
 POExportView class is used to handle download requests from the web
 site.

@@ -14,7 +14,7 @@
       Milestones belong to a series and can be created from the series page
       by a project owner or series release manager.
     </p>
-    
+
     <ul class="horizontal"
       tal:condition="context/project|nothing">
       <li>
@@ -25,10 +25,10 @@
     </ul>
   </div>
 
-  <tal:milestones define="milestones context/all_milestones">
+  <tal:milestones>
     <table id="milestones" class="listing"
       tal:define="has_series context/series|nothing"
-      tal:condition="milestones">
+      tal:condition="view/milestones">
       <thead>
         <tr>
           <th>Version</th>
@@ -40,12 +40,12 @@
       </thead>
       <tbody>
           <tal:row
-            repeat="milestone milestones"
+            repeat="milestone view/milestones"
             replace="structure milestone/@@+pillar-table-row" />
       </tbody>
     </table>
 
-    <tal:no-milestones condition="not: milestones">
+    <tal:no-milestones condition="not: view/milestones">
       <p>There are no milestones associated with
         <span tal:replace="context/title" />
       </p>

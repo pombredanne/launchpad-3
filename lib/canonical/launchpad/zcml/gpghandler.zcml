@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -10,25 +10,25 @@
     i18n_domain="launchpad">
 
     <class class="canonical.launchpad.utilities.GPGHandler">
-        <allow interface="canonical.launchpad.interfaces.IGPGHandler" />
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IGPGHandler" />
     </class>
 
     <securedutility
         class="canonical.launchpad.utilities.GPGHandler"
-        provides="canonical.launchpad.interfaces.IGPGHandler">
-        <allow interface="canonical.launchpad.interfaces.IGPGHandler" />
+        provides="canonical.launchpad.interfaces.gpghandler.IGPGHandler">
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IGPGHandler" />
     </securedutility>
 
     <class class="canonical.launchpad.utilities.PymeSignature">
-        <allow interface="canonical.launchpad.interfaces.IPymeSignature" />
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IPymeSignature" />
     </class>
 
     <class class="canonical.launchpad.utilities.PymeKey">
-        <allow interface="canonical.launchpad.interfaces.IPymeKey" />
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IPymeKey" />
     </class>
 
     <class class="canonical.launchpad.utilities.PymeUserId">
-        <allow interface="canonical.launchpad.interfaces.IPymeUserId" />
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IPymeUserId" />
     </class>
 
 </configure>

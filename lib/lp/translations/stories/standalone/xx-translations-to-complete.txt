@@ -19,7 +19,7 @@ Jean has been working on French translations for Foux in Launchpad.
 
     >>> potmsgset = factory.makePOTMsgSet(
     ...     potemplate=template, singular='a', sequence=1)
-    >>> message = factory.makeTranslationMessage(
+    >>> message = factory.makeCurrentTranslationMessage(
     ...     potmsgset=potmsgset, pofile=pofile, translator=jean,
     ...     translations=['un'])
 
@@ -73,11 +73,10 @@ page does not show any translations to complete--even to a member of the team.
 
     >>> login('carlos@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> pofile = factory.makePOFile('ru')
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-    >>> message = factory.makeTranslationMessage(
+    >>> message = factory.makeCurrentTranslationMessage(
     ...     pofile=pofile, translator=rosetta_experts, translations=['x'])
     >>> logout()
 

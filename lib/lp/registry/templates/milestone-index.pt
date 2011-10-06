@@ -6,14 +6,26 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
 
-  <tal:css metal:fill-slot="head_epilogue"
-    condition="view/is_project_milestone">
-    <style id="hide-side-portlets" type="text/css">
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <tal:is_project condition="view/is_project_milestone">
+      <style id="hide-side-portlets" type="text/css">
         .side {
-            background: #fff;
-            }
-    </style>
-  </tal:css>
+          background: #fff;
+        }
+      </style>
+    </tal:is_project>
+    <tal:uses_launchpad_bugtracker
+       condition="context/target/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript">
+          LPS.use('lp.registry.structural_subscription', function(Y) {
+              var module = Y.lp.registry.structural_subscription;
+              Y.on('domready', function() {
+                module.setup({content_box: "#structural-subscription-content-box"});
+              });
+          });
+      </script>
+    </tal:uses_launchpad_bugtracker>
+  </tal:head-epilogue>
 
   <body>
     <tal:heading metal:fill-slot="heading">
@@ -24,6 +36,7 @@
       specs view/specifications;
       bugtasks view/bugtasks;
       release_menu view/release/menu:context|Nothing;
+      milestone_menu view/milestone/menu:overview;
       has_edit context/required:launchpad.Edit">
 
       <div class="top-portlet">
@@ -73,7 +86,7 @@
                   tal:attributes="title context/dateexpected/fmt:datetime"
                   tal:content="context/dateexpected/fmt:approximatedate" />
                   &nbsp;
-                  <a tal:replace="structure view/milestone/menu:overview/create_release/fmt:icon-link" />
+                  <a tal:replace="structure milestone_menu/create_release/fmt:icon-link" />
                 </dd>
               </dl>
 
@@ -112,7 +125,7 @@
                 <tal:no condition="not: context/active">
                   No.  Drivers cannot target bugs and blueprints to this milestone.
                 </tal:no>
-                &nbsp; <a tal:replace="structure view/milestone/menu:navigation/edit/fmt:icon" />
+                &nbsp; <a tal:replace="structure milestone_menu/edit/fmt:icon" />
               </dd>
             </dl>
 
@@ -127,7 +140,8 @@
         </div>
 
         <div class="yui-u">
-          <div class="portlet">
+          <div id="milestone-activities" class="portlet"
+            tal:content="cache:anonymous, view/expire_cache_minutes minute">
             <h2>Activities</h2>
 
             <dl>
@@ -195,17 +209,18 @@
       tal:condition="view/release"
       tal:content="structure view/milestone/@@+productrelease-data" />
 
-    <div class="portlet full-page-width">
+    <div id="milestone-specs-bugs" class="portlet full-page-width">
         <h2>
-          <span id="specification-count" style="color: #3594bb;"
+          <span id="specification-count"
             tal:content="structure view/specification_count_text">2</span>
           and
-          <span id="bug-count" style="color: #9f2b33;"
+          <span id="bug-count"
             tal:content="structure view/bugtask_count_text">2</span>
           targeted
         </h2>
 
-        <tal:has_specs condition="specs">
+        <tal:has_specs condition="specs"
+          tal:content="cache:anonymous, view/expire_cache_minutes minute">
           <table class="listing sortable" id="milestone_specs"
             style="margin-bottom: 2em;">
             <thead>
@@ -263,61 +278,10 @@
         </tal:has_specs>
 
         <tal:has_bugtasks condition="bugtasks">
-          <table class="listing sortable" id="milestone_bugtasks">
-            <thead>
-              <tr>
-                <th colspan="4">Bug report</th>
-                <th style="width: 14em"
-                  tal:condition="view/is_project_milestone">
-                  Project
-                </th>
-                <th style="width: 9em;">Importance</th>
-                <th style="width: 14em;">Assignee</th>
-                <th style="width: 10em;">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr tal:repeat="bugtask bugtasks">
-                <td class="icon left">
-                  <span class="sortkey" tal:content="bugtask/bug/id" />
-                  <span tal:content="structure bugtask/image:icon" />
-                </td>
-                <td tal:content="string:#${bugtask/bug/id}" class="amount">12345</td>
-                <td>
-                  <a tal:attributes="href bugtask/bug/fmt:url"
-                     tal:content="bugtask/bug/title">
-                     Bug Title Here
-                  </a>
-                </td>
-                <td style="padding-right: 5px; text-align:right">
-                  <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
-                </td>
-                <td tal:condition="view/is_project_milestone">
-                  <span class="sortkey" tal:content="bugtask/target/displayname" />
-                  <a tal:attributes="href bugtask/milestone/fmt:url"
-                     tal:content="bugtask/target/displayname" />
-                </td>
-                <td>
-                  <span class="sortkey" tal:content="bugtask/importance/sortkey" />
-                  <span tal:content="bugtask/importance/title"
-                        tal:attributes="
-                        class string:importance${bugtask/importance/name}">High</span>
-                </td>
-                <td>
-                  <a tal:condition="bugtask/assignee"
-                     tal:replace="structure bugtask/assignee/fmt:link" />&nbsp;
-                </td>
-                <td
-                  tal:attributes="title bugtask/last_significant_change_date/fmt:displaydate">
-                  <span class="sortkey" tal:content="bugtask/status/sortkey" />
-                  <span
-                      tal:content="bugtask/status/title"
-                      tal:attributes="
-                      class string:status${bugtask/status/name}">High</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <tal:cache content="cache:anonymous, view/expire_cache_minutes minute">
+            <tal:milestone-bugtasks
+              metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
+          </tal:cache>
         </tal:has_bugtasks>
 
         <tal:neither_bugs_nor_specs condition="not: view/has_bugs_or_specs">
@@ -355,6 +319,9 @@
               series</a>
           </li>
         </ul>
+      </div>
+      <div class="yui-u">
+        <div id="structural-subscription-content-box"></div>
       </div>
     </div>
 

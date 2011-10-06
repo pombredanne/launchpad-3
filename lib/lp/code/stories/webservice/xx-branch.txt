@@ -11,8 +11,8 @@ the things on Launchpad.
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.code.enums import BranchLifecycleStatus, BranchType
-    >>> from lp.code.interfaces.branch import IBranch
     >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
+    >>> from lp.code.interfaces.branch import IBranch
 
 To make this document a little more readable, we'll have to define some
 helpers. This one turns a JSON date/time response into a Python
@@ -115,6 +115,7 @@ time goes on.
     dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
     description: None
     display_name: u'lp://dev/~eric/fooix/trunk'
+    explicitly_private: False
     landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
     last_mirror_attempt: None
@@ -123,11 +124,14 @@ time goes on.
     last_scanned_id: None
     lifecycle_status: u'Development'
     linked_bugs_collection_link: u'http://.../~eric/fooix/trunk/linked_bugs'
+    merge_queue_config: None
+    merge_queue_link: None
     mirror_status_message: None
     name: u'trunk'
     owner_link: u'.../~eric'
     private: False
     project_link: u'.../fooix'
+    recipes_collection_link: u'http://.../~eric/fooix/trunk/recipes'
     registrant_link: u'.../~eric'
     repository_format: None
     resource_type_link: u'.../#branch'
@@ -140,8 +144,8 @@ time goes on.
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
     unique_name: u'~eric/fooix/trunk'
     url: None
+    web_link: u'http://code.../~eric/fooix/trunk'
     whiteboard: None
-
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
 should have a branch at the endpoint of landing_candidates.
@@ -244,6 +248,34 @@ As with projects, these can be filtered by the branch status.
     >>> print_branches(webservice, '/widgets', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
 
+Differences between versions
+============================
+
+In version 'beta', a branch can be made private or public by invoking
+the named operation 'setPrivate'.
+
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> print branch['private']
+    False
+
+    >>> response = webservice.named_post(
+    ...     branch_url, 'setPrivate', api_version='beta', private=True)
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> print branch['explicitly_private']
+    True
+    >>> print branch['private']
+    True
+
+In subsequent versions, 'setPrivate' is gone; you have to set the
+'explicitly_private' field directly.
+
+    >>> print webservice.named_post(
+    ...     branch_url, 'setPrivate', api_version='devel',
+    ...     explicitly_private=True)
+    HTTP/1.1 400 Bad Request
+    ...
+    No such operation: setPrivate
+
 Removing branches
 =================
 
@@ -255,7 +287,7 @@ delete them.
     >>> print deletable
     False
 
-    Deleting only works on branches that do not have anything else 
+    Deleting only works on branches that do not have anything else
     depending on them.
 
     >>> response = webservice.delete('/~eric/fooix/feature-branch')

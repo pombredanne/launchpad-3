@@ -1,0 +1,214 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+  <head>
+  <title>stroppy trunk series : Series trunk : stroppy</title>
+
+  <!-- YUI and test setup -->
+  <script type="text/javascript"
+          src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
+  </script>
+  <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+  <script type="text/javascript"
+          src="../../../app/javascript/testing/testrunner.js"></script>
+
+  <script type="text/javascript" src="../../../app/javascript/lp.js"></script>
+
+  <!-- The module under test -->
+  <script type="text/javascript" src="../productseries-setbranch.js"></script>
+  <script type="text/javascript">
+    LPS.use('lp.code.productseries_setbranch', function(Y) {
+      Y.on('domready', Y.lp.code.productseries_setbranch.setup);
+    });
+  </script>
+
+  <!-- The test suite -->
+  <script type="text/javascript" src="test_productseries_setbranch.js"></script>
+  </head>
+
+<body class="yui3-skin-sam">
+  <div id="productseries-setbranch">
+  <form action="." name="launchpadform" method="post"
+        enctype="multipart/form-data"
+        accept-charset="UTF-8">
+
+    <table class="form">
+      <tbody>
+        <tr>
+          <td>
+            <label>
+              <input class="radioType" checked="checked"
+                     id="field.branch_type.0"
+                     name="field.branch_type" type="radio" value="link-lp-bzr">
+              Link to a Bazaar branch already in Launchpad
+            </label>
+              <table>
+                <tbody>
+                  <tr>
+                    <td colspan="2">
+                      <label for="field.branch_location">Branch:</label>
+                      <span class="fieldRequired">(Optional)</span>
+                      <div>
+                        <input type="text" value="" id="field.branch_location"
+                               name="field.branch_location" size="35">
+
+                      </div>
+                      <p class="formHelp">The Bazaar branch for this series in
+                        Launchpad, if one exists.</p>
+                    </td>
+                  </tr>
+              </tbody>
+              </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <label>
+              <input class="radioType" id="field.branch_type.1"
+                     name="field.branch_type"
+                     type="radio" value="create-new">
+              Create a new, empty branch in Launchpad and link
+              to this series
+            </label>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <label>
+              <input class="radioType" id="field.branch_type.2"
+                     name="field.branch_type" type="radio"
+                     value="import-external">
+              Import a branch hosted somewhere else
+            </label>
+            <table>
+              <tbody>
+                <tr>
+                  <td colspan="2">
+                    <label for="field.repo_url">Branch URL:</label>
+                    <span class="fieldRequired">(Optional)</span>
+                    <div>
+                      <input class="urlTextType textType" id="field.repo_url"
+                             name="field.repo_url" size="44" type="text"
+                             value="" disabled="">
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <label>
+                      <input class="radioType" id="field.rcs_type.6"
+                             name="field.rcs_type" type="radio" value="BZR"
+                             disabled="">
+                      Bazaar, hosted externally
+                    </label>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <label>
+                      <input class="radioType" id="field.rcs_type.4"
+                             name="field.rcs_type" type="radio" value="GIT"
+                             disabled="">
+                      Git
+                    </label>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <label>
+                      <input class="radioType" id="field.rcs_type.3"
+                             name="field.rcs_type" type="radio"
+                             value="BZR_SVN" disabled="">
+                      SVN
+                    </label>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <label>
+                      <input class="radioType" id="field.rcs_type.5"
+                             name="field.rcs_type" type="radio" value="HG" disabled="">
+                      Mercurial
+                    </label>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <label>
+                      <input class="radioType" id="field.rcs_type.1"
+                             name="field.rcs_type" type="radio" value="CVS"
+                             disabled="">
+                      CVS
+                    </label>
+
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td colspan="2">
+                            <label for="field.cvs_module">Module:</label>
+                            <span class="fieldRequired">(Optional)</span>
+
+                            <div>
+                              <input class="textType" id="field.cvs_module"
+                                     name="field.cvs_module" size="20"
+                                     type="text"
+                                     value="" disabled="">
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td colspan="2">
+            <label for="field.branch_name">Branch name:</label>
+            <div>
+              <input class="textType" id="field.branch_name" name="field.branch_name" size="20" type="text" value=""  />
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td colspan="2">
+            <label for="field.branch_owner">Branch owner:</label>
+            <div>
+              <div class="value">
+                <select id="field.branch_owner" name="field.branch_owner" size="1" >
+                  <option value="mark">Mark Shuttleworth (mark)</option>
+                  <option value="guadamen">GuadaMen (guadamen)</option>
+                  <option value="hwdb-team">HWDB Team (hwdb-team)</option>
+                  <option value="admins">Launchpad Administrators (admins)</option>
+                  <option value="mailing-list-experts">Mailing List Experts (mailing-list-experts)</option>
+                  <option value="ubuntu-mirror-admins">Mirror Administrators (ubuntu-mirror-admins)</option>
+                  <option value="registry">Registry Administrators (registry)</option>
+                  <option value="testing-spanish-team">testing Spanish team (testing-spanish-team)</option>
+                  <option value="ubuntu-team">Ubuntu Team (ubuntu-team)</option>
+                </select>
+              </div>
+              <input name="field.branch_owner-empty-marker" type="hidden" value="1" />
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <input type="submit" id="field.actions.update"
+           name="field.actions.update" value="Update" class="button">
+    or&nbsp;
+    <a href="https://launchpad.dev/zyc/trunk">Cancel</a>
+  </form>
+  </div>
+</body>
+</html>

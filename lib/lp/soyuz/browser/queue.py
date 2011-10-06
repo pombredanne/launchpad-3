@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
@@ -9,31 +9,45 @@ __all__ = [
     'QueueItemsView',
     ]
 
+import cgi
 import operator
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
-from lp.soyuz.interfaces.queue import (
-    IHasQueueItems, IPackageUpload, IPackageUploadSet,
-    QueueInconsistentStateError)
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from lp.soyuz.interfaces.files import (
-    IBinaryPackageFileSet, ISourcePackageReleaseFileSet)
-from lp.soyuz.interfaces.publishing import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
+from lp.services.job.model.job import Job
+from lp.soyuz.enums import (
+    PackagePublishingPriority,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.files import (
+    IBinaryPackageFileSet,
+    ISourcePackageReleaseFileSet,
+    )
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.publishing import name_priority_map
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload,
+    IPackageUploadSet,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.section import ISectionSet
 
-from lazr.delegates import delegates
 
 QUEUE_SIZE = 30
 
@@ -46,7 +60,6 @@ class QueueItemsView(LaunchpadView):
     template/distroseries-queue.pt and callsite details in DistroSeries
     view classes.
     """
-    __used_for__ = IHasQueueItems
 
     def setupQueueList(self):
         """Setup a batched queue list.
@@ -61,7 +74,7 @@ class QueueItemsView(LaunchpadView):
         try:
             state_value = int(self.request.get('queue_state', ''))
         except ValueError:
-            state_value = 0
+            state_value = PackageUploadStatus.NEW.value
 
         try:
             self.state = PackageUploadStatus.items[state_value]
@@ -82,19 +95,14 @@ class QueueItemsView(LaunchpadView):
         self.filtered_options = []
 
         for state in valid_states:
-            if state == self.state:
-                selected = True
-            else:
-                selected = False
+            selected = (state == self.state)
             self.filtered_options.append(
-                dict(name=state.title, value=state.value, selected=selected)
-                )
+                dict(name=state.title, value=state.value, selected=selected))
 
-        # request context queue items according the selected state
-        queue_items = self.context.getQueueItems(
+        queue_items = self.context.getPackageUploads(
             status=self.state, name=self.name_filter)
-        self.batchnav = BatchNavigator(queue_items, self.request,
-                                       size=QUEUE_SIZE)
+        self.batchnav = BatchNavigator(
+            queue_items, self.request, size=QUEUE_SIZE)
 
     def builds_dict(self, upload_ids, binary_files):
         """Return a dictionary of PackageUploadBuild keyed on build ID.
@@ -150,7 +158,7 @@ class QueueItemsView(LaunchpadView):
                 pkg_upload_source.sourcepackagerelease.id] = pkg_upload_source
         return package_upload_source_dict
 
-    def source_fies_dict(self, package_upload_source_dict, source_files):
+    def source_files_dict(self, package_upload_source_dict, source_files):
         """Return a dictionary of source files keyed on PackageUpload ID."""
         source_upload_files = {}
         for source_file in source_files:
@@ -174,6 +182,28 @@ class QueueItemsView(LaunchpadView):
         # Listify to avoid repeated queries.
         return list(old_binary_packages)
 
+    def getPackagesetsFor(self, source_package_releases):
+        """Find associated `Packagesets`.
+
+        :param source_package_releases: A sequence of `SourcePackageRelease`s.
+        """
+        sprs = [spr for spr in source_package_releases if spr is not None]
+        return getUtility(IPackagesetSet).getForPackages(
+            self.context, set(spr.sourcepackagenameID for spr in sprs))
+
+    def loadPackageCopyJobs(self, uploads):
+        """Batch-load `PackageCopyJob`s and related information."""
+        # Avoid circular imports.
+        from lp.registry.model.person import Person
+        from lp.soyuz.model.archive import Archive
+        from lp.soyuz.model.packagecopyjob import PackageCopyJob
+
+        package_copy_jobs = load_related(
+            PackageCopyJob, uploads, ['package_copy_job_id'])
+        load_related(Archive, package_copy_jobs, ['source_archive_id'])
+        jobs = load_related(Job, package_copy_jobs, ['job_id'])
+        load_related(Person, jobs, ['requester_id'])
+
     def decoratedQueueBatch(self):
         """Return the current batch, converted to decorated objects.
 
@@ -181,6 +211,10 @@ class QueueItemsView(LaunchpadView):
         CompletePackageUpload.  This avoids many additional SQL queries
         in the +queue template.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.queue import PackageUploadSource
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
         uploads = list(self.batchnav.currentBatch())
 
         if len(uploads) == 0:
@@ -194,19 +228,27 @@ class QueueItemsView(LaunchpadView):
                     upload.status != PackageUploadStatus.DONE)]
         binary_file_set = getUtility(IBinaryPackageFileSet)
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
+        binary_file_set.loadLibraryFiles(binary_files)
+        packageuploadsources = load_referencing(
+            PackageUploadSource, uploads, ['packageuploadID'])
         source_file_set = getUtility(ISourcePackageReleaseFileSet)
         source_files = source_file_set.getByPackageUploadIDs(upload_ids)
+
+        source_sprs = load_related(
+            SourcePackageRelease, packageuploadsources,
+            ['sourcepackagereleaseID'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(
             upload_ids, binary_files)
+
         build_upload_files, binary_package_names = self.binary_files_dict(
             package_upload_builds_dict, binary_files)
 
         # Get a dictionary of lists of source files keyed by upload ID.
         package_upload_source_dict = self.source_dict(
             upload_ids, source_files)
-        source_upload_files = self.source_fies_dict(
+        source_upload_files = self.source_files_dict(
             package_upload_source_dict, source_files)
 
         # Get a list of binary package names that already exist in
@@ -215,9 +257,14 @@ class QueueItemsView(LaunchpadView):
         self.old_binary_packages = self.calculateOldBinaries(
             binary_package_names)
 
-        return [CompletePackageUpload(item, build_upload_files,
-                                      source_upload_files)
-                for item in uploads]
+        package_sets = self.getPackagesetsFor(source_sprs)
+
+        self.loadPackageCopyJobs(uploads)
+
+        return [
+            CompletePackageUpload(
+                item, build_upload_files, source_upload_files, package_sets)
+            for item in uploads]
 
     def is_new(self, binarypackagerelease):
         """Return True if the binarypackagerelease has no ancestry."""
@@ -313,10 +360,8 @@ class QueueItemsView(LaunchpadView):
         queue_set = getUtility(IPackageUploadSet)
 
         if accept:
-            header = 'Accepting Results:\n'
             action = "accept"
         elif reject:
-            header = 'Rejecting Results:\n'
             action = "reject"
 
         success = []
@@ -349,10 +394,10 @@ class QueueItemsView(LaunchpadView):
                 continue
 
             feedback_interpolations = {
-                "name"      : queue_item.displayname,
-                "component" : "(unchanged)",
-                "section"   : "(unchanged)",
-                "priority"  : "(unchanged)",
+                "name": queue_item.displayname,
+                "component": "(unchanged)",
+                "section": "(unchanged)",
+                "priority": "(unchanged)",
                 }
             if new_component:
                 feedback_interpolations['component'] = new_component.name
@@ -369,14 +414,13 @@ class QueueItemsView(LaunchpadView):
                                (queue_item.displayname, info))
             else:
                 if source_overridden:
-                    success.append("OK: %(name)s(%(component)s/%(section)s)" %
-                                   feedback_interpolations)
+                    desc = "%(name)s(%(component)s/%(section)s)"
                 elif binary_overridden:
-                    success.append(
-                        "OK: %(name)s(%(component)s/%(section)s/%(priority)s)"
-                            % feedback_interpolations)
+                    desc = "%(name)s(%(component)s/%(section)s/%(priority)s)"
                 else:
-                    success.append('OK: %s' % queue_item.displayname)
+                    desc = "%(name)s"
+                success.append(
+                    "OK: " + desc % feedback_interpolations)
 
         for message in success:
             self.request.response.addInfoNotification(message)
@@ -391,7 +435,7 @@ class QueueItemsView(LaunchpadView):
 
     def queue_action_accept(self, queue_item):
         """Reject the queue item passed."""
-        queue_item.acceptFromQueue(announce_list=self.context.changeslist)
+        queue_item.acceptFromQueue()
 
     def queue_action_reject(self, queue_item):
         """Accept the queue item passed."""
@@ -414,8 +458,9 @@ class QueueItemsView(LaunchpadView):
 class CompletePackageUpload:
     """A decorated `PackageUpload` including sources, builds and packages.
 
-    Some properties of PackageUpload are cached here to reduce the number
-    of queries that the +queue template has to make.
+    This acts effectively as a view for package uploads.  Some properties of
+    the class are cached here to reduce the number of queries that the +queue
+    template has to make.  Others are added here exclusively.
     """
     # These need to be predeclared to avoid delegates taking them over.
     # Would be nice if there was a way of allowing writes to just work
@@ -432,7 +477,7 @@ class CompletePackageUpload:
     delegates(IPackageUpload)
 
     def __init__(self, packageupload, build_upload_files,
-                 source_upload_files):
+                 source_upload_files, package_sets):
         self.pocket = packageupload.pocket
         self.date_created = packageupload.date_created
         self.context = packageupload
@@ -445,22 +490,21 @@ class CompletePackageUpload:
         # Create a dictionary of binary files keyed by
         # binarypackagerelease.
         self.binary_packages = {}
-        self.binary_files = build_upload_files.get(self.id, None)
-        if self.binary_files is not None:
-            for binary in self.binary_files:
-                package = binary.binarypackagerelease
-                if package not in self.binary_packages:
-                    self.binary_packages[package] = []
-                self.binary_packages[package].append(binary)
+        for binary in build_upload_files.get(self.id, []):
+            package = binary.binarypackagerelease
+            self.binary_packages.setdefault(package, []).append(binary)
 
         # Create a list of source files if this is a source upload.
         self.source_files = source_upload_files.get(self.id, None)
 
-        # Pre-fetch the sourcepackagerelease if it exists.
         if self.contains_source:
             self.sourcepackagerelease = self.sources[0].sourcepackagerelease
+
+        if self.contains_source:
+            self.package_sets = package_sets.get(
+                self.sourcepackagerelease.sourcepackagenameID, [])
         else:
-            self.sourcepackagerelease = None
+            self.package_sets = []
 
     @property
     def pending_delayed_copy(self):
@@ -477,6 +521,91 @@ class CompletePackageUpload:
         used to upload the contained source.
         """
         if self.is_delayed_copy:
-            return self.sources[0].sourcepackagerelease.upload_changesfile
+            return self.sourcepackagerelease.upload_changesfile
         return self.context.changesfile
 
+    @property
+    def display_package_sets(self):
+        """Package sets, if any, for display on the +queue page."""
+        return ' '.join(sorted(
+            packageset.name for packageset in self.package_sets))
+
+    @property
+    def display_component(self):
+        """Component name, if any, for display on the +queue page."""
+        component_name = self.component_name
+        if component_name is None:
+            return ""
+        else:
+            return component_name.lower()
+
+    @property
+    def display_section(self):
+        """Section name, if any, for display on the +queue page."""
+        section_name = self.section_name
+        if section_name is None:
+            return ""
+        else:
+            return section_name.lower()
+
+    @property
+    def display_priority(self):
+        """Priority name, if any, for display on the +queue page."""
+        if self.contains_source:
+            return self.sourcepackagerelease.urgency.name.lower()
+        else:
+            return ""
+
+    def composeIcon(self, alt, icon, title=None):
+        """Compose an icon for the package's icon list."""
+        # These should really be sprites!
+        if title is None:
+            title = alt
+        return '<img alt="[%s]" src="/@@/%s" title="%s" />' % (
+            cgi.escape(alt, quote=True),
+            icon,
+            cgi.escape(title, quote=True),
+            )
+
+    def composeIconList(self):
+        """List icons that should be shown for this upload."""
+        ddtp = "Debian Description Translation Project Indexes"
+        potential_icons = [
+            (self.contains_source, ("Source", 'package-source')),
+            (self.contains_build, ("Build", 'package-binary', "Binary")),
+            (self.package_copy_job, ("Sync", 'package-sync')),
+            (self.contains_translation, ("Translation", 'translation-file')),
+            (self.contains_installer, ("Installer", 'ubuntu-icon')),
+            (self.contains_upgrader, ("Upgrader", 'ubuntu-icon')),
+            (self.contains_ddtp, (ddtp, 'ubuntu-icon')),
+            ]
+        return [
+            self.composeIcon(*details)
+            for condition, details in potential_icons
+                if condition]
+
+    def composeNameAndChangesLink(self):
+        """Compose HTML: upload name and link to changes file."""
+        raw_displayname = self.displayname
+        displayname = cgi.escape(raw_displayname)
+        if self.pending_delayed_copy or self.changesfile is None:
+            return displayname
+        else:
+            return '<a href="%s" title="Changes file for %s">%s</a>' % (
+                self.changesfile.http_url,
+                cgi.escape(self.displayname, quote=True),
+                displayname)
+
+    @property
+    def icons_and_name(self):
+        """Icon list and name, linked to changes file if appropriate."""
+        iconlist_id = "queue%d-iconlist" % self.id
+        icons = self.composeIconList()
+        link = self.composeNameAndChangesLink()
+        return """
+            <div id="%s">
+              %s
+              %s
+              (%s)
+            </div>
+            """ % (iconlist_id, '\n'.join(icons), link, self.displayarchs)

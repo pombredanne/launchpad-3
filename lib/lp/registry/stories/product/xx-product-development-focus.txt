@@ -32,6 +32,12 @@ section on the product overview page.
     ...             print content
     ...         title = a.get('title', '')
     ...         print "%s (%s)" % (title, a['href'])
+    >>> def print_involvement_portlet(browser):
+    ...     involvement = find_tag_by_id(browser.contents, 'involvement')
+    ...     for a in involvement.findAll('a'):
+    ...         for content in a.contents:
+    ...             print content
+    ...         print a['href']
 
 
 Projects without development focus branches
@@ -39,48 +45,59 @@ Projects without development focus branches
 
 If the project has not specified a development focus branch then the
 development focus section just contains a link to the development focus
-series, and text telling the user that no branch has been specified.
+series.
 
     >>> anon_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(anon_browser)
     Development focus:
     trunk series
-    Development focus branch has not been specified
     Links:
       trunk series (/fooix/trunk)
+    >>> print_involvement_portlet(anon_browser)
 
 
 Setting the development focus branch
 ------------------------------------
 
 If the user has rights to change the development focus or to specify the
-development focus branch, then these links are shown next to the text.
+development focus branch, then these links are shown in the involvement
+portlet.
 
     >>> owner_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(owner_browser)
     Development focus:
     trunk series    Change details
-    Development focus branch has not been specified  Link to branch
     Links:
-      trunk series (/fooix/trunk)
-      <span class="invisible-link">Change details</span>
-        (http://launchpad.dev/fooix/+edit)
-      <span class="invisible-link">Link to branch</span>
-      Set the branch for this series
-        (http://launchpad.dev/fooix/trunk/+linkbranch)
+    trunk series
+     (/fooix/trunk)
+    <span class="invisible-link">Change details</span>
+     (http://launchpad.dev/fooix/+edit)
+    >>> print_involvement_portlet(owner_browser)
+    Configure bug tracker
+    http://launchpad.dev/fooix/+configure-bugtracker
+    Configure support tracker
+    http://launchpad.dev/fooix/+configure-answers
+    Configure translations
+    http://launchpad.dev/fooix/+configure-translations
+    Configure project branch
+    http://launchpad.dev/fooix/trunk/+setbranch
 
 The owner can specify the development focus branch from the overview page.
 
-    >>> owner_browser.getLink(url='+linkbranch').click()
-    >>> owner_browser.getControl('Branch').value = '~eric/fooix/trunk'
+    >>> owner_browser.getLink(url='+setbranch').click()
+    >>> owner_browser.getControl(name='field.branch_location').value = (
+    ...     '~eric/fooix/trunk')
     >>> owner_browser.getControl('Update').click()
     >>> print_feedback_messages(owner_browser.contents)
     Series code location updated.
 
-The owner is taken back to the trunk series page.
+The owner is taken back to the project page.
 
-    >>> print_tag_with_id(owner_browser.contents, 'branch-details')
-    lp://dev/fooix - Eric  Change branch
+    >>> print_tag_with_id(owner_browser.contents, 'dev-focus')
+    Development focus:
+    trunk series Change details
+    lp://dev/fooix Change branch
+    Browse the code
 
 
 Projects with development focus branches
@@ -97,11 +114,11 @@ branch.
     Development focus:
     trunk series
     lp://dev/fooix
-    View the branch content
+    Browse the code
     Links:
       trunk series (/fooix/trunk)
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
-      View the branch content
+      Browse the code
         (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
     >>> owner_browser.open('http://launchpad.dev/fooix')
@@ -109,7 +126,7 @@ branch.
     Development focus:
     trunk series     Change details
     lp://dev/fooix   Change branch
-    View the branch content
+    Browse the code
     Links:
       trunk series (/fooix/trunk)
       <span class="invisible-link">Change details</span>
@@ -118,7 +135,7 @@ branch.
       <span class="invisible-link">Change branch</span>
       Change the branch for this series
         (http://launchpad.dev/fooix/trunk/+linkbranch)
-      View the branch content
+      Browse the code
         (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
 
@@ -130,14 +147,13 @@ appears as if there is no series branch set.
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(branch).private = True
+    >>> removeSecurityProxy(branch).explicitly_private = True
     >>> logout()
 
     >>> anon_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(anon_browser)
     Development focus:
     trunk series
-    Development focus branch has not been specified
     Links:
       trunk series (/fooix/trunk)
 
@@ -145,15 +161,15 @@ appears as if there is no series branch set.
     >>> print_development_focus(owner_browser)
     Development focus:
     trunk series     Change details
-    lp://dev/~eric/fooix/trunk   Change branch
-    View the branch content
+    lp://dev/fooix   Change branch
+    Browse the code
     Links:
       trunk series (/fooix/trunk)
       <span class="invisible-link">Change details</span>
         (http://launchpad.dev/fooix/+edit)
-      lp://dev/~eric/fooix/trunk (http://code.launchpad.dev/~eric/fooix/trunk)
+      lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
       <span class="invisible-link">Change branch</span>
       Change the branch for this series
         (http://launchpad.dev/fooix/trunk/+linkbranch)
-      View the branch content
+      Browse the code
         (https://bazaar.launchpad.dev/~eric/fooix/trunk/files)

@@ -1,19 +1,22 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
 import re
 
-from unittest import TestLoader
+import transaction
+from zope.component import getUtility
 
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import LaunchpadScriptLayer
-
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.mail import stub
+from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue)
+    TranslationImportQueue,
+    )
 from lp.translations.scripts.po_import import TranslationsImport
 
 
@@ -23,16 +26,6 @@ class UnexpectedException(Exception):
 
 class OutrageousSystemError(SystemError):
     """Very serious system error."""
-
-
-class Raiser:
-    """Raise a given exception."""
-    def __init__(self, exception):
-        self.exception = exception
-
-    def __call__(self, *args, **kwargs):
-        """Whatever the arguments, just raise self.exception."""
-        raise self.exception
 
 
 class TestTranslationsImport(TestCaseWithFactory):
@@ -52,8 +45,26 @@ class TestTranslationsImport(TestCaseWithFactory):
 
     def _makeEntry(self, path, **kwargs):
         """Produce a queue entry."""
+        uploader = kwargs.pop('uploader', self.owner)
         return self.queue.addOrUpdateEntry(
-            path, '# Nothing here', False, self.owner, **kwargs)
+            path, '# Nothing here', False, uploader, **kwargs)
+
+    def _makeApprovedEntry(self, uploader):
+        """Produce an approved queue entry."""
+        path = '%s.pot' % self.factory.getUniqueString()
+        series = self.factory.makeProductSeries()
+        template = self.factory.makePOTemplate(series)
+        entry = self._makeEntry(
+            path, uploader=uploader, potemplate=template,
+            productseries=template.productseries)
+        entry.status = RosettaImportStatus.APPROVED
+        return entry
+
+    def _getEmailRecipients(self):
+        """List the recipients of all pending outgoing emails."""
+        return sum([
+            recipients
+            for sender, recipients, text in stub.test_emails], [])
 
     def test_describeEntry_without_target(self):
         productseries = self._makeProductSeries()
@@ -111,7 +122,7 @@ class TestTranslationsImport(TestCaseWithFactory):
 
     def test_checkEntry_misapproved_package(self):
         package = self.factory.makeSourcePackage()
-        other_series = self.factory.makeDistroRelease(
+        other_series = self.factory.makeDistroSeries(
             distribution=package.distroseries.distribution)
         template = self.factory.makePOTemplate(
             distroseries=package.distroseries,
@@ -136,7 +147,8 @@ class TestTranslationsImport(TestCaseWithFactory):
         self.assertNotEqual(None, entry.import_into)
 
         message = "The system has exploded."
-        self.script._importEntry = Raiser(OutrageousSystemError(message))
+        self.script._importEntry = FakeMethod(
+            failure=OutrageousSystemError(message))
         self.assertRaises(OutrageousSystemError, self.script.main)
 
         self.assertEqual(RosettaImportStatus.FAILED, entry.status)
@@ -153,7 +165,8 @@ class TestTranslationsImport(TestCaseWithFactory):
         self.assertNotEqual(None, entry.import_into)
 
         message = "Nobody expects the Spanish Inquisition!"
-        self.script._importEntry = Raiser(UnexpectedException(message))
+        self.script._importEntry = FakeMethod(
+            failure=UnexpectedException(message))
         self.script.main()
 
         self.assertEqual(RosettaImportStatus.FAILED, entry.status)
@@ -167,6 +180,18 @@ class TestTranslationsImport(TestCaseWithFactory):
         self.assertEqual(default_reporting.oops_prefix,
                          errorlog.globalErrorUtility.oops_prefix)
 
+    def test_notifies_uploader(self):
+        entry = self._makeApprovedEntry(self.owner)
+        transaction.commit()
+        self.script._importEntry(entry)
+        transaction.commit()
+        self.assertEqual(
+            [self.owner.preferredemail.email], self._getEmailRecipients())
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    def test_does_not_notify_vcs_imports(self):
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        entry = self._makeApprovedEntry(vcs_imports)
+        transaction.commit()
+        self.script._importEntry(entry)
+        transaction.commit()
+        self.assertEqual([], self._getEmailRecipients())

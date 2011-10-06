@@ -1,44 +1,32 @@
 = DecoratedResultSet =
 
-Within Soyuz (and possibly other areas of Launchpad?) there are a 
-number of content classes which do not actually correspond directly to
-a database table. For example, a `DistroSeriesBinaryPackage` is really
-just a representation of a `BinaryPackageName` within a certain
-DistroSeries. Nonetheless, this representation is presented (via views)
-to users as a useful reference point for obtaining particular package
-releases and/or architectures.
+Within Launchpad we often want to return related data for a ResultSet
+but not have every call site know how that data is structured - they
+should not need to know how to go about loading related Persons for
+a BugMessage, or how to calculate whether a Person is valid. Nor do
+we want to return a less capable object - that prohibits late slicing
+and sorting.
 
-A problem arises however when attempting to present a search result of
-such content. For example, when a user searches for all packages within
-the Ubuntu Intrepid `DistroSeries` that include the letter 'l', it is 
-actually the `DistroSeriesPackageCache` that is searched, but the
-results need to be presented back to the browser as a set of
-`DistroSeriesBinaryPackage`s. In the past this was achieved by using a
-list comprehension on the complete result set to convert each result
-into the expected DSBP. This in-memory list was then passed to the view.
-But given that views usually paginate results, they are only interested
-in 20 or so items at a time, so there is a huge waste of resources (DB
-and memory primarily, but some CPU).
-
-The purpose of the `DecoratedResultSet` is to allow such content
-classes to pass an un-evaluated result set to the view so that the view
-can add limits to the query *before* it is evaluated (batching), while
-still ensuring that when the query is evaluated the result is converted
-into the expected content class.
+DecoratedResultSet permits some preprocessing of Storm ResultSet
+objects at the time the query executes. This can be used to present
+content classes which are not backed directly in the database, to
+eager load multiple related tables and present just one in the result,
+and so on.
 
 First, we'll create the un-decorated result set of all distributions:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from storm.store import Store
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> store = Store.of(ubuntu)
     >>> from lp.registry.model.distribution import Distribution
     >>> result_set = store.find(Distribution)
 
-== Creating the decorator method ==
+== Creating the decorator function ==
 
-We create a decorator method that we want to be applied to any
-results obtained from our undecorated result set:
+We create a decorator function that we want to be applied to any
+results obtained from our undecorated result set. For instance,
+we can turn a model object into a string:
 
     >>> def result_decorator(distribution):
     ...     return "Dist name is: %s" % distribution.name
@@ -87,12 +75,12 @@ just work like normally:
 
 There was a bug in the Storm API whereby calling count (or other aggregates)
 on a storm ResultSet does not respect the distinct
-config option (https://bugs.edge.launchpad.net/storm/+bug/217644):
+config option (https://bugs.launchpad.net/storm/+bug/217644):
 
-    >>> from canonical.launchpad.database import (BinaryPackageRelease,
-    ...     BinaryPackagePublishingHistory)
+    >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+    >>> from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
     >>> results = store.find(BinaryPackageRelease,
-    ...     BinaryPackageRelease.id == 
+    ...     BinaryPackageRelease.id ==
     ...         BinaryPackagePublishingHistory.binarypackagereleaseID)
     >>> results = results.config(distinct=True)
     >>> len(list(results))
@@ -150,3 +138,47 @@ The pre_iter_hook() method is only called once when iteration begins.
     > original value : 4
      decorated result: 8
 
+
+== Calculating row numbers ==
+
+DecoratedResultSet can inform its hooks about slice data if slice_info=True is
+passed.
+
+    >>> def pre_iter(rows, slice):
+    ...     print "pre iter", len(rows), slice.start, slice.stop
+    >>> def decorate(row, row_index):
+    ...     print "row", row.id, row_index
+    >>> _ = result_set.order_by(Distribution.id)
+    >>> drs = DecoratedResultSet(
+    ...     result_set, decorate, pre_iter, slice_info=True)
+
+We need enough rows to play with:
+
+    >>> drs.count()
+    7
+
+    >>> _ = list(drs[1:3])
+    pre iter 2 1 3
+    row 2 1
+    row 3 2
+
+Half open slicing is supported too:
+
+    >>> _ = list(drs[:3])
+    pre iter 3 0 3
+    row 1 0
+    row 2 1
+    row 3 2
+
+    >>> _ = list(drs[2:])
+    pre iter 5 2 7
+    row 3 2
+    row 4 3
+    row 5 4
+    row 7 5
+    row 8 6
+
+And of course empty slices:
+
+    >>> _ = list(drs[3:3])
+    pre iter 0 3 3

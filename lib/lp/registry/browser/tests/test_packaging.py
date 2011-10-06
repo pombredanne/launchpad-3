@@ -5,27 +5,151 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
-
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
+from canonical.launchpad.testing.pages import setupBrowser
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    PageTestLayer,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.testing.pages import setupBrowser
-from canonical.testing import PageTestLayer
+from lp.testing import TestCaseWithFactory
+from lp.testing.memcache import MemcacheTestCase
+from lp.testing.views import create_initialized_view
 
 
-class TestBrowserDeletePackaging(TestCase):
+class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
+    """Browser tests for deletion of Packaging objects."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductSeriesUbuntuPackagingView, self).setUp()
+        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.hoary = self.ubuntu.getSeries('hoary')
+        self.sourcepackagename = self.factory.makeSourcePackageName('hot')
+        self.sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=self.sourcepackagename, distroseries=self.hoary)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.sourcepackagename, distroseries=self.hoary)
+        self.product = self.factory.makeProduct(name="hot", displayname='Hot')
+        self.productseries = self.factory.makeProductSeries(
+            product=self.product, name='hotter')
+        self.packaging_util = getUtility(IPackagingUtil)
+
+    def test_no_error_when_trying_to_readd_same_package(self):
+        # There is no reason to display an error when the user's action
+        # wouldn't cause a state change.
+        self.packaging_util.createPackaging(
+            productseries=self.productseries,
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.hoary, packaging=PackagingType.PRIME,
+            owner=self.product.owner)
+
+        form = {
+            'field.distroseries': self.hoary.name,
+            'field.sourcepackagename': self.sourcepackagename.name,
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.productseries, '+ubuntupkg', form=form)
+        self.assertEqual([], view.errors)
+
+    def test_cannot_link_to_linked_package(self):
+        # Once a distro series sourcepackage is linked to a product series,
+        # no other product series can link to it.
+        form = {
+            'field.distroseries': 'hoary',
+            'field.sourcepackagename': 'hot',
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.productseries, '+ubuntupkg', form=form)
+        self.assertEqual([], view.errors)
+        other_productseries = self.factory.makeProductSeries(
+            product=self.product, name='hottest')
+        form = {
+            'field.distroseries': 'hoary',
+            'field.sourcepackagename': 'hot',
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            other_productseries, '+ubuntupkg', form=form)
+        view_errors = [
+            'The <a href="http://launchpad.dev/ubuntu/hoary/+source/hot">'
+             'hot</a> package in Hoary is already linked to another series.']
+        self.assertEqual(view_errors, view.errors)
+
+    def test_sourcepackgename_required(self):
+        # A source package name must be provided.
+        form = {
+            'field.distroseries': 'hoary',
+            'field.sourcepackagename': '',
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.productseries, '+ubuntupkg', form=form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual('sourcepackagename', view.errors[0].field_name)
+        self.assertEqual('Required input is missing.', view.errors[0].doc())
+
+    def test_cannot_link_to_nonexistant_ubuntu_package(self):
+        # In the case of full functionality distributions like Ubuntu, the
+        # source package must be published in the distro series.
+        self.factory.makeSourcePackageName('vapor')
+        form = {
+            'field.distroseries': 'hoary',
+            'field.sourcepackagename': 'vapor',
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.productseries, '+ubuntupkg', form=form)
+        view_errors = ['The source package is not published in Hoary.']
+        self.assertEqual(view_errors, view.errors)
+
+    def test_link_older_distroseries(self):
+        # The view allows users to link to older Ubuntu series.
+        warty = self.ubuntu.getSeries('warty')
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.sourcepackagename, distroseries=warty)
+        form = {
+            'field.distroseries': 'warty',
+            'field.sourcepackagename': 'hot',
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.productseries, '+ubuntupkg', form=form)
+        self.assertEqual([], view.errors)
+        has_packaging = self.packaging_util.packagingEntryExists(
+            self.sourcepackagename, warty, self.productseries)
+        self.assertTrue(has_packaging)
+
+
+class TestBrowserDeletePackaging(TestCaseWithFactory):
     """Browser tests for deletion of Packaging objects."""
 
     layer = PageTestLayer
 
     def setUp(self):
+        super(TestBrowserDeletePackaging, self).setUp()
+        # Only the person which created the packaging, admins
+        # and other people with certain privileges can delete a
+        # packaging. Since the sample data record we'll use for
+        # deletion testing does not have any owner set, we'll
+        # log in as an admin.
         self.user_browser = setupBrowser(
-            auth="Basic no-priv@canonical.com:test")
+            auth="Basic foo.bar@canonical.com:test")
 
     def test_deletionIsPersistent(self):
         # Test that deleting a Packaging entry is persistent.
@@ -67,6 +191,35 @@ class TestBrowserDeletePackaging(TestCase):
             distroseries=distroseries))
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestDistroseriesPackagingMemcache(MemcacheTestCase):
+    """Tests distroseries packaging cache rules."""
 
+    def setUp(self):
+        super(TestDistroseriesPackagingMemcache, self).setUp()
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.hoary = ubuntu.getSeries('hoary')
+        self.observer = self.factory.makePerson()
+
+    def test_needs_packaging_memcache(self):
+        # Verify that the packages table is cached.
+        # Miss the cache on first render.
+        view = create_initialized_view(
+            self.hoary, name='+needs-packaging', principal=self.observer)
+        self.assertCacheMiss('<table id="packages"', view.render())
+        # Hit the cache on the second render.
+        view = create_initialized_view(
+            self.hoary, name='+needs-packaging', principal=self.observer)
+        self.assertCacheHit(
+            '<table id="packages"', 'public, 30 minute', view.render())
+
+    def test_packaging_memcache(self):
+        # Verify that the packagings table is cached.
+        # Miss the cache on first render.
+        view = create_initialized_view(
+            self.hoary, name='+packaging', principal=self.observer)
+        self.assertCacheMiss('<table id="packagings"', view.render())
+        # Hit the cache on the second render.
+        view = create_initialized_view(
+            self.hoary, name='+packaging', principal=self.observer)
+        self.assertCacheHit(
+            '<table id="packagings"', 'public, 30 minute', view.render())

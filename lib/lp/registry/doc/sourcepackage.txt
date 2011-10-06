@@ -55,16 +55,57 @@ If the package doesn't exist, queryByName returns None:
     None
 
 
+Source package meta object
+--------------------------
+
+A SourcePackage is a meta representation of a source package that is published
+in a distroseries. It provides access to the current and historic information
+about the package in the series. Since a SourcePackage is a meta object, it
+can be constructed from a SourcePackageName and a distroseries.
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.model.sourcepackage import SourcePackage
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
+    >>> firefox_warty_package = SourcePackage(sourcepackagename=firefox,
+    ...     distroseries=ubuntu_warty)
+    >>> firefox_warty_package
+    <SourcePackage ...'Ubuntu'...'warty'...'mozilla-firefox'...>
+
+An instance is commonly retrieved from a distroseries.
+
+    >>> firefox_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
+    >>> firefox_warty == firefox_warty_package
+    True
+
+
+Descriptive attributes
+......................
+
+A source package has a name, displayname, title, and a summary.
+
+    >>> print firefox_warty.name
+    mozilla-firefox
+
+    >>> print firefox_warty.displayname
+    mozilla-firefox in Ubuntu Warty
+
+    >>> print firefox_warty.title.encode('ascii', 'ignore')
+    mozilla-firefox source package in Warty
+
+    >>> print firefox_warty.summary
+    mozilla-firefox: Mozilla Firefox Web Browser
+    mozilla-firefox-data: No summary available for mozilla-firefox-data
+    in ubuntu warty.
+
+
 Latest published component
 ..........................
 
 The 'latest_published_component' attribute indicates the component where
 the package was last published.
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_warty = ubuntu.getSeries('warty')
-    >>> firefox_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
     >>> firefox_warty.latest_published_component.name
     u'main'
 
@@ -87,16 +128,14 @@ upload, even though it gets changed in the publishing record.
     PUBLISHED main
 
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.database import Component
-    >>> from canonical.launchpad.database import (
+    >>> from lp.soyuz.model.component import Component
+    >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
-    >>> from canonical.launchpad.ftests import syncUpdate
 
     >>> latest_publishing = SourcePackagePublishingHistory.get(
     ...     publishing_history[-1].id)
     >>> universe = Component.byName('universe')
     >>> latest_publishing.component = universe
-    >>> syncUpdate(latest_publishing)
     >>> flush_database_caches()
 
     >>> for release in firefox_warty.distinctreleases:
@@ -109,10 +148,9 @@ upload, even though it gets changed in the publishing record.
 Only PUBLISHED records are considered when looking the latest published
 component. If there are no PUBLISHED records, None is returned.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> latest_publishing.status = PackagePublishingStatus.SUPERSEDED
-    >>> syncUpdate(latest_publishing)
     >>> print firefox_warty.latest_published_component
     None
 
@@ -150,7 +188,6 @@ See bug #179028 for further information.
 
     >>> from datetime import timedelta
     >>> pub.dateremoved = pub.datesuperseded + timedelta(days=1)
-    >>> syncUpdate(pub)
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
@@ -179,10 +216,8 @@ something quite different, but is outside the scope of this document.)
 To retrieve a distribution source package, use the getSourcePackage
 method on a distribution:
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distributionsourcepackage import (
     ...     IDistributionSourcePackage)
-    >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> ubuntu_firefox = ubuntu.getSourcePackage(firefox)
     >>> IDistributionSourcePackage.providedBy(ubuntu_firefox)
     True
@@ -194,7 +229,7 @@ method on a distribution:
     \u201cmozilla-firefox\u201d package in Ubuntu
 
     >>> print ubuntu_firefox.displayname
-    mozilla-firefox in ubuntu
+    mozilla-firefox in Ubuntu
 
     >>> ubuntu_firefox.distribution == ubuntu
     True
@@ -204,7 +239,7 @@ method on a distribution:
 
 Distro sourcepackages know how to compare to each other:
 
-    >>> debian = getUtility(IDistributionSet).get(3)
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> ubuntu_firefox_also = ubuntu.getSourcePackage(firefox)
     >>> debian_firefox = debian.getSourcePackage(firefox)
 
@@ -282,7 +317,7 @@ to a product series, the source package does have a product series.
 
     >>> user = factory.makePerson()
     >>> a52dec_series = factory.makeProductSeries(name='ratty')
-    >>> PackagingUtil().createPackaging(
+    >>> packaging = PackagingUtil().createPackaging(
     ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
     ...     distroseries=hoary,
@@ -301,10 +336,12 @@ to a product series, the source package does have a product series.
 Packaging entries can be deleted using PackagingUtil.deletePackaging. That
 also removes the source package product series.
 
-    >>> PackagingUtil().deletePackaging(
-    ...     productseries=a52dec_series,
-    ...     sourcepackagename=a52dec,
-    ...     distroseries=hoary)
+    >>> from lp.testing import person_logged_in
+    >>> with person_logged_in(user):
+    ...     PackagingUtil().deletePackaging(
+    ...         productseries=a52dec_series,
+    ...         sourcepackagename=a52dec,
+    ...         distroseries=hoary)
     >>> PackagingUtil().packagingEntryExists(
     ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
@@ -342,41 +379,8 @@ be more like the bug number linkification just below.
     <BLANKLINE>
 
 The view will linkify bug numbers of the format "LP: #number" in the
-changelog if number is a valid bug ID (also see Soyuz page tests 24
--sourcepackage-changelog.txt).  The changelog() method calls a method
-_linkify_bug_numbers() to do this.
-
-Zero or more spaces may appear between the ":" and the "#".
-
-    >>> from lp.soyuz.browser.sourcepackagerelease import (
-    ...     linkify_bug_numbers)
-    >>> linkify_bug_numbers("LP: #10")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>'
-
-    >>> linkify_bug_numbers("LP:         #10")
-    u'LP:         <a href="/bugs/10" title="another test bug">#10</a>'
-
-    >>> linkify_bug_numbers("LP:#10")
-    u'LP:<a href="/bugs/10" title="another test bug">#10</a>'
-
-    >>> linkify_bug_numbers("LP: #999")
-    'LP: <a href="/bugs/999" title="No such bug">#999</a>'
-
-    >>> linkify_bug_numbers("garbage")
-    'garbage'
-
-    >>> linkify_bug_numbers("LP: #10, #7")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>,
-    <a href="/bugs/7" title="A test bug">#7</a>'
-
-    >>> linkify_bug_numbers("LP: #10 LP: #10")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>
-      LP: <a href="/bugs/10" title="another test bug">#10</a>'
-
-The regex is case-insensitive, so "lp: #nnn" also works.
-
-    >>> linkify_bug_numbers("lp: #10")
-    u'lp: <a href="/bugs/10" title="another test bug">#10</a>'
+changelog if number is a valid bug ID (see Soyuz page tests 24
+-sourcepackage-changelog.txt).
 
 
 Comparing Sourcepackages
@@ -526,7 +530,7 @@ Interface implementation
 SourcePackage implements IHasTranslationImports interface:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)
     True

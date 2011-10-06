@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -16,61 +16,141 @@ __all__ = [
     ]
 
 
-import apt_pkg
+from collections import defaultdict
 from datetime import datetime
 import operator
 import os
-import pytz
 import re
+import sys
 
+import pytz
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Desc,
+    LeftJoin,
+    Or,
+    Sum,
+    )
+from storm.store import Store
+from storm.zope import IResultSet
+from storm.zope.interfaces import ISQLObjectResultSet
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
-from sqlobject import ForeignKey, StringCol
-
-from storm.expr import Desc, In, LeftJoin
-from storm.store import Store
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
-from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.build import BuildSetStatus, IBuildSet
-from lp.soyuz.interfaces.component import IComponentSet
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.worlddata.model.country import Country
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus,
+    IBinaryPackageBuildSet,
+    )
+from lp.soyuz.interfaces.distributionjob import (
+    IDistroSeriesDifferenceJobSource,
+    )
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, IBinaryPackageFilePublishing,
-    IBinaryPackagePublishingHistory, IPublishingSet,
-    ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingStatus,
-    PoolFileOverwriteError)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+    active_publishing_status,
+    IBinaryPackageFilePublishing,
+    IBinaryPackagePublishingHistory,
+    IPublishingSet,
+    ISourcePackageFilePublishing,
+    ISourcePackagePublishingHistory,
+    PoolFileOverwriteError,
+    )
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
+from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 
-# XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
 def makePoolPath(source_name, component_name):
+    # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
     """Return the pool path for a given source name and component name."""
     from lp.archivepublisher.diskpool import poolify
     return os.path.join(
         'pool', poolify(source_name, component_name))
+
+
+def get_component(archive, distroseries, component):
+    """Override the component to fit in the archive, if possible.
+
+    If the archive has a default component, and it forbids use of the
+    requested component in the requested series, use the default.
+
+    If there is no default, just return the given component.
+    """
+    permitted_components = archive.getComponentsForSeries(distroseries)
+    if (component not in permitted_components and
+        archive.default_component is not None):
+        return archive.default_component
+    return component
+
+
+def get_archive(archive, bpr):
+    """Get the archive in which this binary should be published.
+
+    Debug packages live in a DEBUG archive instead of a PRIMARY archive.
+    This helper implements that override.
+    """
+    if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+        debug_archive = archive.debug_archive
+        if debug_archive is None:
+            raise QueueInconsistentStateError(
+                "Could not find the corresponding DEBUG archive "
+                "for %s" % (archive.displayname))
+        archive = debug_archive
+    return archive
 
 
 class FilePublishingBase:
@@ -78,12 +158,6 @@ class FilePublishingBase:
 
     def publish(self, diskpool, log):
         """See IFilePublishing."""
-        # DDEB publication for PPAs is temporarily disabled, see bug #399444.
-        if (self.archive.is_ppa and
-            self.libraryfilealiasfilename.endswith('.ddeb')):
-            log.debug('Skipping DDEB disk publication.')
-            return
-
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')
@@ -93,22 +167,15 @@ class FilePublishingBase:
         sha1 = filealias.content.sha1
         path = diskpool.pathFor(component, source, filename)
 
-        try:
-            action = diskpool.addFile(
-                component, source, filename, sha1, filealias)
-            if action == diskpool.results.FILE_ADDED:
-                log.debug("Added %s from library" % path)
-            elif action == diskpool.results.SYMLINK_ADDED:
-                log.debug("%s created as a symlink." % path)
-            elif action == diskpool.results.NONE:
-                log.debug(
-                    "%s is already in pool with the same content." % path)
-        except PoolFileOverwriteError, info:
-            log.error("PoolFileOverwriteError: %s. Skipping. This indicates "
-                      "some bad data, and Team Soyuz should be informed. "
-                      "However, publishing of other packages is not affected."
-                      % info)
-            raise info
+        action = diskpool.addFile(
+            component, source, filename, sha1, filealias)
+        if action == diskpool.results.FILE_ADDED:
+            log.debug("Added %s from library" % path)
+        elif action == diskpool.results.SYMLINK_ADDED:
+            log.debug("%s created as a symlink." % path)
+        elif action == diskpool.results.NONE:
+            log.debug(
+                "%s is already in pool with the same content." % path)
 
     @property
     def archive_url(self):
@@ -194,11 +261,6 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
 
     implements(IBinaryPackageFilePublishing)
 
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False, notNull=True,
-                              immutable=True)
-
     binarypackagepublishing = ForeignKey(
         dbName='binarypackagepublishing',
         foreignKey='BinaryPackagePublishingHistory', immutable=True)
@@ -216,19 +278,6 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True, immutable=True)
-
-    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
-                                  notNull=True, immutable=True)
-
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               notNull=True, immutable=True,
-                               schema=PackagePublishingStatus)
-
-    architecturetag = StringCol(dbName='architecturetag', unique=False,
-                                notNull=True, immutable=True)
-
-    pocket = EnumCol(dbName='pocket', unique=False,
-                     notNull=True, schema=PackagePublishingPocket)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -258,8 +307,13 @@ class ArchivePublisherBase:
         try:
             for pub_file in self.files:
                 pub_file.publish(diskpool, log)
-        except PoolFileOverwriteError:
-            pass
+        except PoolFileOverwriteError, e:
+            message = "PoolFileOverwriteError: %s, skipping." % e
+            properties = [('error-explanation', message)]
+            request = ScriptRequest(properties)
+            error_utility = ErrorReportingUtility()
+            error_utility.raising(sys.exc_info(), request)
+            log.error('%s (%s)' % (message, request.oopsid))
         else:
             self.setPublished()
 
@@ -268,18 +322,15 @@ class ArchivePublisherBase:
         fields = self.buildIndexStanzaFields()
         return fields.makeOutput()
 
-    def supersede(self):
-        """See `IPublishing`."""
+    def setSuperseded(self):
+        """Set to SUPERSEDED status."""
         self.status = PackagePublishingStatus.SUPERSEDED
         self.datesuperseded = UTC_NOW
-        return self
 
-    def requestDeletion(self, removed_by, removal_comment=None):
-        """See `IPublishing`."""
-        self.status = PackagePublishingStatus.DELETED
-        self.datesuperseded = UTC_NOW
-        self.removed_by = removed_by
-        self.removal_comment = removal_comment
+    def setDeleted(self, removed_by, removal_comment=None):
+        """Set to DELETED status."""
+        getUtility(IPublishingSet).setMultipleDeleted(
+            self.__class__, [self.id], removed_by, removal_comment)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -321,6 +372,11 @@ class IndexStanzaFields:
         Then we can use the FIFO-like behaviour in makeOutput().
         """
         self.fields.append((name, value))
+
+    def extend(self, entries):
+        """Extend the internal list with the key-value pairs in entries.
+        """
+        self.fields.extend(entries)
 
     def makeOutput(self):
         """Return a line-by-line aggregation of appended fields.
@@ -364,10 +420,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
     implements(ISourcePackagePublishingHistory)
 
-    sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
-        dbName='sourcepackagerelease')
-    distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distroseries')
+    sourcepackagename = ForeignKey(
+        foreignKey='SourcePackageName', dbName='sourcepackagename')
+    sourcepackagerelease = ForeignKey(
+        foreignKey='SourcePackageRelease', dbName='sourcepackagerelease')
+    distroseries = ForeignKey(
+        foreignKey='DistroSeries', dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -387,6 +445,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         dbName="removed_by", foreignKey="Person",
         storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
+    ancestor = ForeignKey(
+        dbName="ancestor", foreignKey="SourcePackagePublishingHistory",
+        default=None)
+    creator = ForeignKey(
+        dbName='creator', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def package_creator(self):
@@ -405,18 +469,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             return self.sourcepackagerelease.dscsigningkey.owner
         return None
 
-    @property
+    @cachedproperty
     def newer_distroseries_version(self):
         """See `ISourcePackagePublishingHistory`."""
-        latest_releases = self.distroseries.getCurrentSourceReleases(
-            [self.sourcepackagerelease.sourcepackagename])
-        latest_release = latest_releases.get(self.meta_sourcepackage, None)
-
-        if latest_release is not None and apt_pkg.VersionCompare(
-            latest_release.version, self.source_package_version) > 0:
-            return latest_release
-        else:
-            return None
+        self.distroseries.setNewerDistroSeriesVersions([self])
+        return get_property_cache(self).newer_distroseries_version
 
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -427,62 +484,72 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 for source, binary_pub, binary, binary_name, arch
                 in result_set]
 
-    def getBuiltBinaries(self):
+    def getBuiltBinaries(self, want_files=False):
         """See `ISourcePackagePublishingHistory`."""
-        clauses = """
-            BinaryPackagePublishingHistory.binarypackagerelease=
-                BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchseries=
-                DistroArchSeries.id AND
-            BinaryPackageRelease.build=Build.id AND
-            Build.sourcepackagerelease=%s AND
-            DistroArchSeries.distroseries=%s AND
-            BinaryPackagePublishingHistory.archive=%s AND
-            BinaryPackagePublishingHistory.pocket=%s
-        """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
-                        self.archive, self.pocket)
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        binary_publications = list(Store.of(self).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.archiveID == self.archiveID,
+            BinaryPackagePublishingHistory.pocket == self.pocket,
+            BinaryPackageBuild.id == BinaryPackageRelease.buildID,
+            BinaryPackageBuild.source_package_release_id ==
+                self.sourcepackagereleaseID,
+            DistroArchSeries.distroseriesID == self.distroseriesID))
 
-        clauseTables = ['Build', 'BinaryPackageRelease', 'DistroArchSeries']
-        orderBy = ['-BinaryPackagePublishingHistory.id']
-        preJoins = ['binarypackagerelease']
+        # Preload attached BinaryPackageReleases.
+        bpr_ids = set(
+            pub.binarypackagereleaseID for pub in binary_publications)
+        list(Store.of(self).find(
+            BinaryPackageRelease, BinaryPackageRelease.id.is_in(bpr_ids)))
 
-        results = BinaryPackagePublishingHistory.select(
-            clauses, orderBy=orderBy, clauseTables=clauseTables,
-            prejoins=preJoins)
-        binary_publications = list(results)
+        if want_files:
+            # Preload BinaryPackageFiles.
+            bpfs = list(Store.of(self).find(
+                BinaryPackageFile,
+                BinaryPackageFile.binarypackagereleaseID.is_in(bpr_ids)))
+            bpfs_by_bpr = defaultdict(list)
+            for bpf in bpfs:
+                bpfs_by_bpr[bpf.binarypackagerelease].append(bpf)
+            for bpr in bpfs_by_bpr:
+                get_property_cache(bpr).files = bpfs_by_bpr[bpr]
 
-        unique_binary_ids = set(
-            [pub.binarypackagerelease.id for pub in binary_publications])
+            # Preload LibraryFileAliases.
+            lfa_ids = set(bpf.libraryfileID for bpf in bpfs)
+            list(Store.of(self).find(
+                LibraryFileAlias, LibraryFileAlias.id.is_in(lfa_ids)))
 
         unique_binary_publications = []
         for pub in binary_publications:
-            if pub.binarypackagerelease.id in unique_binary_ids:
+            if pub.binarypackagerelease.id in bpr_ids:
                 unique_binary_publications.append(pub)
-                unique_binary_ids.remove(pub.binarypackagerelease.id)
-                if len(unique_binary_ids) == 0:
+                bpr_ids.remove(pub.binarypackagerelease.id)
+                if len(bpr_ids) == 0:
                     break
 
         return unique_binary_publications
 
+    @staticmethod
+    def _convertBuilds(builds_for_sources):
+        """Convert from IPublishingSet getBuilds to SPPH getBuilds."""
+        return [build[1] for build in builds_for_sources]
+
     def getBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
-        result_set = publishing_set.getBuildsForSources(self)
-
-        return [build for source, build, arch in result_set]
+        result_set = publishing_set.getBuildsForSources([self])
+        return SourcePackagePublishingHistory._convertBuilds(result_set)
 
     def getUnpublishedBuilds(self, build_states=None):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
         result_set = publishing_set.getUnpublishedBuildsForSources(
             self, build_states)
-
-        # Create a function that will just return the second item
-        # in the result tuple (the build).
-        def result_to_build(result):
-            return result[1]
-
-        return DecoratedResultSet(result_set, result_to_build)
+        return DecoratedResultSet(result_set, operator.itemgetter(1))
 
     def changesFileUrl(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -508,30 +575,28 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return the_url
 
     def _getAllowedArchitectures(self, available_archs):
-        """Filter out any restricted architectures not specifically allowed 
+        """Filter out any restricted architectures not specifically allowed
         for an archive.
 
         :param available_archs: Architectures to consider
         :return: Sequence of `IDistroArch` instances.
         """
-        associated_proc_families = [
-            archivearch.processorfamily for archivearch 
-            in getUtility(IArchiveArchSet).getByArchive(self.archive)]
         # Return all distroarches with unrestricted processor families or with
         # processor families the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
-            if not distroarch.processorfamily.restricted or 
-               distroarch.processorfamily in associated_proc_families]
+            if not distroarch.processorfamily.restricted or
+               distroarch.processorfamily in
+                    self.archive.enabled_restricted_families]
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if self.archive.purpose == ArchivePurpose.PPA:
+        if self.archive.is_ppa:
             pas_verify = None
 
         if architectures_available is None:
             architectures_available = list(
-                self.distroseries.enabled_architectures)
+                self.distroseries.buildable_architectures)
 
         architectures_available = self._getAllowedArchitectures(
             architectures_available)
@@ -551,8 +616,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def _createMissingBuildForArchitecture(self, arch, logger=None):
         """Create a build for a given architecture if it doesn't exist yet.
 
-        Return the just-created `IBuild` record already scored or None
-        if a suitable build is already present.
+        Return the just-created `IBinaryPackageBuild` record already
+        scored or None if a suitable build is already present.
         """
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
@@ -560,15 +625,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Check DistroArchSeries database IDs because the object belongs
         # to different transactions (architecture_available is cached).
         if (build_candidate is not None and
-            (build_candidate.distroarchseries.id == arch.id or
-             build_candidate.buildstate == BuildStatus.FULLYBUILT)):
+            (build_candidate.distro_arch_series.id == arch.id or
+             build_candidate.status == BuildStatus.FULLYBUILT)):
             return None
 
         build = self.sourcepackagerelease.createBuild(
-            distroarchseries=arch, archive=self.archive, pocket=self.pocket)
+            distro_arch_series=arch, archive=self.archive, pocket=self.pocket)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not self.archive.enabled)
-        build_queue.score()
         Store.of(build).flush()
 
         if logger is not None:
@@ -601,22 +665,19 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def meta_sourcepackage(self):
         """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.getSourcePackage(
-            self.sourcepackagerelease.sourcepackagename
-            )
+            self.sourcepackagerelease.sourcepackagename)
 
     @property
     def meta_sourcepackagerelease(self):
         """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.distribution.getSourcePackageRelease(
-            self.sourcepackagerelease
-            )
+            self.sourcepackagerelease)
 
     @property
     def meta_distroseriessourcepackagerelease(self):
         """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.getSourcePackageRelease(
-            self.sourcepackagerelease
-            )
+            self.sourcepackagerelease)
 
     @property
     def meta_supersededby(self):
@@ -624,9 +685,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if not self.supersededby:
             return None
         return self.distroseries.distribution.getSourcePackageRelease(
-            self.supersededby
-            )
+            self.supersededby)
 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when
+    # self.sourcepackagename is populated.
     @property
     def source_package_name(self):
         """See `ISourcePackagePublishingHistory`"""
@@ -671,8 +733,29 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Format', spr.dsc_format)
         fields.append('Directory', pool_path)
         fields.append('Files', files_subsection)
+        if spr.user_defined_fields:
+            fields.extend(spr.user_defined_fields)
 
         return fields
+
+    def supersede(self, dominant=None, logger=None):
+        """See `ISourcePackagePublishingHistory`."""
+        assert self.status in active_publishing_status, (
+            "Should not dominate unpublished source %s" %
+            self.sourcepackagerelease.title)
+
+        self.setSuperseded()
+
+        if dominant is not None:
+            if logger is not None:
+                logger.debug(
+                    "%s/%s has been judged as superseded by %s/%s" %
+                    (self.sourcepackagerelease.sourcepackagename.name,
+                     self.sourcepackagerelease.version,
+                     dominant.sourcepackagerelease.sourcepackagename.name,
+                     dominant.sourcepackagerelease.version))
+
+            self.supersededby = dominant.sourcepackagerelease
 
     def changeOverride(self, new_component=None, new_section=None):
         """See `ISourcePackagePublishingHistory`."""
@@ -705,26 +788,34 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
-        return SourcePackagePublishingHistory(
+        return getUtility(IPublishingSet).newSourcePublication(
             distroseries=current.distroseries,
             sourcepackagerelease=current.sourcepackagerelease,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
             pocket=current.pocket,
             component=new_component,
             section=new_section,
             archive=current.archive)
 
-    def copyTo(self, distroseries, pocket, archive):
+    def copyTo(self, distroseries, pocket, archive, override=None,
+               create_dsd_job=True, creator=None):
         """See `ISourcePackagePublishingHistory`."""
+        component = self.component
+        section = self.section
+        if override is not None:
+            if override.component is not None:
+                component = override.component
+            if override.section is not None:
+                section = override.section
         return getUtility(IPublishingSet).newSourcePublication(
             archive,
             self.sourcepackagerelease,
             distroseries,
-            self.component,
-            self.section,
-            pocket
-            )
+            component,
+            section,
+            pocket,
+            ancestor=self,
+            create_dsd_job=create_dsd_job,
+            creator=creator)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -751,20 +842,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         assert self.status == PackagePublishingStatus.PENDING, (
             "Cannot override published records.")
 
-        # If there is an published ancestry, use its component, otherwise
-        # use the original upload component.
-        ancestry = self.getAncestry()
-        if ancestry is not None:
-            component = ancestry.component
-        else:
-            component = self.sourcepackagerelease.component
+        # If there is published ancestry, use its component, otherwise
+        # use the original upload component. Since PPAs only use main,
+        # we don't need to check the ancestry.
+        if not self.archive.is_ppa:
+            ancestry = self.getAncestry()
+            if ancestry is not None:
+                component = ancestry.component
+            else:
+                component = self.sourcepackagerelease.component
 
-        self.component = component
+            self.component = component
+
+        assert self.component in (
+            self.archive.getComponentsForSeries(self.distroseries))
 
     def _proxied_urls(self, files, parent):
         """Run the files passed through `ProxiedLibraryFileAlias`."""
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
         return [
             ProxiedLibraryFileAlias(file, parent).http_url for file in files]
 
@@ -784,16 +878,45 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             [binary for _source, binary, _content in binaries], self.archive)
         return binary_urls
 
+    def packageDiffUrl(self, to_version):
+        """See `ISourcePackagePublishingHistory`."""
+        # There will be only very few diffs for each package so
+        # iterating is fine here, since the package_diffs property is a
+        # multiple join and returns all the diffs quite quickly.
+        for diff in self.sourcepackagerelease.package_diffs:
+            if diff.to_source.version == to_version:
+                return ProxiedLibraryFileAlias(
+                    diff.diff_content, self.archive).http_url
+        return None
+
+    def requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishing`."""
+        self.setDeleted(removed_by, removal_comment)
+        if self.archive.is_main:
+            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+            dsd_job_source.createForPackagePublication(
+                self.distroseries,
+                self.sourcepackagerelease.sourcepackagename, self.pocket)
+
+    def api_requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishingEdit`."""
+        # Special deletion method for the api that makes sure binaries
+        # get deleted too.
+        getUtility(IPublishingSet).requestDeletion(
+            [self], removed_by, removal_comment)
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record."""
 
     implements(IBinaryPackagePublishingHistory)
 
-    binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
-                                      dbName='binarypackagerelease')
-    distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchseries')
+    binarypackagename = ForeignKey(
+        foreignKey='BinaryPackageName', dbName='binarypackagename')
+    binarypackagerelease = ForeignKey(
+        foreignKey='BinaryPackageRelease', dbName='binarypackagerelease')
+    distroarchseries = ForeignKey(
+        foreignKey='DistroArchSeries', dbName='distroarchseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
@@ -802,8 +925,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     datepublished = UtcDateTimeCol(default=None)
     datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
-    supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
-                              default=None)
+    supersededby = ForeignKey(
+        foreignKey='BinaryPackageBuild', dbName='supersededby', default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
@@ -817,7 +940,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def distroarchseriesbinarypackagerelease(self):
         """See `IBinaryPackagePublishingHistory`."""
         # Import here to avoid circular import.
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
 
         return DistroArchSeriesBinaryPackageRelease(
@@ -833,18 +956,30 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             binarypackagepublishing=self).prejoin(preJoins)
 
     @property
+    def distroseries(self):
+        """See `IBinaryPackagePublishingHistory`"""
+        return self.distroarchseries.distroseries
+
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when
+    # self.binarypackagename is populated.
+    @property
     def binary_package_name(self):
-        """See `ISourcePackagePublishingHistory`"""
+        """See `IBinaryPackagePublishingHistory`"""
         return self.binarypackagerelease.name
 
     @property
     def binary_package_version(self):
-        """See `ISourcePackagePublishingHistory`"""
+        """See `IBinaryPackagePublishingHistory`"""
         return self.binarypackagerelease.version
 
     @property
+    def architecture_specific(self):
+        """See `IBinaryPackagePublishingHistory`"""
+        return self.binarypackagerelease.architecturespecific
+
+    @property
     def priority_name(self):
-        """See `ISourcePackagePublishingHistory`"""
+        """See `IBinaryPackagePublishingHistory`"""
         return self.priority.name
 
     @property
@@ -857,10 +992,14 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                    distroseries.name,
                                    self.distroarchseries.architecturetag)
 
+    def getDownloadCount(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        return self.archive.getPackageDownloadTotal(self.binarypackagerelease)
+
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
         bpr = self.binarypackagerelease
-        spr = bpr.build.sourcepackagerelease
+        spr = bpr.build.source_package_release
 
         # binaries have only one file, the DEB
         bin_file = bpr.files[0]
@@ -879,13 +1018,13 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         #  <DESCRIPTION LN>
         descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
         bin_description = (
-            '%s\n %s'% (bpr.summary, '\n '.join(descr_lines)))
+            '%s\n %s' % (bpr.summary, '\n '.join(descr_lines)))
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture
         # independent binaries.
         if bpr.architecturespecific:
-            architecture = bpr.build.distroarchseries.architecturetag
+            architecture = bpr.build.distro_arch_series.architecturetag
         else:
             architecture = 'all'
 
@@ -893,9 +1032,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if bpr.essential:
             essential = 'yes'
 
+        source = None
+        if bpr.version != spr.version:
+            source = '%s (%s)' % (spr.name, spr.version)
+        elif bpr.name != spr.name:
+            source = spr.name
+
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
-        fields.append('Source', spr.name)
+        fields.append('Source', source)
         fields.append('Priority', self.priority.title.lower())
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
@@ -917,12 +1062,115 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('MD5sum', bin_md5)
         fields.append('SHA1', bin_sha1)
         fields.append('Description', bin_description)
+        if bpr.user_defined_fields:
+            fields.extend(bpr.user_defined_fields)
 
         # XXX cprov 2006-11-03: the extra override fields (Bugs, Origin and
         # Task) included in the template be were not populated.
         # When we have the information this will be the place to fill them.
 
         return fields
+
+    def _getOtherPublications(self):
+        """Return remaining publications with the same overrides.
+
+        Only considers binary publications in the same archive, distroseries,
+        pocket, component, section and priority context. These publications
+        are candidates for domination if this is an architecture-independent
+        package.
+
+        The override match is critical -- it prevents a publication created
+        by new overrides from superseding itself.
+        """
+        available_architectures = [
+            das.id for das in
+                self.distroarchseries.distroseries.architectures]
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.status.is_in(
+                    active_publishing_status),
+                BinaryPackagePublishingHistory.distroarchseriesID.is_in(
+                    available_architectures),
+                binarypackagerelease=self.binarypackagerelease,
+                archive=self.archive,
+                pocket=self.pocket,
+                component=self.component,
+                section=self.section,
+                priority=self.priority)
+
+    def _getCorrespondingDDEBPublications(self):
+        """Return remaining publications of the corresponding DDEB.
+
+        Only considers binary publications in the corresponding debug
+        archive with the same distroarchseries, pocket, component, section
+        and priority.
+        """
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.status.is_in(
+                    active_publishing_status),
+                BinaryPackagePublishingHistory.distroarchseries ==
+                    self.distroarchseries,
+                binarypackagerelease=self.binarypackagerelease.debug_package,
+                archive=self.archive.debug_archive,
+                pocket=self.pocket,
+                component=self.component,
+                section=self.section,
+                priority=self.priority)
+
+    def supersede(self, dominant=None, logger=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        # At this point only PUBLISHED (ancient versions) or PENDING (
+        # multiple overrides/copies) publications should be given. We
+        # tolerate SUPERSEDED architecture-independent binaries, because
+        # they are dominated automatically once the first publication is
+        # processed.
+        if self.status not in active_publishing_status:
+            assert not self.binarypackagerelease.architecturespecific, (
+                "Should not dominate unpublished architecture specific "
+                "binary %s (%s)" % (
+                self.binarypackagerelease.title,
+                self.distroarchseries.architecturetag))
+            return
+
+        self.setSuperseded()
+
+        if dominant is not None:
+            # DDEBs cannot themselves be dominant; they are always dominated
+            # by their corresponding DEB. Any attempt to dominate with a
+            # dominant DDEB is a bug.
+            assert (
+                dominant.binarypackagerelease.binpackageformat !=
+                    BinaryPackageFormat.DDEB), (
+                "Should not dominate with %s (%s); DDEBs cannot dominate" % (
+                    dominant.binarypackagerelease.title,
+                    dominant.distroarchseries.architecturetag))
+
+            dominant_build = dominant.binarypackagerelease.build
+            distroarchseries = dominant_build.distro_arch_series
+            if logger is not None:
+                logger.debug(
+                    "The %s build of %s has been judged as superseded by the "
+                    "build of %s.  Arch-specific == %s" % (
+                    distroarchseries.architecturetag,
+                    self.binarypackagerelease.title,
+                    dominant_build.source_package_release.title,
+                    self.binarypackagerelease.architecturespecific))
+            # Binary package releases are superseded by the new build,
+            # not the new binary package release. This is because
+            # there may not *be* a new matching binary package -
+            # source packages can change the binaries they build
+            # between releases.
+            self.supersededby = dominant_build
+
+        for dominated in self._getCorrespondingDDEBPublications():
+            dominated.supersede(dominant, logger)
+
+        # If this is architecture-independent, all publications with the same
+        # context and overrides should be dominated simultaneously.
+        if not self.binarypackagerelease.architecturespecific:
+            for dominated in self._getOtherPublications():
+                dominated.supersede(dominant, logger)
 
     def changeOverride(self, new_component=None, new_section=None,
                        new_priority=None):
@@ -961,6 +1209,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Append the modified package publishing entry
         return BinaryPackagePublishingHistory(
+            binarypackagename=self.binarypackagerelease.binarypackagename,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
@@ -1006,118 +1255,280 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         self.component = component
 
+    def _getDownloadCountClauses(self, start_date=None, end_date=None):
+        clauses = [
+            BinaryPackageReleaseDownloadCount.archive == self.archive,
+            BinaryPackageReleaseDownloadCount.binary_package_release ==
+                self.binarypackagerelease,
+            ]
+
+        if start_date is not None:
+            clauses.append(
+                BinaryPackageReleaseDownloadCount.day >= start_date)
+        if end_date is not None:
+            clauses.append(
+                BinaryPackageReleaseDownloadCount.day <= end_date)
+
+        return clauses
+
+    def getDownloadCounts(self, start_date=None, end_date=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        clauses = self._getDownloadCountClauses(start_date, end_date)
+
+        return Store.of(self).using(
+            BinaryPackageReleaseDownloadCount,
+            LeftJoin(
+                Country,
+                BinaryPackageReleaseDownloadCount.country_id ==
+                    Country.id)).find(
+            BinaryPackageReleaseDownloadCount, *clauses).order_by(
+                Desc(BinaryPackageReleaseDownloadCount.day), Country.name)
+
+    def getDailyDownloadTotals(self, start_date=None, end_date=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        clauses = self._getDownloadCountClauses(start_date, end_date)
+
+        results = Store.of(self).find(
+            (BinaryPackageReleaseDownloadCount.day,
+             Sum(BinaryPackageReleaseDownloadCount.count)),
+            *clauses).group_by(
+                BinaryPackageReleaseDownloadCount.day)
+
+        def date_to_string(result):
+            return (result[0].strftime('%Y-%m-%d'), result[1])
+
+        return dict(date_to_string(result) for result in results)
+
+    def api_requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishingEdit`."""
+        # Special deletion method for the api.  We don't do anything
+        # different here (yet).
+        self.requestDeletion(removed_by, removal_comment)
+
+    def requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishing`."""
+        self.setDeleted(removed_by, removal_comment)
+
+
+def expand_binary_requests(distroseries, binaries):
+    """Architecture-expand a dict of binary publication requests.
+
+    For architecture-independent binaries, a tuple will be returned for each
+    enabled architecture in the series.
+    For architecture-dependent binaries, a tuple will be returned only for the
+    architecture corresponding to the build architecture, if it exists and is
+    enabled.
+
+    :param binaries: A dict mapping `BinaryPackageReleases` to tuples of their
+        desired overrides.
+
+    :return: The binaries and the architectures in which they should be
+        published, as a sequence of (`DistroArchSeries`,
+        `BinaryPackageRelease`, (overrides)) tuples.
+    """
+
+    archs = list(distroseries.enabled_architectures)
+    arch_map = dict((arch.architecturetag, arch) for arch in archs)
+
+    expanded = []
+    for bpr, overrides in binaries.iteritems():
+        if bpr.architecturespecific:
+            # Find the DAS in this series corresponding to the original
+            # build arch tag. If it does not exist or is disabled, we should
+            # not publish.
+            target_arch = arch_map.get(
+                bpr.build.distro_arch_series.architecturetag)
+            target_archs = [target_arch] if target_arch is not None else []
+        else:
+            target_archs = archs
+        for target_arch in target_archs:
+            expanded.append((target_arch, bpr, overrides))
+    return expanded
+
 
 class PublishingSet:
     """Utilities for manipulating publications in batches."""
 
     implements(IPublishingSet)
 
-    def copyBinariesTo(self, binaries, distroseries, pocket, archive):
+    def copyBinariesTo(self, binaries, distroseries, pocket, archive,
+                       policy=None):
         """See `IPublishingSet`."""
+        if binaries is None:
+            return
 
-        # If the target archive is a ppa then we will need to override
-        # the component for each copy - so lookup the main component
-        # here once.
-        override_component = None
-        if archive.is_ppa:
-            override_component = getUtility(IComponentSet)['main']
+        if type(removeSecurityProxy(binaries)) == list:
+            if len(binaries) == 0:
+                return
+        else:
+            if ISQLObjectResultSet.providedBy(binaries):
+                # Adapt to ResultSet
+                binaries = IResultSet(binaries)
+            if binaries.is_empty():
+                return
 
-        secure_copies = []
-
-        for binary in binaries:
-            binarypackagerelease = binary.binarypackagerelease
-            target_component = override_component or binary.component
-
-            if binarypackagerelease.architecturespecific:
-                # If the binary is architecture specific and the target
-                # distroseries does not include the architecture then we
-                # skip the binary and continue.
-                try:
-                    # For safety, we use the architecture the binary was
-                    # built, and not the one it is published, coping with
-                    # single arch-indep publications for architectures that
-                    # do not exist in the destination series.
-                    # See #387589 for more information.
-                    target_architecture = distroseries[
-                        binarypackagerelease.build.arch_tag]
-                except NotFoundError:
+        if policy is not None:
+            bpn_archtag = {}
+            for bpph in binaries:
+                bpn_archtag[(
+                    bpph.binarypackagerelease.binarypackagename,
+                    bpph.distroarchseries.architecturetag)] = bpph
+            with_overrides = {}
+            overrides = policy.calculateBinaryOverrides(
+                archive, distroseries, pocket, bpn_archtag.keys())
+            for override in overrides:
+                if override.distro_arch_series is None:
                     continue
-                destination_architectures = [target_architecture]
-            else:
-                destination_architectures = distroseries.architectures
+                bpph = bpn_archtag[
+                    (override.binary_package_name,
+                     override.distro_arch_series.architecturetag)]
+                new_component = override.component or bpph.component
+                new_section = override.section or bpph.section
+                new_priority = override.priority or bpph.priority
+                calculated = (new_component, new_section, new_priority)
+                with_overrides[bpph.binarypackagerelease] = calculated
+        else:
+            with_overrides = dict(
+                (bpph.binarypackagerelease, (bpph.component, bpph.section,
+                 bpph.priority)) for bpph in binaries)
+        if not with_overrides:
+            return list()
+        return self.publishBinaries(
+            archive, distroseries, pocket, with_overrides)
 
-            for distroarchseries in destination_architectures:
+    def publishBinaries(self, archive, distroseries, pocket,
+                        binaries):
+        """See `IPublishingSet`."""
+        # Expand the dict of binaries into a list of tuples including the
+        # architecture.
+        expanded = expand_binary_requests(distroseries, binaries)
 
-                # We only copy the binary if it doesn't already exist
-                # in the destination.
-                binary_in_destination = archive.getAllPublishedBinaries(
-                    name=binarypackagerelease.name, exact_match=True,
-                    version=binarypackagerelease.version,
-                    status=active_publishing_status, pocket=pocket,
-                    distroarchseries=distroarchseries)
+        # Find existing publications.
+        # We should really be able to just compare BPR.id, but
+        # CopyChecker doesn't seem to ensure that there are no
+        # conflicting binaries from other sources.
+        def make_package_condition(archive, das, bpr):
+            return And(
+                BinaryPackagePublishingHistory.archiveID ==
+                    get_archive(archive, bpr).id,
+                BinaryPackagePublishingHistory.distroarchseriesID == das.id,
+                BinaryPackageRelease.binarypackagenameID ==
+                    bpr.binarypackagenameID,
+                BinaryPackageRelease.version == bpr.version,
+                )
+        candidates = (
+            make_package_condition(archive, das, bpr)
+            for das, bpr, overrides in expanded)
+        already_published = IMasterStore(BinaryPackagePublishingHistory).find(
+            (BinaryPackagePublishingHistory.distroarchseriesID,
+             BinaryPackageRelease.binarypackagenameID,
+             BinaryPackageRelease.version),
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status),
+            BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            Or(*candidates)).config(distinct=True)
+        already_published = frozenset(already_published)
 
-                if binary_in_destination.count() == 0:
-                    pub = BinaryPackagePublishingHistory(
-                        archive=archive,
-                        binarypackagerelease=binarypackagerelease,
-                        distroarchseries=distroarchseries,
-                        component=target_component,
-                        section=binary.section,
-                        priority=binary.priority,
-                        status=PackagePublishingStatus.PENDING,
-                        datecreated=UTC_NOW,
-                        pocket=pocket)
-                    secure_copies.append(pub)
+        needed = [
+            (das, bpr, overrides) for (das, bpr, overrides) in
+            expanded if (das.id, bpr.binarypackagenameID, bpr.version)
+            not in already_published]
+        if not needed:
+            return []
 
-        return secure_copies
+        insert_head = """
+            INSERT INTO BinaryPackagePublishingHistory
+            (archive, distroarchseries, pocket, binarypackagerelease,
+             binarypackagename, component, section, priority, status,
+             datecreated)
+            VALUES
+            """
+        insert_pubs = ", ".join(
+            "(%s)" % ", ".join(sqlvalues(
+                get_archive(archive, bpr).id, das.id, pocket, bpr.id,
+                bpr.binarypackagename,
+                get_component(archive, das.distroseries, component).id,
+                section.id, priority, PackagePublishingStatus.PENDING,
+                UTC_NOW))
+            for (das, bpr, (component, section, priority)) in needed)
+        insert_tail = " RETURNING BinaryPackagePublishingHistory.id"
+        new_ids = IMasterStore(BinaryPackagePublishingHistory).execute(
+            insert_head + insert_pubs + insert_tail)
+
+        publications = IMasterStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.id.is_in(id[0] for id in new_ids))
+        return list(publications)
+
+    def publishBinary(self, archive, binarypackagerelease, distroseries,
+                      component, section, priority, pocket):
+        """See `IPublishingSet`."""
+        return self.publishBinaries(
+            archive, distroseries, pocket,
+            {binarypackagerelease: (component, section, priority)})
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
                              pocket):
         """See `IPublishingSet`."""
-        if archive.is_ppa:
-            # PPA component must always be 'main', so we override it
-            # here.
-            component = getUtility(IComponentSet)['main']
-        pub = BinaryPackagePublishingHistory(
+        assert distroarchseries.enabled, (
+            "Will not create new publications in a disabled architecture.")
+        return BinaryPackagePublishingHistory(
             archive=archive,
+            binarypackagename=binarypackagerelease.binarypackagename,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
-            component=component,
+            component=get_component(
+                archive, distroarchseries.distroseries, component),
             section=section,
             priority=priority,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=pocket)
 
-        return pub
-
     def newSourcePublication(self, archive, sourcepackagerelease,
-                             distroseries, component, section, pocket):
+                             distroseries, component, section, pocket,
+                             ancestor=None, create_dsd_job=True,
+                             creator=None):
         """See `IPublishingSet`."""
-        if archive.is_ppa:
-            # PPA component must always be 'main', so we override it
-            # here.
-            component = getUtility(IComponentSet)['main']
+        # Avoid circular import.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage)
+
+        if creator is None:
+            creator = sourcepackagerelease.creator
+
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
             archive=archive,
+            sourcepackagename=sourcepackagerelease.sourcepackagename,
             sourcepackagerelease=sourcepackagerelease,
-            component=component,
+            component=get_component(archive, distroseries, component),
             section=section,
             status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW)
+            datecreated=UTC_NOW,
+            ancestor=ancestor,
+            creator=creator)
+        DistributionSourcePackage.ensure(pub)
 
+        if create_dsd_job:
+            if archive == distroseries.main_archive:
+                dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+                dsd_job_source.createForPackagePublication(
+                    distroseries, sourcepackagerelease.sourcepackagename,
+                    pocket)
         return pub
 
-    def getBuildsForSourceIds(
-        self, source_publication_ids, archive=None, build_states=None):
+    def getBuildsForSourceIds(self, source_publication_ids, archive=None,
+                              build_states=None, need_build_farm_job=False):
         """See `IPublishingSet`."""
         # Import Build and DistroArchSeries locally to avoid circular
         # imports, since that Build uses SourcePackagePublishingHistory
         # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
@@ -1131,42 +1542,46 @@ class PublishingSet:
         # If an optional list of build states was passed in as a parameter,
         # ensure that the result is limited to builds in those states.
         if build_states is not None:
-            extra_exprs.append(
-                Build.buildstate.is_in(build_states))
+            extra_exprs.extend((
+                BinaryPackageBuild.package_build == PackageBuild.id,
+                PackageBuild.build_farm_job == BuildFarmJob.id,
+                BuildFarmJob.status.is_in(build_states)))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # We'll be looking for builds in the same distroseries as the
         # SPPH for the same release.
         builds_for_distroseries_expr = (
-            Build.distroarchseriesID == DistroArchSeries.id,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            BinaryPackageBuild.distro_arch_series_id == DistroArchSeries.id,
             SourcePackagePublishingHistory.distroseriesID ==
                 DistroArchSeries.distroseriesID,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids)
-            )
+                BinaryPackageBuild.source_package_release_id,
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         # First, we'll find the builds that were built in the same
         # archive context as the published sources.
         builds_in_same_archive = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distroseries_expr,
-            SourcePackagePublishingHistory.archiveID == Build.archiveID,
+            (SourcePackagePublishingHistory.archiveID ==
+                PackageBuild.archive_id),
             *extra_exprs)
 
         # Next get all the builds that have a binary published in the
         # same archive... even though the build was not built in
         # the same context archive.
         builds_copied_into_archive = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distroseries_expr,
-            SourcePackagePublishingHistory.archiveID != Build.archiveID,
+            (SourcePackagePublishingHistory.archiveID !=
+                PackageBuild.archive_id),
             BinaryPackagePublishingHistory.archive ==
                 SourcePackagePublishingHistory.archiveID,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
-            BinaryPackageRelease.build == Build.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
             *extra_exprs)
 
         builds_union = builds_copied_into_archive.union(
@@ -1178,16 +1593,25 @@ class PublishingSet:
         # can't sort on SourcePackagePublishingHistory.id after the
         # union. See bug 443353 for details.
         find_spec = (
-            SourcePackagePublishingHistory, Build, DistroArchSeries)
+            SourcePackagePublishingHistory,
+            BinaryPackageBuild,
+            DistroArchSeries,
+            ) + ((PackageBuild, BuildFarmJob) if need_build_farm_job else ())
 
         # Storm doesn't let us do builds_union.values('id') -
         # ('Union' object has no attribute 'columns'). So instead
         # we have to instantiate the objects just to get the id.
         build_ids = [build.id for build in builds_union]
 
+        prejoin_exprs = (
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            ) if need_build_farm_job else ()
+
         result_set = store.find(
             find_spec, builds_for_distroseries_expr,
-            Build.id.is_in(build_ids))
+            BinaryPackageBuild.id.is_in(build_ids),
+            *prejoin_exprs)
 
         return result_set.order_by(
             SourcePackagePublishingHistory.id,
@@ -1202,7 +1626,7 @@ class PublishingSet:
         return Store.of(archive).find(
             baseclass,
             baseclass.id == id,
-            baseclass.archive == archive.id)
+            baseclass.archive == archive.id).one()
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.
@@ -1235,14 +1659,14 @@ class PublishingSet:
         # to avoid circular imports, since Build uses
         # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
         # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
         join = [
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
-            BinaryPackageRelease.build == Build.id,
+                BinaryPackageBuild.source_package_release_id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackageRelease.binarypackagenameID ==
                 BinaryPackageName.id,
             SourcePackagePublishingHistory.distroseriesID ==
@@ -1255,16 +1679,14 @@ class PublishingSet:
                SourcePackagePublishingHistory.pocket,
             BinaryPackagePublishingHistory.archiveID ==
                SourcePackagePublishingHistory.archiveID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids)
-            ]
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids)]
 
         # If the call-site requested to join only on binaries published
         # with an active publishing status then we need to further restrict
         # the join.
         if active_binaries_only:
-            join.append(
-                In(BinaryPackagePublishingHistory.status,
-                    [enum.value for enum in active_publishing_status]))
+            join.append(BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status))
 
         return join
 
@@ -1276,7 +1698,7 @@ class PublishingSet:
         # to avoid circular imports, since Build uses
         # SourcePackagePublishingHistory and DistroArchSeries uses
         # BinaryPackagePublishingHistory.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
@@ -1289,11 +1711,14 @@ class PublishingSet:
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         published_builds = store.find(
-            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+            (SourcePackagePublishingHistory, BinaryPackageBuild,
+                DistroArchSeries),
             self._getSourceBinaryJoinForSources(
                 source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
-            Build.buildstate.is_in(build_states))
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.status.is_in(build_states))
 
         published_builds.order_by(
             SourcePackagePublishingHistory.id,
@@ -1311,7 +1736,7 @@ class PublishingSet:
         """See `IPublishingSet`."""
         # Import Build locally to avoid circular imports, since that
         # Build already imports SourcePackagePublishingHistory.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
@@ -1324,14 +1749,14 @@ class PublishingSet:
             LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
             BinaryPackageFile.binarypackagerelease ==
                 BinaryPackageRelease.id,
-            BinaryPackageRelease.buildID == Build.id,
+            BinaryPackageRelease.buildID == BinaryPackageBuild.id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
+                BinaryPackageBuild.source_package_release_id,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.archiveID ==
                 SourcePackagePublishingHistory.archiveID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         return binary_result.order_by(LibraryFileAlias.id)
 
@@ -1348,7 +1773,7 @@ class PublishingSet:
             LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
             SourcePackageReleaseFile.sourcepackagerelease ==
                 SourcePackagePublishingHistory.sourcepackagereleaseID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         binary_result = self.getBinaryFilesForSources(
             one_or_more_source_publications)
@@ -1358,14 +1783,11 @@ class PublishingSet:
 
         return result_set
 
-    def getBinaryPublicationsForSources(
-        self, one_or_more_source_publications):
+    def getBinaryPublicationsForSources(self,
+                                        one_or_more_source_publications):
         """See `IPublishingSet`."""
-        # Import Buildand DistroArchSeries locally to avoid circular imports,
-        # since Build uses SourcePackagePublishingHistory and DistroArchSeries
-        # uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.distroarchseries import (
-            DistroArchSeries)
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
 
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
@@ -1402,7 +1824,7 @@ class PublishingSet:
              LibraryFileAlias, LibraryFileContent),
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 PackageDiff.to_sourceID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         result_set.order_by(
             SourcePackagePublishingHistory.id,
@@ -1440,7 +1862,7 @@ class PublishingSet:
                 SourcePackageRelease.id,
             SourcePackageRelease.id ==
                 SourcePackagePublishingHistory.sourcepackagereleaseID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         result_set.order_by(SourcePackagePublishingHistory.id)
         return result_set
@@ -1456,30 +1878,87 @@ class PublishingSet:
             LibraryFileAlias,
             LibraryFileAlias.id == PackageUpload.changesfileID,
             PackageUpload.status == PackageUploadStatus.DONE,
-            PackageUpload.distroseriesID == spr.upload_distroseriesID,
-            PackageUpload.archiveID == spr.upload_archiveID,
+            PackageUpload.distroseriesID == spr.upload_distroseries.id,
+            PackageUpload.archiveID == spr.upload_archive.id,
             PackageUpload.id == PackageUploadSource.packageuploadID,
             PackageUploadSource.sourcepackagereleaseID == spr.id)
         return result_set.one()
 
-    def getBuildStatusSummariesForSourceIdsAndArchive(self,
-                                                      source_ids,
-                                                      archive):
+    def getBuildStatusSummariesForSourceIdsAndArchive(self, source_ids,
+        archive):
         """See `IPublishingSet`."""
         # source_ids can be None or an empty sequence.
         if not source_ids:
             return {}
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        source_pubs = store.find(
-            SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.id.is_in(source_ids),
-            SourcePackagePublishingHistory.archive == archive)
-
+        # Find relevant builds while also getting PackageBuilds and
+        # BuildFarmJobs into the cache. They're used later.
+        build_info = list(
+            self.getBuildsForSourceIds(
+                source_ids, archive=archive, need_build_farm_job=True))
+        source_pubs = set()
+        found_source_ids = set()
+        for row in build_info:
+            source_pubs.add(row[0])
+            found_source_ids.add(row[0].id)
+        pubs_without_builds = set(source_ids) - found_source_ids
+        if pubs_without_builds:
+            # Add in source pubs for which no builds were found: we may in
+            # future want to make this a LEFT OUTER JOIN in
+            # getBuildsForSourceIds but to avoid destabilising other code
+            # paths while we fix performance, it is just done as a single
+            # separate query for now.
+            source_pubs.update(store.find(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.id.is_in(
+                    pubs_without_builds),
+                SourcePackagePublishingHistory.archive == archive))
+        # For each source_pub found, provide an aggregate summary of its
+        # builds.
+        binarypackages = getUtility(IBinaryPackageBuildSet)
         source_build_statuses = {}
+        need_unpublished = set()
         for source_pub in source_pubs:
-            status_summary = source_pub.getStatusSummaryForBuilds()
-            source_build_statuses[source_pub.id] = status_summary
+            source_builds = [
+                build for build in build_info if build[0].id == source_pub.id]
+            builds = SourcePackagePublishingHistory._convertBuilds(
+                source_builds)
+            summary = binarypackages.getStatusSummaryForBuilds(builds)
+            # Thank you, Zope, for security wrapping an abstract data
+            # structure.
+            summary = removeSecurityProxy(summary)
+            summary['date_published'] = source_pub.datepublished
+            summary['source_package_name'] = source_pub.source_package_name
+            source_build_statuses[source_pub.id] = summary
+
+            # If:
+            #   1. the SPPH is in an active publishing state, and
+            #   2. all the builds are fully-built, and
+            #   3. the SPPH is not being published in a rebuild/copy
+            #      archive (in which case the binaries are not published)
+            #   4. There are unpublished builds
+            # Then we augment the result with FULLYBUILT_PENDING and
+            # attach the unpublished builds.
+            if (source_pub.status in active_publishing_status and
+                    summary['status'] == BuildSetStatus.FULLYBUILT and
+                    not source_pub.archive.is_copy):
+                need_unpublished.add(source_pub)
+
+        if need_unpublished:
+            unpublished = list(self.getUnpublishedBuildsForSources(
+                need_unpublished))
+            unpublished_per_source = defaultdict(list)
+            for source_pub, build, _ in unpublished:
+                unpublished_per_source[source_pub].append(build)
+            for source_pub, builds in unpublished_per_source.items():
+                summary = {
+                    'status': BuildSetStatus.FULLYBUILT_PENDING,
+                    'builds': builds,
+                    'date_published': source_pub.datepublished,
+                    'source_package_name': source_pub.source_package_name,
+                }
+                source_build_statuses[source_pub.id] = summary
 
         return source_build_statuses
 
@@ -1491,92 +1970,58 @@ class PublishingSet:
         the same interface but uses cached results for builds and binaries
         used in the calculation.
         """
-        builds = source_publication.getBuilds()
-        summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
-            builds)
+        source_id = source_publication.id
+        return self.getBuildStatusSummariesForSourceIdsAndArchive([source_id],
+            source_publication.archive)[source_id]
 
-        # We only augment the result if:
-        #   1. we (the SPPH) are ourselves in an active publishing state, and
-        #   2. all the builds are fully-built, and
-        #   3. we are not being published in a rebuild/copy archive (in
-        #      which case the binaries are not currently published anyway)
-        # In this case we check to see if they are all published, and if
-        # not we return FULLYBUILT_PENDING:
-        augmented_summary = summary
-        if (source_publication.status in active_publishing_status and
-                summary['status'] == BuildSetStatus.FULLYBUILT and
-                source_publication.archive.purpose != ArchivePurpose.COPY):
+    def setMultipleDeleted(self, publication_class, ids, removed_by,
+                           removal_comment=None):
+        """Mark multiple publication records as deleted."""
+        ids = list(ids)
+        if len(ids) == 0:
+            return
 
-            unpublished_builds = list(
-                source_publication.getUnpublishedBuilds())
+        permitted_classes = [
+            BinaryPackagePublishingHistory,
+            SourcePackagePublishingHistory,
+            ]
+        assert publication_class in permitted_classes, "Deleting wrong type."
 
-            if unpublished_builds:
-                augmented_summary = {
-                    'status': BuildSetStatus.FULLYBUILT_PENDING,
-                    'builds': unpublished_builds
-                }
-        return augmented_summary
+        if removed_by is None:
+            removed_by_id = None
+        else:
+            removed_by_id = removed_by.id
+
+        affected_pubs = IMasterStore(publication_class).find(
+            publication_class, publication_class.id.is_in(ids))
+        affected_pubs.set(
+            status=PackagePublishingStatus.DELETED,
+            datesuperseded=UTC_NOW,
+            removed_byID=removed_by_id,
+            removal_comment=removal_comment)
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
-
-        # The 'sources' parameter could actually be any kind of sequence
-        # (e.g. even a ResultSet) and the method would still work correctly.
-        # This is problematic when it comes to the type of the return value
-        # however.
-        # Apparently the caller anticipates that we return the sequence of
-        # instances "deleted" adhering to the original type of the 'sources'
-        # parameter.
-        # Since this is too messy we prescribe that the type of 'sources'
-        # must be a list and we return the instances manipulated as a list.
-        # This may not be an ideal solution but this way we at least achieve
-        # consistency.
-        assert isinstance(sources, list), (
-            "The 'sources' parameter must be a list.")
-
+        sources = list(sources)
         if len(sources) == 0:
-            return []
+            return
 
-        # The following piece of query "boiler plate" will be used for
-        # both the source and the binary package publishing history table.
-        query_boilerplate = '''
-            SET status = %s,
-                datesuperseded = %s,
-                removed_by = %s,
-                removal_comment = %s
-            WHERE id IN
-            ''' % sqlvalues(PackagePublishingStatus.DELETED, UTC_NOW,
-                            removed_by, removal_comment)
+        spph_ids = [spph.id for spph in sources]
+        self.setMultipleDeleted(
+            SourcePackagePublishingHistory, spph_ids, removed_by,
+            removal_comment=removal_comment)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        getUtility(IDistroSeriesDifferenceJobSource).createForSPPHs(sources)
 
-        # First update the source package publishing history table.
-        source_ids = [source.id for source in sources]
-        if len(source_ids) > 0:
-            query = 'UPDATE SourcePackagePublishingHistory '
-            query += query_boilerplate
-            query += ' %s' % sqlvalues(source_ids)
-            store.execute(query)
-
-        # Prepare the list of associated *binary* packages publishing
-        # history records.
-        binary_packages = []
-        for source in sources:
-            binary_packages.extend(source.getPublishedBinaries())
-
-        if len(binary_packages) == 0:
-            return sources
-
-        # Now run the query that marks the binary packages as deleted
-        # as well.
-        if len(binary_packages) > 0:
-            query = 'UPDATE BinaryPackagePublishingHistory '
-            query += query_boilerplate
-            query += ' %s' % sqlvalues(
-                [binary.id for binary in binary_packages])
-            store.execute(query)
-
-        return sources + binary_packages
+        # Mark binary publications deleted.
+        bpph_ids = [
+            bpph.id
+            for source, bpph, bin, bin_name, arch
+                in self.getBinaryPublicationsForSources(sources)]
+        if len(bpph_ids) > 0:
+            self.setMultipleDeleted(
+                BinaryPackagePublishingHistory, bpph_ids, removed_by,
+                removal_comment=removal_comment)
 
     def getNearestAncestor(
         self, package_name, archive, distroseries, pocket=None,
@@ -1594,7 +2039,7 @@ class PublishingSet:
                 name=package_name, exact_match=True, pocket=pocket,
                 status=status, distroseries=distroseries)
 
-        if ancestries.count() > 0:
+        try:
             return ancestries[0]
-
-        return None
+        except IndexError:
+            return None

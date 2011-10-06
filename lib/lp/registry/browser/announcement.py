@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Announcement views."""
@@ -17,27 +17,47 @@ __all__ = [
     'AnnouncementView',
     ]
 
-from zope.interface import implements, Interface
-from zope.schema import Choice, TextLine
-
-from canonical.cachedproperty import cachedproperty
-
-from lp.registry.interfaces.announcement import IAnnouncement
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
-    AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
-from canonical.launchpad.fields import AnnouncementDate, Summary, Title
-from canonical.launchpad.interfaces.validation import valid_webref
+    AnnouncementsFeedLink,
+    FeedsMixin,
+    RootAnnouncementsFeedLink,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
-    Link, NavigationMenu, enabled_with_permission)
-from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
-from canonical.widgets import AnnouncementDateWidget
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.validators.url import valid_webref
+from lp.app.widgets.announcementdate import AnnouncementDateWidget
+from lp.registry.interfaces.announcement import IAnnouncement
+from lp.services.fields import (
+    AnnouncementDate,
+    Summary,
+    Title,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class AnnouncementMenuMixin:
@@ -135,12 +155,11 @@ class AnnouncementAddView(LaunchpadFormView):
     def announce_action(self, action, data):
         """Registers a new announcement."""
         self.context.announce(
-            user = self.user,
-            title = data.get('title'),
-            summary = data.get('summary'),
-            url = data.get('url'),
-            publication_date = data.get('publication_date')
-            )
+            user=self.user,
+            title=data.get('title'),
+            summary=data.get('summary'),
+            url=data.get('url'),
+            publication_date=data.get('publication_date'))
         self.next_url = canonical_url(self.context)
 
     @property
@@ -173,7 +192,7 @@ class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
         self.context.modify(title=data.get('title'),
                             summary=data.get('summary'),
                             url=data.get('url'))
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class AnnouncementRetargetForm(Interface):
@@ -182,7 +201,7 @@ class AnnouncementRetargetForm(Interface):
     target = Choice(
         title=_("For"),
         description=_("The project where this announcement is being made."),
-        required=True, vocabulary='DistributionOrProductOrProject')
+        required=True, vocabulary='DistributionOrProductOrProjectGroup')
 
 
 class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
@@ -217,7 +236,7 @@ class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
     def retarget_action(self, action, data):
         target = data.get('target')
         self.context.retarget(target)
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
@@ -233,7 +252,7 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
     def publish_action(self, action, data):
         publication_date = data['publication_date']
         self.context.setPublicationDate(publication_date)
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
@@ -245,7 +264,7 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
     @action(_('Retract'), name='retract')
     def retract_action(self, action, data):
         self.context.retract()
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
@@ -257,13 +276,14 @@ class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
     @action(_("Delete"), name="delete", validator='validate_cancel')
     def action_delete(self, action, data):
         self.context.destroySelf()
-        self.next_url = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target) + '/+announcements'
 
 
 class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     """A view class for pillars which have announcements."""
     implements(IAnnouncementCreateMenu)
 
+    page_title = 'News and announcements'
     batch_size = config.launchpad.announcement_batch_size
 
     @cachedproperty
@@ -273,7 +293,7 @@ class HasAnnouncementsView(LaunchpadView, FeedsMixin):
         elif RootAnnouncementsFeedLink.usedfor.providedBy(self.context):
             return RootAnnouncementsFeedLink(self.context).href
         else:
-            raise AssertionError, 'Unknown feed source'
+            raise AssertionError("Unknown feed source")
 
     @cachedproperty
     def announcements(self):
@@ -320,3 +340,5 @@ class AnnouncementView(LaunchpadView):
     @property
     def label(self):
         return self.context.title
+
+    page_title = label

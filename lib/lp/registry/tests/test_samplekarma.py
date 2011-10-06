@@ -5,7 +5,8 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import LaunchpadLayer
+from canonical.testing.layers import LaunchpadLayer
+
 
 class KarmaSampleDataTestCase(unittest.TestCase):
     layer = LaunchpadLayer
@@ -22,7 +23,3 @@ class KarmaSampleDataTestCase(unittest.TestCase):
         dud_rows = cur.fetchone()[0]
         self.failUnlessEqual(
                 dud_rows, 0, 'Karma time bombs added to sampledata')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

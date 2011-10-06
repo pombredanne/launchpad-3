@@ -57,9 +57,9 @@ Ubuntu needs a Bug Supervisor first of all:
     ...     'test@canonical.com')
     >>> admin_browser.getControl('Change').click()
 
-    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print tag.renderContents()
-    Successfully changed the bug supervisor to...Sample Person...
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'bug-supervisor'))
+    Bug supervisor:
+    Sample Person
 
 The new Bug Supervisor for Ubuntu can change the status to Won't Fix:
 
@@ -95,7 +95,8 @@ status. Earlier it was not even displayed as an option.
 
 And a regular user can change other aspects of the bug:
 
-    >>> package_control = user_browser.getControl('Package')
+    >>> package_control = user_browser.getControl(
+    ...     name='ubuntu_mozilla-firefox.target.package')
     >>> print package_control.value
     mozilla-firefox
 
@@ -124,4 +125,3 @@ The Bug Supervisor for Ubuntu can also change the status to Triaged:
     http://bugs.launchpad.dev/ubuntu/+source/iceweasel/+bug/1
     >>> print_highlighted_bugtask(bug_supervisor_browser)
     iceweasel (Ubuntu) ... Triaged  Medium Unassigned ...
-

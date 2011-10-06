@@ -197,12 +197,13 @@ class ISupportsBackLinking(IExternalBugTracker):
         `remote_bug`.
         """
 
-    def setLaunchpadBugId(remote_bug, launchpad_bug_id):
+    def setLaunchpadBugId(remote_bug, launchpad_bug_id, launchpad_bug_url):
         """Set the Launchpad bug ID for a bug on the remote bug tracker.
 
         :param remote_bug: The ID of the bug on the remote tracker on
             which to set the Launchpad bug ID.
         :param launchpad_bug_id: The ID of the Launchpad bug that's
             watching the remote bug.
+        :param launchpad_bug_url: The canonical URL of the bug in
+            Launchpad.
         """
-

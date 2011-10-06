@@ -21,7 +21,7 @@
   <div id="packages">
 
   <tal:maintained-packages
-    define="sourcepackagereleases view/get_latest_maintained_packages_with_stats"
+    define="sourcepackagereleases view/latest_maintained_packages_with_stats"
     condition="sourcepackagereleases">
 
   <div class="top-portlet">
@@ -48,7 +48,7 @@
   </tal:maintained-packages>
 
   <tal:uploaded-packages
-    define="sourcepackagereleases view/get_latest_uploaded_but_not_maintained_packages_with_stats"
+    define="sourcepackagereleases view/latest_uploaded_but_not_maintained_packages_with_stats"
     condition="sourcepackagereleases">
 
   <div class="top-portlet">
@@ -74,7 +74,7 @@
   </tal:uploaded-packages>
 
   <tal:ppa-packages
-    define="sourcepackagereleases view/get_latest_uploaded_ppa_packages_with_stats"
+    define="sourcepackagereleases view/latest_uploaded_ppa_packages_with_stats"
     condition="sourcepackagereleases">
 
   <div class="top-portlet">
@@ -98,6 +98,32 @@
   </table>
   </div>
   </tal:ppa-packages>
+
+  <tal:synchronised-packages
+    define="spphs view/latest_synchronised_publishings_with_stats"
+    condition="spphs">
+
+  <div class="top-portlet">
+  <h2>Synchronised packages</h2>
+
+  <tal:message replace="view/synchronised_packages_header_message"/>
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Uploaded to</th>
+        <th>Version</th>
+        <th>When</th>
+        <th>Failures</th>
+        <th>Bugs</th>
+        <th>Questions</th>
+      </tr>
+    </thead>
+
+    <div metal:use-macro="context/@@+person-macros/spphs-rows" />
+  </table>
+  </div>
+  </tal:synchronised-packages>
 
   </div><!--id packages-->
 
@@ -150,7 +176,6 @@
       doesn't own or drive any projects.
     </p>
   </div>
-
 </div>
 
 <metal:macros fill-slot="bogus">
@@ -187,7 +212,7 @@
       <tal:block condition="not: spr/needs_building">
           <tal:block repeat="build spr/failed_builds">
              <a tal:attributes="href build/fmt:url"
-                tal:content="build/distroarchseries/architecturetag" />
+                tal:content="build/distro_arch_series/architecturetag" />
           </tal:block>
           <tal:block condition="not: spr/failed_builds">
              None

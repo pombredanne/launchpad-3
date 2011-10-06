@@ -13,7 +13,8 @@ from zope.component import getUtility
 
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
 
 
 class ImportQueueGardener(LaunchpadCronScript):

@@ -25,7 +25,7 @@ If we create some jobs that are running, then we can see the currently
 running jobs in the table.
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> login('david.allouche@canonical.com')
+    >>> login('admin@canonical.com')
 
     >>> apollo, odin, saturn = (
     ...     factory.makeCodeImportMachine(set_online=True, hostname='apollo'),
@@ -39,11 +39,6 @@ running jobs in the table.
     ...    logtail="Creating changeset 1\nCreating changeset 2")
     >>> ignored = make_running_import(factory=factory, machine=apollo)
     >>> ignored = make_running_import(factory=factory, machine=odin)
-
-    >>> # XXX thumper 2008-04-08, bug 3989
-    >>> # flush_database_updates needed for test browser to see changes.
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
     >>> logout()
 
     >>> browser.open('http://code.launchpad.dev/+code-imports/+machines')
@@ -105,22 +100,20 @@ the status of the machine.
     >>> print find_tag_by_id(browser.contents, 'update-status')
     None
 
-    >>> import_browser = setupBrowser(
-    ...     auth="Basic david.allouche@canonical.com:test")
-    >>> import_browser.open(browser.url)
+    >>> admin_browser.open(browser.url)
 
-    >>> print find_tag_by_id(import_browser.contents,
+    >>> print find_tag_by_id(admin_browser.contents,
     ...     'update-status').h2.renderContents()
     Update machine status
 
-    >>> import_browser.getControl('Reason').value = (
+    >>> admin_browser.getControl('Reason').value = (
     ...     "Testing quiescing.")
-    >>> import_browser.getControl('Set Quiescing').click()
-    >>> print_heading(import_browser)
+    >>> admin_browser.getControl('Set Quiescing').click()
+    >>> print_heading(admin_browser)
     apollo: Quiescing
 
-    >>> print_events(import_browser)
+    >>> print_events(admin_browser)
     Related events
-    ...: David Allouche set Quiescing Requested
+    ...: ... set Quiescing Requested
       Message: Testing quiescing.
     ...

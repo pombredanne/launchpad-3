@@ -1,4 +1,5 @@
-= Migrating translations between distro series =
+Migrating translations between distro series
+============================================
 
 When a new release series is created for a distribution it usually inherits
 all settings and data from its parent (preceding) series. To facilitate this
@@ -7,9 +8,9 @@ script once after the release series is created.
 
     >>> login("foo.bar@canonical.com")
     >>> foobuntu = factory.makeDistribution('foobuntu', 'Foobuntu')
-    >>> barty = factory.makeDistroRelease(foobuntu, '99.0', name='barty')
-    >>> carty = factory.makeDistroRelease(foobuntu, '99.1',
-    ...                                   name='carty', parent_series=barty)
+    >>> barty = factory.makeDistroSeries(foobuntu, '99.0', name='barty')
+    >>> carty = factory.makeDistroSeries(
+    ...     foobuntu, '99.1', name='carty', previous_series=barty)
 
 Functions to create source packages, templates and and translations.
 
@@ -24,17 +25,15 @@ Functions to create source packages, templates and and translations.
     ...         sourcepackagename=package.sourcepackagename,
     ...         name=name, translation_domain=name+'-domain')
 
-    >>> global_sequence = 1
     >>> def makeTranslation(template, msgid, translations, sequence=None):
-    ...     global global_sequence
     ...     if sequence is None:
-    ...         sequence = global_sequence
-    ...         global_sequence += 1
+    ...         sequence = factory.getUniqueInteger()
     ...     msgset = factory.makePOTMsgSet(template, msgid, sequence=sequence)
     ...     for language, translation in translations.items():
     ...         pofile = template.getPOFileByLang(language)
-    ...         factory.makeSharedTranslationMessage(pofile, msgset,
-    ...             translations=[translation], is_imported=True)
+    ...         factory.makeCurrentTranslationMessage(
+    ...             pofile, msgset, translations=[translation],
+    ...             current_other=True)
     ...     return msgset
 
     >>> package1 = makeSourcePackage('package1')
@@ -69,7 +68,8 @@ We need a transaction manager (in this case a fake one) to make the copy work.
     >>> transaction_stub = FakeTransaction()
 
 
-== Preconditions for migrating translations between distro series ==
+Preconditions for migrating translations between distro series
+==============================================================
 
 Before we are able to migrate translations, there are a set of preconditions
 that should be met:
@@ -102,7 +102,8 @@ accepting uploads for this distroseries.
     >>> carty.defer_translation_imports = True
 
 
-== Performing the migration ==
+Performing the migration
+========================
 
 A pristine distroseries can be filled with copies of translation templates
 and translation files from the parent. The actual translations, stored in
@@ -165,15 +166,16 @@ Because of message sharing incremental copies are no longer needed.
     The child series must not yet have any translation templates.
 
 
-== Running the script ==
+Running the script
+==================
 
 Now, we execute the script that will do the migration using
 copyTranslationsFromParent. For that we create a new child series to receive
 those translations. For testing purposes this series has translation imports
 enabled.
 
-    >>> darty = factory.makeDistroRelease(foobuntu, '99.2',
-    ...                                   name='darty', parent_series=barty)
+    >>> darty = factory.makeDistroSeries(
+    ...     foobuntu, '99.2', name='darty', previous_series=barty)
     >>> darty_id = darty.id
     >>> darty.defer_translation_imports = False
 
@@ -193,7 +195,8 @@ set.
     >>> returnvalue
     1
     >>> print error_output
-    INFO    creating lockfile
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-foobuntu-darty.lock
     ERROR   Before this process starts, set the hide_all_translations and
             defer_translation_imports flags for distribution foobuntu, series
             darty; or use the --force option to make it happen
@@ -219,25 +222,26 @@ sets the defer_translation_imports flag itself before copying.
     >>> returnvalue
     0
     >>> print error_output
-    INFO    creating lockfile
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-foobuntu-darty.lock
     INFO    Starting...
     INFO    Populating blank distroseries darty with translations from barty.
-    INFO    Extracting from POTemplate into
-            "temp_POTemplate_holding_foobuntu_darty"...
-    INFO    Extracting from TranslationTemplateItem into
-            "temp_TranslationTemplateItem_holding_foobuntu_darty"...
-    INFO    Extracting from POFile into
-            "temp_POFile_holding_foobuntu_darty"...
-    INFO    Extracting from POFileTranslator into
-            "temp_POFileTranslator_holding_foobuntu_darty"...
-    INFO    Pouring "temp_POTemplate_holding_foobuntu_darty"
-            back into POTemplate...
-    INFO    Pouring "temp_TranslationTemplateItem_holding_foobuntu_darty"
-            back into TranslationTemplateItem...
-    INFO    Pouring "temp_POFile_holding_foobuntu_darty"
-            back into POFile...
-    INFO    Pouring "temp_POFileTranslator_holding_foobuntu_darty"
-            back into POFileTranslator...
+    INFO    Extracting from potemplate into
+            "temp_potemplate_holding_foobuntu_darty"...
+    INFO    Extracting from translationtemplateitem into
+            "temp_translationtemplateitem_holding_foobuntu_darty"...
+    INFO    Extracting from pofile into
+            "temp_pofile_holding_foobuntu_darty"...
+    INFO    Extracting from pofiletranslator into
+            "temp_pofiletranslator_holding_foobuntu_darty"...
+    INFO    Pouring "temp_potemplate_holding_foobuntu_darty"
+            back into potemplate...
+    INFO    Pouring "temp_translationtemplateitem_holding_foobuntu_darty"
+            back into translationtemplateitem...
+    INFO    Pouring "temp_pofile_holding_foobuntu_darty"
+            back into pofile...
+    INFO    Pouring "temp_pofiletranslator_holding_foobuntu_darty"
+            back into pofiletranslator...
     INFO    Done.
     <BLANKLINE>
 

@@ -1,5 +1,3 @@
-
-
 Translation Submissions
 =======================
 
@@ -16,6 +14,14 @@ xx-pofile-translate-alternative-language.txt
 xx-pofile-translate-message-filtering.txt
 xx-pofile-translate-newlines-check.txt
 xx-pofile-translate-performance.txt
+
+    >>> from zope.component import getUtility
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+
+    >>> login(ANONYMOUS)
+    >>> utility = getUtility(IPOTemplateSet)
+    >>> dummy = utility.populateSuggestivePOTemplatesCache()
+    >>> logout()
 
 
 Anonymous access
@@ -42,7 +48,8 @@ In fact, no input widgets at all are displayed.
 
 As an anynoymous user you will have access to the download and details
 pages for the pofile this message belongs to. The link to upload page
-should not be in that list.
+should not be in that list and so does the link for switching between
+translator and reviewer working mode.
 
     >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
     >>> print extract_text(nav)
@@ -52,26 +59,14 @@ Download translations and Translation details should linked to the proper
 pages
 
     >> print nav.getLink("Download translation").url
-    https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+export
     >> print nav.getLink("Translation details").url
-    https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+details
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
 Rendering the form in read-only mode does not actually stop an anonymous
 visitor (e.g. a spam bot, or a user whose login has expired) from submitting
 data. That part is more convenience than security. The server does not
 remember what form it provided to which requester.
-
-Separately from that, however, the form also rejects anonymous POST
-submissions.
-
-    >>> print http(r"""
-    ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
-    ... Host: translations.launchpad.dev
-    ... """)
-    HTTP/1.1 500 Internal Server Error
-    ...
-    ...UnexpectedFormData: Anonymous users or users who are not accepting
-    our licensing terms cannot do POST submissions...
 
 
 Translation Admin Access
@@ -79,25 +74,28 @@ Translation Admin Access
 
 Let's log in.
 
-  >>> admin_browser.open(
-  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
-  ...     'evolution/+pots/evolution-2.2/es/+translate')
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/evolution-2.2/es/+translate')
 
 As a translation admin you will have access to the download, upload
-and details pages for the pofile this message belongs to.
+and details pages for the pofile this message belongs to. In the same time
+you have access to the link for switching between translator and reviewer
+working mode
 
-  >>> nav = find_tag_by_id(admin_browser.contents, 'nav-pofile-subpages')
-  >>> print extract_text(nav)
-  Download translation Upload translation Translation details
+    >>> nav = find_tag_by_id(admin_browser.contents, 'nav-pofile-subpages')
+    >>> print extract_text(nav)
+    Download translation Upload translation Translation details
+    Reviewer mode (What's this?)
 
 All those links should linked the proper pages
 
-  >> print nav.getLink("Download translation").url
-  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
-  >> print nav.getLink("Upload translation").url
-  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
-  >> print nav.getLink("Translation details").url
-  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+details
+    >> print nav.getLink("Download translation").url
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+export
+    >> print nav.getLink("Upload translation").url
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+upload
+    >> print nav.getLink("Translation details").url
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
 
 Requesting English and its variant languages
@@ -231,13 +229,13 @@ single message.
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/ab/+translate')
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'maincontent'))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Launchpad can&#8217;t handle the plural items ...
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/ab/5/+translate')
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'maincontent'))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Launchpad can&#8217;t handle the plural items ...
 

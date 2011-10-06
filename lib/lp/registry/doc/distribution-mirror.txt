@@ -5,11 +5,20 @@ to create a new mirror you should use the Distribution.newMirror method.
 
     >>> from datetime import datetime, timedelta
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ICountrySet, IDistributionSet, IDistributionMirrorSet,
-    ...     IDistroArchSeriesSet, IDistroSeriesSet, ILibraryFileAliasSet,
-    ...     IPersonSet, MirrorContent, MirrorSpeed)
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distributionmirror import (
+    ...     IDistributionMirrorSet,
+    ...     MirrorContent,
+    ...     MirrorSpeed,
+    ...     MirrorStatus,
+    ...     )
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
@@ -138,7 +147,7 @@ We also have a property which returns all unofficial mirrors.
 It's possible to retrieve a mirror by its name:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IDistributionMirror
+    >>> from lp.registry.interfaces.distributionmirror import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
     True
@@ -396,9 +405,28 @@ getExpectedPackagesPaths() and getExpectedSourcesPaths() methods of
 IDistributionMirror.
 
     >>> paths = mirror.getExpectedPackagesPaths()
-    >>> [path for (series, pocket, component, path) in paths
-    ...  if 'hoary' in path]
-    [u'dists/hoary/main/binary-i386/Packages.gz',
+    >>> [path for (series, pocket, component, path) in paths]
+    [u'dists/breezy-autotest/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/multiverse/binary-i386/Packages.gz',
+     u'dists/hoary/main/binary-i386/Packages.gz',
      u'dists/hoary/restricted/binary-i386/Packages.gz',
      u'dists/hoary-backports/main/binary-i386/Packages.gz',
      u'dists/hoary-backports/restricted/binary-i386/Packages.gz',
@@ -407,12 +435,43 @@ IDistributionMirror.
      u'dists/hoary-updates/main/binary-i386/Packages.gz',
      u'dists/hoary-updates/restricted/binary-i386/Packages.gz',
      u'dists/hoary-proposed/main/binary-i386/Packages.gz',
-     u'dists/hoary-proposed/restricted/binary-i386/Packages.gz']
+     u'dists/hoary-proposed/restricted/binary-i386/Packages.gz',
+     u'dists/warty/main/binary-i386/Packages.gz',
+     u'dists/warty/universe/binary-i386/Packages.gz',
+     u'dists/warty-backports/main/binary-i386/Packages.gz',
+     u'dists/warty-backports/universe/binary-i386/Packages.gz',
+     u'dists/warty-security/main/binary-i386/Packages.gz',
+     u'dists/warty-security/universe/binary-i386/Packages.gz',
+     u'dists/warty-updates/main/binary-i386/Packages.gz',
+     u'dists/warty-updates/universe/binary-i386/Packages.gz',
+     u'dists/warty-proposed/main/binary-i386/Packages.gz',
+     u'dists/warty-proposed/universe/binary-i386/Packages.gz']
+
+    >>> warty.status = SeriesStatus.OBSOLETE
 
     >>> paths = mirror.getExpectedSourcesPaths()
-    >>> [path for (series, pocket, component, path) in paths
-    ...  if 'hoary' in path]
-    [u'dists/hoary/main/source/Sources.gz',
+    >>> [path for (series, pocket, component, path) in paths]
+    [u'dists/breezy-autotest/main/source/Sources.gz',
+     u'dists/breezy-autotest/restricted/source/Sources.gz',
+     u'dists/breezy-autotest/universe/source/Sources.gz',
+     u'dists/breezy-autotest/multiverse/source/Sources.gz',
+     u'dists/breezy-autotest-backports/main/source/Sources.gz',
+     u'dists/breezy-autotest-backports/restricted/source/Sources.gz',
+     u'dists/breezy-autotest-backports/universe/source/Sources.gz',
+     u'dists/breezy-autotest-backports/multiverse/source/Sources.gz',
+     u'dists/breezy-autotest-security/main/source/Sources.gz',
+     u'dists/breezy-autotest-security/restricted/source/Sources.gz',
+     u'dists/breezy-autotest-security/universe/source/Sources.gz',
+     u'dists/breezy-autotest-security/multiverse/source/Sources.gz',
+     u'dists/breezy-autotest-updates/main/source/Sources.gz',
+     u'dists/breezy-autotest-updates/restricted/source/Sources.gz',
+     u'dists/breezy-autotest-updates/universe/source/Sources.gz',
+     u'dists/breezy-autotest-updates/multiverse/source/Sources.gz',
+     u'dists/breezy-autotest-proposed/main/source/Sources.gz',
+     u'dists/breezy-autotest-proposed/restricted/source/Sources.gz',
+     u'dists/breezy-autotest-proposed/universe/source/Sources.gz',
+     u'dists/breezy-autotest-proposed/multiverse/source/Sources.gz',
+     u'dists/hoary/main/source/Sources.gz',
      u'dists/hoary/restricted/source/Sources.gz',
      u'dists/hoary-backports/main/source/Sources.gz',
      u'dists/hoary-backports/restricted/source/Sources.gz',
@@ -421,7 +480,11 @@ IDistributionMirror.
      u'dists/hoary-updates/main/source/Sources.gz',
      u'dists/hoary-updates/restricted/source/Sources.gz',
      u'dists/hoary-proposed/main/source/Sources.gz',
-     u'dists/hoary-proposed/restricted/source/Sources.gz']
+     u'dists/hoary-proposed/restricted/source/Sources.gz',
+     u'dists/warty-security/main/source/Sources.gz',
+     u'dists/warty-updates/main/source/Sources.gz']
+
+    >>> warty.status = SeriesStatus.SUPPORTED
 
 For cdimage mirrors, these files are listed in a file stored in
 http://releases.ubuntu.com/. This file is parsed by
@@ -510,7 +573,7 @@ case is that one of the uploads made on 2005-06-20 contains an .udeb
 package instead of a .deb, and we don't check .udeb files on the mirror,
 so we need to skip that upload.
 
-    >>> from canonical.launchpad.database import BinaryPackageFile
+    >>> from lp.soyuz.model.files import BinaryPackageFile
 
     >>> warty_i386_mirror = foo_mirror.ensureMirrorDistroArchSeries(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
@@ -585,7 +648,7 @@ is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing Archive Mirrors
     INFO    Probed 4 mirrors.
     INFO    Disabling 1 mirror(s):
@@ -599,7 +662,7 @@ is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing CD Image Mirrors
     INFO    Probed 4 mirrors.
     INFO    Disabling 1 mirror(s):
@@ -615,7 +678,7 @@ probed again.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing CD Image Mirrors
     INFO    No mirrors to probe.
     INFO    Done.
@@ -628,7 +691,7 @@ all official mirrors independently if they were probed recently or not.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing CD Image Mirrors
     INFO    Probed 4 mirrors.
     INFO    Done.
@@ -647,7 +710,7 @@ we'll enable them again.
     >>> transaction.commit()
     >>> prober, stdout, stderr = run_prober('--content-type=cdimage --force')
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing CD Image Mirrors
     INFO    Probed 4 mirrors.
     INFO    Re-enabling 1 mirror(s):
@@ -752,7 +815,7 @@ Verify that the view is a DistributionMirrorsView:
 We want to make sure that the view._sum_throughput method knows about all
 the possible mirror speeds.
 
-  >>> from canonical.launchpad.interfaces import MirrorSpeed
+  >>> from lp.registry.interfaces.distributionmirror import MirrorSpeed
   >>> class MockMirror:
   ...     speed = None
   >>> mirrors = []
@@ -814,3 +877,121 @@ Only mirrors which have never been probed can be deleted this way.
     >>> mirrorset.getByName('invalid-mirror') is None
     True
 
+Country DNS mirrors
+-------------------
+
+Country DNS mirrors are mirrors which have been assigned
+$CC.archive.ubuntu.com or $CC.releases.ubuntu.com. These assignments are
+tracked in Launchpad.
+
+    >>> login('admin@canonical.com')
+    >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> de_archive_mirror = factory.makeMirror(ubuntu_distro,
+    ...     "Technische Universitaet Dresden", country=82,
+    ...     http_url="http://ubuntu.mirror.tudos.de/ubuntu/",
+    ...     official_candidate=True)
+    >>> davis_station_archive = factory.makeMirror(ubuntu_distro,
+    ...     "Davis Station", country=9,
+    ...     http_url="http://mirror.davis.antarctica.org/ubuntu",
+    ...     official_candidate=True)
+    >>> de_archive_mirror.status = MirrorStatus.OFFICIAL
+    >>> de_archive_prober_log = factory.makeMirrorProbeRecord(de_archive_mirror)
+    >>> logout()
+
+Normal users can access country_dns_mirror, can see if a mirror is eligible
+for the status, however, they may not change it:
+
+    >>> login('test@canonical.com')
+    >>> de_archive_mirror.canTransitionToCountryMirror()
+    True
+    >>> de_archive_mirror.transitionToCountryMirror(True)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<DistributionMirror at ...>, 'transitionToCountryMirror',
+      'launchpad.Admin')
+    >>> logout()
+
+Mirror listing administrators may change the status however:
+
+    >>> login('karl@canonical.com')
+    >>> de_archive_mirror.transitionToCountryMirror(True)
+
+Mirrors which are already set as country mirrors can't be 'set' as such
+again:
+
+    >>> de_archive_mirror.canTransitionToCountryMirror()
+    False
+    >>> de_archive_mirror.transitionToCountryMirror(True)
+    >>> logout()
+
+There cannot be multiple country mirrors of one type for one country:
+
+    >>> login('karl@canonical.com')
+    >>> proberecord = factory.makeMirrorProbeRecord(davis_station_archive)
+
+    >>> print davis_station_archive.content.name
+    ARCHIVE
+    >>> print davis_station_archive.country_dns_mirror
+    False
+    >>> print davis_station_archive.country.name
+    Antarctica
+
+    >>> archive_mirror2 = getUtility(IDistributionMirrorSet).getByName(
+    ...     'archive-mirror2')
+    >>> print archive_mirror2.content.name
+    ARCHIVE
+    >>> print archive_mirror2.country_dns_mirror
+    False
+    >>> print archive_mirror2.country.name
+    Antarctica
+
+    >>> davis_station_archive.status = MirrorStatus.OFFICIAL
+
+    >>> davis_station_archive.transitionToCountryMirror(True)
+    >>> archive_mirror2.transitionToCountryMirror(True)
+    Traceback (most recent call last):
+    ...
+    CountryMirrorAlreadySet: Antarctica already has a country Archive mirror
+      set.
+
+Mirrors which have not been probed may not be marked as country mirrors:
+
+    >>> linux_au_mirror = factory.makeMirror(ubuntu_distro,
+    ...     "Linux.org.au", country=14,
+    ...     http_url="http://mirror.linux.org.au/ubuntu",
+    ...     official_candidate=True)
+    >>> linux_au_mirror.status = MirrorStatus.OFFICIAL
+    >>> linux_au_mirror.transitionToCountryMirror(True)
+    Traceback (most recent call last):
+    ...
+    MirrorNotProbed: This mirror may not be set as a country mirror as it has
+      not been probed.
+    >>> logout()
+
+Mirrors which are not official or do not have an HTTP URL may not be set as
+country mirrors:
+
+    >>> login('admin@canonical.com')
+    >>> osuosl_mirror = factory.makeMirror(ubuntu_distro,
+    ...     "OSU Open Source Lab", country=226,
+    ...     ftp_url="ftp://ubuntu.osuosl.org/pub/ubuntu/",
+    ...     official_candidate=True)
+    >>> osuosl_mirror.status = MirrorStatus.OFFICIAL
+    >>> print osuosl_mirror.http_base_url
+    None
+
+    >>> osuosl_mirror.canTransitionToCountryMirror()
+    False
+
+    >>> osuosl_mirror.transitionToCountryMirror(None)
+    Traceback (most recent call last):
+    ...
+    NoneError: None isn't acceptable as a value for
+      DistributionMirror.country_dns_mirror
+
+    >>> osuosl_mirror.transitionToCountryMirror(True)
+    Traceback (most recent call last):
+    ...
+    MirrorHasNoHTTPURL: This mirror may not be set as a country mirror as it
+      does not have an HTTP URL set.
+    >>> logout()

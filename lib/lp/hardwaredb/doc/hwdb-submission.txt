@@ -21,8 +21,8 @@ The POST data consists of the following fields:
   * submission_data: An XML file containing the collected data. This file is
     simply stored as a Librarian file, and parsed later by a cron job.
 
-    >>> from StringIO import StringIO
     >>> from zope.component import getUtility
+    >>> from StringIO import StringIO
     >>> from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
     >>> data = StringIO('some data.')
     >>> data.filename = 'hardware-info'
@@ -46,7 +46,7 @@ The POST data consists of the following fields:
 
 The request created an entry in the HWDBSubmissions table.
 
-    >>> from canonical.launchpad.interfaces import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> submission_set = getUtility(IHWSubmissionSet)
     >>> submission = submission_set.getBySubmissionKey(u'unique-id-1')
     >>> submission.date_created, submission.format.name
@@ -253,7 +253,7 @@ submissions. We don't have a Librarian file for this submission, so
 let's add one. Let's add invalid data in order to see how invalid
 submissions are processed.
 
-    >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+    >>> from canonical.librarian.testing.server import fillLibrarianFile
     >>> submission = submission_set.getBySubmissionKey('test_submission_id_1')
     >>> fillLibrarianFile(
     ...     submission.raw_submission.id, 'nonsense')
@@ -270,7 +270,7 @@ submissions are processed.
     >>> returnvalue
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     ERROR   Parsing submission test_submission_id_1: syntax error:
     line 1, column 0
     INFO    Processed 0 valid and 1 invalid HWDB submissions
@@ -306,7 +306,7 @@ data, the other submission is valid.
     >>> returnvalue
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     ERROR   Parsing submission unique-id-1: syntax error: line 1, column 0
     INFO    Processed 1 valid and 1 invalid HWDB submissions
     >>> print out
@@ -366,7 +366,7 @@ processing loop terminates properly, when the parameter "-m" is given.
     >>> returnvalue
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     INFO    Processed 60 valid and 0 invalid HWDB submissions
     >>> print out
     <BLANKLINE>
@@ -403,7 +403,7 @@ unprocessed submissions and process all of them.
     >>> returnvalue
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     INFO    Processed 100 valid and 0 invalid HWDB submissions
     >>> print out
     <BLANKLINE>

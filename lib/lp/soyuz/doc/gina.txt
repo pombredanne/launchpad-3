@@ -7,17 +7,18 @@ quiet mode over it.
 
 Get the current counts of stuff in the database:
 
-    >>> from canonical.launchpad.database import (
-    ...     SourcePackageRelease,
-    ...     SourcePackagePublishingHistory,
+    >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from lp.soyuz.interfaces.publishing import active_publishing_status
+    >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory,
-    ...     EmailAddress,
-    ...     BinaryPackageRelease,
-    ...     Build)
+    ...     SourcePackagePublishingHistory)
     >>> from lp.registry.model.person import Person, WikiName
     >>> from lp.registry.model.teammembership import TeamParticipation
     >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
     >>> SSPPH = SourcePackagePublishingHistory
     >>> SBPPH = BinaryPackagePublishingHistory
 
@@ -28,16 +29,16 @@ Get the current counts of stuff in the database:
     >>> orig_email_count = EmailAddress.select().count()
     >>> orig_wiki_count = WikiName.select().count()
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
-    >>> orig_build_count = Build.select().count()
+    >>> orig_build_count = BinaryPackageBuild.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
     >>> orig_sspph_main_count = SSPPH.selectBy(
     ...     componentID=1, pocket=PackagePublishingPocket.RELEASE).count()
 
 Create a distribution release and an arch release for breezy:
 
-    >>> from canonical.launchpad.database import (
-    ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
+    >>> from lp.soyuz.model.processor import ProcessorFamily
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
     >>> hoary = ubuntu.getSeries("hoary")
@@ -50,6 +51,13 @@ Create a distribution release and an arch release for breezy:
     ...     hoary, celebs.launchpad_developers)
     >>> login(ANONYMOUS)
 
+    # Enable the Derived Series feature flag, to make sure gina likes it.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> from lp.soyuz.model.distroseriesdifferencejob import (
+    ...     FEATURE_FLAG_ENABLE_MODULE,
+    ...     )
+    >>> fixture = FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'})
+    >>> fixture.setUp()
     >>> pf = ProcessorFamily.selectOneBy(name="x86")
     >>> breezy_i386 = DistroArchSeries(distroseries=breezy,
     ...                         processorfamily=pf,
@@ -63,6 +71,8 @@ packages successfully (at least partially):
 
    * archive-copier, a source package which generates one udeb
      in debian-installer. Its maintainer has a name which contains a ","
+   * archive-copier, again, with a different version number to see that
+     both versions get correctly imported.
    * db1-compat, source package what generates 1 binary package. The same
      version was included in both hoary and breezy, but its source
      package's section and its binary package's priority were changed in
@@ -100,8 +110,8 @@ packages successfully (at least partially):
 And two completely broken packages:
 
    * util-linux, a source package that is missing from the pool. It
-     generates 4 binary packages, all missing. It's correctly listed in Sources
-     and Packages, though.
+     generates 4 binary packages, all missing. It's correctly listed in
+     Sources and Packages, though.
 
    * clearlooks, a source package with no binaries listed, and which has
      a DSC file that refers to an inexistant tar.gz.
@@ -131,7 +141,7 @@ Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
     ERROR   Error processing package files for clearlooks
-    -> http://...Error 2 running dpkg-source...clearlooks_0.6.2-1~hoary1.dsc)
+     -> http://...Error 2 unpacking source)
     WARNING Invalid format in db1-compat, assumed '1.0'
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
@@ -174,8 +184,11 @@ The exit status must be 0, for success:
     >>> proc.wait()
     0
     >>> transaction.commit()
+    >>> fixture.cleanUp()
 
-=== Testing Source Package Results ===
+
+Testing Source Package Results
+..............................
 
 We should have more source packages in the database:
 
@@ -201,7 +214,7 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
 
 Check if the changelog message was stored correcly:
 
-    >>> print x11p.changelog_entry
+    >>> print x11p.changelog_entry #doctest: -NORMALIZE_WHITESPACE
     x11proto-damage (6.8.99.7-2) breezy; urgency=low
     <BLANKLINE>
     <BLANKLINE>
@@ -209,9 +222,24 @@ Check if the changelog message was stored correcly:
     <BLANKLINE>
      -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
 
-    >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+    >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
+
+Check that the changelog was uploaded to the librarian correctly:
+
+    >>> print x11p.changelog.read()
+    x11proto-damage (6.8.99.7-2) breezy; urgency=low
+    <BLANKLINE>
+      * Add dependency on x11proto-fixes-dev.
+    <BLANKLINE>
+     -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
+    <BLANKLINE>
+    x11proto-damage (6.8.99.7-1) breezy; urgency=low
+    <BLANKLINE>
+      * First x11proto-damage release.
+    <BLANKLINE>
+     -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 16 May 2005 22:10:17 +1000
 
 Same for the copyright:
 
@@ -265,9 +293,9 @@ Test ubuntu-meta in breezy, which was forcefully imported.
 And check that its files actually ended up in the librarian (these sha1sums
 were calculated directly on the files):
 
-    >>> from canonical.launchpad.database import SourcePackageReleaseFile
-    >>> files = SourcePackageReleaseFile.selectBy(sourcepackagereleaseID=cap.id,
-    ...                                           orderBy="libraryfile")
+    >>> from lp.soyuz.model.files import SourcePackageReleaseFile
+    >>> files = SourcePackageReleaseFile.selectBy(
+    ...     sourcepackagereleaseID=cap.id, orderBy="libraryfile")
     >>> for f in files:
     ...     print f.libraryfile.content.sha1
     107d5478e72385f714523bad5359efedb5dcc8b2
@@ -295,7 +323,9 @@ Make sure that we only imported one db1-compat source package.
     >>> print db1.section.name
     libs
 
-=== Testing Source Package Publishing ===
+
+Testing Source Package Publishing
+.................................
 
 We check that the source package publishing override facility works:
 
@@ -311,32 +341,35 @@ We should have one entry for each package listed in Sources that was
 successfully processed.
 
     - We had 2 errors (out of 10 Sources stanzas) in hoary: mkvmlinuz and
-      util-linux
+      util-linux.
 
-    - We had 2 errors (out of 10 Sources stanzas) in breezy: python-sqllite and
-      util-linux (again, poor thing)
+    - We had 2 errors (out of 10 Sources stanzas) in breezy: python-sqllite
+      and util-linux (again, poor thing).
 
     >>> print SSPPH.select().count() - orig_sspph_count
-    20
+    21
 
-    >>> print SSPPH.selectBy(
+    >>> new_count = SSPPH.selectBy(
     ...     componentID=1,
-    ...     pocket=PackagePublishingPocket.RELEASE).count() - \
-    ...     orig_sspph_main_count
-    20
+    ...     pocket=PackagePublishingPocket.RELEASE).count()
+    >>> print new_count - orig_sspph_main_count
+    21
 
-=== Testing Binary Package Results ===
+
+Testing Binary Package Results
+..............................
 
 We have 26 binary packages in hoary. The 4 packages for util-linux fail, and 1
 package fails for each of python-sqlite and python-pam. We should publish one
 entry for each package listed in Releases.
 
-We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages and
-python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
+We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages
+and python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages
+work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
-    >>> Build.select().count() - orig_build_count
+    >>> BinaryPackageBuild.select().count() - orig_build_count
     13
     >>> SBPPH.select().count() - orig_sbpph_count
     46
@@ -344,14 +377,14 @@ python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 Check that the shlibs parsing and bin-only-NMU version handling works as
 expected:
 
-    >>> from canonical.launchpad.database import BinaryPackageName
+    >>> from lp.soyuz.model.binarypackagename import BinaryPackageName
     >>> n = BinaryPackageName.selectOneBy(name="rioutil")
     >>> rio = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id)
     >>> print rio.shlibdeps
     librioutil 1 rioutil
     >>> print rio.version
     1.4.4-1.0.1
-    >>> print rio.build.sourcepackagerelease.version
+    >>> print rio.build.source_package_release.version
     1.4.4-1
 
 Test all the data got to the ed BPR intact, and that the missing
@@ -363,11 +396,11 @@ priority was correctly munged to "extra":
     0.2-20
     >>> print ed.build.processor.name
     386
-    >>> print ed.build.buildstate
+    >>> print ed.build.status
     Successfully built
-    >>> print ed.build.distroarchseries.processorfamily.name
+    >>> print ed.build.distro_arch_series.processorfamily.name
     x86
-    >>> print ed.build.distroarchseries.architecturetag
+    >>> print ed.build.distro_arch_series.architecturetag
     i386
     >>> print ed.priority
     Extra
@@ -391,9 +424,9 @@ its source version number.
     ...         version="4:4.0.1-3")
     >>> print lib.version
     4:4.0.1-3
-    >>> print lib.build.sourcepackagerelease.version
+    >>> print lib.build.source_package_release.version
     1.28
-    >>> print lib.build.sourcepackagerelease.maintainer.displayname
+    >>> print lib.build.source_package_release.maintainer.displayname
     Debian GCC maintainers
 
 Check if the udeb was properly parsed and identified:
@@ -407,9 +440,9 @@ Check if the udeb was properly parsed and identified:
     Standard
     >>> print ac.section.name
     debian-installer
-    >>> print ac.build.sourcepackagerelease.version
+    >>> print ac.build.source_package_release.version
     0.1.5
-    >>> print ac.build.sourcepackagerelease.maintainer.name
+    >>> print ac.build.source_package_release.maintainer.name
     cjwatson
     >>> print ac.build.processor.name
     386
@@ -430,14 +463,16 @@ We check that the binary package publishing override facility works:
 XXX: test package with invalid source version
 XXX: test package with maintainer with non-ascii name
 
-=== Testing People Created ===
 
-Ensure only one Kamion was created (he's an uploader on multiple packages), and
-that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
-2 being uploaded by mdz and 2 by doko).
+Testing People Created
+......................
+
+Ensure only one Kamion was created (he's an uploader on multiple packages),
+and that we imported exactly 9 people (13 packages with 3 being uploaded by
+Kamion, 2 being uploaded by mdz and 2 by doko).
 
     >>> from sqlobject import LIKE
-    >>> p = Person.selectOne(LIKE(Person.q.name, "cjwatson%"))
+    >>> p = Person.selectOne(LIKE(Person.q.name, u"cjwatson%"))
     >>> print p.name
     cjwatson
     >>> print Person.select().count() - orig_person_count
@@ -448,7 +483,8 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     13
 
 
-=== Re-run Gina ===
+Re-run Gina
+...........
 
 The second run of gina uses a test archive that is a copy of the first
 one, but with updated Packages and Sources files for breezy that do
@@ -478,7 +514,7 @@ run.
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
     ERROR   Error processing package files for clearlooks
-    -> http://...Error 2 running dpkg-source...clearlooks_0.6.2-1~hoary1.dsc)
+     -> http://...Error 2 unpacking source)
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
      -> http://...version: None)
@@ -524,7 +560,7 @@ changed, etc.
     13
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
-    >>> Build.select().count() - orig_build_count
+    >>> BinaryPackageBuild.select().count() - orig_build_count
     13
 
 But the overrides do generate extra publishing entries:
@@ -532,47 +568,47 @@ But the overrides do generate extra publishing entries:
     >>> SBPPH.select().count() - orig_sbpph_count
     47
     >>> print SSPPH.select().count() - orig_sspph_count
-    22
+    23
 
-Check that the overrides we did were correctly issued. We can't use selectOneBy
-because, of course, there may be multiple rows published for that package --
-that's what overrides actually do.
+Check that the overrides we did were correctly issued. We can't use
+selectOneBy because, of course, there may be multiple rows published for that
+package -- that's what overrides actually do.
 
     >>> from canonical.database.sqlbase import sqlvalues
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-    >>> x11_pub = SSPPH.select("""sourcepackagerelease = %s
-    ...                           AND distroseries = %s
-    ...                           AND status in (%s, %s)""" %
-    ...                         sqlvalues(x11p, breezy,
-    ...                          PackagePublishingStatus.PUBLISHED,
-    ...                          PackagePublishingStatus.PENDING),
-    ...                          orderBy=["-datecreated"])[0]
+    >>> x11_pub = SSPPH.select("""
+    ...     sourcepackagerelease = %s AND
+    ...     distroseries = %s AND
+    ...     status in %s
+    ...     """ % sqlvalues(
+    ...         x11p, breezy, active_publishing_status),
+    ...     orderBy=["-datecreated"])[0]
     >>> print x11_pub.section.name
     net
-    >>> ed_pub = SBPPH.select("""binarypackagerelease = %s
-    ...                           AND distroarchseries = %s
-    ...                           AND status in (%s, %s)""" %
-    ...                         sqlvalues(ed, breezy_i386,
-    ...                          PackagePublishingStatus.PUBLISHED,
-    ...                          PackagePublishingStatus.PENDING),
-    ...                          orderBy=["-datecreated"])[0]
+    >>> ed_pub = SBPPH.select("""
+    ...     binarypackagerelease = %s AND
+    ...     distroarchseries = %s AND
+    ...     status in %s
+    ...     """ % sqlvalues(
+    ...         ed, breezy_i386, active_publishing_status),
+    ...     orderBy=["-datecreated"])[0]
     >>> print ed_pub.priority
     Extra
     >>> n = SourcePackageName.selectOneBy(name="archive-copier")
     >>> ac = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...         version="0.3.6")
-    >>> ac_pub = SSPPH.select("""sourcepackagerelease = %s
-    ...                          AND distroseries = %s
-    ...                          AND status in (%s, %s)""" %
-    ...                        sqlvalues(ac, breezy,
-    ...                         PackagePublishingStatus.PUBLISHED,
-    ...                         PackagePublishingStatus.PENDING),
-    ...                         orderBy=["-datecreated"])[0]
+    >>> ac_pub = SSPPH.select("""
+    ...     sourcepackagerelease = %s AND
+    ...     distroseries = %s AND
+    ...     status in %s
+    ...     """ % sqlvalues(
+    ...         ac, breezy, active_publishing_status),
+    ...     orderBy=["-datecreated"])[0]
     >>> print ac_pub.component.name
     universe
 
 
-=== Partner archive import ===
+Partner archive import
+......................
 
 Importing the partner archive requires overriding the component to
 "partner", which also makes the archive on any publishing records the
@@ -607,7 +643,7 @@ There will now be a number of publishings in the partner archive:
 
     >>> source_difference = partner_source_set_after - partner_source_set
     >>> len(source_difference)
-    11
+    12
 
     >>> binary_difference = partner_binary_set_after - partner_binary_set
     >>> len(binary_difference)
@@ -629,7 +665,8 @@ partner archive:
     set(['PARTNER'])
 
 
-=== Source-only imports ===
+Source-only imports
+...................
 
 Gina has a 'source-only' configuration option which allows it to
 import only sources from the configured archive.
@@ -695,15 +732,15 @@ Commit the changes and run the importer script.
 
     >>> transaction.commit()
 
-There is now a number of source publications in PENDING status for the
+There is now a number of source publications in PUBLISHED status for the
 targetted distroseries, 'lenny'.
 
     >>> lenny_sources = SSPPH.select("distroseries = %s" % sqlvalues(lenny))
     >>> lenny_sources.count()
-    11
+    12
 
     >>> print set([pub.status.name for pub in lenny_sources])
-    set(['PENDING'])
+    set(['PUBLISHED'])
 
 As mentioned before, lenny/i386 is empty, no binaries were imported.
 Also, the number of binaries published in the whole debian distribution
@@ -718,7 +755,8 @@ hasn't changed.
     True
 
 
-=== Processing multiple suites in the same batch ===
+Processing multiple suites in the same batch
+............................................
 
 Both, 'lenny' and 'hoary' (as partner) will be processed in the same
 batch.
@@ -728,7 +766,7 @@ batch.
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
 
     >>> print proc.stderr.read()
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-gina.lock
     ...
     INFO    === Processing debian/lenny/release ===
     ...
@@ -739,7 +777,8 @@ batch.
     0
 
 
-=== Other tests ===
+Other tests
+...........
 
 For kicks, finally, run gina on a configured but incomplete archive:
 
@@ -752,7 +791,9 @@ For kicks, finally, run gina on a configured but incomplete archive:
     >>> proc.wait()
     1
 
-=== Wrap up ===
+
+Wrap up
+.......
 
 Remove the tmp link to the gina_test_archive
     >>> os.remove('/tmp/gina_test_archive')

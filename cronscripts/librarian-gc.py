@@ -1,6 +1,6 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0103,W0403
@@ -14,12 +14,14 @@ rows in the database.
 
 __metaclass__ = type
 
-import _pythonpath
 import logging
 
-from canonical.librarian import librariangc
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
+import _pythonpath
+
 from canonical.config import config
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.librarian import librariangc
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -57,14 +59,16 @@ class LibrarianGC(LaunchpadCronScript):
                 help="Skip expiring aliases with an expiry date in the past."
                 )
 
-
     def main(self):
         librariangc.log = self.logger
 
         if self.options.loglevel <= logging.DEBUG:
             librariangc.debug = True
 
-        conn = self.txn.conn()
+        # XXX wgrant 2011-09-18 bug=853066: Using Storm's raw connection
+        # here is wrong. We should either create our own or use
+        # Store.execute or cursor() and the transaction module.
+        conn = IStore(LibraryFileAlias)._connection._raw_connection
 
         # Refuse to run if we have significant clock skew between the
         # librarian and the database.
@@ -75,7 +79,8 @@ class LibrarianGC(LaunchpadCronScript):
         if not self.options.skip_expiry:
             librariangc.expire_aliases(conn)
         if not self.options.skip_content:
-            librariangc.delete_unreferenced_content(conn) # first sweep
+            # First sweep.
+            librariangc.delete_unreferenced_content(conn)
         if not self.options.skip_blobs:
             librariangc.delete_expired_blobs(conn)
         if not self.options.skip_duplicates:
@@ -83,7 +88,8 @@ class LibrarianGC(LaunchpadCronScript):
         if not self.options.skip_aliases:
             librariangc.delete_unreferenced_aliases(conn)
         if not self.options.skip_content:
-            librariangc.delete_unreferenced_content(conn) # second sweep
+            # Second sweep.
+            librariangc.delete_unreferenced_content(conn)
         if not self.options.skip_files:
             librariangc.delete_unwanted_files(conn)
 
@@ -91,5 +97,4 @@ class LibrarianGC(LaunchpadCronScript):
 if __name__ == '__main__':
     script = LibrarianGC('librarian-gc',
                          dbuser=config.librarian_gc.dbuser)
-    script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
-
+    script.lock_and_run(isolation='autocommit')

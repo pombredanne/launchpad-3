@@ -6,6 +6,23 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
+
+  <head>
+    <tal:head-epilogue metal:fill-slot="head_epilogue">
+      <tal:uses_launchpad_bugtracker
+         condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+        <script type="text/javascript">
+            LPS.use('lp.registry.structural_subscription', function(Y) {
+                var module = Y.lp.registry.structural_subscription;
+                Y.on('domready', function() {
+                  module.setup({content_box: "#structural-subscription-content-box"});
+                });
+            });
+        </script>
+      </tal:uses_launchpad_bugtracker>
+    </tal:head-epilogue>
+  </head>
+
   <body>
     <tal:registering metal:fill-slot="registering">
       Registered
@@ -49,10 +66,10 @@
         This is the Project Group Description, which is a much more
         substantial description of the project group.  It should be
         several paragraphs long, and give you a very clear insight into
-        the work of the Project, and the people behind it. It should
+        the work of the Project Group, and the people behind it. It should
         describe the project history, and organisation.
 
-        The Project Description should also mention the major project or
+        The Project Group Description should also mention the major project or
         projects that make up the aggregate project. For example, the
         Apache Project description would highlight its work on the
         Apache Server, and mention other projects such as APR.
@@ -72,11 +89,11 @@
         <tal:details replace="structure context/@@+details" />
 
         <tal:faqs content="structure context/@@+portlet-listfaqs"
-          condition="context/@@+get-involved/official_answers" />
+          condition="context/@@+get-involved/answers_usage/enumvalue:LAUNCHPAD" />
 
         <tal:has-many-project condition="view/has_many_projects">
           <tal:questions content="structure context/@@+portlet-latestquestions"
-            condition="context/@@+get-involved/official_answers" />
+            condition="context/@@+get-involved/answers_usage/enumvalue:LAUNCHPAD" />
         </tal:has-many-project>
 
         <tal:bugs content="structure context/@@+portlet-latestbugs"
@@ -84,7 +101,7 @@
 
         <tal:has-many-project condition="view/has_many_projects">
           <tal:specs content="structure context/@@+portlet-latestspecs"
-            condition="context/@@+get-involved/official_blueprints" />
+            condition="context/@@+get-involved/blueprints_usage/enumvalue:LAUNCHPAD" />
         </tal:has-many-project>
 
         <tal:contributors content="structure context/@@+portlet-top-contributors"/>
@@ -101,10 +118,12 @@
             There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
-          <ul tal:condition="context/products"
-              tal:repeat="product context/products">
-            <li><a tal:replace="structure product/fmt:link">product</a></li>
-          </ul>
+          <tal:cache content="cache:public, 1 hour">
+            <ul tal:condition="context/products"
+                tal:repeat="product context/products">
+              <li><a tal:replace="structure product/fmt:link">product</a></li>
+            </ul>
+          </tal:cache>
           <ul style="margin-top: 0.5em;">
             <li tal:condition="context/menu:overview/new_product/enabled">
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
@@ -117,13 +136,16 @@
 
         <tal:has-few-project condition="not: view/has_many_projects">
           <tal:questions content="structure context/@@+portlet-latestquestions"
-            condition="context/@@+get-involved/official_answers" />
+            condition="context/@@+get-involved/answers_usage/enumvalue:LAUNCHPAD" />
 
           <tal:specs content="structure context/@@+portlet-latestspecs"
-            condition="context/@@+get-involved/official_blueprints" />
+            condition="context/@@+get-involved/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <tal:sprints content="structure context/@@+portlet-coming-sprints" />
         </tal:has-few-project>
+      </div>
+      <div class="yui-u">
+        <div id="structural-subscription-content-box"></div>
       </div>
     </div>
     </tal:main>

@@ -10,33 +10,61 @@ __all__ = [
     'ArchivePermissionSet',
     ]
 
-from sqlobject import BoolCol, ForeignKey
-from storm.expr import In, SQL
-from storm.locals import Int, Reference
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    )
+from storm.expr import SQL
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import alsoProvides, implements
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import sqlvalues, SQLBase
-
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.archive import ComponentNotFound, IArchive
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
-    IArchiveUploader, IArchiveQueueAdmin)
-from lp.soyuz.model.packageset import Packageset
-from lp.soyuz.interfaces.component import IComponent, IComponentSet
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-from lp.soyuz.interfaces.packageset import IPackageset
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet)
-from canonical.launchpad.webapp.interfaces import NotFoundError
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
+from lp.soyuz.interfaces.archive import (
+    ComponentNotFound,
+    IArchive,
+    )
+from lp.soyuz.enums import ArchivePermissionType
+from lp.soyuz.interfaces.archivepermission import (
+    IArchivePermission,
+    IArchivePermissionSet,
+    IArchiveQueueAdmin,
+    IArchiveUploader,
+    )
+from lp.soyuz.interfaces.component import (
+    IComponent,
+    IComponentSet,
+    )
+from lp.soyuz.interfaces.packageset import IPackageset
+from lp.soyuz.model.packageset import Packageset
 
 
 def _extract_type_name(value):
@@ -85,7 +113,7 @@ class ArchivePermission(SQLBase):
         elif self.permission == ArchivePermissionType.QUEUE_ADMIN:
             alsoProvides(self, IArchiveQueueAdmin)
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 "Unknown permission type %s" % self.permission)
 
     @property
@@ -132,8 +160,7 @@ class ArchivePermissionSet:
             ArchivePermission.permission = %s AND
             ArchivePermission.person = TeamParticipation.team AND
             TeamParticipation.person = %s
-            """ % sqlvalues(archive, permission, person)
-            ]
+            """ % sqlvalues(archive, permission, person)]
 
         prejoins = []
 
@@ -151,8 +178,8 @@ class ArchivePermissionSet:
             prejoins.append("packageset")
         else:
             raise AssertionError(
-                "'item' is not an IComponent, IPackageset or an "
-                "ISourcePackageName")
+                "'item' %r is not an IComponent, IPackageset or an "
+                "ISourcePackageName" % item)
 
         query = " AND ".join(clauses)
         auth = ArchivePermission.select(
@@ -167,8 +194,8 @@ class ArchivePermissionSet:
             if isinstance(component, basestring):
                 component = getUtility(IComponentSet)[component]
             return component
-        except NotFoundError, e:
-            raise ComponentNotFound(e)
+        except NotFoundError:
+            raise ComponentNotFound(component)
 
     def _nameToSourcePackageName(self, sourcepackagename):
         """Helper to convert a possible string name to ISourcePackageName."""
@@ -217,8 +244,7 @@ class ArchivePermissionSet:
         clauses = ["""
             ArchivePermission.archive = %s AND
             ArchivePermission.permission = %s
-            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD)
-            ]
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD)]
 
         if component is not None:
             component = self._nameToComponent(component)
@@ -269,34 +295,46 @@ class ArchivePermissionSet:
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
         existing = self.checkAuthenticated(
             person, archive, ArchivePermissionType.UPLOAD, sourcepackagename)
-        if existing.count() != 0:
+        try:
             return existing[0]
-        return ArchivePermission(
-            archive=archive, person=person,
-            sourcepackagename=sourcepackagename,
-            permission=ArchivePermissionType.UPLOAD)
+        except IndexError:
+            return ArchivePermission(
+                archive=archive, person=person,
+                sourcepackagename=sourcepackagename,
+                permission=ArchivePermissionType.UPLOAD)
 
     def newComponentUploader(self, archive, person, component):
         """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
         existing = self.checkAuthenticated(
             person, archive, ArchivePermissionType.UPLOAD, component)
-        if existing.count() != 0:
+        try:
             return existing[0]
-        return ArchivePermission(
-            archive=archive, person=person, component=component,
-            permission=ArchivePermissionType.UPLOAD)
+        except IndexError:
+            return ArchivePermission(
+                archive=archive, person=person, component=component,
+                permission=ArchivePermissionType.UPLOAD)
 
     def newQueueAdmin(self, archive, person, component):
         """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
         existing = self.checkAuthenticated(
             person, archive, ArchivePermissionType.QUEUE_ADMIN, component)
-        if existing.count() != 0:
+        try:
             return existing[0]
-        return ArchivePermission(
-            archive=archive, person=person, component=component,
-            permission=ArchivePermissionType.QUEUE_ADMIN)
+        except IndexError:
+            return ArchivePermission(
+                archive=archive, person=person, component=component,
+                permission=ArchivePermissionType.QUEUE_ADMIN)
+
+    @staticmethod
+    def _remove_permission(permission):
+        if permission is None:
+            # The permission has already been removed, so there's nothing more
+            # to do here.
+            return
+        else:
+            Store.of(permission).remove(permission)
 
     def deletePackageUploader(self, archive, person, sourcepackagename):
         """See `IArchivePermissionSet`."""
@@ -305,7 +343,7 @@ class ArchivePermissionSet:
             archive=archive, person=person,
             sourcepackagename=sourcepackagename,
             permission=ArchivePermissionType.UPLOAD)
-        Store.of(permission).remove(permission)
+        self._remove_permission(permission)
 
     def deleteComponentUploader(self, archive, person, component):
         """See `IArchivePermissionSet`."""
@@ -313,7 +351,7 @@ class ArchivePermissionSet:
         permission = ArchivePermission.selectOneBy(
             archive=archive, person=person, component=component,
             permission=ArchivePermissionType.UPLOAD)
-        Store.of(permission).remove(permission)
+        self._remove_permission(permission)
 
     def deleteQueueAdmin(self, archive, person, component):
         """See `IArchivePermissionSet`."""
@@ -321,7 +359,7 @@ class ArchivePermissionSet:
         permission = ArchivePermission.selectOneBy(
             archive=archive, person=person, component=component,
             permission=ArchivePermissionType.QUEUE_ADMIN)
-        Store.of(permission).remove(permission)
+        self._remove_permission(permission)
 
     def _nameToPackageset(self, packageset):
         """Helper to convert a possible string name to IPackageset."""
@@ -355,7 +393,8 @@ class ArchivePermissionSet:
                 AND ap.packageset IS NOT NULL
         '''
         query = SQL(query, (person.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+        return store.find(
+            ArchivePermission, ArchivePermission.id.is_in(query))
 
     def uploadersForPackageset(
         self, archive, packageset, direct_permissions=True):
@@ -374,7 +413,8 @@ class ArchivePermissionSet:
             '''
         query += " AND ap.archive = ?"
         query = SQL(query, (packageset.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+        return store.find(
+            ArchivePermission, ArchivePermission.id.is_in(query))
 
     def newPackagesetUploader(
         self, archive, person, packageset, explicit=False):
@@ -393,7 +433,8 @@ class ArchivePermissionSet:
         '''
         query = SQL(query, (person.id, packageset.id, archive.id))
         permissions = list(
-            store.find(ArchivePermission, In(ArchivePermission.id, query)))
+            store.find(
+                ArchivePermission, ArchivePermission.id.is_in(query)))
         if len(permissions) > 0:
             # Found permissions in the database, does the 'explicit' flag
             # have the requested value?
@@ -441,10 +482,7 @@ class ArchivePermissionSet:
             ArchivePermission, archive=archive, person=person,
             packageset=packageset, permission=ArchivePermissionType.UPLOAD,
             explicit=explicit).one()
-
-        if permission is not None:
-            # Permission found, remove it!
-            store.remove(permission)
+        self._remove_permission(permission)
 
     def packagesetsForSourceUploader(
         self, archive, sourcepackagename, person):
@@ -465,7 +503,8 @@ class ArchivePermissionSet:
         '''
         query = SQL(
             query, (person.id, sourcepackagename.id, archive.id))
-        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+        return store.find(
+            ArchivePermission, ArchivePermission.id.is_in(query))
 
     def packagesetsForSource(
         self, archive, sourcepackagename, direct_permissions=True):

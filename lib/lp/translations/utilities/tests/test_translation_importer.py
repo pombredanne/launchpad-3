@@ -1,137 +1,130 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Translation Importer tests."""
 
 __metaclass__ = type
 
-import unittest
-from zope.component import getUtility
-from zope.interface.verify import verifyObject
+import transaction
 
-from lp.registry.interfaces.product import IProductSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import DevNullLogger
+from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import Provides
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
+from lp.translations.utilities.translation_common_format import (
+    TranslationMessageData,
+    )
 from lp.translations.utilities.translation_import import (
     importers,
     is_identical_translation,
-    TranslationImporter)
-from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
-from canonical.testing import LaunchpadZopelessLayer
+    POFileImporter,
+    POTFileImporter,
+    TranslationImporter,
+    )
 
 
-class TranslationImporterTestCase(unittest.TestCase):
+class FakeImportQueueEntry:
+    by_maintainer = True
+    format = TranslationFileFormat.PO
+    content = None
+
+    def __init__(self, potemplate, pofile=None):
+        self.importer = potemplate.owner
+        self.potemplate = potemplate
+        self.pofile = pofile
+
+
+class FakeTranslationFile:
+    header = None
+
+
+class FakeParser:
+    uses_source_string_msgids = False
+
+    def parse(self, entry):
+        return FakeTranslationFile()
+
+
+class TranslationImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer component"""
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        # Add a new entry for testing purposes. It's a template one.
-        productset = getUtility(IProductSet)
-        evolution = productset.getByName('evolution')
-        productseries = evolution.getSeries('trunk')
-        potemplateset = getUtility(IPOTemplateSet)
-        potemplate_subset = potemplateset.getSubset(
-            productseries=productseries)
-        evolution_template = potemplate_subset.getPOTemplateByName(
-            'evolution-2.2')
-        spanish_translation = evolution_template.getPOFileByLang('es')
-
-        self.translation_importer = TranslationImporter()
-        self.translation_importer.pofile = spanish_translation
-        self.translation_importer.potemplate = evolution_template
-
     def testInterface(self):
         """Check whether the object follows the interface."""
-        self.failUnless(
-            verifyObject(ITranslationImporter, self.translation_importer),
-            "TranslationImporter doesn't follow the interface")
+        self.assertThat(TranslationImporter(), Provides(ITranslationImporter))
 
     def testGetImporterByFileFormat(self):
         """Check whether we get the right importer from the file format."""
-        po_format_importer = (
-            self.translation_importer.getTranslationFormatImporter(
-                TranslationFileFormat.PO))
-
-        self.failUnless(po_format_importer is not None, (
-            'There is no importer for PO file format!'))
-
-        kdepo_format_importer = (
-            self.translation_importer.getTranslationFormatImporter(
+        importer = TranslationImporter()
+        self.assertIsNot(
+            None,
+            importer.getTranslationFormatImporter(TranslationFileFormat.PO))
+        self.assertIsNot(
+            None,
+            importer.getTranslationFormatImporter(
                 TranslationFileFormat.KDEPO))
-
-        self.failUnless(kdepo_format_importer is not None, (
-            'There is no importer for KDE PO file format!'))
-
-        xpi_format_importer = (
-            self.translation_importer.getTranslationFormatImporter(
-                TranslationFileFormat.XPI))
-
-        self.failUnless(xpi_format_importer is not None, (
-            'There is no importer for XPI file format!'))
+        self.assertIsNot(
+            None,
+            importer.getTranslationFormatImporter(TranslationFileFormat.XPI))
 
     def testGetTranslationFileFormatByFileExtension(self):
         """Checked whether file format precedence works correctly."""
+        importer = TranslationImporter()
 
         # Even if the file extension is the same for both PO and KDEPO
         # file formats, a PO file containing no KDE-style messages is
         # recognized as regular PO file.
-        po_format = self.translation_importer.getTranslationFileFormat(
-            ".po", u'msgid "message"\nmsgstr ""')
-
-        self.failUnless(po_format==TranslationFileFormat.PO, (
-            'Regular PO file is not recognized as such!'))
+        self.assertEqual(
+            TranslationFileFormat.PO,
+            importer.getTranslationFileFormat(
+                ".po", u'msgid "message"\nmsgstr ""'))
 
         # And PO file with KDE-style messages is recognised as KDEPO file.
-        kde_po_format = self.translation_importer.getTranslationFileFormat(
-            ".po", u'msgid "_: kde context\nmessage"\nmsgstr ""')
+        self.assertEqual(
+            TranslationFileFormat.KDEPO,
+            importer.getTranslationFileFormat(
+                ".po", u'msgid "_: kde context\nmessage"\nmsgstr ""'))
 
-        self.failUnless(kde_po_format==TranslationFileFormat.KDEPO, (
-            'KDE PO file is not recognized as such!'))
-
-        xpi_format = self.translation_importer.getTranslationFileFormat(
-            ".xpi", u"")
-
-        self.failUnless(xpi_format==TranslationFileFormat.XPI, (
-            'Mozilla XPI file is not recognized as such!'))
+        self.assertEqual(
+            TranslationFileFormat.XPI,
+            importer.getTranslationFileFormat(".xpi", u""))
 
     def testNoConflictingPriorities(self):
         """Check that no two importers for the same file extension have
         exactly the same priority."""
-        all_extensions = self.translation_importer.supported_file_extensions
-        for file_extension in all_extensions:
+        for file_extension in TranslationImporter().supported_file_extensions:
             priorities = []
             for format, importer in importers.iteritems():
                 if file_extension in importer.file_extensions:
-                    self.failUnless(
-                        importer.priority not in priorities,
-                        "Duplicate priority %d for file extension %s." % (
-                            importer.priority, file_extension))
+                    self.assertNotIn(importer.priority, priorities)
                     priorities.append(importer.priority)
 
     def testFileExtensionsWithImporters(self):
         """Check whether we get the right list of file extensions handled."""
         self.assertEqual(
-            self.translation_importer.supported_file_extensions,
-            ['.po', '.pot', '.xpi'])
+            ['.po', '.pot', '.xpi'],
+            TranslationImporter().supported_file_extensions)
 
     def testTemplateSuffixes(self):
         """Check for changes in filename suffixes that identify templates."""
         self.assertEqual(
-            self.translation_importer.template_suffixes,
-            ['.pot', 'en-US.xpi'])
+            ['.pot', 'en-US.xpi'], TranslationImporter().template_suffixes)
 
     def _assertIsNotTemplate(self, path):
         self.assertFalse(
-            self.translation_importer.isTemplateName(path),
+            TranslationImporter().isTemplateName(path),
             'Mistook "%s" for a template name.' % path)
 
     def _assertIsTemplate(self, path):
         self.assertTrue(
-            self.translation_importer.isTemplateName(path),
+            TranslationImporter().isTemplateName(path),
             'Failed to recognize "%s" as a template name.' % path)
 
     def testTemplateNameRecognition(self):
@@ -151,6 +144,7 @@ class TranslationImporterTestCase(unittest.TestCase):
 
     def testHiddenFilesRecognition(self):
         # Hidden files and directories (leading dot) are recognized.
+        importer = TranslationImporter()
         hidden_files = [
             ".hidden.pot",
             ".hidden/foo.pot",
@@ -167,21 +161,21 @@ class TranslationImporterTestCase(unittest.TestCase):
             ]
         for path in hidden_files:
             self.assertTrue(
-                self.translation_importer.isHidden(path),
+                importer.isHidden(path),
                 'Failed to recognized "%s" as a hidden file.' % path)
         for path in visible_files:
             self.assertFalse(
-                self.translation_importer.isHidden(path),
+                importer.isHidden(path),
                 'Failed to recognized "%s" as a visible file.' % path)
 
     def _assertIsTranslation(self, path):
         self.assertTrue(
-            self.translation_importer.isTranslationName(path),
+            TranslationImporter().isTranslationName(path),
             'Failed to recognize "%s" as a translation file name.' % path)
 
     def _assertIsNotTranslation(self, path):
         self.assertFalse(
-            self.translation_importer.isTranslationName(path),
+            TranslationImporter().isTranslationName(path),
             'Mistook "%s for a translation file name.' % path)
 
     def testTranslationNameRecognition(self):
@@ -242,9 +236,66 @@ class TranslationImporterTestCase(unittest.TestCase):
         self.assertTrue(is_identical_translation(msg1, msg2),
             "Identical multi-form messages not accepted as identical.")
 
+    def test_unseen_messages_stay_intact(self):
+        # If an import does not mention a particular msgid, that msgid
+        # keeps its current translation.
+        pofile = self.factory.makePOFile()
+        template = pofile.potemplate
+        potmsgset1 = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset2 = self.factory.makePOTMsgSet(template, sequence=2)
+        existing_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset1)
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TranslationImporterTestCase))
-    return suite
+        text = """
+            msgid ""
+            msgstr ""
+            "MIME-Version: 1.0\\n"
+            "Content-Type: text/plain; charset=UTF-8\\n"
+            "Content-Transfer-Encoding: 8bit\\n"
+            "X-Launchpad-Export-Date: 2010-11-24\\n"
 
+            msgid "%s"
+            msgstr "A translation."
+        """ % potmsgset2.msgid_singular.msgid
+
+        entry = self.factory.makeTranslationImportQueueEntry(
+            'foo.po', potemplate=template, pofile=pofile,
+            status=RosettaImportStatus.APPROVED, content=text)
+        transaction.commit()
+
+        self.assertTrue(existing_translation.is_current_upstream)
+        TranslationImporter().importFile(entry)
+        self.assertTrue(existing_translation.is_current_upstream)
+
+    def test_template_importMessage_updates_file_references(self):
+        # Importing a template message updates the filereferences on an
+        # existing POTMsgSet.
+        template = self.factory.makePOTemplate()
+        potmsgset = self.factory.makePOTMsgSet(potemplate=template)
+        old_file_references = self.factory.getUniqueString()
+        new_file_references = self.factory.getUniqueString()
+        potmsgset.filereferences = old_file_references
+        message = TranslationMessageData()
+        message.msgid_singular = potmsgset.singular_text
+        message.file_references = new_file_references
+        queue_entry = FakeImportQueueEntry(template)
+        importer = POTFileImporter(queue_entry, FakeParser(), DevNullLogger())
+        importer.importMessage(message)
+        self.assertEqual(new_file_references, potmsgset.filereferences)
+
+    def test_translation_importMessage_does_not_update_file_references(self):
+        # Importing a translation message does not update the
+        # filereferences on an existing POTMsgSet.  (It used to, which
+        # is what caused bug 715854).
+        pofile = self.factory.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(potemplate=pofile.potemplate)
+        old_file_references = self.factory.getUniqueString()
+        new_file_references = self.factory.getUniqueString()
+        potmsgset.filereferences = old_file_references
+        message = TranslationMessageData()
+        message.msgid_singular = potmsgset.singular_text
+        message.file_references = new_file_references
+        queue_entry = FakeImportQueueEntry(pofile.potemplate, pofile)
+        importer = POFileImporter(queue_entry, FakeParser(), DevNullLogger())
+        importer.importMessage(message)
+        self.assertEqual(old_file_references, potmsgset.filereferences)

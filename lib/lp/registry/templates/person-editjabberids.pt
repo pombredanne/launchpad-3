@@ -13,17 +13,15 @@
 
     <table>
 
-      <div tal:condition="context/jabberids">
+      <tal:existing_jabber condition="context/jabberids">
 
         <tr>
           <td><label>Existing Jabber IDs:</label></td>
         </tr>
 
         <tr tal:repeat="jabber context/jabberids">
-          <td>
-            <input tal:attributes="name string:jabberid_${jabber/jabberid};
-                                   value jabber/jabberid"
-                   type="text" style="margin-bottom: 0.5em;"/>
+          <td tal:content="jabber/jabberid"
+              class="jabberid">
           </td>
 
           <td>
@@ -34,23 +32,16 @@
             </label>
           </td>
         </tr>
+      </tal:existing_jabber>
 
-      </div>
+      <tal:widget define="widget nocall:view/widgets/jabberid">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
 
-    <tr tal:condition="context/jabberids">
-      <td><label>New Jabber ID:</label></td>
-    </tr>
-
-    <tr>
-      <td>
-        <input name="newjabberid" type="text" />
-      </td>
-    </tr>
-
-    <tr>
-      <td class="formHelp">Example: yourname@jabber.org</td>
-    </tr>
-  </table>
+      <tr>
+        <td class="formHelp">Example: yourname@jabber.org</td>
+      </tr>
+    </table>
 
   </div>
 </div>

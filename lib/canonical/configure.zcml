@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -15,26 +15,9 @@
     <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <include package="lazr.restful" file="meta.zcml" />
-    <include package="lp.services.database" />
-    <include package="lp.services.inlinehelp" file="meta.zcml" />
-    <include package="lp.services.openid" />
-    <include package="lp.services.job" />
-    <include package="lp.services.memcache" />
-    <include package="lp.services.scripts" />
-    <include package="lp.services.worlddata" />
+    <include package="lp.services" />
     <include package="lazr.uri" />
     <include package="canonical.librarian" />
-
-    <interface
-        name="launchpad"
-        interface="canonical.launchpad.layers.LaunchpadLayer"
-        type="zope.publisher.interfaces.browser.IBrowserSkinType"
-        />
-
-    <!-- Set via overrides -->
-
-    <browser:defaultSkin
-        name="launchpad" />
 
     <!-- The default Zope 3 configuration of the SimpleComponentTraverser is
         that it applies to any object that provides Interface.
@@ -65,7 +48,7 @@
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadProtocolError"
         class="canonical.launchpad.webapp.error.ProtocolErrorView"
-        template="launchpad/templates/protocol-error.pt"
+        template="launchpad/webapp/templates/protocol-error.pt"
         name="index.html"
         permission="zope.Public"
         />
@@ -75,86 +58,81 @@
          virtual host layers.  The directives come in pairs.
          The separate registration for the resources namespace (@@) is needed
          because otherwise the lookup for /@@/ will fail because the
-         layer-specific defaultView directive also registers the 
+         layer-specific defaultView directive also registers the
          default view name as an unnamed adapter.
          -->
       -->
     <!-- virtual host: blueprints -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="specs"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
         />
 
     <!-- virtual host: code -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+code"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         />
 
     <!-- virtual host: translations -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.translations.publisher.TranslationsLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.translations.publisher.TranslationsLayer"
         />
 
     <!-- virtual host: bugs -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="bugs"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.bugs.publisher.BugsLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.bugs.publisher.BugsLayer"
         />
 
     <!-- virtual host: answers -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="questions"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.answers.publisher.AnswersLayer"
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.answers.publisher.AnswersLayer"
         />
 
-    <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
-    <include zcml:condition="installed canonical.shipit"
-             package="canonical.shipit" />
-    <include zcml:condition="installed canonical.signon"
-             package="canonical.signon" />
 
 </configure>

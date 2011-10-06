@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -34,7 +34,7 @@ class Configuration:
 
     @classmethod
     def load(cls, conf_path, schema_path=None):
-        """Initialise the Configuration.
+        """Initialize the Configuration.
 
         :conf_path: The path to the lazr.config conf file.
         :schema_path: The path to the lazr.config schema that defines

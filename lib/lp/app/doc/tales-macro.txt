@@ -1,0 +1,45 @@
+= The macro: TALES namespace =
+
+Launchpad has a 'macro:' TALES namespace that offers controls over the
+layout of the page.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> class FakeView(object):
+    ...     request = LaunchpadTestRequest()
+
+Templates should start by specifying the kind of pagetype they use.
+That's done by using the 'macro:page' traversal. That expression returns
+the master macro from the main_template.pt and sets on the view the
+layout it's using. The following METAL fragment illustrates the way it's
+usually done:
+
+    <html metal:use-macro="view/macro:page/main_side" />
+
+
+    >>> from lp.testing import test_tales
+    >>> view = FakeView()
+
+    # Return value is the compiled macro expression.
+    >>> test_tales('view/macro:page/main_side', view=view)
+    [('version', ...]
+
+The pagetype is registered in the __pagetype__ attribute.
+
+    >>> view.__pagetype__
+    'main_side'
+
+If the pagetype isn't defined, a LocationError is raised.
+
+    >>> test_tales('view/macro:page/not-defined', view=FakeView())
+    Traceback (most recent call last):
+      ...
+    LocationError: 'unknown pagetype: not-defined'
+
+The 'macro:pagehas' can then be used to test for features that should be
+rendered in the layout.
+
+    >>> test_tales('view/macro:pagehas/applicationtabs', view=view)
+    True
+
+    >>> test_tales('view/macro:pagehas/portlets', view=view)
+    True

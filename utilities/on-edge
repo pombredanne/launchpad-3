@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -118,30 +118,24 @@ def get_opt_parse():
     parser.add_option(
         '-v', '--verbose', action='store_true', help="Show revision log.")
     parser.add_option(
-        '--edge-only', action='store_true',
-        help="Only show revisions not on edge. Do not consult staging.")
-    parser.add_option(
-        '--staging-only', action='store_true',
-        help="Only show revisions not on staging. Do not consult edge.")
+        '--edge', action='store_true',
+        help="Show revisions on edge.")
     return parser
 
 
-def run(verbose, edge_only, staging_only):
-    if edge_only and staging_only:
-        raise UsageError("Cannot show only edge and only staging.")
+def run(verbose, edge):
     parent_dir = get_parent_directory()
-    if not staging_only:
+    if edge:
         edge_revision = get_edge_revision()
         stable_branch = os.path.join(parent_dir, 'stable')
         report_difference_to_server(
             'edge', stable_branch, edge_revision, verbose)
-    if not edge_only:
-        staging_revision = get_staging_revision()
-        db_stable_branch = os.path.join(parent_dir, 'db-stable')
-        report_difference_to_server(
-            'staging', db_stable_branch, staging_revision, verbose)
-        print "Last automatic merge on db-stable r%s was stable r%s." % (
-            get_last_automatic_stable_merge_revno(db_stable_branch))
+    staging_revision = get_staging_revision()
+    db_stable_branch = os.path.join(parent_dir, 'db-stable')
+    report_difference_to_server(
+        'staging', db_stable_branch, staging_revision, verbose)
+    print "Last automatic merge on db-stable r%s was stable r%s." % (
+        get_last_automatic_stable_merge_revno(db_stable_branch))
 
 
 def main(argv):
@@ -149,7 +143,7 @@ def main(argv):
     options, args = parser.parse_args(argv)
     if args:
         raise UsageError("Don't know what to do with arguments: %s" % args)
-    run(options.verbose, options.edge_only, options.staging_only)
+    run(options.verbose, options.edge)
 
 
 if __name__ == '__main__':

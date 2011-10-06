@@ -8,24 +8,42 @@ __metaclass__ = type
 import gc
 import sys
 
-from bzrlib import errors, trace
-from bzrlib.branch import Branch
-from bzrlib.bzrdir import format_registry
+from bzrlib import (
+    errors,
+    trace,
+    )
+from bzrlib.branch import (
+    Branch,
+    )
+from bzrlib.bzrdir import (
+    format_registry,
+    )
 from bzrlib.remote import RemoteBranch
-from bzrlib.smart import server
 from bzrlib.tests import (
-    multiply_tests, TestCase, TestCaseWithTransport, TestLoader,
-    TestNotApplicable)
-from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
+    multiply_tests,
+    test_server,
+    TestCase,
+    TestCaseWithTransport,
+    TestLoader,
+    TestNotApplicable,
+    )
+from bzrlib.tests.per_branch import (
+    branch_scenarios,
+    TestCaseWithControlDir,
+    )
 
 from lp.codehosting.bzrutils import (
-    add_exception_logging_hook, DenyingServer, get_branch_stacked_on_url,
-    get_vfs_format_classes, is_branch_stackable,
-    remove_exception_logging_hook)
+    add_exception_logging_hook,
+    DenyingServer,
+    get_branch_stacked_on_url,
+    get_vfs_format_classes,
+    is_branch_stackable,
+    remove_exception_logging_hook,
+    )
 from lp.codehosting.tests.helpers import TestResultWrapper
 
 
-class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
+class TestGetBranchStackedOnURL(TestCaseWithControlDir):
     """Tests for get_branch_stacked_on_url()."""
 
     def __str__(self):
@@ -37,7 +55,7 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
         # test are dropped, so the daemon threads serving those branches can
         # exit.
         gc.collect()
-        TestCaseWithBzrDir.tearDown(self)
+        TestCaseWithControlDir.tearDown(self)
 
     def run(self, result=None):
         """Run the test, with the result wrapped so that it knows about skips.
@@ -187,7 +205,7 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # of the branch, repo and bzrdir, even if the branch is a
         # RemoteBranch.
         vfs_branch = self.make_branch('.')
-        smart_server = server.SmartTCPServer_for_testing()
+        smart_server = test_server.SmartTCPServer_for_testing()
         smart_server.start_server(self.get_vfs_only_server())
         self.addCleanup(smart_server.stop_server)
         remote_branch = Branch.open(smart_server.get_url())
@@ -200,6 +218,7 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         self.assertEqual(
             get_vfs_format_classes(vfs_branch),
             get_vfs_format_classes(remote_branch))
+
 
 
 def load_tests(basic_tests, module, loader):

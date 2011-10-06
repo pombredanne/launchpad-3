@@ -1,7 +1,12 @@
-#!/usr/bin/env ${buildout:directory}/bin/py
+#!${buildout:executable} -S
 
 import os
 import sys
+
+# Initialize our paths.
+${python-relative-path-setup}
+sys.path.insert(0, ${scripts:parts-directory|path-repr})
+import site
 
 from lp.services.spriteutils import SpriteUtil
 
@@ -21,12 +26,11 @@ else:
         print >> sys.stderr, usage()
         sys.exit(2)
 
-root = '${buildout:directory}'
-icing = os.path.join(root, 'lib/canonical/launchpad/icing')
+icing = ${buildout:directory/lib/canonical/launchpad/icing|path-repr}
 combined_image_file = os.path.join(icing, 'icon-sprites')
 positioning_file = os.path.join(icing, 'icon-sprites.positioning')
-css_template_file = os.path.join(icing, 'style-3-0.css.in')
-css_file = os.path.join(icing, 'build/style-3-0.css')
+css_template_file = os.path.join(icing, 'sprite.css.in')
+css_file = os.path.join(icing, 'build/sprite.css')
 
 sprite_util = SpriteUtil(
     css_template_file, 'icon-sprites',

@@ -46,14 +46,15 @@ If the status can't be converted an UnknownRemoteStatusError is raised.
 Let's set up a BugTracker and some watches for the Example.com Bug
 Tracker:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestMantis)
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
-    >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
@@ -77,8 +78,10 @@ Collect the Example.com watches:
 
 And have our special Mantis instance process them:
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(transaction)
+    >>> transaction.commit()
+
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(transaction)
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, example_bug_tracker.watches)
     INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
@@ -89,7 +92,7 @@ And have our special Mantis instance process them:
 
 Let's add a few more watches:
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> expected_remote_statuses = dict(
@@ -119,8 +122,10 @@ Let's add a few more watches:
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
+    >>> from lp.services.propertycache import get_property_cache
+    >>> del get_property_cache(example_ext_bug_tracker).csv_data
+
     >>> example_ext_bug_tracker.trace_calls = True
-    >>> example_ext_bug_tracker.cleanCache()
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, example_bug_tracker.watches)
     INFO:...:Updating 6 watches for 6 bugs on http://bugs.some.where
@@ -164,7 +169,7 @@ now no bug watches are in need of updating:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
+    >>> example_bug_tracker.watches_needing_update.count()
     0
 
 If the status isn't different, the lastchanged attribute doesn't get

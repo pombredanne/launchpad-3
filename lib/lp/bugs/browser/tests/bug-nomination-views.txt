@@ -1,17 +1,33 @@
 = Bug Nomination Pages =
 
 Series targeting is done on the +nominate page of a bug. From here,
-normal users can propose that the bug be fixed in specific distribution
+bug supervisors can propose that the bug be fixed in specific distribution
 and product series, and release managers can directly target
 the bug to series for which they are drivers.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from zope.component import getUtility, getMultiAdapter
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IOpenLaunchBag
+    >>> from canonical.launchpad.ftests import login_person
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.testing.sampledata import (ADMIN_EMAIL)
 
-    >>> login("no-priv@canonical.com")
+    >>> login(ADMIN_EMAIL)
+    >>> nominator = factory.makePerson(name='nominator')
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu = removeSecurityProxy(ubuntu)
+    >>> ubuntu.bug_supervisor = nominator
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox = removeSecurityProxy(firefox)
+    >>> firefox.bug_supervisor = nominator
+    >>> logout()
 
+    >>> login_person(nominator)
     >>> request = LaunchpadTestRequest()
     >>> bug_one_in_ubuntu_firefox = getUtility(IBugTaskSet).get(17)
     >>> print bug_one_in_ubuntu_firefox.bug.id
@@ -31,7 +47,7 @@ to process nominations.
 
 Here's an example of nominating a bug for a distroseries.
 
-    >>> login("no-priv@canonical.com")
+    >>> login_person(nominator)
 
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
@@ -43,13 +59,10 @@ Here's an example of nominating a bug for a distroseries.
 
 (Add objects to the LaunchBag that will be used by the view.)
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-
     >>> launchbag.clear()
     >>> launchbag.add(bug_one_in_ubuntu_firefox)
     >>> launchbag.add(bug_one_in_ubuntu_firefox.distribution)
 
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_warty = ubuntu.getSeries("warty")
 
     >>> bug_one = bug_one_in_ubuntu_firefox.bug
@@ -133,9 +146,9 @@ buttons for a user with release management privileges.
     >>> hoary_nomination_edit_form = getMultiAdapter(
     ...     (hoary_nomination, request), name="+edit-form")
 
-    >>> hoary_nomination_edit_form.shouldShowApproveButton()
+    >>> hoary_nomination_edit_form.shouldShowApproveButton(None)
     True
-    >>> hoary_nomination_edit_form.shouldShowDeclineButton()
+    >>> hoary_nomination_edit_form.shouldShowDeclineButton(None)
     True
 
 If the nomination is declined, the only possible status change is
@@ -145,9 +158,9 @@ approval.
     >>> print hoary_nomination.status.title
     Declined
 
-    >>> hoary_nomination_edit_form.shouldShowApproveButton()
+    >>> hoary_nomination_edit_form.shouldShowApproveButton(None)
     True
-    >>> hoary_nomination_edit_form.shouldShowDeclineButton()
+    >>> hoary_nomination_edit_form.shouldShowDeclineButton(None)
     False
 
 
@@ -166,11 +179,11 @@ Nominations are also listed on the +nomination page for a series.
 
 The batch navigator used returns a BugTaskListingItem for each of the
 distribution's bugtasks that are nominated for this release, with a
-widget set up for accepting/declining the nomination. The widet is only
+widget set up for accepting/declining the nomination. The widget is only
 set up if the user has permission to approve the nomination.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
-    >>> login("no-priv@canonical.com")
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> login_person(nominator)
     >>> no_priv = getUtility(ILaunchBag).user
     >>> ubuntu_bug = ubuntu.createBug(CreateBugParams(
     ...     no_priv, "Ubuntu bug", comment="Test bug."))
@@ -226,8 +239,6 @@ But when we submit a "nomination" for Grumpy as a privileged user, it is
 immediately approved, and a new task added. By "privileged user" in this
 context, we mean a user that has, either directly or through a team,
 launchpad.Driver permission on the nomination.
-
-    >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
 
@@ -319,7 +330,7 @@ The product 'firefox' is the IBugTarget in
     >>> IPrimaryContext(firefox_nomination).context == bugtarget
     True
 
-The source package 'mozilla-firefox in ubuntu' is the IBugTarget in
+The source package 'mozilla-firefox in Ubuntu' is the IBugTarget in
 /ubuntu/+source/mozilla-firefox/+bug/1/nominations/2/+editstatus.
 
     >>> ubuntu_firefox_nomination = bugnominationset.get(2)
@@ -332,7 +343,7 @@ The source package 'mozilla-firefox in ubuntu' is the IBugTarget in
     >>> launchbag.add(bug_one_in_ubuntu_firefox.target)
     >>> launchbag.add(bug_one_in_ubuntu_firefox)
     >>> launchbag.bugtask.target.displayname
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
 
     >>> bugtarget = launchbag.bugtask.target
     >>> IPrimaryContext(ubuntu_firefox_nomination).context == bugtarget

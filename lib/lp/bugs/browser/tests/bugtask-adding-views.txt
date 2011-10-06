@@ -1,4 +1,5 @@
-= Adding BugTasks =
+Adding BugTasks
+===============
 
 If a bug occurs in more than one place, you can request a fix in some
 other software. You can request a fix in either a product or a
@@ -7,12 +8,11 @@ distribution. Let's start with a product, this is done using
 affects and creates the new bugtask.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> len(bug_four.bugtasks)
     1
     >>> firefox_task = bug_four.bugtasks[0]
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 The views registered at +choose-affected-product and +distrotask are in
 fact meta views responsible for calling other views in order to guide the
@@ -29,6 +29,7 @@ our meta view.
     ...     return view.view
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form={}, method='GET')
+
 
 We haven't posted the form, so we'll see one button.
 
@@ -66,6 +67,7 @@ If we supply a valid product, it will move on to the next step.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'evolution',
+    ...     'field.add_packaging': 'off',
     ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
@@ -95,8 +97,8 @@ the product manually, since it's hard to guess which product that is
 most likely to get added. Let's take a look how it works for packages,
 which can have packaging links that helps us choose the product.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IDistributionSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> owner = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
@@ -119,10 +121,13 @@ selected.
     u'firefox'
 
 If some package doesn't have a packaging link, a product will have to
-be chosen manually, and a notification will be displayed, explaining
-why the product wasn't chosen automatically.
+be chosen manually, and the user may choose to link the package to the
+project..
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=ubuntu.currentseries,
+    ...     sourcepackagename=ubuntu_thunderbird.sourcepackagename)
     >>> thunderbird_bug = ubuntu_thunderbird.createBug(create_params)
     >>> ubuntu_thunderbird_task = thunderbird_bug.bugtasks[0]
 
@@ -132,13 +137,11 @@ why the product wasn't chosen automatically.
 
     >>> add_task_view.step_name
     'choose_product'
+    >>> add_task_view.field_names
+    ['product', 'add_packaging', '__visited_steps__']
+
     >>> print add_task_view.widgets['product']._getFormInput()
     None
-    >>> len(add_task_view.request.response.notifications)
-    1
-    >>> for notification in add_task_view.request.response.notifications:
-    ...     print notification.message
-    Please select the appropriate upstream project. This step...
 
 Sometimes the distribution won't have any series, though. In that
 case, we won't prompt the user to add a link, since he can't actually
@@ -162,50 +165,14 @@ add one.
     >>> len(add_task_view.request.response.notifications)
     0
 
-XXX: Because of bug 140526, it's possible to have a package linked to a series
-of an inactive upstream. In a case like that we must ask the user to specify
-the upstream, but we also display a warning telling the user there's a
-package linked to an inactive upstream. -- Guilherme Salgado, 2007-09-18
-
-    # Create the view manually just so we can get the correct upstream
-    # easily.
-    >>> from lp.bugs.browser.bugalsoaffects import (
-    ...     ChooseProductStep)
-    >>> view = ChooseProductStep(
-    ...     ubuntu_firefox_task, LaunchpadTestRequest(method='GET', form={}))
-    >>> upstream = view.context.target.upstream_product
-    >>> upstream.active
-    True
-
-    # Mark the upstream as inactive.
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(upstream).active = False
-    >>> removeSecurityProxy(upstream).syncUpdate()
-
-    >>> add_task_view = get_and_setup_view(
-    ...     ubuntu_firefox_task, '+choose-affected-product', form={},
-    ...     method='GET')
-
-    >>> add_task_view.step_name
-    'choose_product'
-    >>> print add_task_view.widgets['product']._getFormInput()
-    None
-    >>> for notification in add_task_view.request.response.notifications:
-    ...     print notification.message.strip()
-    This package is linked to an inactive upstream...
-
-    # Mark the upstream back as active.
-    >>> removeSecurityProxy(upstream).active = True
-    >>> removeSecurityProxy(upstream).syncUpdate()
-
 Let's take a look at the second step now, where we may enter the URL of
 the remote bug and confirm the bugtask creation.
 In order to show that all the events get fired off, let's create an
 event listener and register it:
 
     >>> from zope.interface import Interface
-    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
     >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
     >>> def on_created_event(object, event):
     ...     print "ObjectCreatedEvent: %r" % object
@@ -224,6 +191,7 @@ include its (and all previous) step_name in field.__visited_steps__.
     >>> form = {
     ...     'field.actions.continue': '1',
     ...     'field.product': u'no-such-product',
+    ...     'field.add_packaging': 'off',
     ...     'field.__visited_steps__':
     ...         'choose_product|specify_remote_bug_url',
     ...     }
@@ -248,7 +216,7 @@ be created:
     >>> form['field.product'] = u'evolution'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.bugtargetdisplayname
@@ -259,8 +227,8 @@ This worked without any problems since Evolution does use Malone as its
 offical bug tracker.
 
     >>> evolution_task = bug_four.bugtasks[0]
-    >>> evolution_task.target.official_malone
-    True
+    >>> evolution_task.target.bug_tracking_usage
+    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
 
     >>> transaction.commit()
 
@@ -294,7 +262,7 @@ watch.
     >>> form['field.link_upstream_how'] = u'UNLINKED_UPSTREAM'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
     >>> print add_task_view.notifications
     []
     >>> add_task_view.next_url is not None
@@ -310,8 +278,8 @@ But since no bug watch was specified, the status and importance
 are set to the default values.
 
     >>> alsa_task = bug_four.bugtasks[0]
-    >>> alsa_task.target.official_malone
-    False
+    >>> alsa_task.target.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
     >>> alsa_task.status.title
     'New'
     >>> alsa_task.importance.title
@@ -356,7 +324,7 @@ linked to the new bug watch.
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     ObjectCreatedEvent: <BugWatch at ...>
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.bugtargetdisplayname
@@ -379,7 +347,7 @@ and the bug watch will be added without any confirmation needed:
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     ObjectCreatedEvent: <BugWatch at ...>
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
 
     >>> print add_task_view.notifications
     []
@@ -397,14 +365,14 @@ and the bug watch will be added without any confirmation needed:
     bugzilla.somewhere.org/bugs/: 84
 
 The bug watch got linked to the created task, and all the bug task's
-attributes got initialised to Unknown. The bugtask will be synced with
+attributes got initialized to Unknown. The bugtask will be synced with
 the bug watch's status later.
 
     >>> alsa_task = bug_four.bugtasks[0]
     >>> alsa_task.bugtargetname
     u'alsa-utils'
-    >>> alsa_task.product.official_malone
-    False
+    >>> alsa_task.product.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
     >>> alsa_task.bugwatch == bug_four.watches[0]
     True
 
@@ -422,7 +390,7 @@ another bug links to the same bug.
     >>> add_task_view = get_and_setup_view(
     ...     bug_five_task, '+choose-affected-product', form)
     ObjectCreatedEvent: <BugWatch at ...>
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
 
     >>> add_task_view.request.response.getHeader('Location')
     'http://.../+bug/5'
@@ -471,7 +439,7 @@ package will be converted to the corresponding source package.
     ...     'field.sourcepackagename': u'mozilla-firefox-data'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+distrotask', form)
-    ObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask ...>
     >>> add_task_view.errors
     []
 
@@ -484,7 +452,8 @@ package will be converted to the corresponding source package.
     >>> on_created_listener.unregister()
 
 
-== Registering a product while adding a bugtask ==
+Registering a product while adding a bugtask
+============================================
 
 One of the facilities we have when adding a bugtask is the option to target it
 to a newly registered product.  When that option is used, though, we use the
@@ -585,29 +554,33 @@ project in question.
     []
     >>> login('test@canonical.com')
 
-== IAddBugTaskForm Interface Definition ==
 
-IAddBugTaskForm, which is used as the schema for the views tested above, has
-some attributes which are identical to those of IUpstreamBugTask and
-IDistroBugTask. However, we must ensure that IAddBugTask defines its own
-attributes rather than borrowing those of IUpstreamBugTask and IDistroBugTask,
-since doing so has produced OOPSes (bug 129406).
+IAddBugTaskForm Interface Definition
+====================================
+
+IAddBugTaskForm, which is used as the schema for the views tested above,
+has some attributes which are identical to those of IBugTask However, we
+must ensure that IAddBugTask defines its own attributes rather than
+borrowing those of IBugTask, since doing so has produced OOPSes (bug
+129406).
 
     >>> from lp.bugs.interfaces.bugtask import (
-    ...     IAddBugTaskForm, IDistroBugTask, IUpstreamBugTask)
-    >>> IAddBugTaskForm['product'] is IUpstreamBugTask['product']
+    ...     IAddBugTaskForm,
+    ...     IBugTask,
+    ...     )
+    >>> IAddBugTaskForm['product'] is IBugTask['product']
     False
 
-    >>> IAddBugTaskForm['distribution'] is IDistroBugTask['distribution']
+    >>> IAddBugTaskForm['distribution'] is IBugTask['distribution']
     False
 
-    >>> (IAddBugTaskForm['sourcepackagename'] is
-    ...     IDistroBugTask['sourcepackagename'])
+    >>> IAddBugTaskForm['sourcepackagename'] is IBugTask['sourcepackagename']
     False
 
 
 
-== Getting the upstream bug filing URL for a product ==
+Getting the upstream bug filing URL for a product
+=================================================
 
 Products that don't use Launchpad for bug tracking can be linked to
 external bug trackers. In order to make it easier for users to file bugs
@@ -639,6 +612,7 @@ search link includes the summary only.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'frobnitz',
+    ...     'field.add_packaging': 'off',
     ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
@@ -676,5 +650,5 @@ bug trackers will always be a usable URL.
     >>> product.bugtracker = trac_bugtracker
 
     >>> print_links(add_task_view.upstream_bugtracker_links)
-    bug_filing_url: http://trac.example.com/newticket
+    bug_filing_url: http://trac.example.com/newticket?summary=Reflow%20...
     bug_search_url: http://trac.example.com/search?ticket=on&q=Reflow%20...

@@ -67,23 +67,19 @@
     access_level="write" />
 
   <permission
+    id="launchpad.BugSupervisor"
+    title="The role of managing bugs and bug rules for a product."
+    access_level="write" />
+
+  <permission
     id="launchpad.Owner"
     title="The role of someone who created or otherwise owns an object."
     access_level="write" />
 
+  <!-- This permission only exists to please apidoc.launchpad.dev and
+       shouldn't be used anywhere else. -->
   <permission
-    id="launchpad.MailingListManager"
-    title="The role of someone who can manage and configure a mailing list."
-    access_level="write" />
-
-  <!--
-    XXX: BradCrittenden 2009-05-17 bug=400762: ProjectReview should properly
-    just be Moderate except there is a clash between IProduct and IFAQTarget.
-  -->
-  <permission
-    id="launchpad.ProjectReview"
-    title="Review Launchpad projects"
-    access_level="write" />
-
+    id="zope.ManageApplication" title="Needed by zope.app.apidoc"
+    access_level="read" />
 
 </configure>

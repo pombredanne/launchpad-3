@@ -18,9 +18,6 @@
     #code-review-votes {
       margin: 1em 0;
     }
-    #description, #edit-description {
-      margin: 1em 0;
-    }
     #add-comment-form {
       max-width: 60em;
       padding-bottom: 3em;
@@ -46,9 +43,10 @@
     #proposal-summary td {
       padding-left: 0.5em;
     }
-    /* A page-specific fix for inline text are editing to line up box. */
-    #edit-description .yui-ieditor-input { top: 0; }
-    #edit-commit_message .yui-ieditor-input { top: 0; }
+    .related-bugs-list {
+      padding-left: 20px;
+      padding-bottom: 10px;
+    }
   </style>
 </metal:block>
 
@@ -97,45 +95,35 @@
   </div>
 
   <div id="commit-message" class="yui-g">
-  <tal:no-commit-message condition="not: context/commit_message">
     <div tal:define="link menu/set_commit_message"
          tal:condition="link/enabled"
-         tal:content="structure link/render">
+         tal:content="structure link/render"
+         tal:attributes="class view/edit_commit_message_link_class">
       Set commit message
     </div>
-    <div id="edit-commit_message" class="lazr-multiline-edit unseen"
-         tal:content="structure view/commit_message_html"/>
-  </tal:no-commit-message>
-  <tal:has-commit-message condition="context/commit_message">
-    <div tal:define="link menu/set_commit_message"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" class="unseen">
-      Set commit message
-    </div>
-    <div id="edit-commit_message" class="lazr-multiline-edit"
-         tal:content="structure view/commit_message_html"/>
-  </tal:has-commit-message>
+    <tal:widget replace="structure view/commit_message_html"/>
   </div>
 
   <div id="description" class="yui-g">
-  <tal:no-description condition="not: context/description">
     <div tal:define="link menu/set_description"
          tal:condition="link/enabled"
-         tal:content="structure link/render">
+         tal:content="structure link/render"
+         tal:attributes="class view/edit_description_link_class">
       Set description
     </div>
-    <div id="edit-description" class="lazr-multiline-edit unseen"
-         tal:content="structure view/description_html"/>
-  </tal:no-description>
-  <tal:has-description condition="context/description">
-    <div tal:define="link menu/set_description"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" class="unseen">
-      Set description
-    </div>
-    <div id="edit-description" class="lazr-multiline-edit"
-         tal:content="structure view/description_html"/>
-  </tal:has-description>
+    <tal:widget replace="structure view/description_html"/>
+  </div>
+
+  <div class="yui-g" tal:condition="view/has_bug_or_spec">
+      <div id="related-bugs-and-blueprints" class="related-bugs-list"
+        tal:define="branch context/source_branch">
+        <div class="actions">
+          <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+        </div>
+        <div class="actions">
+          <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+        </div>
+      </div>
   </div>
 
   <div class="yui-g">
@@ -176,51 +164,38 @@
   </tal:logged-in>
 
   <div class="yui-g">
-    <div class="yui-u first">
-      <div id="source-revisions"
-           tal:condition="not: context/queue_status/enumvalue:MERGED">
+    <div id="source-revisions"
+         tal:condition="not: context/queue_status/enumvalue:MERGED">
 
-        <tal:history-available condition="context/source_branch/revision_count"
-                               define="branch context/source_branch;
-                                       revisions view/unlanded_revisions">
-          <h2>Unmerged revisions</h2>
-          <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
-        </tal:history-available>
-
-        <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
-          <h2>Unmerged revisions</h2>
-          <p>Recent revisions are not available due to the source branch being remote.</p>
-        </tal:remote-branch>
-      </div>
-    </div>
-
-    <div class="yui-u" tal:condition="view/has_bug_or_spec">
-      <div id="related-bugs-and-blueprints"
-        tal:define="branch context/source_branch">
-        <h2>Linked bug reports and blueprints</h2>
-        <div class="actions">
-
-          <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
-        </div>
-        <div class="actions">
-          <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
-        </div>
-      </div>
+      <tal:history-available condition="context/source_branch/revision_count"
+                             define="branch context/source_branch;
+                                     revisions view/unlanded_revisions">
+        <h2>Unmerged revisions</h2>
+        <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
+      </tal:history-available>
+      <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+        <h2>Unmerged revisions</h2>
+        <p>Recent revisions are not available due to the source branch being remote.</p>
+      </tal:remote-branch>
     </div>
   </div>
 
-  <div class="yui-g" tal:condition="view/pending_diff">
-    <div class="pending-update" id="diff-pending-update">
-      <h3>Updating diff...</h3>
-      <p>
-        An updated diff will be available in a few minutes.  Reload to see the
-        changes.
-      </p>
+  <div id="diff-area">
+    <div class="yui-g" tal:condition="view/pending_diff">
+      <div class="pending-update" id="diff-pending-update">
+        <h3>Updating diff...</h3>
+        <p>
+          An updated diff will be available in a few minutes. Reload to see the
+          changes.
+        </p>
+      </div>
     </div>
-  </div>
-  <div id="review-diff" tal:condition="view/preview_diff">
-    <h2>Preview Diff</h2>
-    <div tal:replace="structure context/@@++diff"/>
+    <div id="review-diff" tal:condition="view/preview_diff">
+      <h2>Preview Diff </h2>
+      <div class="diff-content">
+        <div tal:replace="structure context/@@++diff"/>
+      </div>
+    </div>
   </div>
 
 <tal:script
@@ -229,13 +204,15 @@
   conf = <tal:status-config replace="view/status_config" />
   <!--
   LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
-          'lp.code.branchmergeproposal.status', 'lp.comment', function(Y) {
+          'lp.code.branchmergeproposal.status', 'lp.app.comment',
+          'lp.code.branchmergeproposal.updater', 'lp.app.widgets.expander',
+          'lp.code.branch.revisionexpander', function(Y) {
 
     Y.on('load', function() {
-        var logged_in = LP.client.links['me'] !== undefined;
+        var logged_in = LP.links['me'] !== undefined;
 
         if (logged_in) {
-            var comment = new Y.lp.CodeReviewComment();
+            var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
 
             if(Y.UA.ie) {
@@ -247,7 +224,31 @@
         Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
         (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
             ).render();
+
+        if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
+            var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
+                {srcNode: Y.one('#diff-area')});
+            Y.on(LP.cache.merge_proposal_event_key, function(data) {
+                if (Y.lp.code.branchmergeproposal.updater.is_mp_diff_updated(data)) {
+		    updater.update();
+                }
+            });
+            updater.on(updater.NAME + '.updated', function() {
+                (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
+                    ).render();
+            });
+        }
+
       }, window);
+
+    Y.on('domready', function() {
+        Y.lp.app.widgets.expander.createByCSS(
+            '.revision-group-diff',
+            '.expander-icon',
+            '.expander-content',
+            false,
+            Y.lp.code.branch.revisionexpander.bmp_diff_loader);
+    });
   });
   -->
 <tal:script replace="structure string:&lt;/script&gt;" />

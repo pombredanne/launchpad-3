@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -16,54 +16,108 @@ __all__ = [
     ]
 
 from datetime import datetime
-import operator
-import pytz
-
 from email.Utils import make_msgid
+import operator
 
-from zope.component import getUtility
-from zope.event import notify
-from zope.interface import implements, providedBy
-from zope.security.proxy import isinstance as zope_isinstance
-
+from lazr.enum import (
+    DBItem,
+    Item,
+    )
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import LeftJoin
 from storm.store import Store
+from zope.component import getUtility
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
+from zope.security.proxy import isinstance as zope_isinstance
 
-from lazr.enum import DBItem, Item
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
-    IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
-    ILaunchpadCelebrities, IMessage, IPerson, IProduct, IProductSet,
-    IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
-    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
-    QuestionPriority, QuestionSort, QuestionStatus)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.registry.interfaces.person import validate_public_person
-
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
-
-from lp.answers.model.answercontact import AnswerContact
-from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.services.worlddata.model.language import Language
-from canonical.launchpad.database.message import Message, MessageChunk
-from lp.coop.answersbugs.model import QuestionBug
-from lp.answers.model.questionmessage import QuestionMessage
-from lp.answers.model.questionsubscription import (
-    QuestionSubscription)
+from canonical.database.nl_search import nl_phrase_search
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import is_english_variant
-from canonical.launchpad.mailnotification import (
-    NotificationRecipientSet)
+from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    QuestionAction,
+    QuestionParticipation,
+    QuestionPriority,
+    QuestionSort,
+    QuestionStatus,
+    )
+from lp.answers.errors import (
+    AddAnswerContactError,
+    FAQTargetError,
+    InvalidQuestionStateError,
+    NotAnswerContactError,
+    NotMessageOwnerError,
+    NotQuestionOwnerError,
+    QuestionTargetError,
+    )
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.model.answercontact import AnswerContact
+from lp.answers.model.questionmessage import QuestionMessage
+from lp.answers.model.questionreopening import create_questionreopening
+from lp.answers.model.questionsubscription import QuestionSubscription
+from lp.app.enums import ServiceUsage
+from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.coop.answersbugs.model import QuestionBug
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    validate_public_person,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.messages.interfaces.message import IMessage
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.language import ILanguage
+from lp.services.worlddata.model.language import Language
 
 
 class notify_question_modified:
@@ -83,6 +137,7 @@ class notify_question_modified:
 
     def __call__(self, func):
         """Return the ObjectModifiedEvent decorator."""
+
         def notify_question_modified(self, *args, **kwargs):
             """Create the ObjectModifiedEvent decorator."""
             old_question = Snapshot(self, providing=providedBy(self))
@@ -177,18 +232,14 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def _settarget(self, question_target):
         """See Question.target."""
-        assert IQuestionTarget.providedBy(question_target), (
-            "The target must be an IQuestionTarget")
+        if not IQuestionTarget.providedBy(question_target):
+            raise QuestionTargetError(
+                "The target must be an IQuestionTarget")
         if IProduct.providedBy(question_target):
             self.product = question_target
             self.distribution = None
             self.sourcepackagename = None
-        # XXX sinzui 2007-04-20 bug=108240
-        # We test for ISourcePackage because it is a valid QuestionTarget even
-        # though it should not be. SourcePackages are never passed to this
-        # mutator.
-        elif (ISourcePackage.providedBy(question_target) or
-                IDistributionSourcePackage.providedBy(question_target)):
+        elif (IDistributionSourcePackage.providedBy(question_target)):
             self.product = None
             self.distribution = question_target.distribution
             self.sourcepackagename = question_target.sourcepackagename
@@ -206,7 +257,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def followup_subject(self):
         """See `IMessageTarget`."""
         if not self.messages:
-            return 'Re: '+ self.title
+            return 'Re: ' + self.title
         subject = self.messages[-1].title
         if subject[:4].lower() == 're: ':
             return subject
@@ -230,14 +281,26 @@ class Question(SQLBase, BugLinkTargetMixin):
                 "New status is same as the old one.")
 
         # If the previous state recorded an answer, clear those
-        # information as well.
+        # information as well, but copy it out for the reopening.
+        old_status = self.status
+        old_answerer = self.answerer
+        old_date_solved = self.date_solved
         self.answerer = None
         self.answer = None
         self.date_solved = None
 
-        return self._newMessage(
+        msg = self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.SETSTATUS, new_status=new_status)
+
+        if new_status == QuestionStatus.OPEN:
+            create_questionreopening(
+                self,
+                msg,
+                old_status,
+                old_answerer,
+                old_date_solved)
+        return msg
 
     @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
@@ -257,7 +320,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def requestInfo(self, user, question, datecreated=None):
         """See `IQuestion`."""
-        assert user != self.owner, "Owner cannot use requestInfo()."
+        if user == self.owner:
+            raise NotQuestionOwnerError("Owner cannot use requestInfo().")
         if not self.can_request_info:
             raise InvalidQuestionStateError(
             "Question status != OPEN, NEEDSINFO, or ANSWERED")
@@ -323,10 +387,12 @@ class Question(SQLBase, BugLinkTargetMixin):
     def linkFAQ(self, user, faq, comment, datecreated=None):
         """See `IQuestion`."""
         if faq is not None:
-            assert IFAQ.providedBy(faq), (
-                "faq parameter must provide IFAQ or be None")
-        assert self.faq != faq, (
-            'cannot call linkFAQ() with already linked FAQ')
+            if not IFAQ.providedBy(faq):
+                raise FAQTargetError(
+                    "faq parameter must provide IFAQ or be None.")
+        if self.faq == faq:
+            raise FAQTargetError(
+                'Cannot call linkFAQ() with already linked FAQ.')
         self.faq = faq
         if self.can_give_answer:
             return self._giveAnswer(user, comment, datecreated)
@@ -357,8 +423,9 @@ class Question(SQLBase, BugLinkTargetMixin):
                 "There is no answer that can be confirmed")
         if answer:
             assert answer in self.messages
-            assert answer.owner != self.owner, (
-                'Use giveAnswer() when solving own question.')
+            if answer.owner == self.owner:
+                raise NotQuestionOwnerError(
+                    'Use giveAnswer() when solving own question.')
 
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
@@ -393,8 +460,9 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def reject(self, user, comment, datecreated=None):
         """See `IQuestion`."""
-        assert self.canReject(user), (
-            'User "%s" cannot reject the question.' % user.displayname)
+        if not self.canReject(user):
+            raise NotAnswerContactError(
+                'User "%s" cannot reject the question.' % user.displayname)
         if self.status == QuestionStatus.INVALID:
             raise InvalidQuestionStateError("Question is already rejected.")
         msg = self._newMessage(
@@ -425,19 +493,31 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
         """See `IQuestion`."""
+        old_status = self.status
+        old_answerer = self.answerer
+        old_date_solved = self.date_solved
         if not self.can_reopen:
             raise InvalidQuestionStateError(
                 "Question status != ANSWERED, EXPIRED or SOLVED.")
         msg = self._newMessage(
-            self.owner, comment, datecreated=datecreated,
-            action=QuestionAction.REOPEN, new_status=QuestionStatus.OPEN)
+            self.owner,
+            comment,
+            datecreated=datecreated,
+            action=QuestionAction.REOPEN,
+            new_status=QuestionStatus.OPEN)
+        create_questionreopening(
+            self,
+            msg,
+            old_status,
+            old_answerer,
+            old_date_solved)
         self.answer = None
         self.answerer = None
         self.date_solved = None
         return msg
 
     # subscriptions
-    def subscribe(self, person):
+    def subscribe(self, person, subscribed_by=None):
         """See `IQuestion`."""
         # First see if a relevant subscription exists, and if so, update it.
         for sub in self.subscriptions:
@@ -448,11 +528,18 @@ class Question(SQLBase, BugLinkTargetMixin):
         Store.of(sub).flush()
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IQuestion`."""
+        if person is None:
+            person = unsubscribed_by
         # See if a relevant subscription exists, and if so, delete it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                    raise UserCannotUnsubscribePerson(
+                        '%s does not have permission to unsubscribe %s.' % (
+                            unsubscribed_by.displayname,
+                            person.displayname))
                 store = Store.of(sub)
                 sub.destroySelf()
                 store.flush()
@@ -461,16 +548,28 @@ class Question(SQLBase, BugLinkTargetMixin):
     def getDirectSubscribers(self):
         """See `IQuestion`.
 
-        This method is sorted so that it iterates like getDirectRecipients().
+        This method is sorted so that it iterates like direct_recipients.
         """
         return sorted(
             self.subscribers, key=operator.attrgetter('displayname'))
+
+    def getDirectSubscribersWithDetails(self):
+        """See `IQuestion`."""
+
+        # Avoid circular imports
+        from lp.registry.model.person import Person
+        results = Store.of(self).find(
+            (Person, QuestionSubscription),
+            QuestionSubscription.person_id == Person.id,
+            QuestionSubscription.question_id == self.id,
+            ).order_by(Person.displayname)
+        return results
 
     def getIndirectSubscribers(self):
         """See `IQuestion`.
 
         This method adds the assignee and is sorted so that it iterates like
-        getIndirectRecipients().
+        indirect_recipients.
         """
         subscribers = set(
             self.target.getAnswerContactsForLanguage(self.language))
@@ -480,19 +579,29 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getRecipients(self):
         """See `IQuestion`."""
-        subscribers = self.getDirectRecipients()
-        subscribers.update(self.getIndirectRecipients())
+        # return a mutable instance of the cached recipients.
+        subscribers = NotificationRecipientSet()
+        subscribers.update(self.direct_recipients)
+        subscribers.update(self.indirect_recipients)
         return subscribers
 
-    def getDirectRecipients(self):
+    @cachedproperty
+    def direct_recipients(self):
         """See `IQuestion`."""
         subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
                   "a direct subscriber of the question.")
         subscribers.add(self.subscribers, reason, 'Subscriber')
+        if self.owner in subscribers:
+            subscribers.remove(self.owner)
+            reason = (
+                "You received this question notification because you "
+                "asked the question.")
+            subscribers.add(self.owner, reason, 'Asker')
         return subscribers
 
-    def getIndirectRecipients(self):
+    @cachedproperty
+    def indirect_recipients(self):
         """See `IQuestion`."""
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
@@ -509,7 +618,8 @@ class Question(SQLBase, BugLinkTargetMixin):
         When update_question_dates is True, the question's datelastquery or
         datelastresponse attribute is updated to the message creation date.
         The datelastquery attribute is updated when the message owner is the
-        same than the question owner, otherwise the datelastresponse is updated.
+        same than the question owner, otherwise the datelastresponse is
+        updated.
 
         :owner: An IPerson.
         :content: A string or an IMessage. When it's an IMessage, the owner
@@ -523,8 +633,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         :update_question_dates: A bool.
         """
         if IMessage.providedBy(content):
-            assert owner == content.owner, (
-                'The IMessage has the wrong owner.')
+            if owner != content.owner:
+                raise NotMessageOwnerError(
+                    'The IMessage has the wrong owner.')
             msg = content
         else:
             if subject is None:
@@ -569,6 +680,11 @@ class Question(SQLBase, BugLinkTargetMixin):
     def createBugLink(self, bug):
         """See BugLinkTargetMixin."""
         return QuestionBug(question=self, bug=bug)
+
+    def setCommentVisibility(self, user, comment_number, visible):
+        """See `IQuestion`."""
+        message = self.messages[comment_number].message
+        message.visible = visible
 
 
 class QuestionSet:
@@ -631,8 +747,8 @@ class QuestionSet:
                     LEFT OUTER JOIN Distribution ON (
                         Question.distribution = Distribution.id)
                 WHERE
-                    (Product.official_answers is True
-                    OR Distribution.official_answers is TRUE)
+                    (Product.answers_usage = %s
+                    OR Distribution.answers_usage = %s)
                     AND Question.datecreated > (
                         current_timestamp -interval '60 days')
                 LIMIT 5000
@@ -640,7 +756,8 @@ class QuestionSet:
             GROUP BY product, distribution
             ORDER BY question_count DESC
             LIMIT %s
-            """ % sqlvalues(limit))
+            """ % sqlvalues(
+                    ServiceUsage.LAUNCHPAD, ServiceUsage.LAUNCHPAD, limit))
 
         projects = []
         product_set = getUtility(IProductSet)
@@ -725,7 +842,6 @@ class QuestionSet:
         cur = cursor()
         cur.execute(query)
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
-        packages_with_questions = set()
         # Only packages with open questions are included in the query
         # result, so initialize each package to 0.
         counts = dict((package, 0) for package in packages)
@@ -812,10 +928,8 @@ class QuestionSearch:
         particular person."""
         joins = [
             ("""LEFT OUTER JOIN QuestionMessage
-                ON QuestionMessage.question = Question.id"""),
-            ("""LEFT OUTER JOIN Message
-                ON QuestionMessage.message = Message.id
-                AND Message.owner = %s""" % sqlvalues(person))]
+                ON QuestionMessage.question = Question.id
+                AND QuestionMessage.owner = %s""" % sqlvalues(person))]
         if self.project:
             joins.extend(self.getProductJoins())
 
@@ -846,7 +960,7 @@ class QuestionSearch:
                     AND Question.status IN %(owner_status)s)
                 OR (Question.owner != %(person)s AND
                     Question.status = %(open_status)s AND
-                    Message.owner = %(person)s)
+                    QuestionMessage.owner = %(person)s)
                 )''' % sqlvalues(
                     person=self.needs_attention_from,
                     owner_status=[
@@ -907,7 +1021,7 @@ class QuestionSearch:
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:
             return ['-Question.datelastquery']
         else:
-            raise AssertionError, "Unknown QuestionSort value: %s" % sort
+            raise AssertionError("Unknown QuestionSort value: %s" % sort)
 
     def getResults(self):
         """Return the questions that match this query."""
@@ -1057,7 +1171,7 @@ class QuestionPersonSearch(QuestionSearch):
         QuestionParticipation.ANSWERER: "Question.answerer = %s",
         QuestionParticipation.SUBSCRIBER: "QuestionSubscription.person = %s",
         QuestionParticipation.OWNER: "Question.owner = %s",
-        QuestionParticipation.COMMENTER: "Message.owner = %s",
+        QuestionParticipation.COMMENTER: "QuestionMessage.owner = %s",
         QuestionParticipation.ASSIGNEE: "Question.assignee = %s"}
 
     def getConstraints(self):
@@ -1110,13 +1224,18 @@ class QuestionTargetMixin:
         # Give the datelastresponse a current datetime, otherwise the
         # Launchpad Janitor would quickly expire questions made from old bugs.
         question.datelastresponse = datetime.now(pytz.timezone('UTC'))
-        question.linkBug(bug)
-        for message in bug.messages[1:]:
-            # Bug.message[0] is the original message, and probably a duplicate
-            # of Bug.description.
-            question.addComment(
-                message.owner, message.text_contents,
-                datecreated=message.datecreated)
+        # Directly create the BugLink so that users do not receive duplicate
+        # messages about the bug.
+        question.createBugLink(bug)
+        # Copy the last message that explains why the bug is a question.
+        message = bug.messages[-1]
+        question.addComment(
+            message.owner, message.text_contents,
+            datecreated=message.datecreated)
+        # Direct subscribers to the bug want to know the question answer.
+        for subscriber in bug.getDirectSubscribers():
+            if subscriber != question.owner:
+                question.subscribe(subscriber)
         return question
 
     def getQuestion(self, question_id):
@@ -1136,10 +1255,10 @@ class QuestionTargetMixin:
             return False
         return True
 
-    def findSimilarQuestions(self, title):
+    def findSimilarQuestions(self, phrase):
         """See `IQuestionTarget`."""
         return SimilarQuestionsSearch(
-            title, **self.getTargetTypes()).getResults()
+            phrase, **self.getTargetTypes()).getResults()
 
     def getQuestionLanguages(self):
         """See `IQuestionTarget`."""
@@ -1225,15 +1344,30 @@ class QuestionTargetMixin:
             person.setLanguagesCache(languages)
         return sorted(D.keys(), key=operator.attrgetter('displayname'))
 
-    def addAnswerContact(self, person):
+    def canUserAlterAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
+        if person is None or subscribed_by is None:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if (person == subscribed_by
+            or person in subscribed_by.administrated_teams
+            or subscribed_by.inTeam(self.owner)
+            or subscribed_by.inTeam(admins)):
+            return True
+        return False
+
+    def addAnswerContact(self, person, subscribed_by):
+        """See `IQuestionTarget`."""
+        if not self.canUserAlterAnswerContact(person, subscribed_by):
+            return False
         answer_contact = AnswerContact.selectOneBy(
             person=person, **self.getTargetTypes())
         if answer_contact is not None:
             return False
         # Person must speak a language to be an answer contact.
-        assert len(person.languages) > 0, (
-            "An Answer Contact must speak a language.")
+        if len(person.languages) == 0:
+            raise AddAnswerContactError(
+                "An answer contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
         answer_contact = AnswerContact(person=person, **params)
@@ -1276,8 +1410,8 @@ class QuestionTargetMixin:
         else:
             constraints.append("""
                 Language.id = %s""" % sqlvalues(language))
-        return set(self._selectPersonFromAnswerContacts(
-            constraints, ['PersonLanguage', 'Language']))
+        return list((self._selectPersonFromAnswerContacts(
+            constraints, ['PersonLanguage', 'Language'])))
 
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
@@ -1301,8 +1435,10 @@ class QuestionTargetMixin:
             recipients.add(person, reason, header)
         return recipients
 
-    def removeAnswerContact(self, person):
+    def removeAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
+        if not self.canUserAlterAnswerContact(person, subscribed_by):
+            return False
         if person not in self.answer_contacts:
             return False
         answer_contact = AnswerContact.selectOneBy(
@@ -1322,4 +1458,4 @@ class QuestionTargetMixin:
         languages.add(getUtility(ILaunchpadCelebrities).english)
         languages = set(
             lang for lang in languages if not is_english_variant(lang))
-        return languages
+        return list(languages)

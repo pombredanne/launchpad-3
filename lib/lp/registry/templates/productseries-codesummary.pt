@@ -29,19 +29,19 @@
         <li>
           <p>
             If the code is in a Bazaar branch not yet on Launchpad
-            you can either
+            you can either:
           </p>
 
           <ul class="bulleted" style="margin-bottom: 0;">
             <li>
               Have the branch mirrored from a remote location by
-               <a tal:attributes="href context/menu:overview/branch_add/fmt:url">
+               <a tal:attributes="href context/product/menu:overview/branch_add/fmt:url">
               registering a mirrored branch</a>
             </li>
             <li id="ssh-key-directions">
-              Push the branch directly to Launchpad. eg. with <br />
+              Push the branch directly to Launchpad, e.g. with:<br />
               <tt><strong>
-                bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk
+                bzr push lp:~<tal:user replace="view/user/name"/>/<tal:products replace="context/product/name"/>/<tal:series replace="context/name"/>
               </strong></tt>
               <tal:no-keys condition="not:view/user/sshkeys">
                 <br/>To authenticate with the Launchpad branch upload service,
@@ -58,7 +58,7 @@
           <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
         </li>
       </ul>
-      
+
       <ul class="horizontal">
         <li>
           <a tal:replace="structure context/menu:overview/link_branch/fmt:link" />
@@ -84,13 +84,12 @@
     <a id="series-branch" class="sprite branch"
       tal:attributes="href context/branch/fmt:url"
       tal:content="context/branch/bzr_identity">Mozilla Thunderbird 0.9.1</a>
-    - <a tal:replace="structure context/branch/owner/fmt:link/+ownedbranches" />
+    - <a tal:replace="structure context/branch/owner/fmt:link:code/+ownedbranches" />
     <a
       tal:replace="structure context/menu:overview/link_branch/fmt:icon" />
   </div>
   <div id="branch-revision-details" tal:condition="context/branch/revision_count">
-    <span tal:replace="context/branch/revision_count">35</span> revisions,
-    <span tal:replace="context/branch/@@+product-summary-listing/recent_revision_count">31</span> in the past month.
+    <span tal:replace="context/branch/revision_count">35</span> revisions.
   </div>
 </tal:block>
 

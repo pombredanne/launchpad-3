@@ -3,30 +3,46 @@
 """Check the integrity of the /scripts and /cronscripts."""
 
 __metaclass__ = type
-__all__ = []
 
+import doctest
 import os
 import unittest
 
+from testtools import clone_test_with_new_id
+from testtools.matchers import DocTestMatches
+
 from lp.services.scripts.tests import find_lp_scripts
-from lp.testing import run_script, TestCase
+from lp.testing import (
+    run_script,
+    TestCase,
+    )
 
 
 class ScriptsTestCase(TestCase):
     """Check the integrity of all scripts shipped in the tree."""
 
-    def test_scripts(self):
-        # Walk through all scripts and check if they can run successfully
-        # if passed '-h' (optparser help). We run the scripts in a clean
-        # shell environment, i.e not PYTHONPATH set.
-        bad = []
-        for script_path in find_lp_scripts():
-            cmd_line = script_path + " -h"
-            out, err, returncode = run_script(cmd_line)
-            if returncode != os.EX_OK:
-                bad.append("%s failed\n%s" % (script_path, err))
-        self.failIf(bad, '\n\n'.join(bad))
+    def test_script(self):
+        # Run self.script_path with '-h' to make sure it runs cleanly.
+        cmd_line = self.script_path + " -h"
+        out, err, returncode = run_script(cmd_line)
+        self.assertThat(err, DocTestMatches('', doctest.REPORT_NDIFF))
+        self.assertEqual('', err)
+        self.assertEqual(os.EX_OK, returncode)
+
+
+def make_new_id(old_id, script_path):
+    base, name = old_id.rsplit('.', 1)
+    script_name = os.path.splitext(os.path.basename(script_path))[0]
+    return '.'.join([base, 'script_' + script_name])
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    test = ScriptsTestCase('test_script')
+    test_id = test.id()
+    suite = unittest.TestSuite()
+    for script_path in find_lp_scripts():
+        new_test = clone_test_with_new_id(
+            test, make_new_id(test_id, script_path))
+        new_test.script_path = script_path
+        suite.addTest(new_test)
+    return suite

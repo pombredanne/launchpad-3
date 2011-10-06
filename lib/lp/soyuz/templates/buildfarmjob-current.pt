@@ -4,7 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-  <img src="/@@/processing" alt="[building]" />
   Working on
   <tal:jobtype replace="context/__class__/__name__" />.
 </tal:root>

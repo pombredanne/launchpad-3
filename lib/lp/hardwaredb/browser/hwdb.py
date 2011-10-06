@@ -13,22 +13,37 @@ __all__ = [
 
 from textwrap import dedent
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.launchpad import ILaunchBag, NotFoundError
-from lp.hardwaredb.interfaces.hwdb import (
-    HWSubmissionMissingFields, IHWDBApplication, IHWDeviceClassSet,
-    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionForm,
-    IHWSubmissionSet, IHWSystemFingerprintSet, IHWVendorIDSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
-    action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
+from lp.hardwaredb.interfaces.hwdb import (
+    HWSubmissionMissingFields,
+    IHWDBApplication,
+    IHWDeviceClassSet,
+    IHWDeviceSet,
+    IHWDriverSet,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionForm,
+    IHWSubmissionSet,
+    IHWSystemFingerprintSet,
+    IHWVendorIDSet,
+    )
+from lp.registry.interfaces.distribution import IDistributionSet
 
 
 class HWDBUploadView(LaunchpadFormView):
@@ -54,10 +69,6 @@ class HWDBUploadView(LaunchpadFormView):
         missing_fields = expected_fields.difference(submitted_fields)
         if len(missing_fields) > 0:
             missing_fields = ', '.join(sorted(missing_fields))
-            info = (HWSubmissionMissingFields,
-                    'Missing form fields: %s' % missing_fields, None)
-            errorUtility = getUtility(IErrorReportingUtility)
-            errorUtility.handling(info, self.request)
             self.addCustomHeader(
                 'Error: Required fields not contained in POST data: '
                 + missing_fields)

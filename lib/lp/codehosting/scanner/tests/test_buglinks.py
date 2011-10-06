@@ -5,36 +5,40 @@
 
 __metaclass__ = type
 
-import unittest
-
 from bzrlib.revision import Revision
-from zope.event import notify
 from zope.component import getUtility
+from zope.event import notify
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IBugBranchSet, IBugSet, NotFoundError)
 from canonical.testing.layers import LaunchpadZopelessLayer
-
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner.buglinks import BugBranchLinker
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.services.osutils import override_environ
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class RevisionPropertyParsing(TestCase):
     """Tests for parsing the bugs revision property.
 
-    The bugs revision property holds information about Launchpad bugs which are
-    affected by a revision. A given revision may affect multiple bugs in
-    different ways. A revision may indicate work has begin on a bug, or that it
-    constitutes a fix for a bug.
+    The bugs revision property holds information about Launchpad bugs which
+    are affected by a revision. A given revision may affect multiple bugs in
+    different ways. A revision may indicate work has begin on a bug, or that
+    it constitutes a fix for a bug.
 
-    The bugs property is formatted as a newline-separated list of entries. Each
-    entry is of the form '<bug_id> <status>', where '<bug_id>' is the URL for a
-    page that describes the bug, and status is one of 'fixed' or 'inprogress'.
+    The bugs property is formatted as a newline-separated list of entries.
+    Each entry is of the form '<bug_id> <status>', where '<bug_id>' is the URL
+    for a page that describes the bug, and status is one of 'fixed' or
+    'inprogress'.
 
     In general, the parser skips over any lines with errors.
 
@@ -112,8 +116,16 @@ class TestBugLinking(BzrSyncTestCase):
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()
         self.bug1 = self.factory.makeBug()
+        sp = self.factory.makeSourcePackage(publish=True)
+        self.bug1.addTask(self.bug1.owner, sp)
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.bug1.addTask(self.bug1.owner, dsp)
+        distro = self.factory.makeDistribution()
+        self.bug1.addTask(self.bug1.owner, distro)
         self.bug2 = self.factory.makeBug()
         self.new_db_branch = self.factory.makeAnyBranch()
+        removeSecurityProxy(distro).max_bug_heat = 0
+        removeSecurityProxy(dsp).max_bug_heat = 0
         self.layer.txn.commit()
 
     def getBugURL(self, bug):
@@ -189,28 +201,31 @@ class TestBugLinking(BzrSyncTestCase):
         """Don't add BugBranches based on non-mainline revisions."""
         # Make the base revision.
         author = self.factory.getUniqueString()
-        self.bzr_tree.commit(
-            u'common parent', committer=author, rev_id='r1',
-            allow_pointless=True)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            self.bzr_tree.commit(
+                u'common parent', committer=author, rev_id='r1',
+                allow_pointless=True)
 
-        # Branch from the base revision.
-        new_tree = self.make_branch_and_tree('bzr_branch_merged')
-        new_tree.pull(self.bzr_branch)
+            # Branch from the base revision.
+            new_tree = self.make_branch_and_tree('bzr_branch_merged')
+            new_tree.pull(self.bzr_branch)
 
-        # Commit to both branches
-        self.bzr_tree.commit(
-            u'commit one', committer=author, rev_id='r2',
-            allow_pointless=True)
-        new_tree.commit(
-            u'commit two', committer=author, rev_id='r1.1.1',
-            allow_pointless=True,
-            revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
+            # Commit to both branches
+            self.bzr_tree.commit(
+                u'commit one', committer=author, rev_id='r2',
+                allow_pointless=True)
+            new_tree.commit(
+                u'commit two', committer=author, rev_id='r1.1.1',
+                allow_pointless=True,
+                revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
 
-        # Merge and commit.
-        self.bzr_tree.merge_from_branch(new_tree.branch)
-        self.bzr_tree.commit(
-            u'merge', committer=author, rev_id='r3',
-            allow_pointless=True)
+            # Merge and commit.
+            self.bzr_tree.merge_from_branch(new_tree.branch)
+            self.bzr_tree.commit(
+                u'merge', committer=author, rev_id='r3',
+                allow_pointless=True)
 
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         self.assertEqual(
@@ -246,13 +261,17 @@ class TestSubscription(TestCaseWithFactory):
 
     def test_got_new_revision_subscribed(self):
         """got_new_revision is subscribed to NewRevision."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         bug = self.factory.makeBug()
         self.layer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        revision_id = tree.commit('fix revision',
-            revprops={'bugs': 'https://launchpad.net/bugs/%d fixed' % bug.id})
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revision_id = tree.commit('fix revision',
+                revprops={
+                    'bugs': 'https://launchpad.net/bugs/%d fixed' % bug.id})
         bzr_revision = tree.branch.repository.get_revision(revision_id)
         revno = 1
         revision_set = getUtility(IRevisionSet)
@@ -261,7 +280,3 @@ class TestSubscription(TestCaseWithFactory):
             db_branch, tree.branch, db_revision, bzr_revision, revno))
         bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, db_branch)
         self.assertIsNot(None, bug_branch)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

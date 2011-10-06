@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to code imports."""
@@ -7,19 +7,28 @@ __metaclass__ = type
 
 import textwrap
 
-from zope.component import getUtility
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeImportEventDataType,
-    CodeImportEventType, CodeImportReviewStatus, RevisionControlSystems)
-from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.mail import format_address, simple_sendmail
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.webapp import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.enums import (
+    BranchSubscriptionNotificationLevel,
+    CodeImportEventDataType,
+    CodeImportEventType,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
+from lp.registry.interfaces.person import IPerson
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 
 
 def new_import(code_import, event):
@@ -31,7 +40,7 @@ def new_import(code_import, event):
         return
     user = IPerson(event.user)
     subject = 'New code import: %s/%s' % (
-        code_import.product.name, code_import.branch.name)
+        code_import.branch.target.name, code_import.branch.name)
     if code_import.rcs_type == RevisionControlSystems.CVS:
         location = '%s, %s' % (code_import.cvs_root, code_import.cvs_module)
     else:
@@ -42,6 +51,7 @@ def new_import(code_import, event):
         RevisionControlSystems.BZR_SVN: 'subversion',
         RevisionControlSystems.GIT: 'git',
         RevisionControlSystems.HG: 'mercurial',
+        RevisionControlSystems.BZR: 'bazaar',
         }
     body = get_email_template('new-code-import.txt') % {
         'person': code_import.registrant.displayname,
@@ -114,11 +124,12 @@ def make_email_body_for_code_import_update(
     elif code_import.rcs_type in (RevisionControlSystems.SVN,
                                   RevisionControlSystems.BZR_SVN,
                                   RevisionControlSystems.GIT,
-                                  RevisionControlSystems.HG):
+                                  RevisionControlSystems.HG,
+                                  RevisionControlSystems.BZR):
         if CodeImportEventDataType.OLD_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_URL]
             body.append(
-                details_change_prefix + '\n    ' +code_import.url +
+                details_change_prefix + '\n    ' + code_import.url +
                 "\ninstead of:\n    " + old_url)
     else:
         raise AssertionError(
@@ -147,7 +158,7 @@ def code_import_updated(code_import, event, new_whiteboard, person):
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
     subject = 'Code import %s/%s status: %s' % (
-        code_import.product.name, branch.name,
+        code_import.branch.target.name, branch.name,
         code_import.review_status.title)
 
     email_template = get_email_template('code-import-status-updated.txt')

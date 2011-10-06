@@ -6,16 +6,24 @@
 from datetime import timedelta
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.build import Build
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
+from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -24,7 +32,7 @@ from lp.testing import TestCaseWithFactory
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
     for build in test.builds:
-        if (build.sourcepackagerelease.name == name
+        if (build.source_package_release.name == name
             and build.processor.name == processor):
             return (build, build.buildqueue_record)
     return (None, None)
@@ -42,7 +50,7 @@ def assign_to_builder(test, job_name, builder_number, processor='386'):
         builder = None
         builders = test.builders.get(builder_key(build), [])
         try:
-            builder = builders[n-1]
+            builder = builders[n - 1]
         except IndexError:
             pass
         return builder
@@ -126,7 +134,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()
@@ -201,7 +209,8 @@ class TestBuildPackageJob(TestBuildJobBase):
             duration += 60
             bq = build.buildqueue_record
             bq.lastscore = score
-            bq.estimated_duration = timedelta(seconds=duration)
+            removeSecurityProxy(bq).estimated_duration = timedelta(
+                seconds=duration)
 
     def test_processor(self):
         # Test that BuildPackageJob returns the correct processor.
@@ -225,3 +234,63 @@ class TestBuildPackageJob(TestBuildJobBase):
         # Test that BuildPackageJob returns the title of the build.
         build, bq = find_job(self, 'gcc', '386')
         self.assertEqual(bq.specific_job.getTitle(), build.title)
+
+    def test_providesInterfaces(self):
+        # Ensure that a BuildPackageJob generates an appropriate cookie.
+        build, bq = find_job(self, 'gcc', '386')
+        build_farm_job = bq.specific_job
+        self.assertProvides(build_farm_job, IBuildPackageJob)
+        self.assertProvides(build_farm_job, IBuildFarmBuildJob)
+
+    def test_jobStarted(self):
+        # Starting a build updates the status.
+        build, bq = find_job(self, 'gcc', '386')
+        build_package_job = bq.specific_job
+        build_package_job.jobStarted()
+        self.failUnlessEqual(
+            BuildStatus.BUILDING, build_package_job.build.status)
+
+
+class TestBuildPackageJobScore(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_score_unusual_component(self):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            component='unusual')
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease)
+        build.queueBuild()
+        job = build.buildqueue_record.specific_job
+        # For now just test that it doesn't raise an Exception
+        job.score()
+
+    def test_main_release_low_score(self):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            component='main', urgency='low')
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            pocket='RELEASE')
+        job = build.makeJob()
+        self.assertEquals(2505, job.score())
+
+    def test_copy_archive_main_release_low_score(self):
+        copy_archive = self.factory.makeArchive(purpose='COPY')
+        spph = self.factory.makeSourcePackagePublishingHistory(
+           archive=copy_archive, component='main', urgency='low')
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            pocket='RELEASE')
+        job = build.makeJob()
+        self.assertEquals(-95, job.score())
+
+    def test_copy_archive_relative_score_is_applied(self):
+        copy_archive = self.factory.makeArchive(purpose='COPY')
+        removeSecurityProxy(copy_archive).relative_build_score = 2600
+        spph = self.factory.makeSourcePackagePublishingHistory(
+           archive=copy_archive, component='main', urgency='low')
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            pocket='RELEASE')
+        job = build.makeJob()
+        self.assertEquals(2505, job.score())

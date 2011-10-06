@@ -25,6 +25,7 @@
       </span>
     </dd>
   </dl>
+  <p tal:content="series/product/summary"/>
 
   <style>
     #upstream-fields dd {
@@ -50,14 +51,47 @@
         <tal:yes-no replace="structure series/branch/image:boolean"/>
       </dd>
       <dd title="Series translations auto import"
-          tal:condition="context/getTranslationTemplates"
+          tal:condition="context/has_translation_templates"
           tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
         Translations:
         <tal:yes-no replace="structure bool/image:boolean"/>
       </dd>
     </dl>
-
   </div>
+
+  <tal:upstream-version
+    define="release series/getLatestRelease;
+            tracking view/current_release_tracking">
+    <p id="no-upstream-version"
+      tal:condition="tracking/enumvalue:NONE">
+      <span class="sprite no">There are no registered releases</span>
+      for the <tal:project replace="series/product/displayname" />
+      &rArr; <tal:series replace="series/name" />.
+    </p>
+    <p id="newer-upstream-version"
+      tal:condition="tracking/enumvalue:NEWER">
+      <strong class="sprite warning-icon">A newer version of
+      <tal:name replace="context/name"/> is available for
+      packaging: <a
+        tal:replace="structure release/fmt:link" /></strong>
+    </p>
+    <p id="older-upstream-version"
+      tal:condition="tracking/enumvalue:OLDER">
+      <span class="sprite warning-icon"><a
+        tal:replace="structure release/fmt:link" /></span> is older than the
+      current packaged version. Launchpad may be missing release information
+      for the <a tal:content="string:${series/name} series"
+        tal:attributes="href series/fmt:url" /> or this package is linked
+        to the wrong
+        <a tal:attributes="href series/product/menu:overview/series/fmt:url"
+           tal:content="string: ${series/product/displayname} series" />.
+    </p>
+    <p id="current-upstream-version"
+      tal:condition="tracking/enumvalue:CURRENT">
+      <span class="sprite yes">Packaging is up-to-date</span> for
+      <a tal:replace="structure release/fmt:link" />.
+    </p>
+  </tal:upstream-version>
 </div>
 
 </tal:root>

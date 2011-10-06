@@ -25,11 +25,13 @@ First, we need to feed the import queue.
   <div...Thank you for your upload. 2 files from the tarball...
 
 Let's check the values we get by default from the .pot file. The name field
-is empty.
+and the translation domain field are pre-filled from the name of the file.
 
   >>> browser.open('http://translations.launchpad.dev/+imports/4')
   >>> browser.getControl(name='field.name').value
-  ''
+  'test'
+  >>> browser.getControl(name='field.translation_domain').value
+  'test'
 
 But the path field has been preloaded with the value from the tar ball and
 the file type has been determined correctly from it.
@@ -66,8 +68,6 @@ and the user sees a warning so he checks that it's ok.
   ['']
   >>> browser.getControl(name='field.language').value
   ['es']
-  >>> browser.getControl(name='field.variant').value
-  ''
 
 Rosetta experts should be able to override the path in the source tree from
 where this entry comes. To be sure that the path changed but that it's still
@@ -88,5 +88,3 @@ Reloading the form shows all the submitted information applied.
   ['10']
   >>> browser.getControl(name='field.language').value
   ['es']
-  >>> browser.getControl(name='field.variant').value
-  ''

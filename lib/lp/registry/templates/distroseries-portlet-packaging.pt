@@ -3,7 +3,8 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="series-packaging" class="portlet"
-  tal:define="overview_menu context/menu:overview">
+  tal:define="overview_menu context/menu:overview"
+  tal:content="cache:public, 3 hour">
   <h2>Upstream packaging</h2>
 
   <p id="packaging-summary"
@@ -47,20 +48,6 @@
               tal:content="package/datecreated/fmt:approximatedate" />
         </p>
       </tal:package>
-    </dd>
-
-    <dt id="needs-linking"
-        tal:condition="view/needs_linking">
-      Needs more information or linking to upstream:
-    </dt>
-    <dd tal:condition="view/needs_linking">
-      <ul class="horizontal">
-          <li repeat="package view/needs_linking">
-            <a class="sprite package-source"
-               tal:attributes="href package/package/fmt:url"
-               tal:content="package/package/name">evolution</a>
-          </li>
-      </ul>
     </dd>
   </dl>
 

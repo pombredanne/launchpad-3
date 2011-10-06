@@ -122,8 +122,8 @@ The release owner can edit the release via its +edit form:
 If the product or series owner is a team, members can edit a product
 release too.
 
-    >>> from lp.registry.model.product import Product
     >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.product import Product
     >>> tomcat = Product.selectOneBy(name='tomcat')
     >>> print tomcat.owner.name
     ubuntu-team

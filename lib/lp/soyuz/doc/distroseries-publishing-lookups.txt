@@ -1,4 +1,5 @@
-= DistroSeries source publishing lookups =
+DistroSeries source publishing lookups
+======================================
 
 IDistroSeries allows source publishing lookup via
 getReleasedPackages method which returns a shortlist of
@@ -8,8 +9,8 @@ In order to test its behavior we will create a bunch of sample
 publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest, which is empty:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -60,7 +61,7 @@ pockets:
     ...    all_published_main_pubs, key=operator.attrgetter('id'),
     ...    reverse=True)
 
-    >>> result = breezy_autotest.getPublishedReleases('cnews')
+    >>> result = breezy_autotest.getPublishedSources('cnews')
     >>> soyuz_helper.checkPubList(all_published_main_pubs, result)
     True
 
@@ -77,7 +78,7 @@ pockets.
     >>> all_main_pubs = sorted(
     ...    all_main_pubs, key=operator.attrgetter('id'), reverse=True)
 
-    >>> result = breezy_autotest.getPublishedReleases(
+    >>> result = breezy_autotest.getPublishedSources(
     ...     'cnews', include_pending=True)
     >>> soyuz_helper.checkPubList(all_main_pubs, result)
     True
@@ -88,7 +89,7 @@ Using 'pocket' filter:
     ...     pub_main_updates_pending,
     ...     ]
 
-    >>> result = breezy_autotest.getPublishedReleases(
+    >>> result = breezy_autotest.getPublishedSources(
     ...     'cnews', include_pending=True,
     ...     pocket=PackagePublishingPocket.UPDATES)
 
@@ -107,7 +108,7 @@ Using 'exclude_pocket' filter, to exclude publications to RELEASE pocket:
     ...    non_release_main_pubs, key=operator.attrgetter('id'),
     ...    reverse=True)
 
-    >>> result = breezy_autotest.getPublishedReleases(
+    >>> result = breezy_autotest.getPublishedSources(
     ...     'cnews', include_pending=True,
     ...     exclude_pocket=PackagePublishingPocket.RELEASE)
 
@@ -127,7 +128,7 @@ pockets.
     >>> all_ppa_pubs = sorted(
     ...    all_ppa_pubs, key=operator.attrgetter('id'), reverse=True)
 
-    >>> result = breezy_autotest.getPublishedReleases(
+    >>> result = breezy_autotest.getPublishedSources(
     ...    'cnews', include_pending=True, archive=cprov_archive)
     >>> soyuz_helper.checkPubList(all_ppa_pubs, result)
     True

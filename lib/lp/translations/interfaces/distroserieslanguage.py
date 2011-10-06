@@ -3,9 +3,13 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 from lp.translations.interfaces.rosettastats import IRosettaStats
+
 
 __metaclass__ = type
 
@@ -34,9 +38,6 @@ class IDistroSeriesLanguage(IRosettaStats):
     pofiles = Attribute("The set of pofiles in this distroseries for this "
         "language. This includes only the real pofiles where translations "
         "exist.")
-
-    translator_count = Attribute("The number of registered translators "
-        "for this language in the distribution.")
 
     contributor_count = Attribute("The number of contributors in total "
         "for this language in the distribution.")

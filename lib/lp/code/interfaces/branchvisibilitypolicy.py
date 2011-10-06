@@ -17,8 +17,8 @@ from zope.interface import Interface
 from zope.schema import Choice
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.code.enums import TeamBranchVisibilityRule
+from lp.services.fields import PersonChoice
 
 
 class InvalidVisibilityPolicy(Exception):
@@ -61,7 +61,7 @@ class IHasBranchVisibilityPolicy(Interface):
 
         Products that don't have any explicitly defined team policies, use
         the team policies defined for the project if the product has an
-        associated project.  Projects can't have inherited policies.
+        associated project.  ProjectGroups can't have inherited policies.
         """
 
     def setBranchVisibilityTeamPolicy(team, rule):
@@ -89,7 +89,7 @@ class IBranchVisibilityTeamPolicy(Interface):
     The team may be null, in which case the rule applies to everyone.
     """
 
-    team = ParticipatingPersonChoice(
+    team = PersonChoice(
         title=_('Team'), required=True, vocabulary='ValidPersonOrTeam',
         description=_("Specifies the team that the policy applies to. "
                       "If None then the policy applies to everyone."))

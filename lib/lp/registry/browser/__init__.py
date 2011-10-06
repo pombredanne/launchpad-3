@@ -6,8 +6,11 @@
 __metaclass__ = type
 
 __all__ = [
+    'add_subscribe_link',
+    'BaseRdfView',
     'get_status_counts',
     'MilestoneOverlayMixin',
+    'RDFIndexView',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
     'StatusCount',
@@ -15,17 +18,27 @@ __all__ = [
 
 
 from operator import attrgetter
-
-from zope.component import getUtility
+import os
 
 from storm.store import Store
+from zope.component import getUtility
 
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
-from lp.registry.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadEditFormView)
-from canonical.launchpad.webapp.publisher import canonical_url
+    action,
+    LaunchpadEditFormView,
+    )
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.lazr import ExportedFolder
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 
 
 class StatusCount:
@@ -57,6 +70,11 @@ def get_status_counts(workitems, status_attr, key='sortkey'):
         for status in sorted(statuses, key=attrgetter(key))]
 
 
+def add_subscribe_link(links):
+    """Add the subscription-related links."""
+    links.extend(['subscribe_to_bug_mail', 'edit_bug_mail'])
+
+
 class MilestoneOverlayMixin:
     """A mixin that provides the data for the milestoneoverlay script."""
 
@@ -75,7 +93,7 @@ class MilestoneOverlayMixin:
     @property
     def milestone_table_class(self):
         """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
+        if self.context.has_milestones:
             return 'listing'
         else:
             # The page can remove the 'unseen' class to make the table
@@ -100,8 +118,9 @@ class MilestoneOverlayMixin:
             'milestone_row_uri': self.milestone_row_uri_template,
             }
         return """
-            YUI().use(
-                'node', 'registry.milestoneoverlay', 'registry.milestonetable',
+            LPS.use(
+                'node', 'lp.registry.milestoneoverlay',
+                'lp.registry.milestonetable',
                 function (Y) {
 
                 var series_uri = '%(series_api_uri)s';
@@ -110,21 +129,22 @@ class MilestoneOverlayMixin:
                 var milestone_rows_id = '#milestone-rows';
 
                 Y.on('domready', function () {
-                    var create_milestone_link = Y.get(
+                    var create_milestone_link = Y.one(
                         '.menu-link-create_milestone');
                     create_milestone_link.addClass('js-action');
+                    var milestone_table = Y.lp.registry.milestonetable;
                     var config = {
                         milestone_form_uri: milestone_form_uri,
                         series_uri: series_uri,
-                        next_step: Y.registry.milestonetable.get_milestone_row,
+                        next_step: milestone_table.get_milestone_row,
                         activate_node: create_milestone_link
                         };
-                    Y.registry.milestoneoverlay.attach_widget(config);
+                    Y.lp.registry.milestoneoverlay.attach_widget(config);
                     var table_config = {
                         milestone_row_uri_template: milestone_row_uri,
                         milestone_rows_id: milestone_rows_id
                         }
-                    Y.registry.milestonetable.setup(table_config);
+                    Y.lp.registry.milestonetable.setup(table_config);
                 });
             });
             """ % uris
@@ -141,10 +161,10 @@ class RegistryDeleteViewMixin:
     def _getBugtasks(self, target):
         """Return the list `IBugTask`s associated with the target."""
         if IProductSeries.providedBy(target):
-            params = BugTaskSearchParams(user=None)
+            params = BugTaskSearchParams(user=self.user)
             params.setProductSeries(target)
         else:
-            params = BugTaskSearchParams(milestone=target, user=None)
+            params = BugTaskSearchParams(milestone=target, user=self.user)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 
@@ -173,7 +193,7 @@ class RegistryDeleteViewMixin:
             # The owner of the subscription or an admin are the only users
             # that can destroy a subscription, but this rule cannot prevent
             # the owner from removing the structure.
-            Store.of(subscription).remove(subscription)
+            subscription.delete()
 
     def _remove_series_bugs_and_specifications(self, series):
         """Untarget the associated bugs and subscriptions."""
@@ -206,13 +226,18 @@ class RegistryDeleteViewMixin:
         date_time = series.datecreated.strftime('%Y%m%d-%H%M%S')
         series.name = '%s-%s-%s' % (
             series.product.name, series.name, date_time)
+        series.status = SeriesStatus.OBSOLETE
+        series.releasefileglob = None
         series.product = getUtility(ILaunchpadCelebrities).obsolete_junk
 
     def _deleteMilestone(self, milestone):
         """Delete a milestone and unlink related objects."""
         self._unsubscribe_structure(milestone)
         for bugtask in self._getBugtasks(milestone):
-            bugtask.milestone = None
+            if bugtask.conjoined_master is not None:
+                Store.of(bugtask).remove(bugtask.conjoined_master)
+            else:
+                bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
             spec.milestone = None
         self._deleteRelease(milestone.product_release)
@@ -244,3 +269,41 @@ class RegistryEditFormView(LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
+
+
+class BaseRdfView:
+    """A view that sets its mime-type to application/rdf+xml."""
+
+    template = None
+    filename = None
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename=%s.rdf' % (
+             self.filename))
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
+
+
+class RDFIndexView(LaunchpadView):
+    """View for /rdf page."""
+    page_title = label = "Launchpad RDF"
+
+
+class RDFFolder(ExportedFolder):
+    """Export the Launchpad RDF schemas."""
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../rdfspec/')

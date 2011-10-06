@@ -11,7 +11,11 @@ __all__ = [
     ]
 
 
-from zope.component.interfaces import IObjectEvent, implements, ObjectEvent
+from zope.component.interfaces import (
+    implements,
+    IObjectEvent,
+    ObjectEvent,
+    )
 
 
 class ScannerEvent(ObjectEvent):
@@ -107,6 +111,7 @@ class RevisionsRemoved(ScannerEvent):
         ScannerEvent.__init__(self, db_branch, bzr_branch)
         self.removed_history = removed_history
 
+
 class IScanCompleted(IObjectEvent):
     """The scan has been completed and the database is up-to-date."""
 
@@ -116,7 +121,7 @@ class ScanCompleted(ScannerEvent):
 
     implements(IScanCompleted)
 
-    def __init__(self, db_branch, bzr_branch, bzr_ancestry, logger):
+    def __init__(self, db_branch, bzr_branch, logger, new_ancestry):
         """Construct a `ScanCompleted` event.
 
         :param db_branch: The database branch.
@@ -127,7 +132,7 @@ class ScanCompleted(ScannerEvent):
             information, such as merges that we find.
         """
         ScannerEvent.__init__(self, db_branch, bzr_branch)
-        self.bzr_ancestry = bzr_ancestry
+        self.new_ancestry = new_ancestry
         # This is kind of ick. In a strict Zope sense, the logger should
         # probably be a registered utility.
         self.logger = logger

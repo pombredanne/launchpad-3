@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Project-related View Classes"""
+"""ProjectGroup-related View Classes"""
 
 __metaclass__ = type
 
@@ -12,10 +12,16 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, Link, LaunchpadView)
+    action,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.browser.project import ProjectEditView
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 
@@ -28,11 +34,11 @@ class ProjectTranslationsMenu(NavigationMenu):
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
         text = 'Change permissions'
-        return Link('+settings', text, icon='edit')
+        return Link('+settings', text, icon='edit', site='translations')
 
     def products(self):
         text = 'Products'
-        return Link('', text)
+        return Link('', text, site='translations')
 
     def overview(self):
         text = 'Overview'
@@ -59,11 +65,9 @@ class ProjectSettingsView(TranslationsMixin, ProjectEditView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite="translations")
 
-    @property
-    def next_url(self):
-        return self.cancel_url
+    next_url = cancel_url
 
     @action('Change', name='change')
     def edit(self, action, data):

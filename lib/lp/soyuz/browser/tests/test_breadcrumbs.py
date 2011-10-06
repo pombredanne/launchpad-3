@@ -1,18 +1,18 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.browser.archivesubscription import PersonalArchiveSubscription
-from lp.testing import login, login_person
+from lp.testing import (
+    login,
+    login_person,
+    )
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
 class TestDistroArchSeriesBreadcrumb(BaseBreadcrumbTestCase):
@@ -22,39 +22,27 @@ class TestDistroArchSeriesBreadcrumb(BaseBreadcrumbTestCase):
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         self.hoary = self.ubuntu.getSeries('hoary')
         self.hoary_i386 = self.hoary['i386']
-        self.traversed_objects = [
-            self.root, self.ubuntu, self.hoary, self.hoary_i386]
 
     def test_distroarchseries(self):
         das_url = canonical_url(self.hoary_i386)
-        urls = self._getBreadcrumbsURLs(das_url, self.traversed_objects)
-        texts = self._getBreadcrumbsTexts(das_url, self.traversed_objects)
-
-        self.assertEquals(urls[-1], das_url)
-        self.assertEquals(texts[-1], "i386")
+        crumbs = self.getBreadcrumbsForObject(self.hoary_i386)
+        self.assertEquals(crumbs[-1].url, das_url)
+        self.assertEquals(crumbs[-1].text, "i386")
 
     def test_distroarchseriesbinarypackage(self):
         pmount_hoary_i386 = self.hoary_i386.getBinaryPackage("pmount")
-        self.traversed_objects.append(pmount_hoary_i386)
         pmount_url = canonical_url(pmount_hoary_i386)
-        urls = self._getBreadcrumbsURLs(pmount_url, self.traversed_objects)
-        texts = self._getBreadcrumbsTexts(pmount_url, self.traversed_objects)
-
-        self.assertEquals(urls[-1], pmount_url)
-        self.assertEquals(texts[-1], "pmount")
+        crumbs = self.getBreadcrumbsForObject(pmount_hoary_i386)
+        self.assertEquals(crumbs[-1].url, pmount_url)
+        self.assertEquals(crumbs[-1].text, "pmount")
 
     def test_distroarchseriesbinarypackagerelease(self):
         pmount_hoary_i386 = self.hoary_i386.getBinaryPackage("pmount")
         pmount_release = pmount_hoary_i386['0.1-1']
-        self.traversed_objects.extend([pmount_hoary_i386, pmount_release])
         pmount_release_url = canonical_url(pmount_release)
-        urls = self._getBreadcrumbsURLs(
-            pmount_release_url, self.traversed_objects)
-        texts = self._getBreadcrumbsTexts(
-            pmount_release_url, self.traversed_objects)
-
-        self.assertEquals(urls[-1], pmount_release_url)
-        self.assertEquals(texts[-1], "0.1-1")
+        crumbs = self.getBreadcrumbsForObject(pmount_release)
+        self.assertEquals(crumbs[-1].url, pmount_release_url)
+        self.assertEquals(crumbs[-1].text, "0.1-1")
 
 
 class TestArchiveSubscriptionBreadcrumb(BaseBreadcrumbTestCase):
@@ -76,18 +64,9 @@ class TestArchiveSubscriptionBreadcrumb(BaseBreadcrumbTestCase):
             owner, self.ppa)
 
     def test_personal_archive_subscription(self):
-        self.traversed_objects = [
-            self.root, self.ppa.owner, self.personal_archive_subscription]
         subscription_url = canonical_url(self.personal_archive_subscription)
-
-        urls = self._getBreadcrumbsURLs(
-            subscription_url, self.traversed_objects)
-        texts = self._getBreadcrumbsTexts(
-            subscription_url, self.traversed_objects)
-
-        self.assertEquals(subscription_url, urls[-1])
+        crumbs = self.getBreadcrumbsForObject(
+            self.personal_archive_subscription)
+        self.assertEquals(subscription_url, crumbs[-1].url)
         self.assertEquals(
-            "Access to %s" % self.ppa.displayname, texts[-1])
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+            "Access to %s" % self.ppa.displayname, crumbs[-1].text)

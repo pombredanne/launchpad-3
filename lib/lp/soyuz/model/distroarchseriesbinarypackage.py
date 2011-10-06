@@ -11,24 +11,22 @@ __all__ = [
     'DistroArchSeriesBinaryPackage',
     ]
 
-from storm.locals import Desc, In
+from storm.locals import Desc
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces import IStore
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
-    DistroArchSeriesBinaryPackageRelease)
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.errors import NotFoundError
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
-    IDistroArchSeriesBinaryPackage)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    IDistroArchSeriesBinaryPackage,
+    )
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
+    DistroArchSeriesBinaryPackageRelease,
+    )
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
 class DistroArchSeriesBinaryPackage:
@@ -77,6 +75,8 @@ class DistroArchSeriesBinaryPackage:
     @cachedproperty
     def cache(self):
         """See IDistroArchSeriesBinaryPackage."""
+        from lp.soyuz.model.distroseriespackagecache import (
+            DistroSeriesPackageCache)
         query = """
             distroseries = %s AND
             archive IN %s AND
@@ -178,7 +178,7 @@ class DistroArchSeriesBinaryPackage:
             orderBy='-datecreated',
             limit=1,
             distinct=True,
-            clauseTables=['BinaryPackagePublishingHistory',])
+            clauseTables=['BinaryPackagePublishingHistory'])
 
         # Listify to limit the SQL queries to one only.
         results = list(releases)
@@ -196,12 +196,10 @@ class DistroArchSeriesBinaryPackage:
             BinaryPackageRelease.binarypackagename == self.binarypackagename,
             BinaryPackagePublishingHistory.distroarchseries ==
                 self.distroarchseries,
-            In(
-                BinaryPackagePublishingHistory.archiveID,
+            BinaryPackagePublishingHistory.archiveID.is_in(
                 self.distribution.all_distro_archive_ids),
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id
-            ).config(distinct=True).order_by(
+                BinaryPackageRelease.id).config(distinct=True).order_by(
                 Desc(BinaryPackagePublishingHistory.datecreated))
 
     @property
@@ -244,4 +242,3 @@ class DistroArchSeriesBinaryPackage:
             return None
         else:
             return src_pkg_release.sourcepackage
-

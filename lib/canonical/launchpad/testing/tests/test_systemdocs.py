@@ -5,17 +5,18 @@
 
 __metaclass__ = type
 
+import doctest
 import logging
 import os
 import shutil
 import tempfile
 import unittest
 
-from zope.testing import doctest
-
 from canonical.config import config
 from canonical.launchpad.testing.systemdocs import (
-    default_optionflags, LayeredDocFileSuite)
+    default_optionflags,
+    LayeredDocFileSuite,
+    )
 from canonical.testing import reset_logging
 
 
@@ -60,9 +61,9 @@ class LayeredDocFileSuiteTests(unittest.TestCase):
 
         [foo_test, bar_test] = list(suite)
         self.assertTrue(isinstance(foo_test, unittest.TestCase))
-        self.assertEqual(os.path.basename(foo_test.id()), 'foo_txt')
+        self.assertEqual(os.path.basename(foo_test.id()), 'foo.txt')
         self.assertTrue(isinstance(bar_test, unittest.TestCase))
-        self.assertEqual(os.path.basename(bar_test.id()), 'bar_txt')
+        self.assertEqual(os.path.basename(bar_test.id()), 'bar.txt')
         self.runSuite(suite, num_tests=2)
 
     def test_set_layer(self):
@@ -126,7 +127,7 @@ class LayeredDocFileSuiteTests(unittest.TestCase):
         [foo_test] = list(suite)
         # The test ID and string representation have the prefix
         # stripped off.
-        self.assertEqual(foo_test.id(), 'foo_txt')
+        self.assertEqual(foo_test.id(), 'foo.txt')
         self.assertEqual(str(foo_test), 'foo.txt')
         # Tests outside of the Launchpad tree root are left as is:
         config.root = '/nonexistent'

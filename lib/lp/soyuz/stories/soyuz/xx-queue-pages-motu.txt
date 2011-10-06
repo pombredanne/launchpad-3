@@ -1,4 +1,5 @@
-= MOTU administration of the Upload Queue Pages =
+MOTU administration of the Upload Queue Pages
+=============================================
 
 (see also xx-queue-pages.txt)
 
@@ -17,7 +18,8 @@ fake changes files (so it doesn't OOPS when trying to send emails).
     >>> insertFakeChangesFileForAllPackageUploads()
 
 
-== MOTU upload-admin role ==
+MOTU upload-admin role
+----------------------
 
 In our sample data, there is a user 'no-team-memberships' who has
 rights to administer the queue in the universe and multiverse
@@ -38,13 +40,13 @@ component:
     ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
     >>> motu_browser.getLink("Show uploads").click()
     >>> print_queue(motu_browser.contents)
-    Package             Version     Component Section Priority Pocket  When
-    netapplet...ddtp... -                                      Release 2006...
-    netapplet...dist... -                                      Release 2006...
-    alsa-utils (source) 1.0.9a-4... main      base    low      Release 2006...
-    netapplet (source)  0.99.6-1    main      web     low      Release 2006...
-    pmount (i386)       0.1-1                                  Release 2006...
-    moz...irefox (i386) 0.9                                    Release 2006...
+    Package             Version     Component Section Priority Sets Pocket  When
+    netapplet...ddtp... -                                           Release 2006...
+    netapplet...dist... -                                           Release 2006...
+    alsa-utils (source) 1.0.9a-4... main      base    low           Release 2006...
+    netapplet (source)  0.99.6-1    main      web     low           Release 2006...
+    pmount (i386)       0.1-1                                       Release 2006...
+    moz...irefox (i386) 0.9                                         Release 2006...
 
 If we try and accept "alsa-utils" it will fail because our user does
 not have permission to accept items in "main":
@@ -70,10 +72,13 @@ permission to manipulate them.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import (
-    ... IBinaryPackageNameSet, IComponentSet, ISourcePackageNameSet)
-    >>> from canonical.launchpad.database import (
-    ...     BinaryPackageRelease, SourcePackageRelease)
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> from lp.soyuz.interfaces.binarypackagename import (
+    ...     IBinaryPackageNameSet)
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
     >>> universe = getUtility(IComponentSet)['universe']
     >>> alsa_utils = getUtility(
     ...     ISourcePackageNameSet).queryByName("alsa-utils")
@@ -109,7 +114,7 @@ If he tries to override back to main, it will fail:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    FAILED: alsa-utils (No rights to override from universe to main)
+    FAILED: alsa-utils (No rights to override to main)
 
 The same applies to the binary:
 
@@ -119,7 +124,7 @@ The same applies to the binary:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    FAILED: pmount (No rights to override from universe to main)
+    FAILED: pmount (No rights to override to main)
 
 Our user is able to override to multiverse, however.  Let's do that
 with pmount:

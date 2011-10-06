@@ -25,8 +25,10 @@ keyserver is a trusted data source, so we have to do that.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
-    >>> from canonical.launchpad.interfaces import (
-    ...      IGPGHandler, IPymeKey)
+    >>> from canonical.launchpad.interfaces.gpghandler import (
+    ...     IGPGHandler,
+    ...     IPymeKey,
+    ...     )
     >>> gpghandler = getUtility(IGPGHandler)
 
 -------------------------------------------------------------------------
@@ -59,8 +61,8 @@ Let's recover some coherent data and verify if it works as expected:
     >>> verifyObject(IPymeKey, key)
     True
 
-    >>> key.fingerprint
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    >>> print key.fingerprint
+    A419AE861E88BC9E04B9C26FBA2B9389DFD20543
 
     >>> print key.secret
     False
@@ -119,8 +121,8 @@ Apparently GPGME is able to import an incomplete public key:
     >>> assert key is not None
     >>> verifyObject(IPymeKey, key)
     True
-    >>> key.fingerprint
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    >>> print key.fingerprint
+    A419AE861E88BC9E04B9C26FBA2B9389DFD20543
 
 But we get an error if the damage is big:
 (what probably happened in bug #2547)
@@ -230,10 +232,10 @@ set.
     Launchpad PPA for Celso áéíóú Providelo
 
     >>> uid.comment
-    ''
+    u''
 
     >>> uid.email
-    ''
+    u''
 
 The public key is also available.
 
@@ -286,11 +288,11 @@ keyserver web interface.
 IGPGHandler also allow callsites to upload the public part of a local
 key to the configuration keyserver.
 
-We will setup and use the test-keyserver (zeca).
+We will set up and use the test-keyserver.
 
-    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-    >>> z = ZecaTestSetup()
-    >>> z.setUp()
+    >>> from lp.testing.keyserver import KeyServerTac
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
 Upload the just-generated key to the keyserver so that we can reset
 the local keyring.
@@ -313,26 +315,23 @@ An attempt to upload an unknown key will fail.
     >>> gpghandler.uploadPublicKey('F' * 40)
     Traceback (most recent call last):
     ...
-    GPGKeyNotFoundError: No GPG key found with the given content:
-    ...
+    GPGKeyDoesNotExistOnServer: GPG key
+    FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF does not exist on the keyserver.
 
 Uploading the same key more than once is fine, it is handled on the
 keyserver side.
 
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
 
-Let's shut zeca down.
-
-    >>> z.tearDown()
-
 An attempt to upload a key when the keyserver is unreachable results
 in a error.
 
+    >>> tac.tearDown()
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
     Traceback (most recent call last):
     ...
     GPGUploadFailure: Could not reach keyserver at
-    http://localhost:11371 (111, 'Connection refused')
+    http://localhost:11371...Connection refused...
 
 
 == Fingerprint sanitizing ==

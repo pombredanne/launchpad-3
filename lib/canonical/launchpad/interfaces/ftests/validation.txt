@@ -1,22 +1,28 @@
 = Launchpad field validators =
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IOpenLaunchBag, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> no_priv = getUtility(IPersonSet).getByEmail(
+    ...     'no-priv@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox = removeSecurityProxy(firefox)
+    >>> firefox.bug_supervisor = no_priv
 
 == can_be_nominated_for_series ==
 
 This validator is used to check if the bug in the launchbag can be
 nominated for the given series.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.validation import (
     ...     can_be_nominated_for_series)
 
 If we create a new bug, all the target's series can be nominated.
 
     >>> login('no-priv@canonical.com')
-    >>> no_priv = getUtility(IPersonSet).getByEmail(
-    ...     'no-priv@canonical.com')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> bug = firefox.createBug(
     ...     CreateBugParams(no_priv, "New Bug", comment="New Bug."))

@@ -4,7 +4,7 @@ DistroSeries translations view classes
 Let's use ubuntu/hoary for these tests.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.series import SeriesStatus
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
@@ -23,12 +23,12 @@ Each distroseries has a switch that allows administrators to either
 reveal its translations to the public or hide them from the public.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.app.errors import TranslationUnavailable
     >>> from lp.translations.browser.distroseries import (
     ...     DistroSeriesView)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, ITeamMembershipSet, TeamMembershipStatus)
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     TranslationUnavailable)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     ITeamMembershipSet, TeamMembershipStatus)
 
     >>> def check_translations_access(distroseries):
     ...     """Return any objections to current user accessing

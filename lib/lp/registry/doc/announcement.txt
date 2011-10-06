@@ -11,10 +11,13 @@ after publishing, and they can be deleted, permanently.
     >>> from zope.component import getUtility
     >>> from datetime import datetime, timedelta
     >>> import pytz
-    >>> NOW = datetime.utcnow().replace(tzinfo=pytz.utc)
+    >>> from lp.services.utils import utc_now
+    >>> NOW = utc_now()
     >>> FUTURE = NOW + timedelta(days=10)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IAnnouncementSet, IDistributionSet, IProductSet, IProjectGroupSet)
+    >>> from lp.registry.interfaces.announcement import IAnnouncementSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> announcements = getUtility(IAnnouncementSet)
     >>> kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
     >>> apache = getUtility(IProjectGroupSet).getByName('apache')
@@ -23,19 +26,6 @@ after publishing, and they can be deleted, permanently.
     >>> mark = apache.owner
     >>> print mark.name
     mark
-
-== Beta testers ==
-
-For the moment, this is only available to beta testers.
-
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-    >>> ignored = beta.addMember(mark, mark)
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> logout()
 
 
 == Creation ==
@@ -47,8 +37,6 @@ This can be done on an IProjectGroup:
 In this first example, we will specify a date and time the announcement was
 published:
 
-    >>> from datetime import datetime
-    >>> import pytz
     >>> apache_asia = apache.announce(
     ...  mark,
     ...  "OS Summit Asia 2007 - New Event by Apache and Eclipse",

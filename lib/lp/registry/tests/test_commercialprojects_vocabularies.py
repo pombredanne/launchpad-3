@@ -5,21 +5,25 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestCase
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
-    ANONYMOUS, login, logout, syncUpdate)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus)
+    ANONYMOUS,
+    login,
+    logout,
+    )
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.product import (
-    IProductSet, License)
-from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadFunctionalLayer
-
+    IProductSet,
+    License,
+    )
 from lp.registry.vocabularies import CommercialProjectsVocabulary
+from lp.testing.factory import LaunchpadObjectFactory
+
 
 class TestCommProjVocabulary(TestCase):
     """Test that the CommercialProjectsVocabulary behaves as expected."""
@@ -48,13 +52,11 @@ class TestCommProjVocabulary(TestCase):
                                          licenses=[License.OTHER_PROPRIETARY])
             naked_widget = removeSecurityProxy(widget)
             naked_widget.owner = self.owner
-            syncUpdate(naked_widget)
         # Create an open source project with a GNU license.
         widget = factory.makeProduct(name='openwidget',
                                      licenses=[License.GNU_GPL_V3])
         naked_widget = removeSecurityProxy(widget)
         naked_widget.owner = self.owner
-        syncUpdate(naked_widget)
 
     def test_emptySearch(self):
         """An empty search should return all commercial projects."""
@@ -111,13 +113,9 @@ class TestCommProjVocabulary(TestCase):
         widget = getUtility(IProductSet).getByName(project_name)
         naked_widget = removeSecurityProxy(widget)
         naked_widget.licenses = [License.GNU_GPL_V3]
-        syncUpdate(naked_widget)
 
         # The project is no longer commercial so it is not found.
         results = self.vocab.searchForTerms(project_name)
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
                          (0, len(results)))
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

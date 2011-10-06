@@ -1,6 +1,8 @@
-= Bug Filing Pages =
+Bug Filing Pages
+================
 
-== Filing a Bug ==
+Filing a Bug
+------------
 
 There are three objects on which you can file a bug. An
 ObjectCreatedEvent is published when the bug is filed. Let's register
@@ -11,7 +13,7 @@ an event listener to demonstrate this.
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> def on_created_event(object, event):
     ...     print "ObjectCreatedEvent: %r" % object
     >>> on_created_listener = TestEventListener(
@@ -27,10 +29,19 @@ name, that information is recorded in the description, and the first
 comment, of the bug report.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet, IBugSet, IBugTaskSet,
-    ...     ILaunchBag, IOpenLaunchBag, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     ILaunchBag,
+    ...     IOpenLaunchBag,
+    ...     )
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> launchbag = getUtility(IOpenLaunchBag)
     >>> login("foo.bar@canonical.com")
@@ -63,9 +74,6 @@ The user specified a binary package name, so that's been added to the
 bug description and the first comment:
 
     >>> print latest_ubuntu_bugtask.bug.description
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
     a bug in a bin pkg
 
 the source package from which the binary was built has been set on
@@ -112,7 +120,8 @@ You can also access the +filebug page from a sourcepackage.
 
     >>> launchbag.clear()
 
-== Adding Comments ==
+Adding Comments
+---------------
 
 Let's flush all changes so far to ensure we're looking at a consistent view of
 the database.
@@ -154,28 +163,23 @@ grab a new view to actually see them:
     3
     >>> [ (c.index, c.owner.name, c.text_contents)
     ...  for c in ubuntu_bugview.comments ]
-    [(0, u'name16', u'Binary package hint: linux-2.6.12\n\na bug in a bin pkg'),
+    [(0, u'name16', u'a bug in a bin pkg'),
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
 
 
-== Description and Comment Display ==
+Description and Comment Display
+-------------------------------
 
 When a user posts a new bug, the first comment and the description are
 identical. Take as an example the first bug posted above:
 
     >>> print latest_ubuntu_bugtask.bug.description
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
     a bug in a bin pkg
 
 Its description has the same contents as the bug's first comment:
 
     >>> print latest_ubuntu_bugtask.bug.messages[0].text_contents
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
     a bug in a bin pkg
 
 The view class offers a method to check exactly that:
@@ -193,16 +197,17 @@ If we go ahead and modify the description, however:
     True
 
 The displayable comments for a bug can be obtained from the view
-property visible_comments_for_display.
+property activity_and_comments.
 
-    >>> viewable_comments = ubuntu_bugview.visible_comments_for_display
+    >>> comments = [event.get('comment') for event in
+    ...     ubuntu_bugview.activity_and_comments if event.get('comment')]
 
 Because we omit the first comment, and because the third comment is
 indentical to the second, we really only display one comment:
 
-    >>> print len(viewable_comments)
+    >>> print len(comments)
     1
-    >>> [(c.index, c.owner.name, c.text_contents) for c in viewable_comments]
+    >>> [(c.index, c.owner.name, c.text_contents) for c in comments]
     [(1, u'name16', u'I can reproduce this bug.')]
 
 (Unregister our listener, since we no longer need it.)
@@ -210,9 +215,11 @@ indentical to the second, we really only display one comment:
     >>> on_created_listener.unregister()
 
 
-= Bug Portlets =
+Bug Portlets
+============
 
-== Duplicates Portlet ==
+Duplicates Portlet
+------------------
 
 The duplicate bugs portlet lists duplicates of the current bug. If the
 duplicate bug affects the current context, the link to the dupe will
@@ -249,7 +256,8 @@ Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
 and see how the returned link changes.
 
     >>> bug_two = bugset.get(2)
-    >>> bug_two.duplicateof = 5
+    >>> bug_five = bugset.get(5)
+    >>> bug_two.markAsDuplicate(bug_five)
 
     >>> bug_page_view = getMultiAdapter(
     ...     (bug_five_in_firefox.bug, request), name="+portlet-duplicates")
@@ -259,7 +267,46 @@ and see how the returned link changes.
     http://.../bugs/2
     ...
 
-== Bug Navigation ==
+
+Bug Attachments
+---------------
+
+We show bug attachments in two lists: patches and non-patch attachments.
+Sequences with data about patch and non-patch attachments are provided
+by the properties `patches` and `regular_attachments` of the class
+BugView. The elements of the sequences are dictionaries containing
+the the attachment itself and a ProxiedLibraryFileAlias for the
+librarian file of the attachment.
+
+    >>> from lp.bugs.browser.bug import BugView
+    >>> login('foo.bar@canonical.com')
+    >>> request = LaunchpadTestRequest()
+    >>> bug_seven = bugset.get(7)
+    >>> attachment_1 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='attachment 1', is_patch=False)
+    >>> attachment_2 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='attachment 2', is_patch=False)
+    >>> patch_1 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='patch 1', is_patch=True)
+    >>> patch_2 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='patch 2', is_patch=True)
+    >>> view = BugView(bug_seven, request)
+    >>> [attachment['attachment'].title
+    ...  for attachment in view.regular_attachments]
+    [u'attachment 1', u'attachment 2']
+    >>> [patch['attachment'].title for patch in view.patches]
+    [u'patch 1', u'patch 2']
+    >>> [attachment['file'].http_url
+    ...  for attachment in view.regular_attachments]
+    [u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/1/+files/...',
+     u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/2/+files/...']
+    >>> [patch['file'].http_url for patch in view.patches]
+    [u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/3/+files/...',
+     u'http://bugs.launchpad.dev/firefox/+bug/5/+attachment/4/+files/...']
+
+
+Bug Navigation
+--------------
 
 The +subscribe link has different text depending on if the user is
 subscribed to the bug, or if a team the user of a member of is
@@ -284,31 +331,31 @@ If the user isn't subscribed to the bug , 'Subscribe' is shown.
     >>> bug_menu.subscription().icon
     'add'
 
-If we subscribe Foo Bar, 'Unsubscribe' is shown.
+If we subscribe Foo Bar, 'Edit subscription' is shown.
 
     >>> bug_one.subscribe(foo_bar, foo_bar)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
-    'Unsubscribe'
+    'Edit subscription'
 
     >>> bug_menu.subscription().icon
-    'remove'
+    'edit'
 
 If we subscribe one of the teams that Foo Bar is a member of, it will
-still say 'Unsubscribe':
+still say 'Edit subscription':
 
     >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
     >>> foo_bar.inTeam(launchpad_team)
     True
     >>> bug_one.subscribe(launchpad_team, launchpad_team)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
-    'Unsubscribe'
+    'Edit subscription'
 
     >>> bug_menu.subscription().icon
-    'remove'
+    'edit'
 
 If we now unsubscribe Foo Bar, it will say 'Subscribe', since team
 unsubsription is handled by the remove icon next the the team in the
@@ -350,23 +397,19 @@ can't know if the user is subscribed or not.
 
     Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
     a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
-    is presented with the Unsubscribe link.
+    is presented with the "Edit subscription" link.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-
-    >>> bug_two.duplicateof = bug_three
-    >>> syncUpdate(bug_two)
+    >>> bug_two.markAsDuplicate(bug_three)
 
     >>> bug_menu.subscription().text
-        'Unsubscribe'
+    'Edit subscription'
 
     Now, let's revert that duplicate marking and demonstrate it again, this
     time where the subscription from the duplicate is of a /team/ of which
     the current user is a member. So, for Foo Bar, bug #3 has a simple
     Subscribe link initially.
 
-    >>> bug_two.duplicateof = None
-    >>> syncUpdate(bug_two)
+    >>> bug_two.markAsDuplicate(None)
 
     >>> login("foo.bar@canonical.com")
 
@@ -378,16 +421,16 @@ can't know if the user is subscribed or not.
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
     >>> bug_two.subscribe(ubuntu_team, ubuntu_team)
-        <BugSubscription...>
+        <lp.bugs.model.bugsubscription.BugSubscription ...>
 
-    >>> bug_two.duplicateof = bug_three
-    >>> syncUpdate(bug_two)
+    >>> bug_two.markAsDuplicate(bug_three)
 
     >>> bug_menu.subscription().text
     'Subscribe'
 
 
-== BugTasks and Nominations Table ==
+BugTasks and Nominations Table
+------------------------------
 
 A table is rendered at the top of the bug page which shows both bugtasks
 and nominations. This table is rendered with the
@@ -406,7 +449,8 @@ bugtargetdisplayname. Approved nominations are not included in the
 returned results, because an approved nomination will have created a
 task anyway.
 
-    >>> from canonical.launchpad.interfaces import IBugTask, IBugNomination
+    >>> from lp.bugs.interfaces.bugnomination import IBugNomination
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
 
     >>> def get_object_type(task_or_nomination):
     ...     if IBugTask.providedBy(task_or_nomination):
@@ -434,12 +478,26 @@ task anyway.
     bugtask, New, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
 
-Let's nominate the bug for upstream and an Ubuntu series and see how
-the list changes.
+After creating bug supervisors for Ubuntu and Firefox Let's nominate the bug
+for upstream and an Ubuntu series and see how the list changes.
 
-(Login as an unprivileged user to be able to nominate.)
+    >>> from lp.testing.sampledata import (ADMIN_EMAIL)
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>>
+    >>> login(ADMIN_EMAIL)
+    >>> nominator = factory.makePerson(name='nominator')
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu = removeSecurityProxy(ubuntu)
+    >>> ubuntu.bug_supervisor = nominator
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox = removeSecurityProxy(firefox)
+    >>> firefox.bug_supervisor = nominator
+    >>> logout()
 
-    >>> login("no-priv@canonical.com")
+(Login as a bug supervisor to be able to nominate.)
+
+    >>> login_person(nominator)
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> ubuntu_warty = ubuntu.getSeries("warty")
@@ -468,10 +526,7 @@ Let's add another affected package in Ubuntu to the bug.
 
     >>> current_user = getUtility(ILaunchBag).user
 
-    >>> bugtaskset.createTask(
-    ...     owner=current_user, bug=bug_one,
-    ...     distribution=evolution.distribution,
-    ...     sourcepackagename=evolution.sourcepackagename)
+    >>> bugtaskset.createTask(bug_one, current_user, evolution)
     <BugTask ...>
 
 A nomination row will be included for evolution now too.
@@ -527,7 +582,7 @@ approve/decline nominations.)
 Bug Edit Page
 =============
 
-The bug edit page is used to edit the summary, description, nick name,
+The bug edit page is used to edit the summary, description,
 and bug tags. If the user try to add a tag that hasn't been used in the
 current context, we display a confirmation button, which shouldn't be
 automatically rendered by the form template. In order to show how it
@@ -549,6 +604,8 @@ Initially, the normal edit page is shown, with a single button.
 
     >>> bug_edit.view.render()
     EDIT BUG
+    >>> bug_edit.view.field_names
+    ['title', 'description', 'tags']
     >>> [action.label for action in bug_edit.view.actions]
     ['Change']
 
@@ -559,7 +616,6 @@ and the bug will have been edited.
     >>> edit_values = {
     ...     'field.title': u'New title',
     ...     'field.description': u'New description.',
-    ...     'field.name': u'new-nickname',
     ...     'field.tags': u'doc'}
 
     >>> bug_edit.submit('change', edit_values)
@@ -572,8 +628,6 @@ and the bug will have been edited.
     u'New title'
     >>> bug_one.description
     u'New description.'
-    >>> bug_one.name
-    u'new-nickname'
     >>> bug_one.tags
     [u'doc']
 
@@ -581,7 +635,7 @@ and the bug will have been edited.
 Emails are sent out by adding entries to the bugnotification table. We
 need to know how many messages are currently in that table.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
     >>> start_bugnotification_count = bn_set.count()
 
@@ -615,7 +669,7 @@ the user can confirm that he wants to add the tag.
     False
     >>> for message in bug_edit.view.notifications:
     ...     print message
-    The tag "new-tag" hasn't been used by Mozilla Firefox before. 
+    The tag "new-tag" hasn't been used by Mozilla Firefox before.
     <input ...Create the new tag...>
 
     >>> bug_edit.wasRedirected()
@@ -652,107 +706,8 @@ should exist.
     u'** Tags added: new-tag'
 
 
-= Visibility of Imported DebBugs Comments =
-
-Comments imported from the DebBugs bug tracker are not displayed in the
-user interface by default.
-
-A config option, malone.comment_syncing_team, controls which team should
-be able to see imported comments. We can demonstrate these using the
-standard BugTaskView for bug 15, which has a debian bug watch and
-imported comments.
-
-    >>> from zope.component import getUtility
-    >>> from lp.bugs.browser.bugtask import BugTaskView
-    >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.launchpad.webapp.servers import (
-    ...     LaunchpadTestRequest)
-    >>> bug = getUtility(IBugSet).get(15)
-
-For anonymous users, the comments returned which have been imported from
-a bug watch will have a can_be_shown property of False.
-
-    >>> login(ANONYMOUS)
-    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
-    >>> print view.user
-    None
-    >>> for comment in view.visible_comments_for_display:
-    ...     comment.can_be_shown
-    False
-    False
-    False
-    False
-    False
-    False
-
-The same is true for people not in the comment syncing team.
-
-    >>> from canonical.config import config
-    >>> syncing_team = getUtility(IPersonSet).getByName(
-    ...     config.malone.comment_syncing_team)
-    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    >>> no_priv.inTeam(syncing_team)
-    False
-
-    >>> login('no-priv@canonical.com')
-    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
-    >>> view.user.name
-    u'no-priv'
-    >>> for comment in view.visible_comments_for_display:
-    ...     comment.can_be_shown
-    False
-    False
-    False
-    False
-    False
-    False
-
-People in the team get to see the comments.
-
-    >>> login('foo.bar@canonical.com')
-    >>> ignored = syncing_team.addMember(no_priv, no_priv)
-
-    >>> login('no-priv@canonical.com')
-    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
-    >>> view.user.name
-    u'no-priv'
-    >>> for comment in view.visible_comments_for_display:
-    ...     comment.can_be_shown
-    True
-    True
-    True
-    True
-    True
-    True
-
-However, if we set the comment_syncing_team config option to None, the
-imported comments for bug 15 will be displayable, even for anonymous
-users.
-
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [malone]
-    ...     comment_syncing_team: None
-    ...     """)
-    >>> config.push('test_data', test_data)
-
-    >>> login(ANONYMOUS)
-    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
-    >>> print view.user
-    None
-    >>> for comment in view.visible_comments_for_display:
-    ...     comment.can_be_shown
-    True
-    True
-    True
-    True
-    True
-    True
-
-    >>> test_config_data = config.pop('test_data')
-
-
-== Displaying BugActivity interleaved with comments ==
+Displaying BugActivity interleaved with comments
+------------------------------------------------
 
 BugTaskView offers a means for us to get a list of comments and activity
 for a bug, ordered by date.
@@ -789,16 +744,6 @@ First, some set-up.
     >>> view = getMultiAdapter(
     ...     (bug.bugtasks[0], request), name="+index")
 
-The activity_by_date property of BugTaskView returns a dict of
-BugActivityItems grouped by the date on which they occurred. The items
-are returned as a list of dicts containig a list of activity items for a
-given target.
-
-    >>> print pretty(view.activity_by_date)
-    {datetime.datetime(2009, 3, 26...):
-    [{'activity': [<...BugActivityItem...>],
-    'target': None}]}
-
 The activity_and_comments property of BugTaskView is a list of comments
 and activity on a bug, ordered by the date that they occurred. Each item
 is encapsulated in a dict, in the form: {'comment': <BugComment>} or
@@ -815,35 +760,47 @@ order, the comments and activity that have taken place on a bug.
     ...         'testproduct.actions.save': 'Save Changes',
     ...         })
     >>> view = getMultiAdapter(
-    ...     (bug.bugtasks[0], request), name="+editstatus-page")
+    ...     (bug.bugtasks[0], request), name="+editstatus")
     >>> view.initialize()
 
     >>> view = getMultiAdapter(
     ...     (bug.bugtasks[0], request), name="+index")
     >>> view.initialize()
 
-    >>> activity_and_comments = view.activity_and_comments
-    >>> for activity_or_comment in activity_and_comments:
-    ...     if 'activity' in activity_or_comment:
-    ...         activity_dict = activity_or_comment['activity']
-    ...         for activity_for_target in activity_dict:
-    ...             target_name = activity_for_target['target']
-    ...             activity_items = activity_for_target['activity']
-    ...             if target_name is not None:
-    ...                 print "Changed in %s:" % target_name
-    ...             for activity_item in activity_items:
-    ...                 print "%s: %s => %s" % (
-    ...                     activity_item.change_summary,
-    ...                     activity_item.oldvalue,
-    ...                     activity_item.newvalue)
-    ...
-    ...     if 'comment' in activity_or_comment:
-    ...         comment = activity_or_comment['comment']
-    ...         print comment.text_for_display
-    summary: A bug title => A new bug title
+    >>> def print_activities(activities):
+    ...     for activity in activities:
+    ...         target_name = activity['target']
+    ...         if target_name is None:
+    ...             print "Changed:"
+    ...         else:
+    ...             print "Changed in %s:" % target_name
+    ...         activity_items = activity['activity']
+    ...         for activity_item in activity_items:
+    ...             print "* %s: %s => %s" % (
+    ...                 activity_item.change_summary,
+    ...                 activity_item.oldvalue,
+    ...                 activity_item.newvalue)
+
+    >>> def print_comment(comment):
+    ...     print comment.text_for_display
+    ...     print_activities(comment.activity)
+
+    >>> def print_activity_and_comments(activity_and_comments):
+    ...     for activity_or_comment in activity_and_comments:
+    ...         print "-- {person.name} --".format(**activity_or_comment)
+    ...         if 'activity' in activity_or_comment:
+    ...             print_activities(activity_or_comment["activity"])
+    ...         if 'comment' in activity_or_comment:
+    ...             print_comment(activity_or_comment["comment"])
+
+    >>> print_activity_and_comments(view.activity_and_comments)
+    -- name16 --
+    Changed:
+    * summary: A bug title => A new bug title
+    -- name16 --
     A comment, for the reading of.
     Changed in testproduct:
-                    status: New => Confirmed
+    * status: New => Confirmed
 
 If a comment and a BugActivity item occur at the same time, the activity
 item will be returned in the comment's activity property rather than as
@@ -859,7 +816,7 @@ comments and activity together.
     ...         'testproduct.actions.save': 'Save Changes',
     ...         })
     >>> view = getMultiAdapter(
-    ...     (bug.bugtasks[0], request), name="+editstatus-page")
+    ...     (bug.bugtasks[0], request), name="+editstatus")
     >>> view.initialize()
 
     >>> view = getMultiAdapter(
@@ -870,39 +827,21 @@ Looking at activity_and_comments will give us the same results as
 before, plus the new comment, since the changes we just made were
 grouped with that comment.
 
-    >>> activity_and_comments = view.activity_and_comments
-    >>> for activity_or_comment in activity_and_comments:
-    ...     if 'activity' in activity_or_comment:
-    ...         for activity_dict in activity_or_comment['activity']:
-    ...             for activity in activity_dict['activity']:
-    ...                 print "%s: %s => %s" % (
-    ...                     activity.whatchanged, activity.oldvalue,
-    ...                     activity.newvalue)
-    ...     if 'comment' in activity_or_comment:
-    ...         comment = activity_or_comment['comment']
-    ...         print comment.text_for_display
-    summary: A bug title => A new bug title
+    >>> print_activity_and_comments(view.activity_and_comments)
+    -- name16 --
+    Changed:
+    * summary: A bug title => A new bug title
+    -- name16 --
     A comment, for the reading of.
+    -- name16 --
     I triaged it.
-
-But if we look at the most recent comment's activity property we'll see
-that the activity recorded there reflects the changes that go with the
-comment.
-
-    >>> comment = activity_and_comments[-1]['comment']
-    >>> for activity_dict in comment.activity:
-    ...     if activity_dict['target'] is not None:
-    ...         print "Changed in %s:" % activity_dict['target']
-    ...     for activity in activity_dict['activity']:
-    ...         print "%s: %s => %s" % (
-    ...             activity.attribute, activity.oldvalue,
-    ...             activity.newvalue)
     Changed in testproduct:
-                importance: Undecided => High
-                    status: New => Confirmed
+    * importance: Undecided => High
+    * status: New => Confirmed
 
 
-== Getting the list of possible duplicates for a new bug ==
+Getting the list of possible duplicates for a new bug
+-----------------------------------------------------
 
 It's possible to get a list of the possible duplicates for a new bug by
 using the +filebug-show-similar view of a BugTarget.

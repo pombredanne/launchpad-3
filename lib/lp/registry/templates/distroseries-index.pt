@@ -5,6 +5,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
+
   <body>
     <metal:block fill-slot="head_epilogue">
       <metal:yui-dependencies
@@ -12,6 +13,17 @@
       <script id="milestone-script" type="text/javascript"
         tal:condition="context/menu:overview/create_milestone/enabled"
         tal:content="view/register_milestone_script"></script>
+      <tal:uses_launchpad_bugtracker
+         condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+        <script type="text/javascript">
+            LPS.use('lp.registry.structural_subscription', function(Y) {
+                var module = Y.lp.registry.structural_subscription;
+                Y.on('domready', function() {
+                  module.setup({content_box: "#structural-subscription-content-box"});
+                });
+            });
+        </script>
+      </tal:uses_launchpad_bugtracker>
     </metal:block>
 
     <tal:heading metal:fill-slot="heading">
@@ -19,13 +31,11 @@
     </tal:heading>
 
     <tal:registering metal:fill-slot="registering">
-      <p>
-        registered by
-        <a tal:replace="structure context/owner/fmt:link" />
+        Registered by
+        <a tal:replace="structure context/registrant/fmt:link" />
         <span tal:content="context/date_created/fmt:displaydate"
               tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
-      </p>
     </tal:registering>
 
     <div metal:fill-slot="main">
@@ -53,6 +63,14 @@
           <div
             tal:replace="structure context/@@+portlet-details"/>
         </div>
+        <tal:derivation
+          tal:condition="request/features/soyuz.derived_series_ui.enabled">
+          <div class="yui-u"
+               tal:condition="python: context.isDerivedSeries() or
+                              context.getInitializationJob() is not None">
+            <div tal:replace="structure context/@@+portlet-derivation" />
+          </div>
+        </tal:derivation>
 
         <div class="yui-u">
           <div tal:replace="structure context/@@+portlet-package-summary" />
@@ -85,7 +103,8 @@
 
           <div
             tal:content="structure context/@@+portlet-latestspecs"
-            tal:condition="context/@@+get-involved/official_blueprints" />
+            tal:define="blueprints_usage context/@@+get-involved/blueprints_usage"
+            condition="blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div
            tal:replace="structure context/distribution/@@+portlet-coming-sprints" />
@@ -109,12 +128,16 @@
             </ul>
           </div>
         </div>
+        <div class="yui-u">
+          <div id="structural-subscription-content-box"></div>
+        </div>
       </div>
     </div>
 
     <tal:side metal:fill-slot="side"
       define="overview_menu context/menu:overview">
-      <div id="global-actions" class="portlet">
+      <div id="global-actions" class="portlet"
+           condition="overview_menu/subscribe_to_bug_mail/enabled|overview_menu/subscribe/enabled|nothing">
         <ul>
           <li tal:condition="overview_menu/edit/enabled">
             <a tal:replace="structure overview_menu/edit/fmt:link" />
@@ -122,11 +145,14 @@
           <li tal:condition="overview_menu/admin/enabled">
             <a tal:replace="structure overview_menu/admin/fmt:link" />
           </li>
-          <li tal:condition="overview_menu/reassign/enabled">
-            <a tal:replace="structure overview_menu/reassign/fmt:link" />
+          <li tal:condition="overview_menu/initseries/enabled|nothing">
+            <a tal:replace="structure overview_menu/initseries/fmt:link" />
           </li>
-          <li>
+          <li tal:condition="overview_menu/subscribe/enabled|nothing">
             <a tal:replace="structure overview_menu/subscribe/fmt:link" />
+          </li>
+          <li tal:condition="overview_menu/subscribe_to_bug_mail/enabled|nothing">
+            <a tal:replace="structure overview_menu/subscribe_to_bug_mail/fmt:link" />
           </li>
         </ul>
       </div>

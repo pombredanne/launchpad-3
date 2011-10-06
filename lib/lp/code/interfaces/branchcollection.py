@@ -57,17 +57,20 @@ class IBranchCollection(Interface):
             of individuals and teams that own branches in this collection.
         """
 
-    def getBranches():
+    def getBranches(eager_load=False):
         """Return a result set of all branches in this collection.
 
         The returned result set will also join across the specified tables as
         defined by the arguments to this function.  These extra tables are
         joined specificly to allow the caller to sort on values not in the
         Branch table itself.
+
+        :param eager_load: If True trigger eager loading of all the related
+            objects in the collection.
         """
 
     def getMergeProposals(statuses=None, for_branches=None,
-                          target_branch=None):
+                          target_branch=None, eager_load=False):
         """Return a result set of merge proposals for the branches in this
         collection.
 
@@ -78,6 +81,8 @@ class IBranchCollection(Interface):
             branch is one of the branches specified.
         :param target_branch: If specified, only return merge proposals
             that target the specified branch.
+        :param eager_load: If True, preloads all the related information for
+            merge proposals like PreviewDiffs and Branches.
         """
 
     def getMergeProposalsForPerson(person, status=None):
@@ -97,6 +102,18 @@ class IBranchCollection(Interface):
         :param status: An iterable of queue_status of the proposals to return.
             If None is specified, all the proposals of all possible states
             are returned.
+        """
+
+    def getExtendedRevisionDetails(user, revisions):
+        """Return information about the specified revisions on a branch.
+
+        For each revision, see if the revision resulted from merging in a
+        merge proposal, and if so package up the merge proposal and any linked
+        bug tasks on the merge proposal's source branch.
+
+        :param user: The user who is making the request. Only bug tasks
+            visible to this user are returned.
+        :param revisions: The revisions we want details for.
         """
 
     def getTeamsWithBranches(person):
@@ -124,6 +141,9 @@ class IBranchCollection(Interface):
     def inDistributionSourcePackage(distro_source_package):
         """Restrict to branches in a 'package' for a 'distribution'."""
 
+    def linkedToBugs(bugs):
+        """Restrict to branches linked to `bugs`."""
+
     def officialBranches(pocket=None):
         """Restrict to branches that are official for some source package."""
 
@@ -136,6 +156,11 @@ class IBranchCollection(Interface):
 
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
+
+    def ownedByTeamMember(person):
+        """Restrict the collection to branches owned by 'person' or a team
+        of which person is a member.
+        """
 
     def registeredBy(person):
         """Restrict the collection to branches registered by 'person'."""
@@ -180,8 +205,10 @@ class IBranchCollection(Interface):
 
         A branch is targeted by a person if that person has registered a merge
         proposal with the branch as the target.
+
+        :param since: If supplied, ignore merge proposals before this date.
         """
 
 
 class IAllBranches(IBranchCollection):
-    """An `IBranchCollection` representing all branches in Launchpad."""
+    """A `IBranchCollection` representing all branches in Launchpad."""

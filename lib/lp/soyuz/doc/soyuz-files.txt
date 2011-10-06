@@ -10,12 +10,15 @@ object via a BinaryPackageFile or SourcePackageReleaseFile.
 SourcePackageReleaseFile or BinaryPackageFile are available via the
 'files' attribute on its parent.
 
- >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from zope.component import getUtility
+ >>> from canonical.launchpad.webapp.testing import verifyObject
 
- >>> from canonical.launchpad.interfaces import (
- ...    IDistributionSet, ILibraryFileAlias,
- ...    ISourcePackageReleaseFile, IBinaryPackageFile)
+ >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+ >>> from lp.registry.interfaces.distribution import IDistributionSet
+ >>> from lp.soyuz.interfaces.files import (
+ ...     IBinaryPackageFile,
+ ...     ISourcePackageReleaseFile,
+ ...     )
 
  >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
 
@@ -45,7 +48,7 @@ package for that release:
  u'firefox_0.9.2.orig.tar.gz'
 
  >>> srcfile.libraryfile.http_url
- 'http://localhost:58000/3/firefox_0.9.2.orig.tar.gz'
+ 'http://.../3/firefox_0.9.2.orig.tar.gz'
 
 
 == Binary Files ==
@@ -73,7 +76,7 @@ instalable debian-format file:
  u'pmount_1.9-1_all.deb'
 
  >>> debfile.libraryfile.http_url
- 'http://localhost:58000/37/pmount_1.9-1_all.deb'
+ 'http://.../37/pmount_1.9-1_all.deb'
 
 
 == Utilities ==

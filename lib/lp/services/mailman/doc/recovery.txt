@@ -13,15 +13,17 @@ message, but again the reportStatus() call fails.  In both these cases,
 Mailman and Launchpad should eventually resynchronize their state
 automatically.
 
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
+    >>> browser.open('%s/people/+newteam' % root_url)
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
     >>> browser.getLink('Create a mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.getControl('Create new Mailing List').click()
 
     >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.review_list('itest-one')
@@ -37,8 +39,10 @@ state.
 
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, MailingListStatus)
+    >>> from lp.registry.interfaces.mailinglist import (
+    ...     IMailingListSet,
+    ...     MailingListStatus,
+    ...     )
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('admin@canonical.com')
     >>> mailing_list_set = getUtility(IMailingListSet)
@@ -56,7 +60,7 @@ Now we just wait for Mailman to resynchronize its state with Launchpad.
 However, if the list status on Launchpad is CONSTRUCTING, but the mailing list
 does not actually exist in Mailman, then Mailman will create it.
 
-    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
+    >>> browser.open('%s/people/+newteam' % root_url)
     >>> browser.getControl(name='field.name').value = 'itest-two'
     >>> browser.getControl('Display Name').value = 'ITest Two'
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
@@ -68,7 +72,7 @@ does not actually exist in Mailman, then Mailman will create it.
     ['itest-one', 'unused_mailman_site_list']
 
     >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> team_two = person_set.getByName('itest-two')
     >>> itest_two = mailing_list_set.new(team_two, team_two.teamowner)

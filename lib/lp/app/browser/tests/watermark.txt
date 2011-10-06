@@ -30,7 +30,7 @@ A series of the product still show the product watermark.
     >>> print test_tales('view/watermark:heading', view=view(dev_focus))
     <h...>Widget</h...>
 
-Projects also directly implement IRootContext ...
+ProjectGroups also directly implement IRootContext ...
 
     >>> kde = factory.makeProject(title='KDE')
     >>> print test_tales('view/watermark:heading', view=view(kde))

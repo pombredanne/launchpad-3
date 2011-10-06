@@ -1,3 +1,8 @@
+     DOCTESTS SUCK! PLEASE DO NOT ADD TO THIS DOCTEST, SEE
+     lib/lp/soyuz/tests/test_sourcepackagerelease.py instead and consider
+     migrating tests from here to there.
+
+
 = Creating & Looking for Build records =
 
 ISourcePackageRelease has the ability to create Build records,
@@ -12,8 +17,8 @@ DistroArchSeries and Archive.
 To demonstrate this we need to define some variables.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILibraryFileAliasSet)
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
@@ -27,7 +32,7 @@ Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
     >>> trash = hoary_i386.addOrUpdateChroot(fake_chroot)
     >>> trash = hoary_hppa.addOrUpdateChroot(fake_chroot)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> from lp.registry.interfaces.pocket import (
@@ -35,23 +40,23 @@ Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
     >>> pocket_release = PackagePublishingPocket.RELEASE
 
 The base method createBuild() is able to create a build to a given
-distroarchseries, pocket and archive.
+distro_arch_series, pocket and archive.
 
-Build.buildstate, by default is set to NEEDSBUILD, but you can
+Build.status, by default is set to NEEDSBUILD, but you can
 optionally provide another status.
 
     >>> hoary_evo_source = hoary.getSourcePackage('evolution')
     >>> evo_release = hoary_evo_source['1.0'].sourcepackagerelease
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> evo_build_i386 = evo_release.createBuild(
     ...     hoary_i386, pocket_release, ubuntu.main_archive,
     ...     status=BuildStatus.FULLYBUILT)
 
-    >>> print evo_build_i386.buildstate.name
+    >>> print evo_build_i386.status.name
     FULLYBUILT
 
-    >>> evo_build_i386.distroarchseries.architecturetag
+    >>> evo_build_i386.distro_arch_series.architecturetag
     u'i386'
 
     >>> print evo_build_i386.archive.displayname
@@ -81,7 +86,7 @@ was inherited in the initialization.
     >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
     >>> breezy_autotest_i386 = breezy_autotest['i386']
 
-    >>> print breezy_autotest.parent_series.title
+    >>> print breezy_autotest.previous_series.title
     The Hoary Hedgehog Release
 
     >>> hoary_evo_release = hoary_evo_source['1.0']
@@ -118,7 +123,7 @@ In order to be independent of the sampledata we will use the
 SoyuzTestPublisher helper to create fake but complete publication for
 this test.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.soyuz.enums import (
     ...    PackagePublishingStatus)
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
@@ -191,7 +196,7 @@ contents at the time it was built.
     >>> evo_build_i386_ppa = copy.sourcepackagerelease.createBuild(
     ...     hoary_i386, pocket_release, cprov.archive)
 
-    >>> evo_build_i386_ppa.buildstate.name
+    >>> evo_build_i386_ppa.status.name
     'NEEDSBUILD'
 
     >>> print evo_build_i386_ppa.archive.displayname
@@ -288,7 +293,7 @@ Another possible situation is when the user wants to rebuild the
 same source published in hoary to another suite, let's say
 breezy-autotest in his PPA.
 
-    >>> cprov_foo_src = cprov.archive.getPublishedSources(name='foo')[0]
+    >>> cprov_foo_src = cprov.archive.getPublishedSources(name='foo').first()
 
     >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
     >>> copy = cprov_foo_src.copyTo(
@@ -310,7 +315,7 @@ It's even possible to copy source and binaries from hoary to warty
 suite in Celso's PPA.
 
     >>> cprov_foo_src = cprov.archive.getPublishedSources(
-    ...    name='foo', distroseries=hoary)[0]
+    ...    name='foo', distroseries=hoary).first()
     >>> cprov_foo_bin = cprov_foo_src.getPublishedBinaries()[0]
 
     >>> warty = ubuntu.getSeries('warty')
@@ -340,7 +345,7 @@ Now we can also copy the hoary source and its binary from Celso's PPA
 to Mark Shuttleworth's PPA.
 
     >>> cprov_foo_src = cprov.archive.getPublishedSources(
-    ...    name='foo', distroseries=hoary)[0]
+    ...    name='foo', distroseries=hoary).first()
     >>> cprov_foo_bin = cprov_foo_src.getPublishedBinaries()[0]
 
     >>> mark = getUtility(IPersonSet).getByName('mark')

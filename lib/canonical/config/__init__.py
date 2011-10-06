@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 '''
@@ -6,27 +6,31 @@ Configuration information pulled from launchpad.conf.
 
 The configuration section used is specified using the LPCONFIG
 environment variable, and defaults to 'development'
+
+XXX: Robert Collins 2010-10-20 bug=663454 this is in the wrong namespace.
 '''
 
 __metaclass__ = type
 
 
-import os
 import logging
+import os
 import sys
-from urlparse import urlparse, urlunparse
-
-import pkg_resources
-import ZConfig
+from urlparse import (
+    urlparse,
+    urlunparse,
+    )
 
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
+import pkg_resources
+import ZConfig
 
 from canonical.launchpad.readonly import is_read_only
+from lp.services.osutils import open_for_writing
 
 
 __all__ = [
-    'DatabaseConfig',
     'dbconfig',
     'config',
     ]
@@ -56,8 +60,7 @@ TREE_ROOT = os.path.abspath(
 # The directories containing instances configuration directories.
 CONFIG_ROOT_DIRS = [
     os.path.join(TREE_ROOT, 'configs'),
-    os.path.join(TREE_ROOT, 'production-configs')
-    ]
+    os.path.join(TREE_ROOT, 'production-configs')]
 
 
 def find_instance_name():
@@ -98,6 +101,7 @@ class CanonicalConfig:
     is thread safe (not that this will be a problem if we stick with
     simple configuration).
     """
+
     def __init__(self, instance_name=None, process_name=None):
         """Create a new instance of CanonicalConfig.
 
@@ -153,6 +157,16 @@ class CanonicalConfig:
         """Reload the config."""
         self._invalidateConfig()
         self._getConfig()
+
+    def isTestRunner(self):
+        """Return true if the current config is a 'testrunner' config.
+
+        That is, if it is the testrunner config, or a unique variation of it,
+        but not if its the testrunner-appserver, development or production
+        config.
+        """
+        return (self.instance_name == 'testrunner' or
+                self.instance_name.startswith('testrunner_'))
 
     @property
     def process_name(self):
@@ -227,8 +241,8 @@ class CanonicalConfig:
 
         Call this method before letting any ZCML processing occur.
         """
-        loader_file = os.path.join(self.root, '+config-overrides.zcml')
-        loader = open(loader_file, 'w')
+        loader_file = os.path.join(self.root, 'zcml/+config-overrides.zcml')
+        loader = open_for_writing(loader_file, 'w')
 
         print >> loader, """
             <configure xmlns="http://namespaces.zope.org/zope">
@@ -238,6 +252,15 @@ class CanonicalConfig:
                 <include files="%s/*.zcml" />
                 </configure>""" % self.config_dir
         loader.close()
+
+    def appserver_root_url(self, facet='mainsite', ensureSlash=False):
+        """Return the correct app server root url for the given facet."""
+        root_url = str(getattr(self.vhost, facet).rooturl)
+        if not ensureSlash:
+            return root_url.rstrip('/')
+        if not root_url.endswith('/'):
+            return root_url + '/'
+        return root_url
 
     def __getattr__(self, name):
         self._getConfig()
@@ -254,6 +277,19 @@ class CanonicalConfig:
     def __getitem__(self, key):
         self._getConfig()
         return self._config[key]
+
+    def __dir__(self):
+        """List section names in addition to methods and variables."""
+        self._getConfig()
+        names = dir(self.__class__)
+        names.extend(self.__dict__)
+        names.extend(section.name for section in self._config)
+        return names
+
+    def __iter__(self):
+        """Iterate through configuration sections."""
+        self._getConfig()
+        return iter(self._config)
 
 
 config = CanonicalConfig()
@@ -276,6 +312,7 @@ def url(value):
         raise ValueError('No protocol in URL')
     value = urlunparse(bits)
     return value
+
 
 def urlbase(value):
     """ZConfig validator for url bases
@@ -318,11 +355,11 @@ def urlbase(value):
     value = url(value)
     scheme, location, path, parameters, query, fragment = urlparse(value)
     if parameters:
-        raise ValueError, 'URL parameters not allowed'
+        raise ValueError('URL parameters not allowed')
     if query:
-        raise ValueError, 'URL query not allowed'
+        raise ValueError('URL query not allowed')
     if fragment:
-        raise ValueError, 'URL fragments not allowed'
+        raise ValueError('URL fragments not allowed')
     if not value.endswith('/'):
         value = value + '/'
     return value
@@ -364,8 +401,11 @@ def loglevel(value):
         raise ValueError(
                 "Invalid log level %s. "
                 "Should be DEBUG, CRITICAL, ERROR, FATAL, INFO, WARNING "
-                "as per logging module." % value
-                )
+                "as per logging module." % value)
+
+
+class DatabaseConfigOverrides(object):
+    pass
 
 
 class DatabaseConfig:
@@ -374,16 +414,23 @@ class DatabaseConfig:
     _db_config_attrs = frozenset([
         'dbuser', 'auth_dbuser',
         'rw_main_master', 'rw_main_slave',
-        'ro_main_master', 'ro_main_slave', 'auth_master', 'auth_slave',
+        'ro_main_master', 'ro_main_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'randomise_select_results',
         'soft_request_timeout', 'storm_cache', 'storm_cache_size'])
     _db_config_required_attrs = frozenset([
         'dbuser', 'rw_main_master', 'rw_main_slave', 'ro_main_master',
-        'ro_main_slave', 'auth_master', 'auth_slave'])
+        'ro_main_slave'])
+
+    def __init__(self):
+        self.reset()
 
     @property
     def main_master(self):
+        # Its a bit silly having ro_main_master and rw_main_master.
+        # rw_main_master will never be used, as read-only-mode will
+        # fail attempts to access the master database with a
+        # ReadOnlyModeDisallowedStore exception.
         if is_read_only():
             return self.ro_main_master
         else:
@@ -396,25 +443,32 @@ class DatabaseConfig:
         else:
             return self.rw_main_slave
 
-    def setConfigSection(self, section_name):
-        self._config_section = section_name
+    def override(self, **kwargs):
+        """Override one or more config attributes.
 
-    def getSectionName(self):
-        """The name of the config file section this DatabaseConfig references.
+        Overriding a value to None removes the override.
         """
-        return self._config_section
+        for attr, value in kwargs.iteritems():
+            assert attr in self._db_config_attrs, (
+                "%s cannot be overriden" % attr)
+            if value is None:
+                if hasattr(self.overrides, attr):
+                    delattr(self.overrides, attr)
+            else:
+                setattr(self.overrides, attr, value)
+
+    def reset(self):
+        self.overrides = DatabaseConfigOverrides()
 
     def _getConfigSections(self):
         """Returns a list of sections to search for database configuration.
 
         The first section in the list has highest priority.
         """
-        if self._config_section is None:
-            return [config.database]
-        overlay = config
-        for part in self._config_section.split('.'):
-            overlay = getattr(overlay, part)
-        return [overlay, config.database]
+        # config.launchpad remains here for compatibility -- production
+        # appserver configs customise its dbuser. Eventually they should
+        # be migrated into config.database, and this can be removed.
+        return [self.overrides, config.launchpad, config.database]
 
     def __getattr__(self, name):
         sections = self._getConfigSections()
@@ -432,4 +486,3 @@ class DatabaseConfig:
 
 
 dbconfig = DatabaseConfig()
-dbconfig.setConfigSection('launchpad')

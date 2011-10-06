@@ -11,16 +11,11 @@
 <body>
   <metal:translation-import-queue define-macro="translation-import-queue-content">
       <script type="text/javascript" tal:content="view/choice_confs_js" />
-      <script
-        type="text/javascript"
-        tal:condition="devmode"
-        tal:attributes="src string:${icingroot}/build/translations/translations.js">
-      </script>
 
       <script type="text/javascript">
-          LPS.use( 'translations', 'event', function(Y) {
+          LPS.use('lp.translations.importqueue', 'event', function(Y) {
               Y.on('domready', function(e) {
-                  Y.translations.initialize_import_queue_page(Y);
+                  Y.lp.translations.importqueue.initialize_import_queue_page(Y);
               });
           });
       </script>
@@ -132,7 +127,7 @@
                 </tr>
                 <tr class="discreet secondary">
                   <td colspan="3">
-                    Uploaded by 
+                    Uploaded by
                     <a tal:replace="structure entry/importer/fmt:link">
                       Mark Shuttleworth
                     </a>
@@ -150,7 +145,7 @@
                   <td colspan="3">
                     <span style="margin-right: 0.5em"
                           tal:condition="entry/import_into/title|nothing" >
-                      Will be imported into 
+                      Will be imported into
                       <a tal:content="entry/import_into/title"
                          tal:attributes="href entry/import_into/fmt:url"
                          >Foo</a>
@@ -191,7 +186,6 @@
           </form>
         </tal:block>
       </div>
-      <div id="spinner-loader"></div>
     </metal:translation-import-queue>
 </body>
 </html>

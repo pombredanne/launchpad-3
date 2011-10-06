@@ -1,91 +1,23 @@
 #! /bin/bash
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This script will set up a brand new Ubuntu machine as a LP developer
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
 
-# We require Bazaar 1.16.1 or higher.
-# So first, grab the output of 'bzr --version' and transform the
-# version line, like "Bazaar (bzr) 1.16.1", into "1 16 1":
-VER_RAW=`bzr --version | head -1 | sed -e 's/Bazaar (bzr) //g'`
-VER_NUMS=`echo -n ${VER_RAW} | sed -e 's/[^.0-9]//g' | sed -e 's/[.]/ /g'`
-# Now stuff each component into its own variable, so we can check sanely.
-MAJOR=0
-MINOR=0
-MICRO=0
-ITER=0
-for VER_COMPONENT in ${VER_NUMS}; do
-  if [ ${ITER} -eq 0 ]; then
-    MAJOR=${VER_COMPONENT}
-  elif [ ${ITER} -eq 1 ]; then
-    MINOR=${VER_COMPONENT}
-  elif [ ${ITER} -eq 2 ]; then
-    MICRO=${VER_COMPONENT}
-  # Ignore anything beyond micro -- nanoversions are irrelevant here.
-  fi
-  ITER=`expr ${ITER} + 1`
-done
-# Check that the version is high enough.
-BAZAAR_BAIL=0
-if [ ${MAJOR} -lt 2 ]; then
-  if [ ${MAJOR} -lt 1 ]; then
-    BAZAAR_BAIL=1
-  elif [ ${MINOR} -lt 16 ]; then
-    BAZAAR_BAIL=1
-  elif [ ${MINOR} -eq 16 -a ${MICRO} -lt 1 ]; then
-    BAZAAR_BAIL=1
-  fi
-fi
-if [ ${BAZAAR_BAIL} -ne 0 ]; then
-  echo "ERROR: You don't have a high enough version of Bazaar:"
-  echo "  rocketfuel-setup requires bzr 1.16.1 or higher, but you have bzr ${VER_RAW}."
-  echo "  Please see http://bazaar-vcs.org/Download to get a newer version."
-  exit 1
-fi
-
-if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
-  echo "# Common environment variables for the rocketfuel-* scripts.
-#
-# The ones you can set are:
-#
-# LP_PROJECT_ROOT - The root directory of all your Launchpad stuff.  Your
-#                   Launchpad shared repository will live in a child directory
-#                   of this directory.
-# LP_SHARED_REPO  - Your Launchpad shared repository directory.  All of your
-#                   Launchpad development branches will live under here.
-# LP_TRUNK_NAME   - The directory name (not path!) to your rocketfuel trunk
-#                   mirror directory.  This is relative to your shared repo.
-# LP_SOURCEDEPS_DIR - The name of the directory (not path!) where your
-#                   trunk sourcecode will be placed.  This is relative to your
-#                   LP_PROJECT_ROOT and should /not/ have the 'sourcecode'
-#                   path appended to it, since this is automatically added by
-#                   the scripts.
-
-LP_PROJECT_ROOT=\${LP_PROJECT_ROOT:=~/launchpad}
-LP_SHARED_REPO=\${LP_SHARED_REPO:=lp-branches}
-LP_PROJECT_PATH=\$LP_PROJECT_ROOT/\$LP_SHARED_REPO
-LP_TRUNK_NAME=\${LP_TRUNK_NAME:=devel}
-LP_TRUNK_PATH=\$LP_PROJECT_PATH/\$LP_TRUNK_NAME
-
-LP_SOURCEDEPS_DIR=\${LP_SOURCEDEPS_DIR:=lp-sourcedeps}
-LP_SOURCEDEPS_PATH=\$LP_PROJECT_ROOT/\$LP_SOURCEDEPS_DIR/sourcecode
-
-# Force tilde expansion
-LP_SOURCEDEPS_PATH=\$(eval echo \${LP_SOURCEDEPS_PATH})
-" > "$HOME/.rocketfuel-env.sh"
-fi
-
-source "$HOME/.rocketfuel-env.sh"
-if [ "$?" != 0 ]; then
-    echo "Something went wrong with rocketfuel-setup!"
-    exit 1
-fi
-
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
+DO_WORKSPACE=1
+for arg in "$@"; do
+  if [ "$arg" == "--no-workspace" ]; then
+    DO_WORKSPACE=0
+  else
+    echo Unrecognized argument: $arg >& 2
+    exit 1;
+  fi
+done
 
 # Establish LP username
 whoami=`whoami`
@@ -133,9 +65,6 @@ hostnames=$(cat <<EOF
     ubuntu-openid.launchpad.dev
     ppa.launchpad.dev
     private-ppa.launchpad.dev
-    shipit.edubuntu.dev
-    shipit.kubuntu.dev
-    shipit.ubuntu.dev
     testopenid.dev
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
@@ -155,15 +84,23 @@ if [ $? -ne 0 ]; then
   echo "bazaar.launchpad.dev added to /etc/hosts"
 fi
 
+grep -q "^127.0.0.77" /etc/hosts
+if [ $? -ne 0 ]; then
+  echo "
+127.0.0.77      vostok.dev archive.vostok.dev
+" | sudo tee -a /etc/hosts > /dev/null
+  echo "vostok.dev added to /etc/hosts"
+fi
+
 # Enable relevant Ubuntu package repositories
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
-    echo "Please enable the 'universe' component in /etc/apt/source.list'"
+    echo "Please enable the 'universe' component in /etc/apt/sources.list'"
     exit 1
 fi
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*multiverse" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
-    echo "Please enable the 'multiverse' component in /etc/apt/source.list'"
+    echo "Please enable the 'multiverse' component in /etc/apt/sources.list'"
     exit 1
 fi
 
@@ -192,7 +129,7 @@ for key in $REQUIRED_PPA_KEYS; do
    sudo apt-key list | grep -q $key
    if [ $? -ne 0 ]; then
      echo "Retrieving key $key."
-     gpg --keyserver keyserver.ubuntu.com --recv-keys $key
+     gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys $key
      if [ $? -ne 0 ]; then
        echo "Could not retrieve key $key."
        exit 1
@@ -209,7 +146,7 @@ do_install() {
   dpkg -s $pkg | grep -q "^Status: install ok installed"
   if [ $? -ne 0 ]; then
     echo "Installing $pkg package..."
-    sudo aptitude install $pkg
+    sudo apt-get install $pkg
     if [ $? -ne 0 ]; then
       echo "Unable to install $pkg."
       exit 1
@@ -217,7 +154,7 @@ do_install() {
   fi
   }
 
-sudo aptitude update
+sudo apt-get update
 REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 apache2-mpm-worker"
 for pkg in $REQUIRED_PACKAGES; do
   do_install;
@@ -262,6 +199,60 @@ if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable headers module in Apache2"
   exit 1
 fi
+
+if [ $DO_WORKSPACE == 0 ]; then
+  cat <<EOT
+Branches have not been created, as requested.  You will need to do some or all
+of the following steps:
+$ bzr branch lp:launchpad devel
+$ cd devel
+$ bzr branch lp:~launchpad/lp-source-dependencies/trunk/ download-cache
+$ utilities/update-sourcecode
+$ utilities/launchpad-database-setup
+$ make schema
+$ sudo make install
+EOT
+  exit 0
+fi
+
+if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
+  echo "# Common environment variables for the rocketfuel-* scripts.
+#
+# The ones you can set are:
+#
+# LP_PROJECT_ROOT - The root directory of all your Launchpad stuff.  Your
+#                   Launchpad shared repository will live in a child directory
+#                   of this directory.
+# LP_SHARED_REPO  - Your Launchpad shared repository directory.  All of your
+#                   Launchpad development branches will live under here.
+# LP_TRUNK_NAME   - The directory name (not path!) to your rocketfuel trunk
+#                   mirror directory.  This is relative to your shared repo.
+# LP_SOURCEDEPS_DIR - The name of the directory (not path!) where your
+#                   trunk sourcecode will be placed.  This is relative to your
+#                   LP_PROJECT_ROOT and should /not/ have the 'sourcecode'
+#                   path appended to it, since this is automatically added by
+#                   the scripts.
+
+LP_PROJECT_ROOT=\${LP_PROJECT_ROOT:=~/launchpad}
+LP_SHARED_REPO=\${LP_SHARED_REPO:=lp-branches}
+LP_PROJECT_PATH=\$LP_PROJECT_ROOT/\$LP_SHARED_REPO
+LP_TRUNK_NAME=\${LP_TRUNK_NAME:=devel}
+LP_TRUNK_PATH=\$LP_PROJECT_PATH/\$LP_TRUNK_NAME
+
+LP_SOURCEDEPS_DIR=\${LP_SOURCEDEPS_DIR:=lp-sourcedeps}
+LP_SOURCEDEPS_PATH=\$LP_PROJECT_ROOT/\$LP_SOURCEDEPS_DIR/sourcecode
+
+# Force tilde expansion
+LP_SOURCEDEPS_PATH=\$(eval echo \${LP_SOURCEDEPS_PATH})
+" > "$HOME/.rocketfuel-env.sh"
+fi
+
+source "$HOME/.rocketfuel-env.sh"
+if [ "$?" != 0 ]; then
+    echo "Something went wrong with rocketfuel-setup!"
+    exit 1
+fi
+
 
 # Create the local branch structure we will use for managing Launchpad code
 mkdir -p $LP_PROJECT_ROOT

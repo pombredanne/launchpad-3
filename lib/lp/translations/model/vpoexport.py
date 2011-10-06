@@ -12,21 +12,27 @@ __all__ = [
     'VPOExport'
     ]
 
+from storm.expr import (
+    And,
+    Or,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import And, Or
-
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.interfaces.vpoexport import (
+    IVPOExport,
+    IVPOExportSet,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.translations.interfaces.vpoexport import IVPOExport, IVPOExportSet
 
 
 class VPOExportSet:
@@ -87,7 +93,7 @@ class VPOExportSet:
         # Order by POTemplate.  Caching in the export scripts can be
         # much more effective when consecutive POFiles belong to the
         # same POTemplate, e.g. they'll have the same POTMsgSets.
-        sort_list = [POFile.potemplateID, POFile.languageID, POFile.variant]
+        sort_list = [POFile.potemplateID, POFile.languageID]
         return query.order_by(sort_list).config(distinct=True)
 
     def get_distroseries_pofiles_count(self, series, date=None,
@@ -119,8 +125,8 @@ class VPOExport:
         (self.potmsgset_id,
          self.sequence,
          self.comment,
-         self.is_current,
-         self.is_imported,
+         self.is_current_ubuntu,
+         self.is_current_upstream,
          self.diverged,
          self.translation0,
          self.translation1,

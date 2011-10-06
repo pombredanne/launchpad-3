@@ -11,20 +11,34 @@ __all__ = [
     'DistroSeriesSourcePackageRelease',
     ]
 
-from operator import attrgetter
-
+from lazr.delegates import delegates
+from operator import itemgetter
+from storm.expr import (
+    And,
+    Desc,
+    Join,
+    )
+from storm.store import Store
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    IDistroSeriesSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lazr.delegates import delegates
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 
 class DistroSeriesSourcePackageRelease:
@@ -37,7 +51,9 @@ class DistroSeriesSourcePackageRelease:
     delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distroseries, sourcepackagerelease):
+        assert IDistroSeries.providedBy(distroseries)
         self.distroseries = distroseries
+        assert ISourcePackageRelease.providedBy(sourcepackagerelease)
         self.sourcepackagerelease = sourcepackagerelease
 
     @property
@@ -102,7 +118,7 @@ class DistroSeriesSourcePackageRelease:
 
         # Import DistributionSourcePackageRelease here to avoid circular
         # imports (and imported directly from database to avoid long line)
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distributionsourcepackagerelease import (
             DistributionSourcePackageRelease)
 
         distro_builds = DistributionSourcePackageRelease(
@@ -111,7 +127,7 @@ class DistroSeriesSourcePackageRelease:
 
         return (
             [build for build in distro_builds
-                if build.distroarchseries.distroseries == self.distroseries])
+             if build.distro_arch_series.distroseries == self.distroseries])
 
     @property
     def files(self):
@@ -121,38 +137,40 @@ class DistroSeriesSourcePackageRelease:
     @property
     def binaries(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        clauseTables = [
-            'BinaryPackageRelease',
-            'DistroArchSeries',
-            'Build',
-            'BinaryPackagePublishingHistory'
-        ]
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        store = Store.of(self.distroseries)
+        result_row = (
+            BinaryPackageRelease, BinaryPackageBuild, BinaryPackageName)
 
-        query = """
-        BinaryPackageRelease.build=Build.id AND
-        DistroArchSeries.id =
-            BinaryPackagePublishingHistory.distroarchseries AND
-        BinaryPackagePublishingHistory.binarypackagerelease=
-            BinaryPackageRelease.id AND
-        DistroArchSeries.distroseries=%s AND
-        BinaryPackagePublishingHistory.archive IN %s AND
-        Build.sourcepackagerelease=%s
-        """ % sqlvalues(self.distroseries,
-                        self.distroseries.distribution.all_distro_archive_ids,
-                        self.sourcepackagerelease)
-
-        return BinaryPackageRelease.select(
-                query, prejoinClauseTables=['Build'], orderBy=['-id'],
-                clauseTables=clauseTables, distinct=True)
-
-    @property
-    def meta_binaries(self):
-        """See `IDistroSeriesSourcePackageRelease`."""
-        binary_pkg_names = sorted(
-            set([pkg.binarypackagename for pkg in self.binaries]),
-            key=attrgetter('name'))
-        return [self.distroseries.getBinaryPackage(name)
-                for name in binary_pkg_names]
+        tables = (
+            BinaryPackageRelease,
+            Join(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == BinaryPackageRelease.buildID),
+            Join(
+                BinaryPackagePublishingHistory,
+                BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID),
+            Join(
+                DistroArchSeries,
+                DistroArchSeries.id ==
+                BinaryPackagePublishingHistory.distroarchseriesID),
+            Join(
+                BinaryPackageName,
+                BinaryPackageName.id ==
+                BinaryPackageRelease.binarypackagenameID))
+        archive_ids = list(
+            self.distroseries.distribution.all_distro_archive_ids)
+        binaries = store.using(*tables).find(
+            result_row,
+            And(
+                DistroArchSeries.distroseriesID == self.distroseries.id,
+                BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
+                BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease))
+        binaries.order_by(Desc(BinaryPackageRelease.id)).config(distinct=True)
+        return DecoratedResultSet(binaries, itemgetter(0))
 
     @property
     def changesfile(self):
@@ -170,7 +188,7 @@ class DistroSeriesSourcePackageRelease:
         # location.
         for binary in self.binaries:
             if binary.architecturespecific:
-                considered_arches = [binary.build.distroarchseries]
+                considered_arches = [binary.build.distro_arch_series]
             else:
                 considered_arches = self.distroseries.architectures
 
@@ -191,13 +209,16 @@ class DistroSeriesSourcePackageRelease:
     @property
     def publishing_history(self):
         """See `IDistroSeriesSourcePackage`."""
+        # sqlvalues bails on security proxied objects.
+        archive_ids = removeSecurityProxy(
+            self.distroseries.distribution.all_distro_archive_ids)
         return SourcePackagePublishingHistory.select("""
             distroseries = %s AND
             archive IN %s AND
             sourcepackagerelease = %s
             """ % sqlvalues(
                     self.distroseries,
-                    self.distroseries.distribution.all_distro_archive_ids,
+                    archive_ids,
                     self.sourcepackagerelease),
             orderBy='-datecreated')
 
@@ -207,9 +228,10 @@ class DistroSeriesSourcePackageRelease:
         this release is or was published.
         """
         pub_hist = self.publishing_history
-        if pub_hist.count() == 0:
+        try:
+            return pub_hist[0]
+        except IndexError:
             return None
-        return pub_hist[0]
 
     @property
     def current_published(self):

@@ -1,7 +1,19 @@
-= Projects with active branches =
+Projects with active branches
+=============================
 
 The tag cloud of projects is one way in which the number and scope of available
 bazaar branches is shown to the user.
+
+    >>> login(ANONYMOUS)
+    >>> from lp.code.tests.helpers import make_project_cloud_data
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> now = datetime.now(pytz.UTC)
+    >>> make_project_cloud_data(factory, [
+    ...     ('wibble', 35, 2, now - timedelta(days=2)),
+    ...     ('linux', 110, 1, now - timedelta(days=8)),
+    ...     ])
+    >>> logout()
 
     >>> anon_browser.open("http://code.launchpad.dev/projects")
     >>> print anon_browser.title
@@ -14,26 +26,5 @@ the link is shown.
     >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
     >>> for anchor in tags.fetch('a'):
     ...     print anchor.renderContents(), anchor['class']
-    firefox cloud-size-largest cloud-light
-
-If the project is using bzr as its main branch repository then the class is
-different from the other projects.  This allows the CSS to show these projects
-in a different colour.
-
-Update firefox to officially use codehosting:
-
-    >>> admin_browser.open('http://launchpad.dev/firefox/+edit')
-    >>> admin_browser.getControl(
-    ...     'Code for this project is published in Bazaar branches on '
-    ...     'Launchpad').click()
-    >>> admin_browser.getControl('Change').click()
-
-The class for firefox in the project tag cloud will now show 'highlight' rather
-than shade.
-
-    >>> anon_browser.open("http://code.launchpad.dev/projects")
-    >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
-    >>> for anchor in tags.fetch('a'):
-    ...     if anchor.renderContents() == 'firefox':
-    ...         print anchor['class']
-    cloud-size-largest cloud-light
+    linux cloud-size-largest cloud-medium
+    wibble cloud-size-smallest cloud-dark

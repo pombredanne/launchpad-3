@@ -1,34 +1,52 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for Distribution."""
+"""Tests for distroseries."""
 
 __metaclass__ = type
 
-import unittest
-
+from datetime import (
+    timedelta,
+)
 import transaction
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.registry.interfaces.distroseries import (
-    IDistroSeriesSet, NoSuchDistroSeries)
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.utils import utc_now
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.distributionjob import (
+    IInitializeDistroSeriesJobSource,
+    )
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingStatus)
+    IDistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.testing import TestCase, TestCaseWithFactory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import (
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    TranslationsBranchImportMode,
+    )
 
 
 class TestDistroSeriesCurrentSourceReleases(TestCase):
@@ -121,7 +139,7 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
     def ignore_other_distributions(self):
         # Packages with the same name in other distributions don't
         # affect the returned version.
-        series_in_other_distribution = self.factory.makeDistroRelease()
+        series_in_other_distribution = self.factory.makeDistroSeries()
         self.publisher.getPubSource(version='0.9')
         self.publisher.getPubSource(
             version='1.0', distroseries=series_in_other_distribution)
@@ -160,7 +178,7 @@ class TestDistroSeries(TestCaseWithFactory):
     def test_getSuite_release_pocket(self):
         # The suite of a distro series and the release pocket is the name of
         # the distroseries.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.assertEqual(
             distroseries.name,
             distroseries.getSuite(PackagePublishingPocket.RELEASE))
@@ -169,14 +187,14 @@ class TestDistroSeries(TestCaseWithFactory):
         # The suite of a distro series and a non-release pocket is the name of
         # the distroseries followed by a hyphen and the name of the pocket in
         # lower case.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.PROPOSED
         suite = '%s-%s' % (distroseries.name, pocket.name.lower())
         self.assertEqual(suite, distroseries.getSuite(pocket))
 
     def test_getDistroArchSeriesByProcessor(self):
         # A IDistroArchSeries can be retrieved by processor
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         processorfamily = ProcessorFamilySet().getByName('x86')
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag='i386',
@@ -188,11 +206,107 @@ class TestDistroSeries(TestCaseWithFactory):
     def test_getDistroArchSeriesByProcessor_none(self):
         # getDistroArchSeriesByProcessor returns None when no distroarchseries
         # is found
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         processorfamily = ProcessorFamilySet().getByName('x86')
         self.assertIs(None,
             distroseries.getDistroArchSeriesByProcessor(
                 processorfamily.processors[0]))
+
+    def test_getDerivedSeries(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        self.assertEquals(
+            [dsp.derived_series], dsp.parent_series.getDerivedSeries())
+
+    def test_registrant_owner_differ(self):
+        # The registrant is the creator whereas the owner is the
+        # distribution's owner.
+        registrant = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries(registrant=registrant)
+        self.assertEquals(distroseries.distribution.owner, distroseries.owner)
+        self.assertEquals(registrant, distroseries.registrant)
+        self.assertNotEqual(distroseries.registrant, distroseries.owner)
+
+    def test_isDerivedSeries(self):
+        # The series method isInitializing() returns True only if the series
+        # has one or more parent series.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.isDerivedSeries())
+        self.factory.makeDistroSeriesParent(derived_series=distroseries)
+        self.assertTrue(distroseries.isDerivedSeries())
+
+    def test_isInitializing(self):
+        # The series method isInitializing() returns True only if there is an
+        # initialization job with a pending status attached to this series.
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.isInitializing())
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(distroseries, [parent_distroseries.id])
+        self.assertTrue(distroseries.isInitializing())
+        job.start()
+        self.assertTrue(distroseries.isInitializing())
+        job.queue()
+        self.assertTrue(distroseries.isInitializing())
+        job.start()
+        job.complete()
+        self.assertFalse(distroseries.isInitializing())
+
+    def test_isInitialized(self):
+        # The series method isInitialized() returns True once the series has
+        # been initialized.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.isInitialized())
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        self.assertTrue(distroseries.isInitialized())
+
+    def test_getInitializationJob(self):
+        # getInitializationJob() returns the most recent
+        # `IInitializeDistroSeriesJob` for the given series.
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
+        self.assertIs(None, distroseries.getInitializationJob())
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(distroseries, [parent_distroseries.id])
+        self.assertEqual(job, distroseries.getInitializationJob())
+
+    def test_priorReleasedSeries(self):
+        # Make sure that previousReleasedSeries returns all series with a
+        # release date less than the contextual series,
+        # ordered by descending date.
+        distro = self.factory.makeDistribution()
+        # Make an unreleased series.
+        self.factory.makeDistroSeries(distribution=distro)
+        ds1 = self.factory.makeDistroSeries(distribution=distro)
+        ds2 = self.factory.makeDistroSeries(distribution=distro)
+        ds3 = self.factory.makeDistroSeries(distribution=distro)
+        ds4 = self.factory.makeDistroSeries(distribution=distro)
+
+        now = utc_now()
+        older = now - timedelta(days=5)
+        oldest = now - timedelta(days=10)
+        newer = now + timedelta(days=15)
+        removeSecurityProxy(ds1).datereleased = oldest
+        removeSecurityProxy(ds2).datereleased = older
+        removeSecurityProxy(ds3).datereleased = now
+        removeSecurityProxy(ds4).datereleased = newer
+
+        # The data set up here is 5 distroseries. where one is unreleased,
+        # ds1 and ds2 are released and in the past and ds4 is released but
+        # in the future compared to ds3.
+
+        prior = ds3.priorReleasedSeries()
+        self.assertEqual(
+            [ds2, ds1],
+            list(prior))
+
+    def test_getDifferenceComments_gets_DistroSeriesDifferenceComments(self):
+        distroseries = self.factory.makeDistroSeries()
+        dsd = self.factory.makeDistroSeriesDifference(
+            derived_series=distroseries)
+        comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
+        self.assertContentEqual(
+            [comment], distroseries.getDifferenceComments())
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
@@ -201,7 +315,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDistroSeriesPackaging, self).setUp()
-        self.series = self.factory.makeDistroRelease()
+        self.series = self.factory.makeDistroSeries()
         self.user = self.series.distribution.owner
         login('admin@canonical.com')
         component_set = getUtility(IComponentSet)
@@ -210,7 +324,13 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.universe_component = component_set['universe']
         self.makeSeriesPackage('normal')
         self.makeSeriesPackage('translatable', messages=800)
-        self.makeSeriesPackage('hot', heat=500)
+        hot_package = self.makeSeriesPackage('hot', heat=500)
+        # Create a second SPPH for 'hot', to verify that duplicates are
+        # eliminated in the queries.
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=hot_package.sourcepackagename,
+            distroseries=self.series,
+            component=self.universe_component, section_name='web')
         self.makeSeriesPackage('hot-translatable', heat=250, messages=1000)
         self.makeSeriesPackage('main', is_main=True)
         self.makeSeriesPackage('linked')
@@ -219,16 +339,21 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         login(ANONYMOUS)
 
     def makeSeriesPackage(self, name,
-                          is_main=False, heat=None, messages=None):
+                          is_main=False, heat=None, messages=None,
+                          is_translations=False):
         # Make a published source package.
         if is_main:
             component = self.main_component
         else:
             component = self.universe_component
+        if is_translations:
+            section = 'translations'
+        else:
+            section = 'web'
         sourcepackagename = self.factory.makeSourcePackageName(name)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename, distroseries=self.series,
-            component=component)
+            component=component, section_name=section)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
         if heat is not None:
@@ -241,6 +366,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 owner=self.user)
             removeSecurityProxy(template).messagecount = messages
         self.packages[name] = source_package
+        return source_package
 
     def linkPackage(self, name):
         product_series = self.factory.makeProductSeries()
@@ -256,48 +382,60 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings(self):
+    def test_getPrioritizedUnlinkedSourcePackages_no_language_packs(self):
+        # Verify that translations packages are not listed.
+        self.makeSeriesPackage('language-pack-vi', is_translations=True)
+        package_summaries = self.series.getPrioritizedUnlinkedSourcePackages()
+        names = [summary['package'].name for summary in package_summaries]
+        expected = [
+            u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
+        self.assertEqual(expected, names)
+
+    def test_getPrioritizedPackagings(self):
         # Verify the ordering of packagings that need more upstream info.
         for name in ['main', 'hot-translatable', 'hot', 'translatable']:
             self.linkPackage(name)
-        packagings = self.series.getPrioritizedlPackagings()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [
             u'main', u'hot-translatable', u'hot', u'translatable', u'linked']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_bug_tracker(self):
+    def test_getPrioritizedPackagings_bug_tracker(self):
         # Verify the ordering of packagings with and without a bug tracker.
         self.linkPackage('hot')
         self.makeSeriesPackage('cold')
         product_series = self.linkPackage('cold')
-        product_series.product.bugtraker = self.factory.makeBugTracker()
-        packagings = self.series.getPrioritizedlPackagings()
+        with person_logged_in(product_series.product.owner):
+            product_series.product.bugtracker = self.factory.makeBugTracker()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'hot', u'linked', u'cold']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_branch(self):
+    def test_getPrioritizedPackagings_branch(self):
         # Verify the ordering of packagings with and without a branch.
         self.linkPackage('translatable')
         self.makeSeriesPackage('withbranch')
         product_series = self.linkPackage('withbranch')
-        product_series.branch = self.factory.makeBranch()
-        packagings = self.series.getPrioritizedlPackagings()
+        with person_logged_in(product_series.product.owner):
+            product_series.branch = self.factory.makeBranch()
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'withbranch']
         self.assertEqual(expected, names)
 
-    def test_getPrioritizedlPackagings_translation(self):
+    def test_getPrioritizedPackagings_translation(self):
         # Verify the ordering of translatable packagings that are and are not
         # configured to import.
         self.linkPackage('translatable')
         self.makeSeriesPackage('importabletranslatable')
         product_series = self.linkPackage('importabletranslatable')
-        product_series.branch = self.factory.makeBranch()
-        product_series.translations_autoimport_mode = (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        packagings = self.series.getPrioritizedlPackagings()
+        with person_logged_in(product_series.product.owner):
+            product_series.branch = self.factory.makeBranch()
+            product_series.translations_autoimport_mode = (
+                TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'importabletranslatable']
         self.assertEqual(expected, names)
@@ -328,8 +466,9 @@ class TestDistroSeriesSet(TestCaseWithFactory):
         self.ref_translatables = self._get_translatables()
 
         new_distroseries = (
-            self.factory.makeDistroRelease(name=u"sampleseries"))
-        new_distroseries.hide_all_translations = False
+            self.factory.makeDistroSeries(name=u"sampleseries"))
+        with person_logged_in(new_distroseries.distribution.owner):
+            new_distroseries.hide_all_translations = False
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(
@@ -339,7 +478,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables, self._ref_translatables()))
 
         new_sourcepackagename = self.factory.makeSourcePackageName()
-        new_potemplate = self.factory.makePOTemplate(
+        self.factory.makePOTemplate(
             distroseries=new_distroseries,
             sourcepackagename=new_sourcepackagename)
         transaction.commit()
@@ -351,7 +490,8 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables,
                 self._ref_translatables(u"sampleseries")))
 
-        new_distroseries.hide_all_translations = True
+        with person_logged_in(new_distroseries.distribution.owner):
+            new_distroseries.hide_all_translations = True
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(
@@ -361,14 +501,13 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables, self._ref_translatables()))
 
     def test_fromSuite_release_pocket(self):
-        series = self.factory.makeDistroRelease()
+        series = self.factory.makeDistroSeries()
         result = getUtility(IDistroSeriesSet).fromSuite(
             series.distribution, series.name)
         self.assertEqual((series, PackagePublishingPocket.RELEASE), result)
 
     def test_fromSuite_non_release_pocket(self):
-        series = self.factory.makeDistroRelease()
-        pocket = PackagePublishingPocket.BACKPORTS
+        series = self.factory.makeDistroSeries()
         suite = '%s-backports' % series.name
         result = getUtility(IDistroSeriesSet).fromSuite(
             series.distribution, suite)
@@ -380,7 +519,3 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             NoSuchDistroSeries,
             getUtility(IDistroSeriesSet).fromSuite,
             distribution, 'doesntexist')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

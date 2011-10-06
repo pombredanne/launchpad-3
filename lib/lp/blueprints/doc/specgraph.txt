@@ -1,16 +1,17 @@
-= Specification graphs =
+Specification graphs
+====================
 
-A SpecGraph object manages a set of SpecNodes and the edges that connect the
-nodes.  It knows how to output itself in `dot` format, for use by Graphviz.
+A SpecGraph object manages a set of SpecNodes and the edges that connect
+the nodes.  It knows how to output itself in `dot` format, for use by
+Graphviz.
 
 A SpecGraph has a root node, and then various other nodes.  You can make
-connections between nodes using its 'link' method.  Each node is identified by
-its name, which is the database name of the specification that the node
-represents.
+connections between nodes using its 'link' method.  Each node is
+identified by its name, which is the database name of the specification
+that the node represents.
 
 Use the SpecGraph as a factory for creating new nodes.  This allows the
 SpecGraph to keep track of the nodes that have been added.
-
 
     >>> from lp.blueprints.browser.specification import SpecGraph
     >>> g = SpecGraph()
@@ -37,8 +38,8 @@ SpecGraph to keep track of the nodes that have been added.
     >>> print root
     <foo>
 
-Note that the root DOT data doesn't have a URL.  This is because we don't
-want a link to the spec we're currently looking at.
+Note that the root DOT data doesn't have a URL.  This is because we
+don't want a link to the spec we're currently looking at.
 
     >>> print root.getDOTNodeStatement()
     "foo"
@@ -51,12 +52,16 @@ want a link to the spec we're currently looking at.
 
     >>> print g.root_node
     <foo>
+
     >>> print root.name, root.label, root.URL, root.color
     foo foo http://whatever/foo red
+
     >>> g.getNode('no such name') is None
     True
+
     >>> g.getNode('foo') is root
     True
+
     >>> print g.listNodes()
     Root is <foo>
     <foo>:
@@ -73,7 +78,7 @@ want a link to the spec we're currently looking at.
     >>> def make_graph(dependency, blocked):
     ...     g = SpecGraph()
     ...     g.url_pattern_for_testing = 'http://whatever/%s'
-    ...     root = g.newNode(foo, root=True)
+    ...     g.newNode(foo, root=True)
     ...     if dependency:
     ...         g.addDependencyNodes(foo)
     ...     if blocked:
@@ -98,73 +103,72 @@ want a link to the spec we're currently looking at.
     <foo2>:
         foo
 
-   >>> print_graph_dot()
-   digraph "deptree" {
-   graph
-       [
-       "bgcolor"="#ffffff",
-       "mode"="hier",
-       "nodesep"="0.01",
-       "ranksep"="0.25",
-       "ratio"="compress",
-       "size"="9.2,9"
-       ]
-   node
-       [
-       "fillcolor"="white",
-       "fontname"="Sans",
-       "fontsize"="11",
-       "style"="filled"
-       ]
-   edge
-       [
-       "arrowhead"="normal"
-       ]
-   "foo"
-       [
-       "color"="red",
-       "comment"="something with \" and \n in it",
-       "label"="foo",
-       "tooltip"="something with \" and \n in it"
-       ]
-   "foo1"
-       [
-       "URL"="http://whatever/foo1",
-       "color"="black",
-       "comment"="foo1",
-       "label"="foo1",
-       "tooltip"="foo1"
-       ]
-   "foo11"
-       [
-       "URL"="http://whatever/foo11",
-       "color"="black",
-       "comment"="foo11",
-       "label"="foo11",
-       "tooltip"="foo11"
-       ]
-   "foo111"
-       [
-       "URL"="http://whatever/foo111",
-       "color"="black",
-       "comment"="foo111",
-       "label"="foo111",
-       "tooltip"="foo111"
-       ]
-   "foo2"
-       [
-       "URL"="http://whatever/foo2",
-       "color"="black",
-       "comment"="foo2",
-       "label"="foo2",
-       "tooltip"="foo2"
-       ]
-   "foo1" -> "foo"
-   "foo11" -> "foo1"
-   "foo111" -> "foo11"
-   "foo2" -> "foo"
-   }
-
+    >>> print_graph_dot()
+    digraph "deptree" {
+    graph
+        [
+        "bgcolor"="#ffffff",
+        "mode"="hier",
+        "nodesep"="0.01",
+        "ranksep"="0.25",
+        "ratio"="compress",
+        "size"="9.2,9"
+        ]
+    node
+        [
+        "fillcolor"="white",
+        "fontname"="Sans",
+        "fontsize"="11",
+        "style"="filled"
+        ]
+    edge
+        [
+        "arrowhead"="normal"
+        ]
+    "foo"
+        [
+        "color"="red",
+        "comment"="something with \" and \n in it",
+        "label"="foo",
+        "tooltip"="something with \" and \n in it"
+        ]
+    "foo1"
+        [
+        "URL"="http://whatever/foo1",
+        "color"="black",
+        "comment"="foo1",
+        "label"="foo1",
+        "tooltip"="foo1"
+        ]
+    "foo11"
+        [
+        "URL"="http://whatever/foo11",
+        "color"="black",
+        "comment"="foo11",
+        "label"="foo11",
+        "tooltip"="foo11"
+        ]
+    "foo111"
+        [
+        "URL"="http://whatever/foo111",
+        "color"="black",
+        "comment"="foo111",
+        "label"="foo111",
+        "tooltip"="foo111"
+        ]
+    "foo2"
+        [
+        "URL"="http://whatever/foo2",
+        "color"="black",
+        "comment"="foo2",
+        "label"="foo2",
+        "tooltip"="foo2"
+        ]
+    "foo1" -> "foo"
+    "foo11" -> "foo1"
+    "foo111" -> "foo11"
+    "foo2" -> "foo"
+    }
 
 Now, add a circle at the top.
 
@@ -181,7 +185,6 @@ Now, add a circle at the top.
         foo11
     <foo2>:
         foo
-
 
 Now add another circle at the bottom.
 
@@ -222,9 +225,9 @@ Now make it even more convoluted, for fun.
         foo
         foo1
 
-
-And finally, try checking out the blocked specs too.  Because of the hack
-earlier, we have a "mirror image" of the dependencies in the blocked speces.
+And finally, try checking out the blocked specs too.  Because of the
+hack earlier, we have a "mirror image" of the dependencies in the
+blocked speces.
 
     >>> print_graph(dependency=False, blocked=True)
     Root is <foo>
@@ -244,7 +247,8 @@ earlier, we have a "mirror image" of the dependencies in the blocked speces.
         foo1
 
 
-== SpecificationTreeImageTag and SpecificationView ==
+SpecificationTreeImageTag and SpecificationView
+-----------------------------------------------
 
 The SpecificationTreeImageTag subclass will generate a HTML image map
 tag when the render() method is called.
@@ -252,8 +256,8 @@ tag when the render() method is called.
     >>> from zope.component import getMultiAdapter
     >>> from lp.blueprints.browser.specification import (
     ...     SpecificationTreeImageTag)
-    >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> svg_support = firefox.getSpecification('svg-support')
@@ -288,14 +292,16 @@ The SpecificationTreeImageTag view is indirectly called when the spec's
     u'<map id="deptree" name="deptree">'
 
 
-== renderGraphvizGraph() error handling ==
+renderGraphvizGraph() error handling
+------------------------------------
 
 The renderGraphvizGraph() method may raise a ProblemRenderingGraph error
-running the subprocess. The error could be caused because the
-data sent to the command is bad:
+running the subprocess. The error could be caused because the data sent
+to the command is bad:
 
     # Replace getDotFileText() with a fake function that will return
     # bad data.
+
     >>> from lp.blueprints.browser import specification
     >>> graph_view_class = specification.SpecificationTreeGraphView
     >>> original_getDotFileText = graph_view_class.getDotFileText
@@ -311,9 +317,9 @@ data sent to the command is bad:
      ...
     ProblemRenderingGraph: (... syntax error in line 1 near 'bad'...)
 
-The SpecificationTreeImageTag.render() method captures the raised
-error and directly converts it into an oops report. The markup contains
-a message explaining that the image was not linked.
+The SpecificationTreeImageTag.render() method captures the raised error
+and directly converts it into an oops report. The markup contains a
+message explaining that the image was not linked.
 
     >>> print graph_view.render()
     <img src="deptree.png" usemap="#deptree" />
@@ -321,10 +327,11 @@ a message explaining that the image was not linked.
     to its specs.</p>
 
     >>> oops_report = graph_view.request.oops
-    >>> print oops_report.type, oops_report.value
+    >>> print oops_report['type'], oops_report['value']
     ProblemRenderingGraph (... syntax error in line 1 near 'bad'...)
 
     # Restore the getDotFileText() method.
+
     >>> graph_view_class.getDotFileText = original_getDotFileText
 
 The renderGraphvizGraph() pipes data to a subprocess. That subprocess
@@ -332,6 +339,7 @@ can raise errors like OSError.
 
     # Replace the Popen object with a fake function that will raise
     # an OSError.
+
     >>> original_popen = specification.Popen
     >>> def fake_popen(*args, **kwargs):
     ...     raise OSError(12, 'Cannot allocate memory')
@@ -346,8 +354,8 @@ can raise errors like OSError.
     OSError: [Errno 12] Cannot allocate memory
 
 The OSError raised creating the image map does not break the spec index
-page. Again, the image map was replaced with an suggestion to reload
-the page to link the image.
+page. Again, the image map was replaced with an suggestion to reload the
+page to link the image.
 
     >>> print graph_view.render()
     <img src="deptree.png" usemap="#deptree" />
@@ -355,12 +363,12 @@ the page to link the image.
     to its specs. Reload the page to link the image.</p>
 
     >>> oops_report = graph_view.request.oops
-    >>> print oops_report.type, oops_report.value
+    >>> print oops_report['type'], oops_report['value']
     OSError [Errno 12] Cannot allocate memory
 
-If an error occurs during the render of the PNG image, the fail
-over image (icing/blueprints-deptree-error.png) is returned. It's size
-is 3092 bytes.
+If an error occurs during the render of the PNG image, the fail over
+image (icing/blueprints-deptree-error.png) is returned. It's size is
+3092 bytes.
 
     >>> graph_view = getMultiAdapter(
     ...     (svg_support, request), name="deptree.png")
@@ -378,10 +386,10 @@ is 3092 bytes.
     >>> fail_over_image_length
     3092
 
-The dependency graph image is rendered correctly when Popen is
-restored.
+The dependency graph image is rendered correctly when Popen is restored.
 
     # Restore the Popen object.
+
     >>> specification.Popen = original_popen
 
     >>> graph_view = getMultiAdapter(

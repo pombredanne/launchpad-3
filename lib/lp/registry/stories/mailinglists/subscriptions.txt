@@ -24,11 +24,11 @@ contact address.
 
     >>> admin_browser.open('http://launchpad.dev/~admins')
     >>> admin_browser.getLink(url='+mailinglist').click()
-    >>> admin_browser.getControl('Apply for Mailing List').click()
+    >>> admin_browser.getControl('Create new Mailing List').click()
 
     >>> admin_browser.open('http://launchpad.dev/~rosetta-admins/')
     >>> admin_browser.getLink(url='+mailinglist').click()
-    >>> admin_browser.getControl('Apply for Mailing List').click()
+    >>> admin_browser.getControl('Create new Mailing List').click()
 
     >>> import transaction
     >>> from lp.registry.tests import mailinglists_helper
@@ -48,7 +48,7 @@ actually be approved.
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~testing-spanish-team')
     >>> browser.getLink(url='+mailinglist').click()
-    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.getControl('Create new Mailing List').click()
 
 
 Subscribing
@@ -182,25 +182,7 @@ Jdub is only a member of the ubuntu team.  He can request to be placed
 on another team's mailing list at the same time that he requests
 membership on the team.
 
-First, we need to make sure that Jdub is a member of the Beta Testers
-team.  (Otherwise, the mailing list subscription checkbox won't show at
-all.)
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
-    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-    >>> person_set = getUtility(IPersonSet)
-    >>> jdub = person_set.getByName('jdub')
-    >>> mark = person_set.getByName('mark')
-    >>> ignored = beta.addMember(jdub, reviewer=mark)
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> logout()
-
-We also need to confirm that the desired team has a list to subscribe
+First we need to confirm that the desired team has a list to subscribe
 to.  We will use Carlos, as he is an administrator for the Rosetta
 Admins team, and he should know if the list is available.
 
@@ -372,7 +354,7 @@ does not show either link.
     >>> print extract_text(
     ...     find_portlet(browser.contents, 'Mailing list'))
     Mailing list
-    This team does not have a mailing list.
+    This team does not use Launchpad to host a mailing list.
     Create a mailing list
 
     >>> browser.getLink('Subscribe')
@@ -400,19 +382,8 @@ rosetta admins team has such a list and carlos is the owner.
     rosetta-admins@lists.launchpad.dev
     Policy: You must be a team member to subscribe to the team mailing list.
     Subscribe to mailing list
-    View archive
+    View public archive
     View subscribers...
-
-Non-members are not shown links to subscribe or unsubscribe.
-
-    >>> user_browser.open('http://launchpad.dev/~rosetta-admins')
-    >>> print extract_text(
-    ...     find_portlet(user_browser.contents, 'Mailing list'))
-    Mailing list
-    rosetta-admins@lists.launchpad.dev
-    Policy: You must be a team member to subscribe to the team mailing list.
-    View archive
-    View subscribers
 
 The mailing list for Rosetta Admins has no subscribers.
 (Jeff Waugh has asked to subscribe but he's not considered a subscriber
@@ -435,6 +406,12 @@ list.
     ... default_batch_size: 1
     ... """)
     >>> login('foo.bar@canonical.com')
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> person_set = getUtility(IPersonSet)
+    >>> jdub = person_set.getByName('jdub')
+    >>> mark = person_set.getByName('mark')
     >>> salgado = person_set.getByName('salgado')
     >>> jordi = person_set.getByName('jordi')
     >>> rosetta_admins = person_set.getByName('rosetta-admins')

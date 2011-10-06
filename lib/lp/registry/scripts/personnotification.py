@@ -8,13 +8,15 @@ __all__ = [
     ]
 
 
-import pytz
-from datetime import timedelta, datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 
 
@@ -35,15 +37,13 @@ class PersonNotificationManager:
             '%d notification(s) to send.' % pending_notifications.count())
         for notification in pending_notifications:
             person = notification.person
-            if person.preferredemail is None:
+            if not notification.can_send:
                 unsent_notifications.append(notification)
                 self.logger.info(
                     "%s has no email address." % person.name)
                 continue
-            self.logger.info(
-                "Sending notification to %s <%s>."
-                % (person.name, person.preferredemail.email))
-            notification.send()
+            self.logger.info("Notifying %s." % person.name)
+            notification.send(logger=self.logger)
             notifications_sent = True
             # Commit after each email sent, so that we won't re-mail the
             # notifications in case of something going wrong in the middle.

@@ -1,21 +1,30 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-__all__ = ['DBLoopTuner', 'LoopTuner']
+__all__ = [
+    'DBLoopTuner',
+    'LoopTuner',
+    'TunableLoop',
+    ]
 
 
 from datetime import timedelta
 import time
 
+from lazr.restful.utils import safe_hasattr
 import transaction
 from zope.component import getUtility
+from zope.interface import implements
 
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
 import canonical.launchpad.scripts
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 
 
 class LoopTuner:
@@ -89,58 +98,80 @@ class LoopTuner:
         else:
             self.log = log
 
+    # True if this task has timed out. Set by _isTimedOut().
+    _has_timed_out = False
+
+    def _isTimedOut(self, extra_seconds=0):
+        """Return True if the task will be timed out in extra_seconds.
+
+        If this method returns True, all future calls will also return
+        True.
+        """
+        if self.abort_time is None:
+            return False
+        if self._has_timed_out:
+            return True
+        if self._time() + extra_seconds >= self.start_time + self.abort_time:
+            self._has_timed_out = True
+            return True
+        return False
+
     def run(self):
         """Run the loop to completion."""
-        chunk_size = self.minimum_chunk_size
-        iteration = 0
-        total_size = 0
-        start_time = self._time()
-        last_clock = start_time
-        while not self.operation.isDone():
+        try:
+            chunk_size = self.minimum_chunk_size
+            iteration = 0
+            total_size = 0
+            self.start_time = self._time()
+            last_clock = self.start_time
+            while not self.operation.isDone():
 
-            if (self.abort_time is not None
-                and last_clock >= start_time + self.abort_time):
-                self.log.warn(
-                    "Task aborted after %d seconds." % self.abort_time)
-                break
+                if self._isTimedOut():
+                    self.log.warn(
+                        "Task aborted after %d seconds.", self.abort_time)
+                    break
 
-            self.operation(chunk_size)
+                self.operation(chunk_size)
 
-            new_clock = self._time()
-            time_taken = new_clock - last_clock
-            last_clock = new_clock
-            self.log.debug("Iteration %d (size %.1f): %.3f seconds" %
-                         (iteration, chunk_size, time_taken))
+                new_clock = self._time()
+                time_taken = new_clock - last_clock
+                last_clock = new_clock
 
-            last_clock = self._coolDown(last_clock)
+                self.log.debug2(
+                    "Iteration %d (size %.1f): %.3f seconds",
+                    iteration, chunk_size, time_taken)
 
-            total_size += chunk_size
+                last_clock = self._coolDown(last_clock)
 
-            # Adjust parameter value to approximate goal_seconds.  The new
-            # value is the average of two numbers: the previous value, and an
-            # estimate of how many rows would take us to exactly goal_seconds
-            # seconds.
-            # The weight in this estimate of any given historic measurement
-            # decays exponentially with an exponent of 1/2.  This softens the
-            # blows from spikes and dips in processing time.
-            # Set a reasonable minimum for time_taken, just in case we get
-            # weird values for whatever reason and destabilize the
-            # algorithm.
-            time_taken = max(self.goal_seconds/10, time_taken)
-            chunk_size *= (1 + self.goal_seconds/time_taken)/2
-            chunk_size = max(chunk_size, self.minimum_chunk_size)
-            chunk_size = min(chunk_size, self.maximum_chunk_size)
-            iteration += 1
+                total_size += chunk_size
 
-        total_time = last_clock - start_time
-        average_size = total_size/max(1, iteration)
-        average_speed = total_size/max(1, total_time)
-        self.log.debug(
-            "Done. %d items in %d iterations, "
-            "%.3f seconds, "
-            "average size %f (%s/s)" %
-                (total_size, iteration, total_time, average_size,
-                 average_speed))
+                # Adjust parameter value to approximate goal_seconds.
+                # The new value is the average of two numbers: the
+                # previous value, and an estimate of how many rows would
+                # take us to exactly goal_seconds seconds. The weight in
+                # this estimate of any given historic measurement decays
+                # exponentially with an exponent of 1/2. This softens
+                # the blows from spikes and dips in processing time. Set
+                # a reasonable minimum for time_taken, just in case we
+                # get weird values for whatever reason and destabilize
+                # the algorithm.
+                time_taken = max(self.goal_seconds / 10, time_taken)
+                chunk_size *= (1 + self.goal_seconds / time_taken) / 2
+                chunk_size = max(chunk_size, self.minimum_chunk_size)
+                chunk_size = min(chunk_size, self.maximum_chunk_size)
+                iteration += 1
+
+            total_time = last_clock - self.start_time
+            average_size = total_size / max(1, iteration)
+            average_speed = total_size / max(1, total_time)
+            self.log.debug2(
+                "Done. %d items in %d iterations, %3f seconds, "
+                "average size %f (%s/s)",
+                total_size, iteration, total_time, average_size,
+                average_speed)
+        finally:
+            if safe_hasattr(self.operation, 'cleanUp'):
+                self.operation.cleanUp()
 
     def _coolDown(self, bedtime):
         """Sleep for `self.cooldown_time` seconds, if set.
@@ -156,7 +187,7 @@ class LoopTuner:
         if self.cooldown_time is None or self.cooldown_time <= 0.0:
             return bedtime
         else:
-            time.sleep(self.cooldown_time)
+            self._sleep(self.cooldown_time)
             return self._time()
 
     def _time(self):
@@ -166,6 +197,15 @@ class LoopTuner:
         actually waiting.
         """
         return time.time()
+
+    def _sleep(self, seconds):
+        """Sleep.
+
+        If the sleep interval would put us over the tasks timeout,
+        do nothing.
+        """
+        if not self._isTimedOut(seconds):
+            time.sleep(seconds)
 
 
 def timedelta_to_seconds(td):
@@ -194,33 +234,31 @@ class DBLoopTuner(LoopTuner):
     """
 
     # We block until replication lag is under this threshold.
-    acceptable_replication_lag = timedelta(seconds=30) # In seconds.
+    acceptable_replication_lag = timedelta(seconds=30)  # In seconds.
 
     # We block if there are transactions running longer than this threshold.
-    long_running_transaction = 30*60 # In seconds
+    long_running_transaction = 30 * 60  # In seconds.
 
     def _blockWhenLagged(self):
         """When database replication lag is high, block until it drops."""
         # Lag is most meaningful on the master.
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        while True:
+        msg_counter = 0
+        while not self._isTimedOut():
             lag = store.execute("SELECT replication_lag()").get_one()[0]
-            if lag is None:
-                lag = timedelta(seconds=0)
-            if lag <= self.acceptable_replication_lag:
+            if lag is None or lag <= self.acceptable_replication_lag:
                 return
 
-            # Minimum 2 seconds, max 5 minutes.
-            time_to_sleep = int(min(
-                5*60, max(2, timedelta_to_seconds(
-                    lag - self.acceptable_replication_lag))))
+            # Report just once every 10 minutes to avoid log spam.
+            msg_counter += 1
+            if msg_counter % 60 == 1:
+                self.log.info(
+                    "Database replication lagged %s. "
+                    "Sleeping up to 10 minutes.", lag)
 
-            self.log.info(
-                "Database replication lagged. Sleeping %d seconds"
-                % time_to_sleep)
-
-            transaction.abort() # Don't become a long running transaction!
-            time.sleep(time_to_sleep)
+            # Don't become a long running transaction!
+            transaction.abort()
+            self._sleep(10)
 
     def _blockForLongRunningTransactions(self):
         """If there are long running transactions, block to avoid making
@@ -228,7 +266,8 @@ class DBLoopTuner(LoopTuner):
         if self.long_running_transaction is None:
             return
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        while True:
+        msg_counter = 0
+        while not self._isTimedOut():
             results = list(store.execute("""
                 SELECT
                     CURRENT_TIMESTAMP - xact_start,
@@ -239,16 +278,23 @@ class DBLoopTuner(LoopTuner):
                 FROM activity()
                 WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
                     AND datname = current_database()
+                ORDER BY xact_start LIMIT 4
                 """ % self.long_running_transaction).get_all())
             if not results:
                 break
-            for runtime, procpid, usename, datname, query in results:
-                self.log.info(
-                    "Blocked on %s old xact %s@%s/%d - %s."
-                    % (runtime, usename, datname, procpid, query))
-            self.log.info("Sleeping for 5 minutes.")
-            transaction.abort() # Don't become a long running transaction!
-            time.sleep(5*60)
+
+            # Check for long running transactions every 10 seconds, but
+            # only report every 10 minutes to avoid log spam.
+            msg_counter += 1
+            if msg_counter % 60 == 1:
+                for runtime, procpid, usename, datname, query in results:
+                    self.log.info(
+                        "Blocked on %s old xact %s@%s/%d - %s.",
+                        runtime, usename, datname, procpid, query)
+                self.log.info("Sleeping for up to 10 minutes.")
+            # Don't become a long running transaction!
+            transaction.abort()
+            self._sleep(10)
 
     def _coolDown(self, bedtime):
         """As per LoopTuner._coolDown, except we always wait until there
@@ -259,6 +305,34 @@ class DBLoopTuner(LoopTuner):
         if self.cooldown_time is not None and self.cooldown_time > 0.0:
             remaining_nap = self._time() - bedtime + self.cooldown_time
             if remaining_nap > 0.0:
-                time.sleep(remaining_nap)
+                self._sleep(remaining_nap)
         return self._time()
 
+
+class TunableLoop:
+    """A base implementation of `ITunableLoop`."""
+    implements(ITunableLoop)
+
+    goal_seconds = 2
+    minimum_chunk_size = 1
+    maximum_chunk_size = None  # Override.
+    cooldown_time = 0
+
+    def __init__(self, log, abort_time=None):
+        self.log = log
+        self.abort_time = abort_time
+
+    def isDone(self):
+        """Return True when the TunableLoop is complete."""
+        raise NotImplementedError(self.isDone)
+
+    def run(self):
+        assert self.maximum_chunk_size is not None, (
+            "Did not override maximum_chunk_size.")
+        DBLoopTuner(
+            self, self.goal_seconds,
+            minimum_chunk_size=self.minimum_chunk_size,
+            maximum_chunk_size=self.maximum_chunk_size,
+            cooldown_time=self.cooldown_time,
+            abort_time=self.abort_time,
+            log=self.log).run()

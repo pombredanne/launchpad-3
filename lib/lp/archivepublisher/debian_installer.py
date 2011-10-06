@@ -14,7 +14,9 @@ import os
 import shutil
 
 from lp.archivepublisher.customupload import (
-    CustomUpload, CustomUploadError)
+    CustomUpload,
+    CustomUploadError,
+    )
 
 
 class DebianInstallerAlreadyExists(CustomUploadError):

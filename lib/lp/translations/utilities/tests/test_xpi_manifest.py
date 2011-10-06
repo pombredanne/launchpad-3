@@ -7,10 +7,10 @@ __metaclass__ = type
 
 import unittest
 
-from lp.translations.utilities.xpi_manifest import XpiManifest
-
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatSyntaxError)
+    TranslationFormatSyntaxError,
+    )
+from lp.translations.utilities.xpi_manifest import XpiManifest
 
 
 class XpiManifestTestCase(unittest.TestCase):
@@ -305,8 +305,3 @@ class XpiManifestTestCase(unittest.TestCase):
             XpiManifest, """
             locale browser en-US jar:locales
             """)
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
-

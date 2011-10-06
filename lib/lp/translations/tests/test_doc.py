@@ -11,23 +11,20 @@ import unittest
 
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, setGlobs, tearDown)
-from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
 
 
 special = {
-    'pofile-views.txt': LayeredDocFileSuite(
-            '../browser/tests/pofile-views.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'remove-upstream-translations-script.txt': LayeredDocFileSuite(
-        '../doc/remove-upstream-translations-script.txt',
-        setUp=setGlobs, stdout_logging=False, layer=None
-        ),
     'poexport-queue.txt': LayeredDocFileSuite(
         '../doc/poexport-queue.txt',
         setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
@@ -65,8 +62,7 @@ def test_suite():
         suite.addTest(PageTestSuite(story_path))
 
     testsdir = os.path.abspath(
-        os.path.normpath(os.path.join(here, os.path.pardir, 'doc'))
-        )
+        os.path.normpath(os.path.join(here, os.path.pardir, 'doc')))
 
     # Add special needs tests
     for key in sorted(special):
@@ -84,8 +80,7 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            )
+            stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 
     return suite

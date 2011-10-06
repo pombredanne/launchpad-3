@@ -8,7 +8,10 @@ __metaclass__ = type
 __all__ = ['MailingListAutoSubscribePolicy']
 
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 class MailingListAutoSubscribePolicy(DBEnumeratedType):

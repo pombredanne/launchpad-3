@@ -1,15 +1,17 @@
-= TranslationImportQueueEntry Edit View =
+TranslationImportQueueEntry Edit View
+=====================================
 
 On this section, we are going to test the edit view class for an
 ITranslationImportQueueEntry object.
 
     >>> from zope.component import getUtility, getMultiAdapter
+    >>> from canonical.launchpad.layers import setFirstLayer
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.browser.translationimportqueue import (
     ...     TranslationImportQueueEntryView)
-    >>> from canonical.launchpad.layers import TranslationsLayer, setFirstLayer
+    >>> from lp.translations.publisher import TranslationsLayer
 
 This view is only accessible for administrators.
 
@@ -57,7 +59,7 @@ to get it new for each subsequent test.
     >>> isinstance(view, TranslationImportQueueEntryView)
     True
 
-Upon initialisation the view sets the file type.
+Upon initialization the view sets the file type.
 
     >>> print view.initial_values['file_type']
     Template
@@ -87,7 +89,7 @@ some errors.
     ...     'name': 'demo-name',
     ...     'translation_domain': 'demo-domain'}
     >>> validate(view, data)
-    The file name must end with ".po".
+    This filename is not appropriate for a translation.
     Please choose a template.
 
 Also, the filename must be given and the template name must be a valid name.
@@ -116,7 +118,7 @@ Specifying po file data for po templates is not a good idea either.
     ...     'potemplate': potemplate,
     ...     'language': language }
     >>> validate(view, data)
-    The file name must end with ".pot".
+    This filename is not appropriate for a template.
     Please specify a name for the template.
     Please specify a translation domain for the template.
 
@@ -152,10 +154,9 @@ The potemplate entry for the new template is also created.
 
 The Ubuntu distribution gets special treatment for the language pack flag.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> ubuntuseries = factory.makeDistroRelease(ubuntu)
+    >>> ubuntuseries = factory.makeDistroSeries(ubuntu)
     >>> packagename = factory.makeSourcePackageName()
 
 We can upload to a sourcepackagename in the Ubuntu series.
@@ -200,7 +201,7 @@ as the default value.
 
 For non-Ubuntu distroseries, languagepack is not displayed.
 
-    >>> other_series = factory.makeDistroRelease()
+    >>> other_series = factory.makeDistroSeries()
     >>> other_entry = queue.addOrUpdateEntry(
     ...     'demo.pot', '# foo', True,
     ...     importer, distroseries=other_series,

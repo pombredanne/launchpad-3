@@ -6,58 +6,61 @@
 __metaclass__ = type
 
 __all__ = [
+    "AbstractUploadPolicy",
+    "ArchiveUploadType",
+    "BuildDaemonUploadPolicy",
     "findPolicyByName",
-    "findPolicyByOptions",
+    "IArchiveUploadPolicy",
     "UploadPolicyError",
     ]
 
-from zope.component import getUtility
+from textwrap import dedent
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
+
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-
+from lp.registry.interfaces.series import SeriesStatus
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
 
 
-def policy_options(optparser):
-    """Add to the optparser all the options which can be used by the policy
-    objects herein.
-    """
-
-    optparser.add_option(
-        "-C", "--context", action="store", dest="context",
-        metavar="CONTEXT", default="insecure",
-        help="The context in which to consider the upload.")
-
-    optparser.add_option(
-        "-d", "--distro", action="store",
-        dest="distro", metavar="DISTRO", default="ubuntu",
-        help="Distribution to give back from")
-
-    optparser.add_option(
-        "-s", "--series", action="store", default=None,
-        dest="distroseries", metavar="DISTROSERIES",
-        help="Distro series to give back from.")
-
-    optparser.add_option(
-        "-b", "--buildid", action="store", type="int",
-        dest="buildid", metavar="BUILD",
-        help="The build ID to which to attach this upload.")
-
-    optparser.add_option(
-        "-a", "--announce", action="store",
-        dest="announcelist", metavar="ANNOUNCELIST",
-        help="Override the announcement list")
-
-
 class UploadPolicyError(Exception):
     """Raised when a specific policy violation occurs."""
+
+
+class IArchiveUploadPolicy(Interface):
+    """The policy of an upload to a Launchpad archive.
+
+    This is, in practice, just a marker interface for us to look up upload
+    policies by name.
+
+    If registered as a utility, any classes implementing this must be given as
+    the 'component' argument of the <utility> directive so that a getUtility()
+    call returns the class itself rather than an instance.  This is needed
+    because the callsites usually change the policies (based on user-specified
+    arguments).
+    """
+
+
+class ArchiveUploadType(EnumeratedType):
+
+    SOURCE_ONLY = Item("Source only")
+    BINARY_ONLY = Item("Binary only")
+    MIXED_ONLY = Item("Mixed only")
 
 
 class AbstractUploadPolicy:
@@ -69,13 +72,14 @@ class AbstractUploadPolicy:
     tests themselves and they operate on NascentUpload instances in order
     to verify them.
     """
+    implements(IArchiveUploadPolicy)
 
-    policies = {}
+    name = 'abstract'
     options = None
+    accepted_type = None # Must be defined in subclasses.
 
     def __init__(self):
         """Prepare a policy..."""
-        self.name = 'abstract'
         self.distro = None
         self.distroseries = None
         self.pocket = None
@@ -83,21 +87,47 @@ class AbstractUploadPolicy:
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
-        self.can_upload_source = True
-        self.can_upload_binaries = True
-        self.can_upload_mixed = True
         # future_time_grace is in seconds. 28800 is 8 hours
         self.future_time_grace = 8 * HOURS
         # The earliest year we accept in a deb's file's mtime
         self.earliest_year = 1984
 
-    def getUploader(self, changes):
-        """Get the person who is doing the uploading."""
-        return changes.signer
+    def validateUploadType(self, upload):
+        """Check that the type of the given upload is accepted by this policy.
+
+        When the type (e.g. sourceful, binaryful or mixed) is not accepted,
+        the upload is rejected.
+        """
+        if upload.sourceful and upload.binaryful:
+            if self.accepted_type != ArchiveUploadType.MIXED_ONLY:
+                upload.reject(
+                    "Source/binary (i.e. mixed) uploads are not allowed.")
+
+        elif upload.sourceful:
+            if self.accepted_type != ArchiveUploadType.SOURCE_ONLY:
+                upload.reject(
+                    "Sourceful uploads are not accepted by this policy.")
+
+        elif upload.binaryful:
+            if self.accepted_type != ArchiveUploadType.BINARY_ONLY:
+                message = dedent("""
+                    Upload rejected because it contains binary packages.
+                    Ensure you are using `debuild -S`, or an equivalent
+                    command, to generate only the source package before
+                    re-uploading.""")
+
+                if upload.is_ppa:
+                    message += dedent("""
+                        See https://help.launchpad.net/Packaging/PPA for
+                        more information.""")
+                upload.reject(message)
+
+        else:
+            raise AssertionError(
+                "Upload is not sourceful, binaryful or mixed.")
 
     def setOptions(self, options):
         """Store the options for later."""
-        self.options = options
         # Extract and locate the distribution though...
         self.distro = getUtility(IDistributionSet)[options.distro]
         if options.distroseries is not None:
@@ -119,15 +149,6 @@ class AbstractUploadPolicy:
 
         if self.archive is None:
             self.archive = self.distroseries.main_archive
-
-    @property
-    def announcelist(self):
-        """Return the announcement list address."""
-        announce_list = getattr(self.options, 'announcelist', None)
-        if (announce_list is None and
-            getattr(self, 'distroseries', None) is not None):
-            announce_list = self.distroseries.changeslist
-        return announce_list
 
     def checkUpload(self, upload):
         """Mandatory policy checks on NascentUploads."""
@@ -174,65 +195,16 @@ class AbstractUploadPolicy:
         """Return whether the NEW upload should be automatically approved."""
         return False
 
-    @classmethod
-    def _registerPolicy(cls, policy_type):
-        """Register the given policy type as belonging to its given name."""
-        # XXX: JonathanLange 2010-01-15 bug=510892: This shouldn't instantiate
-        # policy types. They should instead have names as class variables.
-        policy_name = policy_type().name
-        cls.policies[policy_name] = policy_type
-
-    @classmethod
-    def findPolicyByName(cls, policy_name):
-        """Return a new policy instance for the given policy name."""
-        return cls.policies[policy_name]()
-
-    @classmethod
-    def findPolicyByOptions(cls, options):
-        """Return a new policy instance given the options dictionary."""
-        policy = cls.policies[options.context]()
-        policy.setOptions(options)
-        return policy
-
-# XXX: dsilvers 2005-10-19 bug=3373: use the component architecture for
-# these instead of reinventing the registration/finder again?
-# Nice shiny top-level policy finder
-findPolicyByName = AbstractUploadPolicy.findPolicyByName
-findPolicyByOptions = AbstractUploadPolicy.findPolicyByOptions
-
 
 class InsecureUploadPolicy(AbstractUploadPolicy):
     """The insecure upload policy is used by the poppy interface."""
 
-    def __init__(self):
-        AbstractUploadPolicy.__init__(self)
-        self.name = 'insecure'
-        self.can_upload_binaries = False
-        self.can_upload_mixed = False
+    name = 'insecure'
+    accepted_type = ArchiveUploadType.SOURCE_ONLY
 
     def rejectPPAUploads(self, upload):
         """Insecure policy allows PPA upload."""
         return False
-
-    def checkSignerIsUbuntuCodeOfConductSignee(self, upload):
-        """Reject the upload if not signed by an Ubuntu CoC signer."""
-        if not upload.changes.signer.is_ubuntu_coc_signer:
-            upload.reject(
-                'PPA uploads must be signed by an Ubuntu '
-                'Code of Conduct signer.')
-
-    def checkSignerIsBetaTester(self, upload):
-        """Reject the upload if the upload signer is not a 'beta-tester'.
-
-        For being a 'beta-tester' a person must be a valid member of
-        launchpad-beta-tester team/celebrity.
-        """
-        beta_testers = getUtility(
-            ILaunchpadCelebrities).launchpad_beta_testers
-        if not upload.changes.signer.inTeam(beta_testers):
-            upload.reject(
-                "PPA is only allowed for members of "
-                "launchpad-beta-testers team.")
 
     def checkArchiveSizeQuota(self, upload):
         """Reject the upload if target archive size quota will be exceeded.
@@ -276,18 +248,10 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
-        If the upload is targeted to any PPA, checks if the signer is an
-        Ubuntu Code of Conduct signer, and if so is a member of
-        'launchpad-beta-tests'.
+        If the upload is targeted to any PPA, checks if the upload is within
+        the allowed quota.
         """
         if upload.is_ppa:
-            # XXX cprov 2007-06-13: checks for PPA uploads are not yet
-            # established. We may decide for only one of the checks.  Either
-            # in a specific team or having an Ubuntu CoC signer (or similar
-            # flag). This code will be revisited before releasing PPA
-            # publicly.
-            self.checkSignerIsUbuntuCodeOfConductSignee(upload)
-            #self.checkSignerIsBetaTester(upload)
             self.checkArchiveSizeQuota(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
@@ -312,26 +276,21 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         return False
 
 
-AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
-
-
 class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
+    name = 'buildd'
+
     def __init__(self):
         super(BuildDaemonUploadPolicy, self).__init__()
-        self.name = 'buildd'
         # We permit unsigned uploads because we trust our build daemons
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
-        self.can_upload_source = False
-        self.can_upload_mixed = False
 
     def setOptions(self, options):
-        AbstractUploadPolicy.setOptions(self, options)
-        # We require a buildid to be provided
-        if getattr(options, 'buildid', None) is None:
-            raise UploadPolicyError("BuildID required for buildd context")
+        """Store the options for later."""
+        super(BuildDaemonUploadPolicy, self).setOptions(options)
+        options.builds = True
 
     def policySpecificChecks(self, upload):
         """The buildd policy should enforce that the buildid matches."""
@@ -343,44 +302,27 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         """Buildd policy allows PPA upload."""
         return False
 
-
-AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
-
-
-class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
-    """Policy for uploading the results of a source package recipe build."""
-
-    def __init__(self):
-        super(SourcePackageRecipeUploadPolicy, self).__init__()
-        # XXX: JonathanLange 2010-01-15 bug=510894: This has to be exactly the
-        # same string as the one in SourcePackageRecipeBuild.policy_name.
-        # Factor out a shared constant.
-        self.name = 'recipe'
-        self.can_upload_source = True
-        self.can_upload_binaries = False
-
-    def getUploader(self, changes):
-        """Return the person doing the upload."""
-        build_id = int(getattr(self.options, 'buildid'))
-        sprb = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
-        return sprb.requester
-
-
-AbstractUploadPolicy._registerPolicy(SourcePackageRecipeUploadPolicy)
+    def validateUploadType(self, upload):
+        if upload.sourceful and upload.binaryful:
+            if self.accepted_type != ArchiveUploadType.MIXED_ONLY:
+                upload.reject(
+                    "Source/binary (i.e. mixed) uploads are not allowed.")
+        elif not upload.sourceful and not upload.binaryful:
+            raise AssertionError(
+                "Upload is not sourceful, binaryful or mixed.")
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):
     """This policy is invoked when processing sync uploads."""
 
+    name = 'sync'
+    accepted_type = ArchiveUploadType.SOURCE_ONLY
+
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
-        self.name = "sync"
         # We don't require changes or dsc to be signed for syncs
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
-        # We don't want binaries in a sync
-        self.can_upload_mixed = False
-        self.can_upload_binaries = False
 
     def policySpecificChecks(self, upload):
         """Perform sync specific checks."""
@@ -388,69 +330,18 @@ class SyncUploadPolicy(AbstractUploadPolicy):
         # Implement this to check the sync
         pass
 
-AbstractUploadPolicy._registerPolicy(SyncUploadPolicy)
+
+def findPolicyByName(policy_name):
+    """Return a new policy instance for the given policy name."""
+    return getUtility(IArchiveUploadPolicy, policy_name)()
 
 
-class AnythingGoesUploadPolicy(AbstractUploadPolicy):
-    """This policy is invoked when processing uploads from the test process.
-
-    We require a signed changes file but that's it.
-    """
-
-    def __init__(self):
-        AbstractUploadPolicy.__init__(self)
-        self.name = "anything"
-        # We require the changes to be signed but not the dsc
-        self.unsigned_dsc_ok = True
-
-    def policySpecificChecks(self, upload):
-        """Nothing, let it go."""
-        pass
-
-    def rejectPPAUploads(self, upload):
-        """We allow PPA uploads."""
-        return False
-
-AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
-
-
-class AbsolutelyAnythingGoesUploadPolicy(AnythingGoesUploadPolicy):
-    """This policy is invoked when processing uploads from the test process.
-
-    Absolutely everything is allowed, for when you don't want the hassle
-    of dealing with inappropriate checks in tests.
-    """
-
-    def __init__(self):
-        AnythingGoesUploadPolicy.__init__(self)
-        self.name = "absolutely-anything"
-        self.unsigned_changes_ok = True
-
-    def policySpecificChecks(self, upload):
-        """Nothing, let it go."""
-        pass
-
-AbstractUploadPolicy._registerPolicy(AbsolutelyAnythingGoesUploadPolicy)
-
-
-class SecurityUploadPolicy(AbstractUploadPolicy):
-    """The security-upload policy.
-
-    It allows unsigned changes and binary uploads.
-    """
-
-    def __init__(self):
-        AbstractUploadPolicy.__init__(self)
-        self.name = "security"
-        self.unsigned_dsc_ok = True
-        self.unsigned_changes_ok = True
-        self.can_upload_mixed = True
-        self.can_upload_binaries = True
-
-    def policySpecificChecks(self, upload):
-        """Deny uploads to any pocket other than the security pocket."""
-        if self.pocket != PackagePublishingPocket.SECURITY:
-            upload.reject(
-                "Not permitted to do security upload to non SECURITY pocket")
-
-AbstractUploadPolicy._registerPolicy(SecurityUploadPolicy)
+def register_archive_upload_policy_adapters():
+    policies = [
+        BuildDaemonUploadPolicy,
+        InsecureUploadPolicy,
+        SyncUploadPolicy]
+    sm = getGlobalSiteManager()
+    for policy in policies:
+        sm.registerUtility(
+            component=policy, provided=IArchiveUploadPolicy, name=policy.name)

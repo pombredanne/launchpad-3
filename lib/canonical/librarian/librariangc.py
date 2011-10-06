@@ -22,8 +22,9 @@ from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
 
-log = None # This is set by cronscripts/librarian-gc.py
+log = None  # This is set by cronscripts/librarian-gc.py
 debug = False
+
 
 def confirm_no_clock_skew(con):
     """Raise an exception if there is significant clock skew between the
@@ -52,8 +53,12 @@ def delete_expired_blobs(con):
 
        We delete the LibraryFileAliases here as the default behavior of the
        garbage collector could leave them hanging around indefinitely.
+
+       We also delete any linked ApportJob and Job records here.
     """
     cur = con.cursor()
+
+    # Generate the list of expired blobs.
     cur.execute("""
         SELECT file_alias
         INTO TEMPORARY TABLE BlobAliasesToDelete
@@ -61,11 +66,43 @@ def delete_expired_blobs(con):
         WHERE file_alias = LibraryFileAlias.id
             AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
         """)
+
+    # Generate the list of expired Jobs. We ignore jobs that have not
+    # finished.
+    cur.execute("""
+        SELECT job
+        INTO TEMPORARY TABLE JobsToDelete
+        FROM Job, ApportJob, TemporaryBlobStorage, LibraryFileAlias
+        WHERE
+            ApportJob.blob = TemporaryBlobStorage.id
+            AND Job.id = ApportJob.job
+            AND Job.date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            AND TemporaryBlobStorage.file_alias = LibraryFileAlias.id
+                AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        """)
+
+    # Delete expired ApportJob records.
+    cur.execute("""
+        DELETE FROM ApportJob
+        USING JobsToDelete
+        WHERE ApportJob.job = JobsToDelete.job
+        """)
+
+    # Delete expired Job records.
+    cur.execute("""
+        DELETE FROM Job
+        USING JobsToDelete
+        WHERE Job.id = JobsToDelete.job
+        """)
+
+    # Delete expired blobs.
     cur.execute("""
         DELETE FROM TemporaryBlobStorage
         USING BlobAliasesToDelete
         WHERE TemporaryBlobStorage.file_alias = BlobAliasesToDelete.file_alias
         """)
+
+    # Delete LibraryFileAliases referencing expired blobs.
     cur.execute("""
         DELETE FROM LibraryFileAlias
         USING BlobAliasesToDelete
@@ -100,7 +137,7 @@ def merge_duplicates(con):
     for sha1, filesize in rows:
         cur = con.cursor()
 
-        sha1 = sha1.encode('US-ASCII') # Can't pass Unicode to execute (yet)
+        sha1 = sha1.encode('US-ASCII')  # Can't pass Unicode to execute (yet)
 
         # Get a list of our dupes. Where multiple files exist, we return
         # the most recently added one first, because this is the version
@@ -246,8 +283,8 @@ class UnreferencedLibraryFileAliasPruner:
     implements(ITunableLoop)
 
     def __init__(self, con):
-        self.con = con # Database connection to use
-        self.total_deleted = 0 # Running total
+        self.con = con  # Database connection to use
+        self.total_deleted = 0  # Running total
         self.index = 1
 
         log.info("Deleting unreferenced LibraryFileAliases")
@@ -470,10 +507,6 @@ def delete_unwanted_files(con):
     """
     cur = con.cursor()
 
-    # Get the largest id in the database
-    cur.execute("SELECT max(id) from LibraryFileContent")
-    max_id = cur.fetchone()[0]
-
     # Calculate all stored LibraryFileContent ids that we want to keep.
     # Results are ordered so we don't have to suck them all in at once.
     cur.execute("""
@@ -488,20 +521,22 @@ def delete_unwanted_files(con):
             return result[0]
 
     removed_count = 0
-    next_wanted_content_id = -1
+    content_id = next_wanted_content_id = -1
 
     hex_content_id_re = re.compile('^[0-9a-f]{8}$')
     ONE_DAY = 24 * 60 * 60
 
-    for dirpath, dirnames, filenames in os.walk(get_storage_root()):
+    for dirpath, dirnames, filenames in os.walk(
+        get_storage_root(), followlinks=True):
 
         # Ignore known and harmless noise in the Librarian storage area.
         if 'incoming' in dirnames:
             dirnames.remove('incoming')
         if 'lost+found' in dirnames:
             dirnames.remove('lost+found')
-        if 'librarian.pid' in filenames:
-            filenames.remove('librarian.pid')
+        filenames = set(filenames)
+        filenames.discard('librarian.pid')
+        filenames.discard('librarian.log')
 
         for dirname in dirnames[:]:
             if len(dirname) != 2:
@@ -518,7 +553,7 @@ def delete_unwanted_files(con):
         # We need everything in order to ensure we visit files in the
         # same order we retrieve wanted files from the database.
         dirnames.sort()
-        filenames.sort()
+        filenames = sorted(filenames)
 
         # Noise in the storage area, or maybe we are looking at the wrong
         # path?

@@ -6,10 +6,11 @@
 __metaclass__ = type
 
 import unittest
+
 import psycopg2
 
 from canonical.database.sqlbase import cursor
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class RoUserTestCase(unittest.TestCase):
@@ -49,9 +50,3 @@ class RoUserTestCase(unittest.TestCase):
                 psycopg2.Error, cur.execute, "DELETE FROM WikiName"
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")
-
-
-def test_suite():
-    """Create the test suite."""
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

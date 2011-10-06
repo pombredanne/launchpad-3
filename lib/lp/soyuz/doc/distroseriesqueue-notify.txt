@@ -10,7 +10,7 @@ set of supporting sample data.  It has rows in distribution, distroseries,
 sourcepackagerelease, person and a librarian entry for the changes file 
 which are all needed for successful operation of notify().
 
-  >>> from canonical.launchpad.interfaces import IPackageUploadSet
+  >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
   >>> netapplet_upload = getUtility(IPackageUploadSet)[3]
   >>> print netapplet_upload.displayname
   netapplet
@@ -18,8 +18,8 @@ which are all needed for successful operation of notify().
 Set up some library files for the netapplet source package.  These are not
 already present in the sample data.
 
-  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-  >>> from lp.archiveuploader.tests import datadir, mock_logger
+  >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+  >>> from lp.archiveuploader.tests import datadir
   >>> import os
   >>> netapplet_spr = netapplet_upload.sources[0].sourcepackagerelease
   >>> librarian = getUtility(ILibraryFileAliasSet)
@@ -41,19 +41,19 @@ logger object that will extract tracebacks for the purposes of this doctest.
   >>> changes_file_path = datadir(
   ...     'suite/netapplet_1.0-1/netapplet_1.0-1_source.changes')
   >>> changes_file = open(changes_file_path,'r')
+  >>> from lp.services.log.logger import FakeLogger
   >>> netapplet_upload.notify(
-  ...     announce_list="announcelist@canonical.com", 
-  ...     changes_file_object=changes_file, logger=mock_logger)
-  DEBUG: Building recipients list.
-  DEBUG: Changes file is unsigned, adding changer as recipient
+  ...     changes_file_object=changes_file, logger=FakeLogger())
+  DEBUG Building recipients list.
+  DEBUG Changes file is unsigned, adding changer as recipient
   ...
-  DEBUG: Sent a mail:
+  DEBUG Sent a mail:
   ...
-  DEBUG:     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: above if files already exist in other distroseries.
+  DEBUG above if files already exist in other distroseries.
   ...
-  DEBUG: signer of the above package.
+  DEBUG signer of the above package.
 
 Helper functions to examine emails that were sent:
 
@@ -103,8 +103,8 @@ a different recipient list to unsigned ones; recipients for signed package
 uploads can be the signer, the maintainer and the changer, where these people 
 are different.  Unsigned packages only send notifications to the changer.
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
   >>> from zope.security.proxy import removeSecurityProxy
+  >>> from lp.registry.interfaces.gpg import IGPGKeySet
   >>> gpgkey = getUtility(IGPGKeySet).get(1)
   >>> removeSecurityProxy(netapplet_upload).signing_key = gpgkey
 
@@ -115,17 +115,16 @@ Now request the email:
   >>> changes_file = open(changes_file_path,'r')
   >>> netapplet_upload.setAccepted()
   >>> netapplet_upload.notify(
-  ...     announce_list="announcelist@canonical.com", 
-  ...     changes_file_object=changes_file, logger=mock_logger)
-  DEBUG: Building recipients list.
+  ...     changes_file_object=changes_file, logger=FakeLogger())
+  DEBUG Building recipients list.
   ...
-  DEBUG: Sent a mail:
+  DEBUG Sent a mail:
   ...
-  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: Announcing to announcelist@canonical.com
+  DEBUG Announcing to autotest_changes@ubuntu.com
   ...
-  DEBUG: Sent a mail:
+  DEBUG Sent a mail:
   ...
 
 There are two emails, the upload acknowledgement and the announcement, because
@@ -136,10 +135,10 @@ this upload is already accepted.
   2
 
 The mail 'To:' addresses contain the signer and the changer's email.  The
-announcement email contains the argument specified for "announce_list".
+announcement email contains the serieses changeslist.
 
   >>> [msg['To'] for msg in msgs]
-  ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'announcelist@canonical.com']
+  ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'autotest_changes@ubuntu.com']
 
 The mail 'Bcc:' address is the uploader.  The announcement has the uploader
 and the Debian derivatives address for the package uploaded.
@@ -179,22 +178,21 @@ notify() will also work without passing the changes_file_object parameter
 provided that everything is already committed to the database (which is not
 the case when nascent upload runs).  This example demonstrates this usage:
 
-  >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+  >>> from canonical.librarian.testing.server import fillLibrarianFile
   >>> changes_file = open(changes_file_path,"r")
   >>> fillLibrarianFile(1, content=changes_file.read())
   >>> changes_file.close()
   >>> netapplet_upload.setNew()
-  >>> netapplet_upload.notify(announce_list="announcelist@canonical.com", 
-  ...     logger=mock_logger)
-  DEBUG: Building recipients list.
+  >>> netapplet_upload.notify(logger=FakeLogger())
+  DEBUG Building recipients list.
   ...
-  DEBUG: Sent a mail:
+  DEBUG Sent a mail:
   ...
-  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: above if files already exist in other distroseries.
+  DEBUG above if files already exist in other distroseries.
   ...
-  DEBUG: signer of the above package.
+  DEBUG signer of the above package.
 
 Only one email is generated:
 
@@ -235,21 +233,23 @@ summary_text argument is text that is appended to any auto-generated text for
 the summary.  Rejections don't currently auto-generate anything.
 
   >>> netapplet_upload.setRejected()
-  >>> netapplet_upload.notify(summary_text="Testing rejection message", 
-  ...     logger=mock_logger)
-  DEBUG: Building recipients list.
+  >>> netapplet_upload.notify(summary_text="Testing rejection message",
+  ...     logger=FakeLogger())
+  DEBUG Building recipients list.
   ...
-  DEBUG: Sending rejection email.
+  DEBUG Sending rejection email.
   ...
-  DEBUG:     Subject: netapplet-1.0.0.tar.gz rejected
-  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG:     Body:
-  DEBUG: Rejected:
-  DEBUG: Testing rejection message
+  DEBUG   Subject: [ubuntu/breezy-autotest] netapplet 0.99.6-1 (Rejected)
+  DEBUG   Sender: Root <root@localhost>
+  DEBUG   Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG   Bcc: Root <root@localhost>
+  DEBUG   Body:
+  DEBUG Rejected:
+  DEBUG Testing rejection message
   ...
-  DEBUG: If you don't understand why your files were rejected, or if the
+  DEBUG If you don't understand why your files were rejected, or if the
   ...
-  DEBUG: signer of the above package.
+  DEBUG signer of the above package.
 
 Only one email is generated:
 
@@ -259,5 +259,5 @@ Only one email is generated:
 
 Clean up, otherwise stuff is left lying around in /var/tmp.
 
-  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
-  >>> cleanupLibrarianFiles()
+  >>> from canonical.testing.layers import LibrarianLayer
+  >>> LibrarianLayer.librarian_fixture.clear()

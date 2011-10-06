@@ -9,15 +9,22 @@ __all__ = [
 
 from email.Utils import make_msgid
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    )
+from storm.store import Store
 from zope.interface import implements
 
-from sqlobject import BoolCol, ForeignKey
-from storm.store import Store
-
 from canonical.database.sqlbase import SQLBase
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.blueprints.interfaces.specificationmessage import (
-    ISpecificationMessage, ISpecificationMessageSet)
-from canonical.launchpad.database.message import Message, MessageChunk
+    ISpecificationMessage,
+    ISpecificationMessageSet,
+    )
 
 
 class SpecificationMessage(SQLBase):

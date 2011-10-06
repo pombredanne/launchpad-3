@@ -1,4 +1,5 @@
-= Distributions =
+Distributions
+=============
 
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
@@ -17,7 +18,7 @@ The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistribution, IDistributionSet)
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> distroset = getUtility(IDistributionSet)
 
@@ -69,8 +70,9 @@ have a SourcePackageName object for it.
 
     >>> from lp.registry.model.sourcepackagename import (
     ...                                          SourcePackageName)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSourcePackage,
+    >>> from lp.registry.interfaces.distributionsourcepackage import (
+    ...     IDistributionSourcePackage)
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     ...     IDistributionSourcePackageRelease)
 
     >>> evo = SourcePackageName.byName("evolution")
@@ -142,8 +144,18 @@ are available.
     >>> gentoo.has_published_binaries
     False
 
+You can use the has_published_sources property to find out if the
+distribution has any published sources.
 
-== Distribution Sorting ==
+    >>> ubuntu.has_published_sources
+    True
+
+    >>> gentoo.has_published_sources
+    False
+
+
+Distribution Sorting
+--------------------
 
 If you ask for all the distributions in the DistributionSet you should get
 Ubuntu (and all flavours of it) first and the rest alphabetically:
@@ -164,14 +176,18 @@ DistributionSet also defines __iter__ as a shortcut to getDistros().
     True
 
 
-=== Searching for DistributionSourcePackages ===
+Searching for DistributionSourcePackages
+........................................
 
 The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
 
     >>> packages = ubuntu.searchSourcePackageCaches("mozilla")
-    >>> print packages.count()
-    1
+    >>> for distro_source_package_cache, source_name, rank in packages:
+    ...     print "%-17s rank:%s" % (
+    ...         distro_source_package_cache.name,
+    ...         type(rank))
+    mozilla-firefox   rank:<type 'float'>
 
 The search also matches on exact package names which fti doesn't like,
 and even on substrings:
@@ -181,14 +197,15 @@ and even on substrings:
     1
     >>> packages = ubuntu.searchSourcePackageCaches('a')
     >>> for distro_source_package_cache, source_name, rank in packages:
-    ...     print "%s: %s" % (
+    ...     print "%s: %-17s rank:%s" % (
     ...         distro_source_package_cache.__class__.__name__,
-    ...         distro_source_package_cache.name)
-    DistributionSourcePackageCache: mozilla-firefox
-    DistributionSourcePackageCache: netapplet
-    DistributionSourcePackageCache: alsa-utils
-    DistributionSourcePackageCache: foobar
-    DistributionSourcePackageCache: commercialpackage
+    ...         distro_source_package_cache.name,
+    ...         type(rank))
+    DistributionSourcePackageCache: alsa-utils        rank:<type 'NoneType'>
+    DistributionSourcePackageCache: commercialpackage rank:<type 'NoneType'>
+    DistributionSourcePackageCache: foobar            rank:<type 'NoneType'>
+    DistributionSourcePackageCache: mozilla-firefox   rank:<type 'NoneType'>
+    DistributionSourcePackageCache: netapplet         rank:<type 'NoneType'>
 
 The searchSourcePackages() method just returns a decorated version
 of the results from searchSourcePackageCaches():
@@ -196,11 +213,11 @@ of the results from searchSourcePackageCaches():
     >>> packages = ubuntu.searchSourcePackages('a')
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: alsa-utils
+    DistributionSourcePackage: commercialpackage
+    DistributionSourcePackage: foobar
     DistributionSourcePackage: mozilla-firefox
     DistributionSourcePackage: netapplet
-    DistributionSourcePackage: alsa-utils
-    DistributionSourcePackage: foobar
-    DistributionSourcePackage: commercialpackage
 
 searchSourcePackages() also has a has_packaging parameter that
 it just passes on to searchSourcePackageCaches(), and it restricts
@@ -210,25 +227,35 @@ in the Packaging table linking it to an upstream project.
     >>> packages = ubuntu.searchSourcePackages('a', has_packaging=True)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: alsa-utils
     DistributionSourcePackage: mozilla-firefox
     DistributionSourcePackage: netapplet
-    DistributionSourcePackage: alsa-utils
     >>> packages = ubuntu.searchSourcePackages('a', has_packaging=False)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
-    DistributionSourcePackage: foobar
     DistributionSourcePackage: commercialpackage
+    DistributionSourcePackage: foobar
+
+searchSourcePackages() also has a publishing_distroseries parameter that
+it just passes on to searchSourcePackageCaches(), and it restricts the
+results based on whether the source package has an entry in the
+SourcePackagePublishingHistory table for the given distroseries.
+
+    >>> packages = ubuntu.searchSourcePackages(
+    ...     'a', publishing_distroseries=ubuntu.currentseries)
+    >>> for dsp in packages:
+    ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: alsa-utils
+    DistributionSourcePackage: netapplet
 
 
-=== Searching for binary packages ===
+Searching for binary packages
+.............................
 
-There are two useful functions for searching binary packages related
-to the distribution, searchBinaryPackages() and searchBinaryPackagesFTI().
-The former only does binary package name matches (optionally a substring
-match) and the latter uses the PostgreSQL Full Text Index searches.
-
-Both functions return DistributionSourcePackageCache objects, which
-makes it very easy to associate the binary name with its source.
+searchBinaryPackages() does a name substring match to find binary
+packages related to the distribution. It returns
+DistributionSourcePackageCache objects, which makes it very easy to
+associate the binary name with its source.
 
 Searching for an exact match on a valid binary name returns the
 expected results:
@@ -265,21 +292,9 @@ for the moment until we have a better FTI rank to order with.
     mozilla-firefox
     pmount
 
-We can do an FTI search:
 
-    >>> fti_results = ubuntu.searchBinaryPackagesFTI("rubbish")
-    >>> fti_results.count()
-    0
-
-    >>> fti_results = ubuntu.searchBinaryPackagesFTI("browser")
-    >>> print results[0]
-    <...DistributionSourcePackageCache instance ...
-
-    >>> print [result.name for result in fti_results]
-    [u'mozilla-firefox']
-
-
-=== Finding distroseriess and pockets from distribution names ===
+Finding distroseriess and pockets from distribution names
+.........................................................
 
 A distribution knows what distroseriess it has. Those distroseriess have
 pockets which have suffixes used by the archive publisher. Because we
@@ -324,130 +339,146 @@ raise NotFoundError for us
     NotFoundError: 'hoary-bullshit'
 
 
-=== Upload related stuff ===
+Upload related stuff
+....................
 
 When uploading to a distribution we need to query its uploaders. Each
 uploader record is in fact an ArchivePermission record that tells us
 what component is uploadable to by what person or group of people.
 
-   >>> from operator import attrgetter
-   >>> for permission in sorted(
-   ...     ubuntu.uploaders, key=attrgetter("id")):
-   ...     assert not permission.archive.is_ppa
-   ...     print permission.component.name
-   ...     print permission.person.displayname
-   universe
-   Ubuntu Team
-   restricted
-   Ubuntu Team
-   main
-   Ubuntu Team
-   partner
-   Canonical Partner Developers
-
-When processing an upload we may want to find a file (E.g. if an
-incomplete source is uploaded).
-
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb').getURL()
-    'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName(
-    ...     'mozilla-firefox_0.9_i386.deb', source=False).getURL()
-    'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb', binary=False)
-    Traceback (most recent call last):
-    ...
-    NotFoundError: 'mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName('', source=False, binary=False)
-    Traceback (most recent call last):
-    ...
-    AssertionError: searching in an explicitly empty space is pointless
+    >>> from operator import attrgetter
+    >>> for permission in sorted(
+    ...     ubuntu.uploaders, key=attrgetter("id")):
+    ...     assert not permission.archive.is_ppa
+    ...     print permission.component.name
+    ...     print permission.person.displayname
+    universe
+    Ubuntu Team
+    restricted
+    Ubuntu Team
+    main
+    Ubuntu Team
+    partner
+    Canonical Partner Developers
 
 
-=== Launchpad Usage ===
+Launchpad Usage
+...............
 
 A distribution can specify if it uses Malone, Rosetta, or Answers
 officially. Ubuntu uses all of them:
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.official_malone
     True
-    >>> ubuntu.official_rosetta
+    >>> print ubuntu.answers_usage.name
+    LAUNCHPAD
+    >>> print ubuntu.blueprints_usage.name
+    LAUNCHPAD
+    >>> print ubuntu.translations_usage.name
+    LAUNCHPAD
+
+The bug_tracking_usage property currently only tracks official_malone.
+
+    >>> print ubuntu.bug_tracking_usage.name
+    LAUNCHPAD
+
+While the other attributes track the other official_ attributes.
+
+    >>> print ubuntu.official_rosetta
     True
-    >>> ubuntu.official_answers
+    >>> print ubuntu.translations_usage.name
+    LAUNCHPAD
+    >>> print ubuntu.official_answers
     True
-    >>> ubuntu.official_blueprints
+    >>> print ubuntu.answers_usage.name
+    LAUNCHPAD
+    >>> print ubuntu.official_blueprints
     True
+    >>> print ubuntu.blueprints_usage.name
+    LAUNCHPAD
+
+If the official_ attributes are False and the enum hasn't been set,
+the usage enums don't know anything.
+
+    >>> login_person(ubuntu.owner.teamowner)
+    >>> ubuntu.official_rosetta = False
+    >>> print ubuntu.translations_usage.name
+    UNKNOWN
 
 A distribution *cannot* specify that it uses codehosting. Currently there's
 no way for a distribution to use codehosting.
 
-    >>> ubuntu.official_codehosting
-    False
-    >>> ubuntu.official_codehosting = True
+    >>> from lp.app.enums import ServiceUsage
+    >>> print ubuntu.codehosting_usage.name
+    NOT_APPLICABLE
+    >>> ubuntu.codehosting_usage = ServiceUsage.LAUNCHPAD
     Traceback (most recent call last):
-    ForbiddenAttribute: ('official_codehosting', ...)
+    AttributeError: can't set attribute...
 
 While Debian uses none:
 
     >>> debian = getUtility(ILaunchpadCelebrities).debian
-    >>> debian.official_malone
-    False
-    >>> debian.official_rosetta
-    False
-    >>> debian.official_answers
-    False
-    >>> debian.official_codehosting
-    False
-    >>> debian.official_blueprints
-    False
+    >>> print debian.bug_tracking_usage.name
+    UNKNOWN
+    >>> print debian.translations_usage.name
+    UNKNOWN
+    >>> print debian.answers_usage.name
+    UNKNOWN
+    >>> print debian.codehosting_usage.name
+    NOT_APPLICABLE
+    >>> print debian.blueprints_usage.name
+    UNKNOWN
 
 Gentoo only uses Malone
 
-    >>> print gentoo.official_malone
-    True
-    >>> print gentoo.official_rosetta
-    False
-    >>> print gentoo.official_answers
-    False
+    >>> print gentoo.bug_tracking_usage.name
+    LAUNCHPAD
+    >>> print gentoo.translations_usage.name
+    UNKNOWN
+    >>> print gentoo.answers_usage.name
+    UNKNOWN
 
 Launchpad admins and the distro owner can set these fields.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login('mark@example.com')
     >>> debian = getUtility(ILaunchpadCelebrities).debian
-    >>> debian.official_blueprints = True
-    >>> debian.official_blueprints
-    True
+    >>> debian.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> print debian.blueprints_usage.name
+    LAUNCHPAD
     >>> debian.official_malone = True
     >>> debian.official_malone
     True
-    >>> debian.official_rosetta = True
-    >>> debian.official_rosetta
-    True
+    >>> debian.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> debian.translations_usage.name
+    'LAUNCHPAD'
 
     >>> debian_owner = factory.makePerson()
     >>> debian.owner = debian_owner
     >>> login_person(debian_owner)
-    >>> debian.official_blueprints = False
-    >>> debian.official_blueprints
-    False
+    >>> debian.blueprints_usage = ServiceUsage.NOT_APPLICABLE
+    >>> print debian.blueprints_usage.name
+    NOT_APPLICABLE
 
 But others can't.
 
     >>> login('no-priv@canonical.com')
-    >>> debian.official_blueprints = True
+    >>> debian.blueprints_usage = ServiceUsage.LAUNCHPAD
     Traceback (most recent call last):
-    Unauthorized: (..., 'official_blueprints', 'launchpad.Edit')
+    Unauthorized: (..., 'blueprints_usage', 'launchpad.Edit')
     >>> debian.official_malone = True
     Traceback (most recent call last):
     Unauthorized: (..., 'official_malone', 'launchpad.Edit')
-    >>> debian.official_rosetta = True
+    >>> debian.translations_usage = ServiceUsage.LAUNCHPAD
     Traceback (most recent call last):
-    Unauthorized: (..., 'official_rosetta', 'launchpad.Edit')
+    Unauthorized: (..., 'translations_usage', 'launchpad.Edit')
 
 
-=== Specification Listings ===
+Specification Listings
+......................
 
 We should be able to get lists of specifications in different states
 related to a distro.
@@ -455,90 +486,93 @@ related to a distro.
 Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
- >>> kubuntu = distroset.getByName("kubuntu")
+    >>> kubuntu = distroset.getByName("kubuntu")
 
- >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:
 
- >>> filter = [SpecificationFilter.INFORMATIONAL]
- >>> kubuntu.specifications(filter=filter).count()
- 0
- >>> filter = [SpecificationFilter.INFORMATIONAL,
- ...           SpecificationFilter.COMPLETE]
- >>> kubuntu.specifications(filter=filter).count()
- 1
+    >>> filter = [SpecificationFilter.INFORMATIONAL]
+    >>> kubuntu.specifications(filter=filter).count()
+    0
+    >>> filter = [SpecificationFilter.INFORMATIONAL,
+    ...           SpecificationFilter.COMPLETE]
+    >>> kubuntu.specifications(filter=filter).count()
+    1
 
 
 There are 2 completed specs for Kubuntu:
 
- >>> filter = [SpecificationFilter.COMPLETE]
- >>> for spec in kubuntu.specifications(filter=filter):
- ...    print spec.name, spec.is_complete
- thinclient-local-devices True
- usplash-on-hibernation True
+    >>> filter = [SpecificationFilter.COMPLETE]
+    >>> for spec in kubuntu.specifications(filter=filter):
+    ...    print spec.name, spec.is_complete
+    thinclient-local-devices True
+    usplash-on-hibernation True
 
 
 And there are four incomplete specs:
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> for spec in kubuntu.specifications(filter=filter):
- ...    print spec.name, spec.is_complete
- cluster-installation False
- revu False
- kde-desktopfile-langpacks False
- krunch-desktop-plan False
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> for spec in kubuntu.specifications(filter=filter):
+    ...    print spec.name, spec.is_complete
+    cluster-installation False
+    revu False
+    kde-desktopfile-langpacks False
+    krunch-desktop-plan False
 
 
 If we ask for all specs, we get them in the order of priority.
 
- >>> filter = [SpecificationFilter.ALL]
- >>> for spec in kubuntu.specifications(filter=filter):
- ...    print spec.priority.title, spec.name
- Essential cluster-installation
- High revu
- Medium thinclient-local-devices
- Low usplash-on-hibernation
- Undefined kde-desktopfile-langpacks
- Not krunch-desktop-plan
+    >>> filter = [SpecificationFilter.ALL]
+    >>> for spec in kubuntu.specifications(filter=filter):
+    ...    print spec.priority.title, spec.name
+    Essential cluster-installation
+    High revu
+    Medium thinclient-local-devices
+    Low usplash-on-hibernation
+    Undefined kde-desktopfile-langpacks
+    Not krunch-desktop-plan
 
 
 And if we ask just for specs, we get the incomplete ones.
 
- >>> for spec in kubuntu.specifications():
- ...     print spec.name, spec.is_complete
- cluster-installation False
- revu False
- kde-desktopfile-langpacks False
- krunch-desktop-plan False
+    >>> for spec in kubuntu.specifications():
+    ...     print spec.name, spec.is_complete
+    cluster-installation False
+    revu False
+    kde-desktopfile-langpacks False
+    krunch-desktop-plan False
 
 We can filter for specifications that contain specific text:
 
- >>> for spec in kubuntu.specifications(filter=['package']):
- ...     print spec.name
- revu
+    >>> for spec in kubuntu.specifications(filter=['package']):
+    ...     print spec.name
+    revu
 
 We can get only valid specs (those that are not obsolete or superseded):
 
- >>> from canonical.launchpad.interfaces import SpecificationDefinitionStatus
- >>> login('mark@example.com')
- >>> for spec in kubuntu.specifications():
- ...     # Do this here, otherwise, the change will be flush before
- ...     # updateLifecycleStatus() acts and an IntegrityError will be
- ...     # raised.
- ...     owner = spec.owner
- ...     if spec.name in ['cluster-installation', 'revu']:
- ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
- ...     if spec.name in ['krunch-desktop-plan']:
- ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
- ...     shim = spec.updateLifecycleStatus(owner)
- >>> for spec in kubuntu.valid_specifications:
- ...     print spec.name
- kde-desktopfile-langpacks
+    >>> from lp.blueprints.enums import SpecificationDefinitionStatus
+    >>> login('mark@example.com')
+    >>> for spec in kubuntu.specifications():
+    ...     # Do this here, otherwise, the change will be flush before
+    ...     # updateLifecycleStatus() acts and an IntegrityError will be
+    ...     # raised.
+    ...     owner = spec.owner
+    ...     if spec.name in ['cluster-installation', 'revu']:
+    ...         spec.definition_status = (
+    ...             SpecificationDefinitionStatus.OBSOLETE)
+    ...     if spec.name in ['krunch-desktop-plan']:
+    ...         spec.definition_status = (
+    ...             SpecificationDefinitionStatus.SUPERSEDED)
+    ...     shim = spec.updateLifecycleStatus(owner)
+    >>> for spec in kubuntu.valid_specifications:
+    ...     print spec.name
+    kde-desktopfile-langpacks
 
 
-== Milestones ==
+Milestones
+----------
 
 We can use IDistribution.milestones to get all milestones associated with any
 series of a distribution.
@@ -556,7 +590,7 @@ Milestones for distros can only be created by distro owners or admins.
     ...     name='impossible', dateexpected=datetime(2028, 10, 1))
     Traceback (most recent call last):
     ...
-    Unauthorized: (<DistroSeries at ...>, 'newMilestone', 'launchpad.Edit')
+    Unauthorized: (<DistroSeries u'woody'>, 'newMilestone', 'launchpad.Edit')
     >>> login('mark@example.com')
     >>> debian_milestone = woody.newMilestone(
     ...     name='woody-rc1', dateexpected=datetime(2028, 10, 1))
@@ -580,3 +614,21 @@ To get all milestones of a given distro we have the .all_milestones property.
     >>> [milestone.name for milestone in debian.all_milestones]
     [u'3.1', u'3.1-rc1', u'woody-rc1']
 
+
+Archives
+--------
+
+A distribution archive (primary, partner, debug or copy) can be retrieved
+by name using IDistribution.getArchive.
+
+    >>> def display_archive(archive):
+    ...     print '%s %s %s' % (
+    ...         archive.distribution.name, archive.owner.name, archive.name)
+    >>> display_archive(ubuntu.getArchive('primary'))
+    ubuntu ubuntu-team primary
+    >>> display_archive(ubuntu.getArchive('partner'))
+    ubuntu ubuntu-team partner
+    >>> display_archive(debian.getArchive('primary'))
+    debian mark primary
+    >>> ubuntu.getArchive('ppa')
+    >>> debian.getArchive('partner')

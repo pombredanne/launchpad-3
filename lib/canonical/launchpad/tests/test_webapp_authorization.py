@@ -3,22 +3,26 @@
 
 __metaclass__ = type
 
-import unittest
+from unittest import TestCase
 
 from zope.component import provideAdapter
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.testing.cleanup import CleanUp
 
-from canonical.testing import ZopelessLayer
-
-from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.webapp.interfaces import AccessLevel
+from canonical.launchpad.webapp.interfaces import (
+    AccessLevel,
+    ILaunchpadContainer,
+    )
+from canonical.testing.layers import ZopelessLayer
 
 
 class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(
-    CleanUp, unittest.TestCase):
+    CleanUp, TestCase):
 
     def setUp(self):
         self.principal = LaunchpadPrincipal(
@@ -81,7 +85,3 @@ class LoneObject:
 def adapt_loneobject_to_container(loneobj):
     """Adapt a LoneObject to an `ILaunchpadContainer`."""
     return loneobj
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -7,11 +7,27 @@ Run the doctests and pagetests.
 
 import os
 
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    )
 from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
 
+special = {
+    'tales.txt': LayeredDocFileSuite(
+        '../doc/tales.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
+    }
+
 
 def test_suite():
-    return build_test_suite(here)
+    return build_test_suite(here, special)

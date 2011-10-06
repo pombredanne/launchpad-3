@@ -1,4 +1,5 @@
-= Subscriptions to bug notifications =
+Subscriptions to bug notifications
+----------------------------------
 
 Any logged in user can subscribe themselves to bug notifications for any
 Launchpad structure, as well as subscribe any of the teams to which
@@ -14,12 +15,14 @@ We subscribe the Landscape team to Ubuntu.
     >>> subscribe_team.selected = True
     >>> browser.getControl('Save these changes').click()
 
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For Ubuntu Linux:
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+subscribe')
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
-And subscribe some people to the Firefox source package in Ubuntu.
+And subscribe some people to the Firefox source package in ubuntu.
 
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox')
@@ -37,15 +40,17 @@ And subscribe some people to the Firefox source package in Ubuntu.
 
 Sample Person and the Landscape team are now subscribed.
 
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
     >>> print extract_text(find_portlet(
-    ...     browser.contents, 'Bug subscriptions')).encode(
+    ...     browser.contents, 'Subscribers')).encode(
     ...     'ascii', 'backslashreplace')
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    Subscribers
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
         Landscape Developers
         Sample Person
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 Sample Person can also unsubscribe himself and the Landscape team.
@@ -56,15 +61,18 @@ Sample Person can also unsubscribe himself and the Landscape team.
     >>> subscribe_team = browser.getControl('Landscape')
     >>> subscribe_team.selected = False
     >>> browser.getControl('Save these changes').click()
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 
-== Additional options for distribuion drivers ==
+Additional options for distribution drivers
+===========================================
 
 When editing the subscriptions for a package, a distribution driver
 can subscribe any Launchpad user.
@@ -72,8 +80,8 @@ can subscribe any Launchpad user.
 Firstly, we appoint Sample Person as the driver for the distribution.
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
@@ -97,14 +105,17 @@ No Privileges Person is now subscribed...
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
-    No Privileges Person will now receive an e-mail each time someone reports or changes a public bug in "mozilla-firefox in ubuntu".
+    No Privileges Person will now receive an e-mail each time someone reports
+    or changes a public bug in "mozilla-firefox in Ubuntu".
 
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
         No Privileges Person
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 ...has an entry in the "Remove subscriptions" list...
@@ -117,12 +128,15 @@ No Privileges Person is now subscribed...
     >>> browser.getControl('Save these changes').click()
     >>> print find_tags_by_class(
     ...    browser.contents, 'informational message')[0].contents[0]
-    No Privileges Person will no longer automatically receive e-mail about public bugs in "mozilla-firefox in ubuntu".
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    No Privileges Person will no longer automatically receive e-mail about
+    public bugs in "mozilla-firefox in Ubuntu".
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 The checkbox to unsubscribe No Privileges Person is no longer present on
@@ -144,11 +158,11 @@ An attempt by Sample Person to remove Foo Bar from the subscription list
 and to add Sample Person is now silently ignored, because LaunchpadFormView
 purges the submitted form data from now unexpected values.
 
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
     >>> remove_other = browser.getControl('\xa0Foo Bar')
@@ -156,11 +170,13 @@ purges the submitted form data from now unexpected values.
     >>> subscribe_other = browser.getControl('Subscribe someone else:')
     >>> subscribe_other.value = 'nopriv'
     >>> browser.getControl('Save these changes').click()
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 When Sample Person now visits the bug subscription page, he no longer sees
@@ -179,18 +195,33 @@ the UI elements for the subscription/unsubscription of arbitrary persons.
     LookupError: label '\xa0Foo Bar'
 
 
-== Bug #462742 ==
+Distribution with a bug supervisor
+==================================
 
-Loading pages with the subscription menu works fine for anonymous users, even
-when there are existing subscriptions.
+If a distribution has a bug supervisor only that team or members of it can
+subscribe to all of the distribution's bugs.
 
-    >>> browser.open('http://launchpad.dev/bzr')
-    >>> browser.getLink('Subscribe to bug mail').click()
-    >>> browser.getControl(
-    ...     'I want to receive these '
-    ...     'notifications by e-mail.').selected = True
-    >>> browser.getControl('Save these changes').click()
+First, check the page content for a distribution without a bug supervisor.
 
-    >>> anon_browser.open('http://launchpad.dev/bzr')
-    >>> print anon_browser.title
-    Bazaar Version Control System in Launchpad
+    >>> browser.open('http://bugs.launchpad.dev/ubuntu/+subscribe')
+    >>> text_contents = extract_text(find_main_content(browser.contents))
+    >>> "You can choose to receive an e-mail every time" in text_contents
+    True
+
+Set a bug supervisor for Ubuntu.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = removeSecurityProxy(getUtility(IDistributionSet).get(1))
+    >>> guadamen = getUtility(IPersonSet).getByName('guadamen')
+    >>> ubuntu.bug_supervisor = guadamen
+    >>> flush_database_updates()
+    >>> logout()
+
+Second, check that the page content for a distribution with a bug supervisor
+contains a message about not being able to subscribe.
+
+    >>> browser.open('http://bugs.launchpad.dev/ubuntu/+subscribe')
+    >>> text_contents = extract_text(find_main_content(browser.contents))
+    >>> "You are unable to subscribe to bug reports about" in text_contents
+    True

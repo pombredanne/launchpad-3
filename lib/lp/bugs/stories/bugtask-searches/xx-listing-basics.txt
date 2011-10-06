@@ -14,6 +14,10 @@ project.  Bugs in the Firefox product are displayed.
 
 Bug listings default to open bugtasks:
 
+    >>> # Debian must enable the Launchpad bug tracker to access bugs.
+    >>> from lp.testing.service_usage_helpers import set_service_usage
+    >>> set_service_usage('debian', bug_tracking_usage='LAUNCHPAD')
+
     >>> user_browser.open('http://launchpad.dev/debian/+bugs')
     >>> print_bugtasks(user_browser.contents)
     3 Bug Title Test mozilla-firefox Unknown New
@@ -31,6 +35,7 @@ But you can make it show fixed ones to:
 
 An anonymous user views the bug tasks in upstream Ubuntu.
 
+    >>> set_service_usage('tomcat', bug_tracking_usage='LAUNCHPAD')
     >>> anon_browser.open("http://launchpad.dev/tomcat/+bugs")
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder Low New
@@ -179,6 +184,7 @@ instead of displaying an empty table.
 Similarly, if we don't do a search and there are no open bugs on that product,
 it'll say so.
 
+    >>> set_service_usage('iso-codes', bug_tracking_usage='LAUNCHPAD')
     >>> user_browser.open("http://launchpad.dev/iso-codes/+bugs")
     >>> print user_browser.contents
     <...
@@ -188,8 +194,7 @@ it'll say so.
 
 == Bug Badge Decoration ==
 
-We display bug badges for associated branches, mentorship,
-specifications, patches, etc.
+We display bug badges for associated branches, specifications, patches, etc.
 
     >>> def names_and_branches(contents):
     ...     table = find_tag_by_id(contents, 'buglisting')
@@ -227,10 +232,11 @@ relevant listings:
 Patches also appear as badges in bug listings.
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IMessageSet, IPersonSet)
     >>> from zope.component import getUtility
     >>> from StringIO import StringIO
+    >>> from lp.services.messages.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> import transaction
     >>> login("foo.bar@canonical.com")
     >>> foobar = getUtility(IPersonSet).getByName("name16")

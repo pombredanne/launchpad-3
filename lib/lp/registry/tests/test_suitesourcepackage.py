@@ -1,16 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ISuiteSourcePackage."""
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.testing import TestCaseWithFactory
 
 
@@ -22,7 +19,7 @@ class TestSuiteSourcePackage(TestCaseWithFactory):
         # A SuiteSourcePackage is constructed from an `IDistroSeries`, a
         # `PackagePublishingPocket` enum and an `ISourcePackageName`. These
         # are all provided as attributes.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
         sourcepackagename = self.factory.makeSourcePackageName()
         ssp = SuiteSourcePackage(distroseries, pocket, sourcepackagename)
@@ -78,7 +75,3 @@ class TestSuiteSourcePackage(TestCaseWithFactory):
         self.assertEqual(
             '%s in %s' % (ssp.sourcepackagename.name, ssp.suite),
             ssp.displayname)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,72 +1,81 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import re
+__metaclass__ = type
+__all__ = [
+    'BadPluralExpression',
+    'make_friendly_plural_forms',
+    'make_plurals_identity_map',
+    'plural_form_mapper',
+    ]
+
 import gettext
-from lp.translations.interfaces.translations import (
-    TranslationConstants)
+import re
+
+from lp.translations.interfaces.translations import TranslationConstants
 
 
 class BadPluralExpression(Exception):
-    """Local "escape hatch" exception for unusable plural expressions."""
+    """Unusable plural expression."""
 
 
-def make_friendly_plural_forms(expression, pluralforms_count):
-    """Return a list of dicts of plural forms and its examples."""
+def make_friendly_plural_forms(expression, expected_forms):
+    """Return a list of dicts describing plural forms and examples."""
 
-    expression = make_plural_function(expression)
+    function = make_plural_function(expression)
     forms = {}
-    # The max length of the examples list per plural form.
+    # Maximum number of examples per plural form.
     MAX_EXAMPLES = 6
 
-    for number in range(0, 200):
+    for number in xrange(200):
         try:
-            form = expression(number)
+            form = function(number)
         except ZeroDivisionError:
             raise BadPluralExpression(
-                "Zero division error in the plural form expression.")
+                "Division by zero in plural expression for n = %d."
+                % number)
 
-        # Create empty list if this form doesn't have one yet
         forms.setdefault(form, [])
-        # If all the plural forms for this language have examples (max. of 6
-        # numbers per plural form), it stops.
-        if len(forms[form]) == MAX_EXAMPLES:
-            continue
-        forms[form].append(number)
+        if len(forms[form]) < MAX_EXAMPLES:
+            forms[form].append(number)
 
-    if pluralforms_count != len(forms):
+    found_forms = sorted(forms.keys())
+    if found_forms != range(expected_forms):
         raise BadPluralExpression(
-            "Number of recognized plural forms doesn't match the "
-            "expected number of them.")
+            "Plural expression should produce forms 0..%d, "
+            "but we found forms %s." % (expected_forms, found_forms))
 
-    # Each dict has two keys, 'form' and 'examples', that address the form
-    # number index and a list of its examples.
-    return [{'form' : form, 'examples' : examples}
-            for (form, examples) in forms.iteritems()]
+    return [
+        {'form' : form, 'examples' : examples}
+        for (form, examples) in forms.iteritems()
+        ]
 
 
 def make_plural_function(expression):
-    """Create a lambda function for C-like plural expression."""
+    """Create a lambda function for a C-like plural expression."""
     # Largest expressions we could find in practice were 113 characters
     # long.  500 is a reasonable value which is still 4 times more than
     # that, yet not incredibly long.
-    if expression is None or len(expression) > 500:
-        raise BadPluralExpression
+    if expression is None:
+        raise BadPluralExpression("No plural expression given.")
+    if len(expression) > 500:
+        raise BadPluralExpression("Plural expression is too long.")
 
     # Guard against '**' usage: it's not useful in evaluating
     # plural forms, yet can be used to introduce a DoS.
     if expression.find('**') != -1:
-        raise BadPluralExpression
+        raise BadPluralExpression("Invalid operator: **.")
 
     # We allow digits, whitespace [ \t], parentheses, "n", and operators
     # as allowed by GNU gettext implementation as well.
     if not re.match('^[0-9 \t()n|&?:!=<>+%*/-]*$', expression):
-        raise BadPluralExpression
+        raise BadPluralExpression(
+            "Plural expression contains disallowed characters.")
 
     try:
         function = gettext.c2py(expression)
-    except (ValueError, SyntaxError):
-        raise BadPluralExpression
+    except (ValueError, SyntaxError), e:
+        raise BadPluralExpression(e.args[0])
 
     return function
 
@@ -117,4 +126,3 @@ def plural_form_mapper(first_expression, second_expression):
     result = identity_map.copy()
     result.update(mapping)
     return result
-

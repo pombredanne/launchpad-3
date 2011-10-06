@@ -1,11 +1,13 @@
-= ExternalBugTracker: Bugzilla =
+ExternalBugTracker: Bugzilla
+============================
 
 An ExternalBugtracker is used to talk to remote bug trackers and update bug
 watches. This document describes how the Bugzilla implementation of
 ExternalBugTracker works.
 
 
-== Basics ==
+Basics
+------
 
 The class that implements ExternalBugTracker is called Bugzilla.
 
@@ -20,14 +22,14 @@ The class that implements ExternalBugTracker is called Bugzilla.
 
 The Bugzilla ExternalBugTracker works differently depending on which
 version of Bugzilla it is talking to. If it's a version we can't parse,
-UnparseableBugTrackerVersion is raised:
+UnparsableBugTrackerVersion is raised:
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B')
     Traceback (most recent call last):
       ...
-    UnparseableBugTrackerVersion:
+    UnparsableBugTrackerVersion:
     Failed to parse version 'A.B' for http://...
 
 The version parsing is carried out by the Bugzilla._parseVersion()
@@ -56,16 +58,18 @@ And will also handle versions which contain the string 'rc'.
 Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
 
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> from lp.bugs.tests.externalbugtracker import TestBugzilla
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
+    >>> gnome_bugzilla = (
+    ...     getUtility(IBugTrackerSet).getByName('gnome-bugzilla'))
     >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
     >>> version = external_bugzilla._probe_version()
     >>> version
     (2, 20)
 
 
-== Launchpad plugin ==
+Launchpad plugin
+----------------
 
 Some Bugzillas offer the Bugzilla 3.4 XML-RPC API or have a Launchpad
 plugin installed. For these bugtrackers, we use the BugzillaAPI
@@ -83,7 +87,8 @@ we override for the purpose of this test.
     >>> import xmlrpclib
     >>> class FailingXMLRPCTransport(xmlrpclib.Transport):
     ...
-    ...     error = xmlrpclib.Fault('Client', "Method doesn't exist")
+    ...     error = xmlrpclib.Fault(
+    ...         xmlrpclib.METHOD_NOT_FOUND, "Method doesn't exist")
     ...
     ...     def request(self, host, handler, request, verbose=None):
     ...         if self.error is not None:
@@ -102,9 +107,11 @@ we override for the purpose of this test.
 
     >>> bugzilla = BugzillaWithFakeProxy('http://example.com')
 
-When getExternalBugTrackerToUse() receives a Fault of type 'Client' from
-the remote server in response to its check, it will return a standard
-Bugzilla instance.
+When getExternalBugTrackerToUse() receives a Fault of type
+METHOD_NOT_FOUND from the remote server in response to its check, it
+will return a standard Bugzilla instance.
+
+    >>> transaction.commit()
 
     >>> from lp.bugs.externalbugtracker import (
     ...     BugzillaAPI, BugzillaLPPlugin)
@@ -165,7 +172,8 @@ XML-RPC proxy that behaves like a Bugzilla 3.4 instance.
     ...         if method_name == 'Bugzilla.version':
     ...             return [{'version': self.version}]
     ...         else:
-    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...             raise xmlrpclib.Fault(
+    ...                 xmlrpclib.METHOD_NOT_FOUND, 'No such method')
     ...
     >>> test_transport = APIXMLRPCTransport()
 
@@ -189,7 +197,8 @@ getExternalBugTrackerToUse() will return a BugzillaLPPlugin instance.
     ...         if method_name == 'Launchpad.plugin_version':
     ...             return [{'version': '0.2'}]
     ...         else:
-    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...             raise xmlrpclib.Fault(
+    ...                 xmlrpclib.METHOD_NOT_FOUND, 'No such method')
     ...
     >>> test_transport = PluginXMLRPCTransport()
 
@@ -213,7 +222,8 @@ selected.
     ...         if method_name == 'Bugzilla.version':
     ...             return ('versionResponse', {'version': '3.2.5+'})
     ...         else:
-    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...             raise xmlrpclib.Fault(
+    ...                 xmlrpclib.METHOD_NOT_FOUND, 'No such method')
     ...
     >>> test_transport = OldXMLRPCTransport()
 
@@ -226,8 +236,34 @@ selected.
     ...  isinstance(bugzilla_to_use, BugzillaLPPlugin))
     False
 
+Some Bugzillas return 'Client' instead of METHOD_NOT_FOUND when a method
+is not discovered over XML-RPC. It's not clear if this is an error in
+Bugzilla or in and XML-RPC library used by Bugzilla. In any case, we
+recognize and treat it the same as METHOD_NOT_FOUND.
 
-== Status Conversion ==
+    >>> class OldBrokenXMLRPCTransport(xmlrpclib.Transport):
+    ...     def request(self, host, handler, request, verbose=None):
+    ...         args, method_name = xmlrpclib.loads(request)
+    ...
+    ...         if method_name == 'Bugzilla.version':
+    ...             return ('versionResponse', {'version': '3.2.5+'})
+    ...         else:
+    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...
+    >>> test_transport = OldBrokenXMLRPCTransport()
+
+    >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi',
+    ...     transport=test_transport)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> (isinstance(bugzilla_to_use, BugzillaAPI) or
+    ...  isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    False
+
+
+Status Conversion
+-----------------
 
 It contains a function for converting one of its own status to a Malone
 status. Bugzilla statuses consist of two parts, the status, and the
@@ -246,6 +282,8 @@ if the bug is closed:
     'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO_REPORTER').title
     'Incomplete'
+    >>> external_bugzilla.convertRemoteStatus('NEEDSINFO').title
+    'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('MODIFIED').title
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
@@ -254,6 +292,8 @@ if the bug is closed:
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
+    >>> external_bugzilla.convertRemoteStatus('RESOLVED UPSTREAM').title
+    "Won't Fix"
     >>> external_bugzilla.convertRemoteStatus(
     ...     'CLOSED PATCH_ALREADY_AVAILABLE').title
     'Fix Released'
@@ -263,8 +303,10 @@ if the bug is closed:
     "Won't Fix"
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Invalid'
+    >>> external_bugzilla.convertRemoteStatus('CLOSED DUPLICATE').title
+    'Invalid'
     >>> external_bugzilla.convertRemoteStatus('CLOSED UPSTREAM').title
-    'Fix Released'
+    "Won't Fix"
 
 If the status can't be converted an UnknownRemoteStatusError will be
 returned.
@@ -273,52 +315,170 @@ returned.
     Traceback (most recent call last):
       ...
     UnknownRemoteStatusError: FOO
+    >>> external_bugzilla.convertRemoteStatus('CLOSED BAR').title
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError: CLOSED BAR
 
 
-== Updating Bug Watches ==
+Importance Conversion
+---------------------
+
+There is also a function for conversion of bugzilla importances to
+launchpad importances.  The Bugzilla importance is comprised of priority
+and severity, but we only use severity in mapping the value unless it
+isn't available in which case we map against priority values.
+
+    >>> external_bugzilla.convertRemoteImportance('URGENT BLOCKER').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance('LOW BLOCKER').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance('BLOCKER').title
+    'Critical'
+
+    >>> external_bugzilla.convertRemoteImportance('URGENT CRITICAL').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance('LOW CRITICAL').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance('CRITICAL').title
+    'Critical'
+
+    >>> external_bugzilla.convertRemoteImportance('URGENT MAJOR').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('LOW MAJOR').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('MAJOR').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('CRASH').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('GRAVE').title
+    'High'
+
+    >>> external_bugzilla.convertRemoteImportance('URGENT NORMAL').title
+    'Medium'
+    >>> external_bugzilla.convertRemoteImportance('LOW NORMAL').title
+    'Medium'
+    >>> external_bugzilla.convertRemoteImportance('NORMAL').title
+    'Medium'
+    >>> external_bugzilla.convertRemoteImportance('NOR').title
+    'Medium'
+
+    >>> external_bugzilla.convertRemoteImportance('URGENT MINOR').title
+    'Low'
+    >>> external_bugzilla.convertRemoteImportance('LOW MINOR').title
+    'Low'
+    >>> external_bugzilla.convertRemoteImportance('MINOR').title
+    'Low'
+
+    >>> external_bugzilla.convertRemoteImportance('URGENT TRIVIAL').title
+    'Low'
+    >>> external_bugzilla.convertRemoteImportance('LOW TRIVIAL').title
+    'Low'
+    >>> external_bugzilla.convertRemoteImportance('TRIVIAL').title
+    'Low'
+
+    >>> external_bugzilla.convertRemoteImportance('LOW ENHANCEMENT').title
+    'Wishlist'
+    >>> external_bugzilla.convertRemoteImportance('ENHANCEMENT').title
+    'Wishlist'
+    >>> external_bugzilla.convertRemoteImportance('WISHLIST').title
+    'Wishlist'
+
+    >>> external_bugzilla.convertRemoteImportance('IMMEDIATE').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance('URGENT').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance('HIGH').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('MEDIUM').title
+    'Medium'
+    >>> external_bugzilla.convertRemoteImportance('LOW').title
+    'Low'
+
+    >>> external_bugzilla.convertRemoteImportance('P5').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance('P4').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('P3').title
+    'Medium'
+    >>> external_bugzilla.convertRemoteImportance('P2').title
+    'Low'
+    >>> external_bugzilla.convertRemoteImportance('P1').title
+    'Low'
+
+Some bugzillas don't provide a value, resulting in blank strings for
+priority and severity.  We simply leave the importance unknown in this
+case.
+
+    >>> external_bugzilla.convertRemoteImportance('').title
+    'Unknown'
+
+However, we still treat as an error if the priority or severity are set
+to some other unexpected string.
+
+    >>> external_bugzilla.convertRemoteImportance('foo bar')
+    Traceback (most recent call last):
+    ...
+    UnknownRemoteImportanceError: foo bar
+    >>> external_bugzilla.convertRemoteImportance('%&*@*#&$%!')
+    Traceback (most recent call last):
+    ...
+    UnknownRemoteImportanceError: %&*@*#&$%!
+
+
+
+Updating Bug Watches
+--------------------
 
 The main use of an ExternalBugtracker is to update bug watches. This is
 done through updateBugWatches(), which expects a list of bug watches to
 update:
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> for bug_watch in gnome_bugzilla.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    304070: None
-    3224:
+    ...     print "%s: %s %s" % (bug_watch.remotebug,
+    ...           bug_watch.remotestatus,
+    ...           bug_watch.remote_importance)
+    304070: None None
+    3224:  None
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
     INFO:...:Updating 2 watches for 2 bugs on http://bugzilla.gnome.org/bugs
-    WARNING:...Didn't find bug u'304070' on
-    http://bugzilla.gnome.org/bugs (local bugs: 15). (OOPS-...)
+    INFO:...Didn't find bug u'304070' on
+    http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> for bug_watch in gnome_bugzilla.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    304070: None
-    3224: RESOLVED FIXED
+    ...     print "%s: %s %s" % (bug_watch.remotebug,
+    ...           bug_watch.remotestatus,
+    ...           bug_watch.remote_importance)
+    304070: None None
+    3224: RESOLVED FIXED MINOR URGENT
 
 Let's add a handful of watches:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugWatchSet, IPersonSet)
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_watch_set = getUtility(IBugWatchSet)
 
     >>> expected_remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
+    >>> expected_remote_importances = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remote_importance)
+    ...      for bug_watch in gnome_bugzilla.watches])
     >>> for remote_bug_id in range(50,55):
     ...     bug_watch = bug_watch_set.createBugWatch(
     ...         bug=bug_one, owner=sample_person, bugtracker=gnome_bugzilla,
     ...         remotebug=str(remote_bug_id))
     ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
-    ...         'RESOLVED', 'FIXED')
+    ...         'RESOLVED', 'FIXED', 'HIGH', 'ENHANCEMENT')
     ...     expected_remote_statuses[remote_bug_id] = 'RESOLVED FIXED'
-    >>> from canonical.launchpad.ftests import sync
-    >>> for bug_watch in gnome_bugzilla.watches:
-    ...     sync(bug_watch)
+    ...     expected_remote_importances[remote_bug_id] = 'HIGH ENHANCEMENT'
 
 Set the batch threshold higher than the number of bug watches.
 
@@ -337,13 +497,19 @@ Then updateBugWatches() will make one request per bug watch:
     CALLED _postPage()
     CALLED _postPage()
     CALLED _postPage()
-    WARNING:...:Didn't find bug u'304070' on
-    http://bugzilla.gnome.org/bugs (local bugs: 15). (OOPS-...)
+    INFO:...:Didn't find bug u'304070' on
+    http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
     >>> remote_statuses == expected_remote_statuses
+    True
+
+    >>> remote_importances = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remote_importance)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> remote_importances == expected_remote_importances
     True
 
     >>> external_bugzilla.trace_calls = False
@@ -353,15 +519,17 @@ Let's add a few more watches:
     >>> expected_remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
+    >>> expected_remote_importances = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remote_importance)
+    ...      for bug_watch in gnome_bugzilla.watches])
     >>> for remote_bug_id in range(100,300):
     ...     bug_watch = bug_watch_set.createBugWatch(
     ...         bug=bug_one, owner=sample_person, bugtracker=gnome_bugzilla,
     ...         remotebug=str(remote_bug_id))
     ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
-    ...         'ASSIGNED', '')
+    ...         'ASSIGNED', '', 'MEDIUM', 'URGENT')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
-    >>> for bug_watch in gnome_bugzilla.watches:
-    ...     sync(bug_watch)
+    ...     expected_remote_importances[remote_bug_id] = 'MEDIUM URGENT'
 
 
 Set the batch threshold very low and remove the batch size limit:
@@ -377,13 +545,19 @@ updateBugWatches() issues only one request to update all watches:
     ...     external_bugzilla, gnome_bugzilla.watches)
     INFO:...:Updating 207 watches for 207 bugs...
     CALLED _postPage()
-    WARNING:...:Didn't find bug u'304070' on
-    http://bugzilla.gnome.org/bugs (local bugs: 15). (OOPS-...)
+    INFO:...:Didn't find bug u'304070' on
+    http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
     >>> remote_statuses == expected_remote_statuses
+    True
+
+    >>> remote_importances = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remote_importance)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> remote_importances == expected_remote_importances
     True
 
     >>> external_bugzilla.trace_calls = False
@@ -393,7 +567,7 @@ now no bug watches are in need of updating:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> gnome_bugzilla.getBugWatchesNeedingUpdate(23).count()
+    >>> gnome_bugzilla.watches_needing_update.count()
     0
 
 If the status isn't different, the lastchanged attribute doesn't get
@@ -419,11 +593,13 @@ from a bug task.
     Unknown
     >>> thunderbird_task.bugwatch.remotestatus is None
     True
+    >>> thunderbird_task.bugwatch.remote_importance is None
+    True
 
-We don't yet support updating the importance for Bugzilla bugs, so let's set it
-to some bogus value, to see that it gets set to UNKNOWN.
+Importance gets updated for Bugzilla bugs.  Let's set it to some bogus
+value, and see that it gets set to a proper value.
 
-    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> thunderbird_task.transitionToImportance(
     ...     BugTaskImportance.HIGH,
     ...     thunderbird_task.pillar.owner)
@@ -433,7 +609,8 @@ We need to create a new ExternalBugtracker for the Mozilla tracker:
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName(
     ...     'mozilla.org')
     >>> external_bugzilla = TestBugzilla(mozilla_bugzilla.baseurl, '2.20')
-    >>> external_bugzilla.bugzilla_bugs = {1234: ('ASSIGNED', '')}
+    >>> external_bugzilla.bugzilla_bugs = {1234: (
+    ...     'ASSIGNED', '', 'MEDIUM', 'ENHANCEMENT')}
 
 Let's update the bug watch, and see that the linked bug watch got
 synced:
@@ -447,15 +624,17 @@ synced:
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.importance.title
-    Unknown
+    Wishlist
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
+    >>> print thunderbird_task.bugwatch.remote_importance
+    MEDIUM ENHANCEMENT
 
 If we change the bugtask status, it will be updated again even though
 the remote status hasn't changed. This can happen if we change the
 status mapping.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> thunderbird_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED,
     ...     getUtility(IPersonSet).getByName('no-priv'))
@@ -467,13 +646,18 @@ status mapping.
     >>> thunderbird_task = bug_nine.bugtasks[0]
     >>> print thunderbird_task.status.title
     In Progress
+    >>> print thunderbird_task.importance.title
+    Wishlist
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
+    >>> print thunderbird_task.bugwatch.remote_importance
+    MEDIUM ENHANCEMENT
 
 If there are two bug watches, linked to different bugs, pointing to the
 same remote bug, both will of course be updated.
 
-    >>> external_bugzilla.bugzilla_bugs[42] = ('RESOLVED', 'FIXED')
+    >>> external_bugzilla.bugzilla_bugs[42] = (
+    ...     'RESOLVED', 'FIXED', 'LOW', 'BLOCKER')
     >>> bug_watch1 = bug_watch_set.createBugWatch(
     ...     bug=bug_one, owner=sample_person, bugtracker=mozilla_bugzilla,
     ...     remotebug='42')
@@ -490,20 +674,24 @@ same remote bug, both will of course be updated.
     >>> bug_watch1 = getUtility(IBugWatchSet).get(bug_watch1_id)
     >>> print bug_watch1.remotestatus
     RESOLVED FIXED
+    >>> print bug_watch1.remote_importance
+    LOW BLOCKER
     >>> bug_watch2 = getUtility(IBugWatchSet).get(bug_watch2_id)
     >>> print bug_watch2.remotestatus
     RESOLVED FIXED
+    >>> print bug_watch2.remote_importance
+    LOW BLOCKER
 
 If updateBugWatches() can't parse the XML file returned from the remote
 bug tracker, an error is logged.
 
     >>> external_bugzilla._postPage = (
-    ...     lambda self, data: '<invalid xml>')
+    ...     lambda self, data, repost_on_redirect: '<invalid xml>')
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [bug_watch1, bug_watch2])
     Traceback (most recent call last):
     ...
-    UnparseableBugData:
+    UnparsableBugData:
     Failed to parse XML description for https://bugzilla.mozilla.org...
 
 The error is also recorded in each bug watch's last_error_type field so that
@@ -517,7 +705,8 @@ it can be displayed to the user.
     'Unparsable Bug'
 
 
-== Getting Remote Product ==
+Getting Remote Product
+----------------------
 
 getRemoteProduct() returns the product a remote bug is associated with
 in Bugzilla. getRemoteProduct() has to be called after
@@ -525,7 +714,8 @@ initializeRemoteBugDB() has been called, in order for the bug
 information to be fetched from the external Bugzilla instance.
 
     >>> external_bugzilla = TestBugzilla()
-    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.bugzilla_bugs = {84: (
+    ...     'RESOLVED', 'FIXED', 'MEDIUM', 'NORMAL')}
     >>> external_bugzilla.initializeRemoteBugDB(['84'])
     >>> external_bugzilla.remote_bug_product['84']
     u'product-84'
@@ -536,7 +726,8 @@ Sometimes we might not get the product in the bug listing. In these
 cases getRemoteProduct() returns None.
 
     >>> external_bugzilla = TestBugzilla()
-    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.bugzilla_bugs = {84: (
+    ...     'RESOLVED', 'FIXED', 'MEDIUM', 'NORMAL')}
     >>> # Make the buglist XML not include the product tag.
     >>> external_bugzilla.bug_item_file = 'gnome_bug_li_item_noproduct.xml'
     >>> external_bugzilla.initializeRemoteBugDB(['84'])
@@ -546,7 +737,8 @@ cases getRemoteProduct() returns None.
 Requesting the product for a bug that doesn't exist raises BugNotFound.
 
     >>> external_bugzilla = TestBugzilla()
-    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.bugzilla_bugs = {84: (
+    ...     'RESOLVED', 'FIXED', 'MEDIUM', 'NORMAL')}
     >>> external_bugzilla.initializeRemoteBugDB(['84'])
     >>> external_bugzilla.getRemoteProduct('42')
     Traceback (most recent call last):

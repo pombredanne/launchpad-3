@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -7,61 +7,40 @@ __metaclass__ = type
 
 import logging
 
-import zope.app.publication.interfaces
-from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import (
-    IAuthentication, IPrincipal, IPrincipalSource)
-from zope.traversing.interfaces import IContainmentRoot
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from lazr.batchnavigator.interfaces import IBatchNavigator
-from lazr.enum import DBEnumeratedType, DBItem, use_template
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    use_template,
+    )
+import zope.app.publication.interfaces
+from zope.app.security.interfaces import (
+    IAuthentication,
+    IPrincipal,
+    IPrincipalSource,
+    )
+from zope.component.interfaces import IObjectEvent
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
+from zope.traversing.interfaces import IContainmentRoot
 
 from canonical.launchpad import _
 
 
-class TranslationUnavailable(Exception):
-    """Translation objects are unavailable."""
-
-
-class NotFoundError(KeyError):
-    """Launchpad object not found."""
-
-
-class GoneError(KeyError):
-    """Launchpad object is gone."""
-
-
-class NameLookupFailed(NotFoundError):
-    """Raised when a lookup by name fails.
-
-    Subclasses should define the `_message_prefix` class variable, which will
-    be prefixed to the quoted name of the name that could not be found.
-
-    :ivar name: The name that could not be found.
-    """
-
-    _message_prefix = "Not found"
-
-    def __init__(self, name, message=None):
-        if message is None:
-            message = self._message_prefix
-        self.message = "%s: '%s'." % (message, name)
-        self.name = name
-        NotFoundError.__init__(self, self.message)
-
-    def __str__(self):
-        return self.message
-
-
-class UnexpectedFormData(AssertionError):
-    """Got form data that is not what is expected by a form handler."""
-
-
-class POSTToNonCanonicalURL(UnexpectedFormData):
-    """Got a POST to an incorrect URL.
-
-    One example would be a URL containing uppercase letters.
-    """
+class IAPIDocRoot(IContainmentRoot):
+    """Marker interface for the root object of the apidoc vhost."""
 
 
 class ILaunchpadContainer(Interface):
@@ -89,24 +68,12 @@ class ILaunchpadProtocolError(Interface):
     """Marker interface for a Launchpad protocol error exception."""
 
 
-class IAuthorization(Interface):
-    """Authorization policy for a particular object and permission."""
-
-    def checkUnauthenticated():
-        """Returns True if an unauthenticated user has that permission
-        on the adapted object.  Otherwise returns False.
-        """
-
-    def checkAccountAuthenticated(account):
-        """Returns True if the account has that permission on the adapted
-        object.  Otherwise returns False.
-
-        The argument `account` is the account who is authenticated.
-        """
-
-
 class OffsiteFormPostError(Exception):
     """An attempt was made to post a form from a remote site."""
+
+
+class NoReferrerError(Exception):
+    """At attempt was made to post a form without a REFERER header."""
 
 
 class UnsafeFormGetSubmissionError(Exception):
@@ -201,11 +168,18 @@ class ILinkData(Interface):
     sort_key = Attribute(
         "The sort key to use when rendering it with a group of links.")
 
+    hidden = Attribute(
+        "Boolean to say whether this link is hidden.  This is separate from "
+        "being enabled and is used to support links which need to be be "
+        "enabled but not viewable in the rendered HTML.  The link may be "
+        "changed to visible by JavaScript or some other means.")
+
 
 class ILink(ILinkData):
     """An object that represents a link in a menu.
 
-    The attributes name, url and linked may be set by the menus infrastructure.
+    The attributes name, url and linked may be set by the menus
+    infrastructure.
     """
 
     name = Attribute("The name of this link in Python data structures.")
@@ -289,13 +263,13 @@ class NoCanonicalUrl(TypeError):
             (object_url_requested_for, broken_link_in_chain)
             )
 
+
 # XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
 # generic thing. The problem lies in the fact that half of this (user, login,
 # time zone, developer) is actually useful inside webapp/, and the other half
 # is very Launchpad-specific. I suggest we split the interface and
 # implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
-    site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
     project = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')
@@ -335,6 +309,7 @@ class IOpenLaunchBag(ILaunchBag):
         connection blows up.
         '''
 
+
 #
 # Request
 #
@@ -349,6 +324,10 @@ class IBasicLaunchpadRequest(Interface):
 
     query_string_params = Attribute(
         'A dictionary of the query string parameters.')
+
+    is_ajax = Bool(
+        title=_('Is ajax'), required=False, readonly=True,
+        description=_("Indicates whether the request is an XMLHttpRequest."))
 
     def getRootURL(rootsite):
         """Return this request's root URL.
@@ -366,6 +345,13 @@ class IBasicLaunchpadRequest(Interface):
         returned.
 
         If no matching object is found, the tuple (None, None) is returned.
+        """
+
+    def getURL(level=0, path_only=False, include_query=False):
+        """See `IHTTPApplicationRequest`.
+
+        Additionally, if `include_query` is `True`, the query string is
+        included in the returned URL.
         """
 
 
@@ -430,6 +416,7 @@ class ILoggedInEvent(Interface):
 
 class CookieAuthLoggedInEvent:
     implements(ILoggedInEvent)
+
     def __init__(self, request, login):
         self.request = request
         self.login = login
@@ -437,6 +424,7 @@ class CookieAuthLoggedInEvent:
 
 class CookieAuthPrincipalIdentifiedEvent:
     implements(IPrincipalIdentifiedEvent)
+
     def __init__(self, principal, request, login):
         self.principal = principal
         self.request = request
@@ -445,6 +433,7 @@ class CookieAuthPrincipalIdentifiedEvent:
 
 class BasicAuthLoggedInEvent:
     implements(ILoggedInEvent, IPrincipalIdentifiedEvent)
+
     def __init__(self, request, login, principal):
         # these one from ILoggedInEvent
         self.login = login
@@ -460,6 +449,7 @@ class ILoggedOutEvent(Interface):
 
 class LoggedOutEvent:
     implements(ILoggedOutEvent)
+
     def __init__(self, request):
         self.request = request
 
@@ -542,6 +532,15 @@ class OAuthPermission(DBEnumeratedType):
         for reading and changing anything, including private data.
         """)
 
+    DESKTOP_INTEGRATION = DBItem(60, """
+        Integrate an entire system
+
+        Every application running on your desktop will have read-write
+        access to your Launchpad account, including to your private
+        data. You should not allow this unless you trust the computer
+        you're using right now.
+        """)
+
 
 class AccessLevel(DBEnumeratedType):
     """The level of access any given principal has."""
@@ -568,18 +567,13 @@ class ILaunchpadPrincipal(IPrincipal):
 #
 
 class BrowserNotificationLevel:
-    """Matches the standard logging levels, with the addition of notice
-    (which we should probably add to our log levels as well)
-    """
-    # XXX mpt 2006-03-22 bugs=36287:
-    # NOTICE and INFO should be merged.
-    DEBUG = logging.DEBUG     # A debugging message
-    INFO = logging.INFO       # simple confirmation of a change
-    NOTICE = logging.INFO + 5 # action had effects you might not have intended
-    WARNING = logging.WARNING # action will not be successful unless you ...
-    ERROR = logging.ERROR     # the previous action did not succeed, and why
+    """Matches the standard logging levels."""
+    DEBUG = logging.DEBUG  # debugging message
+    INFO = logging.INFO  # simple confirmation of a change
+    WARNING = logging.WARNING  # action will not be successful unless you ...
+    ERROR = logging.ERROR  # the previous action did not succeed, and why
 
-    ALL_LEVELS = (DEBUG, INFO, NOTICE, WARNING, ERROR)
+    ALL_LEVELS = (DEBUG, INFO, WARNING, ERROR)
 
 
 class INotification(Interface):
@@ -596,7 +590,7 @@ class INotificationList(Interface):
 
     def __getitem__(index_or_levelname):
         """Retrieve an INotification by index, or a list of INotification
-        instances by level name (DEBUG, NOTICE, INFO, WARNING, ERROR).
+        instances by level name (DEBUG, INFO, WARNING, ERROR).
         """
 
     def __iter__():
@@ -619,7 +613,7 @@ class INotificationResponse(Interface):
     have been set when redirect() is called.
     """
 
-    def addNotification(msg, level=BrowserNotificationLevel.NOTICE):
+    def addNotification(msg, level=BrowserNotificationLevel.INFO):
         """Append the given message to the list of notifications.
 
         A plain string message will be CGI escaped.  Passing a message
@@ -632,7 +626,7 @@ class INotificationResponse(Interface):
             or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-            INFO, NOTICE, WARNING, ERROR.
+            INFO, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -652,9 +646,6 @@ class INotificationResponse(Interface):
     def addInfoNotification(msg):
         """Shortcut to addNotification(msg, INFO)."""
 
-    def addNoticeNotification(msg):
-        """Shortcut to addNotification(msg, NOTICE)."""
-
     def addWarningNotification(msg):
         """Shortcut to addNotification(msg, WARNING)."""
 
@@ -668,6 +659,14 @@ class INotificationResponse(Interface):
         that redirect from lp.net to vhost.lp.net don't have to pass
         trusted=True explicitly.
         """
+
+
+class IUnloggedException(Interface):
+    """An exception that should not be logged in an OOPS report (marker)."""
+
+
+class IErrorReportEvent(IObjectEvent):
+    """A new error report has been created."""
 
 
 class IErrorReport(Interface):
@@ -692,6 +691,7 @@ class IErrorReportRequest(Interface):
     oopsid = TextLine(
         description=u"""an identifier for the exception, or None if no
         exception has occurred""")
+
 
 #
 # Batch Navigation
@@ -740,14 +740,12 @@ class IPrimaryContext(Interface):
 # Database policies
 #
 
-MAIN_STORE = 'main' # The main database.
-AUTH_STORE = 'auth' # The authentication database.
+MAIN_STORE = 'main'  # The main database.
+ALL_STORES = frozenset([MAIN_STORE])
 
-ALL_STORES = frozenset([MAIN_STORE, AUTH_STORE])
-
-DEFAULT_FLAVOR = 'default' # Default flavor for current state.
-MASTER_FLAVOR = 'master' # The master database.
-SLAVE_FLAVOR = 'slave' # A slave database.
+DEFAULT_FLAVOR = 'default'  # Default flavor for current state.
+MASTER_FLAVOR = 'master'  # The master database.
+SLAVE_FLAVOR = 'slave'  # A slave database.
 
 
 class IDatabasePolicy(Interface):
@@ -863,9 +861,51 @@ class IStoreSelector(Interface):
         """
 
 
-class IWebBrowserOriginatingRequest(Interface):
-    """Marker interface for converting webservice requests into webapp ones.
+# XXX mars 2010-07-14 bug=598816
+#
+# We need a conditional import of the request events until the real events
+# land in the Zope mainline.
+#
+# See bug 598816 for the details.
 
-    It's used in the webservice domain for calculating webapp URLs, for
-    instance, `ProxiedLibraryFileAlias`.
+try:
+    from zope.publisher.interfaces import StartRequestEvent
+except ImportError:
+    class IStartRequestEvent(Interface):
+        """An event that gets sent before the start of a request."""
+
+        request = Attribute("The request the event is about")
+
+    class StartRequestEvent:
+        """An event fired once at the start of requests.
+
+        :ivar request: The request the event is for.
+        """
+        implements(IStartRequestEvent)
+
+        def __init__(self, request):
+            self.request = request
+
+
+class IFinishReadOnlyRequestEvent(Interface):
+    """An event which gets sent when the publication is ended"""
+
+    object = Attribute("The object to which this request pertains.")
+
+    request = Attribute("The active request.")
+
+
+class FinishReadOnlyRequestEvent:
+    """An event which gets sent when the publication is ended"""
+
+    implements(IFinishReadOnlyRequestEvent)
+
+    def __init__(self, ob, request):
+        self.object = ob
+        self.request = request
+
+
+class StormRangeFactoryError(Exception):
+    """Raised when a Storm result set cannot be used for slicing by a
+    StormRangeFactory.
     """

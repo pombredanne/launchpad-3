@@ -10,9 +10,9 @@ of the page. Any page can use these layout options by including
 in the root element of the page template. The base layout template uses the
 YUI grid classes for positioning.
 
-    >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from canonical.launchpad.webapp.publisher import LaunchpadView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from z3c.ptcompat import ViewPageTemplateFile
 
     >>> user = factory.makePerson(name='waffles')
     >>> request = LaunchpadTestRequest(
@@ -35,105 +35,12 @@ slots. The global search and the applications tabs are present. The
 main and side content are positioned using the "yui-t4", "yui-main",
 "yui-b", and "yui-b side" classes.
 
-Header.
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
     >>> view = MainSideView(user, request)
     >>> html = view.render()
     >>> print html
     <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-          lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: main_side</title>
-        <link rel="shortcut icon" href="/@@/launchpad.png" />
-    ...
-
-Standard Javascript functions.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            sortables_init();
-            initInlineHelp();
-            Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
-    ...
-
-Body preamble.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-      <body id="document"
-            class="tab-overview
-          main_side
-          public
-          yui-skin-sam">
-        <div class="yui-d0">
-    <BLANKLINE>
-          <div id="locationbar">
-    ...
-
-Watermark and breadcrumbs.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-          <div class="watermark-apps-portlet top-portlet">
-            <img alt="" width="64" height="64" src="/@@/person-logo" />
-            <h2>Waffles</h2>
-    ...
-      <!-- Application Menu -->
-      <ul class="facetmenu">
-    <BLANKLINE>
-          <li class="overview active"
-              title="General information about Waffles"><a
-        href="http://launchpad.dev/~waffles">Overview</a></li>
-    ...
-              <div class="yui-b" dir="ltr">
-                <div>
-                  <h2>Heading</h2>
-                  <ol class="breadcrumbs">
-    ...
-
-Top portlet.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-          <div class="top-portlet">
-            <p class="registered">
-              Registered on 2005-09-16
-              by <a class="sprite team" href="#">Illuminati team</a>
-            </p>
-            <p>
-              Main content of the page.
-            </p>
-          </div>
-    ...
-
-Help pane.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-        <div id="help-pane" class="invisible">
-          <div id="help-body">
-    <BLANKLINE>
-            <iframe id="help-pane-content" class="invisible" ...
-            </div>
-          <div id="help-footer">
-            <span id="help-close"></span>
-          </div>
-        </div>
-    ...
-
-Footer.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
       <!--
         Facet name: overview
         Page type: main_side
@@ -155,80 +62,6 @@ content to take up all the horizontal space.
 
     >>> view = MainOnlyView(user, request)
     >>> html = view.render()
-
-Heading.
-
-    >>> print html
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-          lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: main_only</title>
-        <link rel="shortcut icon" href="/@@/launchpad.png" />
-    ...
-
-Watermark.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-          <div class="watermark-apps-portlet top-portlet">
-            <img alt="" width="64" height="64" src="/@@/person-logo" />
-            <h2>Waffles</h2>
-    ...
-
-Main content.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            <div id="maincontent" class="yui-main">
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-              <div class="yui-b" dir="ltr">
-                <div>
-    <BLANKLINE>
-                  <ol class="breadcrumbs">
-    <BLANKLINE>
-    </ol>
-    <BLANKLINE>
-                </div>
-    <BLANKLINE>
-          <div class="top-portlet">
-            <h1>Heading</h1>
-            <p class="registered">
-              Registered on 2005-09-16
-              by <a class="sprite team" href="#">Illuminati team</a>
-            </p>
-            <p>
-              Main content of the page.
-            </p>
-          </div>
-    <BLANKLINE>
-              </div><!-- yui-b -->
-            </div><!-- yui-main -->
-    <BLANKLINE>
-            <!-- yui-b side -->
-          <!-- yui-t4 -->
-    ...
-
-Global search.
-
-    >>> print html
-    <!DOCTYPE html ...
-      <form id="globalsearch" method="get"
-            accept-charset="UTF-8"
-            action="http://launchpad.dev/+search">
-        <input type="search" id="search-text" name="field.text" />
-        <input type="submit" value="" class="icon-only sprite search-icon" />
-      </form>
-    </div>
-    ...
-
-Footer.
-
     >>> print html
     <!DOCTYPE html ...
     ...
@@ -252,93 +85,6 @@ slots are rendered, as are the application tabs.
 
     >>> view = SearchlessView(user, request)
     >>> html = view.render()
-
-Heading.
-
-    >>> print html
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-          lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: searchless</title>
-        <link rel="shortcut icon" href="/@@/launchpad.png" />
-    ...
-
-Body class.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-      <body id="document"
-            class="tab-overview
-          searchless
-          public
-          yui-skin-sam">
-        <div class="yui-d0">
-    ...
-
-Watermarks.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-          <div class="watermark-apps-portlet top-portlet">
-            <img alt="" width="64" height="64" src="/@@/person-logo" />
-            <h2>Waffles</h2>
-            <div id="registration" class="registering">
-            </div>
-    <BLANKLINE>
-      <!-- Application Menu -->
-      <ul class="facetmenu">
-    <BLANKLINE>
-          <li class="overview active"
-              title="General information about Waffles"><a
-        href="http://launchpad.dev/~waffles">Overview</a></li>
-    ...
-
-Main content.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            <div id="maincontent" class="yui-main">
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-              <div class="yui-b" dir="ltr">
-                <div>
-    <BLANKLINE>
-                  <ol class="breadcrumbs">
-    <BLANKLINE>
-    </ol>
-    ...
-
-Top portlet.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-          <div class="top-portlet">
-            <h1>Heading</h1>
-            <p class="registered">
-              Registered on 2005-09-16
-              by <a class="sprite team" href="#">Illuminati team</a>
-            </p>
-            <p>
-              Main content of the page.
-            </p>
-          </div>
-    <BLANKLINE>
-              </div><!-- yui-b -->
-            </div><!-- yui-main -->
-    <BLANKLINE>
-            <!-- yui-b side -->
-          <!-- yui-t4 -->
-    ...
-
-Footer.
-
     >>> print html
     <!DOCTYPE html ...
     ...
@@ -364,64 +110,6 @@ or breadcrumbs; the template must provide its own h1 element.
 
     >>> view = LocationlessView(user, request)
     >>> html = view.render()
-
-Heading.
-
-    >>> print html
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-          lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: locationless</title>
-        <link rel="shortcut icon" href="/@@/launchpad.png" />
-    ...
-
-Body.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-      <body id="document"
-            class="tab-overview
-          locationless
-          public
-          yui-skin-sam">
-        <div class="yui-d0">
-    ...
-
-Main content.
-
-    >>> print html
-    <!DOCTYPE html ...
-    ...
-            <div id="maincontent" class="yui-main">
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-              <div class="yui-b" dir="ltr">
-    <BLANKLINE>
-    <BLANKLINE>
-          <div class="top-portlet">
-            <h1>Heading</h1>
-            <p class="registered">
-              Registered on 2005-09-16
-              by <a class="sprite team" href="#">Illuminati team</a>
-            </p>
-            <p>
-              Main content of the page.
-            </p>
-          </div>
-    <BLANKLINE>
-              </div><!-- yui-b -->
-            </div><!-- yui-main -->
-    <BLANKLINE>
-            <!-- yui-b side -->
-          <!-- yui-t4 -->
-    ...
-
-Footer.
-
     >>> print html
     <!DOCTYPE html ...
     ...
@@ -437,27 +125,28 @@ Footer.
 Page Diagnostics
 ----------------
 
-The page includes a comment after the document with diagnostic information.
+The page includes a comment after the body with diagnostic information.
 
-    >>> print html[html.index('</html>') + 7:]
+    >>> print html[html.index('</body>') + 7:]
+    ...
     <!--
       Facet name: overview
       Page type: locationless
       Has global search: False
       Has application tabs: False
       Has side portlets: False
-      At least ... queries issued in ... seconds
-      Launchpad ... (r...)
+      At least ... queries... issued in ... seconds
+      Features: {...}
+      in scopes {...}
+      r...
     -->
-
+    ...
 
 Page Headings
 -------------
 
 The example layouts all used the heading slot to define a heading for their
 test. The template controlled the heading.
-
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print content.h1
@@ -478,22 +167,15 @@ Page Footers
     >>> footer = find_tag_by_id(html, 'footer')
     >>> for tag in footer.findAll('a'):
     ...     print tag.string, tag['href']
-    None
-      http://launchpad.dev/
-    Take the tour
-      http://launchpad.dev/+tour
-    Read the guide
-      https://help.launchpad.net/
-    Canonical&nbsp;Ltd.
-      http://canonical.com/
-    Terms of use
-      http://launchpad.dev/legal
-    Contact us
-      https://help.launchpad.net/Feedback
-    System status
-      http://identi.ca/launchpadstatus
-    Launchpad ...
-      https://help.launchpad.net/LaunchpadReleases
+    None http://launchpad.dev/
+    Take the tour http://launchpad.dev/+tour
+    Read the guide https://help.launchpad.net/
+    Canonical&nbsp;Ltd. http://canonical.com/
+    Terms of use http://launchpad.dev/legal
+    Contact Launchpad Support /feedback
+    Blog http://blog.launchpad.net/
+    System status http://identi.ca/launchpadstatus
+    Get the code! https://dev.launchpad.net/
 
 
 Page registering
@@ -540,7 +222,7 @@ private, the 'private' class is added to the body's class attribute.
     >>> view = LocationlessView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless private yui-skin-sam
+    tab-overview locationless private yui3-skin-sam
 
 When the context is public, the 'public' class is in the class attribute.
 
@@ -549,4 +231,44 @@ When the context is public, the 'public' class is in the class attribute.
     >>> view = LocationlessView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless public yui-skin-sam
+    tab-overview locationless public yui3-skin-sam
+
+
+Notifications
+-------------
+
+Notifications are displayed between the breadcrumbs and the page content.
+
+    >>> request.response.addInfoNotification('I cannot do that Dave.')
+    >>> view = MainOnlyView(user, request)
+    >>> body_tag = find_tag_by_id(view.render(), 'maincontent')
+    >>> print str(body_tag)
+    <div id="maincontent" ...
+      ...
+      <div id="request-notifications">
+        <div class="informational message">I cannot do that Dave.</div>
+      </div>
+      <div class="top-portlet">
+      ...
+
+For ajax requests to form views, notifications are added to the response
+headers.
+
+    >>> from lp.app.browser.launchpadform import action, LaunchpadFormView
+    >>> from zope.interface import Interface
+    >>> class FormView(LaunchpadFormView):
+    ...     """A simple view to test notifications."""
+    ...     class schema(Interface):
+    ...         """A default schema."""
+    ...     @action('Test', name='test')
+    ...     def test_action(self, action, data):
+    ...         pass
+
+    >>> extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={'field.actions.test': 'Test'}, **extra)
+    >>> request.response.addInfoNotification('I cannot do that Dave.')
+    >>> view = FormView(user, request)
+    >>> view.initialize()
+    >>> print request.response.getHeader('X-Lazr-Notifications')
+    [[20, "I cannot do that Dave."]]

@@ -2,7 +2,7 @@
 
   >>> from zope.component import queryMultiAdapter
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
 
 Empty request.
 
@@ -67,8 +67,8 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
 
   >>> firefox_parsed_depends = firefox_view.builddepends
 
+  >>> from lp.soyuz.interfaces.packagerelationship import IPackageRelationshipSet
   >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
   >>> verifyObject(IPackageRelationshipSet, firefox_parsed_depends)
   True
 

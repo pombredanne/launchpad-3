@@ -1,14 +1,16 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 import pytz
 
 from canonical.launchpad.ftests import login
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestPoll(TestCaseWithFactory):
@@ -25,7 +27,3 @@ class TestPoll(TestCaseWithFactory):
         # Force closing of the poll so that we can call getWinners().
         poll.datecloses = datetime.now(pytz.UTC)
         self.failUnless(poll.getWinners() is None, poll.getWinners())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

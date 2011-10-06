@@ -1,36 +1,55 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
+__all__ = [
+    'Diff',
+    'IncrementalDiff',
+    'PreviewDiff',
+    ]
 
-import sys
-
+from contextlib import nested
 from cStringIO import StringIO
+import sys
+from uuid import uuid1
 
-from bzrlib.branch import Branch
-from bzrlib.diff import show_diff_trees
-from bzrlib.patches import parse_patches, Patch
-from bzrlib.merge import Merge3Merger
 from bzrlib import trace
+from bzrlib.diff import show_diff_trees
+from bzrlib.merge import Merge3Merger
+from bzrlib.patches import (
+    parse_patches,
+    Patch,
+    )
+from bzrlib.plugins.difftacular.generate_diff import diff_ignore_branches
 from lazr.delegates import delegates
 import simplejson
-from sqlobject import ForeignKey, IntCol, StringCol
-from storm.locals import Int, Reference, Storm, Unicode
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import classProvides, implements
+from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase
-from canonical.uuid import generate_uuid
-
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
-    IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
+    IDiff,
+    IIncrementalDiff,
+    IPreviewDiff,
+    )
+from lp.codehosting.bzrutils import read_locked
 
 
 class Diff(SQLBase):
@@ -140,9 +159,11 @@ class Diff(SQLBase):
             source_revision)
         merger = Merge3Merger(
             merge_target, merge_target, merge_base, merge_source,
-            do_merge=False)
+            this_branch=target_branch, do_merge=False)
+
         def dummy_warning(self, *args, **kwargs):
             pass
+
         real_warning = trace.warning
         trace.warning = dummy_warning
         try:
@@ -175,9 +196,14 @@ class Diff(SQLBase):
         diff_content = StringIO()
         show_diff_trees(from_tree, to_tree, diff_content, old_label='',
                         new_label='')
+        return klass.fromFileAtEnd(diff_content, filename)
+
+    @classmethod
+    def fromFileAtEnd(cls, diff_content, filename=None):
+        """Make a Diff from a file object that is currently at its end."""
         size = diff_content.tell()
         diff_content.seek(0)
-        return klass.fromFile(diff_content, size, filename)
+        return cls.fromFile(diff_content, size, filename)
 
     @classmethod
     def fromFile(cls, diff_content, size, filename=None):
@@ -194,7 +220,7 @@ class Diff(SQLBase):
             diff_content_bytes = ''
         else:
             if filename is None:
-                filename = generate_uuid() + '.txt'
+                filename = str(uuid1()) + '.txt'
             diff_text = getUtility(ILibraryFileAliasSet).create(
                 filename, size, diff_content, 'text/x-diff', restricted=True)
             diff_content.seek(0)
@@ -238,52 +264,59 @@ class Diff(SQLBase):
             file_stats[path] = tuple(patch.stats_values()[:2])
         return file_stats
 
-
-class StaticDiff(SQLBase):
-    """A diff from one revision to another."""
-
-    implements(IStaticDiff)
-
-    classProvides(IStaticDiffSource)
-
-    from_revision_id = StringCol()
-
-    to_revision_id = StringCol()
-
-    diff = ForeignKey(foreignKey='Diff', notNull=True)
-
     @classmethod
-    def acquire(klass, from_revision_id, to_revision_id, repository,
-                filename=None):
-        """See `IStaticDiffSource`."""
-        existing_diff = klass.selectOneBy(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id)
-        if existing_diff is not None:
-            return existing_diff
-        from_tree = repository.revision_tree(from_revision_id)
-        to_tree = repository.revision_tree(to_revision_id)
-        diff = Diff.fromTrees(from_tree, to_tree, filename)
-        return klass(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
-            diff=diff)
+    def generateIncrementalDiff(cls, old_revision, new_revision,
+            source_branch, ignore_branches):
+        """Return a Diff whose contents are an incremental diff.
 
-    @classmethod
-    def acquireFromText(klass, from_revision_id, to_revision_id, text,
-                        filename=None):
-        """See `IStaticDiffSource`."""
-        existing_diff = klass.selectOneBy(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id)
-        if existing_diff is not None:
-            return existing_diff
-        diff = Diff.fromFile(StringIO(text), len(text), filename)
-        return klass(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
-            diff=diff)
+        The Diff's contents will show the changes made between old_revision
+        and new_revision, except those changes introduced by the
+        ignore_branches.
 
-    def destroySelf(self):
-        diff = self.diff
-        SQLBase.destroySelf(self)
-        diff.destroySelf()
+        :param old_revision: The `Revision` to show changes from.
+        :param new_revision: The `Revision` to show changes to.
+        :param source_branch: The bzr branch containing these revisions.
+        :param ignore_brances: A collection of branches to ignore merges from.
+        :return: a `Diff`.
+        """
+        diff_content = StringIO()
+        read_locks = [read_locked(branch) for branch in [source_branch] +
+                ignore_branches]
+        with nested(*read_locks):
+            diff_ignore_branches(
+                source_branch, ignore_branches, old_revision.revision_id,
+                new_revision.revision_id, diff_content)
+        return cls.fromFileAtEnd(diff_content)
+
+
+class IncrementalDiff(Storm):
+    """See `IIncrementalDiff."""
+
+    implements(IIncrementalDiff)
+
+    delegates(IDiff, context='diff')
+
+    __storm_table__ = 'IncrementalDiff'
+
+    id = Int(primary=True, allow_none=False)
+
+    diff_id = Int(name='diff', allow_none=False)
+
+    diff = Reference(diff_id, 'Diff.id')
+
+    branch_merge_proposal_id = Int(
+        name='branch_merge_proposal', allow_none=False)
+
+    branch_merge_proposal = Reference(
+        branch_merge_proposal_id, "BranchMergeProposal.id")
+
+    old_revision_id = Int(name='old_revision', allow_none=False)
+
+    old_revision = Reference(old_revision_id, 'Revision.id')
+
+    new_revision_id = Int(name='new_revision', allow_none=False)
+
+    new_revision = Reference(new_revision_id, 'Revision.id')
 
 
 class PreviewDiff(Storm):
@@ -291,7 +324,6 @@ class PreviewDiff(Storm):
     implements(IPreviewDiff)
     delegates(IDiff, context='diff')
     __storm_table__ = 'PreviewDiff'
-
 
     id = Int(primary=True)
 
@@ -322,16 +354,15 @@ class PreviewDiff(Storm):
         :param bmp: The `BranchMergeProposal` to generate a `PreviewDiff` for.
         :return: A `PreviewDiff`.
         """
-        source_branch = Branch.open(bmp.source_branch.warehouse_url)
+        source_branch = bmp.source_branch.getBzrBranch()
         source_revision = source_branch.last_revision()
-        target_branch = Branch.open(bmp.target_branch.warehouse_url)
+        target_branch = bmp.target_branch.getBzrBranch()
         target_revision = target_branch.last_revision()
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
         if bmp.prerequisite_branch is not None:
-            prerequisite_branch = Branch.open(
-                bmp.prerequisite_branch.warehouse_url)
+            prerequisite_branch = bmp.prerequisite_branch.getBzrBranch()
         else:
             prerequisite_branch = None
         preview.diff, conflicts = Diff.mergePreviewFromBranches(
@@ -360,7 +391,7 @@ class PreviewDiff(Storm):
         preview.prerequisite_revision_id = prerequisite_revision_id
         preview.conflicts = conflicts
 
-        filename = generate_uuid() + '.txt'
+        filename = str(uuid1()) + '.txt'
         size = len(diff_content)
         preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
         return preview
@@ -371,7 +402,6 @@ class PreviewDiff(Storm):
         # A preview diff is stale if the revision ids used to make the diff
         # are different from the tips of the source or target branches.
         bmp = self.branch_merge_proposal
-        is_stale = False
         if (self.source_revision_id != bmp.source_branch.last_scanned_id or
             self.target_revision_id != bmp.target_branch.last_scanned_id):
             # This is the simple frequent case.

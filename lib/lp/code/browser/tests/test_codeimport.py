@@ -6,12 +6,13 @@
 __metaclass__ = type
 
 import re
-import unittest
 
-from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.code.enums import RevisionControlSystems
 from lp.testing import TestCaseWithFactory
 
@@ -52,9 +53,3 @@ class TestImportDetails(TestCaseWithFactory):
         svn_details = find_tag_by_id(browser.contents, 'svn-import-details')
         self.assertSvnDetailsDisplayed(
             svn_details, RevisionControlSystems.SVN)
-
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

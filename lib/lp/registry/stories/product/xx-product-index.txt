@@ -118,7 +118,7 @@ A project that has not set a license is marked as 'Unspecified'.
 If the project doesn't have a license, a portlet is displayed to direct
 the owner to set a license.
 
-    >>> from canonical.launchpad.interfaces import License
+    >>> from lp.registry.interfaces.product import License
     >>> firefox = Product.selectOneBy(name="firefox")
     >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> owner_browser.open('http://launchpad.dev/firefox')
@@ -180,7 +180,7 @@ Changing the state to reviewed but not approved results in the project
 being shown as proprietary.
 
     >>> admin_browser.open('http://launchpad.dev/thunderbird/+review-license')
-    >>> admin_browser.getControl(name='field.license_reviewed').value = True
+    >>> admin_browser.getControl(name='field.project_reviewed').value = True
     >>> admin_browser.getControl(name='field.license_approved').value = False
     >>> admin_browser.getControl('Change').click()
 
@@ -359,8 +359,7 @@ If a product is packaged in Ubuntu the links are shown.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
     All packages
-    Packages in Ubuntu
-    “mozilla-firefox” source package in Hoary
+    Packages in Distributions
     “mozilla-firefox” source package in Warty Version 0.9 uploaded on...
 
 A product that has linked packages now displays suggestions and asks
@@ -373,11 +372,12 @@ the user to select the package.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
     All packages...
-    Packages in Ubuntu...
-    Ubuntu packages:
+    Packages in Distributions...
+    Ubuntu Hoary packages:
     pmount...
 
-    >>> user_browser.getControl(name='field.distributionsourcepackage').value = ['pmount']
-    >>> user_browser.getControl('Link to this Ubuntu Package').click()
+    >>> user_browser.getControl(
+    ...     name='field.distributionsourcepackage').value = ['pmount']
+    >>> user_browser.getControl('Set Ubuntu Package Information').click()
     >>> print_feedback_messages(user_browser.contents)
-    This project was linked to the source package "pmount in ubuntu"
+    This project was linked to the source package "pmount in Ubuntu"

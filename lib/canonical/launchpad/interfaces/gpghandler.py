@@ -3,12 +3,18 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 __all__ = [
+    'GPGKeyDoesNotExistOnServer',
     'GPGKeyExpired',
     'GPGKeyRevoked',
     'GPGKeyNotFoundError',
+    'GPGKeyTemporarilyNotFoundError',
     'GPGUploadFailure',
     'GPGVerificationError',
     'IGPGHandler',
@@ -28,13 +34,41 @@ class MoreThanOneGPGKeyFound(Exception):
 
 
 class GPGKeyNotFoundError(Exception):
-    """The given GPG key was not found in the keyserver."""
+    """The GPG key with the given fingerprint was not found on the keyserver.
+    """
 
-    def __init__(self, fingerprint, pubkey=None):
+    def __init__(self, fingerprint, message=None):
         self.fingerprint = fingerprint
-        self.pubkey = pubkey
-        super(GPGKeyNotFoundError, self).__init__(
-            "No GPG key found with the given content: %s" % (fingerprint,))
+        if message is None:
+            message = (
+            "No GPG key found with the given content: %s" % (fingerprint, ))
+        super(GPGKeyNotFoundError, self).__init__(message)
+
+
+class GPGKeyTemporarilyNotFoundError(GPGKeyNotFoundError):
+    """The GPG key with the given fingerprint was not found on the keyserver.
+
+    The reason is a timeout while accessing the server, a general
+    server error, a network problem or some other temporary issue.
+    """
+    def __init__(self, fingerprint):
+        message = (
+            "GPG key %s not found due to a server or network failure."
+            % fingerprint)
+        super(GPGKeyTemporarilyNotFoundError, self).__init__(
+            fingerprint, message)
+
+
+class GPGKeyDoesNotExistOnServer(GPGKeyNotFoundError):
+    """The GPG key with the given fingerprint was not found on the keyserver.
+
+    The server returned an explicit "not found".
+    """
+    def __init__(self, fingerprint):
+        message = (
+            "GPG key %s does not exist on the keyserver." % fingerprint)
+        super(GPGKeyDoesNotExistOnServer, self).__init__(
+            fingerprint, message)
 
 
 class GPGKeyRevoked(Exception):
@@ -43,7 +77,7 @@ class GPGKeyRevoked(Exception):
     def __init__(self, key):
         self.key = key
         super(GPGKeyRevoked, self).__init__(
-            "%s has been publicly revoked" % (key.keyid,))
+            "%s has been publicly revoked" % (key.keyid, ))
 
 
 class GPGKeyExpired(Exception):
@@ -51,7 +85,7 @@ class GPGKeyExpired(Exception):
 
     def __init__(self, key):
         self.key = key
-        super(GPGKeyExpired, self).__init__("%s has expired" % (key.keyid,))
+        super(GPGKeyExpired, self).__init__("%s has expired" % (key.keyid, ))
 
 
 class SecretGPGKeyImportDetected(Exception):
@@ -165,14 +199,6 @@ class IGPGHandler(Interface):
         :return: a `PymeKey` object for the just-generated secret key.
         """
 
-    def importKeyringFile(filepath):
-        """Import the keyring filepath into the local key database.
-
-        :param filepath: the path to a keyring to import.
-
-        :returns: a list of the imported keys.
-        """
-
     def encryptContent(content, fingerprint):
         """Encrypt the given content for the given fingerprint.
 
@@ -237,15 +263,6 @@ class IGPGHandler(Interface):
         :raise AssertionError: if the POST request doesn't succeed.
         """
 
-    def checkTrustDb():
-        """Check whether the OpenPGP trust database is up to date.
-
-        The method automatically rebuild the trust values if necessary.
-
-        The results will be visible in any new retrieved key objects.
-        Existing key objects will not reflect the new trust value.
-        """
-
     def localKeys(filter=None, secret=False):
         """Return an iterator of all keys locally known about.
 
@@ -265,12 +282,23 @@ class IGPGHandler(Interface):
         """
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
 
+    def touchConfigurationDirectory():
+        """Touch the home directory and all files within.
+
+        This function is called so that the configuration directory does not
+        get cleaned up by any reaper scripts which look at time last modified.
+        It is only required in the case where a long running daemon uses an
+        IGPGHandler instance such that the lifetime of the daemon exceeds the
+        reaping (ie tmp clean up) interval.
+        """
+
 
 class IPymeSignature(Interface):
     """pyME signature container."""
 
     fingerprint = Attribute("Signer Fingerprint.")
     plain_data = Attribute("Plain Signed Text.")
+    timestamp = Attribute("The time at which the message was signed.")
 
 
 class IPymeKey(Interface):
@@ -294,9 +322,6 @@ class IPymeKey(Interface):
     can_certify = Attribute("Whether the key can be used for certification")
     can_authenticate = Attribute(
         "Whether the key can be used for authentication")
-
-    def setOwnerTrust(value):
-        """Set the owner_trust value for this key."""
 
     def export():
         """Export the context key in ASCII-armored mode.

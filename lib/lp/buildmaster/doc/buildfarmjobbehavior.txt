@@ -70,13 +70,6 @@ specific information.
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     >>> bob = store.find(Builder, Builder.name == 'bob').one()
 
-XXX Michael Nelson 2009-12-04 bug 484819. At the time of writing the
-BuildQueue.specific_job method has not been updated to support different
-job types, so we will set the behavior explicitly here.
-
-    >>> bob.current_build_behavior = IBuildFarmJobBehavior(
-    ...     MyNewBuildFarmJob())
-
 Once the builder has the relevant behavior, it is able to provide both general
 builder functionality of its own accord, while delegating any build-type
 specific functionality to the behavior.
@@ -111,3 +104,11 @@ appropriate exception.
      ...
     BuildBehaviorMismatch: Builder was idle when asked to log the start of a
     build.
+
+If a slave is working on a job while we think it is idle, it will always be
+aborted.
+
+    >>> bob.current_build_behavior.verifySlaveBuildCookie('foo')
+    Traceback (most recent call last):
+    ...
+    CorruptBuildCookie: No job assigned to builder

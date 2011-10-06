@@ -44,10 +44,12 @@
     </td>
   </tr>
 
-  <tal:product tal:define="widget nocall:view/widgets/product|nothing"
-               tal:condition="widget">
-    <metal:widget use-macro="context/@@launchpad_form/widget_row" />
-  </tal:product>
+  <noscript>
+    <tal:product tal:define="widget nocall:view/widgets/product|nothing"
+                 tal:condition="widget">
+      <metal:widget use-macro="context/@@launchpad_form/widget_row" />
+    </tal:product>
+  </noscript>
 
   <metal:summary tal:define="widget nocall:view/widgets/title">
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
@@ -57,51 +59,14 @@
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:description>
 
-  <metal:bug_reporting_guidelines
-      use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
-
-  <tr tal:define="security_context view/getSecurityContext">
-    <td colspan="2" width="100%"
-        tal:define="widget nocall: view/widgets/security_related">
-      <table>
-        <tbody>
-          <tr>
-            <td>
-              <input type="checkbox" tal:replace="structure widget" />
-            </td>
-            <td>
-              <label tal:attributes="for widget/name">
-                This bug is a security vulnerability
-              </label>
-              <div tal:condition="view/can_decide_security_contact"
-                   tal:define="security_contact security_context/security_contact|nothing">
-                <tal:security-contact tal:condition="security_contact">
-                  The security contact for
-                  <tal:security-context content="security_context/displayname" />,
-                  <a tal:replace="structure security_contact/fmt:link" />,
-                  will be notified.
-                </tal:security-contact>
-                <tal:maintainer condition="not:security_contact"
-                   define="maintainer security_context/owner">
-                  The maintainer of
-                  <tal:security-context content="security_context/displayname">
-                    Mozilla Firefox</tal:security-context>,
-                  <a tal:replace="structure maintainer/fmt:link">
-                    Sample Person</a>,
-                  will be notified.
-                </tal:maintainer>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </td>
-  </tr>
+  <tr id="extra-filebug-details"
+    tal:replace="structure context/@@+filebug-reporting-guidelines" />
 
   <tr>
     <td colspan="2">
-      <fieldset id="filebug-extra-options" class="collapsible collapsed">
+      <fieldset id="filebug-extra-options" class="collapsible">
         <legend>Extra options</legend>
+        <div class="unseen">
         <table>
           <tal:status
               define="widget nocall:view/widgets/status|nothing"
@@ -129,6 +94,7 @@
         </table>
         <metal:attachment-form
             use-macro="context/@@bug-attachment-macros/attachment-form" />
+        </div>
       </fieldset>
     </td>
   </tr>
@@ -143,7 +109,7 @@
       <div class="highlight-message">
         <a tal:replace="structure product_or_distro/fmt:link">Alsa Utils</a>
         <strong>does not use</strong> Launchpad as its bug tracker.
-        <a tal:attributes="href context/menu:overview/edit/fmt:url"
+        <a tal:attributes="href context/menu:overview/configure_bugtracker/fmt:url"
            tal:condition="context/required:launchpad.Edit">
           Change this&nbsp;<span class="sprite edit"></span>
         </a>
@@ -156,9 +122,9 @@
         <tal:defines define="bugtracker product_or_distro/getExternalBugTracker">
           <h3>
             Are you sure this bug is in <acronym class="explain"
-            style="color: inherit" title="the original developer of
-            the software">upstream</acronym> <span
-            tal:replace="product_or_distro/displayname" />?
+            style="color: inherit"
+            title="the original developer of the software">upstream</acronym>
+            <span tal:replace="product_or_distro/displayname" />?
           </h3>
           <tal:distro-source-pacakges
               condition="product_or_distro/distrosourcepackages">
@@ -172,7 +138,7 @@
             <ul class="source package" tal:repeat="dsp product_or_distro/distrosourcepackages">
               <li>
                 <a tal:attributes="href dsp/fmt:url"
-                   tal:content="string:${dsp/distribution/displayname} ${dsp/sourcepackagename}" />
+                   tal:content="string:${dsp/distribution/displayname} ${dsp/sourcepackagename/name}" />
               </li>
             </ul>
             <p>
@@ -198,8 +164,8 @@
           </tal:not-distro-source-packages>
           <tal:has-bugtracker condition="bugtracker">
             <p id="bugtarget-upstream-bugtracker-info">
-              Bugs in <abbr title="the original developer of the
-              software" class="explain">upstream</abbr>
+              Bugs in <abbr title="the original developer of the software"
+              class="explain">upstream</abbr>
               <span tal:replace="product_or_distro/displayname">
                 Alsa Utils
               </span>
@@ -219,7 +185,7 @@
           </tal:has-bugtracker>
           <tal:XXX condition="nothing">
             XXX: Gavin Panella 2009-09-14 bug=429354:
-            Asking people to use feedback@launchpad.net is not
+            Asking people to use answers is not
             ideal. We could instead link project owners to the +edit
             page and provide the +contactuser form for everyone else
             to contact the owner.
@@ -228,8 +194,8 @@
             <p class="warning message">
               Launchpad doesn't know what bug tracker <span
               tal:replace="product_or_distro/displayname">Alsa
-              Utils</span> uses. Do you know? <a href="mailto:
-              feedback@launchpad.net">Tell us about it.</a>
+              Utils</span> uses. Do you know?
+              <a href="/support">Tell us about it.</a>
             </p>
           </tal:not-has-bugtracker>
         </tal:defines>
@@ -298,7 +264,7 @@
           </p>
         </tal:singular>
         <ul class="product-bug-options" tal:repeat="product context/products">
-          <li condition="product/official_malone">
+          <li condition="product/bug_tracking_usage/enumvalue:LAUNCHPAD">
             <tal:link replace="structure product/fmt:link" />
             <ul class="bulleted">
               <tal:external-tracker
@@ -323,7 +289,7 @@
                       <a tal:attributes="href package/fmt:url">
                         <tal:displayname
                             replace="package/distribution/displayname" />
-                        <tal:packagename replace="package/sourcepackagename" />
+                        <tal:packagename replace="package/sourcepackagename/name" />
                       </a>
                       (<a tal:attributes="href
                       package/fmt:url/+filebug">File a bug here</a>)
@@ -353,8 +319,9 @@
       tal:condition="guidelines">
     <td colspan="2" id="bug-reporting-guidelines">
       <tal:guidelines repeat="guideline guidelines">
-        <h3><span tal:replace="guideline/source" /> guidelines:</h3>
-        <div tal:content="structure guideline/content/fmt:text-to-html" />
+        <h3><span tal:replace="guideline/source" /> bug reporting guidelines:</h3>
+        <div
+          tal:content="structure guideline/content/fmt:text-to-html-with-target" />
       </tal:guidelines>
     </td>
   </tr>
@@ -379,17 +346,17 @@
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
         <tbody>
           <tr>
-            <td>
-              <img width="14" height="14" src="/@@/treeCollapsed"
-                  class="bug-already-reported-expander"
-                  tal:attributes="id string:bug-details-expander-bug-${bug/id};"
-                />
-            </td>
-            <td>
-              <label tal:attributes="for string:bug-already-reported-as-${bug/id};
+            <td class="bug-already-reported-expander">
+              <tal:comment condition="nothing">
+                We use zero-width space (&#8203;) to force the otherwise
+                empty span using sprite image to show up. Also no whitespace
+                between tags is allowed.
+              </tal:comment>
+              <span class="expander">&#8203;</span><label
+                 tal:attributes="for string:bug-already-reported-as-${bug/id};
                                      class bugtask/image:sprite_css"
-                     tal:condition="bugtask"/>
-              <label class="sprite bug" tal:condition="not:bugtask"/>
+                     tal:condition="bugtask">&#8203;</label><label
+                 class="sprite bug" tal:condition="not:bugtask">&#8203;</label>
             </td>
             <td>
               <div>
@@ -422,7 +389,9 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-                  <a class="view-bug-link" tal:attributes="href bug/fmt:url"
+                  &nbsp;&nbsp;
+                  <a class="sprite new-window view-bug-link" target="_blank"
+		      tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>
               </div>
@@ -504,7 +473,7 @@
 </metal:similar-bugs-and-filebug-form>
 
 <metal:inline-filebug-form define-macro="inline-filebug-form">
-  <div id="bug_reporting_form">
+  <div id="bug-reporting-form">
     <metal:form use-macro="context/@@launchpad_form/form">
       <a name="form-start" />
       <metal:widgets metal:fill-slot="widgets">

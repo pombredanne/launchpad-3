@@ -19,9 +19,10 @@ export LANG=C LC_ALL=C
 
 SBUILD=/usr/bin/sbuild
 BUILDID=$1
-SUITE=$2
+ARCHITECTURETAG=$2
+SUITE=$3
 
-shift; shift
+shift 3
 
 export NR_PROCESSORS=$(grep ^processor /proc/cpuinfo | wc -l)
 
@@ -34,11 +35,6 @@ fi
 cd "$HOME/build-$BUILDID"
 
 hostarch=$(dpkg --print-architecture)
-architecturetag=$hostarch
-
-if [ -f /etc/launchpad-buildd/default ]; then
-  eval `grep architecturetag /etc/launchpad-buildd/default | sed 's/ //g'`
-fi
 
 WARN=""
 case $hostarch in
@@ -51,7 +47,7 @@ case $hostarch in
     WARN="--warnonly"
     ;;
   amd64)
-    if [ "$hostarch" != "$architecturetag" ]; then
+    if [ "$hostarch" != "$ARCHITECTURETAG" ]; then
       SBUILD="linux32 $SBUILD"
       WARN="--warnonly"
     fi

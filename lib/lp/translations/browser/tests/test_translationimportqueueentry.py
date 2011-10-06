@@ -4,20 +4,27 @@
 """Unit tests for translation import queue views."""
 
 from datetime import datetime
-from pytz import timezone
-from unittest import TestLoader
 
-from zope.component import getMultiAdapter, getUtility
+from pytz import timezone
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadFunctionalLayer
-
-from canonical.launchpad.layers import TranslationsLayer, setFirstLayer
+from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from lp.testing import TestCaseWithFactory
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.translations.browser.translationimportqueue import escape_js_string
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
+from lp.translations.publisher import TranslationsLayer
 
 
 class TestTranslationImportQueueEntryView(TestCaseWithFactory):
@@ -46,13 +53,14 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         return view
 
     def _makeEntry(self, productseries=None, distroseries=None,
-                   sourcepackagename=None):
-        filename = self.factory.getUniqueString() + '.pot'
+                   sourcepackagename=None, filename=None, potemplate=None):
+        if filename is None:
+            filename = self.factory.getUniqueString() + '.pot'
         contents = self.factory.getUniqueString()
         entry = self.queue.addOrUpdateEntry(
             filename, contents, False, self.uploader,
             productseries=productseries, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename, potemplate=potemplate)
         return removeSecurityProxy(entry)
 
     def test_import_target_productseries(self):
@@ -142,7 +150,6 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         # status_change_date describes the date of the entry's last
         # status change.
         series = self._makeProductSeries()
-        product = series.product
         entry = self._makeEntry(productseries=series)
         view = self._makeView(entry)
 
@@ -159,6 +166,71 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         self.assertEqual(
             "Last changed on 2007-08-14.", view.status_change_date)
 
+    def test_initial_values_domain(self):
+        # Without a given potemplate, a translation domain will be suggested
+        # from the file name.
+        series = self._makeProductSeries()
+        entry = self._makeEntry(
+            productseries=series, filename="My_Domain.pot")
+        view = self._makeView(entry)
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+        self.assertEqual(
+            "My_Domain", view.initial_values['translation_domain'])
+
+    def test_initial_values_existing_domain(self):
+        # With a given potemplate, its translation domain will be presented
+        # as the initial value.
+        domain = self.factory.getUniqueString()
+        series = self._makeProductSeries()
+        potemplate = self.factory.makePOTemplate(
+            productseries=series, translation_domain=domain)
+        entry = self._makeEntry(
+            productseries=series, potemplate=potemplate)
+        view = self._makeView(entry)
+
+        self.assertEqual(domain, view.initial_values['translation_domain'])
+
+    def test_initial_values_potemplate(self):
+        # Without a given potemplate, a name will be suggested from the file
+        # name. The name is converted to be suitable as a template name.
+        series = self._makeProductSeries()
+        entry = self._makeEntry(
+            productseries=series, filename="My_Domain.pot")
+        view = self._makeView(entry)
+
+        self.assertEqual("my-domain", view.initial_values['name'])
+
+    def test_initial_values_existing_potemplate(self):
+        # With a given potemplate, its name will be presented
+        # as the initial value.
+        name = self.factory.getUniqueString()
+        series = self._makeProductSeries()
+        potemplate = self.factory.makePOTemplate(
+            productseries=series, name=name)
+        entry = self._makeEntry(
+            productseries=series, potemplate=potemplate)
+        view = self._makeView(entry)
+
+        self.assertEqual(name, view.initial_values['name'])
+
+
+class TestEscapeJSString(TestCase):
+    """Test `escape_js_string`."""
+
+    def test_escape_js_string_empty(self):
+        self.assertEqual('', escape_js_string(''))
+
+    def test_escape_js_string_plain(self):
+        self.assertEqual('foo', escape_js_string('foo'))
+
+    def test_escape_js_string_singlequote(self):
+        self.assertEqual("\\'", escape_js_string("'"))
+
+    def test_escape_js_string_doublequote(self):
+        self.assertEqual('\\"', escape_js_string('"'))
+
+    def test_escape_js_string_backslash(self):
+        self.assertEqual('\\\\', escape_js_string('\\'))
+
+    def test_escape_js_string_ampersand(self):
+        self.assertEqual('&', escape_js_string('&'))

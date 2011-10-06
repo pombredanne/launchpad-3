@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Distro Series Languages."""
@@ -12,24 +12,26 @@ __all__ = [
     'ProductSeriesLanguageView',
     ]
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import Navigation
+from lp.app.browser.tales import PersonFormatterAPI
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_related
+from lp.services.propertycache import cachedproperty
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguage)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
+    IDistroSeriesLanguage,
+    )
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguage)
+    IProductSeriesLanguage,
+    )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class BaseSeriesLanguageView(LaunchpadView):
-    """View base class to render translation status for an 
+    """View base class to render translation status for an
     `IDistroSeries` and `IProductSeries`
 
     This class should not be directly instantiated.
@@ -46,12 +48,18 @@ class BaseSeriesLanguageView(LaunchpadView):
         self.translationgroup = translationgroup
         self.form = self.request.form
 
-        self.batchnav = BatchNavigator(
-            self.series.getCurrentTranslationTemplates(),
-            self.request)
-
-        self.pofiles = self.context.getPOFilesFor(
-            self.batchnav.currentBatch())
+        if IDistroSeriesLanguage.providedBy(self.context):
+            self.batchnav = BatchNavigator(
+                self.series.getCurrentTranslationTemplates(),
+                self.request)
+            self.pofiles = self.context.getPOFilesFor(
+                self.batchnav.currentBatch())
+            load_related(
+                SourcePackageName, self.batchnav.currentBatch(),
+                ['sourcepackagenameID'])
+        else:
+            self.batchnav = BatchNavigator(self.context.pofiles, self.request)
+            self.pofiles = self.batchnav.currentBatch()
 
     @property
     def translation_group(self):
@@ -77,7 +85,7 @@ class BaseSeriesLanguageView(LaunchpadView):
     @property
     def access_level_description(self):
         """Must not be called when there's no translation group."""
-        
+
         if is_read_only():
             return (
                 "No work can be done on these translations while Launchpad "

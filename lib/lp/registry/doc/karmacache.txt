@@ -9,10 +9,10 @@ The KarmaCache table is maintained by our foaf-update-karma-cache.py script,
 which runs daily. The script does that by using the IKarmaCacheManager API.
 
     >>> from zope.component import getUtility
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.registry.interfaces.karma import IKarmaCacheManager
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.model.karma import KarmaCategory
-    >>> from canonical.launchpad.interfaces import (
-    ...     IKarmaCacheManager, IPersonSet)
-    >>> from canonical.testing import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('karma')
     >>> karmacachemanager = getUtility(IKarmaCacheManager)

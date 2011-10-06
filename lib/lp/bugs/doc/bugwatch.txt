@@ -1,4 +1,5 @@
-= Bug Watches =
+Bug Watches
+===========
 
 Malone is a bug tracker that understands the structure of the Open
 Source world. It's there for people who want to use it, and take
@@ -13,12 +14,13 @@ of the status of a bug that lives outside Malone for the benefit of
 users and maintainers that are using Malone.
 
 
-== Retrieving Bug Watches ==
+Retrieving Bug Watches
+----------------------
 
 Bug watches are accessed via a utility that provides IBugWatchSet.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> getUtility(IBugWatchSet).get(98765)
     Traceback (most recent call last):
     ...
@@ -57,8 +59,9 @@ slash or not:
 Watches of Email Address bugtrackers are slightly different: the `url`
 property is always the same as the bugtracker baseurl property.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugTrackerSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> bugtrackerset = getUtility(IBugTrackerSet)
 
     >>> email_bugtracker = bugtrackerset['email']
@@ -102,7 +105,7 @@ If we have a bug, we can query for a bug watch associated with that
 bug. This method is useful for preventing duplicate bug watches from
 being added.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> mozilla_watch = bug_one.getBugWatch(mozilla_bugtracker, '2000')
     >>> mozilla_watch in bug_one.watches
@@ -118,11 +121,12 @@ If no matching bug watch can be found, None is returned.
     True
 
 
-== Creating Bug Watches ==
+Creating Bug Watches
+--------------------
 
 To create a bugwatch, use IBugWatchSet.createBugWatch:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -135,7 +139,8 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
     True
 
 
-== Creating SF.net Bug Watches ==
+Creating SF.net Bug Watches
+---------------------------
 
 SourceForge.net bug watch URLs are generated using the
 "/support/tracker.php" script, which will redirect to the URL with the
@@ -150,7 +155,8 @@ group_id and aid arguments filled in:
     >>> bugwatch.url
     u'http://sourceforge.net/support/tracker.php?aid=1337833'
 
-== Extracting Bug Watches From Text ==
+Extracting Bug Watches From Text
+--------------------------------
 
 When you have a text, for example a bug comment, it can be useful to
 extract all the possible bug watches from that text. To make this
@@ -199,7 +205,7 @@ doesn't handle the case where the same bug tracker is available through
 different URLs, for example where the host name is different (e.g.,
 bugs.gnome.org vs. bugzilla.gnome.org).
 
-    >>> old_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> old_bugtracker_count = getUtility(IBugTrackerSet).count
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).queryByBaseURL(
     ...     'http://bugzilla.gnome.org/bugs')
     >>> gnome_bugzilla.name
@@ -209,7 +215,7 @@ bugs.gnome.org vs. bugzilla.gnome.org).
     ...     text, bug_one, sample_person)
     >>> gnome_bugwatch.bugtracker.name
     u'gnome-bugzilla'
-    >>> new_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> new_bugtracker_count = getUtility(IBugTrackerSet).count
     >>> old_bugtracker_count == new_bugtracker_count
     True
 
@@ -226,7 +232,8 @@ the text passed to fromText().
     []
 
 
-== Syncing the Status with Linked Bugtasks ==
+Syncing the Status with Linked Bugtasks
+---------------------------------------
 
 If the bug watch is linked to a bugtask, the bug watch can sync its
 status with it. Before we do this we need to login as the Bug Watch
@@ -261,15 +268,15 @@ we can confirm that an event is indeed fired off.
     ...         print "%s => %s" % (old_bugtask.importance.title,
     ...             bugtask.importance.title)
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.interfaces import IBugTask
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> event_listener = TestEventListener(
     ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified)
 
 If we pass in a different Malone status than the existing one, an event
 will be fired off, even though the remote status stays the same.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> old_lastchanged = debian_bugwatch.lastchanged
     >>> debian_bugwatch.updateStatus(
     ...     debian_bugwatch.remotestatus, BugTaskStatus.NEW)
@@ -328,14 +335,15 @@ Finally, let's make sure that bug notifications were added:
            Status: Confirmed => New
 
 
-== Syncing Importance With Linked BugTasks ==
+Syncing Importance With Linked BugTasks
+---------------------------------------
 
 Similarly, the bug watch updater can modify the bug watch's importance.
 Passing it a new Malone importance will fire off an event, which our
 event listener will pick up. We reset the `lastchanged` field of the bug
 watch so that we can demonstrate how it gets updated.
 
-    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> debian_bugwatch.lastchanged = old_lastchanged
     >>> old_remote_importance = debian_bugwatch.remote_importance
 
@@ -398,7 +406,8 @@ The Bug Watch Updater can transition a bug to any status or importance:
     ...     debian_bugwatch.updateImportance(u'nothing', importance)
 
 
-== BugWatches against BugTasks with conjoined masters ==
+BugWatches against BugTasks with conjoined masters
+--------------------------------------------------
 
 A conjoined bugtask involves a master and slave in in a conjoined
 relationship. The slave is a generic product or distribution task; the
@@ -409,9 +418,13 @@ creating a bug task with a conjoined master.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, BugTrackerType, IBugTaskSet,
-    ...     IBugTrackerSet, IDistributionSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtracker import (
+    ...     BugTrackerType,
+    ...     IBugTrackerSet,
+    ...     )
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> firefox = ubuntu.getSourcePackage('mozilla-firefox')
@@ -420,9 +433,7 @@ creating a bug task with a conjoined master.
     ...     comment="A sample bug for conjoined master tests."))
 
     >>> targeted_bugtask = getUtility(IBugTaskSet).createTask(
-    ...     bug=bug, owner=sample_person,
-    ...     distroseries=ubuntu.currentseries,
-    ...     sourcepackagename=firefox.sourcepackagename)
+    ...     bug, sample_person, firefox.development_version)
 
     >>> targeted_bugtask.conjoined_master is None
     True
@@ -454,9 +465,9 @@ slaves must be updated through their conjoined master.
     >>> import transaction
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestRoundup)
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
-    >>> bug_watch_updater = BugWatchUpdater(transaction, FakeLogger())
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(transaction, FakeLogger())
     >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
     INFO Updating 1 watches for 1 bugs on http://some.where
@@ -465,7 +476,8 @@ slaves must be updated through their conjoined master.
     'New'
 
 
-== Getting linked bug watches for a product ==
+Getting linked bug watches for a product
+----------------------------------------
 
 Product has a method, getLinkedBugWatches, for getting all the bug
 watches that are linked to a bug task targeted to the Product.
@@ -504,3 +516,114 @@ Bug watches can be removed using the removeWatch method.
     >>> bug.removeWatch(bug_watch, factory.makePerson())
     >>> [bug_watch.remotebug for bug_watch in bug.watches]
     []
+
+
+Checking if a watch can be rescheduled
+--------------------------------------
+
+IBugWatch provides an attribute, can_be_rescheduled, which indicates
+whether or not the watch can be rescheduled. For a new bug watch this
+will be False.
+
+    >>> schedulable_watch = factory.makeBugWatch()
+    >>> schedulable_watch.next_check = None
+    >>> schedulable_watch.can_be_rescheduled
+    False
+
+If there's been activity on the watch but it's always been successful,
+can_be_rescheduled will be False.
+
+    >>> schedulable_watch.addActivity()
+    >>> schedulable_watch.can_be_rescheduled
+    False
+
+If the watch's updates have failed less than 60% of the time,
+can_be_rescheduled will be True
+
+    >>> import transaction
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
+
+    >>> transaction.commit()
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> schedulable_watch.can_be_rescheduled
+    True
+
+If the watch is rescheduled, can_be_rescheduled will be False, since the
+next_check time for the watch will be in the past (or in this case is
+now) and therefore it will be checked with the next checkwatches run.
+
+    >>> from datetime import datetime
+    >>> from pytz import utc
+    >>> schedulable_watch.next_check = datetime.now(utc)
+    >>> schedulable_watch.can_be_rescheduled
+    False
+
+However, if the watch has failed more than 60% of the time
+can_be_rescheduled will be False, since it's assumed that the watch
+needs attention in order for it to be able to work again.
+
+    >>> schedulable_watch.next_check = None
+    >>> transaction.commit()
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> schedulable_watch.can_be_rescheduled
+    False
+
+If the watch has run and failed only once, can_be_rescheduled will be
+true.
+
+    >>> from datetime import timedelta
+    >>> run_once_failed_once_watch = factory.makeBugWatch()
+    >>> run_once_failed_once_watch.next_check = (
+    ...     datetime.now(utc) + timedelta(days=7))
+    >>> run_once_failed_once_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> run_once_failed_once_watch.can_be_rescheduled
+    True
+
+If the most recent update on the watch succeded, can_be_rescheduled will
+be False, regardless of the ratio of failures to successes.
+
+    >>> transaction.commit()
+    >>> run_once_failed_once_watch.addActivity()
+    >>> run_once_failed_once_watch.can_be_rescheduled
+    False
+
+
+Rescheduling a watch
+--------------------
+
+The rescheduling of a watch is done via IBugWatch.setNextCheck(). This
+is to ensure that watches are only rescheduled when can_be_rescheduled
+is True (note that the BugWatch Scheduler bypasses setNextCheck() and
+sets next_check directly because it has admin privileges).
+
+The schedulable_watch that we used in the previous test cannot currently
+be rescheduled.
+
+    >>> schedulable_watch = factory.makeBugWatch()
+    >>> schedulable_watch.next_check = None
+    >>> schedulable_watch.can_be_rescheduled
+    False
+
+Calling setNextCheck() on this watch will cause an Exception,
+BugWatchCannotBeRescheduled, to be raised.
+
+    >>> schedulable_watch.setNextCheck(datetime.now(utc))
+    Traceback (most recent call last):
+      ...
+    BugWatchCannotBeRescheduled...
+
+If we add some activity to the watch, to make its can_be_rescheduled
+property become True, setNextCheck() will succeed.
+
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> schedulable_watch.can_be_rescheduled
+    True
+
+    >>> next_check = datetime.now(utc)
+    >>> schedulable_watch.setNextCheck(next_check)
+    >>> schedulable_watch.next_check == next_check
+    True

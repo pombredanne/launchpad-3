@@ -1,0 +1,418 @@
+Set branch
+----------
+
+The productseries +setbranch view allows the user to set a branch for
+this series.  The branch can be one that already exists in Launchpad,
+or a new branch in Launchpad can be defined, or it can be a repository
+that exists externally in a variety of version control systems.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> product = factory.makeProduct(name="chevy")
+    >>> series = factory.makeProductSeries(name="impala", product=product)
+    >>> transaction.commit()
+    >>> login_person(product.owner)
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner)
+    >>> print find_tag_by_id(view.render(), 'maincontent')
+    <div...
+    ...Link to a Bazaar branch already on Launchpad...
+    ...Create a new, empty branch in Launchpad and link to this series...
+    ...Import a branch hosted somewhere else...
+    ...Branch name:...
+    ...Branch owner:...
+
+
+Linking to an existing branch
+-----------------------------
+
+If linking to an existing branch is selected then the branch location
+must be provided.
+
+    >>> form = {
+    ...     'field.branch_type': 'link-lp-bzr',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    The branch location must be set.
+
+Setting the branch location to an invalid branch results in another
+validation error.
+
+    >>> form = {
+    ...     'field.branch_type': 'link-lp-bzr',
+    ...     'field.branch_location': 'foo',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    ('Invalid value', InvalidValue("token 'foo' not found in vocabulary"))
+
+Providing a valid branch results in a successful linking.
+
+    >>> series.branch is None
+    True
+    >>> branch = factory.makeBranch(name='impala-branch',
+    ...                             owner=product.owner, product=product)
+    >>> form = {
+    ...     'field.branch_type': 'link-lp-bzr',
+    ...     'field.branch_location': branch.unique_name,
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Series code location updated.
+
+    >>> print series.branch.name
+    impala-branch
+
+Revisiting the +setbranch page when the branch is already set will
+show the branch location pre-populated with the existing value.
+
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> print view.widgets.get('branch_location')._getFormValue().unique_name
+    ~person.../chevy/impala-branch
+
+
+Creating a new branch
+---------------------
+
+When creating a new branch the branch name and owner must be specified.
+
+    >>> series = factory.makeProductSeries(name="camaro", product=product)
+    >>> transaction.commit()
+
+    >>> form = {
+    ...     'field.branch_type': 'create-new',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    >>> for error in view.errors:
+    ...     print error
+    The branch name must be set.
+    The branch owner must be set.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> mark = getUtility(IPersonSet).getByEmail('mark@example.com')
+    >>> form = {
+    ...     'field.branch_type': 'create-new',
+    ...     'field.branch_name': 'camaro-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.actions.update': 'Update',
+    ...     }
+
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> print view.errors_in_action
+    False
+    >>> print view.next_url
+    http://launchpad.dev/chevy/camaro
+    >>> for error in view.errors:
+    ...     print error
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    New branch created and linked to the series.
+    >>> print series.branch.name
+    camaro-branch
+
+Using a branch name that already exists results in an error.
+
+    >>> form = {
+    ...     'field.branch_type': 'create-new',
+    ...     'field.branch_name': 'camaro-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.actions.update': 'Update',
+    ...     }
+
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> print view.errors_in_action
+    True
+    >>> print view.next_url
+    None
+    >>> for error in view.errors:
+    ...     print error
+    You already have a branch for <em>Chevy</em> called <em>camaro-branch</em>.
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+
+
+Import a branch hosted elsewhere
+--------------------------------
+
+Importing an externally hosted branch can either be a mirror, if a
+Bazaar branch, or an import, if a git, hg, cvs, or svn branch.
+
+Lots of data are required to create an import.
+
+    >>> series = factory.makeProductSeries(name="blazer", product=product)
+    >>> transaction.commit()
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    >>> for error in view.errors:
+    ...     print error
+    You must set the external repository URL.
+    You must specify the type of RCS for the remote host.
+    The branch name must be set.
+    The branch owner must be set.
+
+For Bazaar branches the scheme may only be http or https.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'BZR',
+    ...     'field.branch_name': 'blazer-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'bzr+ssh://bzr.com/foo',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    >>> for error in view.errors:
+    ...     print error
+    ('repo_url'...The URI scheme "bzr+ssh" is not allowed.  Only URIs with the following schemes may be
+    used: bzr, http, https'))
+
+
+A correct URL is accepted.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'BZR',
+    ...     'field.branch_name': 'blazer-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'http://bzr.com/foo',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> transaction.commit()
+    >>> for error in view.errors:
+    ...     print error
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Mirrored branch created and linked to the series.
+    >>> print series.branch.name
+    blazer-branch
+
+Git branches cannnot use svn.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'GIT',
+    ...     'field.branch_name': 'chevette-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'svn://svn.com/chevette',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    >>> for error in view.errors:
+    ...     print error
+    ('repo_url'...'The URI scheme "svn" is not allowed.  Only
+    URIs with the following schemes may be used: git, http, https'))
+
+But Git branches may use git.
+
+    >>> series = factory.makeProductSeries(name="chevette", product=product)
+    >>> transaction.commit()
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'GIT',
+    ...     'field.branch_name': 'chevette-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'git://github.com/chevette',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> transaction.commit()
+    >>> for error in view.errors:
+    ...     print error
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Code import created and branch linked to the series.
+    >>> print series.branch.name
+    chevette-branch
+
+But Subversion branches cannnot use git.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'BZR_SVN',
+    ...     'field.branch_name': 'suburban-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'git://github.com/suburban',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    >>> for error in view.errors:
+    ...     print error
+    ('repo_url'...'The URI scheme "git" is not allowed.  Only
+    URIs with the following schemes may be used: http, https, svn'))
+
+But Subversion branches may use svn as the scheme.
+
+    >>> series = factory.makeProductSeries(name="suburban", product=product)
+    >>> transaction.commit()
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'BZR_SVN',
+    ...     'field.branch_name': 'suburban-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'svn://svn.com/suburban',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Code import created and branch linked to the series.
+    >>> print series.branch.name
+    suburban-branch
+
+Mercurial branches must use http or https as the scheme.
+
+    >>> series = factory.makeProductSeries(name="malibu", product=product)
+    >>> transaction.commit()
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'HG',
+    ...     'field.branch_name': 'malibu-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'https://mercurial.com/branch',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Code import created and branch linked to the series.
+    >>> print series.branch.name
+    malibu-branch
+
+CVS branches must use http or https as the scheme and must have the
+CVS module field specified.
+
+    >>> series = factory.makeProductSeries(name="corvair", product=product)
+    >>> transaction.commit()
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'CVS',
+    ...     'field.branch_name': 'corvair-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'https://cvs.com/branch',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    >>> for error in view.errors:
+    ...     print error
+    The CVS module must be set.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'CVS',
+    ...     'field.branch_name': 'corvair-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'https://cvs.com/branch',
+    ...     'field.cvs_module': 'root',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Code import created and branch linked to the series.
+    >>> print series.branch.name
+    corvair-branch
+
+Attempting to import a location that has already been imported results
+in an error.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'GIT',
+    ...     'field.branch_name': 'chevette-branch-dup',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'git://github.com/chevette',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    <BLANKLINE>
+    This foreign branch URL is already specified for
+    the imported branch <a href="http://code.launchpad.dev/~.../chevy/chevette-branch">~.../chevy/chevette-branch</a>.
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+
+Using a branch name that already exists results in an error.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'GIT',
+    ...     'field.branch_name': 'chevette-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'git://github.com/different/chevette',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    You already have a branch for <em>Chevy</em> called <em>chevette-branch</em>.
+    >>> print view.errors_in_action
+    True
+    >>> print view.next_url
+    None
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+
+Bazaar external branches are handled differently but they also give an
+error if a duplicate name is used.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'BZR',
+    ...     'field.branch_name': 'blazer-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'http://bzr.com/foo',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    You already have a branch for <em>Chevy</em> called <em>blazer-branch</em>.
+    >>> print view.errors_in_action
+    True
+    >>> print view.next_url
+    None
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message

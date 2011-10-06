@@ -1,7 +1,7 @@
 ProductSeries Views
 ===================
 
-Productseries menus
+ProductSeries menus
 -------------------
 
 The ProductSeriesOverviewMenu provides the links to the common ProductSeries
@@ -11,9 +11,61 @@ views.
     ...     ProductSeriesOverviewMenu)
     >>> from lp.testing.menu import check_menu_links
 
-    >>> series = factory.makeSeries()
+    >>> product = factory.makeProduct(name='app')
+    >>> series = factory.makeProductSeries(name='simple', product=product)
     >>> check_menu_links(ProductSeriesOverviewMenu(series))
     True
+
+
+ProductSeries Involvement links
+...............................
+
+The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
+rendering links:
+
+    >>> from lp.app.enums import ServiceUsage
+    >>> login_person(product.owner)
+    >>> product.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> product.official_malone = True
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> view = create_view(series, '+get-involved')
+
+    # answers_usage is never LAUNCHPAD for product series.
+    >>> print view.answers_usage.name
+    NOT_APPLICABLE
+    >>> print view.blueprints_usage.name
+    LAUNCHPAD
+    >>> print view.official_malone
+    True
+    >>> print view.translations_usage.name
+    LAUNCHPAD
+    >>> print view.codehosting_usage.name
+    UNKNOWN
+
+    >>> for link in view.enabled_links:
+    ...     print link.url
+    http://bugs.launchpad.dev/app/simple/+filebug
+    http://translations.launchpad.dev/app/simple
+    http://blueprints.launchpad.dev/app/simple/+addspec
+    >>> for link in view.visible_disabled_links:
+    ...     print link.url
+    http://code.launchpad.dev/app/+addbranch
+
+Setting a branch for the series should enable the +addbranch link.
+
+    >>> series.branch = factory.makeBranch()
+    >>> view = create_view(series, '+get-involved')
+    >>> print view.codehosting_usage.name
+    LAUNCHPAD
+    >>> for link in view.enabled_links:
+    ...     print link.url
+    http://bugs.launchpad.dev/app/simple/+filebug
+    http://translations.launchpad.dev/app/simple
+    http://code.launchpad.dev/app/+addbranch
+    http://blueprints.launchpad.dev/app/simple/+addspec
+    >>> for link in view.visible_disabled_links:
+    ...     print link.url
 
 
 ProductSeries view
@@ -26,25 +78,23 @@ update the milestones and releases table.
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
     >>> login('foo.bar@canonical.com')
-
-    >>> product = factory.makeProduct(name='app')
-    >>> series = factory.makeSeries(name='simple', product=product)
     >>> view = create_view(series, '+index', principal=product.owner)
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        YUI().use(... 'registry.milestoneoverlay', 'registry.milestonetable'...
+        LPS.use(... 'lp.registry.milestoneoverlay',
+                      'lp.registry.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
             var milestone_row_uri =
                 '/app/+milestone/{name}/+productseries-table-row';
             var milestone_rows_id = '#milestone-rows';...
             Y.on('domready', function () {
-                var create_milestone_link = Y.get(
+                var create_milestone_link = Y.one(
                     '.menu-link-create_milestone');
                 create_milestone_link.addClass('js-action');...
-                Y.registry.milestoneoverlay.attach_widget(config);...
-                Y.registry.milestonetable.setup(table_config);...
+                Y.lp.registry.milestoneoverlay.attach_widget(config);...
+                Y.lp.registry.milestonetable.setup(table_config);...
 
 If the Create milestone link is not enabled, the script is not present.
 
@@ -83,7 +133,7 @@ to display.
 
     >>> from lp.registry.interfaces.series import SeriesStatus
 
-    >>> print series.status
+    >>> print series.status.title
     Active Development
     >>> view.is_obsolete
     False
@@ -110,7 +160,7 @@ The view provides access to the latest release if it has one.
 The view also provides a link to register a new code import.
 
     >>> print view.request_import_link
-    http://launchpad.dev/firefox/+new-import
+    http://code.launchpad.dev/firefox/+new-import
 
 
 Edit ProductSeries
@@ -189,16 +239,6 @@ There is a cancel_url property too.
     >>> print view.cancel_url
     http://launchpad.dev/app/simple
 
-Bazaar experts can change the branch links.
-
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> celebrities = getUtility(ILaunchpadCelebrities)
-    >>> login_person(celebrities.bazaar_experts.teamowner)
-    >>> check_permission('launchpad.Edit', view)
-    True
-
-
 Delete ProductSeries
 --------------------
 
@@ -208,14 +248,15 @@ mistake.
 
     >>> from datetime import datetime
     >>> from pytz import UTC
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> celebrities = getUtility(ILaunchpadCelebrities)
 
+    >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
     >>> product = factory.makeProduct(name="field", displayname='Field')
     >>> productseries = factory.makeProductSeries(
-    ...     product=product, name='rabbit')
-
-    # Hack the creation date for testing purposes.
-    >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
-    >>> productseries.datecreated = test_date
+    ...     product=product, name='rabbit', date_created=test_date)
+    >>> login_person(celebrities.admin.teamowner)
+    >>> productseries.releasefileglob = 'http://eg.dom/rabbit/*'
 
 Users without edit permission cannot access the view.
 
@@ -261,7 +302,7 @@ series, the most important of which are milestones. Bugtasks and
 specifications that will be unassigned, and release files that will be
 deleted are available.
 
-    >>> view.milestones
+    >>> list(view.milestones)
     []
     >>> view.bugtasks
     []
@@ -291,6 +332,7 @@ portion do.
     >>> series_specification.proposeGoal(productseries, owner)
     >>> series_bugtask = factory.makeBugTask(bug=bug, target=productseries)
     >>> subscription = productseries.addSubscription(owner, owner)
+    >>> filter = subscription.newBugFilter()
     >>> productseries.branch = factory.makeBranch()
 
     >>> view = create_view(productseries, name='+delete')
@@ -337,7 +379,6 @@ view's can_delete property checks this rule.
 The delete action will not delete a series that is the active focus of
 development.
 
-    >>> transaction.commit()
     >>> form = {
     ...     'field.actions.delete': 'Delete this Series',
     ...     }
@@ -356,9 +397,9 @@ The delete action will not delete a series that is linked to a package.
     ...     IPackagingUtil, PackagingType)
 
     >>> sourcepackagename = factory.makeSourcePackageName('sausage')
-    >>> distro_series = factory.makeDistroRelease()
+    >>> distro_series = factory.makeDistroSeries()
     >>> linked_series = factory.makeProductSeries(product=product)
-    >>> getUtility(IPackagingUtil).createPackaging(
+    >>> packaging = getUtility(IPackagingUtil).createPackaging(
     ...     linked_series, sourcepackagename, distro_series,
     ...     PackagingType.PRIME, owner=owner)
     >>> linked_view = create_initialized_view(linked_series, '+delete')
@@ -421,10 +462,17 @@ avoid conflicts. The linked branch is removed.
     >>> print productseries.name
     field-rabbit-20090501-193424
 
+The series status is set to obsolete and the releasefileglob was set to None.
+
+    >>> print productseries.status.title
+    Obsolete
+    >>> print productseries.releasefileglob
+    None
+
 A series cannot be deleted if it is has translation templates.
 
     >>> translated_series = factory.makeProductSeries(product=product)
-    >>> product.official_rosetta = True
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> po_template = factory.makePOTemplate(
     ...     name='gibberish', productseries=translated_series)
     >>> translated_view = create_initialized_view(
@@ -447,7 +495,7 @@ A series cannot be deleted if it is has translation templates.
 The view reports all the reason why a series cannot be deleted.
 
     >>> sourcepackagename = factory.makeSourcePackageName('tomato')
-    >>> getUtility(IPackagingUtil).createPackaging(
+    >>> packaging = getUtility(IPackagingUtil).createPackaging(
     ...     active_series, sourcepackagename, distro_series,
     ...     PackagingType.PRIME, owner=owner)
     >>> po_template = factory.makePOTemplate(

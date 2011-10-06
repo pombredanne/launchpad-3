@@ -5,16 +5,15 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.publisher.xmlrpc import TestRequest
 
-from canonical.launchpad.interfaces import IPrivateApplication
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces.launchpad import IPrivateApplication
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.authserver import AuthServerAPIView
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
+
 
 class GetUserAndSSHKeysTests(TestCaseWithFactory):
     """Tests for the implementation of `IAuthServer.getUserAndSSHKeys`.
@@ -28,17 +27,10 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
         self.authserver = AuthServerAPIView(
             private_root.authserver, TestRequest())
 
-    def assertFaultEqual(self, expected_fault, observed_fault):
-        """Assert that `expected_fault` equals `observed_fault`."""
-        self.assertIsInstance(observed_fault, faults.LaunchpadFault)
-        self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
-        self.assertEqual(
-            expected_fault.faultString, observed_fault.faultString)
-
     def test_user_not_found(self):
         # getUserAndSSHKeys returns the NoSuchPersonWithName fault if there is
         # no Person of the given name.
-        self.assertFaultEqual(
+        self.assertEqual(
             faults.NoSuchPersonWithName('no-one'),
             self.authserver.getUserAndSSHKeys('no-one'))
 
@@ -61,7 +53,3 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
             dict(id=new_person.id, name=new_person.name,
                  keys=[(key.keytype.title, key.keytext)]),
             self.authserver.getUserAndSSHKeys(new_person.name))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

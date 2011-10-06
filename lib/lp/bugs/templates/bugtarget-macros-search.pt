@@ -3,6 +3,21 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 
+<metal:block define-macro="also-in-ubuntu">
+  <p id="also-in-ubuntu"
+    tal:define="packages context/ubuntu_packages | nothing"
+    tal:condition="packages">
+    Ubuntu
+    <tal:also condition="view/has_bugtracker">also</tal:also>
+    tracks bugs for packages derived from this project:
+    <tal:packages repeat="package packages">
+      <span style="white-space: nowrap"
+            tal:content="structure package/fmt:link" /><tal:comma
+      condition="not:repeat/package/end">,</tal:comma></tal:packages>.
+  </p>
+</metal:block>
+
+
 <metal:block define-macro="sortwidget">
   <tal:comment condition="nothing">
     This macro expects that the callsite's view class has a shouldShowTargetName
@@ -36,13 +51,13 @@
       tal:attributes="selected python:orderby == '-datecreated'"
     >newest first</option>
     <option
-      value="date_last_updated"
-      tal:attributes="selected python:orderby == 'date_last_updated'"
-    >least recently changed</option>
-    <option
       value="-date_last_updated"
       tal:attributes="selected python:orderby == '-date_last_updated'"
     >most recently changed</option>
+    <option
+      value="date_last_updated"
+      tal:attributes="selected python:orderby == 'date_last_updated'"
+    >not recently changed</option>
     <option
       value="-number_of_duplicates"
       tal:attributes="selected python:orderby == '-number_of_duplicates'"
@@ -65,6 +80,7 @@
 <metal:block define-macro="simple-search-form">
 <form method="get" name="search" class="primary search"
       tal:attributes="action search_url|string:">
+  <p>
   <tal:searchbox replace="structure view/widgets/searchtext" />
   <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
   <input type="submit" name="search" value="Search" />
@@ -77,9 +93,22 @@
   <tal:widget replace="structure view/widgets/has_patch/hidden" />
   <tal:widget replace="structure view/widgets/component/hidden" />
   <tal:widget replace="structure view/widgets/has_no_package/hidden" />
-  <br /><br />
+  </p>
+  <p>
   <a tal:attributes="href advanced_search_url|string:?advanced=1"
   >Advanced search</a>
+  </p>
+
+  <metal:also-in-ubuntu
+    use-macro="context/@@+bugtarget-macros-search/also-in-ubuntu" />
+
+  <p id="also-in-upstream"
+    tal:define="product view/upstream_launchpad_project | nothing"
+    tal:condition="product">
+    <a tal:replace="structure product/fmt:link:bugs" /> also
+    tracks bugs for this package.
+  </p>
+
   <div metal:define-slot="extra-search-widgets">
   </div>
 </form>

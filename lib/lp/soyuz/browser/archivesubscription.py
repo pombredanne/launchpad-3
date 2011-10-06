@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -11,36 +11,48 @@ __all__ = [
     'ArchiveSubscribersView',
     'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
-    'traverse_archive_subscription_for_subscriber'
+    'traverse_archive_subscription_for_subscriber',
     ]
 
 import datetime
+from operator import attrgetter
 
 import pytz
-
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface, implements
-from zope.schema import Date, Text
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Date,
+    Text,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
-from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IPersonalArchiveSubscription)
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView)
-from canonical.widgets import DateWidget
-from canonical.widgets.popup import PersonPickerWidget
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.date import DateWidget
+from lp.app.widgets.popup import PersonPickerWidget
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet,
+    IPersonalArchiveSubscription,
+    )
 
 
 def archive_subscription_ui_adapter(archive_subscription):
@@ -93,7 +105,7 @@ class IArchiveSubscriberUI(Interface):
     we simply want to use a date field when users create or edit new
     subscriptions.
     """
-    subscriber = ParticipatingPersonChoice(
+    subscriber = PersonChoice(
         title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
         description=_("The person or team to grant access."))
 
@@ -136,18 +148,20 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
         super(ArchiveSubscribersView, self).initialize()
 
-    @property
+    @cachedproperty
     def subscriptions(self):
         """Return all the subscriptions for this archive."""
-        return getUtility(IArchiveSubscriberSet).getByArchive(
-            self.context)
+        result = list(getUtility(IArchiveSubscriberSet
+            ).getByArchive(self.context))
+        ids = set(map(attrgetter('subscriber_id'), result))
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
+            need_validity=True))
+        return result
 
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
-        # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.subscriptions.any() is not None
+        return bool(self.subscriptions)
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
@@ -319,7 +333,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         return personal_subscription_tokens
 
 
-class PersonArchiveSubscriptionView(LaunchpadView):
+class PersonArchiveSubscriptionView(LaunchpadView, SourcesListEntriesWidget):
     """Display a user's archive subscription and relevant info.
 
     This includes the current sources.list entries (if the subscription
@@ -335,9 +349,12 @@ class PersonArchiveSubscriptionView(LaunchpadView):
     def initialize(self):
         """Process any posted actions."""
         super(PersonArchiveSubscriptionView, self).initialize()
+        # Set the archive attribute so SourcesListEntriesWidget can be built
+        # correctly.
+        self.archive = self.context.archive
 
         # If an activation was requested and there isn't a currently
-        # active token, then create a token, provided a notification
+        # active token, then create a token, provide a notification
         # and redirect.
         if self.request.form.get('activate') and not self.active_token:
             self.context.archive.newAuthToken(self.context.subscriber)
@@ -359,30 +376,3 @@ class PersonArchiveSubscriptionView(LaunchpadView):
                 "\"sources.list\"." % self.context.archive.displayname)
 
             self.request.response.redirect(self.request.getURL())
-
-    @cachedproperty
-    def sources_list_entries(self):
-        """Setup and return the sources list entries widget."""
-        if self.active_token is None:
-            return None
-
-        comment = "Personal access of %s to %s" % (
-            self.context.subscriber.displayname,
-            self.context.archive.displayname)
-
-        entries = SourcesListEntries(
-            self.context.archive.distribution,
-            self.active_token.archive_url,
-            self.context.archive.series_with_sources)
-
-        return SourcesListEntriesView(entries, self.request, comment=comment)
-
-    @cachedproperty
-    def active_token(self):
-        """Returns the corresponding current token for this subscription."""
-        token_set = getUtility(IArchiveAuthTokenSet)
-        return token_set.getActiveTokenForArchiveAndPerson(
-            self.context.archive, self.context.subscriber)
-
-
-

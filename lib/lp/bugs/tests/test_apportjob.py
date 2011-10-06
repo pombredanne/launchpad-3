@@ -6,30 +6,40 @@
 __metaclass__ = type
 
 import os
-import transaction
-import unittest
 
 from sqlobject import SQLObjectNotFound
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+    ITemporaryStorageManager,
+    )
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.bugs.interfaces.apportjob import (
-    ApportJobType, IProcessApportBlobJobSource)
-from lp.bugs.model.apportjob import ApportJob, ApportJobDerived
+    ApportJobType,
+    IProcessApportBlobJobSource,
+    )
+from lp.bugs.model.apportjob import (
+    ApportJob,
+    ApportJobDerived,
+    )
 from lp.bugs.utilities.filebugdataparser import (
-    FileBugData, FileBugDataParser)
+    FileBugData,
+    FileBugDataParser,
+    )
 from lp.services.job.interfaces.job import JobStatus
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -85,6 +95,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         blob_data = blob_file.read()
 
         self.blob = self.factory.makeBlob(blob_data)
+        transaction.commit() # We need the blob available from the Librarian.
 
     def _assertFileBugDataMatchesDict(self, filebug_data, data_dict):
         """Asser that the data in a FileBugData object matches a dict."""
@@ -212,24 +223,22 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # IProcessApportBlobJobSource.create() will create only one
         # ProcessApportBlobJob for a given BLOB, no matter how many
         # times it is called.
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        blobjobsource = getUtility(IProcessApportBlobJobSource)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        job = blobjobsource.create(self.blob)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             1, len(current_jobs),
             "There should be only one ProcessApportBlobJob. Found %s" %
             len(current_jobs))
 
-        another_job = getUtility(IProcessApportBlobJobSource).create(self.blob)
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        another_job = blobjobsource.create(self.blob)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             1, len(current_jobs),
             "There should be only one ProcessApportBlobJob. Found %s" %
@@ -241,17 +250,14 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # IProcessApportBlobJobSource.
         job.job.start()
         job.job.complete()
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ready ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        yet_another_job = getUtility(
-            IProcessApportBlobJobSource).create(self.blob)
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        yet_another_job = blobjobsource.create(self.blob)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no new ProcessApportBlobJobs. Found %s" %
@@ -272,7 +278,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 IProcessApportBlobJobSource jobs.\n', stderr)
+            'INFO    Ran 1 ProcessApportBlobJob jobs.\n', stderr)
 
     def test_getFileBugData(self):
         # The IProcessApportBlobJobSource.getFileBugData() method
@@ -336,6 +342,31 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         # the extra_data_token attribute gets populated.
         view.publishTraverse(view.request, blob_uuid)
         return view
+
+    def test_blob_has_been_processed(self):
+        # Using the TemporaryBlobStorageAddView to upload a new BLOB
+        # will show blob as being processed
+        blob_uuid = self._create_blob_and_job_using_storeblob()
+        blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
+
+        self.assertFalse(
+            blob.hasBeenProcessed(),
+            "BLOB should not be processed, but indicates it has.")
+
+    def test_blob_get_processed_data(self):
+        # Using the TemporaryBlobStorageAddView to upload a new BLOB
+        # should indicate there two attachments were processed.
+        blob_uuid = self._create_blob_and_job_using_storeblob()
+        blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
+        job = getUtility(IProcessApportBlobJobSource).getByBlobUUID(blob_uuid)
+        job.job.start()
+        job.job.complete()
+        job.run()
+        blob_meta = blob.getProcessedData()
+
+        self.assertEqual(
+            len(blob_meta['attachments']), 2,
+            "BLOB metadata: %s" %(str(blob_meta)))
 
     def test_adding_blob_adds_job(self):
         # Using the TemporaryBlobStorageAddView to upload a new BLOB
@@ -420,7 +451,3 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
             view.extra_data_to_process,
             "view.extra_data_to_process should be False when there is no "
             "job.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

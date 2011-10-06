@@ -1,10 +1,11 @@
-= Bug tags =
+Bug tags
+========
 
 In order to arbitrary group bugs together a bug can be associated with
 one or more tags. A tag is a simple text string, not contain a space
 character. The tags are available as a list of strings on the bug:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
 
 There are no tags currently, so let's add some. It doesn't matter which
@@ -62,14 +63,15 @@ Let's correct the spelling mistake we did and delete one of the tags:
     sco
 
 
-== Widgets ==
+Widgets
+-------
 
 To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
 
-    >>> from canonical.launchpad.interfaces import IBug
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.widgets.bug import BugTagsWidget
+    >>> from lp.bugs.browser.widgets.bug import BugTagsWidget
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_tags_field = IBug['tags'].bind(bug_one)
     >>> tag_field = bug_tags_field.value_type
     >>> request = LaunchpadTestRequest()
@@ -158,7 +160,52 @@ Duplicate tags are converted to a single instance.
     [u'bar', u'foo']
 
 
-=== Large and Small Bug Tags Widget ===
+Bug Tags Widget for Frozen Sets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A variant of `BugTagsWidget` exists for when tags are stored in a
+`FrozenSet` field.
+
+    >>> from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
+
+Field-manipulation is not going to be examined here, and the widget
+does not care what type the field is otherwise, so the field from
+earlier can be used again.
+
+    >>> tags_frozen_set_widget = BugTagsFrozenSetWidget(
+    ...     bug_tags_field, tag_field, request)
+
+_tagsFromFieldValue() converts tags from the field value to tags for
+display. The absense of tags causes it to return None:
+
+    >>> print tags_frozen_set_widget._tagsFromFieldValue(None)
+    None
+    >>> print tags_frozen_set_widget._tagsFromFieldValue(frozenset())
+    None
+
+Tags are ordered before returning:
+
+    >>> tags_frozen_set_widget._tagsFromFieldValue(
+    ...     frozenset([5, 4, 1, 12]))
+    [1, 4, 5, 12]
+
+_tagsToFieldValue() converts the tags entered in the form into a value
+suitable for the field. In the absense of tags it returns an empty
+frozenset():
+
+    >>> tags_frozen_set_widget._tagsToFieldValue(None)
+    frozenset([])
+    >>> tags_frozen_set_widget._tagsToFieldValue([])
+    frozenset([])
+
+Otherwise it returns a `frozenset` of the tags given:
+
+    >>> tags_frozen_set_widget._tagsToFieldValue([u"foo", u"bar"])
+    frozenset([u'foo', u'bar'])
+
+
+Large and Small Bug Tags Widget
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A regular BugTagsWidget is rendered as an <input> tag,
 
@@ -167,20 +214,21 @@ A regular BugTagsWidget is rendered as an <input> tag,
 
 A LargeBugTagsWidget is rendered as a <textarea>,
 
-    >>> from canonical.widgets.bug import LargeBugTagsWidget
+    >>> from lp.bugs.browser.widgets.bug import LargeBugTagsWidget
     >>> large_text_widget = LargeBugTagsWidget(
     ...     bug_tags_field, tag_field, request)
     >>> print large_text_widget()
     <textarea...
 
 
-== Searching ==
+Searching
+---------
 
 We can search for bugs with some specific tag.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet)
     >>> from canonical.launchpad.searchbuilder import all
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> svg_tasks = ubuntu.searchTasks(
     ...     BugTaskSearchParams(tag=all(u'svg'), user=None))
@@ -234,7 +282,9 @@ If we now set bug one's tag to 'some-tag', it will be found.
     ...     print bugtask.id, bugtask.bug.id, bugtask.bug.tags
     1 [u'some-tag']
 
-== Tags for a context ==
+
+Tags for a context
+------------------
 
 When viewing a bug listing for a context we want to display all the tags
 that are used in that context. For this we have a method on each bug
@@ -243,7 +293,8 @@ tags used in its distribution/distroseries, since it's good to see
 which tags can be used. The tags are ordered alphabetically.  All tags
 are shown, no matter if they are used in open bugs or closed ones.
 
-    >>> from canonical.launchpad.interfaces import IProductSet, BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login('test@canonical.com')
     >>> for bugtask in firefox.searchTasks(BugTaskSearchParams(
@@ -256,7 +307,7 @@ are shown, no matter if they are used in open bugs or closed ones.
     >>> firefox.getUsedBugTags()
     [u'doc', u'layout-test', u'sco', u'svg']
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> mozilla.getUsedBugTags()
     [u'crash', u'doc', u'layout-test', u'sco', u'svg']
@@ -273,35 +324,42 @@ are shown, no matter if they are used in open bugs or closed ones.
     >>> debian_woody.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
 
-    >>> debian_woody_firefox = debian_woody.getSourcePackage('mozilla-firefox')
+    >>> debian_woody_firefox = (
+    ...     debian_woody.getSourcePackage('mozilla-firefox'))
     >>> debian_woody_firefox.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
 
 We can also get all the used tags, together with the number of open
 bugs each tag has. Only tags having open bugs are returned.
 
-    >>> firefox.getUsedBugTagsWithOpenCounts(None)
+    >>> sorted(firefox.getUsedBugTagsWithOpenCounts(None).items())
     [(u'doc', 1L), (u'sco', 1L), (u'svg', 1L)]
 
-    >>> mozilla.getUsedBugTagsWithOpenCounts(None)
+    >>> sorted(mozilla.getUsedBugTagsWithOpenCounts(None).items())
     [(u'doc', 1L), (u'sco', 1L), (u'svg', 1L)]
 
-    >>> ubuntu.getUsedBugTagsWithOpenCounts(None)
+    >>> sorted(ubuntu.getUsedBugTagsWithOpenCounts(None).items())
     [(u'crash', 2L), (u'dataloss', 1L), (u'pebcak', 1L),
      (u'sco', 1L), (u'svg', 1L)]
 
+We can require that some tags be included in the output even when limiting the
+results.
+
+    >>> sorted(ubuntu.getUsedBugTagsWithOpenCounts(None,
+    ...     tag_limit=1, include_tags=[u'pebcak', u'svg', u'fake']).items())
+    [(u'crash', 2L), (u'fake', 0), (u'pebcak', 1L), (u'svg', 1L)]
 
 Source packages are a bit special, they return all the tags that are
 used in the whole distribution, while the bug count includes only bugs
 in the specific package.
 
     >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None)
-    [(u'crash', 1L)]
+    {u'crash': 1L}
 
-    >>> debian_woody.getUsedBugTagsWithOpenCounts(None)
+    >>> sorted(debian_woody.getUsedBugTagsWithOpenCounts(None).items())
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
-    >>> debian_woody_firefox.getUsedBugTagsWithOpenCounts(None)
+    >>> sorted(debian_woody_firefox.getUsedBugTagsWithOpenCounts(None).items())
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
 Only bugs that the supplied user has access to will be counted:
@@ -312,13 +370,13 @@ Only bugs that the supplied user has access to will be counted:
     >>> flush_database_updates()
 
     >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None)
-    []
+    {}
 
     >>> sample_person = getUtility(ILaunchBag).user
     >>> bug_nine.isSubscribed(sample_person)
     True
     >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(sample_person)
-    [(u'crash', 1L)]
+    {u'crash': 1L}
 
 When context doesn't have any tags getUsedBugTags() returns a empty list.
 

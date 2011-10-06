@@ -7,8 +7,6 @@ To switch an app server to read-only mode, all you need to do is create a file
 named read-only.txt in the root of the Launchpad tree.
 """
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'is_read_only',
@@ -20,9 +18,8 @@ import logging
 import os
 import threading
 
-from zope.security.management import queryInteraction
-
 from lazr.restful.utils import get_current_browser_request
+from zope.security.management import queryInteraction
 
 
 root = os.path.abspath(os.path.join(
@@ -47,7 +44,7 @@ def is_read_only():
     request's annotations for a read-only key
     (READ_ONLY_MODE_ANNOTATIONS_KEY), and if it exists we'll just return its
     value.
-    
+
     If there's no request or the key doesn't exist, we check for the presence
     of a read-only.txt file in the root of our tree, set the read-only key in
     the request's annotations (when there is a request), update

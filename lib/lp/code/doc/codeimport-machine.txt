@@ -1,4 +1,5 @@
-= Code Import Machines =
+Code Import Machines
+====================
 
 There is a simple CodeImportMachine table in the database that records
 the machines that can perform imports and whether they are online (that
@@ -16,10 +17,13 @@ is, currently capable of performing imports).
 There are additional unit tests for CodeImportMachine in
 lp.code.model.tests.test_codeimportmachine.
 
-== Retrieving CodeImportMachines ==
+
+Retrieving CodeImportMachines
+-----------------------------
 
 The 'getAll' method of ICodeImportMachineSet returns an iterable of all
-CodeImportMachine.  There is only one CodeImportMachine in the sample data.
+CodeImportMachine.  There is only one CodeImportMachine in the sample
+data.
 
     >>> [sample_machine] = machine_set.getAll()
 
@@ -28,13 +32,15 @@ hostname and online state information.
 
     >>> verifyObject(ICodeImportMachine, sample_machine)
     True
+
     >>> sample_machine.hostname
     u'bazaar-importer'
+
     >>> print sample_machine.state.name
     ONLINE
 
-getByHostname looks for a machine of the given hostname, and returns None if
-there is no machine by that name in the database.
+getByHostname looks for a machine of the given hostname, and returns
+None if there is no machine by that name in the database.
 
     >>> print machine_set.getByHostname('bazaar-importer')
     <...CodeImportMachine...>
@@ -43,7 +49,8 @@ there is no machine by that name in the database.
     None
 
 
-== Canonical URLs ==
+Canonical URLs
+--------------
 
 In order to be able to have views for the code import machines, they
 need to have a canonical URL.  The CodeImportMachineSet also has a
@@ -53,26 +60,27 @@ canonical URL for set based views.
     >>> print canonical_url(machine_set)
     http://code.launchpad.dev/+code-imports/+machines
 
-A single code import machine is identified by the hostname of the machine
-directly after the canonical URL of the code import machine set.
+A single code import machine is identified by the hostname of the
+machine directly after the canonical URL of the code import machine set.
 
     >>> print canonical_url(sample_machine)
     http://code.launchpad.dev/+code-imports/+machines/bazaar-importer
 
 
-== Creating CodeImportMachines ==
+Creating CodeImportMachines
+---------------------------
 
 CodeImportMachines can be created with the 'new' method of
-ICodeImportMachineSet.  New machines can be created in either the
-ONLINE or OFFLINE states, but are in the OFFLINE state by default.
+ICodeImportMachineSet.  New machines can be created in either the ONLINE
+or OFFLINE states, but are in the OFFLINE state by default.
 
     >>> new_machine = machine_set.new('frobisher')
     >>> print new_machine.state.name
     OFFLINE
 
 If they are created in the ONLINE state, an ONLINE event is created in
-the CodeImportEvent audit trail.  The NewEvents class helps testing
-the creation of CodeImportEvent objects.
+the CodeImportEvent audit trail.  The NewEvents class helps testing the
+creation of CodeImportEvent objects.
 
     >>> from lp.code.enums import (
     ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
@@ -84,26 +92,32 @@ the creation of CodeImportEvent objects.
     ...     'innocent', CodeImportMachineState.ONLINE)
     >>> print new_machine2.state.name
     ONLINE
+
     >>> print new_events.summary()
     ONLINE innocent
 
 
-== Modifying CodeImportMachine ==
+Modifying CodeImportMachine
+---------------------------
 
-Directly setting the state information on CodeImportMachines is not permitted.
+Directly setting the state information on CodeImportMachines is not
+permitted.
 
     >>> print new_machine.state.name
     OFFLINE
+
     >>> new_machine.state = CodeImportMachineState.ONLINE
     Traceback (most recent call last):
       ...
     ForbiddenAttribute: ...
 
-Instead, the setOnline() and related methods must be used.  These methods
-update the fields and in addition create events in the CodeImportEvent audit
-trail.
+Instead, the setOnline() and related methods must be used.  These
+methods update the fields and in addition create events in the
+CodeImportEvent audit trail.
 
-=== setOnline ===
+
+setOnline
+.........
 
 The setOnline method sets the machine's state to ONLINE and records the
 corresponding event. It is called when a code-import-controller daemon
@@ -113,10 +127,13 @@ goes online.
     >>> new_machine.setOnline()
     >>> print new_machine.state.name
     ONLINE
+
     >>> print new_events.summary()
     ONLINE frobisher
 
-=== setOffline ===
+
+setOffline
+..........
 
 The setOffline method sets the machine's state to OFFLINE and records
 the corresponding event. It is called when a code-import-controller
@@ -127,6 +144,7 @@ heartbeat for some time.
     >>> new_machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
     >>> print new_machine.state.name
     OFFLINE
+
     >>> print new_events.summary()
     OFFLINE frobisher
 
@@ -135,31 +153,30 @@ heartbeat for some time.
     u'STOPPED'
 
 
-=== setQuiescing ===
+setQuiescing
+............
 
 The setQuiescing method sets the machine's state to QUIESCING and
-records the corresponding event.  A user is passed into the method
-to be recorded in the event, and will in almost all cases be a
-member of vcs-imports.
+records the corresponding event.  A user is passed into the method to be
+recorded in the event, and will in almost all cases be a member of the
+bazaar experts or more likely a LOSA (administrator).
 
-    >>> login('david.allouche@canonical.com')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> ddaa = getUtility(ILaunchBag).user
-    >>> ddaa.inTeam(getUtility(ILaunchpadCelebrities).vcs_imports)
-    True
+    >>> login('admin@canonical.com')
+    >>> admin = getUtility(ILaunchBag).user
 
     >>> new_machine.setOnline()
     >>> new_events = NewEvents()
-    >>> new_machine.setQuiescing(ddaa, "1.1.42 rollout")
+    >>> new_machine.setQuiescing(admin, "1.1.42 rollout")
     >>> print new_events.summary()
-    QUIESCE frobisher ddaa
+    QUIESCE frobisher name16
 
     >>> [new_event] = new_events
     >>> dict(new_event.items())[CodeImportEventDataType.MESSAGE]
     u'1.1.42 rollout'
 
 
-=== Allowed State Transitions ===
+Allowed State Transitions
+.........................
 
 Not all CodeImportMachine.state transitions are allowed.
 
@@ -210,7 +227,7 @@ execution makes redundant calls to this method.
 Attempting the transition from OFFLINE to QUIESCING is also logic error.
 
     >>> offline_machine = new_machine_with_state(OFFLINE)
-    >>> offline_machine.setQuiescing(ddaa, "No worky!")
+    >>> offline_machine.setQuiescing(admin, "No worky!")
     Traceback (most recent call last):
     ...
     AssertionError: State of machine ... was OFFLINE.
@@ -219,7 +236,7 @@ From the ONLINE state, a machine can go OFFLINE or QUIESCING, setOnline
 must fail.
 
     >>> online_machine = new_machine_with_state(ONLINE)
-    >>> online_machine.setQuiescing(ddaa, "Because.")
+    >>> online_machine.setQuiescing(admin, "Because.")
     >>> print online_machine.state.name
     QUIESCING
 
@@ -243,7 +260,7 @@ setQuiescing method must fail.
     ONLINE
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
-    >>> quiescing_machine.setQuiescing(ddaa, "No worky!")
+    >>> quiescing_machine.setQuiescing(admin, "No worky!")
     Traceback (most recent call last):
     ...
     AssertionError: State of machine ... was QUIESCING.
@@ -252,3 +269,5 @@ setQuiescing method must fail.
     >>> quiescing_machine.setOffline(some_reason)
     >>> print quiescing_machine.state.name
     OFFLINE
+
+

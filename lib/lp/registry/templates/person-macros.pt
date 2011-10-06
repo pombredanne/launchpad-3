@@ -61,10 +61,11 @@
       </dl>
       <dl id="subscription-policy">
         <dt>Subscription policy:</dt>
-        <dd>
+        <dd
+          tal:attributes="title context/subscriptionpolicy/description">
           <span tal:replace="context/subscriptionpolicy/title" />
-          <img src="/@@/maybe"
-            tal:attributes="title context/subscriptionpolicy/description" />
+          <a class="sprite maybe" href="/+help/team-subscription-policy.html"
+            target="help">&nbsp;</a>
         </dd>
       </dl>
 
@@ -159,7 +160,7 @@
       <tal:built condition="not: spr/needs_building">
           <tal:failed repeat="build spr/failed_builds">
              <a tal:attributes="href build/fmt:url"
-                tal:content="build/distroarchseries/architecturetag" />
+                tal:content="build/distro_arch_series/architecturetag" />
           </tal:failed>
           <tal:not_failed condition="not: spr/failed_builds">
              None
@@ -172,13 +173,75 @@
       </a>
     </td>
     <td style="text-align: right">
-      <a tal:attributes="href string:${spr/sourcepackage/fmt:url}/+questions"
+      <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+questions"
          tal:content="spr/open_questions">
       </a>
     </td>
   </tal:define>
   </tr>
 </metal:macro>
+
+<metal:macro define-macro="spphs-rows">
+
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+    :spphs: A list of SourcePackagePublishingHistory objects
+  </tal:comment>
+
+  <tr tal:repeat="spph spphs">
+  <tal:define define="spr spph/sourcepackagerelease;
+                     distroseries spph/distroseries">
+    <td>
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
+         class="distrosrcpackage"
+         tal:content="spr/sourcepackagename/name">
+      </a>
+    </td>
+    <td>
+      <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}"
+         class="distroseriessrcpackage"
+         tal:content="distroseries/fullseriesname">
+      </a>
+    </td>
+    <td>
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}/${spr/version}"
+         class="distrosrcpackagerelease"
+         tal:content="spr/version">
+      </a>
+    </td>
+    <td
+      tal:attributes="title spph/datecreated/fmt:datetime"
+      tal:content="spph/datecreated/fmt:approximatedate">
+      2005-10-24
+    </td>
+    <td>
+      <tal:needs_building condition="spph/needs_building">
+          Not yet built
+      </tal:needs_building>
+      <tal:built condition="not: spph/needs_building">
+          <tal:failed repeat="build spph/failed_builds">
+             <a tal:attributes="href build/fmt:url"
+                tal:content="build/distro_arch_series/architecturetag" />
+          </tal:failed>
+          <tal:not_failed condition="not: spph/failed_builds">
+             None
+          </tal:not_failed>
+      </tal:built>
+    </td>
+    <td style="text-align: right">
+      <a tal:attributes="href string:${spph/meta_sourcepackage/distribution_sourcepackage/fmt:url}/+bugs"
+         tal:content="spph/open_bugs">
+      </a>
+    </td>
+    <td style="text-align: right">
+      <a tal:attributes="href string:${spph/meta_sourcepackage/distribution_sourcepackage/fmt:url}/+questions"
+         tal:content="spph/open_questions">
+      </a>
+    </td>
+  </tal:define>
+  </tr>
+</metal:macro>
+
 
 <metal:macro define-macro="private-team-js">
   <tal:comment replace="nothing">

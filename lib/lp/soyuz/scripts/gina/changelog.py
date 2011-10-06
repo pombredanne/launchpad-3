@@ -5,7 +5,9 @@ __metaclass__ = type
 
 """Gina's changelog parser and muncher for great justice"""
 
-import re, sys
+import re
+import sys
+
 
 first_re = re.compile(r"^([a-z0-9][a-z0-9\\+\\.\\-]+)\s+\(([^ ]+)\)")
 urgency_re = re.compile(r'(?:urgency|priority)=([^ ,;:.]+)')
@@ -70,12 +72,13 @@ def parse_changelog(changelines):
                 #print "state0 Exception skip"
                 continue
             firstline = line.strip()
-            stanza = [line, '\n']
+            stanza = [line, '\n', '\n']
             state = 1
             continue
 
         if state == 1:
             stanza.append(line)
+            stanza.append('\n')
 
             if line.startswith(" --") and "@" in line:
                 #print "state1 accept"

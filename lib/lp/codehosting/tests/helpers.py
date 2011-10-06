@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common helpers for codehosting tests."""
@@ -7,9 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase',
     'adapt_suite',
-    'BranchTestCase',
     'CodeHostingTestProviderAdapter',
-    'CodeHostingRepositoryTestProviderAdapter',
     'create_branch_with_one_revision',
     'deferToThread',
     'LoomTestMixin',
@@ -24,26 +22,36 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import FileExists
 from bzrlib.plugins.loom import branch as loom_branch
-from bzrlib.tests import TestNotApplicable, TestSkipped
+from bzrlib.tests import (
+    TestNotApplicable,
+    TestSkipped,
+    )
 
+from testtools.deferredruntest import (
+    AsynchronousDeferredRunTest,
+    )
+
+from twisted.internet import (
+    defer,
+    threads,
+    )
+from twisted.python.util import mergeFunctionMetadata
+
+from canonical.config import config
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
-from canonical.config import config
-from canonical.testing import TwistedLayer
-
-from twisted.internet import defer, threads
-from twisted.python.util import mergeFunctionMetadata
-from twisted.trial.unittest import TestCase as TrialTestCase
+from lp.testing import TestCase
 
 
-class AvatarTestCase(TrialTestCase):
+class AvatarTestCase(TestCase):
     """Base class for tests that need a LaunchpadAvatar with some basic sample
     data.
     """
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
+        super(AvatarTestCase, self).setUp()
         # A basic user dict, 'alice' is a member of no teams (aside from the
         # user themself).
         self.aliceUserDict = {

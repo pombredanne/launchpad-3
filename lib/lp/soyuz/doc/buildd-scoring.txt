@@ -20,7 +20,7 @@ A summary:
 Let's create a 'mock' class which emulate the real behaviour of
 BuildQueue entries.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
@@ -29,9 +29,9 @@ BuildQueue entries.
     u'The Hoary Hedgehog Release for i386 (x86)'
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces import (
-    ...     PackagePublishingStatus, SourcePackageUrgency)
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
@@ -65,8 +65,10 @@ BuildQueue entries.
     ...         hoary386, pub.pocket, pub.archive)
     ...
     ...     build_queue = build.queueBuild()
-    ...     build_queue.job.date_created = date_created
-    ...     build_queue.manual = manual
+    ...     from zope.security.proxy import removeSecurityProxy
+    ...     naked_build_queue = removeSecurityProxy(build_queue)
+    ...     naked_build_queue.job.date_created = date_created
+    ...     naked_build_queue.manual = manual
     ...
     ...     return build_queue
 
@@ -190,7 +192,8 @@ rescored, which allows us to set an arbitrary value on it.
 
     >>> time6 = LOCAL_NOW
     >>> bq6 = setUpBuildQueueEntry(
-    ...      urgency=SourcePackageUrgency.LOW, date_created=time6, manual=True)
+    ...      urgency=SourcePackageUrgency.LOW, date_created=time6,
+    ...      manual=True)
 
     >>> bq6.lastscore = 5000
 
@@ -248,20 +251,17 @@ Builds in COPY archives have a score below zero, so they will only
 be considered when there is nothing else to build. Even language-packs
 and build retries will be built before them.
 
-No other aspects are considered when scoring builds from COPY archive,
-they all have a fixed score of -10. They will get built in the order
-they were created.
-
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=ubuntu.owner, purpose=ArchivePurpose.COPY,
     ...     name='test-rebuild')
 
     >>> bqc = setUpBuildQueueEntry(archive=copy)
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build = getUtility(IBuildSet).getByQueueEntry(bqc)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bqc)
     >>> bqc.score()
     >>> bqc.lastscore
-    -10
+    -85

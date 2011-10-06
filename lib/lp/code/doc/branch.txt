@@ -1,14 +1,15 @@
-= Bazaar Branches =
+Bazaar Branches
+===============
 
 The Branch table holds information about a Bazaar branch.  It contains
-the metadata associated with the branch -- the owner, the whiteboard
-and so on.  Where the actual branch data lives depends on the branch.
+the metadata associated with the branch -- the owner, the whiteboard and
+so on.  Where the actual branch data lives depends on the branch.
 
 It has a N-N association to the Revision table through the
 BranchRevision table. An associated table is required because the
-sequence of revisions listed by "bzr log" is defined by a
-"revision-history" file which has some freedom with respect to the
-ancestry of revisions, at least in Branch5 and older branches.
+sequence of revisions listed by "bzr log" is defined by a "revision-
+history" file which has some freedom with respect to the ancestry of
+revisions, at least in Branch5 and older branches.
 
   * Distinct revision histories may point to same revision.
 
@@ -23,23 +24,18 @@ ancestry of revisions, at least in Branch5 and older branches.
     pull".
 
 
-== Interfaces ==
+Interfaces
+----------
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.code.enums import BranchType
-    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
+    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchsubscription import IBranchSubscription
-    >>> from lp.code.model.branch import Branch, BranchSet
-    >>> from lp.code.model.branchsubscription import BranchSubscription
-    >>> verifyObject(IBranchSet, BranchSet())
-    True
-    >>> verifyObject(IBranch, Branch.get(1))
-    True
-    >>> verifyObject(IBranchSubscription, BranchSubscription.get(1))
-    True
+    >>> from lp.code.model.branch import Branch
 
 
-== Branch types ==
+Branch types
+------------
 
 There are four different types of branches:
 
@@ -52,28 +48,29 @@ Hosted branches use the Launchpad codehosting as a primary location for
 the branch.  The branch (as far as Launchpad is concerned) can be pushed
 to and pulled from.
 
-Mirrored branches have a main location outside of Launchpad, and Launchpad
-pulls the branch into the codehosting area.  Mirrored branches can be
-pulled from but not pushed to.  Launchpad keeps the branch up to date
-using the `branch_puller` script.
+Mirrored branches have a main location outside of Launchpad, and
+Launchpad pulls the branch into the codehosting area.  Mirrored branches
+can be pulled from but not pushed to.  Launchpad keeps the branch up to
+date using the `branch_puller` script.
 
 Imported branches are those where a bazaar branch is built from a CVS or
 Subversion repository.  Imported branches have to be requested and go
 through a testing and verification process.
 
-Remote branches are registered in Launchpad, but the branch is not stored in
-the Launchpad codehosting service, and as such are not accessible using the
-anonymous http access, nor through the Launchpad SFTP or smart server.  The
-remote branches can still be linked to bugs and blueprints.
+Remote branches are registered in Launchpad, but the branch is not
+stored in the Launchpad codehosting service, and as such are not
+accessible using the anonymous http access, nor through the Launchpad
+SFTP or smart server.  The remote branches can still be linked to bugs
+and blueprints.
 
 
-== Fetching branches by ID ==
+Fetching branches by ID
+-----------------------
 
 The collection of all branches is represented by IBranchSet, which is
 registered as an utility.
 
     >>> from zope.component import getUtility
-    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> branchset = getUtility(IBranchSet)
     >>> branch_lookup = getUtility(IBranchLookup)
@@ -90,13 +87,13 @@ It returns None if there is no branch with the specified ID.
     None
 
 
-== Creating branches ==
+Creating branches
+-----------------
 
 Branches can be created with IBranchNamespace.createBranch, which takes
 details like the type of the branch -- whether it is mirrored, hosted,
 imported or remote, name, and so on.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> registrant = factory.makePerson(name='registrant')
     >>> from lp.code.interfaces.branchnamespace import (
     ...     get_branch_namespace)
@@ -108,17 +105,18 @@ imported or remote, name, and so on.
     >>> new_branch.name
     u'dev'
 
-The registrant of the branch is the user that originally registered
-the branch, whereas the owner is the current owner of the branch.
+The registrant of the branch is the user that originally registered the
+branch, whereas the owner is the current owner of the branch.
 
     >>> print new_branch.registrant.name
     registrant
+
     >>> print new_branch.owner.name
     registrant
 
-A user can create a branch where the owner is either themselves, or a team
-that they are a member of.  Neither the owner nor the registrant are writable,
-but the owner can be set using the `setOwner` method.
+A user can create a branch where the owner is either themselves, or a
+team that they are a member of.  Neither the owner nor the registrant
+are writable, but the owner can be set using the `setOwner` method.
 
     >>> login('admin@canonical.com')
     >>> new_branch.registrant = factory.makePerson()
@@ -130,11 +128,12 @@ but the owner can be set using the `setOwner` method.
     >>> new_branch.setOwner(new_owner=team, user=new_branch.owner)
     >>> print new_branch.registrant.name
     registrant
+
     >>> print new_branch.owner.name
     new-owner
 
-Branch names must start with a number or a letter (upper or lower
-case) and -, +, _ and @ are allowed after that.
+Branch names must start with a number or a letter (upper or lower case)
+and -, +, _ and @ are allowed after that.
 
     >>> owner = factory.makePerson()
     >>> namespace.createBranch(
@@ -145,42 +144,33 @@ case) and -, +, _ and @ are allowed after that.
     LaunchpadValidationError: Invalid branch name 'invalid name!'.  Branch ...
 
 
-== Determing the number of branches with bugs ==
+Determining the recently changed, registered and imported branches
+------------------------------------------------------------------
 
-The count of branches that have bugs associated with them is another
-useful piece of summary information that is supplied on one of the initial
-pages to show that there can be a relationship created between
-branches and bugs.
+The IBranchSet methods getRecentlyChangedBranches,
+getRecentlyImportedBranches, and getRecentlyRegisteredBranches are used
+to give summary information that is to be displayed on the
+code.launchpad.net page to entice the user to click through.
 
-    >>> branchset.countBranchesWithAssociatedBugs()
-    2
+Changed branches are branches that are owned by real people or groups
+(as opposed to vcs-imports), and have recently had new revisions
+detected by the branch scanner, either through the branch being pushed
+to Launchpad or the branch puller script mirroring a remote branch.
 
+Imported branches are those branches owned by vcs-imports, and are
+"imported" from other VCS hosted code bases.  Again recently imported
+branches are identified by new revisions detected by the branch scanner.
 
-== Determining the recently changed, registered and imported branches ==
+Branches that have been recently registered have either been created by
+a user using the web UI, or by pushing a new branch directly to
+Launchpad.
 
-The IBranchSet methods getRecentlyChangedBranches, getRecentlyImportedBranches,
-and getRecentlyRegisteredBranches are used to give summary information that
-is to be displayed on the code.launchpad.net page to entice the
-user to click through.
-
-Changed branches are branches that are owned by real people or groups (as
-opposed to vcs-imports), and have recently had new revisions detected by
-the branch scanner, either through the branch being pushed to Launchpad
-or the branch puller script mirroring a remote branch.
-
-Imported branches are those branches owned by vcs-imports, and are "imported"
-from other VCS hosted code bases.  Again recently imported branches are
-identified by new revisions detected by the branch scanner.
-
-Branches that have been recently registered have either been created by a user
-using the web UI, or by pushing a new branch directly to Launchpad.
-
-In order to determine changes in the branches the last_scanned
-timestamp is used.  This is set by the branch scanner when it has
-finished scanning the branches and recording the branch data in the
-launchpad database.  We don't want any of the branches in the sample
-data to mess up our tests, so we clear the last_scanned data in all
-existing branches.
+In order to determine changes in the branches the last_scanned timestamp
+is used.  This is set by the branch scanner when it has finished
+scanning the branches and recording the branch data in the launchpad
+database.  We don't want any of the branches in the sample data to mess
+up our tests, so we clear the last_scanned data in all existing
+branches.
 
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -190,8 +180,8 @@ existing branches.
     >>> list(branchset.getRecentlyChangedBranches(5))
     []
 
-Now we create a few branches that we pretend were updated in a
-definite order.
+Now we create a few branches that we pretend were updated in a definite
+order.
 
     >>> from datetime import datetime
     >>> from lp.testing import time_counter
@@ -211,7 +201,7 @@ definite order.
     >>> make_new_scanned_branch('oldest')
     >>> make_new_scanned_branch('middling')
     >>> make_new_scanned_branch('young')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     >>> make_new_scanned_branch(
     ...     'imported', owner=vcs_imports, branch_type=BranchType.IMPORTED)
@@ -233,7 +223,8 @@ definite order.
     ~user/product/middling
 
 
-== Finding a branch by URL ==
+Finding a branch by URL
+-----------------------
 
 It is possible to find a branch by URL. Either using the pull URL:
 
@@ -250,6 +241,7 @@ Or using the URL of the mirror of the branch on Launchpad:
     ...     new_mirrored_branch.unique_name)
     >>> branch_lookup.getByUrl(new_branch_mirrored) == new_mirrored_branch
     True
+
     >>> new_junk_branch = factory.makePersonalBranch()
     >>> junkcode_mirrored = (
     ...     u'http://bazaar.launchpad.dev/' +
@@ -264,7 +256,8 @@ If no branch is found for the specified URL, getByUrl returns None.
     None
 
 
-== Branch names ==
+Branch names
+------------
 
 Branches have a display name that is the bzr_identity.
 
@@ -273,36 +266,23 @@ Branches have a display name that is the bzr_identity.
     True
 
 
-== Branch subscriptions ==
+Branch subscriptions
+--------------------
 
-Branches can be subscribed to and unsubscribed from by a Person.  An
-implicit subscription to the branch is created when the branch is created
-so that the branch owner can be informed of merge proposals or code review
-messages relating to their branches.
+Branch subscriptions have attributes associated with them. The
+notification_level is used to control what email is sent to the
+subscribed user, and max_diff_lines is used to control the size of any
+generated diffs between revisions that are emailed out.  The
+review_level controls the amount of notification caused by code review
+activities.
 
-    >>> owner = factory.makePerson()
-    >>> branch = factory.makeAnyBranch(owner=owner)
-    >>> subscriptions = list(branch.subscriptions)
-    >>> print len(subscriptions)
-    1
-    >>> subscriptions[0].person == owner
-    True
-
-Branch subscriptions have attributes associated with them.
-The notification_level is used to control what email is sent to the
-subscribed user, and max_diff_lines is used to control the size of
-any generated diffs between revisions that are emailed out.  The review_level
-controls the amount of notification caused by code review activities.
-
-Both of these attributes are contolled through the UI through the use
-of the enumerated types: BranchSubscriptionDiffSize, and
+Both of these attributes are contolled through the UI through the use of
+the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
     >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
-    >>> from lp.code.interfaces.branchsubscription import (
-    ...     IBranchSubscription)
     >>> subscriber = factory.makePerson(name='subscriber')
     >>> branch = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed')
@@ -310,43 +290,52 @@ BranchSubscriptionNotificationLevel.
     ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, subscriber)
     >>> verifyObject(IBranchSubscription, subscription)
     True
+
     >>> subscription.branch == branch and subscription.person == subscriber
     True
-    >>> subscription.notification_level == BranchSubscriptionNotificationLevel.FULL
-    True
+
+    >>> print subscription.notification_level.name
+    FULL
+
     >>> subscription.max_diff_lines == BranchSubscriptionDiffSize.FIVEKLINES
     True
+
     >>> subscription.review_level == CodeReviewNotificationLevel.FULL
     True
+
     >>> branch.subscriptions[1] == subscription
     True
+
     >>> set(branch.subscribers) == set([branch.owner, subscriber])
     True
+
     >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(subscription)
-    http://code.launchpad.dev/~user/product/subscribed/+subscription/subscriber
+    http://code...dev/~user/product/subscribed/+subscription/subscriber
 
 The settings for a subscription can be changed by re-subscribing.
 
     >>> subscription1 = branch.getSubscription(subscriber)
     >>> subscription1.review_level == CodeReviewNotificationLevel.FULL
     True
+
     >>> subscription2 = branch.subscribe(
     ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, subscriber)
     >>> subscription == subscription2
     True
+
     >>> subscription2.review_level == CodeReviewNotificationLevel.NOEMAIL
     True
 
     Unsubscribing is also supported.
 
-    >>> branch.unsubscribe(subscriber)
+    >>> branch.unsubscribe(subscriber, subscriber)
     >>> branch.subscribers.count()
     1
 
@@ -365,7 +354,7 @@ subscription.
     ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, subscriber)
 
     >>> print_names(branch2.getSubscriptionsByLevel([
     ...     BranchSubscriptionNotificationLevel.FULL]))
@@ -380,200 +369,8 @@ subscription.
     subscriber
 
 
-== Branches and revisions ==
-
-See revision.txt for a doctest covering the creation of revisions and related
-objects. Revision data is loaded in the database by a batch job using a
-different user, Launchpad code is only concened with using this data.
-
-Let's get a branch with some revisions in it.
-
-    >>> personset = getUtility(IPersonSet)
-    >>> sample_person = personset.getByName('name12')
-    >>> junk = branch_lookup.getByUniqueName('~name12/+junk/junk.dev')
-    >>> print junk.unique_name
-    ~name12/+junk/junk.dev
-
-
-== Revision history of Branch ==
-
-Branch.revision_history gives the sequence of revisions in this branch's
-history, latest revisions first. All revision history items must implement the
-IBranchRevision interface. The Branch.revision_count attribute gives the length
-of the revision_history attribute but without building the list.
-
-    >>> from lp.code.interfaces.branchrevision import IBranchRevision
-    >>> junk.revision_count
-    6
-    >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
-    [True, True, True, True, True, True]
-    >>> for branch_revision in junk.revision_history:
-    ...     print branch_revision.sequence, branch_revision.revision.id
-    6 9
-    5 8
-    4 7
-    3 6
-    2 5
-    1 4
-
-There are two methods for getting only the latest items of the revision
-history.
-
-Branch.latest_revisions give a specific count of BranchRevisions at the end of
-the history.
-
-    >>> three_latest = list(junk.revision_history)[:3]
-    >>> list(junk.latest_revisions(3)) == three_latest
-    True
-
-Branch.getRevisionsSince gives all the BranchRevisions for revisions committed
-since a given timestamp. It may give surprising results if some committers had a
-skewed clock.
-
-    >>> from datetime import datetime
-    >>> timestamp = datetime(2005, 10, 31, 12, 00, 00)
-    >>> two_latest = list(junk.revision_history)[:2]
-    >>> list(junk.getRevisionsSince(timestamp)) == two_latest
-    True
-
-
-== Ancestry of Revision ==
-
-The revision-history of a given branch, is only one possible ancestry path in
-the ancestry graph. It is also possible to examine the ancestry graph directly.
-
-A Bazaar branch may contains references (by revision_id) to revisions for which
-no data is available. Such revisions are called "ghosts".
-
-Initial commits (after a "bzr init") revisions have no parent.
-
-    >>> history = list(junk.revision_history)
-    >>> initial = history[-1].revision
-    >>> initial.parent_ids
-    []
-
-Normal commits (as opposed to merges) have exactly one parent. The first parent
-of a revision is always the revision that was current when committing.
-
-    >>> commit = history[-2].revision
-    >>> [type(a) for a in commit.parent_ids] == [unicode]
-    True
-
-Merges usually have two parents, but they may have more. Though the bzr user
-interface discourage such complex merges.
-
-    >>> merge = history[-4].revision
-    >>> len(merge.parent_ids)
-    2
-
-Parent revisions are identified by their globally unique id, and not by a
-foreign key, so existing parents and ghosts can be modelled in the same way.
-
-To try and retrieve a Revision given its globally unique id, you can use the
-RevisionSet utility.
-
-    >>> from lp.code.interfaces.revision import IRevisionSet
-    >>> revisionset = getUtility(IRevisionSet)
-    >>> [parent_id] = commit.parent_ids
-    >>> parent = revisionset.getByRevisionId(parent_id)
-    >>> parent == initial
-    True
-
-If the parent was a ghost at import time and is not currently available in the
-database. getByRevisionId returns None.
-
-    >>> revisionset.getByRevisionId('missing-revision-id') is None
-    True
-
-
-== Getting the tip revision for a Branch ==
-
-The last revision that we have stored in the database for any given branch
-is identified by the branch attribute "last_scanned_id".  This is the textual
-revision_id for the bzr revision.  The reason that it is a text id rather than
-an integer foreign key is so it can easily be compared to the
-"last_mirrored_id".  The "last_mirrored_id" is set by the branch puller, and is
-used to identify when a scan is needed for a branch.
-
-    >>> branch = branch_lookup.get(1)
-    >>> branch.last_scanned_id
-    >>> branch.getTipRevision() is None
-    True
-
-    >>> branch.last_scanned_id = 'null:'
-    >>> branch.getTipRevision() is None
-    True
-
-    >>> branch.last_scanned_id = 'test@canonical.com-20051031165248-6f1bb97973c2b4f4'
-    >>> rev = branch.getTipRevision()
-    >>> print rev.date_created
-    2005-10-31 17:21:47.381770+00:00
-    >>> print rev.log_body
-    initial import (empty)
-
-
-== Codebrowse and branches ==
-
-Most branches are able to be browsed using the loggerhead codebrowse
-instance at http://bazaar.launchpad.net.  Branches that have no
-revisions or private branches are not able to be viewed using code
-browse.
-
-The link to codebrowse is shown on the action context menu for branches.
-The enabling of this link is controlled using the branch property
-`code_is_browseable`.
-
-For a public branch with revisions, the link is enabled.
-
-    >>> branch = branch_lookup.getByUniqueName('~name12/+junk/junk.dev')
-    >>> print branch.private
-    False
-    >>> print branch.revision_count
-    6
-    >>> print branch.code_is_browseable
-    True
-
-For a public branch without revisions, the link is disabled.
-
-    >>> branch = branch_lookup.getByUniqueName('~name12/gnome-terminal/main')
-    >>> print branch.private
-    False
-    >>> print branch.revision_count
-    0
-    >>> print branch.code_is_browseable
-    False
-
-
-== Associated product series ==
-
-A branch is able to return a list of product series that the branch is
-associated with through ProductSeries.branch.
-
-    >>> branch = branch_lookup.getByUniqueName('~vcs-imports/evolution/main')
-    >>> series = list(branch.associatedProductSeries())
-    >>> len(series)
-    1
-    >>> series = series[0]
-    >>> print series.product.name, series.name
-    evolution trunk
-
-
-== Deleting branches ==
-
-If a user creates a branch in error, they should be able to remove that branch.
-
-A branch can be deleted trivially if it is not associated with any bugs or
-blueprints, has no subscribers, and hasn't been associated with any product
-series.
-
-Deleting the branch is done through Branch.destroySelf.  If the branch is not
-deletable then an exception is raised.
-
-More details can be found in the file
-canonical/launchpad/database/tests/test_branch.py.
-
-
-== Branch references ==
+Branch references
+-----------------
 
 When new references to the branch table are added, these need to be
 taken into consideration with branch deletion.
@@ -585,9 +382,12 @@ The current references to the branch table are shown here.
     >>> cur = cursor()
     >>> references = list(postgresql.listReferences(cur, 'branch', 'id'))
 
-    >>> for name in sorted([
-    ...     '%s.%s' % (src_tab, src_col) for
-    ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
+    >>> listing = sorted([
+    ...     '%s.%s' % (src_tab, src_col)
+    ...     for src_tab, src_col, ref_tab, ref_col, updact, delact
+    ...     in references
+    ...     ])
+    >>> for name in listing:
     ...     print name
     branch.stacked_on
     branchjob.branch
@@ -604,6 +404,12 @@ The current references to the branch table are shown here.
     sourcepackagerecipedata.base_branch
     sourcepackagerecipedatainstruction.branch
     specificationbranch.branch
+    subunitstream.branch
+    translationtemplatesbuild.branch
 
-(Unfortunately, references can form a cycle-- note that codereviewcomments
+(Unfortunately, references can form a cycle-- note that
+codereviewcomments
+
  aren't shown.)
+
+

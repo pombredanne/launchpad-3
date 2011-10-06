@@ -4,15 +4,16 @@ Package Meta Classes
 There are a bunch of meta classes used for combine information from
 our Database Model for packages in a intuitive manner, they are:
 
- >>> from canonical.launchpad.database import (
- ...     DistributionSourcePackageRelease,
- ...     DistroSeriesSourcePackageRelease, SourcePackageRelease)
  >>> from lp.registry.model.distribution import Distribution
  >>> from lp.registry.model.sourcepackagename import SourcePackageName
+ >>> from lp.soyuz.model.distributionsourcepackagerelease import (
+ ...     DistributionSourcePackageRelease)
+ >>> from lp.soyuz.model.distroseriessourcepackagerelease import (
+ ...     DistroSeriesSourcePackageRelease)
+ >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
- >>> from canonical.launchpad.interfaces import (
- ...     IDistributionSourcePackageRelease,
- ...     IDistroSeriesSourcePackageRelease)
+ >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+ >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import IDistroSeriesSourcePackageRelease
 
 
 DistributionSourcePackage class is tested in:
@@ -73,7 +74,7 @@ First, publish a build in the main archive of ubuntutest.
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
@@ -108,7 +109,7 @@ Create a helper for printing builds:
 
     >>> def print_builds(builds):
     ...     for build in builds:
-    ...         print "%s in %s" % (build.sourcepackagerelease.name,
+    ...         print "%s in %s" % (build.source_package_release.name,
     ...                             build.archive.displayname)
 
 Now we can query the builds:

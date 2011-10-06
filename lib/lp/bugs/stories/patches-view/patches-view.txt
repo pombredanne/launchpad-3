@@ -1,15 +1,20 @@
 Patches View
 ============
 
-Patches View by Product
------------------------
+Patches View by Bug Target
+--------------------------
 
 We have a view listing patches attached to bugs that target a given
-product.  At first, the product is new and has no bugs.
+bug target (in this case, a product).  At first, the product is new
+and has no bugs.
 
-    >>> patchy_product = factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeProduct,
+    >>> from lp.testing import anonymous_logged_in, with_person_logged_in
+    >>> with anonymous_logged_in():
+    ...     anybody = factory.makePerson()
+    >>> with_anybody = with_person_logged_in(anybody)
+    >>> patchy_product = with_anybody(factory.makeProduct)(
     ...     name='patchy-product-1', displayname="Patchy 1")
+    >>> transaction.commit()
 
 We don't see any patches when we open the patches view.
 
@@ -30,19 +35,21 @@ view, because that bug has no patch attachments.
 
     >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance, BugTaskStatus)
-    >>> def make_bug(
+    >>> @with_anybody
+    ... def make_bug(
     ...     title, product, importance=BugTaskImportance.UNDECIDED,
     ...     status=BugTaskStatus.NEW):
     ...     bug = factory.makeBug(title=title, product=product)
+    ...     transaction.commit()
     ...     bug.default_bugtask.transitionToImportance(
     ...         importance, product.owner)
     ...     bug.default_bugtask.transitionToStatus(
     ...         status, product.owner)
+    ...     transaction.commit()
     ...     return bug
 
-    >>> bug_a = factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bug,
-    ...     title="bug_a title", product=patchy_product)
+    >>> bug_a = make_bug(title="bug_a title", product=patchy_product)
+    >>> transaction.commit()
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
@@ -51,9 +58,9 @@ view, because that bug has no patch attachments.
 After we add a non-patch attachment to that bug, the patches view
 still shows no patches.
 
-    >>> factory.doAsUser('foo.bar@canonical.com', factory.makeBugAttachment,
-    ...            bug=bug_a, is_patch=False)
+    >>> with_anybody(factory.makeBugAttachment)(bug=bug_a, is_patch=False)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> anon_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
     There are no patches associated with Patchy 1 at this time.
@@ -61,15 +68,15 @@ still shows no patches.
 After we add a patch attachment that's one day old, we see it in the
 patches view.
 
-    >>> patch_submitter = factory.doAsUser(
-    ...    'foo.bar@canonical.com', factory.makePerson,
+    >>> patch_submitter = with_anybody(factory.makePerson)(
     ...    name="patchy-person", displayname="Patchy Person")
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> transaction.commit()
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch a",
     ...     filename="patch_a.diff", owner=patch_submitter,
     ...     description="description of patch a", bug=bug_a, is_patch=True)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
@@ -88,61 +95,57 @@ The page title and other wording in the page reflects the contents.
 After creating some more bugs, with some non-patch and some patch
 attachments, and various statuses...
 
-    >>> bug_b = factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bug,
+    >>> bug_b = make_bug(
     ...     title="bug_b title", product=patchy_product,
     ...     importance=BugTaskImportance.CRITICAL,
     ...     status=BugTaskStatus.CONFIRMED)
-    >>> bug_c = factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bug,
+    >>> bug_c = make_bug(
     ...     title="bug_c title", product=patchy_product,
     ...     importance=BugTaskImportance.WISHLIST,
     ...     status=BugTaskStatus.FIXCOMMITTED)
-    >>> bug_d = factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bug,
+    >>> bug_d = make_bug(
     ...     title="bug_d title", product=patchy_product,
     ...     importance=BugTaskImportance.WISHLIST,
     ...     status=BugTaskStatus.FIXRELEASED)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch b",
     ...     filename="patch_b.diff", owner=patch_submitter,
     ...     description="description of patch b", bug=bug_b, is_patch=True)
     <BugAttachment at...
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> transaction.commit()
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch c",
     ...     filename="patch_c.diff", owner=patch_submitter,
     ...     description="description of patch c", bug=bug_b, is_patch=True)
     <BugAttachment at...
-    >>> factory.doAsUser(
-    ...    'foo.bar@canonical.com', factory.makeBugAttachment,
-    ...    bug=bug_c, is_patch=False)
+    >>> transaction.commit()
+    >>> with_anybody(factory.makeBugAttachment)(bug=bug_c, is_patch=False)
     <BugAttachment at...
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> transaction.commit()
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch d",
     ...     filename="patch_d.diff", owner=patch_submitter,
     ...     description="description of patch d", bug=bug_c, is_patch=True)
     <BugAttachment at...
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> transaction.commit()
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch e",
     ...     filename="patch_e.diff", owner=patch_submitter,
     ...     description="description of patch e", bug=bug_c, is_patch=True)
     <BugAttachment at...
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> transaction.commit()
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch f",
     ...     filename="patch_f.diff", owner=patch_submitter,
     ...     description="description of patch f", bug=bug_c, is_patch=True)
     <BugAttachment at...
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> transaction.commit()
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch g",
     ...     filename="patch_g.diff", owner=patch_submitter,
     ...     description="description of patch g", bug=bug_d, is_patch=True)
     <BugAttachment at...
+    >>> transaction.commit()
 
 ...the youngest patch on each bug is visible in the patch report
 (except for bugs in "Fix Released" state, which aren't shown):
@@ -207,7 +210,19 @@ Bugs in a product series show up in the patches view for that series.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> def make_bugtask(
+
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+
+    >>> login('admin@canonical.com')
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=factory.getOrMakeSourcePackageName('a52dec'),
+    ...     distroseries=hoary)
+    >>> logout()
+
+    >>> @with_anybody
+    ... def make_bugtask(
     ...     # Meta-factory for making bugtasks.
     ...     #
     ...     # In all instances where a distro is needed, defaults to
@@ -241,12 +256,8 @@ Bugs in a product series show up in the patches view for that series.
     ...     if status is not None:
     ...         bugtask.transitionToStatus(status, ubuntu_distro.owner)
     >>> patchy_product_series = patchy_product.getSeries('trunk')
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask,
-    ...     bug=bug_a, target=patchy_product_series)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask,
-    ...     bug=bug_c, target=patchy_product_series)
+    >>> make_bugtask(bug=bug_a, target=patchy_product_series)
+    >>> make_bugtask(bug=bug_c, target=patchy_product_series)
     >>> anon_browser.open(
     ...     'https://bugs.launchpad.dev/patchy-product-1/trunk/+patches')
     >>> show_patches_view(anon_browser.contents)
@@ -266,242 +277,3 @@ The page title and other wording in the page reflects the contents.
     Hierarchy: Patchy 1 > Series trunk > Bugs > Patch attachments in trunk
     Tabs: ...
     Main heading: Patch attachments in trunk
-
-Patches View by Distro
-----------------------
-
-The patches view also works for distributions, and it shows the target
-package when viewed via a distribution.
-
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
-    ...     target='evolution', target_is_spkg_name=True,
-    ...     importance=BugTaskImportance.MEDIUM,
-    ...     status=BugTaskStatus.FIXCOMMITTED)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_c,
-    ...     target='a52dec', target_is_spkg_name=True,
-    ...     importance=BugTaskImportance.HIGH,
-    ...     status=BugTaskStatus.TRIAGED)
-
-    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+patches')
-
-    >>> show_patches_view(anon_browser.contents)
-    Bug                       Importance   Status    Package    Patch Age
-    Bug #18: bug_c title       High       Triaged    a52dec  ...second...
-    From: Patchy Person
-    Link: patch_f.diff description of patch f
-    Bug #16: bug_a title       Medium   Fix Committed  evolution  ...second...
-    From: Patchy Person
-    Link: patch_a.diff description of patch a
-
-    >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > Bugs > Patch attachments in Ubuntu
-    Tabs: ...
-    Main heading: Patch attachments in Ubuntu
-
-Patches View by Distro Series
------------------------------
-
-The patches view works for distro series.
-
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
-    ...     target='hoary', target_is_distroseries_name=True)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
-    ...     target='warty', target_is_distroseries_name=True)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_b,
-    ...     target='warty', target_is_distroseries_name=True)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_c,
-    ...     target='warty', target_is_distroseries_name=True,
-    ...     importance=BugTaskImportance.HIGH,
-    ...     status=BugTaskStatus.TRIAGED)
-
-    >>> anon_browser.open('https://bugs.launchpad.dev/ubuntu/hoary/+patches')
-    >>> show_patches_view(anon_browser.contents)
-    Bug                       Importance   Status   Package    Patch Age
-    Bug #16: bug_a title     Undecided       New    hoary     ...second...
-    From: Patchy Person
-    Link: patch_a.diff
-    description of patch a
-
-    >>> anon_browser.open('https://bugs.launchpad.dev/ubuntu/warty/+patches')
-    >>> show_patches_view(anon_browser.contents)
-    Bug                       Importance   Status   Package    Patch Age
-    Bug #18: bug_c title        High       Triaged   warty    ...second...
-    From: Patchy Person
-    Link: patch_f.diff description of patch f
-    Bug #17: bug_b title      Undecided      New     warty    ...second...
-    From: Patchy Person
-    Link: patch_c.diff
-    description of patch c
-    Bug #16: bug_a title      Undecided      New     warty    ...second...
-    From: Patchy Person
-    Link: patch_a.diff
-    description of patch a
-
-    >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > Warty (4.10) > Bugs > Patch attachments in Warty
-    Tabs: ...
-    Main heading: Patch attachments in Warty
-
-Patches View by Source Package
-------------------------------
-
-The patches view works for source packages too.  The view doesn't show
-target package column in that case, because the package is implied.
-
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/ubuntu/+source/a52dec/+patches')
-    >>> show_patches_view(anon_browser.contents)
-    Bug                       Importance   Status     Patch Age
-    Bug #18: bug_c title       High       Triaged     ...second...
-    From: Patchy Person
-    Link: patch_f.diff description of patch f
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/ubuntu/+source/evolution/+patches')
-    >>> show_patches_view(anon_browser.contents)
-    Bug                       Importance   Status     Patch Age
-    Bug #16: bug_a title       Medium   Fix Committed ...second...
-    From: Patchy Person
-    Link: patch_a.diff description of patch a
-
-    >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > ?evolution? package > Bugs > Patch ...
-    Tabs: ...
-    Main heading: Patch attachments in evolution in ubuntu
-
-# XXX Karl Fogel 2010-02-02 bug=516186: We should also test the
-# patches view on a project group, to make sure the "Package" column
-# becomes "Project" in that context.
-
-Patches View by Person and Team
--------------------------------
-
-The patches view works for people and teams.
-
-    # Must remove the security proxy because IPerson.name is protected.
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> submitter_name = removeSecurityProxy(patch_submitter).name
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/~%s/+patches' % submitter_name)
-
-    >>> show_patches_view(anon_browser.contents)
-    Bug                  Importance  Status        Project          Patch Age
-    Bug #18: bug_c title Wishlist  Fix Committed patchy-product-1 ...second...
-    From: Patchy Person
-    Link: patch_f.diff
-    description of patch f
-    Bug #18: bug_c title Wishlist  Fix Committed trunk            ...second...
-    From: Patchy Person
-    Link: patch_f.diff
-    description of patch f
-    Bug #18: bug_c title High      Triaged       a52dec           ...second...
-    From: Patchy Person
-    Link: patch_f.diff
-    description of patch f
-    Bug #18: bug_c title Undecided New           ubuntu           ...second...
-    From: Patchy Person
-    Link: patch_f.diff
-    description of patch f
-    Bug #18: bug_c title High      Triaged       warty            ...second...
-    From: Patchy Person
-    Link: patch_f.diff
-    description of patch f
-
-    >>> print_location(anon_browser.contents)
-    Hierarchy: Patchy Person > Patch attachments for Patchy Person
-    Tabs: ...
-    Main heading: Patch attachments for Patchy Person
-
-Reaching the Patches View
--------------------------
-
-The patches view is linked to from a portlet on the product bugs page.
-
-    >>> from lp.bugs.tests.bug import (
-    ...     print_bugfilters_portlet_unfilled,
-    ...     print_bugfilters_portlet_filled)
-    >>> print_bugfilters_portlet_unfilled(anon_browser, 'patchy-product-1')
-    Open bugs
-    Critical bugs
-    Bugs fixed elsewhere
-    New bugs
-    Open CVE bugs - CVE reports
-    Bugs need forwarding upstream
-    Bugs with patches
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/patchy-product-1/+subscribe
-
-    >>> print_bugfilters_portlet_filled(anon_browser, 'patchy-product-1')
-    3 Open bugs
-    1 Critical bug
-    0 Bugs fixed elsewhere
-    1 New bug
-    0 Open CVE bugs - CVE reports
-    3 Bugs need forwarding upstream
-    3 Bugs with patches
-
-It's also linked to from a portlet on the source package bugs page:
-
-    >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu/+source/a52dec')
-    1 Open bug
-    0 Critical bugs
-    1 Bug fixed elsewhere
-    0 New bugs
-    0 Open CVE bugs
-    1 Bug with a patch
-
-And from a portlet on the distro series bugs page:
-
-    >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu/hoary')
-    2 Open bugs
-    0 Critical bugs
-    0 Bugs fixed elsewhere
-    2 New bugs
-    1 Open CVE bug - CVE report
-    0 Incomplete bugs (can expire)
-    1 Bug with a patch
-
-And from a portlet on the distro bugs page:
-
-    >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu')
-    9 Open bugs
-    0 Critical bugs
-    2 Bugs fixed elsewhere
-    6 New bugs
-    2 Open CVE bugs - CVE reports
-    0 Incomplete bugs (can expire)
-    5 Bugs with patches
-
-The number of bugs with patches shown in the bugfilter stats portlet
-might be lower than the number of bugs (bugtasks) listed on the
-corresponding patches view page, because the latter shows resolved
-bugs too.
-
-    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+patches')
-    >>> show_patches_view(anon_browser.contents)
-    Bug                        Importance    Status    Package    Patch Age
-    Bug #18: bug_c title          High       Triaged   a52dec     ...second...
-    From: Patchy Person
-    Link: patch_f.diff
-    description of patch f
-    Bug #18: bug_c title        Undecided      New     ubuntu     ...second...
-    From: Patchy Person
-    Link: patch_f.diff
-    description of patch f
-    Bug #17: bug_b title        Undecided      New     ubuntu     ...second...
-    From: Patchy Person
-    Link: patch_c.diff
-    description of patch c
-    Bug #16: bug_a title         Medium  Fix Committed evolution  ...second...
-    From: Patchy Person
-    Link: patch_a.diff
-    description of patch a
-    Bug #16: bug_a title        Undecided      New     ubuntu     ...second...
-    From: Patchy Person
-    Link: patch_a.diff
-    description of patch a

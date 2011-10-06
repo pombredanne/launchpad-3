@@ -11,13 +11,11 @@ import os
 import shutil
 import socket
 import tempfile
-from unittest import TestLoader
 
 from canonical.launchpad import scripts
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import BaseLayer
-
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 
 
@@ -54,7 +52,7 @@ class TestCodeImportDispatcherUnit(TestCase):
     def makeDispatcher(self, worker_limit=10, _sleep=lambda delay: None):
         """Make a `CodeImportDispatcher`."""
         return CodeImportDispatcher(
-            QuietFakeLogger(), worker_limit, _sleep=_sleep)
+            BufferLogger(), worker_limit, _sleep=_sleep)
 
     def test_getHostname(self):
         # By default, getHostname return the same as socket.gethostname()
@@ -80,6 +78,17 @@ class TestCodeImportDispatcherUnit(TestCase):
 
     def filterOutLoggingOptions(self, arglist):
         """Remove the standard logging options from a list of arguments."""
+
+        # Calling parser.parse_args as we do below is dangerous,
+        # as if a callback invokes parser.error the test suite
+        # terminates. This hack removes the dangerous argument manually.
+        arglist = [
+            arg for arg in arglist if not arg.startswith('--log-file=')]
+        while '--log-file' in arglist:
+            index = arglist.index('--log-file')
+            del arglist[index] # Delete the argument
+            del arglist[index] # And its parameter
+
         parser = OptionParser()
         scripts.logger_options(parser)
         options, args = parser.parse_args(arglist)
@@ -156,7 +165,3 @@ class TestCodeImportDispatcherUnit(TestCase):
         dispatcher._getSleepInterval = lambda : interval
         dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 0]))
         self.assertEqual([interval], sleep_calls)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

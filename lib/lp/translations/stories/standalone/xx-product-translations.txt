@@ -1,4 +1,5 @@
-= Product Translations =
+Product Translations
+====================
 
 Each product in Launchpad has a Translations page.
 
@@ -19,24 +20,22 @@ A helper method to print out language chart.
     ...         print "No translations."
     ...         return
     ...     language_rows = find_tags_by_class(str(table), 'stats')
-    ...     print "%-25s %13s %13s %13s" % (
-    ...         "Language", "Untranslated", "Unreviewed", "Changed")
+    ...     print "%-25s %13s %13s" % (
+    ...         "Language", "Untranslated", "Unreviewed")
     ...     for row in language_rows:
     ...         cols = row.findAll('td')
     ...         language = extract_text(cols[0])
     ...         untranslated = extract_text(cols[2])
     ...         unreviewed = extract_text(cols[3])
-    ...         changed = extract_text(cols[4])
-    ...         print "%-25s %13d %13d %13d" % (
-    ...             language,
-    ...             int(untranslated), int(unreviewed), int(changed))
+    ...         print "%-25s %13d %13d" % (
+    ...             language, int(untranslated), int(unreviewed))
 
 We even have a language chart table.
 
     >>> print_language_stats(anon_browser)
-    Language                   Untranslated    Unreviewed       Changed
-    Portuguese (Brazil)                  25             0             0
-    Spanish                              22             2             0
+    Language                   Untranslated    Unreviewed
+    Portuguese (Brazil)                  25             0
+    Spanish                              22             2
 
 If a product is not set up for translations in Launchpad, and you are its
 registrant or an admin, the Translations page suggests that you set it up for
@@ -48,36 +47,44 @@ translation, or link the product to a translatable package.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         registrant.contents, 'not-translated-in-launchpad'))
-    This project is not using Launchpad for translations.
-    You can change this in the project settings. (Getting
-    started with translating your project in Launchpad)
+    Launchpad does not know where gnomebaker translates its messages.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         registrant.contents, 'translations-explanation'))
+    Launchpad allows communities to translate projects using imports or a
+    branch.
+    Getting started with translating your project in Launchpad
+    Configure translations
 
     >>> registrant.getLink(
     ...     url=('/gnomebaker/trunk/'
     ...          '+translations-upload')) is not None
     True
 
-The instructions for the registrant link to the settings page, where they can
-configure the project to use Launchpad for translations if desired.
+The instructions for the registrant link to the translations
+configuration page, where they can configure the project to use
+Launchpad for translations if desired.
 
-    >>> registrant.getLink('project settings').click()
+    >>> registrant.getLink('Configure translations').click()
     >>> print registrant.url
-    http://.../gnomebaker/+edit
+    http://.../gnomebaker/+configure-translations
 
 (The template upload process is tested in xx-translation-import-queue.txt.)
 
 
-If you're logged in as someone else, the Translations page suggests that you
-contact the product's registrant.
+If you're logged in as someone else, it only tells you that the translations
+are not being used, and provides access to help.
 
     >>> unprivileged = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> unprivileged.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(unprivileged.contents))
     Translation overview
     gnomebaker
-    ...
-    This project is not using Launchpad for translations.
-    ...
+    Translations
+    Help for translations
+    Launchpad does not know where
+    gnomebaker translates its messages.
 
 It omits the registrant-only links ...
 
@@ -100,27 +107,22 @@ It omits the registrant-only links ...
     Unauthorized:...
 
 
-Meanwhile, if you're not logged in at all, you might or might not be the
-registrant, so the text reflects both possibilities.
+If you're not logged in at all, you aren't shown the registrant
+options, either.
 
     >>> anon_browser.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Translation overview
     gnomebaker
-    ...
-    This project is not using Launchpad for translations.
-    ...
+    Translations
+    Help for translations
+    Launchpad does not know where
+    gnomebaker translates its messages.
 
 Finally, if a product states that is not officially using Launchpad
-Translations...
+Translations it doesn't show any translation template:
 
     >>> anon_browser.open('http://launchpad.dev/netapplet')
-    >>> content = find_tag_by_id(anon_browser.contents, 'uses')
-    >>> print extract_text(content)
-    Does not use Launchpad for development.
-
-... it doesn't show any translation template:
-
     >>> anon_browser.getLink('Translations').click()
     >>> print anon_browser.title
     Translations : NetApplet
@@ -136,20 +138,17 @@ Translations, there is no language chart shown.
 
 If the netapplet project is updated to use Launchpad for translations...
 
-    >>> admin_browser.open('http://translations.launchpad.dev/netapplet')
-    >>> admin_browser.getLink('Overview').click()
-    >>> print admin_browser.title
-    Network Applet in Launchpad
-    >>> admin_browser.getLink('Change details').click()
-    >>> admin_browser.getControl(
-    ...     'Translations for this project are done in Launchpad').selected
-    False
-    >>> admin_browser.getControl(
-    ...     'Translations for this project are done in Launchpad'
-    ...     ).selected = True
+    >>> admin_browser.open('http://launchpad.dev/netapplet')
+    >>> admin_browser.getLink('Configure translations').click()
+    >>> print_radio_button_field(admin_browser.contents, "translations_usage")
+    (*) Unknown
+    ( ) Launchpad
+    ( ) External
+    ( ) Not Applicable
+    >>> admin_browser.getControl('Launchpad').click()
     >>> admin_browser.getControl('Change').click()
 
-...there are no longer any obsolete entires.
+...there are no longer any obsolete entries.
 
     >>> admin_browser.getLink('Translations').click()
     >>> print admin_browser.title
@@ -165,10 +164,11 @@ Also, we will get some translation status for network applet.
     <...
     ...Translation overview...
     >>> print_language_stats(anon_browser)
-    Language                   Untranslated    Unreviewed       Changed
+    Language                   Untranslated    Unreviewed
 
 
-== Translation recommendation ==
+Translation recommendation
+==========================
 
 The page mentions which product series should be translated.
 
@@ -235,4 +235,6 @@ Instead a notice is displayed that the product has no translations.
 
     >>> notice = first_tag_by_class(admin_browser.contents, 'notice')
     >>> print extract_text(notice)
+    Getting started with translating your project in Launchpad
+    Configure translations
     There are no translations for this project.

@@ -15,5 +15,6 @@ import unittest
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import LaunchpadZopelessLayer
 
+
 def test_suite():
     return LayeredDocFileSuite('decoratedresultset.txt', layer=LaunchpadZopelessLayer)

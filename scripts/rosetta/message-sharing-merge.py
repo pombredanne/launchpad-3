@@ -1,4 +1,4 @@
-#! /usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -9,7 +9,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from lp.translations.scripts.message_sharing_migration import (
+from lp.translations.translationmerger import (
     MessageSharingMerge)
 
 # This script merges POTMsgSets for sharing POTemplates.  This involves
@@ -18,7 +18,7 @@ from lp.translations.scripts.message_sharing_migration import (
 # TranslationTemplateItems:
 #
 # GRANT DELETE ON POTMsgSET TO rosettaadmin;
-# GRANT DELETE ON  TranslationTemplateItem TO rosettaadmin; 
+# GRANT DELETE ON  TranslationTemplateItem TO rosettaadmin;
 
 
 if __name__ == '__main__':

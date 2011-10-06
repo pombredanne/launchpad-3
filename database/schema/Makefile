@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Quick hack makefile to (re)create the Launchpad database.
@@ -42,17 +42,19 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to drop (if exists) and recreate a database.
 CREATEDB=${PYTHON} ../../utilities/pgmassacre.py -t
 
-HEADER="-- Copyright 2009 Canonical Ltd.  This software is licensed under \
+HEADER="-- Copyright 2010 Canonical Ltd.  This software is licensed under \
 	the\n-- GNU Affero General Public License version 3 (see the file \
 	LICENSE)."
 
 # The command used (in conjunction with $(call)) to dump the contents of the
 # given database ($1) into an SQL file ($2).
-build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
-	echo $(HEADER) > $(2); \
-    pg_dump --schema=public --disable-triggers -a -D -O -d ${1} \
+build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
+	echo $(HEADER) > $(2) && \
+    echo -n "-- Created using " >> $(2) && \
+    pg_dump --version >> $(2) && \
+    pg_dump --schema=public --disable-triggers -a --column-inserts -O ${1} \
     | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
-    | $(PYTHON) sort_sql.py >> $(2); \
+    | $(PYTHON) sort_sql.py >> $(2) && \
     $(PYTHON) fti.py --force -d ${1} -q
 
 
@@ -61,15 +63,15 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
 # to ensure that the development database remains in sync with reality
 # on production. It is generated using newbaseline.py in
 # bzr+ssh://devpad.canonical.com/code/stub/dbascripts
-# 
-REV=2207
+#
+REV=2208
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=6a28c01a33ee2dc133ab4f8931d94282  launchpad-2207-00-0.sql
+MD5SUM=12a258f8651ae3bba0c96ec8e62be1dd  launchpad-2208-00-0.sql
 
 default: all
 
 # Create a launchpad_ftest_template DB and load the test sample data into it.
-test: create 
+test: create
 	@ echo "* Creating database \"$(TEMPLATE_WITH_TEST_SAMPLEDATA)\"."
 	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Loading sample data"
@@ -108,7 +110,7 @@ dev: test
 # database schema, full text indexes and grants into it.
 # It will also create session DBs for the test and dev environments.
 # No sample data is added at this point.
-create: 
+create:
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
@@ -126,7 +128,6 @@ create:
 	@ psql -d ${EMPTY_DBNAME} -q -c "CREATE SCHEMA todrop;"
 	@ echo "* Creating functions"
 	@ psql -d ${EMPTY_DBNAME} -f trusted.sql   | grep : | cat
-	@ psql -d ${EMPTY_DBNAME} -f testfuncs.sql | grep : | cat
 	@ echo "* Installing tsearch2 into ts2 schema"
 	@ ${PYTHON} fti.py -q --setup-only -d ${EMPTY_DBNAME}
 	@ echo "* Loading base database schema"

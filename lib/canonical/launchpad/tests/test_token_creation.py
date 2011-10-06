@@ -7,11 +7,13 @@ import random
 import unittest
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.components.tokens import (
-    create_token, create_unique_token_for_table)
+    create_token,
+    create_unique_token_for_table,
+    )
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 class Test_create_token(unittest.TestCase):
@@ -36,13 +38,9 @@ class Test_create_unique_token_for_table(unittest.TestCase):
 
         # Now insert the token in the table so that the next time we call
         # create_unique_token_for_table() we get a different token.
-        login_token = LoginToken(
+        LoginToken(
             requester=None, token=token2, email='email@example.com',
-            tokentype=LoginTokenType.NEWACCOUNT, created=UTC_NOW)
+            tokentype=LoginTokenType.ACCOUNTMERGE, created=UTC_NOW)
         random.seed(0)
         token3 = create_unique_token_for_table(99, LoginToken.token)
         self.assertNotEquals(token1, token3)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

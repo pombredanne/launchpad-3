@@ -5,23 +5,32 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.model.person import PersonSet
-from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
-from lp.registry.interfaces.person import (
-    PersonCreationRationale, IPersonSet)
-from lp.testing import TestCaseWithFactory, login_person, logout
-
 from canonical.database.sqlbase import cursor
+from canonical.launchpad.interfaces.account import (
+    AccountStatus,
+    AccountSuspendedError,
+    )
 from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches)
-from canonical.testing import DatabaseFunctionalLayer
+    remove_all_sample_data_branches,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy,
+    )
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
+from lp.registry.model.person import PersonSet
+from lp.testing import (
+    login_person,
+    logout,
+    TestCaseWithFactory,
+    )
 
 
 class TestPersonSetBranchCounts(TestCaseWithFactory):
@@ -91,6 +100,9 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
         ensured_person = self.person_set.ensurePerson(
             self.email_address, self.displayname, self.rationale)
         self.assertEquals(test_account.id, ensured_person.account.id)
+        self.assertEquals(
+            test_account.preferredemail, ensured_person.preferredemail)
+        self.assertEquals(ensured_person, test_account.preferredemail.person)
         self.assertTrue(ensured_person.hide_email_addresses)
 
     def test_ensurePerson_for_existing_account_with_person(self):
@@ -99,23 +111,19 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
         # Person in question.
 
         # Create a testing `Account` and a testing `Person` directly,
-        # linked. However the `Account` email is not linked to the
-        # `Person`.
+        # linked.
         testing_account = self.factory.makeAccount(
             self.displayname, email=self.email_address)
         testing_person = removeSecurityProxy(
             testing_account).createPerson(self.rationale)
-        self.assertIs(None, testing_account.preferredemail.person)
-        self.assertIs(None, testing_person.preferredemail)
+        self.assertEqual(
+            testing_person, testing_account.preferredemail.person)
 
+        # Since there's an existing Person for the given email address,
+        # IPersonSet.ensurePerson() will just return it.
         ensured_person = self.person_set.ensurePerson(
             self.email_address, self.displayname, self.rationale)
-
-        # The existing Person was retrieved and the Account
-        # 'preferredemail' is also bound to the existing Person.
-        self.assertEquals(testing_person.id, ensured_person.id)
-        self.assertEquals(testing_account.preferredemail.id,
-                          ensured_person.preferredemail.id)
+        self.assertEqual(testing_person, ensured_person)
 
 
 class TestPersonSetMerge(TestCaseWithFactory):
@@ -150,5 +158,95 @@ class TestPersonSetMerge(TestCaseWithFactory):
         self.assertEqual(1, self.cur.rowcount)
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetGetOrCreateByOpenIDIdentifier, self).setUp()
+        self.person_set = getUtility(IPersonSet)
+
+    def callGetOrCreate(self, identifier, email='a@b.com'):
+        return self.person_set.getOrCreateByOpenIDIdentifier(
+            identifier, email, "Joe Bloggs",
+            PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
+            "when purchasing an application via Software Center.")
+
+    def test_existing_person(self):
+        email = 'test-email@example.com'
+        person = self.factory.makePerson(email=email)
+        openid_ident = removeSecurityProxy(
+            person.account).openid_identifiers.any().identifier
+        person_set = getUtility(IPersonSet)
+
+        result, db_updated = self.callGetOrCreate(openid_ident, email=email)
+
+        self.assertEqual(person, result)
+        self.assertFalse(db_updated)
+
+    def test_existing_account_no_person(self):
+        # A person is created with the correct rationale.
+        account = self.factory.makeAccount('purchaser')
+        openid_ident = removeSecurityProxy(
+            account).openid_identifiers.any().identifier
+
+        person, db_updated = self.callGetOrCreate(openid_ident)
+
+        self.assertEqual(account, person.account)
+        # The person is created with the correct rationale and creation
+        # comment.
+        self.assertEqual(
+            "when purchasing an application via Software Center.",
+            person.creation_comment)
+        self.assertEqual(
+            PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
+            person.creation_rationale)
+        self.assertTrue(db_updated)
+
+    def test_existing_deactivated_account(self):
+        # An existing deactivated account will be reactivated.
+        account = self.factory.makeAccount('purchaser',
+            status=AccountStatus.DEACTIVATED)
+        openid_ident = removeSecurityProxy(
+            account).openid_identifiers.any().identifier
+
+        person, db_updated = self.callGetOrCreate(openid_ident)
+        self.assertEqual(AccountStatus.ACTIVE, person.account.status)
+        self.assertTrue(db_updated)
+        self.assertEqual(
+            "when purchasing an application via Software Center.",
+            removeSecurityProxy(person.account).status_comment)
+
+    def test_existing_suspended_account(self):
+        # An existing suspended account will raise an exception.
+        account = self.factory.makeAccount('purchaser',
+            status=AccountStatus.SUSPENDED)
+        openid_ident = removeSecurityProxy(
+            account).openid_identifiers.any().identifier
+
+        self.assertRaises(
+            AccountSuspendedError, self.callGetOrCreate, openid_ident)
+
+    def test_no_account_or_email(self):
+        # An identifier can be used to create an account (it is assumed
+        # to be already authenticated with SSO).
+        person, db_updated = self.callGetOrCreate(u'openid-identifier')
+
+        self.assertEqual(
+            u"openid-identifier", removeSecurityProxy(
+                person.account).openid_identifiers.any().identifier)
+        self.assertTrue(db_updated)
+
+    def test_no_matching_account_existing_email(self):
+        # The openid_identity of the account matching the email will
+        # updated.
+        other_account = self.factory.makeAccount('test', email='a@b.com')
+
+        person, db_updated = self.callGetOrCreate(
+            u'other-openid-identifier', 'a@b.com')
+
+        self.assertEqual(other_account, person.account)
+        self.assert_(
+            u'other-openid-identifier' in [
+                identifier.identifier for identifier in removeSecurityProxy(
+                    person.account).openid_identifiers])

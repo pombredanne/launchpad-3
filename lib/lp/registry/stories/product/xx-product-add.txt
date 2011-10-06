@@ -5,7 +5,7 @@ Sample Person decides to register her new project, which she can do either
 from the Launchpad home page or the projects home page.
 
     >>> user_browser.open('http://launchpad.dev')
-    >>> user_browser.getLink('Create a new project').click()
+    >>> user_browser.getLink('Register a project').click()
     >>> print user_browser.title
     Register a project in Launchpad...
 
@@ -14,12 +14,31 @@ from the Launchpad home page or the projects home page.
     >>> print user_browser.title
     Register a project in Launchpad...
 
-The page includes both a direct link and a button to order Ubuntu CDs.
+The page includes both a direct link and a button to test projects on staging.
 
-    >>> print user_browser.getLink('shipit.ubuntu.com').url
-    https://shipit.ubuntu.com/
-    >>> print user_browser.getControl('Oh, I want Ubuntu CDs').type
+    >>> print user_browser.getLink('staging.launchpad.net').url
+    https://staging.launchpad.net/
+    >>> print user_browser.getControl(
+    ...     'Oh, I want to create a test project').type
     submit
+
+The user can see links about things that are often assumed to be related to
+project registration.
+
+    >>> print user_browser.getLink('Register a team').url
+    https://help.launchpad.net/Teams
+
+    >>> print user_browser.getLink('Activate a PPA').url
+    https://help.launchpad.net/Packaging/PPA
+
+    >>> print user_browser.getLink('Access your personal branches').url
+    https://help.launchpad.net/Code/PersonalBranches
+
+    >>> print user_browser.getLink('Translate a project').url
+    https://help.launchpad.net/Translations/YourProject
+
+    >>> print user_browser.getLink('Request a project group').url
+    https://help.launchpad.net/ProjectGroups
 
 
 Project basics
@@ -41,7 +60,7 @@ forgetting to enter a title or summary.
     >>> print_errors(user_browser.contents)
     There are 3 errors.
     URL:
-    http://launchpad.net/
+    http://launchpad.dev/
     Invalid name 'aard vark'. Names must be at least two characters ...
     At least one lowercase letter or number, followed by letters, numbers,
     dots, hyphens or pluses. Keep this name short; it is used in URLs as
@@ -51,7 +70,7 @@ forgetting to enter a title or summary.
     The project title. Should be just a few words.
     Summary:
     Required input is missing.
-    The summary should be a single short paragraph.
+    A short paragraph to introduce the project's work.
 
 Realizing her mistake, Sample Person fills out the project's basic information
 correctly this time.
@@ -76,9 +95,9 @@ Completing the registration
 The second step of the registration process does not allow Sample Person to
 modify the project's URL.
 
-    >>> user_browser.getControl('URL')
+    >>> user_browser.getControl(name='field.name')
     <Control name='field.name' type='hidden'>
-    >>> print user_browser.getControl('URL').value
+    >>> print user_browser.getControl(name='field.name').value
     aardvark
 
 Sample Person is given the opportunity though to change the title and
@@ -104,7 +123,7 @@ This time, Sample Person remembers to select a license.
     >>> user_browser.getControl('Python License').click()
     >>> user_browser.getControl('Complete Registration').click()
     >>> print user_browser.title
-    Aardvark Central Command in Launchpad
+    Aardvark Center in Launchpad
 
 Let's ensure the summary and description are presented.
 
@@ -117,6 +136,54 @@ Let's ensure the summary and description are presented.
     >>> print extract_text(desc)
     The desktop aardvark is an ornery thing.
 
+Let's ensure the registrant and maintainer are listed correctly.
+
+    >>> registrant = find_tag_by_id(user_browser.contents,
+    ...                             'registration')
+    >>> print extract_text(registrant)
+    Registered...by...No Privileges Person...
+
+    >>> maintainer = find_tag_by_id(user_browser.contents,
+    ...                             'owner')
+    >>> print extract_text(maintainer)
+    Maintainer: No Privileges Person...
+
+
+Turning over maintainership
+---------------------------
+
+Sample Person wants to create a project in Launchpad for a project
+that exists elsewhere as an upstream.  She wants it to exist in
+Launchpad so she can file a bug, for instance, but she is not
+interested in being the project maintainer for the long run.
+
+    >>> user_browser.open('http://launchpad.dev')
+    >>> user_browser.getLink('Register a project').click()
+
+    >>> user_browser.getControl('Name').value = 'kittyhawk'
+    >>> user_browser.getControl('URL').value = 'kittyhawk'
+    >>> user_browser.getControl('Title').value = 'Kitty Hawk ATC'
+    >>> user_browser.getControl('Summary').value = (
+    ...     'Kitty Hawk Air Traffic Simulator')
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Python License').click()
+    >>> disclaim = user_browser.getControl(name='field.disclaim_maintainer')
+    >>> disclaim.value = ['checked']
+    >>> user_browser.getControl('Complete Registration').click()
+
+Sample person is shown as the registrant but the maintainer is now
+Registry Admins.
+
+    >>> registrant = find_tag_by_id(user_browser.contents,
+    ...                             'registration')
+    >>> print extract_text(registrant)
+    Registered...by...No Privileges Person...
+
+    >>> maintainer = find_tag_by_id(user_browser.contents,
+    ...                             'owner')
+    >>> print extract_text(maintainer)
+    Maintainer: Registry Administrators...
+
 
 Search results
 --------------
@@ -125,7 +192,7 @@ Sample Person has another project she wants to register.  It is similar to
 Firefox.
 
     >>> user_browser.open('http://launchpad.dev')
-    >>> user_browser.getLink('Create a new project').click()
+    >>> user_browser.getLink('Register a project').click()
     >>> print user_browser.title
     Register a project in Launchpad...
 
@@ -142,7 +209,7 @@ Firefox project is discovered.
 Instead of registering her new project, Sample Person decides to participate
 in the Mozilla Project.
 
-    >>> user_browser.getLink('the Mozilla Project').click()
+    >>> user_browser.getLink('The Mozilla Project').click()
     >>> print user_browser.title
     The Mozilla Project in Launchpad
 

@@ -1,4 +1,4 @@
-#! /usr/bin/env ${buildout:directory}/bin/py
+#!${buildout:executable} -S
 ##############################################################################
 #
 # Copyright (c) 2004 Zope Corporation and Contributors.
@@ -20,17 +20,30 @@
 
 import logging, os, re, sys, time, warnings
 
-BUILD_DIR = '${buildout:directory}'
+# Initialize our paths.
+${python-relative-path-setup}
+import sys
+sys.path.insert(0, ${scripts:parts-directory|path-repr})
+import site
 
-if os.getsid(0) == os.getsid(os.getppid()):
-    # We need to become the process group leader so test_on_merge.py
-    # can reap its children.
-    #
-    # Note that if setpgrp() is used to move a process from one
-    # process group to another (as is done by some shells when
-    # creating pipelines), then both process groups must be part of
-    # the same session.
-    os.setpgrp()
+
+# Fix doctest so that it can handle mixed unicode and encoded output.
+import doctest
+
+_RealSpoofOut = doctest._SpoofOut
+
+class _SpoofOut(doctest._SpoofOut):
+
+    def write(self, value):
+        if isinstance(value, unicode):
+            value = value.encode('utf8')
+        _RealSpoofOut.write(self, value)
+
+doctest._SpoofOut = _SpoofOut
+
+
+BUILD_DIR = ${buildout:directory|path-repr}
+CUSTOM_SITE_DIR = ${scripts:parts-directory|path-repr}
 
 # Make tests run in a timezone no launchpad developers live in.
 # Our tests need to run in any timezone.
@@ -38,13 +51,12 @@ if os.getsid(0) == os.getsid(os.getppid()):
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
 
-# Enable Storm's C extensions.
-os.environ['STORM_CEXTENSIONS'] = '1'
+# Storm's C extensions should already be enabled from lp_sitecustomize.py,
+# which our custom sitecustomize.py ran.
+assert os.environ['STORM_CEXTENSIONS'] == '1'
 
-# Set PYTHONPATH environment variable for spawned processes.
-# This is the kind of use case for the site.py fork we have in lib (see the
-# comment in that file). :-(
-os.environ['PYTHONPATH'] = ':'.join(sys.path)
+# Make sure our site.py is the one that subprocesses use.
+os.environ['PYTHONPATH'] = CUSTOM_SITE_DIR
 
 # Set a flag if this is the main testrunner process
 if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
@@ -66,7 +78,6 @@ def exit_with_atexit_handlers(*ignored):
     sys.exit(-1 * signal.SIGTERM)
 signal.signal(signal.SIGTERM, exit_with_atexit_handlers)
 
-
 # Tell canonical.config to use the testrunner config instance.
 from canonical.config import config
 config.setInstance('testrunner')
@@ -87,19 +98,36 @@ try:
 except KeyError:
     pass
 
+# Suppress accessability warning because the test runner does not have UI.
+os.environ['GTK_MODULES'] = ''
+
 # Silence spurious warnings. Note that this does not propagate to subprocesses
 # so this is not always as easy as it seems. Warnings caused by our code that
 # need to be silenced should have an accompanied Bug reference.
 #
 warnings.filterwarnings(
-    'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh'
+    'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh',
     )
 warnings.filterwarnings(
     'ignore', 'twisted.python.plugin', DeprecationWarning,
     )
 warnings.filterwarnings(
-    'ignore', 'bzrlib.*was deprecated', DeprecationWarning
-)
+    'ignore', 'zope.testing.doctest', DeprecationWarning,
+    )
+warnings.filterwarnings(
+    'ignore', 'bzrlib.*was deprecated', DeprecationWarning,
+    )
+# XXX: 2010-04-26, Salgado, bug=570246: Silence python2.6 deprecation
+# warnings.
+# We cannot narrow this warnings filter to just twisted because
+# warnings.warn_explicit() sees this import as coming from importfascist, not
+# from twisted.  It makes no sense to put module='importfascist' here though
+# because /everything/ gets imported through it.  So, sad as it is, until
+# twisted doesn't produce warnings under Python 2.6, just ignore all these
+# deprecations.
+warnings.filterwarnings(
+    'ignore', '.*(md5|sha|sets)', DeprecationWarning,
+    )
 # The next one is caused by a lamosity in python-openid.  The following change
 # to openid/server/server.py would make the warning filter unnecessary:
 # 978c974,974
@@ -124,13 +152,14 @@ warnings.filterwarnings(
     re.escape('clear_request_started() called outside of a request'),
     UserWarning
     )
+# Unicode warnings are always fatal
+warnings.filterwarnings('error', category=UnicodeWarning)
 
-# Any warnings not explicitly silenced are errors
-warnings.filterwarnings('error', append=True)
+# shortlist() raises an error when it is misused.
+warnings.filterwarnings('error', r'shortlist\(\)')
 
-
-from canonical.ftests import pgsql
-# If this is removed, make sure canonical.ftests.pgsql is updated
+from lp.testing import pgsql
+# If this is removed, make sure lp.testing.pgsql is updated
 # because the test harness there relies on the Connection wrapper being
 # installed.
 pgsql.installFakeConnect()
@@ -141,8 +170,8 @@ from zope.testing.testrunner import options
 defaults = {
     # Find tests in the tests and ftests directories
     'tests_pattern': '^f?tests$',
-    'test_path': ['${buildout:directory}/lib'],
-    'package': ['canonical', 'lp', 'devscripts'],
+    'test_path': [${buildout:directory/lib|path-repr}],
+    'package': ['canonical', 'lp', 'devscripts', 'launchpad_loggerhead'],
     'layer': ['!(MailmanLayer)'],
     }
 
@@ -165,14 +194,7 @@ def listdir(path):
 os.listdir = listdir
 
 
-from canonical.testing.customresult import (
-    filter_tests,
-    list_tests,
-    patch_find_tests,
-    patch_zope_testresult,
-    replace_list_of_tests,
-    )
-from subunit import TestProtocolClient
+from canonical.testing.customresult import filter_tests, patch_find_tests
 
 
 if __name__ == '__main__':
@@ -191,46 +213,25 @@ if __name__ == '__main__':
     else:
         args = sys.argv
 
+    # thunk across to parallel support if needed.
+    if '--parallel' in sys.argv and '--list-tests' not in sys.argv:
+        # thunk over to parallel testing.
+        from canonical.testing.parallel import main
+        sys.exit(main(sys.argv))
+
     def load_list(option, opt_str, list_name, parser):
         patch_find_tests(filter_tests(list_name))
     options.parser.add_option(
         '--load-list', type=str, action='callback', callback=load_list)
-
-    def list_test_option(option, opt, value, parser):
-        patch_find_tests(list_tests)
     options.parser.add_option(
-        '--list', action='callback', callback=list_test_option)
-
-    def save_list_test_option(option, opt, value, parser):
-        # Replace zope.testing's list_of_tests() method with our own
-        # that prints test IDs to the file given at the command line.
-        replace_list_of_tests(open(value, 'wb'))
-        # Get zope.testing to produce a listing. This works because
-        # this option parser is actually called twice, once here and
-        # once again within zope.testing.
-        args.append('--list-tests')
-    options.parser.add_option(
-        '--save-list', action='callback',
-        callback=save_list_test_option, type="str")
-
-    def use_subunit(option, opt, value, parser):
-        patch_zope_testresult(TestProtocolClient(sys.stdout))
-    options.parser.add_option(
-        '--subunit', action='callback', callback=use_subunit)
+        '--parallel', action='store_true',
+        help='Run tests in parallel processes. '
+            'Poorly isolated tests will break.')
 
     # tests_pattern is a regexp, so the parsed value is hard to compare
     # with the default value in the loop below.
     options.parser.defaults['tests_pattern'] = defaults['tests_pattern']
     local_options = options.get_options(args=args)
-    if os.getenv("SUBUNIT_FORMATTER"):
-        try:
-            from subunit import get_default_formatter
-        except ImportError:
-            # Not a new enough subunit
-            pass
-        else:
-            stream = get_default_formatter()
-            patch_zope_testresult(TestProtocolClient(stream))
     # Set our default options, if the options aren't specified.
     for name, value in defaults.items():
         parsed_option = getattr(local_options, name)
@@ -254,15 +255,14 @@ if __name__ == '__main__':
     # tree. This is very useful for IDE integration, so an IDE can
     # e.g. run the test that you are currently editing.
     try:
-        there = os.getcwd()
-        os.chdir('${buildout:directory}')
-        result = testrunner.run([])
+        try:
+            there = os.getcwd()
+            os.chdir(BUILD_DIR)
+            testrunner.run([])
+        except SystemExit:
+            # Print Layer profiling report if requested.
+            if main_process and local_options.verbose >= 3:
+                profiled.report_profile_stats()
+            raise
     finally:
         os.chdir(there)
-    # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
-    logging.disable(999999999)
-
-    # Print Layer profiling report if requested.
-    if main_process and local_options.verbose >= 3:
-        profiled.report_profile_stats()
-    sys.exit(result)

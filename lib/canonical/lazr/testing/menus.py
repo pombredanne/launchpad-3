@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for testing menus."""
@@ -9,11 +9,9 @@ __all__ = [
     'make_fake_request',
     ]
 
-
+from lazr.restful.utils import safe_hasattr
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.management import endInteraction, newInteraction
-
-from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.webapp.interfaces import ILink
@@ -24,7 +22,7 @@ def summarise_tal_links(links):
     """List the links and their attributes in the dict or list.
 
     :param links: A dictionary or list of menu links returned by
-        `canonical.launchpad.webapp.tales.MenuAPI`.
+        `lp.app.browser.tales.MenuAPI`.
     """
     is_dict = zope_isinstance(links, dict)
     if is_dict:

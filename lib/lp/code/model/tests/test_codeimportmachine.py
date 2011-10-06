@@ -5,18 +5,16 @@
 
 Other tests are in codeimport-machine.txt."""
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
-    CodeImportMachineOfflineReason, CodeImportMachineState)
-from lp.code.model.tests.test_codeimportjob import (
-    login_for_code_imports)
+    CodeImportMachineOfflineReason,
+    CodeImportMachineState,
+    )
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestCodeImportMachineShouldLookForJob(TestCaseWithFactory):
@@ -25,8 +23,8 @@ class TestCodeImportMachineShouldLookForJob(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestCodeImportMachineShouldLookForJob, self).setUp()
-        login_for_code_imports()
+        super(TestCodeImportMachineShouldLookForJob, self).setUp(
+            'admin@canonical.com')
         self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
     def createJobRunningOnMachine(self, machine):
@@ -86,7 +84,3 @@ class TestCodeImportMachineShouldLookForJob(TestCaseWithFactory):
         # When the machine is online, the heartbeat is updated.
         self.machine.shouldLookForJob(10)
         self.assertSqlAttributeEqualsDate(self.machine, 'heartbeat', UTC_NOW)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

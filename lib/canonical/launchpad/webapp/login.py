@@ -1,49 +1,68 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from __future__ import with_statement
-
 """Stuff to do with logging in and logging out."""
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import urllib
 
-from datetime import datetime, timedelta
-
 from BeautifulSoup import UnicodeDammit
-
-from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from openid.consumer.consumer import (
+    CANCEL,
+    Consumer,
+    FAILURE,
+    SUCCESS,
+    )
 from openid.extensions import sreg
-from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
-
+from openid.fetchers import (
+    setDefaultFetcher,
+    Urllib2Fetcher,
+    )
 import transaction
-
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, getSiteManager
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.event import notify
 from zope.interface import Interface
 from zope.publisher.browser import BrowserPage
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.security.proxy import removeSecurityProxy
-from zope.session.interfaces import ISession, IClientIdManager
-
-from z3c.ptcompat import ViewPageTemplateFile
+from zope.session.interfaces import (
+    IClientIdManager,
+    ISession,
+    )
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.account import AccountSuspendedError
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
-from lp.registry.interfaces.person import IPerson, PersonCreationRationale
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadApplication, ILaunchpadPrincipal,
-    IPlacelessAuthUtility, IPlacelessLoginSource, LoggedOutEvent)
+    CookieAuthLoggedInEvent,
+    ILaunchpadApplication,
+    IPlacelessAuthUtility,
+    IPlacelessLoginSource,
+    LoggedOutEvent,
+    )
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 class UnauthorizedView(SystemErrorView):
@@ -51,12 +70,16 @@ class UnauthorizedView(SystemErrorView):
     response_code = None
 
     forbidden_page = ViewPageTemplateFile(
-        '../templates/launchpad-forbidden.pt')
+        '../../../lp/app/templates/launchpad-forbidden.pt')
 
     read_only_page = ViewPageTemplateFile(
-        '../templates/launchpad-readonlyfailure.pt')
+        '../../../lp/app/templates/launchpad-readonlyfailure.pt')
 
-    notification_message = _('To continue, you must log in to Launchpad.')
+    def page_title(self):
+        if is_read_only():
+            return super(UnauthorizedView, self).page_title
+        else:
+            return 'Forbidden'
 
     def __call__(self):
         # In read only mode, Unauthorized exceptions get raised by the
@@ -69,7 +92,7 @@ class UnauthorizedView(SystemErrorView):
             # a tuple containing (object, attribute_requested, permission).
             lp_permission = getUtility(ILaunchpadPermission, self.context[2])
             if lp_permission.access_level != "read":
-                self.request.response.setStatus(503) # Service Unavailable
+                self.request.response.setStatus(503)  # Service Unavailable
                 return self.read_only_page()
 
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
@@ -85,7 +108,7 @@ class UnauthorizedView(SystemErrorView):
                 # must ensure that form pages require the same rights
                 # as the pages that process those forms.  So, we should never
                 # need to newly authenticate on a POST.
-                self.request.response.setStatus(500) # Internal Server Error
+                self.request.response.setStatus(500)  # Internal Server Error
                 self.request.response.setHeader('Content-type', 'text/plain')
                 return ('Application error.  Unauthenticated user POSTing to '
                         'page that requires authentication.')
@@ -103,15 +126,13 @@ class UnauthorizedView(SystemErrorView):
             target = self.getRedirectURL(current_url, query_string)
             # A dance to assert that we want to break the rules about no
             # unauthenticated sessions. Only after this next line is it safe
-            # to use the ``addNoticeNotification`` method.
+            # to use the ``addInfoNotification`` method.
             allowUnauthenticatedSession(self.request)
-            self.request.response.addNoticeNotification(
-                self.notification_message)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
         else:
-            self.request.response.setStatus(403) # Forbidden
+            self.request.response.setStatus(403)  # Forbidden
             return self.forbidden_page()
 
     def getRedirectURL(self, current_url, query_string):
@@ -181,10 +202,18 @@ class OpenIDLogin(LaunchpadView):
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
         openid_vhost = config.launchpad.openid_provider_vhost
-        self.openid_request = consumer.begin(
-            allvhosts.configs[openid_vhost].rooturl)
+
+        timeline_action = get_request_timeline(self.request).start(
+            "openid-association-begin",
+            allvhosts.configs[openid_vhost].rooturl,
+            allow_nested=True)
+        try:
+            self.openid_request = consumer.begin(
+                allvhosts.configs[openid_vhost].rooturl)
+        finally:
+            timeline_action.finish()
         self.openid_request.addExtension(
-            sreg.SRegRequest(optional=['email', 'fullname']))
+            sreg.SRegRequest(required=['email', 'fullname']))
 
         assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")
@@ -201,7 +230,7 @@ class OpenIDLogin(LaunchpadView):
         return_to = "%s?%s" % (return_to, starting_url)
         form_html = self.openid_request.htmlMarkup(trust_root, return_to)
 
-        # The consumer.begin() call above will insert rows into the 
+        # The consumer.begin() call above will insert rows into the
         # OpenIDAssociations table, but since this will be a GET request, the
         # transaction would be rolled back, so we need an explicit commit
         # here.
@@ -246,11 +275,35 @@ class OpenIDCallbackView(OpenIDLogin):
     """
 
     suspended_account_template = ViewPageTemplateFile(
-        '../templates/login-suspended-account.pt')
+        'templates/login-suspended-account.pt')
+
+    def _gather_params(self, request):
+        params = dict(request.form)
+        for key, value in request.query_string_params.iteritems():
+            if len(value) > 1:
+                raise ValueError(
+                    'Did not expect multi-valued fields.')
+            params[key] = value[0]
+
+        return params
+
+    def _get_requested_url(self, request):
+        requested_url = request.getURL()
+        query_string = request.get('QUERY_STRING')
+        if query_string is not None:
+            requested_url += '?' + query_string
+        return requested_url
 
     def initialize(self):
-        self.openid_response = self._getConsumer().complete(
-            self.request.form, self.request.getURL())
+        params = self._gather_params(self.request)
+        requested_url = self._get_requested_url(self.request)
+        consumer = self._getConsumer()
+        timeline_action = get_request_timeline(self.request).start(
+            "openid-association-complete", '', allow_nested=True)
+        try:
+            self.openid_response = consumer.complete(params, requested_url)
+        finally:
+            timeline_action.finish()
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -260,7 +313,11 @@ class OpenIDCallbackView(OpenIDLogin):
         logInPrincipal(
             self.request, loginsource.getPrincipalByLogin(email), email)
 
-    def _createAccount(self, openid_identifier):
+    @cachedproperty
+    def sreg_response(self):
+        return sreg.SRegResponse.fromSuccessResponse(self.openid_response)
+
+    def _getEmailAddressAndFullName(self):
         # Here we assume the OP sent us the user's email address and
         # full name in the response. Note we can only do that because
         # we used a fixed OP (login.launchpad.net) that includes the
@@ -268,76 +325,102 @@ class OpenIDCallbackView(OpenIDLogin):
         # asked to.  Once we start using other OPs we won't be able to
         # make this assumption here as they might not include what we
         # want in the response.
-        sreg_response = sreg.SRegResponse.fromSuccessResponse(
-            self.openid_response)
-        assert sreg_response is not None, (
+        assert self.sreg_response is not None, (
             "OP didn't include an sreg extension in the response.")
-        email_address = sreg_response.get('email')
-        full_name = sreg_response.get('fullname')
+        email_address = self.sreg_response.get('email')
+        full_name = self.sreg_response.get('fullname')
         assert email_address is not None and full_name is not None, (
-            "No email address or full name found in sreg response; "
-            "can't create a new account for this identity URL.")
-        account, email = getUtility(IAccountSet).createAccountAndEmail(
-            email_address,
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-            full_name,
-            password=None,
-            openid_identifier=openid_identifier)
-        return account
+            "No email address or full name found in sreg response")
+        return email_address, full_name
+
+    def processPositiveAssertion(self):
+        """Process an OpenID response containing a positive assertion.
+
+        We'll get the person and account with the given OpenID
+        identifier (creating one if necessary), and then login using
+        that account.
+
+        If the account is suspended, we stop and render an error page.
+
+        We also update the 'last_write' key in the session if we've done any
+        DB writes, to ensure subsequent requests use the master DB and see
+        the changes we just did.
+        """
+        identifier = self.openid_response.identity_url.split('/')[-1]
+        identifier = identifier.decode('ascii')
+        should_update_last_write = False
+        # Force the use of the master database to make sure a lagged slave
+        # doesn't fool us into creating a Person/Account when one already
+        # exists.
+        person_set = getUtility(IPersonSet)
+        email_address, full_name = self._getEmailAddressAndFullName()
+        try:
+            person, db_updated = person_set.getOrCreateByOpenIDIdentifier(
+                identifier, email_address, full_name,
+                comment='when logging in to Launchpad.',
+                creation_rationale=(
+                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD))
+            should_update_last_write = db_updated
+        except AccountSuspendedError:
+            return self.suspended_account_template()
+
+        with MasterDatabasePolicy():
+            self.login(person.account)
+
+        if should_update_last_write:
+            # This is a GET request but we changed the database, so update
+            # session_data['last_write'] to make sure further requests use
+            # the master DB and thus see the changes we've just made.
+            session_data = ISession(self.request)['lp.dbpolicy']
+            session_data['last_write'] = datetime.utcnow()
+        self._redirect()
+        # No need to return anything as we redirect above.
+        return None
 
     def render(self):
         if self.openid_response.status == SUCCESS:
-            identifier = self.openid_response.identity_url.split('/')[-1]
-            account_set = getUtility(IAccountSet)
-            should_update_last_write = False
-            # Force the use of the master database to make sure a lagged slave
-            # doesn't fool us into creating a Person/Account when one already
-            # exists.
-            with MasterDatabasePolicy():
-                try:
-                    account = getUtility(IAccountSet).getByOpenIDIdentifier(
-                        identifier)
-                except LookupError:
-                    account = self._createAccount(identifier)
-                    should_update_last_write = True
+            return self.processPositiveAssertion()
 
-                if account.status == AccountStatus.SUSPENDED:
-                    return self.suspended_account_template()
-                if IPerson(account, None) is None:
-                    removeSecurityProxy(account).createPerson(
-                        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-                    should_update_last_write = True
-                self.login(account)
-
-            if should_update_last_write:
-                # This is a GET request but we changed the database, so update
-                # session_data['last_write'] to make sure further requests use
-                # the master DB and thus see the changes we've just made.
-                session_data = ISession(self.request)['lp.dbpolicy']
-                session_data['last_write'] = datetime.utcnow()
-            target = self.request.form.get('starting_url')
-            if target is None:
-                target = self.getApplicationURL()
-            self.request.response.redirect(target, temporary_if_possible=True)
+        if self.account is not None:
+            # The authentication failed (or was canceled), but the user is
+            # already logged in, so we just add a notification message and
+            # redirect.
+            self.request.response.addInfoNotification(
+                _(u'Your authentication failed but you were already '
+                   'logged into Launchpad.'))
+            self._redirect()
             # No need to return anything as we redirect above.
-            retval = None
+            return None
         else:
-            retval = OpenIDLoginErrorView(
+            return OpenIDLoginErrorView(
                 self.context, self.request, self.openid_response)()
 
-        # The consumer.complete() call above will create entries in
+    def __call__(self):
+        retval = super(OpenIDCallbackView, self).__call__()
+        # The consumer.complete() call in initialize() will create entries in
         # OpenIDConsumerNonce to prevent replay attacks, but since this will
         # be a GET request, the transaction would be rolled back, so we need
         # an explicit commit here.
         transaction.commit()
-
         return retval
+
+    def _redirect(self):
+        target = self.request.form.get('starting_url')
+        if target is None:
+            # If this was a POST, then the starting_url won't be in the form
+            # values, but in the query parameters instead.
+            target = self.request.query_string_params.get('starting_url')
+            if target is None:
+                target = self.request.getApplicationURL()
+            else:
+                target = target[0]
+        self.request.response.redirect(target, temporary_if_possible=True)
 
 
 class OpenIDLoginErrorView(LaunchpadView):
 
     page_title = 'Error logging in'
-    template = ViewPageTemplateFile("../templates/login-error.pt")
+    template = ViewPageTemplateFile("templates/login-error.pt")
 
     def __init__(self, context, request, openid_response):
         super(OpenIDLoginErrorView, self).__init__(context, request)
@@ -354,11 +437,18 @@ class OpenIDLoginErrorView(LaunchpadView):
 class AlreadyLoggedInView(LaunchpadView):
 
     page_title = 'Already logged in'
-    template = ViewPageTemplateFile("../templates/login-already.pt")
+    template = ViewPageTemplateFile("templates/login-already.pt")
 
 
 def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
+    # Force a fresh session, per Bug #828638. Any changes to any
+    # existing session made this request will be lost, but that should
+    # not be a problem as authentication must be done before
+    # authorization and authorization before we do any actual work.
+    client_id_manager = getUtility(IClientIdManager)
+    new_client_id = client_id_manager.generateUniqueId()
+    client_id_manager.setRequestId(request, new_client_id)
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
@@ -367,24 +457,6 @@ def logInPrincipal(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
-
-
-def logInPrincipalAndMaybeCreatePerson(request, principal, email):
-    """Log the principal in, creating a Person if necessary.
-
-    If the given principal has no associated person, we create a new
-    person, fetch a new principal and set it in the request.
-
-    Password validation must be done in callsites.
-    """
-    logInPrincipal(request, principal, email)
-    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
-        person = principal.account.createPerson(
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            principal.id)
-        assert ILaunchpadPrincipal.providedBy(new_principal)
-        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,
@@ -457,10 +529,11 @@ class CookieLogoutPage:
 
     def logout(self):
         logoutPerson(self.request)
-        self.request.response.addNoticeNotification(
-            _(u'You have been logged out')
-            )
-        target = '%s/?loggingout=1' % self.request.URL[-1]
+        openid_vhost = config.launchpad.openid_provider_vhost
+        openid_root = allvhosts.configs[openid_vhost].rooturl
+        target = '%s+logout?%s' % (
+            config.codehosting.secure_codebrowse_root,
+            urllib.urlencode(dict(next_to='%s+logout' % (openid_root, ))))
         self.request.response.redirect(target)
         return ''
 
@@ -471,5 +544,5 @@ class FeedsUnauthorizedView(UnauthorizedView):
     def __call__(self):
         assert IUnauthenticatedPrincipal.providedBy(self.request.principal), (
             "Feeds user should always be anonymous.")
-        self.request.response.setStatus(403) # Forbidden
+        self.request.response.setStatus(403)  # Forbidden
         return self.forbidden_page()

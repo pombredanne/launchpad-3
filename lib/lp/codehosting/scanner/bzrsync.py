@@ -15,58 +15,29 @@ __all__ = [
     ]
 
 import logging
+
+from bzrlib.graph import DictParentsProvider
+from bzrlib.revision import NULL_REVISION
 import pytz
 import transaction
-
+from storm.locals import Store
 from zope.component import getUtility
 from zope.event import notify
 
-from bzrlib.branch import BzrBranchFormat4
-from bzrlib.repofmt.weaverepo import (
-    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
-from bzrlib import urlutils
+from canonical.config import config
 
-from lazr.uri import URI
-
-from lp.codehosting import iter_list_chunks
-from lp.codehosting.puller.worker import BranchMirrorer
-from lp.codehosting.scanner import events
-from lp.codehosting.vfs.branchfs import BranchPolicy
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.code.interfaces.branchrevision import IBranchRevisionSet
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchrevision import (BranchRevision)
+from lp.code.model.revision import Revision
+from lp.codehosting.scanner import events
+from lp.services.utils import iter_list_chunks
 from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource)
+    ITranslationTemplatesBuildJobSource,
+    )
+
 
 UTC = pytz.timezone('UTC')
-
-
-class InvalidStackedBranchURL(Exception):
-    """Raised when we try to scan a branch stacked on an invalid URL."""
-
-
-class WarehouseBranchPolicy(BranchPolicy):
-
-    def checkOneURL(self, url):
-        """See `BranchOpener.checkOneURL`.
-
-        If the URLs we are mirroring from are anything but a
-        lp-mirrored:///~user/project/branch URLs, we don't want to scan them.
-        Opening branches on remote systems takes too long, and we want all of
-        our local access to be channelled through this transport.
-        """
-        uri = URI(url)
-        if uri.scheme != 'lp-mirrored':
-            raise InvalidStackedBranchURL(url)
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        We're happy to open stacked branches in the usual manner, but want to
-        go on checking the URLs of any branches we then open.
-        """
-        return urlutils.join(branch.base, url), True
 
 
 class BzrSync:
@@ -83,8 +54,7 @@ class BzrSync:
         """Synchronize the database with a Bazaar branch, handling locking.
         """
         if bzr_branch is None:
-            bzr_branch = BranchMirrorer(WarehouseBranchPolicy()).open(
-                self.db_branch.warehouse_url)
+            bzr_branch = self.db_branch.getBzrBranch()
         bzr_branch.lock_read()
         try:
             self.syncBranch(bzr_branch)
@@ -100,7 +70,8 @@ class BzrSync:
 
         * Revision: there must be one Revision row for each revision in the
           branch ancestry. If the row for a revision that has just been added
-          to the branch is already present, it must be checked for consistency.
+          to the branch is already present, it must be checked for
+          consistency.
 
         * BranchRevision: there must be one BrancheRevision row for each
           revision in the branch ancestry. If history revisions became merged
@@ -113,23 +84,21 @@ class BzrSync:
         self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
-        bzr_ancestry, bzr_history = self.retrieveBranchDetails(bzr_branch)
+        self.logger.info("Retrieving history from bzrlib.")
+        bzr_history = bzr_branch.revision_history()
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
-        self.setFormats(bzr_branch)
-        db_ancestry, db_history, db_branch_revision_map = (
-            self.retrieveDatabaseAncestry())
+        db_ancestry, db_history = self.retrieveDatabaseAncestry()
 
-        (added_ancestry, branchrevisions_to_delete,
+        (new_ancestry, branchrevisions_to_delete,
             revids_to_insert) = self.planDatabaseChanges(
-            bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history,
-            db_branch_revision_map)
-        added_ancestry.difference_update(
-            getUtility(IRevisionSet).onlyPresent(added_ancestry))
-        self.logger.info("Adding %s new revisions.", len(added_ancestry))
-        for revids in iter_list_chunks(list(added_ancestry), 1000):
+            bzr_branch, bzr_history, db_ancestry, db_history)
+        new_db_revs = (
+            new_ancestry - getUtility(IRevisionSet).onlyPresent(new_ancestry))
+        self.logger.info("Adding %s new revisions.", len(new_db_revs))
+        for revids in iter_list_chunks(list(new_db_revs), 1000):
             revisions = self.getBazaarRevisions(bzr_branch, revids)
             for revision in revisions:
                 # This would probably go much faster if we found some way to
@@ -160,78 +129,49 @@ class BzrSync:
         self.updateBranchStatus(bzr_history)
         notify(
             events.ScanCompleted(
-                self.db_branch, bzr_branch, bzr_ancestry, self.logger))
+                self.db_branch, bzr_branch, self.logger, new_ancestry))
         transaction.commit()
 
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
         self.logger.info("Retrieving ancestry from database.")
-        db_ancestry, db_history, db_branch_revision_map = (
-            self.db_branch.getScannerData())
-        return db_ancestry, db_history, db_branch_revision_map
+        db_ancestry, db_history = self.db_branch.getScannerData()
+        return db_ancestry, db_history
 
-    def retrieveBranchDetails(self, bzr_branch):
-        """Retrieve ancestry from the the bzr branch on disk."""
-        self.logger.info("Retrieving ancestry from bzrlib.")
-        last_revision = bzr_branch.last_revision()
-        # Make bzr_ancestry a set for consistency with db_ancestry.
-        bzr_ancestry_ordered = (
-            bzr_branch.repository.get_ancestry(last_revision))
-        first_ancestor = bzr_ancestry_ordered.pop(0)
-        assert first_ancestor is None, 'history horizons are not supported'
-        bzr_ancestry = set(bzr_ancestry_ordered)
-        bzr_history = bzr_branch.revision_history()
-        return bzr_ancestry, bzr_history
+    def _getRevisionGraph(self, bzr_branch, db_last):
+        if bzr_branch.repository.has_revision(db_last):
+            return bzr_branch.repository.get_graph()
+        revisions = Store.of(self.db_branch).find(Revision,
+                BranchRevision.branch_id == self.db_branch.id,
+                Revision.id == BranchRevision.revision_id)
+        parent_map = dict(
+            (r.revision_id, r.parent_ids) for r in revisions)
+        parents_provider = DictParentsProvider(parent_map)
 
-    def setFormats(self, bzr_branch):
-        """Record the stored formats in the database object.
+        class PPSource:
 
-        The previous value is unconditionally overwritten.
+            @staticmethod
+            def _make_parents_provider():
+                return parents_provider
 
-        Note that the strings associated with the formats themselves are used,
-        not the strings on disk.
-        """
-        def match_title(enum, title, default):
-            for value in enum.items:
-                if value.title == title:
-                    return value
-            else:
-                return default
+        return bzr_branch.repository.get_graph(PPSource)
 
-        # XXX: Aaron Bentley 2008-06-13
-        # Bazaar does not provide a public API for learning about format
-        # markers.  Fix this in Bazaar, then here.
-        control_string = bzr_branch.bzrdir._format.get_format_string()
-        if bzr_branch._format.__class__ is BzrBranchFormat4:
-            branch_string = BranchFormat.BZR_BRANCH_4.title
+    def getAncestryDelta(self, bzr_branch):
+        bzr_last = bzr_branch.last_revision()
+        db_last = self.db_branch.last_scanned_id
+        if db_last is None:
+            added_ancestry = set(bzr_branch.repository.get_ancestry(bzr_last))
+            added_ancestry.discard(None)
+            removed_ancestry = set()
         else:
-            branch_string = bzr_branch._format.get_format_string()
-        repository_format = bzr_branch.repository._format
-        if repository_format.__class__ is RepositoryFormat6:
-            repository_string = RepositoryFormat.BZR_REPOSITORY_6.title
-        elif repository_format.__class__ is RepositoryFormat5:
-            repository_string = RepositoryFormat.BZR_REPOSITORY_5.title
-        elif repository_format.__class__ is RepositoryFormat4:
-            repository_string = RepositoryFormat.BZR_REPOSITORY_4.title
-        else:
-            repository_string = repository_format.get_format_string()
-        self.db_branch.control_format = match_title(
-            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
-        self.db_branch.branch_format = match_title(
-            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
-        self.db_branch.repository_format = match_title(
-            RepositoryFormat, repository_string,
-            RepositoryFormat.UNRECOGNIZED)
+            graph = self._getRevisionGraph(bzr_branch, db_last)
+            added_ancestry, removed_ancestry = (
+                graph.find_difference(bzr_last, db_last))
+            added_ancestry.discard(NULL_REVISION)
+        return added_ancestry, removed_ancestry
 
-    def planDatabaseChanges(self, bzr_branch, bzr_ancestry, bzr_history,
-                            db_ancestry, db_history, db_branch_revision_map):
-        """Plan database changes to synchronize with bzrlib data.
-
-        Use the data retrieved by `retrieveDatabaseAncestry` and
-        `retrieveBranchDetails` to plan the changes to apply to the database.
-        """
-        self.logger.info("Planning changes.")
-        # Find the length of the common history.
+    def getHistoryDelta(self, bzr_history, db_history):
+        self.logger.info("Calculating history delta.")
         common_len = min(len(bzr_history), len(db_history))
         while common_len > 0:
             # The outer conditional improves efficiency. Without it, the
@@ -244,40 +184,51 @@ class BzrSync:
                 if db_history[:common_len] == bzr_history[:common_len]:
                     break
             common_len -= 1
-
-        # Revisions added to the branch's ancestry.
-        added_ancestry = bzr_ancestry.difference(db_ancestry)
-
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
         removed_history = db_history[common_len:]
         added_history = bzr_history[common_len:]
+        return added_history, removed_history
+
+    def planDatabaseChanges(self, bzr_branch, bzr_history, db_ancestry,
+                            db_history):
+        """Plan database changes to synchronize with bzrlib data.
+
+        Use the data retrieved by `retrieveDatabaseAncestry` and
+        `retrieveBranchDetails` to plan the changes to apply to the database.
+        """
+        self.logger.info("Planning changes.")
+        # Find the length of the common history.
+        added_history, removed_history = self.getHistoryDelta(
+            bzr_history, db_history)
+        added_ancestry, removed_ancestry = self.getAncestryDelta(bzr_branch)
 
         notify(
             events.RevisionsRemoved(
                 self.db_branch, bzr_branch, removed_history))
 
-        # Merged (non-history) revisions in the database and the bzr branch.
-        old_merged = db_ancestry.difference(db_history)
-        new_merged = bzr_ancestry.difference(bzr_history)
-
-        # Revisions added or removed from the set of merged revisions.
-        removed_merged = old_merged.difference(new_merged)
-        added_merged = new_merged.difference(old_merged)
-
         # We must delete BranchRevision rows for all revisions which where
         # removed from the ancestry or whose sequence value has changed.
-        branchrevisions_to_delete = set(
-            db_branch_revision_map[revid]
-            for revid in removed_merged.union(removed_history))
+        branchrevisions_to_delete = set(removed_history)
+        branchrevisions_to_delete.update(removed_ancestry)
+        branchrevisions_to_delete.update(
+            set(added_history).difference(added_ancestry))
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
+        last_revno = len(bzr_history)
         revids_to_insert = dict(
-            self.getRevisions(
-                bzr_history, added_merged.union(added_history)))
+            self.revisionsToInsert(
+                added_history, last_revno, added_ancestry))
+        # We must remove any stray BranchRevisions that happen to already be
+        # present.
+        existing_branchrevisions = Store.of(self.db_branch).find(
+            Revision.revision_id, BranchRevision.branch == self.db_branch,
+            BranchRevision.revision_id == Revision.id,
+            Revision.revision_id.is_in(revids_to_insert))
+        branchrevisions_to_delete.update(existing_branchrevisions)
 
-        return (added_ancestry, branchrevisions_to_delete,
+        return (added_ancestry, list(branchrevisions_to_delete),
                 revids_to_insert)
 
     def getBazaarRevisions(self, bzr_branch, revisions):
@@ -308,32 +259,40 @@ class BzrSync:
                 self.db_branch, bzr_branch, db_revision, bzr_revision,
                 revids_to_insert[revision_id]))
 
-    def getRevisions(self, bzr_history, revision_subset):
-        """Iterate over '(revid, revno)' pairs in a branch's ancestry.
+    @staticmethod
+    def revisionsToInsert(added_history, last_revno, added_ancestry):
+        """Calculate the revisions to insert and their revnos.
 
-        Generate a sequence of (revision-id, sequence) pairs to be inserted
-        into the branchrevision table.
+        :param added_history: A list of revision ids added to the revision
+            history in parent-to-child order.
+        :param last_revno: The revno of the last revision.
+        :param added_ancestry: A set of revisions that have been added to the
+            ancestry of the branch.  May overlap with added_history.
         """
-        for (index, revision_id) in enumerate(bzr_history):
-            if revision_id in revision_subset:
-                # sequence numbers start from 1
-                yield revision_id, index + 1
-        for revision_id in revision_subset.difference(set(bzr_history)):
+        start_revno = last_revno - len(added_history) + 1
+        for (revno, revision_id) in enumerate(added_history, start_revno):
+            yield revision_id, revno
+        for revision_id in added_ancestry.difference(added_history):
             yield revision_id, None
 
-    def deleteBranchRevisions(self, branchrevisions_to_delete):
+    def deleteBranchRevisions(self, revision_ids_to_delete):
         """Delete a batch of BranchRevision rows."""
         self.logger.info("Deleting %d branchrevision records.",
-            len(branchrevisions_to_delete))
-        branch_revision_set = getUtility(IBranchRevisionSet)
-        for branchrevision in sorted(branchrevisions_to_delete):
-            branch_revision_set.delete(branchrevision)
+            len(revision_ids_to_delete))
+        # Use a config value to work out how many to delete at a time.
+        # Deleting more than one at a time is significantly more efficient
+        # than doing one at a time, but the actual optimal count is a bit up
+        # in the air.
+        batch_size = config.branchscanner.branch_revision_delete_count
+        while revision_ids_to_delete:
+            batch = revision_ids_to_delete[:batch_size]
+            revision_ids_to_delete[:batch_size] = []
+            self.db_branch.removeBranchRevisions(batch)
 
     def insertBranchRevisions(self, bzr_branch, revids_to_insert):
         """Insert a batch of BranchRevision rows."""
         self.logger.info("Inserting %d branchrevision records.",
             len(revids_to_insert))
-        revision_set = getUtility(IRevisionSet)
         revid_seq_pairs = revids_to_insert.items()
         for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
@@ -364,3 +323,8 @@ def schedule_translation_templates_build(tip_changed):
 
 def schedule_diff_updates(tip_changed):
     tip_changed.db_branch.scheduleDiffUpdates()
+
+
+def update_recipes(tip_changed):
+    for recipe in tip_changed.db_branch.recipes:
+        recipe.is_stale = True

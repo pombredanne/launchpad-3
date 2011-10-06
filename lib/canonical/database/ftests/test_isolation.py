@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests confirming that changing isolation levels does what we expect."""
@@ -7,23 +7,36 @@ __metaclass__ = type
 __all__ = []
 
 import os.path
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import sys
 from textwrap import dedent
 import unittest
 
-from canonical.config import config
+import transaction
+
+from canonical.config import dbconfig
 from canonical.database.sqlbase import (
-    cursor, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_DEFAULT,
-    ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_SERIALIZABLE,
-    connect)
-from canonical.testing.layers import LaunchpadZopelessLayer
+    connect,
+    cursor,
+    ISOLATION_LEVEL_SERIALIZABLE,
+    )
+from canonical.testing.layers import (
+    disconnect_stores,
+    LaunchpadZopelessLayer,
+    )
+
+
+def set_isolation_level(isolation):
+    dbconfig.override(isolation_level=isolation)
+    disconnect_stores()
+
 
 class TestIsolation(unittest.TestCase):
     layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        self.txn = LaunchpadZopelessLayer.txn
 
     def getCurrentIsolation(self, con=None):
         if con is None:
@@ -37,12 +50,8 @@ class TestIsolation(unittest.TestCase):
     def test_default(self):
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
-    def test_default2(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_DEFAULT)
-        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-
     def test_autocommit(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        set_isolation_level('autocommit')
         # There is no actual 'autocommit' mode in PostgreSQL. psycopg
         # implements this feature by using read committed isolation and
         # issuing commit() statements after every query.
@@ -50,47 +59,46 @@ class TestIsolation(unittest.TestCase):
 
         # So we need to confirm we are actually in autocommit mode
         # by seeing if we an roll back
-        con = self.txn.conn()
-        cur = con.cursor()
-        cur.execute("SELECT COUNT(*) FROM Person WHERE country IS NULL")
+        cur = cursor()
+        cur.execute(
+            "SELECT COUNT(*) FROM Person WHERE homepage_content IS NULL")
         self.failIfEqual(cur.fetchone()[0], 0)
-        cur.execute("UPDATE Person SET country=NULL")
-        con.rollback()
-        cur = con.cursor()
-        cur.execute("SELECT COUNT(*) FROM Person WHERE country IS NOT NULL")
+        cur.execute("UPDATE Person SET homepage_content=NULL")
+        transaction.abort()
+        cur = cursor()
+        cur.execute(
+            "SELECT COUNT(*) FROM Person WHERE homepage_content IS NOT NULL")
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
     def test_readCommitted(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
+        set_isolation_level('read_committed')
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_serializable(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+        set_isolation_level('serializable')
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_commit(self):
         # Change the isolation level
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-        self.txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+        set_isolation_level('serializable')
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
-        con = self.txn.conn()
-        cur = con.cursor()
-        cur.execute("UPDATE Person SET country=NULL")
-        con.commit()
-        cur.execute("UPDATE Person SET country=61")
+        cur = cursor()
+        cur.execute("UPDATE Person SET homepage_content=NULL")
+        transaction.commit()
+        cur.execute("UPDATE Person SET homepage_content='foo'")
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_rollback(self):
         # Change the isolation level
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-        self.txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
+        set_isolation_level('serializable')
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
-        con = self.txn.conn()
-        cur = con.cursor()
-        cur.execute("UPDATE Person SET country=NULL")
-        con.rollback()
+        cur = cursor()
+        cur.execute("UPDATE Person SET homepage_content=NULL")
+        transaction.abort()
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_script(self):
@@ -107,33 +115,25 @@ class TestIsolation(unittest.TestCase):
                 read committed
                 serializable
                 serializable
-                serializable
-                serializable
                 """))
 
     def test_connect(self):
         # Ensure connect() method returns a connection with the correct
         # default isolation
-        con = connect(config.launchpad.dbuser)
+        con = connect()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'read committed')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'read committed')
 
         # Ensure that changing the isolation sticks.
-        con = connect(
-            config.launchpad.dbuser, isolation=ISOLATION_LEVEL_SERIALIZABLE)
+        con = connect(isolation=ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
 
         # But on a fresh connection, it works just fine.
-        con = connect(config.launchpad.dbuser)
+        con = connect()
         con.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

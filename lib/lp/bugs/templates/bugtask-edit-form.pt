@@ -36,9 +36,15 @@
     <tal:bugtracker-active
         condition="watch/bugtracker/active">
       <p tal:condition="watch/last_error_type"
-          class="error message"
-          tal:content="watch/getLastErrorMessage"
-      />
+          class="error message">
+        <tal:bugwatch-error-message define="
+            message view/bug_watch_error_message/message;
+            help_url view/bug_watch_error_message/help_url;">
+          <tal:message replace="message" /><br />
+          <a tal:attributes="href help_url" target="help" class="help"
+            >(what does this mean?)</a>
+        </tal:bugwatch-error-message>
+      </p>
     </tal:bugtracker-active>
     <p class="warning message"
         tal:condition="not:watch/bugtracker/active">
@@ -108,52 +114,45 @@
     </tr>
   </table>
   <div class="field">
-    <table>
-      <tal:distrotask
-        condition="python:context.distribution or context.distroseries"
-        define="error python:view.getFieldError('sourcepackagename')"
-      >
-        <tr>
-          <td>
-            <label
-              tal:attributes="for view/widgets/sourcepackagename/name"
-              tal:content="view/widgets/sourcepackagename/label"
-            >Source package name</label>
-          </td>
-        </tr>
-        <tr tal:attributes="class python:error and 'error' or None">
-          <td>
-            <tal:widget content="structure view/widgets/sourcepackagename" />
-            <div tal:condition="error"
-                class="message"
-                tal:content="error">An error in sourcepackagename widget.
-            </div>
-          </td>
-        </tr>
-      </tal:distrotask>
-
-      <tal:upstreamtask
-          condition="python:context.product"
-          define="omit_required python:True;
-                  error python:view.getFieldError('product')">
-        <tr>
-          <td colspan="2">
-            <label style="font-weight: bold"
-              tal:attributes="for view/widgets/product/name"
-              tal:content="view/widgets/product/label"
-            >Upstream project</label>
-          </td>
-        </tr>
-        <tr tal:attributes="class python:error and 'error' or None">
-          <td colspan="2" style="white-space: nowrap">
-            <tal:widget content="structure view/widgets/product" />
-            <div tal:condition="error"
-                class="message"
-                tal:content="error">An error in product widget.
-            </div>
-          </td>
-        </tr>
-      </tal:upstreamtask>
+    <table tal:condition="view/show_target_widget">
+      <tr>
+        <td>
+          <label
+            tal:attributes="for view/widgets/target/name"
+            tal:content="view/widgets/target/label"
+          >Target</label>
+        </td>
+      </tr>
+      <tr tal:define="error python:view.getFieldError('target')"
+          tal:attributes="class python:error and 'error' or None">
+        <td>
+          <tal:widget content="structure view/widgets/target" />
+          <div tal:condition="error"
+              class="message"
+              tal:content="error">An error in target widget.
+          </div>
+        </td>
+      </tr>
+    </table>
+    <table tal:condition="view/show_sourcepackagename_widget">
+      <tr>
+        <td>
+          <label
+            tal:attributes="for view/widgets/sourcepackagename/name"
+            tal:content="view/widgets/sourcepackagename/label"
+          >Package</label>
+        </td>
+      </tr>
+      <tr tal:define="error python:view.getFieldError('sourcepackagename')"
+          tal:attributes="class python:error and 'error' or None">
+        <td>
+          <tal:widget content="structure view/widgets/sourcepackagename" />
+          <div tal:condition="error"
+              class="message"
+              tal:content="error">An error in sourcepackagename widget.
+          </div>
+        </td>
+      </tr>
     </table>
     <table>
       <tr>
@@ -181,16 +180,14 @@
         <td title="Changeable only by a project maintainer or bug supervisor">
           <span
             tal:condition="not:view/userCanEditImportance"
-            class="sprite read-only"
-          />
+            class="sprite read-only"></span>
           <tal:widget content="structure view/widgets/importance" />
         </td>
         <td tal:condition="view/widgets/milestone"
             title="Changeable only by a project maintainer or bug supervisor">
           <span
             tal:condition="not:view/userCanEditMilestone"
-            class="sprite read-only"
-          />
+            class="sprite read-only"></span>
           <tal:widget content="structure view/widgets/milestone" />
         </td>
       </tr>
@@ -227,7 +224,7 @@
         The information about this bug in Launchpad is
         automatically pulled daily from the remote bug.
         <tal:has_bugwatch tal:condition="context/bugwatch">
-          <tal:has_been_pulled 
+          <tal:has_been_pulled
               tal:condition="context/bugwatch/lastchecked">
               This information was last pulled
               <b
@@ -236,7 +233,7 @@
                 3 minutes ago
               </b>.
           </tal:has_been_pulled>
-          <tal:has_not_been_pulled 
+          <tal:has_not_been_pulled
               tal:condition="not:context/bugwatch/lastchecked">
             This information hasn't been pulled yet.
           </tal:has_not_been_pulled>

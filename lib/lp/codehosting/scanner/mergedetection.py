@@ -10,13 +10,15 @@ __all__ = [
     ]
 
 from bzrlib.revision import NULL_REVISION
-
 from zope.component import getUtility
 
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES, notify_modified)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    notify_modified,
+    )
+from lp.services.utils import CachingIterator
 
 
 def is_series_branch(branch):
@@ -47,7 +49,7 @@ def mark_branch_merged(logger, branch):
     branch.lifecycle_status = BranchLifecycleStatus.MERGED
 
 
-def merge_detected(logger, source, target, proposal=None):
+def merge_detected(logger, source, target, proposal=None, merge_revno=None):
     """Handle the merge of source into target."""
     # If the target branch is not the development focus, then don't update
     # the status of the source branch.
@@ -60,7 +62,7 @@ def merge_detected(logger, source, target, proposal=None):
         if is_development_focus(target):
             mark_branch_merged(logger, source)
     else:
-        notify_modified(proposal, proposal.markAsMerged)
+        notify_modified(proposal, proposal.markAsMerged, merge_revno)
         # If there is an explicit merge proposal, change the branch's
         # status when it's been merged into a development focus or any
         # other series branch.
@@ -76,7 +78,7 @@ def auto_merge_branches(scan_completed):
     determine which other branches this branch has been merged into.
     """
     db_branch = scan_completed.db_branch
-    bzr_ancestry = scan_completed.bzr_ancestry
+    new_ancestry = scan_completed.new_ancestry
     logger = scan_completed.logger
 
     # XXX: JonathanLange 2009-05-05 spec=package-branches: Yet another thing
@@ -95,7 +97,7 @@ def auto_merge_branches(scan_completed):
         BranchLifecycleStatus.DEVELOPMENT,
         BranchLifecycleStatus.EXPERIMENTAL,
         BranchLifecycleStatus.MATURE,
-        BranchLifecycleStatus.ABANDONED).getBranches()
+        BranchLifecycleStatus.ABANDONED).getBranches(eager_load=False)
     for branch in branches:
         last_scanned = branch.last_scanned_id
         # If the branch doesn't have any revisions, not any point setting
@@ -110,14 +112,35 @@ def auto_merge_branches(scan_completed):
             # If the tip revisions are the same, then it is the same
             # branch, not one merged into the other.
             pass
-        elif last_scanned in bzr_ancestry:
+        elif last_scanned in new_ancestry:
             merge_detected(logger, branch, db_branch)
+
+
+def find_merged_revno(merge_sorted, tip_rev_id):
+    """Find the mainline revno that merged tip_rev_id.
+
+    This method traverses the merge sorted graph looking for the first
+    """
+    last_mainline = None
+    iterator = iter(merge_sorted)
+    while True:
+        try:
+            rev_id, depth, revno, ignored = iterator.next()
+        except StopIteration:
+            break
+        if depth == 0:
+            last_mainline = revno[0]
+        if rev_id == tip_rev_id:
+            return last_mainline
+    # The only reason we get here is that the tip_rev_id isn't in the merge
+    # sorted graph.
+    return None
 
 
 def auto_merge_proposals(scan_completed):
     """Detect merged proposals."""
     db_branch = scan_completed.db_branch
-    bzr_ancestry = scan_completed.bzr_ancestry
+    new_ancestry = scan_completed.new_ancestry
     logger = scan_completed.logger
 
     # Check landing candidates in non-terminal states to see if their tip
@@ -127,12 +150,24 @@ def auto_merge_proposals(scan_completed):
     # At this stage we are not going to worry about the revno
     # which introduced the change, that will either be set through the web
     # ui by a person, or by PQM once it is integrated.
-    for proposal in db_branch.landing_candidates:
-        if proposal.source_branch.last_scanned_id in bzr_ancestry:
-            merge_detected(
-                logger, proposal.source_branch, db_branch, proposal)
 
-    # Now check the landing targets.
+    if scan_completed.bzr_branch is None:
+        # Only happens in tests.
+        merge_sorted = []
+    else:
+        merge_sorted = CachingIterator(
+            scan_completed.bzr_branch.iter_merge_sorted_revisions())
+    for proposal in db_branch.landing_candidates:
+        tip_rev_id = proposal.source_branch.last_scanned_id
+        if tip_rev_id in new_ancestry:
+            merged_revno = find_merged_revno(merge_sorted, tip_rev_id)
+            # Remember so we can find the merged revision number.
+            merge_detected(
+                logger, proposal.source_branch, db_branch, proposal,
+                merged_revno)
+
+    # Now check the landing targets.  We should probably get rid of this,
+    # especially if we are trying to get rid of the branch revision table.
     final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
     tip_rev_id = db_branch.last_scanned_id
     for proposal in db_branch.landing_targets:

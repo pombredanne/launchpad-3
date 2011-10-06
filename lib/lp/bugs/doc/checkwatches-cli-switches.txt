@@ -1,28 +1,26 @@
-= Updating selected bug trackers =
+Updating selected bug trackers
+==============================
 
-The BugWatchUpdater class can be instructed to update only a subset of
+The CheckwatchesMaster class can be instructed to update only a subset of
 bugtrackers. This is acheived by passing a list of bug tracker names to
 the updateBugTrackers() method.
+
+    >>> import transaction
+    >>> from canonical.database.sqlbase import cursor, sqlvalues
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
 
 We'll update all bugtrackers so that the test doesn't try to make any
 external connections.
 
-    >>> from canonical.database.sqlbase import cursor, sqlvalues
-    >>> from canonical.database.constants import UTC_NOW
     >>> cur = cursor()
     >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" %
     ...     sqlvalues(UTC_NOW))
-    >>> import transaction
     >>> transaction.commit()
 
-    >>> from canonical.database.sqlbase import (
-    ...     ZopelessTransactionManager)
-    >>> from canonical.launchpad.scripts import FakeLogger
-    >>> from lp.bugs.scripts.checkwatches import (
-    ...     BugWatchUpdater)
-    >>> transactionmgr = ZopelessTransactionManager._installed
-    >>> updater = BugWatchUpdater(transactionmgr, log=FakeLogger())
-    >>> updater._login()
+    >>> updater = CheckwatchesMaster(transaction, logger=FakeLogger())
+
     >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
     DEBUG...No watches to update on http://bugs.debian.org
     DEBUG...No watches to update on http://bugzilla.gnome.org/bugs
@@ -30,18 +28,17 @@ external connections.
 If a bug tracker is disabled checkwatches won't try to update it.
 
     >>> from canonical.config import config
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from lp.testing.factory import LaunchpadObjectFactory
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
-    >>> bug_tracker = LaunchpadObjectFactory().makeBugTracker(
-    ...     'http://example.com')
+    >>> bug_tracker = factory.makeBugTracker('http://example.com')
     >>> bug_tracker.active = False
+    >>> bug_tracker_name = bug_tracker.name
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
-    >>> updater.updateBugTrackers([bug_tracker.name])
+    >>> updater.updateBugTrackers([bug_tracker_name])
     DEBUG...Updates are disabled for bug tracker at http://example.com
 
 This functionality can also be used with the checkwatches cronscript,
@@ -54,8 +51,10 @@ line.
     ...     def __init__(self, name, dbuser=None, test_args=None):
     ...         super(TestCheckWatchesCronScript, self).__init__(
     ...             name, dbuser, test_args)
-    ...         self.logger = FakeLogger()
     ...         self.txn = transaction
+    ...
+    ...     def handle_options(self):
+    ...         self.logger = FakeLogger()
 
     >>> def run_cronscript_with_args(args):
     ...     # It may seem a bit weird to do ths rather than letting the
@@ -63,6 +62,7 @@ line.
     ...     # LayerIsolationErrors get raised as it leaves threads lying
     ...     # around.
     ...     login('bugwatch@bugs.launchpad.net')
+    ...     transaction.commit()
     ...     checkwatches_cronscript = TestCheckWatchesCronScript(
     ...         "checkwatches", config.checkwatches.dbuser,
     ...         test_args=args)
@@ -71,10 +71,11 @@ line.
     >>> run_cronscript_with_args([
     ...     '--bug-tracker=mozilla.org', '--bug-tracker=debbugs', '-v',
     ...     '--batch-size=10'])
-    DEBUG   Using a global batch size of 10
-    DEBUG   No watches to update on https://bugzilla.mozilla.org/
-    DEBUG   No watches to update on http://bugs.debian.org
-    INFO    Time for this run: ... seconds.
+    DEBUG Enabled by DEFAULT section
+    DEBUG Using a global batch size of 10
+    DEBUG No watches to update on https://bugzilla.mozilla.org/
+    DEBUG No watches to update on http://bugs.debian.org
+    INFO  Time for this run: ... seconds.
 
 
 Updating all watches from the command line
@@ -88,8 +89,8 @@ demonstrate this.
 
     >>> import pytz
     >>> from datetime import datetime
-    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> factory = LaunchpadObjectFactory()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -102,12 +103,13 @@ demonstrate this.
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
     >>> run_cronscript_with_args(['-vvt', 'savannah', '--reset'])
+    DEBUG Enabled by DEFAULT section
     INFO Resetting 5 bug watches for bug tracker 'savannah'
     INFO Updating 5 watches on bug tracker 'savannah'
-    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
-    (OOPS-...)
+    INFO 'Unsupported Bugtracker' error updating http://savannah.gnu.org/:
+    SAVANE
     INFO 0 watches left to check on bug tracker 'savannah'
-    INFO    Time for this run...
+    INFO Time for this run...
 
 
 Getting help

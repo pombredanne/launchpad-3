@@ -4,15 +4,19 @@
 """Unit tests for CodeReviewComment"""
 
 from textwrap import dedent
-import unittest
 
-from canonical.launchpad.database.message import MessageSet
+from lp.services.messages.model.message import MessageSet
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.code.enums import CodeReviewVote
 from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
 from lp.code.model.codereviewcomment import quote_text_as_email
-from lp.testing import TestCaseWithFactory, TestCase
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
@@ -78,7 +82,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual('Re: Message subject', reply.message.subject)
 
     def test_createNoParentComment(self):
-        comment = self.bmp.createComment(
+        self.bmp.createComment(
             self.submitter, 'Message subject', 'Message content')
         new_comment = self.bmp.createComment(
             self.reviewer, 'New subject', 'New content',
@@ -237,7 +241,3 @@ class TestQuoteTextAsEmail(TestCase):
     def test_trailing_whitespace(self):
         # Trailing whitespace is removed.
         self.assertEqual('>   foo', quote_text_as_email('  foo  \n '))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

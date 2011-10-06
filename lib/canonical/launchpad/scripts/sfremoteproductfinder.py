@@ -9,17 +9,21 @@ __all__ = [
     ]
 
 import urllib
+from urllib2 import (
+    HTTPError,
+    urlopen,
+    )
 
 from BeautifulSoup import BeautifulSoup
-from urllib2 import HTTPError, urlopen
-
 from zope.component import getUtility
 
-from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities)
 from canonical.launchpad.scripts.logger import log as default_log
-from canonical.launchpad.webapp import urlappend, urlsplit
+from canonical.launchpad.webapp import (
+    urlappend,
+    urlsplit,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.product import IProductSet
 
 
 class SourceForgeRemoteProductFinder:

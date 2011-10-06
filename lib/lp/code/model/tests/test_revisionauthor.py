@@ -6,19 +6,20 @@
 __metaclass__ = type
 
 import transaction
-from unittest import TestLoader
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.ftests.logger import MockLogger
-from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
+from lp.scripts.garbo import RevisionAuthorEmailLinker
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.code.model.revision import (
+    RevisionAuthor,
+    RevisionSet,
+    )
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
-from lp.code.model.revision import RevisionAuthor, RevisionSet
-from lp.registry.interfaces.person import IPersonSet
 
 
 class TestRevisionEmailExtraction(TestCase):
@@ -162,7 +163,7 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
 
         # After the garbo RevisionAuthorEmailLinker job runs, the link
         # is made.
-        RevisionAuthorEmailLinker(log=MockLogger()).run()
+        RevisionAuthorEmailLinker(log=DevNullLogger()).run()
         self.assertEqual(harry, self.author.person,
                          'Harry should now be the author.')
 
@@ -205,7 +206,3 @@ class TestRevisionAuthor(TestCase):
         # name_without_email is an empty string.
         author = RevisionAuthor(name=u'jml@localhost')
         self.assertEqual('', author.name_without_email)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

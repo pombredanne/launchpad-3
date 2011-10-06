@@ -1,19 +1,22 @@
-= Menus =
+Menus
+=====
 
-Launchpad uses menus associated with content object views and facets
-(a layer associate with a vhost). The FacetMenu and NavigationMenu
-are the base classes for constructing menus to browse a content
-object and its views.
-
-
-== Menu prerequisite objects and configuration ==
-
-We require a considerable amount of setup to construct menus
-and observe their behaviour. At a minimum, we need interfaces,
-content objects, and views to be registered before implementing menus.
+Launchpad uses menus associated with content object views and facets (a
+layer associate with a vhost). The FacetMenu and NavigationMenu are the
+base classes for constructing menus to browse a content object and its
+views.
 
 
-=== Content objects that have menus ===
+Menu prerequisite objects and configuration
+-------------------------------------------
+
+We require a considerable amount of setup to construct menus and observe
+their behaviour. At a minimum, we need interfaces, content objects, and
+views to be registered before implementing menus.
+
+
+Content objects that have menus
+...............................
 
 Menus are retrieved through adaption.  Here are two example interfaces;
 later, implementations having facets and menus will be defined.
@@ -27,6 +30,7 @@ later, implementations having facets and menus will be defined.
     ...     """An object with facets and menus."""
 
     # Create a fake module that we'll patch our examples into.
+
     >>> import new
     >>> import sys
     >>> cookingexample = new.module('cookingexample')
@@ -61,17 +65,19 @@ for traversable objects.
     ...     implements(IRecipe)
 
 
-=== Content views associates with menus ===
+Content views associates with menus
+...................................
 
-The content object is discovered by traversing the URL hierarchy.
-Here is a three objects hierarchy: (the root)/joy-of-cooking/fried-spam.
-Each object has a canonical url derived from its place in the hierarchy.
+The content object is discovered by traversing the URL hierarchy. Here
+is a three objects hierarchy: (the root)/joy-of-cooking/fried-spam. Each
+object has a canonical url derived from its place in the hierarchy.
 
     # Menu testing requires a request object that provides the traversed
     # objects. This function does most of the work, but views must be
     # assigned to the _last_obj_traversed attribute.
-    >>> from canonical.lazr.testing.menus import make_fake_request
+
     >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.lazr.testing.menus import make_fake_request
 
     >>> root = Root('', None)
     >>> cookbook = Cookbook('joy-of-cooking', root)
@@ -83,12 +89,13 @@ Each object has a canonical url derived from its place in the hierarchy.
 
     >>> canonical_url(cookbook)
     u'http://launchpad.dev/joy-of-cooking'
+
     >>> canonical_url(recipe)
     u'http://launchpad.dev/joy-of-cooking/fried-spam'
 
 Content objects are not suitable for presentation by themselves; they
-require a view class to adapt them to the required format. An object
-may have many views, each delegated to one aspect of the object.
+require a view class to adapt them to the required format. An object may
+have many views, each delegated to one aspect of the object.
 
 Navigation menus are used to connect the views into pseudo-hierarchy
 from the last traversed content object. Some views implement a marker
@@ -105,28 +112,24 @@ content object's menu.
 
     >>> class RecipeIndexView(LaunchpadView):
     ...     """View for summary of a recipe on the cookery facet."""
-    ...     __used_for__ = IRecipe
 
     >>> class RecipeEditInstructionsView(LaunchpadView):
     ...     """View for editing recipe instructions on the cookery facet."""
-    ...     __used_for__ = IRecipe
     ...     implements(IRecipeEditMenuMarker)
 
     >>> class RecipeEditIngredientsView(LaunchpadView):
     ...     """View for editing recipe ingedients on the cookery facet."""
-    ...     __used_for__ = IRecipe
     ...     implements(IRecipeEditMenuMarker)
 
     >>> class RecipeReadJournalView(LaunchpadView):
     ...     """View for reading a recipe's journal on the cookery facet."""
-    ...     __used_for__ = IRecipe
     ...     implements(IRecipeJournalMenuMarker)
 
     >>> class RecipeQuestionsAllView(LaunchpadView):
     ...     """View for all questions of a recipe on the questions facet."""
-    ...     __used_for__ = IRecipe
 
     # Monkey patch the interfaces and views into the cookingexample module.
+
     >>> cookingexample.IRecipeEditMenuMarker = IRecipeEditMenuMarker
     >>> cookingexample.IRecipeJournalMenuMarker = IRecipeJournalMenuMarker
     >>> cookingexample.RecipeIndexView = RecipeIndexView
@@ -136,6 +139,7 @@ content object's menu.
     >>> cookingexample.RecipeQuestionsAllView = RecipeQuestionsAllView
 
 The views for IRecipe are registered using ZCML. Each page requires a:
+
     * name: To get the view by name (the page)
     * for: The interface being adapted (IRecipe)
     * class: The class the adapter returns (the view)
@@ -196,13 +200,14 @@ they are assigned to the same facet.
     ... """)
 
 
-== The FacetMenu class ==
+The FacetMenu class
+-------------------
 
 A FacetMenu is a menu that defines all the facets for a site. A facet
 may be considered an application or focus. There may be many ways in
-which a site's content object may be used. For example: one aspect of
-a content object is its definition and publication, another might
-be questions and answers about the content object.
+which a site's content object may be used. For example: one aspect of a
+content object is its definition and publication, another might be
+questions and answers about the content object.
 
 FacetMenus are meant to be used as a base-class for writing your own
 IFacetMenu classes.  An error is raise if it is directly called.
@@ -216,12 +221,12 @@ IFacetMenu classes.  An error is raise if it is directly called.
     ...
     AssertionError: Subclasses of FacetMenu must provide self.links
 
-Here is the common FacetMenu for the cookery site. The FacetMenu
-class has four attributes: usedfor, links, defaultlink, and enable_only.
-The 'usedfor' attribute associates the menu with a specific interface.
-The required 'links' attribute is a list of the method names that
-return links. The 'defaultlink' attribute defines the selected link when
-the facet is not known for the context being viewed. The enable_links
+Here is the common FacetMenu for the cookery site. The FacetMenu class
+has four attributes: usedfor, links, defaultlink, and enable_only. The
+'usedfor' attribute associates the menu with a specific interface. The
+required 'links' attribute is a list of the method names that return
+links. The 'defaultlink' attribute defines the selected link when the
+facet is not known for the context being viewed. The enable_links
 attribute is a list of links that are enabled; a subset of links that
 are appropriate for a context object.
 
@@ -254,9 +259,9 @@ are appropriate for a context object.
 
     >>> cookingexample.CookeryFacetMenu = CookeryFacetMenu
 
-An instance of a FacetMenu is usually retrieved through adaption, but
-we can directly create one with a context object to show that its
-methods can access `self.context`.
+An instance of a FacetMenu is usually retrieved through adaption, but we
+can directly create one with a context object to show that its methods
+can access `self.context`.
 
     >>> from zope.component import provideAdapter
     >>> from zope.security.checker import (
@@ -269,13 +274,14 @@ methods can access `self.context`.
 
     # The adapters for the link types used by menus are registered in ZCML.
     # That is not the focus of this test so they are manually registered.
+
     >>> provideAdapter(MenuLink, [ILinkData], ILink)
     >>> provideAdapter(FacetLink, [ILinkData], IFacetLink)
     >>> defineChecker(FacetLink, InterfaceChecker(IFacetLink))
     >>> defineChecker(MenuLink, InterfaceChecker(ILink))
     >>> defineChecker(URI, NamesChecker(dir(URI)))
 
-    >>> from canonical.lazr.utils import safe_hasattr
+    >>> from lazr.restful.utils import safe_hasattr
     >>> def summarise_links(menu, url=None, facet=None):
     ...     """List the links and their attributes."""
     ...     if url is not None:
@@ -314,11 +320,12 @@ methods can access `self.context`.
         selected: False
         linked: True
 
-Note that the 'variations' link is not enabled. See the section
-`Enabled and disabled links` for how this is done.
+Note that the 'variations' link is not enabled. See the section `Enabled
+and disabled links` for how this is done.
 
 
-== The NavigationMenu class ==
+The NavigationMenu class
+------------------------
 
 Navigation menus are defined for content or view objects.  Each object
 has just one navigation menu, and it is available at all times. A page
@@ -361,10 +368,10 @@ menu though one of its links.
     ...         text = 'Edit ingredients'
     ...         return Link(target, text)
 
-Menus can provide extra attributes that are available to the TAL processing.
-These are defined by the attribute 'extra_attributes'.  When the MenuAPI is
-processing the menu, each of these attributes is also available in the
-generated dictionary.
+Menus can provide extra attributes that are available to the TAL
+processing. These are defined by the attribute 'extra_attributes'.  When
+the MenuAPI is processing the menu, each of these attributes is also
+available in the generated dictionary.
 
     >>> class RecipeJournalMenu(NavigationMenu):
     ...     usedfor = IRecipeJournalMenuMarker
@@ -418,6 +425,7 @@ generated dictionary.
     ...         return Link(target, text)
 
     # Monkey patch the menus into the cookingexample module.
+
     >>> cookingexample.RecipeEditMenu = RecipeEditMenu
     >>> cookingexample.RecipeJournalMenu = RecipeJournalMenu
     >>> cookingexample.RecipeMenu = RecipeMenu
@@ -443,11 +451,12 @@ is defined in by the RecipeMenu class and the view of recipe.
         linked: True
 
 
-== Enabled and disabled links ==
+Enabled and disabled links
+--------------------------
 
-Menus are often constructed by sub classing a common menu. The
-common menu defines all the facet links, and the enabled link that are
-common to most content objects.
+Menus are often constructed by sub classing a common menu. The common
+menu defines all the facet links, and the enabled link that are common
+to most content objects.
 
 The CookeryFacetMenu defines all the facets for the cookery site for all
 content interfaces, three links: summary, questions, and variations. But
@@ -464,6 +473,7 @@ content object and it has all facet links enabled.
     ...     enable_only = ['summary', 'questions', 'variations']
 
     # Monkey patch the menus into the cookingexample module.
+
     >>> cookingexample.RecipeFacetMenu = RecipeFacetMenu
 
     >>> summarise_links(
@@ -490,7 +500,8 @@ content object and it has all facet links enabled.
         linked: True
 
 
-== Menu requirements  ==
+Menu requirements
+-----------------
 
 All menus descend from MenuBase which impose a number of requirements
 upon its descendants.
@@ -520,9 +531,9 @@ not defined, or links is not of the right type, an error is raised.
      ...
     AssertionError: self.links must be a tuple or list.
 
-An error is raised if a class enables a link that is not in the
-list of links. CookeryFacetMenu did not include 'non_link' in its
-links, so an error is raised when BogusFacetMenu is used.
+An error is raised if a class enables a link that is not in the list of
+links. CookeryFacetMenu did not include 'non_link' in its links, so an
+error is raised when BogusFacetMenu is used.
 
     >>> class BogusFacetMenu(CookeryFacetMenu):
     ...
@@ -537,9 +548,9 @@ links, so an error is raised when BogusFacetMenu is used.
     ...
     AssertionError: Links in 'enable_only' not found in 'links': non_link
 
-The iterlinks() method of menus requires a `IHTTPApplicationRequest`
-(a request object) present in the `Interaction` to determine the
-state of its links. Without a request, an error is raised.
+The iterlinks() method of menus requires a `IHTTPApplicationRequest` (a
+request object) present in the `Interaction` to determine the state of
+its links. Without a request, an error is raised.
 
     >>> from zope.security.management import endInteraction
 
@@ -550,12 +561,13 @@ state of its links. Without a request, an error is raised.
     AttributeError: 'NoneType' object has no attribute 'getURL'
 
 
-== Registering menus as adapters for content objects and views ==
+Registering menus as adapters for content objects and views
+-----------------------------------------------------------
 
-The menus must be registered as an adapter for their respective
-classes. Menus can be associated with content objects and or views.
-This is normally performed in ZCML; without the ZCML registration,
-the cookery objects cannot be adapted to menus.
+The menus must be registered as an adapter for their respective classes.
+Menus can be associated with content objects and or views. This is
+normally performed in ZCML; without the ZCML registration, the cookery
+objects cannot be adapted to menus.
 
     >>> from zope.component import getMultiAdapter, queryAdapter
     >>> from canonical.launchpad.webapp.interfaces import (
@@ -601,8 +613,8 @@ facet name.
     >>> recipe_questions_navigationmenu
     <RecipeQuestionsMenu ...>
 
-And the RecipeEditMenu can be retrieved by adapting the recipe's
-view +edit-ingredients.
+And the RecipeEditMenu can be retrieved by adapting the recipe's view
++edit-ingredients.
 
     >>> recipe_ingredients_view = getMultiAdapter(
     ...     (recipe, request), name='+edit-ingredients')
@@ -612,7 +624,8 @@ view +edit-ingredients.
     <RecipeEditMenu ...>
 
 
-== Menu linked links ==
+Menu linked links
+-----------------
 
 A link is not linked (the anchor is not rendered) when its URL matches
 the request URI; the user should not navigate to a page he is already
@@ -635,8 +648,8 @@ seeing. The matched URI comes from the view's request...
         menu: <...IRecipeJournalMenuMarker...>
         linked: True
 
-...or from the request_url keyword argument for iterlinks() that
-is passed by the helper function.
+...or from the request_url keyword argument for iterlinks() that is
+passed by the helper function.
 
     >>> summarise_links(
     ...     recipe_navigationmenu,
@@ -699,12 +712,13 @@ prefix to be considered the current one.
 attribute might be True.)
 
 
-=== FacetMenu selected links ===
+FacetMenu selected links
+........................
 
 Facet links are selected when their name matches the selectedfacetname.
 The question link can be selected by passing 'question' as the
-selectedfacetname. The selection is independent of whether the link
-is linked, as can be seen when the url is not explicitly passed.
+selectedfacetname. The selection is independent of whether the link is
+linked, as can be seen when the url is not explicitly passed.
 
     >>> request.getURL()
     'http://launchpad.dev/joy-of-cooking/fried-spam'
@@ -732,18 +746,18 @@ is linked, as can be seen when the url is not explicitly passed.
         linked: True
 
 
-=== NavigationMenu linked links ===
+NavigationMenu linked links
+...........................
 
-When navigational menus are associated with a content object and one
-of its views, they provide a menu and sub menu. The view's sub menu
-belongs to one of the content object's menu's links.
+When navigational menus are associated with a content object and one of
+its views, they provide a menu and sub menu. The view's sub menu belongs
+to one of the content object's menu's links.
 
 A link will be linked if request's url matches one of the links in the
 link's menu. A link's menu contains child links in the navigational
 hierarchy; when a child link is linked, the parent link is not linked
 itself. (It is assume that one of the link in the child menu, will be
 identical to the one in the parent's menu.)
-
 
     >>> request = make_fake_request(
     ...     'http://launchpad.dev'
@@ -819,7 +833,8 @@ menu of the RecipeMenu will change the state of both menus.
         linked: True
 
 
-=== Absolute links ===
+Absolute links
+..............
 
 Absolute urls can be made with a full url, including the host part, or
 as a url path beginning with '/'.
@@ -872,18 +887,19 @@ see if we have a link to a page within Launchpad.
     http://launchpad.dev/joy-of-cooking/+spoo True
 
 
-==== The current view's menu ====
+The current view's menu
+.......................
 
-The linked state of a link may be determined from the menu adapted
-from the current view. The object responsible for rendering the page is
-the last object in the request.traversed_objects list, but that object
-is not always the view. It may be the view's instancemethod.
+The linked state of a link may be determined from the menu adapted from
+the current view. The object responsible for rendering the page is the
+last object in the request.traversed_objects list, but that object is
+not always the view. It may be the view's instancemethod.
 
 In the example above recipe_ingredients_view was appended to the
 request.traversed_objects just as the publisher would do. If the
-publisher were to append the view's __call__ method, the RecipeMenu
-will still have the correct state because iterlinks() knows how to
-find the instancemethods object.
+publisher were to append the view's __call__ method, the RecipeMenu will
+still have the correct state because iterlinks() knows how to find the
+instancemethods object.
 
     >>> request._last_obj_traversed = recipe_journal_view.__call__
 
@@ -901,24 +917,27 @@ find the instancemethods object.
 
     # Restore the _last_obj_traversed to the view that matches the
     # request's URL.
+
     >>> request._last_obj_traversed = recipe_journal_view
 
 
-== Accessing menus from TALES ==
+Accessing menus from TALES
+--------------------------
 
-Most of the interaction with menus happens in page templates. The
-TAL namespace 'menu' is used to query the state of a menu and to iterate
+Most of the interaction with menus happens in page templates. The TAL
+namespace 'menu' is used to query the state of a menu and to iterate
 over the links. The TALES takes the form of 'view/menu:navigation'.
 
     >>> from zope.interface import classImplements
     >>> from zope.traversing.adapters import DefaultTraversable
     >>> from zope.traversing.interfaces import IPathAdapter, ITraversable
-    >>> from canonical.launchpad.ftests import test_tales
-    >>> from canonical.launchpad.webapp.tales import MenuAPI
     >>> from canonical.lazr.testing.menus import summarise_tal_links
+    >>> from lp.app.browser.tales import MenuAPI
+    >>> from lp.testing import test_tales
 
     # MenuAPI is normally registered as an IPathAdapter in ZCML. This
     # approximates what is done by the code:
+
     >>> classImplements(MenuAPI, IPathAdapter)
     >>> provideAdapter(MenuAPI, [Interface,], IPathAdapter, name='menu')
     >>> provideAdapter(DefaultTraversable, (Interface,), ITraversable)
@@ -982,7 +1001,8 @@ The attributes of the menu can be accessed with the normal path method.
     42
 
 
-== Looking up the nearest navigation menu ==
+Looking up the nearest navigation menu
+--------------------------------------
 
 Sometimes the view will have a navigation menu, but the view's context
 will not.  In this case we want to search upwards through the navigation
@@ -1000,6 +1020,7 @@ that the comment refers to.
     ...     implements(IComment)
 
     # This is usually done in ZCML by browser:defaultView.
+
     >>> from zope.publisher.interfaces import IDefaultViewName
     >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
     >>> provideAdapter(
@@ -1032,7 +1053,8 @@ returned.
         linked: True
 
 
-=== Menus for objects without canonical URLs or menus ===
+Menus for objects without canonical URLs or menus
+.................................................
 
 If we try a navigation menu lookup on an object without a canonical url
 or a navigation menu adapter, then no menu will be returned, and no
@@ -1049,16 +1071,17 @@ error will be raised by the template.
     {}
 
 
-== Rendering the menu in a template ==
+Rendering the menu in a template
+--------------------------------
 
-Menus are often rendered with a view controller class to ensure
-that only enabled links are rendered. The TALES expression might call
-the view using:
+Menus are often rendered with a view controller class to ensure that
+only enabled links are rendered. The TALES expression might call the
+view using:
 
     tal:content view/menu:navigation@@+navigationmenu
 
-The view and template are usually registered in ZCML. The following
-is an example of a template and view classes for the FacetMenu and
+The view and template are usually registered in ZCML. The following is
+an example of a template and view classes for the FacetMenu and
 NavigationMenus used in the previous TALES section.
 
     >>> import operator
@@ -1113,11 +1136,12 @@ NavigationMenus used in the previous TALES section.
 
     # NavigationMenuView is normally registered as an IPathAdapter in ZCML.
     # This approximates what is done by the code:
+
     >>> classImplements(FacetMenuView, IPathAdapter)
     >>> classImplements(NavigationMenuView, IPathAdapter)
 
-The Summary in the facet menu is selected because the current facet
-is 'cookery'.
+The Summary in the facet menu is selected because the current facet is
+'cookery'.
 
     >>> recipe_facet_menu_view = FacetMenuView(recipe, request)
     >>> recipe_facet_menu_view.initialize()
@@ -1182,13 +1206,15 @@ URL.
     </div>
 
     # Remove the temporary file.
+
     >>> template_file.close()
 
 
-== tearDown ==
+tearDown
+--------
 
-Restore the modules module to its starting state. First remove the
-ZCML registrations. Then, in dict order, remove the cooking example by
+Restore the modules module to its starting state. First remove the ZCML
+registrations. Then, in dict order, remove the cooking example by
 setting private names, then public names (except for __builtins__) to
 None. See `http://www.python.org/doc/essays/cleanup/` steps C1-3.
 

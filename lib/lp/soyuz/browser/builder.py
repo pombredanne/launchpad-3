@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
@@ -20,40 +20,54 @@ __all__ = [
 
 import operator
 
+from lazr.restful.utils import smartquote
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser import TextAreaWidget, TextWidget
 
-from canonical.cachedproperty import cachedproperty
-from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
-from lp.soyuz.browser.build import BuildRecordsView
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission, stepthrough)
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets import HiddenUserWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.owner import HiddenUserWidget
+from lp.buildmaster.interfaces.builder import (
+    IBuilder,
+    IBuilderSet,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.build import (
+    BuildNavigationMixin,
+    BuildRecordsView,
+    )
 
 
-class BuilderSetNavigation(GetitemNavigation):
+class BuilderSetNavigation(GetitemNavigation, BuildNavigationMixin):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
 
     @stepthrough('+build')
     def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
-        except NotFoundError:
+        build = super(BuilderSetNavigation, self).traverse_build(name)
+        if build is None:
             return None
         else:
             return self.redirectSubTree(canonical_url(build))
@@ -118,7 +132,6 @@ class BuilderOverviewMenu(ApplicationMenu):
 
 class BuilderSetView(LaunchpadView):
     """Default BuilderSet view class."""
-    __used_for__ = IBuilderSet
 
     @property
     def label(self):
@@ -149,12 +162,18 @@ class BuilderSetView(LaunchpadView):
     def number_of_building_builders(self):
         return len([b for b in self.builders if b.currentjob is not None])
 
+    @cachedproperty
+    def build_queue_sizes(self):
+        """Return the build queue sizes for all processors."""
+        builderset = getUtility(IBuilderSet)
+        return builderset.getBuildQueueSizes()
+
     @property
     def ppa_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'PPA build status', virtualized=True)
-        builder_category.groupBuilders(self.builders)
+        builder_category.groupBuilders(self.builders, self.build_queue_sizes)
         return builder_category
 
     @property
@@ -162,7 +181,7 @@ class BuilderSetView(LaunchpadView):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'Official distributions build status', virtualized=False)
-        builder_category.groupBuilders(self.builders)
+        builder_category.groupBuilders(self.builders, self.build_queue_sizes)
         return builder_category
 
 
@@ -199,7 +218,7 @@ class BuilderCategory:
         return sorted(self._builder_groups,
                       key=operator.attrgetter('processor_name'))
 
-    def groupBuilders(self, all_builders):
+    def groupBuilders(self, all_builders, build_queue_sizes):
         """Group the given builders as a collection of Buildergroups.
 
         A BuilderGroup will be initialized for each processor.
@@ -214,10 +233,10 @@ class BuilderCategory:
             else:
                 grouped_builders[builder.processor] = [builder]
 
-        builderset = getUtility(IBuilderSet)
         for processor, builders in grouped_builders.iteritems():
-            queue_size, duration = builderset.getBuildQueueSizeForProcessor(
-                processor, virtualized=self.virtualized)
+            virt_str = 'virt' if self.virtualized else 'nonvirt'
+            queue_size, duration = build_queue_sizes[virt_str].get(
+                processor.name, (0, None))
             builder_group = BuilderGroup(
                 processor.name, queue_size, duration,
                 sorted(builders, key=operator.attrgetter('title')))
@@ -229,7 +248,6 @@ class BuilderView(LaunchpadView):
 
     Implements useful actions for the page template.
     """
-    __used_for__ = IBuilder
 
     @property
     def current_build_duration(self):
@@ -256,9 +274,8 @@ class BuilderView(LaunchpadView):
 class BuilderHistoryView(BuildRecordsView):
     """This class exists only to override the page_title."""
 
-    __used_for__ = IBuilder
-
     page_title = 'Build history'
+    binary_only = False
 
     @property
     def label(self):
@@ -335,7 +352,17 @@ class BuilderEditView(LaunchpadEditFormView):
     @action(_('Change'), name='update')
     def change_details(self, action, data):
         """Update the builder with the data from the form."""
-        builder_was_modified = self.updateContextFromData(data)
+        # notify_modified is set False here because it uses
+        # lazr.lifecycle.snapshot to store the state of the object
+        # before and after modification.  This is dangerous for the
+        # builder model class because it causes some properties to be
+        # queried that try and communicate with the slave, which cannot
+        # be done from the webapp (it's generally firewalled).  We could
+        # prevent snapshots for individual properties by defining the
+        # interface properties with doNotSnapshot() but this doesn't
+        # guard against future properties being created.
+        builder_was_modified = self.updateContextFromData(
+            data, notify_modified=False)
 
         if builder_was_modified:
             notification = 'The builder "%s" was updated successfully.' % (

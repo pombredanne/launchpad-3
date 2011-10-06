@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -25,20 +25,26 @@ from twisted.python import log
 from twisted.web import xmlrpc
 
 from canonical.config import config
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor)
 from lp.services.scripts.base import LaunchpadScript
+from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class CodeImportWorker(LaunchpadScript):
 
     def __init__(self, name, dbuser=None, test_args=None):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
-        set_up_oops_reporting(name, mangle_stdout=True)
+        set_up_oops_reporting('codeimportworker', name, mangle_stdout=True)
 
-    def _init_db(self, implicit_begin, isolation):
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option(
+            "--access-policy", type="choice", metavar="ACCESS_POLICY",
+            choices=["anything", "default"], default=None)
+
+    def _init_db(self, isolation):
         # This script doesn't access the database.
         pass
 
@@ -59,7 +65,8 @@ class CodeImportWorker(LaunchpadScript):
     def _main(self, job_id):
         worker = CodeImportWorkerMonitor(
             job_id, self.logger,
-            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
+            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url),
+            self.options.access_policy)
         return worker.run()
 
 if __name__ == '__main__':

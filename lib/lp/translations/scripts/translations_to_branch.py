@@ -7,25 +7,50 @@ __metaclass__ = type
 __all__ = ['ExportTranslationsToBranch']
 
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import os.path
-from datetime import datetime, timedelta
 
+from bzrlib.errors import NotBranchError
+from bzrlib.revision import NULL_REVISION
 import pytz
-
+from storm.expr import (
+    And,
+    Join,
+    )
 from zope.component import getUtility
 
-from storm.expr import Join, SQL
-
-from canonical.launchpad.helpers import shortlist
-from lp.codehosting.vfs import get_multi_server
-from lp.translations.interfaces.potemplate import IPOTemplateSet
+from canonical.config import config
+from canonical.launchpad.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    shortlist,
+    )
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
-
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
+from lp.app.enums import ServiceUsage
+# Load the normal plugin set.
+import lp.codehosting
+from lp.code.errors import StaleLastMirrored
+from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.directbranchcommit import (
-    ConcurrentUpdateError, DirectBranchCommit)
+    ConcurrentUpdateError,
+    DirectBranchCommit,
+    )
+from lp.codehosting.vfs import get_rw_server
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 class ExportTranslationsToBranch(LaunchpadCronScript):
@@ -77,12 +102,12 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
     def _makeDirectBranchCommit(self, db_branch):
         """Create a `DirectBranchCommit`.
 
-        This factory is a mock-injection point for tests.
-
         :param db_branch: A `Branch` object as defined in Launchpad.
         :return: A `DirectBranchCommit` for `db_branch`.
         """
-        return DirectBranchCommit(db_branch)
+        committer_id = 'Launchpad Translations on behalf of %s' % (
+            db_branch.owner.name)
+        return DirectBranchCommit(db_branch, committer_id=committer_id)
 
     def _prepareBranchCommit(self, db_branch):
         """Prepare branch for use with `DirectBranchCommit`.
@@ -98,22 +123,16 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # possible again to commit to these branches at some point.
         # When that happens, remove this workaround and just call
         # _makeDirectBranchCommit directly.
-        committer = self._makeDirectBranchCommit(db_branch)
-        if not db_branch.stacked_on:
-            # The normal case.
-            return committer
+        if db_branch.stacked_on:
+            bzrbranch = db_branch.getBzrBranch()
+            self.logger.info("Unstacking branch to work around bug 375013.")
+            bzrbranch.set_stacked_on_url(None)
+            self.logger.info("Done unstacking branch.")
 
-        self.logger.info("Unstacking branch to work around bug 375013.")
-        try:
-            committer.bzrbranch.set_stacked_on_url(None)
-        finally:
-            committer.unlock()
-        self.logger.info("Done unstacking branch.")
-
-        # This may have taken a while, so commit for good
-        # manners.
-        if self.txn:
-            self.txn.commit()
+            # This may have taken a while, so commit for good
+            # manners.
+            if self.txn:
+                self.txn.commit()
 
         return self._makeDirectBranchCommit(db_branch)
 
@@ -139,7 +158,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         revno, current_rev = branch.last_revision_info()
         repository = branch.repository
-        for rev_id in repository.iter_reverse_revision_history(current_rev):
+        graph = repository.get_graph()
+        for rev_id in graph.iter_lefthand_ancestry(
+                current_rev, (NULL_REVISION, )):
             revision = repository.get_revision(rev_id)
             revision_date = self._getRevisionTime(revision)
             if self._isTranslationsCommit(revision):
@@ -151,6 +172,21 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         return None
 
+    def _findChangedPOFiles(self, source, changed_since):
+        """Return an iterator of POFiles changed since `changed_since`.
+
+        :param source: a `ProductSeries`.
+        :param changed_since: a datetime object.
+        """
+        subset = getUtility(IPOTemplateSet).getSubset(
+            productseries=source, iscurrent=True)
+        for template in subset:
+            for pofile in template.pofiles:
+                if (changed_since is None or
+                    pofile.date_changed > changed_since or
+                    template.date_last_updated > changed_since):
+                    yield pofile
+
     def _exportToBranch(self, source):
         """Export translations for source into source.translations_branch.
 
@@ -159,7 +195,17 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         self.logger.info("Exporting %s." % source.title)
         self._checkForObjections(source)
 
-        committer = self._prepareBranchCommit(source.translations_branch)
+        try:
+            committer = self._prepareBranchCommit(source.translations_branch)
+        except StaleLastMirrored as e:
+            source.translations_branch.branchChanged(
+                **get_db_branch_info(**e.info))
+            self.logger.warning(
+                'Skipped %s due to stale DB info and scheduled scan.',
+                source.translations_branch.bzr_identity)
+            if self.txn:
+                self.txn.commit()
+            return
         self.logger.debug("Created DirectBranchCommit.")
         if self.txn:
             self.txn.commit()
@@ -183,37 +229,28 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         change_count = 0
 
         try:
-            subset = getUtility(IPOTemplateSet).getSubset(
-                productseries=source, iscurrent=True)
-            for template in subset:
-                base_path = os.path.dirname(template.path)
+            for pofile in self._findChangedPOFiles(source, changed_since):
+                base_path = os.path.dirname(pofile.potemplate.path)
 
-                for pofile in template.pofiles:
-                    has_changed = (
-                        changed_since is None or
-                        pofile.date_changed > changed_since)
-                    if not has_changed:
-                        continue
+                language_code = pofile.getFullLanguageCode()
+                self.logger.debug("Exporting %s." % language_code)
 
-                    language_code = pofile.getFullLanguageCode()
-                    self.logger.debug("Exporting %s." % language_code)
+                pofile_path = os.path.join(
+                    base_path, language_code + '.po')
+                pofile_contents = pofile.export()
 
-                    pofile_path = os.path.join(
-                        base_path, language_code + '.po')
-                    pofile_contents = pofile.export()
+                committer.writeFile(pofile_path, pofile_contents)
+                change_count += 1
 
-                    committer.writeFile(pofile_path, pofile_contents)
-                    change_count += 1
+                # We're not actually writing any changes to the
+                # database, but it's not polite to stay in one
+                # transaction for too long.
+                if self.txn:
+                    self.txn.commit()
 
-                    # We're not actually writing any changes to the
-                    # database, but it's not polite to stay in one
-                    # transaction for too long.
-                    if self.txn:
-                        self.txn.commit()
-
-                    # We're done with this POFile.  Don't bother caching
-                    # anything about it any longer.
-                    template.clearPOFileCache()
+                # We're done with this POFile.  Don't bother caching
+                # anything about it any longer.
+                pofile.potemplate.clearPOFileCache()
 
             if change_count > 0:
                 self.logger.debug("Writing to branch.")
@@ -225,6 +262,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         """Loop over `productseries_iter` and export their translations."""
         items_done = 0
         items_failed = 0
+        unpushed_branches = 0
 
         productseries = shortlist(productseries_iter, longest_expected=2000)
 
@@ -236,6 +274,13 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     self.txn.commit()
             except (KeyboardInterrupt, SystemExit):
                 raise
+            except NotBranchError:
+                unpushed_branches += 1
+                if self.txn:
+                    self.txn.abort()
+                self._handleUnpushedBranch(source)
+                if self.txn:
+                    self.txn.commit()
             except Exception, e:
                 items_failed += 1
                 self.logger.error("Failure: %s" % repr(e))
@@ -244,8 +289,34 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
             items_done += 1
 
-        self.logger.info("Processed %d item(s); %d failure(s)." % (
-            items_done, items_failed))
+        self.logger.info(
+            "Processed %d item(s); %d failure(s), %d unpushed branch(es)." % (
+                items_done, items_failed, unpushed_branches))
+
+    def _sendMail(self, sender, recipients, subject, text):
+        """Wrapper for `simple_sendmail`.  Fakeable for easy testing."""
+        simple_sendmail(sender, recipients, subject, text)
+
+    def _handleUnpushedBranch(self, productseries):
+        """Branch has never been scanned.  Notify owner.
+
+        This means that as far as the Launchpad database knows, there is
+        no actual bzr branch behind this `IBranch` yet.
+        """
+        branch = productseries.translations_branch
+        self.logger.info("Notifying %s of unpushed branch %s." % (
+            branch.owner.name, branch.bzr_identity))
+
+        template = get_email_template('unpushed-branch.txt', 'translations')
+        text = template % {
+            'productseries': productseries.title,
+            'branch_url': branch.bzr_identity,
+        }
+        recipients = get_contact_email_addresses(branch.owner)
+        sender = format_address(
+            "Launchpad Translations", config.canonical.noreply_from_address)
+        subject = "Launchpad: translations branch has not been set up."
+        self._sendMail(sender, recipients, subject, text)
 
     def main(self):
         """See `LaunchpadScript`."""
@@ -253,6 +324,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
 
+        errorlog.globalErrorUtility.configure(self.config_name)
         if self.options.no_fudge:
             self.fudge_factor = timedelta(0)
 
@@ -263,14 +335,16 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         product_join = Join(
             ProductSeries, Product, ProductSeries.product == Product.id)
         productseries = self.store.using(product_join).find(
-            ProductSeries, SQL(
-                "official_rosetta AND translations_branch IS NOT NULL"))
+            ProductSeries,
+            And(
+                Product._translations_usage == ServiceUsage.LAUNCHPAD,
+                ProductSeries.translations_branch != None))
 
         # Anything deterministic will do, and even that is only for
         # testing.
         productseries = productseries.order_by(ProductSeries.id)
 
-        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver = get_rw_server()
         bzrserver.start_server()
         try:
             self._exportToBranches(productseries)

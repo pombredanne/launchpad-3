@@ -12,7 +12,7 @@ wants to contact Salgado.
     >>> user_browser.open('http://launchpad.dev/~salgado')
     >>> user_browser.getLink('Contact this user').click()
     >>> print user_browser.title
-    Contact Guilherme Salgado...
+    Contact this user : Guilherme Salgado
 
     >>> user_browser.getControl('Subject').value = 'Hi Salgado'
     >>> user_browser.getControl('Message').value = 'Just saying hello'
@@ -38,24 +38,7 @@ Salgado receives the email message from No Priv.
     From: No Privileges Person <no-priv@canonical.com>
     To: Guilherme Salgado <guilherme.salgado@canonical.com>
     Subject: Hi Salgado
-    Message-ID: ...
-    X-Launchpad-Message-Rationale: ContactViaWeb user
-    Date: ...
-    Reply-To: No Privileges Person <no-priv@canonical.com>
-    Sender: bounces@canonical.com
-    Errors-To: bounces@canonical.com
-    Return-Path: bounces@canonical.com
-    X-Generated-By: Launchpad (canonical.com); Revision="...";
-        Instance="launchpad-lazr.conf"
-    X-Launchpad-Hash: ...
-    <BLANKLINE>
-    Just saying hello
-    --
-    This message was sent from Launchpad by the user
-    No Privileges Person (http://launchpad.dev/~no-priv)
-    using the "Contact this user" link on your profile page.
-    For more information see
-    https://help.launchpad.net/YourAccount/ContactingPeople
+    ...
 
 No Priv starts to send another message to Salgado, but then changes her mind.
 
@@ -97,147 +80,4 @@ alternative addresses.
     From: Sample Person <testing@canonical.com>
     To: Guilherme Salgado <guilherme.salgado@canonical.com>
     Subject: Hi Salgado
-    Message-ID: ...
-    X-Launchpad-Message-Rationale: ContactViaWeb user
-    Date: ...
-    Reply-To: Sample Person <testing@canonical.com>
-    Sender: bounces@canonical.com
-    Errors-To: bounces@canonical.com
-    Return-Path: bounces@canonical.com
-    X-Generated-By: Launchpad (canonical.com); Revision="...";
-        Instance="launchpad-lazr.conf"
-    X-Launchpad-Hash: ...
-    <BLANKLINE>
-    Hello again
-    --
-    This message was sent from Launchpad by the user
-    Sample Person (http://launchpad.dev/~name12)
-    using the "Contact this user" link on your profile page.
-    For more information see
-    https://help.launchpad.net/YourAccount/ContactingPeople
-
-
-Bypassing the quota
-===================
-
-Salgado is the Launchpad Community Help Rotation expert for the day and he
-needs to contact several people.  As a convenience, he opens multiple browser
-pages for each person he wants to contact.  Then he fills out the text and
-begins to send the messages.
-
-However, Salgado has a quota limit of 3 so while he can open four +contactuser
-pages, when he tries to submit the fourth one, the submission fails.
-
-    >>> browser_1 = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
-    >>> browser_2 = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
-    >>> browser_3 = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
-    >>> browser_4 = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
-
-    >>> browser_1.open('http://launchpad.dev/~no-priv/+contactuser')
-    >>> browser_2.open('http://launchpad.dev/~carlos/+contactuser')
-    >>> browser_3.open('http://launchpad.dev/~daf/+contactuser')
-    >>> browser_4.open('http://launchpad.dev/~name12/+contactuser')
-
-    >>> browser_1.getControl('Subject').value = 'One'
-    >>> browser_1.getControl('Message').value = 'One'
-
-    >>> browser_2.getControl('Subject').value = 'Two'
-    >>> browser_2.getControl('Message').value = 'Two'
-
-    >>> browser_3.getControl('Subject').value = 'Three'
-    >>> browser_3.getControl('Message').value = 'Three'
-
-    >>> browser_4.getControl('Subject').value = 'Four'
-    >>> browser_4.getControl('Message').value = 'Four'
-
-    >>> browser_1.getControl('Send').click()
-    >>> print_errors(browser_1.contents)
-
-    >>> browser_2.getControl('Send').click()
-    >>> print_errors(browser_2.contents)
-
-    >>> browser_3.getControl('Send').click()
-    >>> print_errors(browser_3.contents)
-
-    >>> browser_4.getControl('Send').click()
-    >>> print_errors(browser_4.contents)
-    Your message was not sent because you have exceeded your daily quota of 3
-    messages to contact users. Try again in ... hours.
-
-
-Your own profile page
-=====================
-
-For consistency and testing purposes, the "contact" page is available even
-when someone is looking at their own profile page.  The wording on the profile
-page is different though.
-
-    >>> user_browser.open('http://launchpad.dev/~no-priv')
-    >>> user_browser.getLink('Contact this user').click()
-    >>> print user_browser.title
-    Contact No Privileges Person...
-
-This holds true even for Sample Person, who is hiding her email addresses.
-
-    >>> user_browser.open('http://launchpad.dev/~name12')
-    >>> user_browser.getLink('Contact this user').click()
-    >>> print user_browser.title
-    Contact Sample Person...
-
-    >>> name12_browser = setupBrowser('Basic test@canonical.com:test')
-    >>> name12_browser.open('http://launchpad.dev/~name12')
-    >>> name12_browser.getLink('Contact this user').click()
-    >>> print name12_browser.title
-    Contact Sample Person...
-
-
-Teams
-=====
-
-Teams can also be contacted directly by team members, regardless of whether
-the team has set a contact address or uses a Launchpad mailing list.
-
-Guadamen have no contact address, so contacting them contacts all users
-directly.
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen')
-    >>> admin_browser.getLink('Contact this team').click()
-    >>> admin_browser.title
-    'Contact GuadaMen...
-
-Foo Bar registers an explicit contact address for Guadamen...
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen/+contactaddress')
-    >>> admin_browser.getControl('Another e-mail address').selected = True
-    >>> admin_browser.getControl(
-    ...     name='field.contact_address').value = 'foo@example.com'
-    >>> admin_browser.getControl('Change').click()
-
-    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-
-    # Extract the link (from the email we just sent) the user will have to
-    # use to finish the registration process.
-    >>> from canonical.launchpad.ftests.logintoken import (
-    ...     get_token_url_from_email)
-    >>> token_url = get_token_url_from_email(raw_msg)
-    >>> admin_browser.open(token_url)
-    >>> admin_browser.getControl('Continue').click()
-
-...which can also be contacted directly.
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen')
-    >>> admin_browser.getLink('Contact this team').click()
-    >>> admin_browser.title
-    'Contact GuadaMen...
-
-Foo Bar later registers a Launchpad mailing list for Guadamen...
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen/+mailinglist')
-    >>> admin_browser.getControl('Apply for Mailing List').click()
-
-...which too can be contacted directly.
-
-    >>> admin_browser.open('http://launchpad.dev/~guadamen')
-    >>> admin_browser.getLink('Contact this team').click()
-    >>> admin_browser.title
-    'Contact GuadaMen...
+    ...

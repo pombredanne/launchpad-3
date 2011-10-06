@@ -17,7 +17,7 @@ then a list of the relevant Launchpad bugs:
   Hierarchy: Bug trackers > The Mozilla.org Bug Tracker
   Tabs:
   * Launchpad Home - http://launchpad.dev/
-  * Branches - http://code.launchpad.dev/
+  * Code - http://code.launchpad.dev/
   * Bugs (selected) - http://bugs.launchpad.dev/
   * Blueprints - http://blueprints.launchpad.dev/
   * Translations - http://translations.launchpad.dev/
@@ -73,7 +73,7 @@ List Launchpad bugs watching Mozilla bug 42:
   Hierarchy: Bug trackers > The Mozilla.org Bug Tracker
   Tabs:
   * Launchpad Home - http://launchpad.dev/
-  * Branches - http://code.launchpad.dev/
+  * Code - http://code.launchpad.dev/
   * Bugs (selected) - http://bugs.launchpad.dev/
   * Blueprints - http://blueprints.launchpad.dev/
   * Translations - http://translations.launchpad.dev/
@@ -99,7 +99,7 @@ user logs in):
   ...     'http://bugs.launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
   Traceback (most recent call last):
   ...
-  Unauthorized:...
+  NotFound:...
 
 Set the bug back to public:
 

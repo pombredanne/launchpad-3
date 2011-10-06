@@ -5,62 +5,17 @@ Distributions are built by the Soyuz build system which creates many
 objects for the distribution.
 
 
-Guessing package names
-----------------------
-
-IDistribution allows us to retrieve packages by name, returning a tuple
-of Source/BinaryPackageName instances published within this
-distribution:
-
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageName, IBinaryPackageName,
-    ...     PackagePublishingStatus)
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
-    >>> distroset = getUtility(IDistributionSet)
-    >>> gentoo = distroset.getByName("gentoo")
-    >>> ubuntu = distroset.get(1)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
 
-    >>> source_name, bin_name = ubuntu.guessPackageNames('pmount')
-    >>> ISourcePackageName.providedBy(source_name)
-    True
-
-    >>> IBinaryPackageName.providedBy(bin_name)
-    True
-
-    >>> source_name.name, bin_name.name
-    (u'pmount', u'pmount')
-
-Prevents wrong usage by and assertion error:
-
-    >>> name_tuple = ubuntu.guessPackageNames(ubuntu)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Expected string. Got: <Distribution ...>
-
-Raises NotFoundError for following conditions:
-
-    >>> name_tuple = ubuntu.guessPackageNames('@#$')
-    Traceback (most recent call last):
-    ...
-    NotFoundError: 'Invalid package name: @#$'
-
-    >>> name_tuple = ubuntu.guessPackageNames('zeca')
-    Traceback (most recent call last):
-    ...
-    NotFoundError: 'Unknown package: zeca'
-
-    >>> name_tuple = ubuntu.guessPackageNames('1234')
-    Traceback (most recent call last):
-    ...
-    NotFoundError: 'Unknown package: 1234'
-
-Packages only published in PPAs will not be found in the Ubuntu archive.
-Here, 'at' is published in mark's PPA only:
+(Create some data that is depended upon by later tests. It was part of a
+test "narrative" that was converted to unit tests.... for obvious reasons.)
 
     >>> from lp.soyuz.tests.ppa import publishToPPA
-    >>> ubuntutest = distroset.getByName("ubuntutest")
     >>> publishToPPA(
     ...     person_name='cprov',
     ...     sourcepackage_name='at', sourcepackage_version='0.00',
@@ -68,110 +23,6 @@ Here, 'at' is published in mark's PPA only:
     ...     distribution_name='ubuntutest',
     ...     distroseries_name='hoary-test',
     ...     publishing_status=PackagePublishingStatus.PUBLISHED)
-    >>> name_tuple = ubuntutest.guessPackageNames('at')
-    Traceback (most recent call last):
-    ...
-    NotFoundError: u'Package at not published in ubuntutest'
-
-It also raises NotFoundError on distributions with no series:
-
-    >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
-    Traceback (most recent call last):
-    ...
-    NotFoundError: u"Gentoo has no series; 'pmount' was never published in it"
-
-A distroseries can only be created by the distro owner or the admin
-team.
-
-    >>> gentoo.newSeries('gentoo-two', 'Gentoo Two',
-    ...                  'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
-    ...                  '2.0', None, gentoo.owner)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Append')
-
-    >>> login('mark@example.com')
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-    >>> distroseriesset = getUtility(IDistroSeriesSet)
-    >>> gentoo_two = gentoo.newSeries('gentoo-two', 'Gentoo Two',
-    ...                               'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
-    ...                               '2.0', None, gentoo.owner)
-
-    # Reverting the logged in user.
-
-    >>> login(ANONYMOUS)
-
-Even if we add a series to Gentoo, no packages have ever been published
-in it, and therefore guessPackageNames will still fail:
-
-    >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
-    Traceback (most recent call last):
-    ...
-    NotFoundError: u'Package pmount not published in Gentoo'
-
-It will find packages that are at the PENDING publishing state in
-addition to PUBLISHED ones:
-
-    >>> login("admin@canonical.com")
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
-    >>> ignore = test_publisher.setUpDefaultDistroSeries(
-    ...     ubuntu['breezy-autotest'])
-    >>> ignore = test_publisher.getPubSource(
-    ...     sourcename="pendingpackage",
-    ...     status=PackagePublishingStatus.PENDING)
-    >>> login(ANONYMOUS)
-    >>> (source, binary) = ubuntu.guessPackageNames("pendingpackage")
-    >>> print source.name
-    pendingpackage
-
-It also works if we look for a package name which is the name of both
-binary and source packages but for which only the source is published:
-
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> debian = getUtility(ILaunchpadCelebrities).debian
-    >>> source_name, bin_name = debian.guessPackageNames('alsa-utils')
-    >>> print bin_name
-    None
-
-    >>> source_name.name
-    u'alsa-utils'
-
-It's possible for a binary package to have the same name as a source
-package, yet not be derived from that source package. In this case, we
-want to prefer the source package with that name.
-
-First, we need a function to help testing:
-
-    >>> def print_guessed_names(package_name):
-    ...     source, binary = ubuntu.guessPackageNames(package_name)
-    ...     print "source: %r" % source.name
-    ...     print "binary: %r" % getattr(binary, 'name', None)
-
-Note that source packages can produces lots of differently named binary
-packages so only return a match if it's got the same name as the source
-package rather than returning an arbitrary binary package:
-
-Both iceweasel and mozilla-firefox source packages produce mozilla-
-firefox binary packages.
-
-    >>> print_guessed_names('mozilla-firefox')
-    source: u'mozilla-firefox'
-    binary: u'mozilla-firefox'
-
-    >>> print_guessed_names('iceweasel')
-    source: u'iceweasel'
-    binary: None
-
-If we don't get a hit on the source package we search binary packages.
-Because there is a many to one relationship from binary packages to
-source packages we can always return a source package name even if it
-differs:
-
-    >>> print_guessed_names('linux-2.6.12')
-    source: u'linux-source-2.6.15'
-    binary: u'linux-2.6.12'
 
 
 Handling Personal Package Archives
@@ -184,7 +35,7 @@ Handling Personal Package Archives
  * getPendingAcceptancePPAs
  * getPendingPublicationPPAs
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> mark = getUtility(IPersonSet).getByName('mark')
@@ -316,8 +167,6 @@ Records in NEW do not make cprov PPA pending-acceptance:
 Neither in UNAPPROVED:
 
     >>> queue.setUnapproved()
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(queue)
     >>> queue.status.name
     'UNAPPROVED'
 
@@ -327,7 +176,6 @@ Neither in UNAPPROVED:
 Only records in ACCEPTED does:
 
     >>> queue.setAccepted()
-    >>> syncUpdate(queue)
     >>> queue.status.name
     'ACCEPTED'
 
@@ -339,7 +187,6 @@ Only records in ACCEPTED does:
 Records in DONE also do not trigger pending-acceptance state in PPAs:
 
     >>> queue.setDone()
-    >>> syncUpdate(queue)
     >>> queue.status.name
     'DONE'
 
@@ -362,7 +209,7 @@ Nothing is pending-publication in sampledata:
 We can make Celso's PPA pending publication by copying a published
 source to another location within the PPA.
 
-    >>> cprov_src = cprov.archive.getPublishedSources()[0]
+    >>> cprov_src = cprov.archive.getPublishedSources().first()
 
     >>> warty = ubuntu['warty']
     >>> pocket_release = PackagePublishingPocket.RELEASE
@@ -377,7 +224,6 @@ source to another location within the PPA.
 Publishing the record will exclude Celso's PPA from pending-publication
 state:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> src_pub.status = PackagePublishingStatus.PUBLISHED
 
     >>> ubuntu.getPendingPublicationPPAs().count()

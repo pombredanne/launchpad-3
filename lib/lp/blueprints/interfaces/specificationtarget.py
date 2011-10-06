@@ -13,7 +13,27 @@ __all__ = [
     'ISpecificationGoal',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import TextLine
+
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    exported,
+    export_as_webservice_entry,
+    export_read_operation,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_entry,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+
+from canonical.launchpad import _
 
 
 class IHasSpecifications(Interface):
@@ -23,16 +43,30 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
-    all_specifications = Attribute(
-        'A list of all specifications, regardless of status or approval '
-        'or completion, for this object.')
+    all_specifications = exported(doNotSnapshot(
+        CollectionField(
+            title=_("All specifications"),
+            value_type=Reference(schema=Interface),  # ISpecification, really.
+            readonly=True,
+            description=_(
+                'A list of all specifications, regardless of status or '
+                'approval or completion, for this object.'))),
+                                  as_of="devel")
 
     has_any_specifications = Attribute(
         'A true or false indicator of whether or not this object has any '
         'specifications associated with it, regardless of their status.')
 
-    valid_specifications = Attribute(
-        'A list of all specifications that are not obsolete.')
+    valid_specifications = exported(doNotSnapshot(
+        CollectionField(
+            title=_("Valid specifications"),
+            value_type=Reference(schema=Interface),  # ISpecification, really.
+            readonly=True,
+            description=_(
+                'All specifications that are not obsolete. When called from '
+                'an ISpecificationGoal it will also exclude the ones that '
+                'have not been accepted for that goal'))),
+                                    as_of="devel")
 
     latest_specifications = Attribute(
         "The latest 5 specifications registered for this context.")
@@ -60,12 +94,18 @@ class IHasSpecifications(Interface):
         """
 
 
-
 class ISpecificationTarget(IHasSpecifications):
     """An interface for the objects which actually have unique
     specifications directly attached to them.
     """
 
+    export_as_webservice_entry(as_of="devel")
+
+    @operation_parameters(
+        name=TextLine(title=_('The name of the specification')))
+    @operation_returns_entry(Interface) # really ISpecification
+    @export_read_operation()
+    @operation_for_version('devel')
     def getSpecification(name):
         """Returns the specification with the given name, for this target,
         or None.

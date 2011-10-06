@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -10,30 +10,30 @@
 
     <securedutility
         class="canonical.launchpad.systemhomes.FeedsApplication"
-        provides="canonical.launchpad.interfaces.IFeedsApplication">
+        provides="canonical.launchpad.interfaces.launchpad.IFeedsApplication">
         <allow
-            interface="canonical.launchpad.interfaces.IFeedsApplication" />
+            interface="canonical.launchpad.interfaces.launchpad.IFeedsApplication" />
     </securedutility>
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
-        for="canonical.launchpad.interfaces.IFeedsApplication"
+        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
         factory="canonical.launchpad.browser.feeds.FeedsRootUrlData"
         />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IFeedsApplication"
+        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
         name="+index"
         />
 
     <browser:navigation
-        module="canonical.launchpad.browser"
+        module="canonical.launchpad.browser.feeds"
         classes="FeedsNavigation"
         />
 
     <!-- Macros -->
     <browser:page
-        for="*"
+        for="canonical.lazr.interfaces.feed.IFeedEntry"
         name="feed-entry-atom"
         permission="zope.Public"
         template="../../lazr/feed/templates/feed-entry-atom.pt"

@@ -84,7 +84,7 @@ as the latest bugs feed for a product.
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
-    [u'Bugs in the Mozilla Project']
+    [u'Bugs in The Mozilla Project']
     >>> browser.url
     'http://feeds.launchpad.dev/mozilla/latest-bugs.atom'
 
@@ -186,7 +186,7 @@ type of content as the latest bugs feed for a product.
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
-    [u'Bugs in thunderbird in ubuntu']
+    [u'Bugs in thunderbird in Ubuntu']
     >>> browser.url
     'http://feeds.launchpad.dev/ubuntu/+source/thunderbird/latest-bugs.atom'
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
@@ -338,8 +338,8 @@ This feed gets the latest bugs for a person.
 This feed gets the latest bugs for a whole team.
 First, make a team responsible for some bugs.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> one_mem_browser = setupBrowser(
     ...    auth='Basic one-membership@test.com:test')
     >>> personset = getUtility(IPersonSet)

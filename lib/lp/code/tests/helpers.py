@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -6,24 +6,57 @@
 __metaclass__ = type
 __all__ = [
     'add_revision_to_branch',
-    'make_linked_package_branch',
+    'get_non_existant_source_package_branch_unique_name',
     'make_erics_fooix_project',
+    'make_linked_package_branch',
+    'make_merge_proposal_without_reviewers',
+    'make_official_package_branch',
+    'make_project_branch_with_revisions',
+    'make_project_cloud_data',
     ]
 
 
+from contextlib import contextmanager
 from datetime import timedelta
 from difflib import unified_diff
 from itertools import count
 
+from bzrlib.plugins.builder.recipe import RecipeParser
+import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-from zope.security.proxy import isinstance as zisinstance
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks)
-from lp.registry.interfaces.series import SeriesStatus
+from lp.code.interfaces.branchmergeproposal import (
+    IBranchMergeProposalJobSource,
+    )
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import time_counter
+from lp.registry.interfaces.series import SeriesStatus
+from lp.testing import (
+    run_with_login,
+    time_counter,
+    )
+
+
+def mark_all_merge_proposal_jobs_done():
+    """Sometimes in tests we want to clear out all pending jobs.
+
+    This function iterates through all the pending jobs and marks the done.
+    """
+    while True:
+        jobs = list(getUtility(IBranchMergeProposalJobSource).iterReady())
+        if len(jobs) == 0:
+            break
+        for job in jobs:
+            job.start()
+            job.complete()
 
 
 def add_revision_to_branch(factory, branch, revision_date, date_created=None,
@@ -34,9 +67,14 @@ def add_revision_to_branch(factory, branch, revision_date, date_created=None,
     """
     if date_created is None:
         date_created = revision_date
+    parent = branch.revision_history.last()
+    if parent is None:
+        parent_ids = []
+    else:
+        parent_ids = [parent.revision.revision_id]
     revision = factory.makeRevision(
         revision_date=revision_date, date_created=date_created,
-        log_body=commit_msg)
+        log_body=commit_msg, parent_ids=parent_ids)
     if mainline:
         sequence = branch.revision_count + 1
         branch_revision = branch.createBranchRevision(sequence, revision)
@@ -51,7 +89,6 @@ def make_erics_fooix_project(factory):
 
     :return: a dict of objects to put into local scope.
     """
-    result = {}
     eric = factory.makePerson(
         name='eric', displayname='Eric the Viking',
         email='eric@example.com', password='test')
@@ -82,14 +119,14 @@ def make_erics_fooix_project(factory):
     preview.remvoed_lines_count = 13
     preview.diffstat = {'file1': (3, 8), 'file2': (4, 5)}
     return {
-        'eric': eric, 'fooix': fooix, 'trunk':trunk, 'feature': feature,
+        'eric': eric, 'fooix': fooix, 'trunk': trunk, 'feature': feature,
         'proposed': proposed, 'fred': fred}
 
 
 def make_linked_package_branch(factory, distribution=None,
                                sourcepackagename=None):
     """Make a new package branch and make it official."""
-    distro_series = factory.makeDistroRelease(distribution)
+    distro_series = factory.makeDistroSeries(distribution)
     source_package = factory.makeSourcePackage(
         sourcepackagename=sourcepackagename, distroseries=distro_series)
     branch = factory.makePackageBranch(sourcepackage=source_package)
@@ -97,10 +134,7 @@ def make_linked_package_branch(factory, distribution=None,
     # It is possible for the param to be None, so reset to the factory
     # generated one.
     sourcepackagename = source_package.sourcepackagename
-    # We don't care about who can make things official, so get rid of the
-    # security proxy.
-    series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
-    series_set.new(
+    SeriesSourcePackageBranchSet.new(
         distro_series, pocket, sourcepackagename, branch, branch.owner)
     return branch
 
@@ -139,9 +173,6 @@ def make_package_branches(factory, series, sourcepackagename, branch_count,
         for i in range(branch_count)]
 
     official = []
-    # We don't care about who can make things official, so get rid of the
-    # security proxy.
-    series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
     # Sort the pocket items so RELEASE is last, and thus first popped.
     pockets = sorted(PackagePublishingPocket.items, reverse=True)
     # Since there can be only one link per pocket, max out the number of
@@ -149,7 +180,7 @@ def make_package_branches(factory, series, sourcepackagename, branch_count,
     for i in range(min(official_count, len(pockets))):
         branch = branches.pop()
         pocket = pockets.pop()
-        sspb = series_set.new(
+        SeriesSourcePackageBranchSet.new(
             series, pocket, sourcepackagename, branch, branch.owner)
         official.append(branch)
 
@@ -195,7 +226,7 @@ def make_mint_distro_with_branches(factory):
         ("dead", "0.1", SeriesStatus.OBSOLETE),
         ]
     for name, version, status in series:
-        factory.makeDistroRelease(
+        factory.makeDistroSeries(
             distribution=mint, version=version, status=status, name=name)
 
     for pkg_index, name in enumerate(['twisted', 'zope', 'bzr', 'python']):
@@ -208,3 +239,91 @@ def make_mint_distro_with_branches(factory):
             make_package_branches(
                 factory, series, name, branch_count, official_count,
                 owner=mint_team, registrant=albert)
+
+
+def make_official_package_branch(factory, owner=None):
+    """Make a branch linked to the pocket of a source package."""
+    branch = factory.makePackageBranch(owner=owner)
+    # Make sure the (distroseries, pocket) combination used allows us to
+    # upload to it.
+    stable_states = (
+        SeriesStatus.SUPPORTED, SeriesStatus.CURRENT)
+    if branch.distroseries.status in stable_states:
+        pocket = PackagePublishingPocket.BACKPORTS
+    else:
+        pocket = PackagePublishingPocket.RELEASE
+    sourcepackage = branch.sourcepackage
+    suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
+    registrant = factory.makePerson()
+    run_with_login(
+        suite_sourcepackage.distribution.owner,
+        ICanHasLinkedBranch(suite_sourcepackage).setBranch,
+        branch, registrant)
+    return branch
+
+
+def make_project_branch_with_revisions(factory, date_generator, product=None,
+                                       private=None, revision_count=None):
+    """Make a new branch with revisions."""
+    if revision_count is None:
+        revision_count = 5
+    branch = factory.makeProductBranch(product=product, private=private)
+    naked_branch = removeSecurityProxy(branch)
+    factory.makeRevisionsForBranch(
+        naked_branch, count=revision_count, date_generator=date_generator)
+    # The code that updates the revision cache doesn't need to care about
+    # the privacy of the branch.
+    getUtility(IRevisionSet).updateRevisionCacheForBranch(naked_branch)
+    return branch
+
+
+def make_project_cloud_data(factory, details):
+    """Make test data to populate the project cloud.
+
+    Details is a list of tuples containing:
+      (project-name, num_commits, num_authors, last_commit)
+    """
+    delta = timedelta(seconds=1)
+    for project_name, num_commits, num_authors, last_commit in details:
+        project = factory.makeProduct(name=project_name)
+        start_date = last_commit - delta * (num_commits - 1)
+        gen = time_counter(start_date, delta)
+        commits_each = num_commits / num_authors
+        for committer in range(num_authors - 1):
+            make_project_branch_with_revisions(
+                factory, gen, project, commits_each)
+            num_commits -= commits_each
+        make_project_branch_with_revisions(
+            factory, gen, project, revision_count=num_commits)
+    transaction.commit()
+
+
+@contextmanager
+def recipe_parser_newest_version(version):
+    old_version = RecipeParser.NEWEST_VERSION
+    RecipeParser.NEWEST_VERSION = version
+    try:
+        yield
+    finally:
+        RecipeParser.NEWEST_VERSION = old_version
+
+
+def make_merge_proposal_without_reviewers(factory, **kwargs):
+    """Make a merge proposal and strip of any review votes."""
+    proposal = factory.makeBranchMergeProposal(**kwargs)
+    for vote in proposal.votes:
+        removeSecurityProxy(vote).destroySelf()
+    return proposal
+
+
+def get_non_existant_source_package_branch_unique_name(owner, factory):
+    """Return the unique name for a non-existanct source package branch.
+
+    Neither the branch nor the source package name will exist.
+    """
+    distroseries = factory.makeDistroSeries()
+    source_package = factory.getUniqueString('source-package')
+    branch = factory.getUniqueString('branch')
+    return '~%s/%s/%s/%s/%s' % (
+        owner, distroseries.distribution.name, distroseries.name,
+        source_package, branch)

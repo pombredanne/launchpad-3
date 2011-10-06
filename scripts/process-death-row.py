@@ -1,6 +1,6 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Stop lint warning about relative import:
@@ -25,12 +25,16 @@ archive tree without removing the files.
 """
 import _pythonpath
 
-from canonical.config import config
+# This is needed to prevent circular imports until we get rid of the
+# abomination that is known as
+# canonical/launchpad/interfaces/__init.py__ that imports the whole
+# freaking world.
+import canonical.launchpad.interfaces
+
 from lp.soyuz.scripts.processdeathrow import DeathRowProcessor
 
 
 if __name__ == "__main__":
     script = DeathRowProcessor(
-        'process-death-row', dbuser=config.archivepublisher.dbuser)
+        'process-death-row', dbuser='process_death_row')
     script.lock_and_run()
-

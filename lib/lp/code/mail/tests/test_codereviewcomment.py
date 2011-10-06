@@ -1,24 +1,28 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test CodeReviewComment emailing functionality."""
 
 
-from unittest import TestLoader
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadFunctionalLayer
-
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    CodeReviewVote)
-from lp.code.mail.codereviewcomment import  CodeReviewCommentMailer
-from lp.testing import TestCaseWithFactory
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    CodeReviewVote,
+    )
+from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
+from lp.services.mail.sendmail import format_address
+from lp.services.messages.interfaces.message import IMessageSet
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
@@ -47,7 +51,13 @@ class TestCodeReviewComment(TestCaseWithFactory):
             notification_level = CodeReviewNotificationLevel.FULL
         comment.branch_merge_proposal.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            notification_level)
+            notification_level, subscriber)
+        # Email is not sent on construction, so fake a root message id on the
+        # merge proposal.
+        login_person(comment.branch_merge_proposal.registrant)
+        comment.branch_merge_proposal.root_message_id = 'fake-id'
+        # Log our test user back in.
+        login('test@canonical.com')
         return comment, subscriber
 
     def makeMailer(self, body=None, as_reply=False, vote=None, vote_tag=None):
@@ -110,7 +120,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(
             'A %(carefully)s constructed subject',
-            mailer._getSubject(email=None))
+            mailer._getSubject(email=None, recipient=subscriber))
 
     def test_getReplyAddress(self):
         """Ensure that the reply-to address is reasonable."""
@@ -172,7 +182,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '-- \n'
             'I am a wacky guy.\n')
         branch_name = mailer.merge_proposal.source_branch.bzr_identity
-        body = mailer._getBody(subscriber)
+        body = mailer._getBody(subscriber.preferredemail.email, subscriber)
         self.assertEqual(body.splitlines()[1:],
             ['-- ', 'I am a wacky guy.', '',
              canonical_url(mailer.merge_proposal),
@@ -185,7 +195,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
         self.assertEqual('Review: Approve', ctrl.body.splitlines()[0])
-        self.assertEqual(ctrl.body.splitlines()[1:-3],
+        self.assertEqual(ctrl.body.splitlines()[2:-3],
                          mailer.message.text_contents.splitlines())
 
     def test_generateEmailWithVoteAndTag(self):
@@ -195,8 +205,17 @@ class TestCodeReviewComment(TestCaseWithFactory):
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
         self.assertEqual('Review: Approve dbtag', ctrl.body.splitlines()[0])
-        self.assertEqual(ctrl.body.splitlines()[1:-3],
+        self.assertEqual(ctrl.body.splitlines()[2:-3],
                          mailer.message.text_contents.splitlines())
+
+    def makeComment(self, email_message):
+        message = getUtility(IMessageSet).fromEmail(email_message.as_string())
+        bmp = self.factory.makeBranchMergeProposal()
+        comment = bmp.createCommentFromMessage(
+            message, None, None, email_message)
+        # We need to make sure the Librarian is up-to-date, so we commit.
+        transaction.commit()
+        return comment
 
     def test_mailer_attachments(self):
         # Ensure that the attachments are attached.
@@ -207,22 +226,34 @@ class TestCodeReviewComment(TestCaseWithFactory):
             attachments=[
                 ('inc.diff', 'text/x-diff', 'This is a diff.'),
                 ('pic.jpg', 'image/jpeg', 'Binary data')])
-        message = getUtility(IMessageSet).fromEmail(msg.as_string())
-        bmp = self.factory.makeBranchMergeProposal()
-        comment = bmp.createCommentFromMessage(message, None, None, msg)
-        mailer = CodeReviewCommentMailer.forCreation(comment, msg)
+        comment = self.makeComment(msg)
+        mailer = CodeReviewCommentMailer.forCreation(comment)
         # The attachments of the mailer should have only the diff.
         [outgoing_attachment] = mailer.attachments
         self.assertEqual('inc.diff', outgoing_attachment[1])
         self.assertEqual('text/x-diff', outgoing_attachment[2])
         # The attachments are attached to the outgoing message.
-        person = bmp.target_branch.owner
+        person = comment.branch_merge_proposal.target_branch.owner
         message = mailer.generateEmail(
             person.preferredemail.email, person).makeMessage()
         self.assertTrue(message.is_multipart())
         attachment = message.get_payload()[1]
         self.assertEqual('inc.diff', attachment.get_filename())
         self.assertEqual('text/x-diff', attachment['content-type'])
+
+    def test_encoded_attachments(self):
+        msg = self.factory.makeEmailMessage(
+            body='This is the body of the email.',
+            attachments=[('inc.diff', 'text/x-diff', 'This is a diff.')],
+            encode_attachments=True)
+        comment = self.makeComment(msg)
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        person = comment.branch_merge_proposal.target_branch.owner
+        message = mailer.generateEmail(
+            person.preferredemail.email, person).makeMessage()
+        attachment = message.get_payload()[1]
+        self.assertEqual(
+            'This is a diff.', attachment.get_payload(decode=True))
 
     def makeCommentAndParticipants(self):
         """Create a merge proposal and comment.
@@ -236,7 +267,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             email='commenter@email.com', displayname='Commenter')
         bmp.source_branch.subscribe(commenter,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, commenter)
         comment = bmp.createComment(commenter, 'hello')
         return comment
 
@@ -289,6 +320,3 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(reply)
         to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
         self.assertEqual([mailer.merge_proposal.address], to)
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

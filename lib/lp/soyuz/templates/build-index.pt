@@ -10,12 +10,10 @@
   <body>
 
     <tal:registering metal:fill-slot="registering">
-      <p>
         created
-        <span tal:content="context/datecreated/fmt:displaydate"
-              tal:attributes="title context/datecreated/fmt:datetime"
+        <span tal:content="context/date_created/fmt:displaydate"
+              tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
-      </p>
     </tal:registering>
 
     <div metal:fill-slot="main">
@@ -49,7 +47,7 @@
       </tal:binaries>
 
       <div id="buildlog" class="portlet"
-           tal:condition="context/buildstate/enumvalue:BUILDING">
+           tal:condition="context/status/enumvalue:BUILDING">
         <div metal:use-macro="template/macros/buildlog" />
       </div>
 
@@ -69,7 +67,7 @@
           <dd>
             <span class="sprite package-source"
                   tal:condition="view/is_ppa"
-                  tal:content="context/sourcepackagerelease/title"
+                  tal:content="context/source_package_release/title"
              >firefox - 1.0</span>
             <a class="sprite package-source"
                tal:condition="not: view/is_ppa"
@@ -77,6 +75,13 @@
                tal:content="dspr/sourcepackagerelease/title"
                tal:attributes="href dspr/fmt:url">firefox - 1.0</a>
           </dd>
+      </dl>
+      <dl
+          tal:define="spr context/source_package_release"
+          tal:condition="spr/source_package_recipe_build">
+        <dt>Source package recipe build:</dt>
+        <dd tal:content="structure spr/source_package_recipe_build/fmt:link">
+        </dd>
       </dl>
       <dl>
         <dt>Archive:</dt>
@@ -94,7 +99,7 @@
       <dl>
         <dt>Series:</dt>
           <dd><a class="sprite distribution"
-                 tal:define="series context/distroarchseries/distroseries"
+                 tal:define="series context/distro_arch_series/distroseries"
                  tal:attributes="href series/fmt:url"
                  tal:content="series/displayname">Breezy Badger</a>
           </dd>
@@ -102,7 +107,7 @@
       <dl>
         <dt>Architecture:</dt>
           <dd><a class="sprite distribution"
-                 tal:define="archseries context/distroarchseries"
+                 tal:define="archseries context/distro_arch_series"
                  tal:attributes="href archseries/fmt:url"
                  tal:content="archseries/architecturetag">i386</a>
           </dd>
@@ -126,9 +131,9 @@
     <p>
       <span tal:replace="structure context/image:icon" />
       <span tal:attributes="
-            class string:buildstatus${context/buildstate/name};"
-            tal:content="context/buildstate/title">Fully built</span>
-      <tal:building condition="context/buildstate/enumvalue:BUILDING">
+            class string:buildstatus${context/status/name};"
+            tal:content="context/status/title">Fully built</span>
+      <tal:building condition="context/status/enumvalue:BUILDING">
         on <a tal:content="view/buildqueue/builder/title"
               tal:attributes="href view/buildqueue/builder/fmt:url"/>
       </tal:building>
@@ -150,15 +155,17 @@
         <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime;">
           Start <tal:eta
             replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
-            (<span tal:replace="view/buildqueue/lastscore"/>)
-            <tal:rescore define="link context/menu:context/rescore"
-                         condition="link/enabled"
-                         replace="structure link/fmt:icon" />
-            <a href="https://help.launchpad.net/Packaging/BuildScores"
-               target="_blank">What's this?</a>
         </li>
       </tal:pending>
-      <tal:building condition="context/buildstate/enumvalue:BUILDING">
+      <li tal:condition="view/buildqueue">
+        Build score:<span tal:replace="view/buildqueue/lastscore"/>
+          <tal:rescore define="link context/menu:context/rescore"
+                       condition="link/enabled"
+                       replace="structure link/fmt:icon" />
+          (<a href="https://help.launchpad.net/Packaging/BuildScores"
+             target="_blank">What's this?</a>)
+      </li>
+      <tal:building condition="context/status/enumvalue:BUILDING">
         <li>
           Started
           <span tal:attributes="title view/buildqueue/job/date_started/fmt:datetime"
@@ -167,26 +174,25 @@
         </li>
       </tal:building>
       <tal:built condition="context/was_built">
-        <li tal:condition="context/buildduration">
+        <li tal:condition="context/duration">
           Started <span
-           tal:define="start context/calculated_buildstart"
+           tal:define="start context/date_started"
            tal:attributes="title start/fmt:datetime"
            tal:content="start/fmt:displaydate">2008-01-01</span>
         </li>
       </tal:built>
-      <li tal:condition="context/datebuilt">
+      <li tal:condition="context/date_finished">
         Finished <span
-          tal:attributes="title context/datebuilt/fmt:datetime"
-          tal:content="context/datebuilt/fmt:displaydate">2008-01-01</span>
-        <tal:duration condition="context/buildduration">
-          (took <span tal:replace="context/buildduration/fmt:exactduration"/>)
+          tal:attributes="title context/date_finished/fmt:datetime"
+          tal:content="context/date_finished/fmt:displaydate">2008-01-01</span>
+        <tal:duration condition="context/duration">
+          (took <span tal:replace="context/duration/fmt:exactduration"/>)
         </tal:duration>
       </li>
-      <li tal:define="file context/buildlog"
+      <li tal:define="file context/log"
           tal:condition="file">
         <a class="sprite download"
-           tal:attributes="href context/build_log_url"
-           tal:content="string: buildlog">BUILDLOG</a>
+           tal:attributes="href context/log_url">buildlog</a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
       <li tal:define="file context/upload_log"
@@ -235,9 +241,9 @@
            tal:content="binpkg/displayname">foopkg 1.2-3</a>
       </li>
       <li tal:condition="not: linkify_binaries"
-          tal:repeat="binpkg context/binarypackages">
+          tal:repeat="package_title view/binarypackagetitles">
         <span class="sprite package-binary"
-              tal:content="binpkg/title">foopkg-1.2-3</span>
+              tal:content="package_title">foopkg-1.2-3</span>
       </li>
     </ul>
   </metal:macro>

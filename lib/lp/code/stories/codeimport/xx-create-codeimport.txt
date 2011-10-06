@@ -27,8 +27,28 @@ For projects that don't officially use Launchpad for code, there is also a
 link on the main branch listing page for the product.
 
     >>> browser.open('http://code.launchpad.dev/firefox')
-    >>> browser.getLink('Import your project').click()
+    >>> browser.getLink('Import a branch').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
+The owner can configure code hosting for the project and then
+importing will be available to any user.
+
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> owner_browser.open('http://code.launchpad.dev/firefox')
+    >>> owner_browser.getLink('Configure code hosting').click()
+    >>> owner_browser.getControl(
+    ...     'Import a branch').click()
+    >>> owner_browser.getControl('Branch URL').value = 'git://example.com/firefox'
+    >>> owner_browser.getControl('Git').click()
+    >>> owner_browser.getControl('Branch name').value = 'trunk'
+    >>> owner_browser.getControl('Update').click()
+
+Now a regular user can import another branch.
+
+    >>> browser.open('http://code.launchpad.dev/firefox')
+    >>> browser.getLink('Import a branch').click()
 
 Requesting a Subversion import
 ==============================
@@ -41,8 +61,8 @@ The default foreign VCS type is Subversion.
     (*) Subversion
     ( ) CVS
 
-The user is required to enter a project that the import is for,
-a name for the import branch, and a subversion branch location.
+The user is required to enter a project that the import is for, a name
+for the import branch, and a subversion branch location.
 
     >>> browser.getControl('Branch Name').value = "imported"
     >>> browser.getControl('Branch URL').value = (
@@ -52,9 +72,11 @@ a name for the import branch, and a subversion branch location.
 When the user clicks continue, the import branch is created
 
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
-    Import Status: Pending Review
+    Import Status: Reviewed
     This branch is an import of the Subversion branch
     from http://svn.example.com/firefox/trunk.
+    The next import is scheduled to run
+    as soon as possible.
     >>> browser.getLink("http://svn.example.com/firefox/trunk")
     <Link text='http://svn.example.com/firefox/trunk'
            url='http://svn.example.com/firefox/trunk'>
@@ -67,6 +89,22 @@ attribute on the text of 'Subversion'.
     Subversion
     >>> print svn_span['title']
     Subversion via bzr-svn
+
+If the user wants, they can include a username and password in the
+URL.
+
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Branch Name').value = "with-password"
+    >>> browser.getControl('Branch URL').value = (
+    ...     "http://user:password@svn.example.com/firefox/trunk")
+    >>> browser.getControl('Project').value = "firefox"
+    >>> browser.getControl('Request Import').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    Import Status: Reviewed
+    This branch is an import of the Subversion branch
+    from http://user:password@svn.example.com/firefox/trunk.
+    The next import is scheduled to run
+    as soon as possible.
 
 
 Requesting a Git import
@@ -131,10 +169,11 @@ to identify the CVS branch.  A project and branch name are also required.
     >>> browser.getControl('Request Import').click()
 
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
-    Import Status: Pending Review
+    Import Status: Reviewed
     This branch is an import of the CVS module firefox from
     :pserver:anonymous@cvs.example.com:/mozilla/cvs.
-
+    The next import is scheduled to run
+    as soon as possible.
 
 Requesting a CVS import with invalid information
 ================================================
@@ -234,8 +273,8 @@ then an error is shown to the user.
 Requesting an import for a product that does not exist
 ======================================================
 
-If there are privacy policies that disallow the user from creating branches
-then an error is shown to the user.
+If the name typed in the product field does not match that of an
+existing product, an error is shown to the user.
 
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Project').value = "no-such-product"
@@ -247,3 +286,45 @@ then an error is shown to the user.
     ...     print extract_text(message)
     There is 1 error.
     Invalid value
+
+
+Specifying the owner of the branch when it is being created
+===========================================================
+
+When a user is requesting a new code import, they are the owner of the new
+import branch.  sometimes the user may wish for the import branch to be owned
+by a team rather than just themselves.  There is a drop down choice shown for
+the user for the teams that they are a member of.
+
+    >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> sample_browser.open("http://code.launchpad.dev/firefox/+new-import")
+    >>> sample_browser.getControl('Owner').displayValue
+    ['Sample Person (name12)']
+
+Change the owner to be a team that sample person is a member of.
+
+    >>> sample_browser.getControl('Owner').value = ['landscape-developers']
+    >>> sample_browser.getControl('Owner').displayValue
+    ['Landscape Developers (landscape-developers)']
+    >>> sample_browser.getControl('Branch URL').value = (
+    ...     "http://svn.example.com/firefox-beta/trunk")
+    >>> sample_browser.getControl('Request Import').click()
+
+    >>> print_tag_with_id(sample_browser.contents, 'registration')
+    Created by Sample Person ...
+    >>> print_tag_with_id(sample_browser.contents, 'owner')
+    Owner: Landscape Developers
+
+Admins can specify any owner for a new code import.
+
+    >>> admin_browser = setupBrowser(auth='Basic admin@canonical.com:test')
+    >>> admin_browser.open("http://code.launchpad.dev/firefox/+new-import")
+    >>> admin_browser.getControl('Owner').value = 'mark'
+    >>> admin_browser.getControl('Branch URL').value = (
+    ...     "http://svn.example.com/firefox-theta/trunk")
+    >>> admin_browser.getControl('Request Import').click()
+
+    >>> print_tag_with_id(admin_browser.contents, 'registration')
+    Created by Foo Bar ...
+    >>> print_tag_with_id(admin_browser.contents, 'owner')
+    Owner: Mark Shuttleworth

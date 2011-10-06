@@ -9,7 +9,6 @@ __all__ = []
 import os
 import shutil
 from tempfile import mkdtemp, NamedTemporaryFile
-import unittest
 
 from canonical import config
 from lp.testing import TestCase
@@ -139,7 +138,7 @@ class TestGenerateOverrides(ConfigTestCase):
         # Set that root to the temporary directory.
         cfg.root = self.temp_config_root_dir
         cfg.generate_overrides()
-        override_file = os.path.join(cfg.root, '+config-overrides.zcml')
+        override_file = os.path.join(cfg.root, 'zcml/+config-overrides.zcml')
         self.failUnless(
             os.path.isfile(override_file), "Overrides file wasn't created.")
 
@@ -152,7 +151,3 @@ class TestGenerateOverrides(ConfigTestCase):
             magic_line in overrides,
             "Overrides doesn't contain the magic include line (%s):\n%s" %
             (magic_line, overrides))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

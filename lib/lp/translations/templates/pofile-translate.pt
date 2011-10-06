@@ -14,21 +14,13 @@
     }
     </style>
 
-    <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
     <script type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
 
-      LPS.use('lp.pofile', function(Y) {
-          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
-          Y.on('domready', Y.lp.pofile.updateNotificationBox);
-          Y.on('domready', Y.lp.pofile.initializeKeyBindings);
-          Y.on('domready', function(e) {
-            Y.lp.pofile.setFocus(autofocus_field);
-          });
+      LPS.use('lp.translations.pofile', function(Y) {
+        Y.on('domready', Y.lp.translations.pofile.initializePOFile);
       });
+
     </script>
     </div>
     <div metal:fill-slot="main">
@@ -44,48 +36,7 @@
       </script>
 
         <!-- Documentation links -->
-        <tal:documentation condition="view/translation_group">
-          <div class="important-notice-container"
-               tal:condition="view/has_any_documentation">
-            <div class="important-notice-balloon">
-              <div class="important-notice-buttons">
-                <img class="important-notice-cancel-button" src="/@@/no"
-                     alt="Don't show this notice anymore"
-                     title="Hide this notice for the duration of this session" />
-              </div>
-              <img src="/@@/info" alt="Information" />
-              <span class="important-notice"
-                  tal:condition="view/translation_group/translation_guide_url">
-                Before translating, be sure to go through
-                <a tal:content="string:${view/translation_group/title}
-                                instructions"
-                   tal:attributes="href
-                        view/translation_group/translation_guide_url">
-                  translation instructions</a><!--
-             --><tal:has_team
-                   condition="view/translation_team"><!--
-                  --><tal:has_guidelines
-                      tal:condition="view/translation_team/style_guide_url">
-                  and <a class="style-guide-url"
-                         tal:attributes="
-                           href view/translation_team/style_guide_url"
-                         tal:content="string:${context/language/englishname}
-                                      guidelines">Serbian guidelines</a><!--
-               --></tal:has_guidelines><!--
-             --></tal:has_team>.
-              </span>
-              <span class="important-notice"
-                  tal:condition="not:view/translation_group/translation_guide_url">
-                Before translating, be sure to go through
-                <a class="style-guide-url"
-                   tal:content="string:${view/translation_team/translator/displayname}
-                                guidelines"
-                   tal:attributes="href view/translation_team/style_guide_url">
-                  Serbian guidelines</a>.
-              </span>
-            </div>
-          </div>
-        </tal:documentation>
+        <tal:documentation replace="structure view/documentation_link_bubble" />
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
@@ -106,8 +57,33 @@
         </div>
 
       <!--  Navigation -->
-      <metal:nav-pofile-subpages 
+      <metal:nav-pofile-subpages
         use-macro="context/@@+translations-macros/nav-pofile-subpages" />
+
+      <!-- Sharing information -->
+      <div tal:condition="features/translations.sharing_information.enabled">
+        <div id="sharing-information"
+             tal:condition="view/is_sharing">
+          <p tal:define="sharing_pofile view/sharing_pofile;
+                         template sharing_pofile/potemplate">
+            These translations are shared with
+              <a class="sprite package-source"
+                tal:condition="view/is_upstream_pofile"
+                tal:content="template/sourcepackage/displayname"
+                tal:attributes="href template/sourcepackage/fmt:url">
+                apache in Ubuntu Hoary
+              </a><a class="sprite product"
+                tal:condition="not:view/is_upstream_pofile"
+                tal:content="template/productseries/title"
+                tal:attributes="href template/productseries/fmt:url">
+                Evolution trunk
+              </a> template
+              <a tal:attributes="href sharing_pofile/fmt:url"
+                 tal:content="template/name"
+               >evolution-2.2</a>.
+          </p>
+        </div>
+      </div>
 
         <!-- View filter and suggestions from alternative language. -->
         <form method="get" style="text-align: left;" action="+translate">
@@ -162,11 +138,11 @@
                   >
                   items with new suggestions
                 </option>
-                <option value="changed_in_launchpad"
+                <option value="changed_in_ubuntu"
                   tal:attributes="selected
-                  request/htmlform:show/selected/changed_in_launchpad"
+                  request/htmlform:show/selected/changed_in_ubuntu"
                   >
-                  items changed in Launchpad
+                  items changed in Ubuntu
                 </option>
               </select>
             </label>
@@ -242,7 +218,7 @@
         <tal:status replace="structure context/@@+access" />
         <tal:contributors replace="structure context/@@+contributors" />
       </tal:havepluralforms>
-      <metal:pofile-js-footer 
+      <metal:pofile-js-footer
         use-macro="context/@@+translations-macros/pofile-js-footer" />
     </div>
   </body>

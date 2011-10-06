@@ -79,10 +79,14 @@ ignored, as well as empty files, and things whose names end in .po or
     True
     >>> 'empty.po' in anon_browser.contents
     False
-    >>> 'directory.po/' in tarball.getnames()
+
+    # XXX: 2010-04-26, Salgado, bug=570244: Need this hack to make it pass on
+    # python2.5 (where tarball.getnames() include a trailing slash on
+    # directory names) and python2.6 (where directory names don't get a
+    # trailing slash).
+    >>> ('directory.po' in tarball.getnames()
+    ...  or 'directory.po/' in tarball.getnames())
     True
-    >>> 'directory.po/' in anon_browser.contents
-    False
     >>> 'directory.po' in anon_browser.contents
     False
     >>> 'directory.po/.another-dotfile.po' in tarball.getnames()
@@ -177,7 +181,6 @@ And provide information for this IPOFile to be newly created.
   >>> browser.getControl('File Type').value = ['PO']
   >>> browser.getControl(name='field.potemplate').value = ['11']
   >>> browser.getControl('Language').value = ['es']
-  >>> browser.getControl('Variant').value = ''
   >>> browser.getControl('Approve').click()
   >>> print browser.url
   http://translations.launchpad.dev/+imports
@@ -445,3 +448,25 @@ says that.
   1
   >>> print msgs[0]
   Upload ignored.  The tarball you uploaded did not contain...
+
+Bad filter_extension
+~~~~~~~~~~~~~~~~~~~~
+
+Very often robots attempt to request URLs with garbage appended to the end.
+In at least one case it seems to have happened because someone on IRC closed a
+parenthesis right after the URL, and an IRC log site linkified the URL with
+the erroneous parenthesis included.
+
+Here we'll simulate such a request and show that the resulting unrecognized
+filter_extension values do not generate an error.  See bug 388997.
+
+  >>> post_data = urllib.urlencode(
+  ...     {
+  ...         'field.filter_target': 'all',
+  ...         'field.filter_status': 'all',
+  ...         'field.filter_extension': 'potlksajflkasj',
+  ...         'field.actions.change_status': 'Change status',
+  ...     })
+  >>> user_browser.open(
+  ...     'http://translations.launchpad.dev/+imports',
+  ...     data=post_data)

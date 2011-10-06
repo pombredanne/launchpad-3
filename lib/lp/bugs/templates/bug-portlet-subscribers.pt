@@ -6,42 +6,9 @@
   id="portlet-subscribers"
   metal:define-macro="custom"
 >
-  <div class="section" tal:define="context_menu context/menu:context"
-       metal:define-slot="heading">
-    <div
-      tal:attributes="class view/current_user_subscription_class"
-      tal:content="structure context_menu/subscription/render" />
-    <div id="sub-unsub-spinner">Subscribing...</div>
+  <h2>Other bug subscribers</h2>
+  <div tal:define="context_menu context/menu:context">
     <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
-  <a id="subscribers-ids-link"
-     tal:define="bug context/bug|context"
-     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-ids"></a>
-  <a id="subscribers-content-link"
-     tal:define="bug context/bug|context"
-     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-content"></a>
-  <div id="subscribers-portlet-spinner"
-       style="text-align: center; display: none">
-    <img src="/@@/spinner" />
-  </div>
-  <script type="text/javascript">
-    LPS.use('io-base', 'node', 'bugs.bugtask_index', function(Y) {
-        // Must be done inline here to ensure the load event fires.
-        // This is a work around for a YUI3 issue with event handling.
-        var subscription_link = Y.one('.menu-link-subscription');
-        var subscription_link_handler;
-        if (subscription_link) {
-            subscription_link_handler = subscription_link.on('click', function(e) {
-                e.preventDefault();
-            });
-        }
-
-        Y.on('domready', function() {
-            if (Y.bugs) {
-                Y.bugs.load_subscribers_portlet(
-                    subscription_link, subscription_link_handler);
-            }
-        });
-    });
-  </script>
+  <div id="other-bug-subscribers"></div>
 </div>

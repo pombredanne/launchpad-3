@@ -12,13 +12,16 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Object
+from zope.schema import (
+    Choice,
+    Datetime,
+    Object,
+    )
 
 from canonical.launchpad import _
-from lp.registry.interfaces.person import IPerson
-
 from lp.answers.interfaces.question import IQuestion
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
+from lp.registry.interfaces.person import IPerson
 
 
 class IQuestionReopening(Interface):

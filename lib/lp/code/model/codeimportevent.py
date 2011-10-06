@@ -13,20 +13,28 @@ __all__ = [
     ]
 
 
-from sqlobject import StringCol, ForeignKey
-
-from zope.interface import implements
 from lazr.enum import DBItem
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.code.enums import (
-    CodeImportEventDataType, CodeImportEventType,
-    CodeImportMachineOfflineReason, RevisionControlSystems)
+    CodeImportEventDataType,
+    CodeImportEventType,
+    CodeImportMachineOfflineReason,
+    RevisionControlSystems,
+    )
 from lp.code.interfaces.codeimportevent import (
-    ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken)
+    ICodeImportEvent,
+    ICodeImportEventSet,
+    ICodeImportEventToken,
+    )
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -136,12 +144,14 @@ class CodeImportEventSet:
                 data_type=CodeImportEventDataType.MESSAGE,
                 data_value=message)
 
-    def newOnline(self, machine, user=None, message=None):
+    def newOnline(self, machine, user=None, message=None, _date_created=None):
         """See `ICodeImportEventSet`."""
         assert machine is not None, "machine must not be None"
+        if _date_created is None:
+            _date_created = UTC_NOW
         event = CodeImportEvent(
             event_type=CodeImportEventType.ONLINE,
-            machine=machine, person=user)
+            machine=machine, person=user, date_created=_date_created)
         self._recordMessage(event, message)
         return event
 
@@ -259,7 +269,8 @@ class CodeImportEventSet:
         if code_import.rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN,
                                     RevisionControlSystems.GIT,
-                                    RevisionControlSystems.HG):
+                                    RevisionControlSystems.HG,
+                                    RevisionControlSystems.BZR):
             yield 'URL', code_import.url
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             yield 'CVS_ROOT', code_import.cvs_root

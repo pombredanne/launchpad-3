@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """KDE PO importer tests."""
@@ -6,26 +6,29 @@
 __metaclass__ = type
 
 import unittest
+
 import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from lp.translations.utilities.kde_po_importer import (
-    KdePOImporter)
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationFormatImporter)
+    ITranslationFormatImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from canonical.testing import LaunchpadZopelessLayer
+    ITranslationImportQueue,
+    )
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
+from lp.translations.utilities.kde_po_importer import KdePOImporter
+from lp.translations.utilities.tests.test_gettext_po_importer import (
+    test_template,
+    )
 
-from lp.translations.utilities.tests.test_gettext_po_importer \
-     import test_template
 
 test_kde_template = r'''
 msgid ""
@@ -68,29 +71,30 @@ class KdePOImporterTestCase(unittest.TestCase):
         # Add a new entry for testing purposes. It's a template one.
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         template_path = 'po/testing.pot'
-        is_published = True
+        by_maintainer = True
         personset = getUtility(IPersonSet)
         importer = personset.getByName('carlos')
         productset = getUtility(IProductSet)
         firefox = productset.getByName('firefox')
         firefox_trunk = firefox.getSeries('trunk')
         template_entry = self.translation_import_queue.addOrUpdateEntry(
-            template_path, test_kde_template, is_published, importer,
+            template_path, test_kde_template, by_maintainer, importer,
             productseries=firefox_trunk)
 
         # Add another one, a translation file.
         pofile_path = 'po/sr.po'
         translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            pofile_path, test_kde_translation_file, is_published, importer,
+            pofile_path, test_kde_translation_file, by_maintainer, importer,
             productseries=firefox_trunk)
 
         # Add a non-KDE PO file which gets recognized as regular PO file
         # (we use different productseries so it doesn't conflict with
         # KDE PO file being imported into firefox_trunk)
         firefox_10 = firefox.getSeries('1.0')
-        gettext_template_entry = self.translation_import_queue.addOrUpdateEntry(
-            template_path, test_template, is_published, importer,
-            productseries=firefox_10)
+        gettext_template_entry = (
+            self.translation_import_queue.addOrUpdateEntry(
+                template_path, test_template, by_maintainer, importer,
+                productseries=firefox_10))
 
         transaction.commit()
         self.template_importer = KdePOImporter()
@@ -128,7 +132,7 @@ class KdePOImporterTestCase(unittest.TestCase):
             'GettextPOImporter')
 
     def testGettextPOFileFormat(self):
-        """Check whether non-KDE PO files are recognized as regular PO files."""
+        """Check that non-KDE PO files are recognized as regular PO files."""
         format = self.gettext_template_entry.format
         self.failUnless(format == TranslationFileFormat.PO,
                         ('KdePOImporter format expected PO '
@@ -144,14 +148,16 @@ class KdePOImporterTestCase(unittest.TestCase):
             "KdePOImporter didn't import KDE plural forms correctly.")
 
     def testTranslationPlurals(self):
-        """Check whether translated legacy KDE plural forms are correctly imported."""
+        """Check if translated legacy KDE plural forms are correctly imported.
+        """
         message = self.translation_file.messages[0]
         translations = message.translations
         self.failUnless(
             (translations[0] == u'1st plural form %1' and
              translations[1] == u'2nd plural form %1' and
              translations[2] == u'3rd plural form %1'),
-            "KdePOImporter didn't import translated KDE plural forms correctly.")
+            "KdePOImporter didn't import translated KDE plural forms "
+            "correctly.")
 
     def testTemplateContext(self):
         """Check whether legacy KDE context is correctly imported."""
@@ -172,10 +178,3 @@ class KdePOImporterTestCase(unittest.TestCase):
             (singular == u'Message' and context == u'Context' and
              translations[0] == u'Contextual translation'),
             "KdePOImporter didn't import translated KDE context correctly.")
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(KdePOImporterTestCase))
-    return suite
-

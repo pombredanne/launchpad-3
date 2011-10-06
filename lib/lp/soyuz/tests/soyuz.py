@@ -15,26 +15,40 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.database import LibraryFileAlias
-from canonical.launchpad.ftests import import_public_test_keys, syncUpdate
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.ftests import (
+    import_public_test_keys,
+    )
 from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
-    BinaryPackagePublishingHistory)
+    )
+from lp.testing.dbuser import dbuser
+from lp.testing.sampledata import (
+    BUILDD_ADMIN_USERNAME,
+    CHROOT_LIBRARYFILEALIAS,
+    I386_ARCHITECTURE_NAME,
+    LAUNCHPAD_DBUSER_NAME,
+    UBUNTU_DISTRIBUTION_NAME,
+    WARTY_DISTROSERIES_NAME,
+    WARTY_UPDATES_SUITE_NAME,
+    )
 
 
 class SoyuzTestHelper:
     """Helper class to support easier tests in Soyuz component."""
 
     def __init__(self):
-        self.ubuntu = getUtility(IDistributionSet)['ubuntu']
-        self.cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
+        self.ubuntu = getUtility(IDistributionSet)[UBUNTU_DISTRIBUTION_NAME]
+        self.cprov_archive = getUtility(
+            IPersonSet).getByName(BUILDD_ADMIN_USERNAME).archive
 
     @property
     def sample_publishing_data(self):
@@ -90,7 +104,6 @@ class SoyuzTestHelper:
                 pocket=pocket)
             # Flush the object changes into DB do guarantee stable database
             # ID order as expected in the callsites.
-            syncUpdate(pub)
             sample_pub.append(pub)
         return sample_pub
 
@@ -115,7 +128,6 @@ class SoyuzTestHelper:
                 pocket=pocket)
             # Flush the object changes into DB do guarantee stable database
             # ID order as expected in the callsites.
-            syncUpdate(pub)
             sample_pub.append(pub)
         return sample_pub
 
@@ -142,16 +154,13 @@ class TestPackageDiffsBase(unittest.TestCase):
         Store the `FakePackager` object used in the test uploads as `packager`
         so the tests can reuse it if necessary.
         """
-        self.layer.alterConnection(dbuser='launchpad')
+        with dbuser(LAUNCHPAD_DBUSER_NAME):
+            fake_chroot = LibraryFileAlias.get(CHROOT_LIBRARYFILEALIAS)
+            ubuntu = getUtility(IDistributionSet).getByName(
+                UBUNTU_DISTRIBUTION_NAME)
+            warty = ubuntu.getSeries(WARTY_DISTROSERIES_NAME)
+            warty[I386_ARCHITECTURE_NAME].addOrUpdateChroot(fake_chroot)
 
-        fake_chroot = LibraryFileAlias.get(1)
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
-        warty['i386'].addOrUpdateChroot(fake_chroot)
-
-        self.layer.txn.commit()
-
-        self.layer.alterConnection(dbuser=self.dbuser)
         self.packager = self.uploadTestPackages()
         self.layer.txn.commit()
 
@@ -176,13 +185,13 @@ class TestPackageDiffsBase(unittest.TestCase):
             'zeca', '1.0', 'foo.bar@canonical.com-passwordless.sec')
         packager.buildUpstream()
         packager.buildSource()
-        packager.uploadSourceVersion('1.0-1', suite="warty-updates")
+        packager.uploadSourceVersion('1.0-1', suite=WARTY_UPDATES_SUITE_NAME)
 
         # Upload a new version of the source, so a PackageDiff can
         # be created.
         packager.buildVersion('1.0-2', changelog_text="cookies")
         packager.buildSource(include_orig=False)
-        packager.uploadSourceVersion('1.0-2', suite="warty-updates")
+        packager.uploadSourceVersion('1.0-2', suite=WARTY_UPDATES_SUITE_NAME)
 
         # Check if there is exactly one pending PackageDiff record and
         # It's the one we have just created.
@@ -193,4 +202,3 @@ class TestPackageDiffsBase(unittest.TestCase):
     def getPendingDiffs(self):
         """Pending `PackageDiff` available."""
         return getUtility(IPackageDiffSet).getPendingDiffs()
-

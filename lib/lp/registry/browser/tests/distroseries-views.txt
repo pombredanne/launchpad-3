@@ -3,7 +3,7 @@ DistroSeries view classes
 
 Let's use ubuntu/hoary for these tests.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
@@ -86,6 +86,7 @@ The distroseries 'changeslist' field only accept valid email addresses.
     Changeslist: foo@bar.com
     Status: DEVELOPMENT
 
+
 When the distroseries is released, i.e. when it goes from an unstable
 status (FUTURE, EXPERIMENTAL, DEVELOPMENT, FROZEN) to CURRENT, its
 'datereleased' field is set.
@@ -155,6 +156,9 @@ Editing distro series
 The distroseries edit view allows the editor to change series. The form
 uses the displayname, title, and description fields.
 
+    >>> driver = factory.makePerson(name='ubuntu-driver')
+    >>> hoary.driver = driver
+    >>> login_person(driver)
     >>> view = create_initialized_view(hoary, '+edit')
     >>> print view.label
     Edit The Hoary Hedgehog Release details
@@ -168,10 +172,17 @@ uses the displayname, title, and description fields.
     >>> [field.__name__ for field in view.form_fields]
     ['displayname', 'title', 'summary', 'description']
 
+Admins can see the status field for full functionality distributions.
+
+    >>> login('admin@canonical.com')
+    >>> view = create_initialized_view(hoary, '+edit')
+    >>> [field.__name__ for field in view.form_fields]
+    ['displayname', 'title', 'summary', 'description', 'status']
+
 Series that belong to derivative distributions also contain the status field.
 
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
-    >>> yo_series = factory.makeDistroRelease(name='melon')
+    >>> yo_series = factory.makeDistroSeries(name='melon')
     >>> yo_series.title = 'Melon'
     >>> youbuntu.full_functionality
     False
@@ -186,7 +197,7 @@ Series that belong to derivative distributions also contain the status field.
     >>> [field.__name__ for field in view.form_fields]
     ['displayname', 'title', 'summary', 'description', 'status']
 
-    >>> print view.widgets.get('status')._getFormValue()
+    >>> print view.widgets.get('status')._getFormValue().title
     Active Development
 
 
@@ -199,9 +210,9 @@ A distroseries is created using the distroseries view.
 
     >>> view = create_view(ubuntu, '+addseries')
     >>> print view.page_title
-    Register a series
+    Add a series
     >>> print view.label
-    Register a series
+    Add a series
 
     >>> print view.cancel_url
     http://launchpad.dev/ubuntu
@@ -209,19 +220,15 @@ A distroseries is created using the distroseries view.
     None
 
     >>> view.field_names
-    ['name', 'displayname', 'title', 'summary', 'description', 'version',
-     'parent_series']
+    ['name', 'version', 'displayname', 'summary']
 
 A distroseries is created whent the required field are submitted.
 
     >>> form = {
     ...     'field.name': 'sane',
     ...     'field.displayname': 'Sane Name',
-    ...     'field.title': 'Ubuntu Sane Name',
     ...     'field.summary': 'A stable series to introduce fnord.',
-    ...     'field.description': 'I am board filling this out',
     ...     'field.version': '2009.06',
-    ...     'field.parent_series': 'ubuntu/hoary',
     ...     'field.actions.create': 'Create Series',
     ...     }
     >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
@@ -254,13 +261,12 @@ Most distributions are an `IDerivativeDistribution`.
 
     >>> login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
-    >>> check_permission('launchpad.Driver', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
     >>> yo_form = dict(form)
     >>> yo_form['field.name'] = 'island'
     >>> yo_form['field.displayname'] = 'Island'
-    >>> yo_form['field.title'] = 'YouBuntu Island'
     >>> view = create_initialized_view(
     ...     youbuntu, name='+addseries', form=yo_form, principal=yo_driver)
     >>> view.errors
@@ -301,9 +307,7 @@ to a `IDerivativeDistribution`.
     >>> yo_form = dict(form)
     >>> del yo_form['field.actions.create']
     >>> yo_form['field.displayname'] = 'Mountain'
-    >>> yo_form['field.title'] = 'YouBuntu Mountain'
     >>> yo_form['field.summary'] = 'Mountain summary'
-    >>> yo_form['field.description'] = 'Mountain description'
     >>> yo_form['field.actions.change'] = 'Change'
     >>> view = create_initialized_view(
     ...     yo_series, name='+edit', form=yo_form, principal=yo_driver)
@@ -365,7 +369,7 @@ The distroseries version must be a valid debversion.
     >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
     >>> for error in view.errors:
     ...     print error[2]
-    'Hardy-6.06-LTS': Bad upstream version format
+    'Hardy-6.06-LTS': Could not parse version...
 
 The distroseries version is unique to a distribution. Version '2009.06'
 cannot be reused by another Ubuntu series.

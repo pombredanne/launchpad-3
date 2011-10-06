@@ -13,24 +13,6 @@ serve those requests properly.
 This is a dummy logger class to capture the export's log messages.
 
     >>> import sys
-    >>> import traceback
-
-    >>> class MockLogger:
-    ...     messages = []
-    ...
-    ...     def log(self, *stuff, **kw):
-    ...         print 'log>', ' '.join(stuff)
-    ...
-    ...         if 'exc_info' in kw:
-    ...             exception = traceback.format_exception(*sys.exc_info())
-    ...             for thing in exception:
-    ...                 for line in thing.splitlines():
-    ...                     self.log(line)
-    ...
-    ...     debug = info = warn = error = log
-    ...
-    ...     def exception(self, *stuff):
-    ...         self.log(*stuff, **{'exc_info': True})
 
 Here's somebody to make a request.
 
@@ -59,10 +41,11 @@ database).
     >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
     >>> transaction.commit()
-    >>> process_queue(transaction, MockLogger())
-    log> Exporting objects for Happy Downloader, related to template pmount
+    >>> from lp.services.log.logger import FakeLogger
+    >>> process_queue(transaction, FakeLogger())
+    DEBUG Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
-    log> Stored file at http://.../launchpad-export.tar.gz
+    INFO Stored file at http://.../launchpad-export.tar.gz
 
 The user receives a confirmation email.
 
@@ -79,7 +62,7 @@ The user receives a confirmation email.
     The translation files you requested from Launchpad are ready for
     download from the following location:
     <BLANKLINE>
-      http://localhost:58000/.../launchpad-export.tar.gz
+      http://.../launchpad-export.tar.gz
     <BLANKLINE>
     Note: this link will expire in about 1 week.  If you want to
     download these translations again, you will have to request
@@ -108,8 +91,10 @@ Let's download it and make sure the contents look ok.
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
-    ...   print name
-    pmount/
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
+    ...     print name.rstrip('/')
+    pmount
     pmount/pmount-ca.po
     pmount/pmount-cs.po
 
@@ -188,12 +173,13 @@ Let's try requesting an export in MO format:
 
     >>> from lp.translations.interfaces.translationfileformat import (
     ...     TranslationFileFormat)
-    >>> request_set.addRequest(person, None, [cs], TranslationFileFormat.MO)
+    >>> request_set.addRequest(
+    ...     person, None, [cs, cs.potemplate], TranslationFileFormat.MO)
     >>> transaction.commit()
-    >>> process_queue(transaction, MockLogger())
-    log> Exporting objects for Happy Downloader, related to template pmount
+    >>> process_queue(transaction, FakeLogger())
+    DEBUG Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
-    log> Stored file at http://.../cs_LC_MESSAGES_pmount.mo
+    INFO Stored file at http://.../cs_LC_MESSAGES_pmount.mo
 
     >>> emails = pop_notifications()
     >>> len(emails)
@@ -208,7 +194,7 @@ Let's try requesting an export in MO format:
     The translation files you requested from Launchpad are ready for
     download from the following location:
     <BLANKLINE>
-      http://localhost:58000/.../cs_LC_MESSAGES_pmount.mo
+      http://.../cs_LC_MESSAGES_pmount.mo
     <BLANKLINE>
     Note: this link will expire in about 1 week.  If you want to
     download these translations again, you will have to request
@@ -260,13 +246,14 @@ The script is run.
 
     >>> import subprocess
     >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-vv'
+    ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-v'
     ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.STDOUT
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO    creating lockfile
+    DEBUG   ...
+    INFO    Creating lockfile: /var/lock/launchpad-rosetta-export-queue.lock
     DEBUG   Exporting objects for Happy Downloader, related to template
     evolution-2.2 in Evolution trunk
     DEBUG   Exporting objects for Happy Downloader, related to template

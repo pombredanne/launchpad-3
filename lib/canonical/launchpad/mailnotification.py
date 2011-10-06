@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # XXX: Gavin Panella 2008-11-21 bug=300725: This module need
@@ -8,423 +8,62 @@
 
 __metaclass__ = type
 
-import datetime
 from difflib import unified_diff
-import operator
-
-from email.Header import Header
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
+from email import message_from_string
 from email.MIMEMessage import MIMEMessage
-from email.Utils import formataddr, formatdate, make_msgid
-
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
 import re
-import rfc822
 
-from zope.component import getAdapter, getUtility
-from zope.interface import implements
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.adapters.bugchange import BugDuplicateChange, get_bug_changes
 from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
-from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
-    INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
-    IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
-    TeamMembershipStatus)
-from lp.bugs.interfaces.bugchange import IBugChange
-from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.interfaces.message import (
-    IDirectEmailAuthorization, QuotaReachedError)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
-from canonical.launchpad.mail import (
-    sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
-from lp.services.mail.mailwrapper import MailWrapper
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.url import urlappend
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
+from lp.registry.interfaces.person import IPerson
+from lp.services.mail.mailwrapper import MailWrapper
+# XXX 2010-06-16 gmb bug=594985
+#     This shouldn't be here, but if we take it out lots of things cry,
+#     which is sad.
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.mail.sendmail import (
+    format_address,
+    sendmail,
+    simple_sendmail,
+    simple_sendmail_from_person,
+    )
+
+# Silence lint warnings.
+NotificationRecipientSet
 
 
 CC = "CC"
-
-
-class BugNotificationRecipients(NotificationRecipientSet):
-    """A set of emails and rationales notified for a bug change.
-
-    Each email address registered in a BugNotificationRecipients is
-    associated to a string and a header that explain why the address is
-    being emailed. For instance, if the email address is that of a
-    distribution bug supervisor for a bug, the string and header will make
-    that fact clear.
-
-    The string is meant to be rendered in the email footer. The header
-    is meant to be used in an X-Launchpad-Message-Rationale header.
-
-    The first rationale registered for an email address is the one
-    which will be used, regardless of other rationales being added
-    for it later. This gives us a predictable policy of preserving
-    the first reason added to the registry; the callsite should
-    ensure that the manipulation of the BugNotificationRecipients
-    instance is done in preferential order.
-
-    Instances of this class are meant to be returned by
-    IBug.getBugNotificationRecipients().
-    """
-    implements(INotificationRecipientSet)
-
-    def __init__(self, duplicateof=None):
-        """Constructs a new BugNotificationRecipients instance.
-
-        If this bug is a duplicate, duplicateof should be used to
-        specify which bug ID it is a duplicate of.
-
-        Note that there are two duplicate situations that are
-        important:
-          - One is when this bug is a duplicate of another bug:
-            the subscribers to the main bug get notified of our
-            changes.
-          - Another is when the bug we are changing has
-            duplicates; in that case, direct subscribers of
-            duplicate bugs get notified of our changes.
-        These two situations are catered respectively by the
-        duplicateof parameter above and the addDupeSubscriber method.
-        Don't confuse them!
-        """
-        NotificationRecipientSet.__init__(self)
-        self.duplicateof = duplicateof
-
-    def _addReason(self, person, reason, header):
-        """Adds a reason (text and header) for a person.
-
-        It takes care of modifying the message when the person is notified
-        via a duplicate.
-        """
-        if self.duplicateof is not None:
-            reason = reason + " (via bug %s)" % self.duplicateof.id
-            header = header + " via Bug %s" % self.duplicateof.id
-        reason = "You received this bug notification because you %s." % reason
-        self.add(person, reason, header)
-
-    def addDupeSubscriber(self, person):
-        """Registers a subscriber of a duplicate of this bug."""
-        reason = "Subscriber of Duplicate"
-        if person.isTeam():
-            text = ("are a member of %s, which is a subscriber "
-                    "of a duplicate bug" % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a direct subscriber of a duplicate bug"
-        self._addReason(person, text, reason)
-
-    def addDirectSubscriber(self, person):
-        """Registers a direct subscriber of this bug."""
-        reason = "Subscriber"
-        if person.isTeam():
-            text = ("are a member of %s, which is a direct subscriber"
-                    % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a direct subscriber of the bug"
-        self._addReason(person, text, reason)
-
-    def addAssignee(self, person):
-        """Registers an assignee of a bugtask of this bug."""
-        reason = "Assignee"
-        if person.isTeam():
-            text = ("are a member of %s, which is a bug assignee"
-                    % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a bug assignee"
-        self._addReason(person, text, reason)
-
-    def addDistroBugSupervisor(self, person, distro):
-        """Registers a distribution bug supervisor for this bug."""
-        reason = "Bug Supervisor (%s)" % distro.displayname
-        # All displaynames in these reasons should be changed to bugtargetname
-        # (as part of bug 113262) once bugtargetname is finalized for packages
-        # (bug 113258). Changing it before then would be excessively
-        # disruptive.
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug supervisor for %s" %
-                (person.displayname, distro.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug supervisor for %s" % distro.displayname
-        self._addReason(person, text, reason)
-
-    def addStructuralSubscriber(self, person, target):
-        """Registers a structural subscriber to this bug's target."""
-        reason = "Subscriber (%s)" % target.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is subscribed to %s" %
-                (person.displayname, target.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are subscribed to %s" % target.displayname
-        self._addReason(person, text, reason)
-
-    def addUpstreamBugSupervisor(self, person, upstream):
-        """Registers an upstream bug supervisor for this bug."""
-        reason = "Bug Supervisor (%s)" % upstream.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug supervisor for %s" %
-                (person.displayname, upstream.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug supervisor for %s" % upstream.displayname
-        self._addReason(person, text, reason)
-
-    def addRegistrant(self, person, upstream):
-        """Registers an upstream product registrant for this bug."""
-        reason = "Registrant (%s)" % upstream.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is the registrant for %s" %
-                (person.displayname, upstream.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the registrant for %s" % upstream.displayname
-        self._addReason(person, text, reason)
-
-
-def format_rfc2822_date(date):
-    """Formats a date according to RFC2822's desires."""
-    return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0, )))
-
-
-class BugNotificationBuilder:
-    """Constructs a MIMEText message for a bug notification.
-
-    Takes a bug and a set of headers and returns a new MIMEText
-    object. Common and expensive to calculate headers are cached
-    up-front.
-    """
-
-    def __init__(self, bug):
-        self.bug = bug
-
-        # Pre-calculate common headers.
-        self.common_headers = [
-            ('Reply-To', get_bugmail_replyto_address(bug)),
-            ('Sender', config.canonical.bounce_address),
-            ]
-
-        # X-Launchpad-Bug
-        self.common_headers.extend(
-            ('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
-            for bugtask in bug.bugtasks)
-
-        # X-Launchpad-Bug-Tags
-        if len(bug.tags) > 0:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Tags', ' '.join(bug.tags)))
-
-        # Add the X-Launchpad-Bug-Private header. This is a simple
-        # yes/no value denoting privacy for the bug.
-        if bug.private:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Private', 'yes'))
-        else:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Private', 'no'))
-
-        # Add the X-Launchpad-Bug-Security-Vulnerability header to
-        # denote security for this bug. This follows the same form as
-        # the -Bug-Private header.
-        if bug.security_related:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Security-Vulnerability', 'yes'))
-        else:
-            self.common_headers.append(
-                ('X-Launchpad-Bug-Security-Vulnerability', 'no'))
-
-        # Add the -Bug-Commenters header, a space-separated list of
-        # distinct IDs of people who have commented on the bug. The
-        # list is sorted to aid testing.
-        commenters = set(message.owner.name for message in bug.messages)
-        self.common_headers.append(
-            ('X-Launchpad-Bug-Commenters', ' '.join(sorted(commenters))))
-
-    def build(self, from_address, to_address, body, subject, email_date,
-              rationale=None, references=None, message_id=None):
-        """Construct the notification.
-
-        :param from_address: The From address of the notification.
-        :param to_address: The To address for the notification.
-        :param body: The body text of the notification.
-        :type body: unicode
-        :param subject: The Subject of the notification.
-        :param email_date: The Date for the notification.
-        :param rationale: The rationale for why the recipient is
-            receiving this notification.
-        :param references: A value for the References header.
-        :param message_id: A value for the Message-ID header.
-
-        :return: An `email.MIMEText.MIMEText` object.
-        """
-        message = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-        message['Date'] = format_rfc2822_date(email_date)
-        message['From'] = from_address
-        message['To'] = to_address
-
-        # Add the common headers.
-        for header in self.common_headers:
-            message.add_header(*header)
-
-        if references is not None:
-            message['References'] = ' '.join(references)
-        if message_id is not None:
-            message['Message-Id'] = message_id
-
-        subject_prefix = "[Bug %d]" % self.bug.id
-        if subject is None:
-            message['Subject'] = subject_prefix
-        elif subject_prefix in subject:
-            message['Subject'] = subject
-        else:
-            message['Subject'] = "%s %s" % (subject_prefix, subject)
-
-        if rationale is not None:
-            message.add_header('X-Launchpad-Message-Rationale', rationale)
-
-        return message
-
-
-def _send_bug_details_to_new_bug_subscribers(
-    bug, previous_subscribers, current_subscribers, subscribed_by=None):
-    """Send an email containing full bug details to new bug subscribers.
-
-    This function is designed to handle situations where bugtasks get
-    reassigned to new products or sourcepackages, and the new bug subscribers
-    need to be notified of the bug.
-    """
-    prev_subs_set = set(previous_subscribers)
-    cur_subs_set = set(current_subscribers)
-    new_subs = cur_subs_set.difference(prev_subs_set)
-
-    to_addrs = set()
-    for new_sub in new_subs:
-        to_addrs.update(get_contact_email_addresses(new_sub))
-
-    if not to_addrs:
-        return
-
-    from_addr = format_address(
-        'Launchpad Bug Tracker',
-        "%s@%s" % (bug.id, config.launchpad.bugs_domain))
-    # Now's a good a time as any for this email; don't use the original
-    # reported date for the bug as it will just confuse mailer and
-    # recipient.
-    email_date = datetime.datetime.now()
-
-    # The new subscriber email is effectively the initial message regarding
-    # a new bug. The bug's initial message is used in the References
-    # header to establish the message's context in the email client.
-    references = [bug.initial_message.rfc822msgid]
-    recipients = bug.getBugNotificationRecipients()
-
-    bug_notification_builder = BugNotificationBuilder(bug)
-    for to_addr in sorted(to_addrs):
-        reason, rationale = recipients.getReason(to_addr)
-        subject, contents = generate_bug_add_email(
-            bug, new_recipients=True, subscribed_by=subscribed_by,
-            reason=reason)
-        msg = bug_notification_builder.build(
-            from_addr, to_addr, contents, subject, email_date,
-            rationale=rationale, references=references)
-        sendmail(msg)
-
-
-@block_implicit_flushes
-def update_security_contact_subscriptions(modified_bugtask, event):
-    """Subscribe the new security contact when a bugtask's product changes.
-
-    No change is made for private bugs.
-    """
-    if event.object.bug.private:
-        return
-
-    if not IUpstreamBugTask.providedBy(event.object):
-        return
-
-    bugtask_before_modification = event.object_before_modification
-    bugtask_after_modification = event.object
-
-    if (bugtask_before_modification.product !=
-        bugtask_after_modification.product):
-        new_product = bugtask_after_modification.product
-        if new_product.security_contact:
-            bugtask_after_modification.bug.subscribe(
-                new_product.security_contact, IPerson(event.user))
-
-
-def get_bugmail_from_address(person, bug):
-    """Returns the right From: address to use for a bug notification."""
-    if person == getUtility(ILaunchpadCelebrities).janitor:
-        return format_address(
-            'Launchpad Bug Tracker',
-            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
-
-    if person.preferredemail is not None:
-        return format_address(person.displayname, person.preferredemail.email)
-
-    # XXX: Bjorn Tillenius 2006-04-05:
-    # The person doesn't have a preferred email set, but he
-    # added a comment (either via the email UI, or because he was
-    # imported as a deaf reporter). It shouldn't be possible to use the
-    # email UI if you don't have a preferred email set, but work around
-    # it for now by trying hard to find the right email address to use.
-    email_addresses = shortlist(
-        getUtility(IEmailAddressSet).getByPerson(person))
-    if not email_addresses:
-        # XXX: Bjorn Tillenius 2006-05-21 bug=33427:
-        # A user should always have at least one email address,
-        # but due to bug #33427, this isn't always the case.
-        return format_address(person.displayname,
-            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
-
-    # At this point we have no validated emails to use: if any of the
-    # person's emails had been validated the preferredemail would be
-    # set. Since we have no idea of which email address is best to use,
-    # we choose the first one.
-    return format_address(person.displayname, email_addresses[0].email)
-
-
-def get_bugmail_replyto_address(bug):
-    """Return an appropriate bugmail Reply-To address.
-
-    :bug: the IBug.
-
-    :user: an IPerson whose name will appear in the From address, e.g.:
-
-        From: Foo Bar via Malone <123@bugs...>
-    """
-    return u"Bug %d <%s@%s>" % (bug.id, bug.id, config.launchpad.bugs_domain)
-
-
-def get_bugmail_error_address():
-    """Return a suitable From address for a bug transaction error email."""
-    return config.malone.bugmail_error_from_address
+MAX_RETURN_MESSAGE_SIZE = config.processmail.max_error_message_return_size
 
 
 def send_process_error_notification(to_address, subject, error_msg,
-                                    original_msg, failing_command=None):
+                                    original_msg, failing_command=None,
+                                    max_return_size=MAX_RETURN_MESSAGE_SIZE):
     """Send a mail about an error occurring while using the email interface.
 
     Tells the user that an error was encountered while processing his
     request and attaches the original email which caused the error to
-    happen.
+    happen.  The original message will be truncated to
+    max_return_size bytes.
 
         :to_address: The address to send the notification to.
         :subject: The subject of the notification.
         :error_msg: The error message that explains the error.
         :original_msg: The original message sent by the user.
         :failing_command: The command that caused the error to happen.
+        :max_return_size: The maximum size returned for the original message.
     """
     if isinstance(failing_command, list):
         failing_commands = failing_command
@@ -450,96 +89,12 @@ def send_process_error_notification(to_address, subject, error_msg,
     msg['From'] = get_bugmail_error_address()
     msg['Subject'] = subject
     msg.attach(error_part)
+    original_msg_str = str(original_msg)
+    if len(original_msg_str) > max_return_size:
+        truncated_msg_str = original_msg_str[:max_return_size]
+        original_msg = message_from_string(truncated_msg_str)
     msg.attach(MIMEMessage(original_msg))
     sendmail(msg)
-
-
-def notify_errors_list(message, file_alias_url):
-    """Sends an error to the Launchpad errors list."""
-    template = get_email_template('notify-unhandled-email.txt')
-    # We add the error message in as a header too
-    # (X-Launchpad-Unhandled-Email) so we can create filters in the
-    # Launchpad-Error-Reports Mailman mailing list.
-    simple_sendmail(
-        get_bugmail_error_address(), [config.launchpad.errors_address],
-        'Unhandled Email: %s' % file_alias_url,
-        template % {'url': file_alias_url, 'error_msg': message},
-        headers={'X-Launchpad-Unhandled-Email': message})
-
-
-def generate_bug_add_email(bug, new_recipients=False, reason=None,
-                           subscribed_by=None):
-    """Generate a new bug notification from the given IBug.
-
-    If new_recipients is supplied we generate a notification explaining
-    that the new recipients have been subscribed to the bug. Otherwise
-    it's just a notification of a new bug report.
-    """
-    subject = u"[Bug %d] [NEW] %s" % (bug.id, bug.title)
-    contents = ''
-
-    if bug.private:
-        # This is a confidential bug.
-        visibility = u"Private"
-    else:
-        # This is a public bug.
-        visibility = u"Public"
-
-    if bug.security_related:
-        visibility += ' security'
-        contents += '*** This bug is a security vulnerability ***\n\n'
-
-    bug_info = []
-    # Add information about the affected upstreams and packages.
-    for bugtask in bug.bugtasks:
-        bug_info.append(u"** Affects: %s" % bugtask.bugtargetname)
-        bug_info.append(u"     Importance: %s" % bugtask.importance.title)
-
-        if bugtask.assignee:
-            # There's a person assigned to fix this task, so show that
-            # information too.
-            bug_info.append(
-                u"     Assignee: %s" % bugtask.assignee.unique_displayname)
-        bug_info.append(u"         Status: %s\n" % bugtask.status.title)
-
-    if bug.tags:
-        bug_info.append('\n** Tags: %s' % ' '.join(bug.tags))
-
-    mailwrapper = MailWrapper(width=72)
-    content_substitutions = {
-        'visibility': visibility,
-        'bug_url': canonical_url(bug),
-        'bug_info': "\n".join(bug_info),
-        'bug_title': bug.title,
-        'description': mailwrapper.format(bug.description),
-        'notification_rationale': reason,
-        }
-
-    if new_recipients:
-        contents += "You have been subscribed to a %(visibility)s bug"
-        if subscribed_by is not None:
-            contents += " by %(subscribed_by)s"
-            content_substitutions['subscribed_by'] = (
-                subscribed_by.unique_displayname)
-        contents += (":\n\n"
-                     "%(description)s\n\n%(bug_info)s")
-        # The visibility appears mid-phrase so.. hack hack.
-        content_substitutions['visibility'] = visibility.lower()
-        # XXX: kiko, 2007-03-21:
-        # We should really have a centralized way of adding this
-        # footer, but right now we lack a INotificationRecipientSet
-        # for this particular situation.
-        contents += (
-            "\n-- \n%(bug_title)s\n%(bug_url)s\n%(notification_rationale)s")
-    else:
-        contents += ("%(visibility)s bug reported:\n\n"
-                     "%(description)s\n\n%(bug_info)s")
-
-    contents = contents % content_substitutions
-
-    contents = contents.rstrip()
-
-    return (subject, contents)
 
 
 def get_unified_diff(old_text, new_text, text_width):
@@ -582,417 +137,6 @@ def get_unified_diff(old_text, new_text, text_width):
     return text_diff
 
 
-def _get_task_change_row(label, oldval_display, newval_display):
-    """Return a row formatted for display in task change info."""
-    return u"%(label)13s: %(oldval)s => %(newval)s\n" % {
-        'label': label.capitalize(),
-        'oldval': oldval_display,
-        'newval': newval_display}
-
-
-def _get_task_change_values(task_change, displayattrname):
-    """Return the old value and the new value for a task field change."""
-    oldval = task_change.get('old')
-    newval = task_change.get('new')
-
-    oldval_display = None
-    newval_display = None
-
-    if oldval:
-        oldval_display = getattr(oldval, displayattrname)
-    if newval:
-        newval_display = getattr(newval, displayattrname)
-
-    return (oldval_display, newval_display)
-
-
-def get_bug_delta(old_bug, new_bug, user):
-    """Compute the delta from old_bug to new_bug.
-
-    old_bug and new_bug are IBug's. user is an IPerson. Returns an
-    IBugDelta if there are changes, or None if there were no changes.
-    """
-    changes = {}
-
-    for field_name in ("title", "description", "name", "private",
-                       "security_related", "duplicateof", "tags"):
-        # fields for which we show old => new when their values change
-        old_val = getattr(old_bug, field_name)
-        new_val = getattr(new_bug, field_name)
-        if old_val != new_val:
-            changes[field_name] = {}
-            changes[field_name]["old"] = old_val
-            changes[field_name]["new"] = new_val
-
-    if changes:
-        changes["bug"] = new_bug
-        changes["bug_before_modification"] = old_bug
-        changes["bugurl"] = canonical_url(new_bug)
-        changes["user"] = user
-
-        return BugDelta(**changes)
-    else:
-        return None
-
-
-@block_implicit_flushes
-def notify_bug_added(bug, event):
-    """Send an email notification that a bug was added.
-
-    Event must be an IObjectCreatedEvent.
-    """
-
-    bug.addCommentNotification(bug.initial_message)
-
-
-@block_implicit_flushes
-def notify_bug_modified(modified_bug, event):
-    """Notify the Cc'd list that this bug has been modified.
-
-    modified_bug bug must be an IBug. event must be an
-    IObjectModifiedEvent.
-    """
-    bug_delta = get_bug_delta(
-        old_bug=event.object_before_modification,
-        new_bug=event.object, user=IPerson(event.user))
-
-    if bug_delta is not None:
-        add_bug_change_notifications(bug_delta)
-
-
-def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
-    """Return the indirect subscribers for a bug task.
-
-    Return the list of people who should get notifications about
-    changes to the task because of having an indirect subscription
-    relationship with it (by subscribing to its target, being an
-    assignee or owner, etc...)
-
-    If `recipients` is present, add the subscribers to the set of
-    bug notification recipients.
-    """
-    if bugtask.bug.private:
-        return set()
-
-    also_notified_subscribers = set()
-
-    # Assignees are indirect subscribers.
-    if bugtask.assignee:
-        also_notified_subscribers.add(bugtask.assignee)
-        if recipients is not None:
-            recipients.addAssignee(bugtask.assignee)
-
-    if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-        also_notified_subscribers.update(
-            bugtask.target.getBugNotificationsRecipients(
-                recipients, level=level))
-
-    if bugtask.milestone is not None:
-        also_notified_subscribers.update(
-            bugtask.milestone.getBugNotificationsRecipients(
-                recipients, level=level))
-
-    # If the target's bug supervisor isn't set,
-    # we add the owner as a subscriber.
-    pillar = bugtask.pillar
-    if pillar.bug_supervisor is None:
-        also_notified_subscribers.add(pillar.owner)
-        if recipients is not None:
-            recipients.addRegistrant(pillar.owner, pillar)
-
-    return sorted(
-        also_notified_subscribers,
-        key=operator.attrgetter('displayname'))
-
-
-def add_bug_change_notifications(bug_delta, old_bugtask=None):
-    """Generate bug notifications and add them to the bug."""
-    changes = get_bug_changes(bug_delta)
-    recipients = bug_delta.bug.getBugNotificationRecipients(
-        old_bug=bug_delta.bug_before_modification,
-        level=BugNotificationLevel.METADATA)
-    if old_bugtask is not None:
-        old_bugtask_recipients = BugNotificationRecipients()
-        get_bugtask_indirect_subscribers(
-            old_bugtask, recipients=old_bugtask_recipients,
-            level=BugNotificationLevel.METADATA)
-        recipients.update(old_bugtask_recipients)
-    for change in changes:
-        # XXX 2009-03-17 gmb [bug=344125]
-        #     This if..else should be removed once the new BugChange API
-        #     is complete and ubiquitous.
-        if IBugChange.providedBy(change):
-            if isinstance(change, BugDuplicateChange):
-                no_dupe_master_recipients = (
-                    bug_delta.bug.getBugNotificationRecipients(
-                        old_bug=bug_delta.bug_before_modification,
-                        level=BugNotificationLevel.METADATA,
-                        include_master_dupe_subscribers=False))
-                bug_delta.bug.addChange(
-                    change, recipients=no_dupe_master_recipients)
-            else:
-                bug_delta.bug.addChange(change, recipients=recipients)
-        else:
-            bug_delta.bug.addChangeNotification(
-                change, person=bug_delta.user, recipients=recipients)
-
-
-@block_implicit_flushes
-def notify_bugtask_edited(modified_bugtask, event):
-    """Notify CC'd subscribers of this bug that something has changed
-    on this task.
-
-    modified_bugtask must be an IBugTask. event must be an
-    IObjectModifiedEvent.
-    """
-    bugtask_delta = event.object.getDelta(event.object_before_modification)
-    bug_delta = BugDelta(
-        bug=event.object.bug,
-        bugurl=canonical_url(event.object.bug),
-        bugtask_deltas=bugtask_delta,
-        user=IPerson(event.user))
-
-    add_bug_change_notifications(
-        bug_delta, old_bugtask=event.object_before_modification)
-
-    previous_subscribers = event.object_before_modification.bug_subscribers
-    current_subscribers = event.object.bug_subscribers
-    _send_bug_details_to_new_bug_subscribers(
-        event.object.bug, previous_subscribers, current_subscribers)
-    update_security_contact_subscriptions(modified_bugtask, event)
-
-
-@block_implicit_flushes
-def notify_bug_comment_added(bugmessage, event):
-    """Notify CC'd list that a message was added to this bug.
-
-    bugmessage must be an IBugMessage. event must be an
-    IObjectCreatedEvent. If bugmessage.bug is a duplicate the
-    comment will also be sent to the dup target's subscribers.
-    """
-    bug = bugmessage.bug
-    bug.addCommentNotification(bugmessage.message)
-
-
-@block_implicit_flushes
-def notify_bug_attachment_added(bugattachment, event):
-    """Notify CC'd list that a new attachment has been added.
-
-    bugattachment must be an IBugAttachment. event must be an
-    IObjectCreatedEvent.
-    """
-    bug = bugattachment.bug
-    bug_delta = BugDelta(
-        bug=bug,
-        bugurl=canonical_url(bug),
-        user=IPerson(event.user),
-        attachment={'new': bugattachment, 'old': None})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_attachment_removed(bugattachment, event):
-    """Notify that an attachment has been removed."""
-    bug = bugattachment.bug
-    bug_delta = BugDelta(
-        bug=bug,
-        bugurl=canonical_url(bug),
-        user=IPerson(event.user),
-        attachment={'old': bugattachment, 'new': None})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_subscription_added(bug_subscription, event):
-    """Notify that a new bug subscription was added."""
-    # When a user is subscribed to a bug by someone other
-    # than themselves, we send them a notification email.
-    if bug_subscription.person != bug_subscription.subscribed_by:
-        _send_bug_details_to_new_bug_subscribers(
-            bug_subscription.bug, [], [bug_subscription.person],
-            subscribed_by=bug_subscription.subscribed_by)
-
-
-@block_implicit_flushes
-def notify_invitation_to_join_team(event):
-    """Notify team admins that the team has been invited to join another team.
-
-    The notification will include a link to a page in which any team admin can
-    accept the invitation.
-
-    XXX: Guilherme Salgado 2007-05-08:
-    At some point we may want to extend this functionality to allow invites
-    to be sent to users as well, but for now we only use it for teams.
-    """
-    member = event.member
-    assert member.isTeam()
-    team = event.team
-    membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
-        member, team)
-    assert membership is not None
-
-    reviewer = membership.proposed_by
-    admin_addrs = member.getTeamAdminsEmailAddresses()
-    from_addr = format_address(
-        team.displayname, config.canonical.noreply_from_address)
-    subject = 'Invitation for %s to join' % member.name
-    templatename = 'membership-invitation.txt'
-    template = get_email_template(templatename)
-    replacements = {
-        'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
-        'member': '%s (%s)' % (member.displayname, member.name),
-        'team': '%s (%s)' % (team.displayname, team.name),
-        'team_url': canonical_url(team),
-        'membership_invitations_url':
-            "%s/+invitation/%s" % (canonical_url(member), team.name)}
-    for address in admin_addrs:
-        recipient = getUtility(IPersonSet).getByEmail(address)
-        replacements['recipient_name'] = recipient.displayname
-        msg = MailWrapper().format(template % replacements, force_wrap=True)
-        simple_sendmail(from_addr, address, subject, msg)
-
-
-def send_team_email(from_addr, address, subject, template, replacements,
-                    rationale, headers=None):
-    """Send a team message with a rationale."""
-    if headers is None:
-        headers = {}
-    body = MailWrapper().format(template % replacements, force_wrap=True)
-    footer = "-- \n%s" % rationale
-    message = '%s\n\n%s' % (body, footer)
-    simple_sendmail(from_addr, address, subject, message, headers)
-
-
-@block_implicit_flushes
-def notify_team_join(event):
-    """Notify team admins that someone has asked to join the team.
-
-    If the team's policy is Moderated, the email will say that the membership
-    is pending approval. Otherwise it'll say that the person has joined the
-    team and who added that person to the team.
-    """
-    person = event.person
-    team = event.team
-    membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
-        person, team)
-    assert membership is not None
-    approved, admin, proposed = [
-        TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN,
-        TeamMembershipStatus.PROPOSED]
-    admin_addrs = team.getTeamAdminsEmailAddresses()
-    from_addr = format_address(
-        team.displayname, config.canonical.noreply_from_address)
-
-    reviewer = membership.proposed_by
-    if reviewer != person and membership.status in [approved, admin]:
-        reviewer = membership.reviewed_by
-        # Somebody added this person as a member, we better send a
-        # notification to the person too.
-        member_addrs = get_contact_email_addresses(person)
-
-        headers = {}
-        if person.isTeam():
-            templatename = 'new-member-notification-for-teams.txt'
-            subject = '%s joined %s' % (person.name, team.name)
-            header_rational = "Indirect member (%s)" % team.name
-            footer_rationale = (
-                "You received this email because "
-                "%s is the new member." % person.name)
-        else:
-            templatename = 'new-member-notification.txt'
-            subject = 'You have been added to %s' % team.name
-            header_rational = "Member (%s)" % team.name
-            footer_rationale = (
-                "You received this email because you are the new member.")
-
-        if team.mailing_list is not None:
-            template = get_email_template(
-                'team-list-subscribe-block.txt')
-            editemails_url = urlappend(
-                canonical_url(getUtility(ILaunchpadRoot)),
-                'people/+me/+editemails')
-            list_instructions = template % dict(editemails_url=editemails_url)
-        else:
-            list_instructions = ''
-
-        template = get_email_template(templatename)
-        replacements = {
-            'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
-            'team_url': canonical_url(team),
-            'member': '%s (%s)' % (person.displayname, person.name),
-            'team': '%s (%s)' % (team.displayname, team.name),
-            'list_instructions': list_instructions,
-            }
-        headers = {'X-Launchpad-Message-Rationale': header_rational}
-        for address in member_addrs:
-            recipient = getUtility(IPersonSet).getByEmail(address)
-            replacements['recipient_name'] = recipient.displayname
-            send_team_email(
-                from_addr, address, subject, template, replacements,
-                footer_rationale, headers)
-
-        # The member's email address may be in admin_addrs too; let's remove
-        # it so the member don't get two notifications.
-        admin_addrs = set(admin_addrs).difference(set(member_addrs))
-
-    # Yes, we can have teams with no members; not even admins.
-    if not admin_addrs:
-        return
-
-    replacements = {
-        'person_name': "%s (%s)" % (person.displayname, person.name),
-        'team_name': "%s (%s)" % (team.displayname, team.name),
-        'reviewer_name': "%s (%s)" % (reviewer.displayname, reviewer.name),
-        'url': canonical_url(membership)}
-
-    headers = {}
-    if membership.status in [approved, admin]:
-        template = get_email_template(
-            'new-member-notification-for-admins.txt')
-        subject = '%s joined %s' % (person.name, team.name)
-    elif membership.status == proposed:
-        # In the UI, a user can only propose himself or a team he
-        # admins. Some users of the REST API have a workflow, where
-        # they propose users that are designated as mentees (Bug 498181).
-        if reviewer != person:
-            headers = {"Reply-To": reviewer.preferredemail.email}
-            template = get_email_template(
-                'pending-membership-approval-for-third-party.txt')
-        else:
-            headers = {"Reply-To": person.preferredemail.email}
-            template = get_email_template('pending-membership-approval.txt')
-        subject = "%s wants to join" % person.name
-    else:
-        raise AssertionError(
-            "Unexpected membership status: %s" % membership.status)
-
-    for address in admin_addrs:
-        recipient = getUtility(IPersonSet).getByEmail(address)
-        replacements['recipient_name'] = recipient.displayname
-        if recipient.isTeam():
-            header_rationale = 'Admin (%s via %s)' % (
-                team.name, recipient.name)
-            footer_rationale = (
-                "you are an admin of the %s team\n"
-                "via the %s team." % (
-                team.displayname, recipient.displayname))
-        elif recipient == team.teamowner:
-            header_rationale = 'Owner (%s)' % team.name
-            footer_rationale = (
-                "you are the owner of the %s team." % team.displayname)
-        else:
-            header_rationale = 'Admin (%s)' % team.name
-            footer_rationale = (
-                "you are an admin of the %s team." % team.displayname)
-        footer = 'You received this email because %s' % footer_rationale
-        headers['X-Launchpad-Message-Rationale'] = header_rationale
-        send_team_email(
-            from_addr, address, subject, template, replacements,
-            footer, headers)
-
-
 def specification_notification_subject(spec):
     """Format the email subject line for a specification."""
     return '[Blueprint %s] %s' % (spec.name, spec.title)
@@ -1011,7 +155,7 @@ def notify_specification_modified(spec, event):
         return
 
     subject = specification_notification_subject(spec)
-    indent = ' '*4
+    indent = ' ' * 4
     info_lines = []
     for dbitem_name in ('definition_status', 'priority'):
         title = ISpecification[dbitem_name].title
@@ -1119,91 +263,18 @@ def notify_specification_subscription_modified(specsub, event):
         simple_sendmail_from_person(user, address, subject, body)
 
 
-def notify_mailinglist_activated(mailinglist, event):
-    """Notification that a mailing list is available.
-
-    All active members of a team and its subteams receive notification when
-    the team's mailing list is available.
-    """
-    # We will use the setting of the date_activated field as a hint
-    # that this list is new, and that noboby has subscribed yet.  See
-    # `MailingList.transitionToStatus()` for the details.
-    old_date = event.object_before_modification.date_activated
-    new_date = event.object.date_activated
-    list_looks_new = old_date is None and new_date is not None
-
-    if not (list_looks_new and mailinglist.is_usable):
-        return
-
-    team = mailinglist.team
-    from_address = format_address(
-        team.displayname, config.canonical.noreply_from_address)
-    headers = {}
-    subject = "New Mailing List for %s" % team.displayname
-    template = get_email_template('new-mailing-list.txt')
-    editemails_url = '%s/+editemails'
-
-    for person in team.allmembers:
-        if person.is_team or person.preferredemail is None:
-            # This is either a team or a person without a preferred email, so
-            # don't send a notification.
-            continue
-        to_address = [str(person.preferredemail.email)]
-        replacements = {
-            'user': person.displayname,
-            'team_displayname': team.displayname,
-            'team_name': team.name,
-            'team_url': canonical_url(team),
-            'subscribe_url': editemails_url % canonical_url(person),
-            }
-        body = MailWrapper(72).format(template % replacements,
-                                      force_wrap=True)
-        simple_sendmail(from_address, to_address, subject, body, headers)
-
-
-def notify_message_held(message_approval, event):
-    """Send a notification of a message hold to all team administrators."""
-    message_details = getAdapter(message_approval, IHeldMessageDetails)
-    team = message_approval.mailing_list.team
-    from_address = format_address(
-        team.displayname, config.canonical.noreply_from_address)
-    subject = (
-        'New mailing list message requiring approval for %s'
-        % team.displayname)
-    template = get_email_template('new-held-message.txt')
-
-    # Most of the replacements are the same for everyone.
-    replacements = {
-        'subject': message_details.subject,
-        'author_name': message_details.author.displayname,
-        'author_url': canonical_url(message_details.author),
-        'date': message_details.date,
-        'message_id': message_details.message_id,
-        'review_url': '%s/+mailinglist-moderate' % canonical_url(team),
-        'team': team.displayname,
-        }
-
-    # Don't wrap the paragraph with the url.
-    def wrap_function(paragraph):
-        return (paragraph.startswith('http:') or
-                paragraph.startswith('https:'))
-
-    # Send one message to every team administrator.
-    person_set = getUtility(IPersonSet)
-    for address in team.getTeamAdminsEmailAddresses():
-        user = person_set.getByEmail(address)
-        replacements['user'] = user.displayname
-        body = MailWrapper(72).format(
-            template % replacements, force_wrap=True, wrap_func=wrap_function)
-        simple_sendmail(from_address, address, subject, body)
-
-
 @block_implicit_flushes
 def notify_new_ppa_subscription(subscription, event):
     """Notification that a new PPA subscription can be activated."""
     non_active_subscribers = subscription.getNonActiveSubscribers()
 
     archive = subscription.archive
+
+    # We don't send notification emails for commercial PPAs as these
+    # are purchased via software center (and do not mention Launchpad).
+    if archive.commercial:
+        return
+
     registrant_name = subscription.registrant.displayname
     ppa_displayname = archive.displayname
     ppa_reference = "ppa:%s/%s" % (
@@ -1213,22 +284,22 @@ def notify_new_ppa_subscription(subscription, event):
 
     template = get_email_template('ppa-subscription-new.txt')
 
-    for person in non_active_subscribers:
-
-        if person.preferredemail is None:
-            # Don't send to people without a preferred email.
-            continue
-
-        to_address = [person.preferredemail.email]
-        recipient_subscriptions_url = "%s/+archivesubscriptions" % (
-            canonical_url(person))
+    for person, preferred_email in non_active_subscribers:
+        to_address = [preferred_email.email]
+        root = getUtility(ILaunchpadRoot)
+        recipient_subscriptions_url = "%s~/+archivesubscriptions" % (
+            canonical_url(root))
+        description_blurb = '.'
+        if ppa_description is not None and ppa_description != '':
+            description_blurb = (
+                ' and has the following description:\n\n%s' % ppa_description)
         replacements = {
             'recipient_name': person.displayname,
             'registrant_name': registrant_name,
             'registrant_profile_url': canonical_url(subscription.registrant),
             'ppa_displayname': ppa_displayname,
             'ppa_reference': ppa_reference,
-            'ppa_description': ppa_description,
+            'ppa_description_blurb': description_blurb,
             'recipient_subscriptions_url': recipient_subscriptions_url,
             }
         body = MailWrapper(72).format(template % replacements,
@@ -1249,99 +320,3 @@ def notify_new_ppa_subscription(subscription, event):
                 subscription.registrant.preferredemail.email)
 
         simple_sendmail(from_address, to_address, subject, body, headers)
-
-
-def encode(value):
-    """Encode string for transport in a mail header.
-
-    :param value: The raw email header value.
-    :type value: unicode
-    :return: The encoded header.
-    :rtype: `email.Header.Header`
-    """
-    try:
-        value.encode('us-ascii')
-        charset = 'us-ascii'
-    except UnicodeEncodeError:
-        charset = 'utf-8'
-    return Header(value.encode(charset), charset)
-
-
-def send_direct_contact_email(
-    sender_email, recipients_set, subject, body):
-    """Send a direct user-to-user email.
-
-    :param sender_email: The email address of the sender.
-    :type sender_email: string
-    :param recipients_set: The recipients.
-    :type recipients_set:' A ContactViaWebNotificationSet
-    :param subject: The Subject header.
-    :type subject: unicode
-    :param body: The message body.
-    :type body: unicode
-    :return: The sent message.
-    :rtype: `email.Message.Message`
-    """
-    # Craft the email message.  Start by checking whether the subject and
-    # message bodies are ASCII or not.
-    subject_header = encode(subject)
-    try:
-        body.encode('us-ascii')
-        charset = 'us-ascii'
-    except UnicodeEncodeError:
-        charset = 'utf-8'
-    # Get the sender's real name, encoded as per RFC 2047.
-    person_set = getUtility(IPersonSet)
-    sender = person_set.getByEmail(sender_email)
-    assert sender is not None, 'No person for sender %s' % sender_email
-    sender_name = str(encode(sender.displayname))
-    # Do a single authorization/quota check for the sender.  We consume one
-    # quota credit per contact, not per recipient.
-    authorization = IDirectEmailAuthorization(sender)
-    if not authorization.is_allowed:
-        raise QuotaReachedError(sender.displayname, authorization)
-    # Add the footer as a unicode string, then encode the body if necessary.
-    # This is not entirely optimal if the body has non-ascii characters in it,
-    # since the footer may get garbled in a non-MIME aware mail reader.  Who
-    # uses those anyway!?  The only alternative is to attach the footer as a
-    # MIME attachment with a us-ascii charset, but that has it's own set of
-    # problems (and user complaints).  Email sucks.
-    additions = u'\n'.join([
-        u'',
-        u'-- ',
-        u'This message was sent from Launchpad by the user',
-        u'%s (%s)' % (sender_name, canonical_url(sender)),
-        u'using %s.',
-        u'For more information see',
-        u'https://help.launchpad.net/YourAccount/ContactingPeople',
-        ])
-    # Craft and send one message per recipient.
-    mailwrapper = MailWrapper(width=72)
-    message = None
-    for recipient_email, recipient in recipients_set.getRecipientPersons():
-        recipient_name = str(encode(recipient.displayname))
-        reason, rational_header = recipients_set.getReason(recipient_email)
-        reason = str(encode(reason)).replace('\n ', '\n')
-        formatted_body = mailwrapper.format(body, force_wrap=True)
-        formatted_body += additions % reason
-        formatted_body = formatted_body.encode(charset)
-        message = MIMEText(formatted_body, _charset=charset)
-        message['From'] = formataddr((sender_name, sender_email))
-        message['To'] = formataddr((recipient_name, recipient_email))
-        message['Subject'] = subject_header
-        message['Message-ID'] = make_msgid('launchpad')
-        message['X-Launchpad-Message-Rationale'] = rational_header
-        # Send the message.
-        sendmail(message, bulk=False)
-    # BarryWarsaw 19-Nov-2008: If any messages were sent, record the fact that
-    # the sender contacted the team.  This is not perfect though because we're
-    # really recording the fact that the person contacted the last member of
-    # the team.  There's little we can do better though because the team has
-    # no contact address, and so there isn't actually an address to record as
-    # the team's recipient.  It currently doesn't matter though because we
-    # don't actually do anything with the recipient information yet.  All we
-    # care about is the sender, for quota purposes.  We definitely want to
-    # record the contact outside the above loop though, because if there are
-    # 10 members of the team with no contact address, one message should not
-    # consume the sender's entire quota.
-    authorization.record(message)

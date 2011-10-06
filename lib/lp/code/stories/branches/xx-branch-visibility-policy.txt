@@ -1,7 +1,8 @@
-= Branch Visibility Policy Pages =
+Branch Visibility Policy Pages
+==============================
 
 Controlling the branch visibility policies for products and projects is only
-available to launchpad admins and launchpad commercial admins.
+available to Launchpad admins and Launchpad commercial admins.
 
 Not to anonymous people.
 
@@ -64,12 +65,36 @@ And members of the Launchpad Commercial team can view the pages.
     >>> print commercial_browser.url
     http://launchpad.dev/firefox/+branchvisibility
 
-    >>> commercial_browser.getLink('Customise policy for Mozilla Firefox').click()
+    >>> commercial_browser.getLink(
+    ...     'Customise policy for Mozilla Firefox').click()
     >>> print commercial_browser.url
     http://launchpad.dev/firefox/+addbranchvisibilitypolicy
 
+Admins can define branch visibility on projects, too.
 
-== Default policies ==
+    >>> admin_browser.open('http://code.launchpad.dev/mozilla')
+    >>> admin_browser.getLink('Define branch visibility').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/mozilla/+branchvisibility
+
+    >>> admin_browser.getLink('Set policy for a team').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/mozilla/+addbranchvisibilitypolicy
+
+As can commercial admins.
+
+    >>> commercial_browser.open('http://code.launchpad.dev/mozilla')
+    >>> commercial_browser.getLink('Define branch visibility').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/mozilla/+branchvisibility
+
+    >>> commercial_browser.getLink('Set policy for a team').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/mozilla/+addbranchvisibilitypolicy
+
+
+Default policies
+----------------
 
 The default policies are to have all branches public.  When the branch policy
 objects are created for products they are constructed with the branch policy
@@ -79,10 +104,12 @@ visibility policy, then that policy is used.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+branchvisibility')
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'inherited'))
-    Using inherited policy from the Mozilla Project.
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'inherited'))
+    Using inherited policy from The Mozilla Project.
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'default-policy'))
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'default-policy'))
     Default branch visibility for all branches in Mozilla Firefox is Public.
 
 When the project is using the inherited policy, the user can either
@@ -100,8 +127,11 @@ Projects never have inherited policies, so they look a little different.
     >>> admin_browser.getLink('Edit inherited policy').click()
     >>> print find_tag_by_id(admin_browser.contents, 'inherited')
     None
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'default-policy'))
-    Default branch visibility for all branches in the Mozilla Project is Public.
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'default-policy'))
+    Default branch visibility for all branches
+    in The Mozilla Project is Public.
+
     >>> actions = find_tag_by_id(admin_browser.contents, 'policy-actions')
     >>> for anchor in actions.fetch('a'):
     ...     print '%s -> %s' % (anchor.renderContents(), anchor['href'])
@@ -109,11 +139,13 @@ Projects never have inherited policies, so they look a little different.
 
 Products that don't have an associated project look similar to projects.
 
-    >>> admin_browser.open('http://launchpad.dev/alsa-utils/+branchvisibility')
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/+branchvisibility')
 
     >>> print find_tag_by_id(admin_browser.contents, 'inherited')
     None
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'default-policy'))
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'default-policy'))
     Default branch visibility for all branches in alsa-utils is Public.
     >>> actions = find_tag_by_id(admin_browser.contents, 'policy-actions')
     >>> for anchor in actions.fetch('a'):
@@ -121,7 +153,8 @@ Products that don't have an associated project look similar to projects.
     Set policy for a team -> +addbranchvisibilitypolicy
 
 
-== Overriding the inherited policy ==
+Overriding the inherited policy
+-------------------------------
 
 Setting any policy item overrides the use of an inherited policy, even if
 it new policy item just specifies public branches for everyone.
@@ -173,7 +206,8 @@ The rules are shown as radio buttons.
     Ubuntu Gnome Team: Private
 
 
-== Removing policy items ==
+Removing policy items
+---------------------
 
 When removing the policy items, the defined items are shown as a list
 of checkboxes.  Any number of these can be selected, and when the
@@ -206,7 +240,8 @@ See?  All still there.
 Before we remove them, let's ensure that the commercial admins can see
 the removal page.
 
-    >>> commercial_browser.open('http://launchpad.dev/firefox/+branchvisibility')
+    >>> commercial_browser.open(
+    ...     'http://launchpad.dev/firefox/+branchvisibility')
     >>> commercial_browser.getLink('Remove policy items').click()
     >>> print commercial_browser.url
     http://launchpad.dev/firefox/+removebranchvisibilitypolicy
@@ -228,10 +263,11 @@ items, there is only one more policy item to remove.  Once that is removed
 Firefox will go back to inheriting the polices of Mozilla. Let's let
 the commercial admin do the removal to ensure he has the permission.
 
-    >>> commercial_browser.open('http://launchpad.dev/firefox/+branchvisibility')
+    >>> commercial_browser.open(
+    ...     'http://launchpad.dev/firefox/+branchvisibility')
     >>> commercial_browser.getLink('Remove policy items').click()
     >>> commercial_browser.getControl('Ubuntu Gnome Team: Private').click()
     >>> commercial_browser.getControl('Remove Selected Policy Items').click()
 
     >>> print_tag_with_id(commercial_browser.contents, 'inherited')
-    Using inherited policy from the Mozilla Project.
+    Using inherited policy from The Mozilla Project.

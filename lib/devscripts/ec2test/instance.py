@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to represent a single machine instance in EC2."""
@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 import code
+import errno
 import glob
 import os
 import select
@@ -17,12 +18,10 @@ import subprocess
 import sys
 import time
 import traceback
-
+from datetime import datetime
 from bzrlib.errors import BzrCommandError
-
-import paramiko
-
 from devscripts.ec2test.session import EC2SessionName
+import paramiko
 
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
@@ -40,7 +39,7 @@ class AcceptAllPolicy:
 
 
 def get_user_key():
-    """Get a SSH key from the agent.  Raise an error if not found.
+    """Get a SSH key from the agent.  Raise an error if no keys were found.
 
     This key will be used to let the user log in (as $USER) to the instance.
     """
@@ -49,15 +48,22 @@ def get_user_key():
     if len(keys) == 0:
         raise BzrCommandError(
             'You must have an ssh agent running with keys installed that '
-            'will allow the script to rsync to devpad and get your '
+            'will allow the script to access Launchpad and get your '
             'branch.\n')
-    user_key = agent.get_keys()[0]
-    return user_key
+
+    # XXX mars 2010-05-07 bug=577118
+    # Popping the first key off of the stack can create problems if the person
+    # has more than one key in their ssh-agent, but alas, we have no good way
+    # to detect the right key to use.  See bug 577118 for a workaround.
+    return keys[0]
 
 
 # Commands to run to turn a blank image into one usable for the rest of the
 # ec2 functionality.  They come in two parts, one set that need to be run as
 # root and another that should be run as the 'ec2test' user.
+# Note that the sources from http://us.ec2.archive.ubuntu.com/ubuntu/ are per
+# instructions described in http://is.gd/g1MIT .  When we switch to
+# Eucalyptus, we can dump this.
 
 from_scratch_root = """
 # From 'help set':
@@ -73,6 +79,8 @@ cat >> /etc/apt/sources.list << EOF
 deb http://ppa.launchpad.net/launchpad/ubuntu $DISTRIB_CODENAME main
 deb http://ppa.launchpad.net/bzr/ubuntu $DISTRIB_CODENAME main
 deb http://ppa.launchpad.net/bzr-beta-ppa/ubuntu $DISTRIB_CODENAME main
+deb http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME multiverse
+deb-src http://us.ec2.archive.ubuntu.com/ubuntu/ $DISTRIB_CODENAME main
 EOF
 
 # This next part is cribbed from rocketfuel-setup
@@ -102,9 +110,6 @@ hostnames=$(cat <<EOF
     openid.launchpad.dev
     ppa.launchpad.dev
     private-ppa.launchpad.dev
-    shipit.edubuntu.dev
-    shipit.kubuntu.dev
-    shipit.ubuntu.dev
     testopenid.dev
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
@@ -128,7 +133,7 @@ apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f
 aptitude update
 aptitude -y full-upgrade
 
-apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
+DEBIAN_FRONTEND=noninteractive apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
 # Create the ec2test user, give them passwordless sudo.
 adduser --gecos "" --disabled-password ec2test
@@ -357,16 +362,17 @@ class EC2Instance:
         """
         if not self._ec2test_user_has_keys:
             if connection is None:
-                connection = self._connect('root')
+                connection = self._connect('ubuntu')
                 our_connection = True
             else:
                 our_connection = False
             self._upload_local_key(connection, 'local_key')
             connection.perform(
-                'cat /root/.ssh/authorized_keys local_key '
-                '> /home/ec2test/.ssh/authorized_keys && rm local_key')
-            connection.perform('chown -R ec2test:ec2test /home/ec2test/')
-            connection.perform('chmod 644 /home/ec2test/.ssh/*')
+                'cat /home/ubuntu/.ssh/authorized_keys local_key '
+                '| sudo tee /home/ec2test/.ssh/authorized_keys > /dev/null'
+                '&& rm local_key')
+            connection.perform('sudo chown -R ec2test:ec2test /home/ec2test/')
+            connection.perform('sudo chmod 644 /home/ec2test/.ssh/*')
             if our_connection:
                 connection.close()
             self.log(
@@ -382,13 +388,13 @@ class EC2Instance:
         lot of set up.
         """
         if self._from_scratch:
-            root_connection = self._connect('root')
-            self._upload_local_key(root_connection, 'local_key')
-            root_connection.perform(
+            ubuntu_connection = self._connect('ubuntu')
+            self._upload_local_key(ubuntu_connection, 'local_key')
+            ubuntu_connection.perform(
                 'cat local_key >> ~/.ssh/authorized_keys && rm local_key')
-            root_connection.run_script(from_scratch_root)
-            self._ensure_ec2test_user_has_keys(root_connection)
-            root_connection.close()
+            ubuntu_connection.run_script(from_scratch_root, sudo=True)
+            self._ensure_ec2test_user_has_keys(ubuntu_connection)
+            ubuntu_connection.close()
             conn = self._connect('ec2test')
             conn.run_script(
                 from_scratch_ec2test
@@ -487,9 +493,13 @@ class EC2Instance:
                 '%r must match a single %s file' % (pattern, file_kind))
         return matches[0]
 
-    def check_bundling_prerequisites(self):
+    def check_bundling_prerequisites(self, name, credentials):
         """Check, as best we can, that all the files we need to bundle exist.
         """
+        if subprocess.call(['which', 'ec2-register']):
+            raise BzrCommandError(
+                '`ec2-register` command not found.  '
+                'Try `sudo apt-get install ec2-api-tools`.')
         local_ec2_dir = os.path.expanduser('~/.ec2')
         if not os.path.exists(local_ec2_dir):
             raise BzrCommandError(
@@ -504,6 +514,10 @@ class EC2Instance:
             local_ec2_dir, 'cert-*.pem', 'certificate')
         self.local_pk = self._check_single_glob_match(
             local_ec2_dir, 'pk-*.pem', 'private key')
+        # The bucket `name` needs to exist and be accessible. We create it
+        # here to reserve the name. If the bucket already exists and conforms
+        # to the above requirements, this is a no-op.
+        credentials.connect_s3().create_bucket(name)
 
     def bundle(self, name, credentials):
         """Bundle, upload and register the instance as a new AMI.
@@ -512,6 +526,11 @@ class EC2Instance:
         :param credentials: An `EC2Credentials` object.
         """
         connection = self.connect()
+        # See http://is.gd/g1MIT .  When we switch to Eucalyptus, we can dump
+        # this installation of the ec2-ami-tools.
+        connection.perform(
+            'sudo env DEBIAN_FRONTEND=noninteractive '
+            'apt-get -y  install ec2-ami-tools')
         connection.perform('rm -f .ssh/authorized_keys')
         connection.perform('sudo mkdir /mnt/ec2')
         connection.perform('sudo chown $USER:$USER /mnt/ec2')
@@ -556,10 +575,14 @@ class EC2Instance:
         env = os.environ.copy()
         if 'JAVA_HOME' not in os.environ:
             env['JAVA_HOME'] = '/usr/lib/jvm/default-java'
+        now = datetime.strftime(datetime.utcnow(), "%Y-%m-%d %H:%M:%S UTC")
+        description = "Created %s" % now
         cmd = [
             'ec2-register',
             '--private-key=%s' % self.local_pk,
             '--cert=%s' % self.local_cert,
+            '--name=%s' % (name,),
+            '--description=%s' % description,
             manifest_path,
             ]
         self.log("Executing command: %s" % ' '.join(cmd))
@@ -600,7 +623,11 @@ class EC2InstanceConnection:
         session.exec_command(cmd)
         session.shutdown_write()
         while 1:
-            select.select([session], [], [], 0.5)
+            try:
+                select.select([session], [], [], 0.5)
+            except (IOError, select.error), e:
+                if e.errno == errno.EINTR:
+                    continue
             if session.recv_ready():
                 data = session.recv(4096)
                 if data:
@@ -643,12 +670,15 @@ class EC2InstanceConnection:
             raise RuntimeError('Command failed: %s' % (cmd,))
         return res
 
-    def run_script(self, script_text):
+    def run_script(self, script_text, sudo=False):
         """Upload `script_text` to the instance and run it with bash."""
         script = self.sftp.open('script.sh', 'w')
         script.write(script_text)
         script.close()
-        self.run_with_ssh_agent('/bin/bash script.sh')
+        cmd = '/bin/bash script.sh'
+        if sudo:
+            cmd = 'sudo ' + cmd
+        self.run_with_ssh_agent(cmd)
         # At least for mwhudson, the paramiko connection often drops while the
         # script is running.  Reconnect just in case.
         self.reconnect()

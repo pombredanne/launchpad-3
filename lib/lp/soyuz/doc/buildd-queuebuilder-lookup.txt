@@ -22,10 +22,8 @@ publications for a given distroseries:
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     PackagePublishingStatus)
+    >>> from lp.soyuz.enums import ArchivePurpose, PackagePublishingStatus
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -44,14 +42,12 @@ publications for a given distroseries:
 
 Creating a single source publishing record:
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> def create_publication(distroseries, pocket, archive, status):
-    ...     pub = SourcePackagePublishingHistory(
+    ...     SourcePackagePublishingHistory(
     ...         sourcepackagerelease=the_spr, component=the_spr.component,
     ...         section=the_spr.section, datecreated=UTC_NOW,
     ...         distroseries=distroseries, status=status,
     ...         pocket=pocket, archive=archive)
-    ...     syncUpdate(pub)
 
 Create a collection of source publishing records in different
 archives, pockets and statuses. This function creates:

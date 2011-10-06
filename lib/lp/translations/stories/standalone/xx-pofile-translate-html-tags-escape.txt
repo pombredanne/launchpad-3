@@ -20,7 +20,7 @@ textarea, and
 We are in next form page.
 
   >>> print user_browser.url
-  http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate?start=10
+  http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate?memo=10&start=10
 
 Let's go back to the modified message.
 

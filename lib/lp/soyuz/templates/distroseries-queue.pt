@@ -9,6 +9,24 @@
 
 <body>
 
+<div metal:fill-slot="head_epilogue">
+  <script type="text/javascript">
+    LPS.use('node', 'lp.app.widgets.expander', function(Y) {
+        Y.on('domready', function() {
+            var all_expanders = Y.all('.expander-link');
+            all_expanders.each(function(link) {
+                var base_id = link.get('id').replace('-icon', '');
+                var content = Y.one('tbody.' + base_id);
+                var content_rows = content.all('tr td *');
+                var expander = new Y.lp.app.widgets.expander.Expander(
+                    link, content, { no_animation: true });
+                expander.setUp();
+            });
+        });
+    });
+  </script>
+</div>
+
 <div metal:fill-slot="main"
      tal:define="setup view/setupQueueList;
                  message view/performQueueAction;
@@ -63,13 +81,14 @@
            <th> Component </th>
            <th> Section </th>
            <th> Priority </th>
+           <th> Sets </th>
            <th> Pocket </th>
            <th> When </th>
          </tr>
        </thead>
-       <tbody class="lesser">
-         <tal:batch repeat="packageupload batch">
-           <tal:block define="filelist_class string:queue-${packageupload/id}">
+       <tal:batch repeat="packageupload batch">
+         <tal:block define="filelist_class string:queue-${packageupload/id}">
+           <tbody class="lesser">
              <tr class="queue-row">
                 <tal:comment condition="nothing">
                   Every column is top-padded apart from the checkbox
@@ -77,39 +96,37 @@
                   other browsers look odd, now. :/
                 </tal:comment>
                 <td width="14" style="padding-top: 5px">
-                  <a tal:attributes="href string:#;
-                     onclick string:return toggleExpandableTableRows('${filelist_class}')">
-                    <img tal:attributes="id string:${filelist_class}-arrow"
-                         width="14" height="14"
-                         src="/@@/treeCollapsed" alt="view files"/>
-                  </a>
+                  <span tal:attributes="id string:${filelist_class}-icon"
+                        class="expander-link">&nbsp;</span>
                 </td>
                 <td class="icon left" tal:condition="view/availableActions">
                      <input type="checkbox" name="QUEUE_ID"
                             tal:attributes="value packageupload/id"/>
                 </td>
-                <td style="padding-top: 5px">
-                  <metal:iconlist use-macro="template/macros/package-iconlist"/>
+                <td
+                  style="padding-top: 5px"
+                  tal:content="structure packageupload/icons_and_name">
                 </td>
 
                 <td style="padding-top: 5px"
                     tal:content="packageupload/displayversion">2.0.17-6
                 </td>
                 <tal:is_source define="is_source packageupload/contains_source">
-                  <td style="padding-top: 5px">
-                    <tal:component condition="is_source"
-                         content="packageupload/sourcepackagerelease/component/name/lower">
-                    </tal:component>
+                  <td
+                    style="padding-top: 5px"
+                    tal:content="packageupload/display_component">
                   </td>
-                  <td style="padding-top: 5px">
-                    <tal:section condition="is_source"
-                         content="packageupload/sourcepackagerelease/section/name/lower">
-                    </tal:section>
+                  <td
+                    style="padding-top: 5px"
+                    tal:content="packageupload/display_section">
                   </td>
-                  <td style="padding-top: 5px">
-                    <tal:priority condition="is_source"
-                         content="packageupload/sourcepackagerelease/urgency/name/lower">
-                    </tal:priority>
+                  <td
+                    style="padding-top: 5px"
+                    tal:content="packageupload/display_priority">
+                  </td>
+                  <td
+                    style="padding-top: 5px"
+                    tal:content="packageupload/display_package_sets">
                   </td>
                 </tal:is_source>
                 <td style="padding-top: 5px"
@@ -125,9 +142,13 @@
                   </span>
                 </td>
              </tr>
+           </tbody>
+           <tbody tal:attributes="class string:${filelist_class} lesser">
              <metal:filelist use-macro="template/macros/package-filelist"/>
-           </tal:block>
-         </tal:batch>
+           </tbody>
+         </tal:block>
+       </tal:batch>
+       <tbody class="lesser">
          <tr tal:condition="view/availableActions">
            <td colspan="4" style="text-align: right;
                                   vertical-align: bottom;
@@ -200,10 +221,8 @@
   </tal:comment>
 
     <tal:copy condition="packageupload/pending_delayed_copy">
-      <tr tal:attributes="class string:${filelist_class}"
-          tal:define="archive
-                      packageupload/sourcepackagerelease/upload_archive"
-          style="display:none">
+      <tr tal:define="archive
+                      packageupload/sourcepackagerelease/upload_archive">
         <td />
         <td tal:condition="view/availableActions" />
         <td>Copied from
@@ -220,17 +239,31 @@
       </tr>
     </tal:copy>
 
+    <tal:sync condition="packageupload/package_copy_job">
+      <tr>
+        <td />
+        <td tal:condition="view/availableActions" />
+        <td colspan="7">
+          Sync from
+          <tal:archive
+            content="packageupload/package_copy_job/source_archive/displayname">
+            Primary Archive for Ubuntu
+          </tal:archive>,
+          requested by
+          <tal:requester
+            content="structure packageupload/package_copy_job/job/requester/fmt:link" />
+        </td>
+      </tr>
+    </tal:sync>
+
     <tal:upload condition="not: packageupload/pending_delayed_copy">
-      <tr tal:repeat="file packageupload/source_files"
-          tal:attributes="class string:${filelist_class}"
-          style="display:none">
+      <tr tal:repeat="file packageupload/source_files">
         <td/>
         <td tal:condition="view/availableActions"/>
-        <td>
-          <a tal:attributes="href file/libraryfile/http_url">
-            <tal:filename content="file/libraryfile/filename"/>
-          </a>
-          (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
+        <td
+          tal:define="libraryfilealias file/libraryfile"
+          tal:condition="libraryfilealias">
+          <metal:file use-macro="template/macros/package-file"/>
         </td>
         <td colspan="6"/>
       </tr>
@@ -241,16 +274,11 @@
                 component_name package/component/name/lower;
                 section_name package/section/name/lower;
                 version package/version">
-        <tr tal:repeat="file python:packageupload.binary_packages[package]"
-            tal:attributes="class string:${filelist_class}"
-            style="display:none">
+        <tr tal:repeat="file python:packageupload.binary_packages[package]">
           <td/>
           <td tal:condition="view/availableActions"/>
-          <td>
-            <a tal:attributes="href file/libraryfile/http_url">
-              <tal:filename replace="file/libraryfile/filename"/>
-            </a>
-            (<tal:size replace="file/libraryfile/content/filesize/fmt:bytes" />)
+          <td tal:define="libraryfilealias file/libraryfile">
+            <metal:file use-macro="template/macros/package-file"/>
             <span style="color: red" tal:condition="is_new">NEW</span>
           </td>
           <td tal:content="version"/>
@@ -263,60 +291,46 @@
     </tal:package>
 
     <tal:custom define="customfiles packageupload/customfiles">
-      <tr tal:repeat="custom python:list(customfiles)"
-          tal:attributes="class string:${filelist_class}"
-          style="display:none">
+      <tr tal:repeat="custom python:list(customfiles)">
         <td/>
         <td tal:condition="view/availableActions"></td>
-        <td>
-          <a tal:attributes="href custom/libraryfilealias/http_url">
-            <tal:filename content="custom/libraryfilealias/filename"/>
-          </a>
-          (<tal:size replace="
-                custom/libraryfilealias/content/filesize/fmt:bytes" />)
+        <td tal:define="libraryfilealias custom/libraryfilealias">
+          <metal:file use-macro="template/macros/package-file"/>
         </td>
         <td colspan="6"/>
       </tr>
     </tal:custom>
+
+    <tal:diffs condition="packageupload/sourcepackagerelease">
+      <tr tal:define="diffs packageupload/sourcepackagerelease/package_diffs"
+          tal:repeat="diff diffs">
+        <td/>
+        <td tal:condition="view/availableActions"></td>
+        <td>
+          <tal:difflink replace="structure diff/fmt:link" />
+        </td>
+        <td colspan="6"/>
+      </tr>
+    </tal:diffs>
     </tal:upload>
 
 </metal:macro>
 
-<metal:macro define-macro="package-iconlist">
+<metal:macro define-macro="package-file">
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
-    :packageupload: A PackageUpload record for which we display icons.
+    :libraryfilealias: A LibraryFileAlias to link to. If it is expired,
+      no link will be created.
   </tal:comment>
-
-  <div tal:attributes="id string:queue${packageupload/id}-iconlist">
-    <img tal:condition="packageupload/contains_source"
-         alt="[Source]" src="/@@/package-source" title="Source"/>
-    <img tal:condition="packageupload/contains_build"
-         alt="[Build]" src="/@@/package-binary" title="Binary"/>
-    <img tal:condition="packageupload/contains_translation"
-         alt="[Translation]" src="/@@/translation-file"
-         title="Translation"/>
-    <img tal:condition="packageupload/contains_installer"
-         alt="[Installer]" src="/@@/ubuntu-icon"
-         title="Installer"/>
-    <img tal:condition="packageupload/contains_upgrader"
-         alt="[Upgrader]" src="/@@/ubuntu-icon"
-         title="Upgrader"/>
-    <img tal:condition="packageupload/contains_ddtp"
-         alt="[Debian Description Translation Project Indexes]"
-         src="/@@/ubuntu-icon"
-         title="Debian Description Translation Project Indexes"/>
-    <a tal:condition="not: packageupload/pending_delayed_copy"
-       tal:content="packageupload/displayname"
-       tal:attributes="
-         href packageupload/changesfile/http_url;
-         title string:Changes file for ${packageupload/displayname};">
+  <tal:unexpired tal:condition="libraryfilealias/content">
+    <a tal:attributes="href libraryfilealias/http_url">
+      <tal:filename replace="libraryfilealias/filename"/>
     </a>
-    <tal:pending_delayed_copy_title
-      condition="packageupload/pending_delayed_copy"
-      replace="packageupload/displayname" />
-    <tal:arches replace="string: (${packageupload/displayarchs})"/>
-  </div>
+    (<span tal:replace="libraryfilealias/content/filesize/fmt:bytes" />)
+  </tal:unexpired>
+  <tal:expired tal:condition="not:libraryfilealias/content">
+    <span tal:content="libraryfilealias/filename"/>
+  </tal:expired>
 </metal:macro>
 
 </metal:macros>

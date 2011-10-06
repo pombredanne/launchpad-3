@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Translation files."""
@@ -16,46 +16,49 @@ __all__ = [
     'POFileView',
     ]
 
-import re
+from cgi import escape
 import os.path
+import re
 import urllib
 
-from zope.app.form.browser import DropdownWidget
+from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.lazr.utils import smartquote
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from lp.translations.browser.translationmessage import (
-    BaseTranslationView, CurrentTranslationMessageView)
+from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import structured
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import POTemplateFacets
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError,
-    UnexpectedFormData)
-from lp.registry.interfaces.person import IPersonSet
+from lp.translations.browser.translationmessage import (
+    BaseTranslationView,
+    CurrentTranslationMessageView,
+    )
 from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from canonical.launchpad.webapp import (
-    canonical_url, enabled_with_permission, LaunchpadView,
-    Link, Navigation, NavigationMenu)
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.menu import structured
-
-from canonical.launchpad import _
-
-
-class CustomDropdownWidget(DropdownWidget):
-    def _div(self, cssClass, contents, **kw):
-        """Render the select widget without the div tag."""
-        return contents
+    ITranslationImportQueue,
+    )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class POFileNavigation(Navigation):
@@ -85,20 +88,7 @@ class POFileNavigation(Navigation):
             raise NotFoundError(
                 "%r is not a valid sequence number." % name)
 
-        # Need to check in our database whether we have already the requested
-        # TranslationMessage.
-        translationmessage = potmsgset.getCurrentTranslationMessage(
-            self.context.potemplate, self.context.language)
-
-        if translationmessage is not None:
-            # Already have a valid POMsgSet entry, just return it.
-            translationmessage.setPOFile(self.context)
-            return translationmessage
-        else:
-            # Get a fake one so we don't create new TranslationMessage just
-            # because someone is browsing the web.
-            return potmsgset.getCurrentDummyTranslationMessage(
-                self.context.potemplate, self.context.language)
+        return potmsgset.getCurrentTranslationMessageOrDummy(self.context)
 
 
 class POFileFacets(POTemplateFacets):
@@ -136,7 +126,149 @@ class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     links = ('details', 'translate', 'upload', 'download')
 
 
-class POFileBaseView(LaunchpadView):
+class POFileMetadataViewMixin:
+    """`POFile` metadata that multiple views can use."""
+
+    @cachedproperty
+    def translation_group(self):
+        """Is there a translation group for this translation?
+
+        :return: TranslationGroup or None if not found.
+        """
+        translation_groups = self.context.potemplate.translationgroups
+        if translation_groups is not None and len(translation_groups) > 0:
+            group = translation_groups[0]
+        else:
+            group = None
+        return group
+
+    @cachedproperty
+    def translator_entry(self):
+        """The translator entry or None if none is assigned."""
+        group = self.translation_group
+        if group is not None:
+            return group.query_translator(self.context.language)
+        return None
+
+    @cachedproperty
+    def translator(self):
+        """Who is assigned for translations to this language?"""
+        translator_entry = self.translator_entry
+        if translator_entry is not None:
+            return translator_entry.translator
+        return None
+
+    @cachedproperty
+    def user_is_new_translator(self):
+        """Is this user someone who has done no translation work yet?"""
+        user = getUtility(ILaunchBag).user
+        if user is not None:
+            translationsperson = ITranslationsPerson(user)
+            if not translationsperson.hasTranslated():
+                return True
+
+        return False
+
+    @cachedproperty
+    def translation_group_guide(self):
+        """URL to translation group's translation guide, if any."""
+        group = self.translation_group
+        if group is None:
+            return None
+        else:
+            return group.translation_guide_url
+
+    @cachedproperty
+    def translation_team_guide(self):
+        """URL to translation team's translation guide, if any."""
+        translator = self.translator_entry
+        if translator is None:
+            return None
+        else:
+            return translator.style_guide_url
+
+    @cachedproperty
+    def has_any_documentation(self):
+        """Return whether there is any documentation for this POFile."""
+        return (
+            self.translation_group_guide is not None or
+            self.translation_team_guide is not None or
+            self.user_is_new_translator)
+
+    @property
+    def introduction_link(self):
+        """Link to introductory documentation, if appropriate.
+
+        If no link is appropriate, returns the empty string.
+        """
+        if not self.user_is_new_translator:
+            return ""
+
+        return """
+            New to translating in Launchpad?
+            <a href="/+help/new-to-translating.html" target="help">
+                Read our guide</a>.
+            """
+
+    @property
+    def guide_links(self):
+        """Links to translation group/team guidelines, if available.
+
+        If no guidelines are available, returns the empty string.
+        """
+        group_guide = self.translation_group_guide
+        team_guide = self.translation_team_guide
+        if group_guide is None and team_guide is None:
+            return ""
+
+        links = []
+        if group_guide is not None:
+            links.append("""
+                <a class="style-guide-url" href="%s">%s instructions</a>
+                """ % (group_guide, escape(self.translation_group.title)))
+
+        if team_guide is not None:
+            if group_guide is None:
+                # Use team's full name.
+                name = self.translator.displayname
+            else:
+                # Full team name may get tedious after we just named the
+                # group.  Just use the language name.
+                name = self.context.language.englishname
+            links.append("""
+                <a class="style-guide-url" href="%s"> %s guidelines</a>
+                """ % (team_guide, escape(name)))
+
+        text = ' and '.join(links).rstrip()
+
+        return "Before translating, be sure to go through %s." % text
+
+    @property
+    def documentation_link_bubble(self):
+        """Reference to documentation, if appopriate."""
+        if not self.has_any_documentation:
+            return ""
+
+        return """
+            <div class="important-notice-container">
+                <div class="important-notice-balloon">
+                    <div class="important-notice-buttons">
+                        <img class="important-notice-cancel-button"
+                             src="/@@/no"
+                             alt="Don't show this notice anymore"
+                             title="Hide this notice." />
+                    </div>
+                    <span class="sprite info">
+                    <span class="important-notice">
+                        %s
+                    </span>
+                </div>
+            </div>
+            """ % ' '.join([
+                self.introduction_link, self.guide_links])
+
+
+class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
     """A basic view for a POFile
 
     This view is different from POFileView as it is the base for a new
@@ -154,17 +286,16 @@ class POFileBaseView(LaunchpadView):
 
         self.batchnav = self._buildBatchNavigator()
 
-
     @cachedproperty
     def contributors(self):
         return tuple(self.context.contributors)
 
-    @property
+    @cachedproperty
     def user_can_edit(self):
         """Does the user have full edit rights for this translation?"""
         return self.context.canEditTranslations(self.user)
 
-    @property
+    @cachedproperty
     def user_can_suggest(self):
         """Is the user allowed to make suggestions here?"""
         return self.context.canAddSuggestions(self.user)
@@ -212,22 +343,14 @@ class POFileBaseView(LaunchpadView):
                 else:
                     groups.append(_(u"%s assigned by %s") % (
                         translator.translator.displayname, group.title))
+
             # There are at most two translation groups, so just using 'and'
             # is fine here.
-            statement = (_(u"This translation is managed by ") +
-                         _(u" and ").join(groups))+"."
+            statement = _(u"This translation is managed by %s.") % (
+                u" and ".join(groups))
         else:
             statement = _(u"No translation group has been assigned.")
         return statement
-
-    @property
-    def has_plural_form_information(self):
-        """Return whether we know the plural forms for this language."""
-        if self.context.potemplate.hasPluralMessage():
-            return self.context.language.pluralforms is not None
-        # If there are no plural forms, we assume that we have the
-        # plural form information for this language.
-        return True
 
     @property
     def number_of_plural_forms(self):
@@ -243,50 +366,10 @@ class POFileBaseView(LaunchpadView):
             return self.context.language.pluralexpression
         return ""
 
-    @cachedproperty
-    def translation_group(self):
-        """Is there a translation group for this translation?
-
-        :return: TranslationGroup or None if not found.
-        """
-        translation_groups = self.context.potemplate.translationgroups
-        if translation_groups is not None and len(translation_groups) > 0:
-            group = translation_groups[0]
-        else:
-            group = None
-        return group
-
-    def _get_translator_entry(self):
-        """The translator entry or None if none is assigned."""
-        group = self.translation_group
-        if group is not None:
-            return group.query_translator(self.context.language)
-        return None
-
-    @cachedproperty
-    def translator(self):
-        """Who is assigned for translations to this language?"""
-        translator_entry = self._get_translator_entry()
-        if translator_entry is not None:
-            return translator_entry.translator
-        return None
-
-    @cachedproperty
-    def has_any_documentation(self):
-        """Return whether there is any documentation for this POFile."""
-        if (self.translation_group is not None and
-            self.translation_group.translation_guide_url is not None):
-            return True
-        translator_entry = self._get_translator_entry()
-        if (translator_entry is not None and
-            translator_entry.style_guide_url is not None):
-            return True
-        return False
-
     def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.request.form.get('show')
-        self.search_text = self.request.form.get('search')
+        self.show = self.request.form_ng.getOne('show')
+        self.search_text = self.request.form_ng.getOne('search')
         if self.search_text is not None:
             self.show = 'all'
 
@@ -297,7 +380,7 @@ class POFileBaseView(LaunchpadView):
             'translated': self.context.translatedCount,
             'untranslated': self.context.untranslatedCount,
             'new_suggestions': self.context.unreviewedCount,
-            'changed_in_launchpad': self.context.updatesCount,
+            'changed_in_ubuntu': self.context.updatesCount,
             }
 
         if self.show not in count_functions:
@@ -309,11 +392,12 @@ class POFileBaseView(LaunchpadView):
         """Construct a BatchNavigator of POTMsgSets and return it."""
 
         # Changing the "show" option resets batching.
-        old_show_option = self.request.form.get('old_show')
+        old_show_option = self.request.form_ng.getOne('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
-            force_start = True # start will be 0, by default
+            # Start will be 0 by default.
+            force_start = True
         else:
             force_start = False
         return POFileBatchNavigator(self._getSelectedPOTMsgSets(),
@@ -346,8 +430,8 @@ class POFileBaseView(LaunchpadView):
             'translated': self.context.getPOTMsgSetTranslated,
             'untranslated': self.context.getPOTMsgSetUntranslated,
             'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
-            'changed_in_launchpad':
-                self.context.getPOTMsgSetChangedInLaunchpad,
+            'changed_in_ubuntu':
+                self.context.getPOTMsgSetDifferentTranslations,
             }
 
         if self.show not in get_functions:
@@ -422,24 +506,19 @@ class POFileView(LaunchpadView):
         Duplicates are eliminated; every translation group will occur
         at most once.
         """
-        language = self.context.language
         managers = []
-        groups = set()
-        for group in self.context.potemplate.translationgroups:
-            if group not in groups:
-                translator = group.query_translator(language)
-                if translator is None:
-                    team = None
-                    style_guide_url = None
-                else:
-                    team = translator.translator
-                    style_guide_url = translator.style_guide_url
-                managers.append({
-                    'group': group,
-                    'team': team,
-                    'style_guide_url': style_guide_url,
-                    })
-            groups.add(group)
+        policy = self.context.potemplate.getTranslationPolicy()
+        translators = policy.getTranslators(self.context.language)
+        for group, translator, team in reversed(translators):
+            if translator is None:
+                style_guide_url = None
+            else:
+                style_guide_url = translator.style_guide_url
+            managers.append({
+                'group': group,
+                'team': team,
+                'style_guide_url': style_guide_url,
+            })
         return managers
 
 
@@ -455,13 +534,19 @@ class POFileDetailsView(POFileView):
 
 
 class TranslationMessageContainer:
+    """A `TranslationMessage` decorated with usage class.
+
+    The usage class (in-use, hidden" or suggested) is used in CSS to
+    render these messages differently.
+    """
+
     def __init__(self, translation, pofile):
         self.data = translation
 
         # Assign a CSS class to the translation
         # depending on whether it's used, suggested,
         # or an obsolete suggestion.
-        if translation.is_current:
+        if translation.is_current_ubuntu:
             self.usage_class = 'usedtranslation'
         else:
             if translation.isHidden(pofile):
@@ -471,6 +556,8 @@ class TranslationMessageContainer:
 
 
 class FilteredPOTMsgSets:
+    """`POTMsgSet`s and translations shown by the `POFileFilteredView`."""
+
     def __init__(self, translations, pofile):
         potmsgsets = []
         current_potmsgset = None
@@ -487,10 +574,10 @@ class FilteredPOTMsgSets:
                         potmsgsets.append(current_potmsgset)
                     translation.setPOFile(pofile)
                     current_potmsgset = {
-                        'potmsgset' : translation.potmsgset,
-                        'translations' : [TranslationMessageContainer(
-                            translation, pofile)],
-                        'context' : translation
+                        'potmsgset': translation.potmsgset,
+                        'translations': [
+                            TranslationMessageContainer(translation, pofile)],
+                        'context': translation,
                         }
             if current_potmsgset is not None:
                 potmsgsets.append(current_potmsgset)
@@ -516,7 +603,7 @@ class POFileFilteredView(LaunchpadView):
         """See `LaunchpadView`."""
         return smartquote('Translations by %s in "%s"') % (
             self._person_name, self.context.title)
-    
+
     def label(self):
         """See `LaunchpadView`."""
         return "Translations by %s" % self._person_name
@@ -616,12 +703,8 @@ class POFileUploadView(POFileView):
                 " recognised as a file that can be imported.")
             return
 
-        # We only set the 'published' flag if the upload is marked as an
-        # upstream upload.
-        if self.form.get('upload_type') == 'upstream':
-            published = True
-        else:
-            published = False
+        # Uploads on this form are never done by the maintainer.
+        by_maintainer = False
 
         if self.context.path is None:
             # The POFile is a dummy one, we use the filename as the path.
@@ -630,7 +713,7 @@ class POFileUploadView(POFileView):
             path = self.context.path
         # Add it to the queue.
         translation_import_queue.addOrUpdateEntry(
-            path, content, published, self.user,
+            path, content, by_maintainer, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
             distroseries=self.context.potemplate.distroseries,
             productseries=self.context.potemplate.productseries,
@@ -644,8 +727,8 @@ class POFileUploadView(POFileView):
             'should be imported, it will be reviewed manually by an '
             'administrator in the coming few days.  You can track '
             'your upload\'s status in the '
-            '<a href="%s/+imports">Translation Import Queue</a>' %(
-            canonical_url(self.context.potemplate.translationtarget))))
+            '<a href="%s/+imports">Translation Import Queue</a>',
+            canonical_url(self.context.potemplate.translationtarget)))
 
 
 class POFileBatchNavigator(BatchNavigator):
@@ -656,7 +739,7 @@ class POFileBatchNavigator(BatchNavigator):
         return config.rosetta.translate_pages_max_batch_size
 
 
-class POFileTranslateView(BaseTranslationView):
+class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
     """The View class for a `POFile` or a `DummyPOFile`.
 
     This view is based on `BaseTranslationView` and implements the API
@@ -681,7 +764,8 @@ class POFileTranslateView(BaseTranslationView):
                 url = url + '?' + self.request['QUERY_STRING']
 
             return self.request.response.redirect(
-                canonical_url(self.user, view_name='+licensing') +
+                canonical_url(self.user, view_name='+licensing',
+                              rootsite='translations') +
                 '?' + urllib.urlencode({'back_to': url}))
 
         # The handling of errors is slightly tricky here. Because this
@@ -703,49 +787,16 @@ class POFileTranslateView(BaseTranslationView):
     # BaseTranslationView API
     #
 
-    @cachedproperty
-    def translation_group(self):
-        """Is there a translation group for this translation?
-
-        :return: TranslationGroup or None if not found.
-        """
-        translation_groups = self.context.potemplate.translationgroups
-        if translation_groups is not None and len(translation_groups) > 0:
-            group = translation_groups[0]
-        else:
-            group = None
-        return group
-
-    @cachedproperty
-    def translation_team(self):
-        """Is there a translation group for this translation."""
-        group = self.translation_group
-        if group is not None:
-            team = group.query_translator(self.context.language)
-        else:
-            team = None
-        return team
-
-    @cachedproperty
-    def has_any_documentation(self):
-        """Return whether there is any documentation for this POFile."""
-        if (self.translation_group is not None and
-            self.translation_group.translation_guide_url is not None):
-            return True
-        if (self.translation_team is not None and
-            self.translation_team.style_guide_url is not None):
-            return True
-        return False
-
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
 
         # Changing the "show" option resets batching.
-        old_show_option = self.request.form.get('old_show')
+        old_show_option = self.request.form_ng.getOne('old_show')
         show_option_changed = (
             old_show_option is not None and old_show_option != self.show)
         if show_option_changed:
-            force_start = True # start will be 0, by default
+            # Start will be 0 by default.
+            force_start = True
         else:
             force_start = False
         return POFileBatchNavigator(self._getSelectedPOTMsgSets(),
@@ -759,26 +810,15 @@ class POFileTranslateView(BaseTranslationView):
 
     def _buildTranslationMessageViews(self, for_potmsgsets):
         """Build translation message views for all potmsgsets given."""
-        last = None
+        can_edit = self.context.canEditTranslations(self.user)
         for potmsgset in for_potmsgsets:
-            assert (last is None or
-                    potmsgset.getSequence(
-                        self.context.potemplate) >= last.getSequence(
-                            self.context.potemplate)), (
-                "POTMsgSets on page not in ascending sequence order")
-            last = potmsgset
+            translationmessage = (
+                potmsgset.getCurrentTranslationMessageOrDummy(self.context))
+            error = self.errors.get(potmsgset)
 
-            translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.context.potemplate, self.context.language)
-            if translationmessage is None:
-                translationmessage = (
-                    potmsgset.getCurrentDummyTranslationMessage(
-                        self.context.potemplate, self.context.language))
-            else:
-                translationmessage.setPOFile(self.context)
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
-                self.errors.get(potmsgset))
+                pofile=self.context, can_edit=can_edit, error=error)
             view.zoomed_in_view = False
             self.translationmessage_views.append(view)
 
@@ -799,8 +839,8 @@ class POFileTranslateView(BaseTranslationView):
                     "Got translation for POTMsgID %d which is not in the "
                     "template." % id)
 
-            error = self._storeTranslations(potmsgset)
-            if error and potmsgset.getSequence(potmsgset.potemplate) != 0:
+            error = self._receiveTranslations(potmsgset)
+            if error and potmsgset.getSequence(self.context.potemplate) != 0:
                 # There is an error, we should store it to be rendered
                 # together with its respective view.
                 #
@@ -840,8 +880,9 @@ class POFileTranslateView(BaseTranslationView):
         Update the start_offset when the filtered batch has mutated.
         """
         if self.show == 'untranslated':
-            translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.pofile.potemplate, self.pofile.language)
+            translationmessage = potmsgset.getCurrentTranslation(
+                self.pofile.potemplate, self.pofile.language,
+                self.pofile.potemplate.translation_side)
             if translationmessage is not None:
                 self.start_offset += 1
         elif self.show == 'new_suggestions':
@@ -865,8 +906,8 @@ class POFileTranslateView(BaseTranslationView):
 
     def _initializeShowOption(self):
         # Get any value given by the user
-        self.show = self.request.form.get('show')
-        self.search_text = self.request.form.get('search')
+        self.show = self.request.form_ng.getOne('show')
+        self.search_text = self.request.form_ng.getOne('search')
         if self.search_text is not None:
             self.show = 'all'
 
@@ -877,7 +918,7 @@ class POFileTranslateView(BaseTranslationView):
             'translated': self.context.translatedCount,
             'untranslated': self.context.untranslatedCount,
             'new_suggestions': self.context.unreviewedCount,
-            'changed_in_launchpad': self.context.updatesCount,
+            'changed_in_ubuntu': self.context.updatesCount,
             }
 
         if self.show not in count_functions:
@@ -910,8 +951,8 @@ class POFileTranslateView(BaseTranslationView):
             'translated': self.context.getPOTMsgSetTranslated,
             'untranslated': self.context.getPOTMsgSetUntranslated,
             'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
-            'changed_in_launchpad':
-                self.context.getPOTMsgSetChangedInLaunchpad,
+            'changed_in_ubuntu':
+                self.context.getPOTMsgSetDifferentTranslations,
             }
 
         if self.show not in get_functions:
@@ -930,11 +971,11 @@ class POFileTranslateView(BaseTranslationView):
 
     def _messages_html_id(self):
         order = []
-        for message in self.translationmessage_views:
-            if (message.form_is_writeable):
-                for dictionary in message.translation_dictionaries:
-                    order.append(
-                        dictionary['html_id_translation'] + '_new')
+        if self.form_is_writeable:
+            for message in self.translationmessage_views:
+                order += [
+                    dictionary['html_id_translation'] + '_new'
+                    for dictionary in message.translation_dictionaries]
         return order
 
     @property
@@ -948,22 +989,61 @@ class POFileTranslateView(BaseTranslationView):
     def translations_order(self):
         return ' '.join(self._messages_html_id())
 
+    @property
+    def is_upstream_pofile(self):
+        potemplate = self.context.potemplate
+        return potemplate.translation_side == TranslationSide.UPSTREAM
+
+    def is_sharing(self):
+        potemplate = self.context.potemplate.getOtherSidePOTemplate()
+        return potemplate is not None
+
+    @property
+    def sharing_pofile(self):
+        potemplate = self.context.potemplate.getOtherSidePOTemplate()
+        if potemplate is None:
+            return None
+        pofile = potemplate.getPOFileByLang(self.context.language.code)
+        if pofile is None:
+            pofile = potemplate.getDummyPOFile(
+                self.context.language, check_for_existing=False)
+        return pofile
+
 
 class POExportView(BaseExportView):
 
     page_title = "Download translation"
 
-    def modifyFormat(self, format):
+    def getExportFormat(self):
+        format = self.request.form.get("format")
         pochanged = self.request.form.get("pochanged")
         if format == 'PO' and pochanged == 'POCHANGED':
             return 'POCHANGED'
         return format
 
     def processForm(self):
+        is_upstream = (
+            self.context.potemplate.translation_side ==
+                TranslationSide.UPSTREAM)
+        if is_upstream and self.getExportFormat() == 'POCHANGED':
+            other_side_pofile = self.context.getOtherSidePOFile()
+            if other_side_pofile is None:
+                return None
+            return (None, [other_side_pofile])
         return (None, [self.context])
 
     def getDefaultFormat(self):
         return self.context.potemplate.source_file_format
+
+    @property
+    def has_pochanged_option(self):
+        is_ubuntu = (
+            self.context.potemplate.translation_side ==
+                TranslationSide.UBUNTU)
+        if is_ubuntu:
+            return True
+        other_side_pofile = self.context.getOtherSidePOFile()
+        return other_side_pofile is not None
 
     @property
     def cancel_url(self):

@@ -10,28 +10,44 @@
 <body>
 
 <div metal:fill-slot="main">
-  <div class="top-portlet">
+  <div class="top-portlet"
+       tal:define="batch_nav view/series_batch">
     <h2>Packages by project series</h2>
 
-  <tal:series_dict repeat="series_dict view/series_packages">
-  <tal:series_packagings
-    define="series series_dict/series;
-            packagings series_dict/packagings">
+  <tal:multipage tal:condition="batch_nav/has_multiple_pages">
+    <tal:navigation
+        replace="structure batch_nav/@@+navigation-links-upper"/>
+  </tal:multipage>
+  <table class="listing">
+  <tr tal:repeat="series batch_nav/batch">
+  <td tal:define="packagings series/packagings">
+    <table style="width: 100%; margin: 0.5em 0 0 0">
+    <tr>
+    <td style="width: 33%">
     <h3>
       <a tal:attributes="href series/name">
         <span tal:replace="series/name">main</span> series
       </a>
     </h3>
+    </td>
 
-    <p tal:condition="not: packagings">
+    <tal:no-packages condition="not: packagings">
+      <td style="width: 33%; text-align: center">
       No packages linked to this series.
-    </p>
+      </td>
+      <td style="width: 33%; padding: 0 1.5em 0 0; text-align: right">
+        <a tal:condition="series/menu:overview/ubuntupkg/linked"
+           tal:replace="structure series/menu:overview/ubuntupkg/fmt:link" />
+      </td>
+    </tal:no-packages>
+    </tr>
+    </table>
 
     <tal:comment condition="nothing">
       This DIV is necessary for the table-actions:nth-child stylesheet.
     </tal:comment>
     <div>
-      <table class="listing"
+      <table class="listing" style="border: 0"
         tal:condition="packagings"
         tal:attributes="id series/name/fmt:css-id/packages-">
         <thead>
@@ -73,15 +89,19 @@
         </tbody>
       </table>
 
-      <ul class="table-actions"
-        tal:condition="series/menu:overview/ubuntupkg/linked">
-        <li>
+      <ul class="table-actions" tal:condition="packagings">
+        <li tal:condition="series/menu:overview/ubuntupkg/linked">
           <a tal:replace="structure series/menu:overview/ubuntupkg/fmt:link" />
         </li>
       </ul>
     </div>
-  </tal:series_packagings>
-  </tal:series_dict>
+  </td>
+  </tr>
+  </table>
+  <tal:multipage condition="batch_nav/has_multiple_pages">
+    <tal:navigation
+        replace="structure batch_nav/@@+navigation-links-lower"/>
+  </tal:multipage>
   </div>
 
   <div class="portlet">
@@ -116,9 +136,11 @@
               >Apache</a>
           </td>
           <td>
-            <span tal:condition="pkging/sourcepackage/currentrelease"
-                    tal:replace="pkging/sourcepackage/currentrelease/version"
-                    >2.3.4-1</span>
+            <span
+                tal:define="currentrelease pkging/sourcepackage/currentrelease"
+                tal:condition="currentrelease"
+                tal:replace="currentrelease/version"
+                >2.3.4-1</span>
           </td>
           <td>
             <a tal:replace="structure pkging/productseries/fmt:link" />

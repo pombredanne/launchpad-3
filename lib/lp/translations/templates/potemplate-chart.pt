@@ -9,9 +9,9 @@
     <tr>
       <th>Language</th>
       <th>Status</th>
-      <th class="amount">Untranslated</th>
-      <th class="amount">Need review</th>
-      <th class="amount">Changed</th>
+      <th>Untranslated</th>
+      <th>Need review</th>
+      <th>Changed</th>
       <th>Last Edited</th>
       <th>By</th>
     </tr>
@@ -52,7 +52,7 @@
         </td>
         <td>
           <span class="sortkey" tal:content="pf/updatesCount">0</span>
-          <a tal:attributes="href string:${pf/fmt:url}/+translate?show=changed_in_launchpad"
+          <a tal:attributes="href string:${pf/fmt:url}/+translate?show=changed_in_ubuntu"
               tal:condition="pf/updatesCount"
               tal:content="pf/updatesCount"
               >0</a>

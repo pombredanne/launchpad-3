@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 if [ -n "$1" ]; then
@@ -20,8 +20,8 @@ fi
 
 for pgversion in 8.4 8.3 8.2
 do
-  if [ -e /etc/init.d/postgresql-$pgversion ]
-  then
+  sudo grep -q "^auto" /etc/postgresql/$pgversion/main/start.conf
+  if [ $? -eq 0 ]; then
     break
   fi
 done
@@ -41,7 +41,12 @@ if [ $? -ne 0 ]; then
   echo "ensure postgres is running on port 5432."
 fi;
 
-sudo /etc/init.d/postgresql-$pgversion stop
+if [ -e /etc/init.d/postgresql-$pgversion ]; then
+    sudo /etc/init.d/postgresql-$pgversion stop
+else
+    # This is Maverick.
+    sudo /etc/init.d/postgresql stop $pgversion
+fi
 
 echo Purging postgresql data...
 sudo pg_dropcluster $pgversion main --stop-server
@@ -57,7 +62,7 @@ sudo grep -q Launchpad /etc/postgresql/$pgversion/main/pg_hba.conf || \
 sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
 --- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
 +++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
-@@ -58,7 +58,9 @@
+@@ -58,7 +58,10 @@
  # on a non-local interface via the listen_addresses configuration parameter,
  # or via the -i or -h command line switches.
  #
@@ -65,6 +70,7 @@ sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
 +# Launchpad users
 +local   all         all                           trust
 +host    all         all         127.0.0.1/32      trust
++host    all         all         ::1/128           trust
 
 
 
@@ -99,7 +105,12 @@ max_fsm_relations=2000
 EOF
 fi
 
-sudo /etc/init.d/postgresql-$pgversion start
+if [ -e /etc/init.d/postgresql-$pgversion ]; then
+    sudo /etc/init.d/postgresql-$pgversion start
+else
+    # This is Maverick.
+    sudo /etc/init.d/postgresql start $pgversion
+fi
 
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10

@@ -8,13 +8,14 @@ __all__ = [
     ]
 
 import gzip
+import itertools
 import os
 import shutil
 import subprocess
 import tempfile
 
 from sqlobject import ForeignKey
-from storm.expr import Desc, In
+from storm.expr import Desc
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
@@ -22,13 +23,31 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.packagediff import (
-    IPackageDiff, IPackageDiffSet, PackageDiffStatus)
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.librarian.utils import copy_and_close
+from lp.services.database.bulk import load
+from lp.soyuz.enums import PackageDiffStatus
+from lp.soyuz.interfaces.packagediff import (
+    IPackageDiff,
+    IPackageDiffSet,
+    )
 
 
 def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
@@ -123,16 +142,17 @@ class PackageDiff(SQLBase):
             ancestry_identifier = "%s (in %s)" % (
                 self.from_source.version,
                 ancestry_archive.distribution.name.capitalize())
-        return '%s to %s' % (ancestry_identifier, self.to_source.version)
+        return 'diff from %s to %s' % (
+            ancestry_identifier, self.to_source.version)
 
     @property
     def private(self):
         """See `IPackageDiff`."""
         return self.to_source.upload_archive.private
 
-    def _countExpiredLFAs(self):
-        """How many files associated with either source package were
-        already expired by the librarian?"""
+    def _countDeletedLFAs(self):
+        """How many files associated with either source package have been
+        deleted from the librarian?"""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = """
             SELECT COUNT(lfa.id)
@@ -143,7 +163,6 @@ class PackageDiff(SQLBase):
                 spr.id IN %s
                 AND sprf.SourcePackageRelease = spr.id
                 AND sprf.libraryfile = lfa.id
-                AND lfa.expires IS NOT NULL
                 AND lfa.content IS NULL
             """ % sqlvalues((self.from_source.id, self.to_source.id))
         result = store.execute(query).get_one()
@@ -158,7 +177,7 @@ class PackageDiff(SQLBase):
         """
         # Make sure the files associated with the two source packages are
         # still available in the librarian.
-        if self._countExpiredLFAs() > 0:
+        if self._countDeletedLFAs() > 0:
             self.status = PackageDiffStatus.FAILED
             return
 
@@ -262,13 +281,37 @@ class PackageDiffSet:
         result.order_by(PackageDiff.id)
         return result.config(limit=limit)
 
-    def getDiffsToReleases(self, sprs):
+    def getDiffsToReleases(self, sprs, preload_for_display=False):
         """See `IPackageDiffSet`."""
+        from lp.registry.model.distribution import Distribution
+        from lp.soyuz.model.archive import Archive
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
         if len(sprs) == 0:
             return EmptyResultSet()
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         spr_ids = [spr.id for spr in sprs]
-        result = store.find(PackageDiff, In(PackageDiff.to_sourceID, spr_ids))
+        result = store.find(
+            PackageDiff, PackageDiff.to_sourceID.is_in(spr_ids))
         result.order_by(PackageDiff.to_sourceID,
                         Desc(PackageDiff.date_requested))
-        return result
+
+        def preload_hook(rows):
+            lfas = load(LibraryFileAlias, (pd.diff_contentID for pd in rows))
+            lfcs = load(LibraryFileContent, (lfa.contentID for lfa in lfas))
+            sprs = load(
+                SourcePackageRelease,
+                itertools.chain.from_iterable(
+                    (pd.from_sourceID, pd.to_sourceID) for pd in rows))
+            archives = load(Archive, (spr.upload_archiveID for spr in sprs))
+            distros = load(Distribution, (a.distributionID for a in archives))
+
+        if preload_for_display:
+            return DecoratedResultSet(result, pre_iter_hook=preload_hook)
+        else:
+            return result
+
+    def getDiffBetweenReleases(self, from_spr, to_spr):
+        """See `IPackageDiffSet`."""
+        return IStore(PackageDiff).find(
+            PackageDiff,
+            from_sourceID=from_spr.id, to_sourceID=to_spr.id).first()

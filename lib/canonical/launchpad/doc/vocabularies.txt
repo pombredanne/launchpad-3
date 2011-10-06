@@ -1,6 +1,8 @@
-= Vocabularies =
+Vocabularies
+============
 
-== Introduction ==
+Introduction
+------------
 
 Vocabularies are lists of terms. In Launchpad's Component Architecture
 (CA), a vocabulary is a list of terms that a widget (normally a selection
@@ -8,9 +10,11 @@ style widget) "speaks", i.e., its allowed values.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import ANONYMOUS, login
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectGroupSet)
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
     >>> login('foo.bar@canonical.com')
@@ -18,7 +22,8 @@ style widget) "speaks", i.e., its allowed values.
     >>> launchbag.clear()
 
 
-=== Values, Tokens, and Titles ===
+Values, Tokens, and Titles
+..........................
 
 In Launchpad, we generally use "tokenized vocabularies." Each term in
 a vocabulary has a value, token and title. A term is rendered in a
@@ -31,7 +36,8 @@ used to uniquely identify a Term, and the Title is the thing you display
 to the user.
 
 
-== Launchpad Vocabularies ==
+Launchpad Vocabularies
+----------------------
 
 There are two kinds of vocabularies in Launchpad: enumerable and
 non-enumerable. Enumerable vocabularies are short enough to render in a
@@ -53,10 +59,12 @@ vocabulary registry.
     'Select a project'
 
 
-== Enumerable Vocabularies ==
+Enumerable Vocabularies
+-----------------------
 
 
-=== DistributionUsingMaloneVocabulary ===
+DistributionUsingMaloneVocabulary
+.................................
 
 All the distributions that use Malone as their main bug tracker.
 
@@ -69,16 +77,13 @@ All the distributions that use Malone as their main bug tracker.
     gentoo Gentoo Gentoo
     ubuntu Ubuntu Ubuntu
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in using_malone_vocabulary
     True
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> debian in using_malone_vocabulary
     False
-
-    >>> using_malone_vocabulary.getQuery() is None
-    True
 
     >>> term = using_malone_vocabulary.getTerm(ubuntu)
     >>> print term.token, term.value.displayname, term.title
@@ -99,7 +104,8 @@ All the distributions that use Malone as their main bug tracker.
     LookupError:...
 
 
-=== BugNominatableSeriesVocabulary ===
+BugNominatableSeriesVocabulary
+..............................
 
 All the series that can be nominated for fixing.
 
@@ -123,7 +129,7 @@ Firefox has the following series:
 Now, if we look at bug one, we can see that it hasn't been targeted
 for any Firefox series yet:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bugtask in bug_one.bugtasks:
@@ -244,16 +250,17 @@ NoSuchDistroSeries error.
     NoSuchDistroSeries...
 
 
-=== ProjectProductsVocabularyUsingMalone ===
+ProjectProductsVocabularyUsingMalone
+....................................
 
 All the products in a project using Malone.
 
 
     >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> for product in mozilla_project.products:
-    ...     print "%s: %s" % (product.name, product.official_malone)
-    firefox: True
-    thunderbird: False
+    ...     print "%s: %s" % (product.name, product.bug_tracking_usage.name)
+    firefox: LAUNCHPAD
+    thunderbird: UNKNOWN
 
     >>> mozilla_products_vocabulary = vocabulary_registry.get(
     ...     mozilla_project,'ProjectProductsUsingMalone')
@@ -262,14 +269,16 @@ All the products in a project using Malone.
     firefox: Mozilla Firefox
 
 
-== Non-Enumerable Vocabularies ==
+Non-Enumerable Vocabularies
+---------------------------
 
 Iterating over non-enumerable vocabularies, while possible, will
 probably kill the database. Instead, these vocabularies are
 search-driven.
 
 
-=== BinaryAndSourcePackageNameVocabulary ===
+BinaryAndSourcePackageNameVocabulary
+....................................
 
 The list of binary and source package names, ordered by name.
 
@@ -291,8 +300,8 @@ both a source and binary package of that name.
     >>> package_name_terms.count()
     2
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla-firefox', u'iceweasel huh ?'),
-     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
+    [('mozilla-firefox', u'mozilla-firefox'),
+     ('mozilla-firefox-data', u'mozilla-firefox-data')]
 
 Searching for "mozilla" should return the binary package name above, and
 the source package named "mozilla".
@@ -301,9 +310,9 @@ the source package named "mozilla".
     >>> package_name_terms.count()
     3
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla', 'Not uploaded'),
-     ('mozilla-firefox', u'iceweasel huh ?'),
-     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
+    [('mozilla', u'mozilla'),
+     ('mozilla-firefox', u'mozilla-firefox'),
+     ('mozilla-firefox-data', u'mozilla-firefox-data')]
 
 The search does a case-insensitive, substring match.
 
@@ -311,11 +320,12 @@ The search does a case-insensitive, substring match.
     >>> package_name_terms.count()
     2
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('linux-2.6.12', u'this kernel is like the crystal method: a temple...'),
-     ('linux-source-2.6.15', u'Source of: linux-2.6.12')]
+    [('linux-2.6.12', u'linux-2.6.12'),
+     ('linux-source-2.6.15', u'linux-source-2.6.15')]
 
 
-=== BinaryPackageNameVocabulary ===
+BinaryPackageNameVocabulary
+...........................
 
 All the binary packages in Launchpad.
 
@@ -331,7 +341,8 @@ All the binary packages in Launchpad.
      ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 
-=== SourcePackageNameVocabulary ===
+SourcePackageNameVocabulary
+...........................
 
 All the source packages in Launchpad.
 
@@ -352,141 +363,8 @@ All the source packages in Launchpad.
     [('pmount', u'pmount')]
 
 
-=== BranchVocabulary ===
-
-The list of bzr branches registered in Launchpad.
-
-Searchable by branch name or URL, registrant name, and project name.
-Results are not restricted in any way by the context, but the results
-are restricted based on who is asking (as far as private branches is
-concerned).
-
-    # Just use None as the context.
-    >>> branch_vocabulary = get_naked_vocab(None, "Branch")
-    >>> def print_vocab_branches(vocab, search):
-    ...     for term in vocab.searchForTerms(search):
-    ...         print term.value.unique_name
-
-    >>> print_vocab_branches(branch_vocabulary, 'main')
-    ~name12/firefox/main
-    ~stevea/thunderbird/main
-    ~justdave/+junk/main
-    ~kiko/+junk/main
-    ~vcs-imports/evolution/main
-    ~name12/gnome-terminal/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
-    ~vcs-imports/gnome-terminal/import
-    ~vcs-imports/evolution/import
-    ~vcs-imports/evolution/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'evolution')
-    ~carlos/evolution/2.0
-    ~vcs-imports/evolution/import
-    ~vcs-imports/evolution/main
-
-A search with the full branch unique name should also find the branch.
-
-    >>> print_vocab_branches(branch_vocabulary, '~name12/firefox/main')
-    ~name12/firefox/main
-
-The tokens used by terms retrieved from BranchVocabulary use the
-branch unique name as an ID:
-
-    >>> from lp.code.interfaces.branchlookup import IBranchLookup
-    >>> branch = getUtility(IBranchLookup).get(15)
-    >>> print branch.unique_name
-    ~name12/gnome-terminal/main
-    >>> term = branch_vocabulary.toTerm(branch)
-    >>> print term.token
-    ~name12/gnome-terminal/main
-
-The BranchVocabulary recognises both unique names and URLs as tokens:
-
-    >>> term = branch_vocabulary.getTermByToken('~name12/gnome-terminal/main')
-    >>> term.value == branch
-    True
-    >>> term = branch_vocabulary.getTermByToken(
-    ...     'http://bazaar.launchpad.dev/~name12/gnome-terminal/main/')
-    >>> term.value == branch
-    True
-    >>> term = branch_vocabulary.getTermByToken(
-    ...     'http://example.com/gnome-terminal/main')
-    >>> term.value == branch
-    True
-
-The searches that the BranchVocabulary does are private branch aware.
-The results are effectively filtered on what the logged in user is
-able to see.
-
-    >>> print_vocab_branches(branch_vocabulary, 'trunk')
-    ~spiv/+junk/trunk
-    ~limi/+junk/trunk
-    ~landscape-developers/landscape/trunk
-
-    >>> login('no-priv@canonical.com')
-    >>> print_vocab_branches(branch_vocabulary, 'trunk')
-    ~spiv/+junk/trunk
-    ~limi/+junk/trunk
-
-    >>> login('foo.bar@canonical.com')
-
-
-=== BranchRestrictedOnProduct ===
-
-The BranchRestrictedOnProduct vocabulary restricts the result set to
-those of the product of the context.  Currently only two types of
-context are supported: Product; and Branch.  If a branch is the context,
-then the product of the branch is used to restrict the query.
-
-    >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
-    >>> branch_vocabulary = vocabulary_registry.get(
-    ...     gnome_terminal, "BranchRestrictedOnProduct")
-    >>> print_vocab_branches(branch_vocabulary, 'main')
-    ~name12/gnome-terminal/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
-    ~vcs-imports/gnome-terminal/import
-
-If a full unique name is entered that has a different product, the
-branch is not part of the vocabulary.
-
-    >>> print_vocab_branches(branch_vocabulary, '~name12/gnome-terminal/main')
-    ~name12/gnome-terminal/main
-
-    >>> print_vocab_branches(branch_vocabulary, '~name12/firefox/main')
-
-
-The BranchRestrictedOnProduct behaves the same way as the more generic
-BranchVocabulary with respect to the tokens and privacy awareness.
-
-
-=== HostedBranchRestrictedOnOwner ===
-
-Here's a vocabulary for all hosted branches owned by the current user.
-
-    >>> from lp.code.enums import BranchType
-
-    >>> a_user = factory.makePerson(name='a-branching-user')
-    >>> product1 = factory.makeProduct(name='product-one')
-    >>> mirrored_branch = factory.makeBranch(
-    ...     owner=a_user, product=product1, name='mirrored',
-    ...     branch_type=BranchType.MIRRORED)
-    >>> product2 = factory.makeProduct(name='product-two')
-    >>> hosted_branch = factory.makeBranch(
-    ...     owner=a_user, product=product2, name='hosted')
-    >>> foreign_branch = factory.makeBranch()
-
-It returns branches owned by the user, but not ones owned by others, nor
-ones that aren't hosted on Launchpad.
-
-    >>> branch_vocabulary = vocabulary_registry.get(
-    ...     a_user, "HostedBranchRestrictedOnOwner")
-    >>> print_vocab_branches(branch_vocabulary, None)
-    ~a-branching-user/product-two/hosted
-
-
-=== Processor ===
+Processor
+.........
 
 All processors type available in Launchpad.
 
@@ -498,7 +376,8 @@ All processors type available in Launchpad.
     ['386']
 
 
-=== BugWatchVocabulary ===
+BugWatchVocabulary
+..................
 
 All bug watches associated with a bugtask's bug.
 
@@ -515,8 +394,8 @@ All bug watches associated with a bugtask's bug.
 Bug watches with an email address URL (i.e. starts with "mailto:") are
 treated differently.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugWatchSet, IBugTrackerSet)
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> bug_twelve = getUtility(IBugSet).get(12)
     >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')
@@ -555,111 +434,8 @@ email address is hidden, and there is no hyperlink.
     Lionel Richtea (mailto:&lt;email address hidden&gt;)
 
 
-== SpecificationDepCandidatesVocabulary ==
-
-All blueprints that can be added as a dependency of the
-context blueprint.
-
-First, we set up a product with three blueprints.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISpecificationSet, SpecificationDefinitionStatus)
-    >>> evolution = product_set.getByName('evolution')
-    >>> foobar_person = person_set.getByName('name16')
-    >>> foobar_person.displayname
-    u'Foo Bar'
-    >>> specset = getUtility(ISpecificationSet)
-    >>> spec_a = specset.new('spec-a', 'Spec A',
-    ...     'http://www.example.org/SpecA', 'The first spec',
-    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
-    ...     product=evolution)
-    >>> spec_b = specset.new('spec-b', 'Spec B',
-    ...     'http://www.example.org/SpecB', 'The second spec',
-    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
-    ...     product=evolution)
-    >>> spec_c = specset.new('spec-c', 'Spec C',
-    ...     'http://www.example.org/SpecC', 'The third spec',
-    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
-    ...     product=evolution)
-    >>> sorted([spec.name for spec in evolution.specifications()])
-    [u'spec-a', u'spec-b', u'spec-c']
-
-The dependency candidates for spec_a are all blueprints for evolution
-except for spec_a itself.
-
-    >>> vocab = vocabulary_registry.get(
-    ...     spec_a, "SpecificationDepCandidates")
-    >>> sorted([term.value.name for term in vocab])
-    [u'spec-b', u'spec-c']
-
-Dependency candidate come only from the same product of the blueprint
-they depend on.
-
-    >>> unrelated_spec = specset.new('unrelated-spec', 'Unrelated Spec',
-    ...     'http://example.com/SpecU', 'A spec unrelated to Evolution',
-    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
-    ...     product=firefox)
-    >>> vocab = vocabulary_registry.get(
-    ...     spec_a, "SpecificationDepCandidates")
-    >>> unrelated_spec in vocab
-    False
-    >>> [term.value.product for term in vocab
-    ...  if term.value.product != evolution]
-    []
-
-We mark spec_b as a dependency of spec_a and spec_c as a dependency
-of spec_b.
-
-    >>> spec_a.createDependency(spec_b)
-    <SpecificationDependency at ...>
-    >>> [spec.name for spec in spec_a.dependencies]
-    [u'spec-b']
-
-    >>> spec_b.createDependency(spec_c)
-    <SpecificationDependency at ...>
-    >>> [spec.name for spec in spec_b.dependencies]
-    [u'spec-c']
-
-No circular dependencies - the vocabulary excludes specifications that
-are a dependency of the context spec.
-
-    >>> spec_a in spec_b.all_blocked
-    True
-    >>> spec_b in spec_c.all_blocked
-    True
-    >>> vocab = vocabulary_registry.get(
-    ...     spec_c, "SpecificationDepCandidates")
-    >>> spec_a in [term.value for term in vocab]
-    False
-
-This vocabulary provides the IHugeVocabulary interface.
-
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
-    >>> verifyObject(IHugeVocabulary, vocab)
-    True
-
-The search() method returns specifications within the vocabulary
-that matches the search string. The string is matched against the name,
-or fallbacks to a full text search.
-
-    >>> vocab = get_naked_vocab(spec_a, "SpecificationDepCandidates")
-    >>> list(vocab.search('spec-b')) == [spec_b]
-    True
-    >>> list(vocab.search('third')) == [spec_c]
-    True
-
-The search method uses the SQL `LIKE` operator, with the values quoted
-appropriately. Queries conataining regual expression operators, for
-example, will simply look for the respective characters within the
-vocabulary's item (this used to be the cause of an OOPS, see
-https://bugs.edge.launchpad.net/blueprint/+bug/139385 for more details).
-
-    >>> list(vocab.search('*'))
-    []
-
-
-=== PPA ===
+PPA
+...
 
 The PPA vocabulary contains all the PPAs available in a particular
 collection. It provides the IHugeVocabulary interface.
@@ -724,8 +500,8 @@ PPA vocabulary searches consider the owner FTI and the PPA FTI.
 
 We will create an additional PPA for Celso named 'testing'
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
     >>> login_person(current_user)
     >>> cprov = getUtility(IPersonSet).getByName('cprov')

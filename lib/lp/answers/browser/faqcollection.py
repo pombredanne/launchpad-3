@@ -12,19 +12,30 @@ __all__ = [
 
 from urllib import urlencode
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.answers.interfaces.faqcollection import (
-    IFAQCollection, ISearchFAQsForm, FAQSort)
-from lp.answers.interfaces.questionenums import QuestionSort
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.webapp import (
-    action, NavigationMenu, canonical_url, LaunchpadFormView, Link,
-    safe_action)
+    canonical_url,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import enabled_with_permission
+from lp.answers.interfaces.faqcollection import (
+    FAQSort,
+    IFAQCollection,
+    ISearchFAQsForm,
+    )
+from lp.answers.enums import (
+    QuestionSort,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    safe_action,
+    )
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 class FAQCollectionMenu(NavigationMenu):
@@ -43,7 +54,7 @@ class FAQCollectionMenu(NavigationMenu):
         url = canonical_url(collection, rootsite='answers') + '/+faqs'
         return Link(url, 'All FAQs', icon='info')
 
-    @enabled_with_permission('launchpad.Moderate')
+    @enabled_with_permission('launchpad.Append')
     def create_faq(self):
         """Return a Link to create a new FAQ."""
         collection = IFAQCollection(self.context)
@@ -136,5 +147,5 @@ class SearchFAQsView(LaunchpadFormView):
                 status.title for status in QUESTION_STATUS_DEFAULT_SEARCH],
              'field.search_text': self.search_text,
              'field.actions.search': 'Search',
-             'field.sort' : QuestionSort.RELEVANCY.title,
+             'field.sort': QuestionSort.RELEVANCY.title,
              'field.language-empty-marker': 1}, doseq=True)

@@ -20,5 +20,5 @@ The migration succeeds.
 # The script modified the database, even though the database layer may
 # not have noticed it.
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-    >>> LaunchpadTestSetup().force_dirty_database()
+    >>> from canonical.testing.layers import DatabaseLayer
+    >>> DatabaseLayer.force_dirty_database()

@@ -3,8 +3,8 @@
 The bug heat appears on the bug index page as four flames.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'registration').fetch('img')[0]
+    >>> print find_main_content(
+    ...     anon_browser.contents).find('img', src='/@@/bug-heat-0.png')
     <img src="/@@/bug-heat-0.png" alt="0 out of 4 heat flames" title="Heat: 0" />
 
 Packages use their distribution as context when generating flame icons
@@ -30,6 +30,6 @@ with four flames if there are few reported bugs against the package.
     >>> logout()
 
     >>> anon_browser.open(canonical_url(dsp_bug))
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'registration').fetch('img')[0]
+    >>> print find_main_content(
+    ...     anon_browser.contents).find('img', src='/@@/bug-heat-0.png')
     <img src="/@@/bug-heat-0.png" alt="0 out of 4 heat flames" title="Heat: 1250" />

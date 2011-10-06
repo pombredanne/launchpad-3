@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `RepositoryIndexFile`."""
@@ -132,7 +132,3 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         self.assertRaises(
             AssertionError,
             RepositoryIndexFile, self.root, missing_temp_root, 'boing')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

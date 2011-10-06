@@ -7,10 +7,11 @@
   i18n:domain="launchpad"
 >
   <body>
+    <metal:block fill-slot="head_epilogue">
+    </metal:block>
     <div metal:fill-slot="main" tal:define="comment view/comment">
       <h1 tal:content="view/page_title">Foo doesn't work</h1>
-      <tal:comment condition="comment/can_be_shown"
-                   replace="structure comment/@@+box-expanded-reply">
+      <tal:comment replace="structure comment/@@+box-expanded-reply">
       </tal:comment>
     </div>
 </body>

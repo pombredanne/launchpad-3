@@ -7,7 +7,7 @@
   <h2>Remote bug watches</h2>
   <ul>
     <li tal:repeat="watch context/watches">
-      <span class="sprite bug-remote" />
+      <span class="sprite bug-remote"></span>
       <a tal:replace="structure watch/fmt:external-link" />
       <tal:block tal:condition="watch/remotestatus">
         <br />[<span tal:content="watch/remotestatus" />]

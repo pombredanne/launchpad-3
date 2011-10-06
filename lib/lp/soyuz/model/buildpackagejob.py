@@ -8,26 +8,39 @@ __all__ = [
 
 
 from datetime import datetime
+
 import pytz
-
-from storm.locals import Int, Reference, Storm
-
-from zope.interface import implements
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.buildpackagejob import (
+    COPY_ARCHIVE_SCORE_PENALTY,
+    IBuildPackageJob,
+    PRIVATE_ARCHIVE_SCORE_BONUS,
+    SCORE_BY_COMPONENT,
+    SCORE_BY_POCKET,
+    SCORE_BY_URGENCY,
+    )
+
+from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 
 
-class BuildPackageJob(PackageBuildFarmJob, Storm):
+class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
 
@@ -38,33 +51,20 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
     job = Reference(job_id, 'Job.id')
 
     build_id = Int(name='build', allow_none=False)
-    build = Reference(build_id, 'Build.id')
+    build = Reference(build_id, 'BinaryPackageBuild.id')
+
+    def __init__(self, build, job):
+        self.build, self.job = build, job
+        super(BuildPackageJob, self).__init__()
+
+    def _set_build_farm_job(self):
+        """Setup the IBuildFarmJob delegate.
+
+        We override this to provide a delegate specific to package builds."""
+        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     def score(self):
         """See `IBuildPackageJob`."""
-        score_pocketname = {
-            PackagePublishingPocket.BACKPORTS: 0,
-            PackagePublishingPocket.RELEASE: 1500,
-            PackagePublishingPocket.PROPOSED: 3000,
-            PackagePublishingPocket.UPDATES: 3000,
-            PackagePublishingPocket.SECURITY: 4500,
-            }
-
-        score_componentname = {
-            'multiverse': 0,
-            'universe': 250,
-            'restricted': 750,
-            'main': 1000,
-            'partner': 1250,
-            }
-
-        score_urgency = {
-            SourcePackageUrgency.LOW: 5,
-            SourcePackageUrgency.MEDIUM: 10,
-            SourcePackageUrgency.HIGH: 15,
-            SourcePackageUrgency.EMERGENCY: 20,
-            }
-
         # Define a table we'll use to calculate the score based on the time
         # in the build queue.  The table is a sorted list of (upper time
         # limit in seconds, score) tuples.
@@ -77,65 +77,58 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
             (300, 5),
         ]
 
-        private_archive_increment = 10000
-
-        # For build jobs in rebuild archives a score value of -1
-        # was chosen because their priority is lower than build retries
-        # or language-packs. They should be built only when there is
-        # nothing else to build.
-        rebuild_archive_score = -10
-
-        score = 0
-
         # Please note: the score for language packs is to be zero because
         # they unduly delay the building of packages in the main component
         # otherwise.
-        if self.build.sourcepackagerelease.section.name == 'translations':
-            pass
-        elif self.build.archive.purpose == ArchivePurpose.COPY:
-            score = rebuild_archive_score
-        else:
-            # Calculates the urgency-related part of the score.
-            urgency = score_urgency[self.build.sourcepackagerelease.urgency]
-            score += urgency
+        if self.build.source_package_release.section.name == 'translations':
+            return 0
 
-            # Calculates the pocket-related part of the score.
-            score_pocket = score_pocketname[self.build.pocket]
-            score += score_pocket
+        score = 0
 
-            # Calculates the component-related part of the score.
-            score_component = score_componentname[
-                self.build.current_component.name]
-            score += score_component
+        # Calculates the urgency-related part of the score.
+        urgency = SCORE_BY_URGENCY[
+            self.build.source_package_release.urgency]
+        score += urgency
 
-            # Calculates the build queue time component of the score.
-            right_now = datetime.now(pytz.timezone('UTC'))
-            eta = right_now - self.job.date_created
-            for limit, dep_score in queue_time_scores:
-                if eta.seconds > limit:
-                    score += dep_score
-                    break
+        # Calculates the pocket-related part of the score.
+        score_pocket = SCORE_BY_POCKET[self.build.pocket]
+        score += score_pocket
 
-            # Private builds get uber score.
-            if self.build.archive.private:
-                score += private_archive_increment
+        # Calculates the component-related part of the score.
+        score += SCORE_BY_COMPONENT.get(
+            self.build.current_component.name, 0)
 
-            # Lastly, apply the archive score delta.  This is to boost
-            # or retard build scores for any build in a particular
-            # archive.
-            score += self.build.archive.relative_build_score
+        # Calculates the build queue time component of the score.
+        right_now = datetime.now(pytz.timezone('UTC'))
+        eta = right_now - self.job.date_created
+        for limit, dep_score in queue_time_scores:
+            if eta.seconds > limit:
+                score += dep_score
+                break
+
+        # Private builds get uber score.
+        if self.build.archive.private:
+            score += PRIVATE_ARCHIVE_SCORE_BONUS
+
+        if self.build.archive.is_copy:
+            score -= COPY_ARCHIVE_SCORE_PENALTY
+
+        # Lastly, apply the archive score delta.  This is to boost
+        # or retard build scores for any build in a particular
+        # archive.
+        score += self.build.archive.relative_build_score
 
         return score
 
     def getLogFileName(self):
         """See `IBuildPackageJob`."""
-        sourcename = self.build.sourcepackagerelease.name
-        version = self.build.sourcepackagerelease.version
+        sourcename = self.build.source_package_release.name
+        version = self.build.source_package_release.version
         # we rely on previous storage of current buildstate
         # in the state handling methods.
-        state = self.build.buildstate.name
+        state = self.build.status.name
 
-        dar = self.build.distroarchseries
+        dar = self.build.distro_arch_series
         distroname = dar.distroseries.distribution.name
         distroseriesname = dar.distroseries.name
         archname = dar.architecturetag
@@ -152,11 +145,7 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
 
     def getName(self):
         """See `IBuildPackageJob`."""
-        return self.build.sourcepackagerelease.name
-
-    def getTitle(self):
-        """See `IBuildPackageJob`."""
-        return self.build.title
+        return self.build.source_package_release.name
 
     @property
     def processor(self):
@@ -170,22 +159,22 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmCandidateJobSelection`."""
-        # Avoiding circular import.
-        from lp.buildmaster.model.builder import Builder
-
+        """See `IBuildFarmJob`."""
         private_statuses = (
             PackagePublishingStatus.PUBLISHED,
             PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.DELETED,
             )
         sub_query = """
-            SELECT TRUE FROM Archive, Build, BuildPackageJob, DistroArchSeries
+            SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
+                             PackageBuild, BuildFarmJob, DistroArchSeries
             WHERE
             BuildPackageJob.job = Job.id AND
-            BuildPackageJob.build = Build.id AND
-            Build.distroarchseries = DistroArchSeries.id AND
-            Build.archive = Archive.id AND
+            BuildPackageJob.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.distro_arch_series =
+                DistroArchSeries.id AND
+            BinaryPackageBuild.package_build = PackageBuild.id AND
+            PackageBuild.archive = Archive.id AND
             ((Archive.private IS TRUE AND
               EXISTS (
                   SELECT SourcePackagePublishingHistory.id
@@ -194,12 +183,13 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
                       SourcePackagePublishingHistory.distroseries =
                          DistroArchSeries.distroseries AND
                       SourcePackagePublishingHistory.sourcepackagerelease =
-                         Build.sourcepackagerelease AND
+                         BinaryPackageBuild.source_package_release AND
                       SourcePackagePublishingHistory.archive = Archive.id AND
                       SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
-            build.buildstate = %s
+            PackageBuild.build_farm_job = BuildFarmJob.id AND
+            BuildFarmJob.status = %s
         """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
 
         # Ensure that if BUILDING builds exist for the same
@@ -215,38 +205,44 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
         # The extra clause is only used if the number of available
         # builders is greater than one, or nothing would get dispatched
         # at all.
-        num_arch_builders = Builder.selectBy(
-            processor=processor, manual=False, builderok=True).count()
+        num_arch_builders = getUtility(IBuilderSet).getBuildersForQueue(
+            processor, virtualized).count()
         if num_arch_builders > 1:
             sub_query += """
-                AND EXISTS (SELECT true
-                WHERE ((
-                    SELECT COUNT(build2.id)
-                    FROM Build build2, DistroArchSeries distroarchseries2
-                    WHERE
-                        build2.archive = build.archive AND
-                        archive.purpose = %s AND
-                        archive.private IS FALSE AND
-                        build2.distroarchseries = distroarchseries2.id AND
-                        distroarchseries2.processorfamily = %s AND
-                        build2.buildstate = %s) + 1::numeric)
-                    *100 / %s
-                    < 80)
+            AND Archive.id NOT IN (
+                SELECT Archive.id
+                FROM PackageBuild, BuildFarmJob, Archive,
+                    BinaryPackageBuild, DistroArchSeries
+                WHERE
+                    PackageBuild.build_farm_job = BuildFarmJob.id
+                    AND BinaryPackageBuild.package_build = PackageBuild.id
+                    AND BinaryPackageBuild.distro_arch_series
+                        = DistroArchSeries.id
+                    AND DistroArchSeries.processorfamily = %s
+                    AND BuildFarmJob.status = %s
+                    AND PackageBuild.archive = Archive.id
+                    AND Archive.purpose = %s
+                    AND Archive.private IS FALSE
+                GROUP BY Archive.id
+                HAVING (
+                    (count(*)+1) * 100.0 / %s
+                    ) >= 80
+                )
             """ % sqlvalues(
-                ArchivePurpose.PPA, processor.family,
-                BuildStatus.BUILDING, num_arch_builders)
+                processor.family, BuildStatus.BUILDING,
+                ArchivePurpose.PPA, num_arch_builders)
 
         return sub_query
 
     @staticmethod
     def postprocessCandidate(job, logger):
-        """See `IBuildFarmCandidateJobSelection`."""
+        """See `IBuildFarmJob`."""
         # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
         # Builds in those situation should not be built because they will
         # be wasting build-time, the former case already has a newer source
         # and the latter could not be built in DAK.
-        build_set = getUtility(IBuildSet)
+        build_set = getUtility(IBinaryPackageBuildSet)
 
         build = build_set.getByQueueEntry(job)
         if build.pocket == PackagePublishingPocket.SECURITY:
@@ -254,7 +250,7 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
             logger.debug(
                 "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                 % (build.id, job.id))
-            build.buildstate = BuildStatus.FAILEDTOBUILD
+            build.status = BuildStatus.FAILEDTOBUILD
             job.destroySelf()
             return False
 
@@ -265,7 +261,7 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
             logger.debug(
                 "Build %s SUPERSEDED, queue item %s REMOVED"
                 % (build.id, job.id))
-            build.buildstate = BuildStatus.SUPERSEDED
+            build.status = BuildStatus.SUPERSEDED
             job.destroySelf()
             return False
 

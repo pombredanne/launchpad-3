@@ -1,4 +1,5 @@
-== The Product Bugs Page ==
+The Product Bugs Page
+---------------------
 
 The front page for a product on the bugs domain presents some basic
 information the bugs in it. It doesn't display the list of bugs.
@@ -17,14 +18,16 @@ The page has a link to see all open bugs.
     >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
     True
 
-It also has a link to subscribe to bug mail.
+It also has a link to subscribe to bug mail (which is implemented in
+JavaScript so it doesn't actually go anywhere).
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox')
     >>> user_browser.getLink('Subscribe to bug mail').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+subscribe'
 
-== CVE Bugs ==
+CVE Bugs
+--------
 
 It also displays the number of open bugs associated with a CVE.
 
@@ -45,7 +48,8 @@ The link takes you to the list of bugs with CVEs linked to them.
       Low New
 
 
-== Bugs Fixed Elsewhere ==
+Bugs Fixed Elsewhere
+--------------------
 
 The Bugs front page includes the number of bugs that are fixed in some
 other context. For example, users can see all bugs raised against
@@ -66,7 +70,8 @@ The link takes you to the list of the bugs fixed elsewhere:
     ...
 
 
-== Expirable Bugs ==
+Expirable Bugs
+--------------
 
 The bugs page displays the number of Incomplete, unattended bugs that
 can expire when the project has enabled bug expiration. Jokosher
@@ -101,7 +106,8 @@ cannot see any link reporting that bugs can expire.
     LinkNotFoundError
 
 
-== Tags and Filters ==
+Tags and Filters
+----------------
 
 There's also portlets for easy searching by tags and filters. Its content is
 loaded using Javascript in a separate request.
@@ -129,7 +135,8 @@ tag...
       Critical New
 
 
-== Hot Bugs ==
+Hot Bugs
+--------
 
 A listing of the 10 'hottest' bugs is displayed to allow a quick
 overview of the project.
@@ -168,7 +175,6 @@ since the last update.
     #24 Summary for new bug 9    New      Undecided     ...
     #25 Summary for new bug 10   New      Undecided     ...
 
-
 Fix Released bugs are not shown. We demonstrate this by setting the bugtask
 for bug 18 to be "Fix Released".
 
@@ -180,8 +186,6 @@ for bug 18 to be "Fix Released".
     >>> bug_18.bugtasks[0].transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, project_owner)
     >>> logout()
-
-And then reloading the page. The Fix Released bug, bug 18, is no longer shown.
 
     >>> anon_browser.reload()
     >>> print extract_text(

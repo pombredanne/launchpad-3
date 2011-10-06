@@ -12,8 +12,15 @@ __all__ = [
     'ILaunchpadStatisticSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Int, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Int,
+    TextLine,
+    )
+
 from canonical.launchpad import _
 
 

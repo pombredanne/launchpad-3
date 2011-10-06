@@ -1,33 +1,54 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of CodeImport and CodeImportSet."""
 
-from datetime import datetime, timedelta
-import unittest
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from lp.codehosting.codeimport.tests.test_workermonitor import (
-    nuke_codeimport_sample_data)
+from canonical.launchpad.testing.codeimporthelpers import make_running_import
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.enums import (
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
+from lp.code.errors import (
+    BranchCreatorNotMemberOfOwnerTeam,
+    CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
-from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
+from lp.code.model.codeimportjob import (
+    CodeImportJob,
+    CodeImportJobSet,
+    )
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.code.enums import (
-    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
-from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.testing import (
-    login, login_person, logout, TestCaseWithFactory, time_counter)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
+    login,
+    login_person,
+    logout,
+    TestCaseWithFactory,
+    time_counter,
+    )
 
 
 class TestCodeImportCreation(TestCaseWithFactory):
@@ -35,60 +56,60 @@ class TestCodeImportCreation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_new_svn_import(self):
-        """A new subversion code import should have NEW status."""
+    def test_new_svn_import_svn_scheme(self):
+        """A subversion import can use the svn:// scheme."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
-            url=self.factory.getUniqueURL())
+            url=self.factory.getUniqueURL(scheme="svn"))
         self.assertEqual(
-            CodeImportReviewStatus.NEW,
+            CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
         # No job is created for the import.
-        self.assertIs(None, code_import.import_job)
+        self.assertIsNot(None, code_import.import_job)
 
     def test_reviewed_svn_import(self):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
             url=self.factory.getUniqueURL(),
-            review_status=CodeImportReviewStatus.REVIEWED)
+            review_status=None)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
 
-    def test_new_cvs_import(self):
-        """A new CVS code import should have NEW status."""
+    def test_cvs_import_reviewed(self):
+        """A new CVS code import should have REVIEWED status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
-            branch_name='imported',
-            rcs_type=RevisionControlSystems.CVS,
-            cvs_root=self.factory.getUniqueURL(),
-            cvs_module='module')
-        self.assertEqual(
-            CodeImportReviewStatus.NEW,
-            code_import.review_status)
-        # No job is created for the import.
-        self.assertIs(None, code_import.import_job)
-
-    def test_reviewed_cvs_import(self):
-        """A specific review status can be set for a new import."""
-        code_import = CodeImportSet().new(
-            registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
             cvs_module='module',
-            review_status=CodeImportReviewStatus.REVIEWED)
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # A job is created for the import.
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_git_import_git_scheme(self):
+        """A git import can have a git:// style URL."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            target=IBranchTarget(self.factory.makeProduct()),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.GIT,
+            url=self.factory.getUniqueURL(scheme="git"),
+            review_status=None)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
@@ -99,7 +120,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new git import is always reviewed by default."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
@@ -114,7 +135,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new hg import is always reviewed by default."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.HG,
             url=self.factory.getUniqueURL(),
@@ -122,8 +143,93 @@ class TestCodeImportCreation(TestCaseWithFactory):
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
-        # No job is created for the import.
+        # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
+
+    def test_bzr_import_reviewed(self):
+        """A new bzr import is always reviewed by default."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            target=IBranchTarget(self.factory.makeProduct()),
+            branch_name='mirrored',
+            rcs_type=RevisionControlSystems.BZR,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # A job is created for the import.
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_junk_code_import_rejected(self):
+        """You are not allowed to create code imports targetting +junk."""
+        registrant = self.factory.makePerson()
+        self.assertRaises(AssertionError, CodeImportSet().new,
+            registrant=registrant,
+            target=IBranchTarget(registrant),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+
+    def test_create_source_package_import(self):
+        """Test that we can create an import targetting a source package."""
+        registrant = self.factory.makePerson()
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        code_import = CodeImportSet().new(
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        code_import = removeSecurityProxy(code_import)
+        self.assertEqual(registrant, code_import.registrant)
+        self.assertEqual(registrant, code_import.branch.owner)
+        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(source_package, code_import.branch.sourcepackage)
+        # And a job is still created
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_set_owner(self):
+        """Test that we can create an import owned by someone else."""
+        registrant = self.factory.makePerson()
+        owner = self.factory.makeTeam()
+        removeSecurityProxy(registrant).join(owner)
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        code_import = CodeImportSet().new(
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None, owner=owner)
+        code_import = removeSecurityProxy(code_import)
+        self.assertEqual(registrant, code_import.registrant)
+        self.assertEqual(owner, code_import.branch.owner)
+        self.assertEqual(registrant, code_import.branch.registrant)
+        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(source_package, code_import.branch.sourcepackage)
+        # And a job is still created
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_registrant_must_be_in_owner(self):
+        """Test that we can't create an import for an arbitrary team."""
+        registrant = self.factory.makePerson()
+        owner = self.factory.makeTeam()
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        self.assertRaises(
+            BranchCreatorNotMemberOfOwnerTeam,
+            CodeImportSet().new,
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None, owner=owner)
 
 
 class TestCodeImportDeletion(TestCaseWithFactory):
@@ -140,8 +246,7 @@ class TestCodeImportDeletion(TestCaseWithFactory):
         """Ensure deleting CodeImport objects deletes associated jobs."""
         code_import = self.factory.makeCodeImport()
         login_person(getUtility(ILaunchpadCelebrities).vcs_imports.teamowner)
-        code_import_job = self.factory.makeCodeImportJob(code_import)
-        job_id = code_import_job.id
+        job_id = code_import.import_job.id
         CodeImportJobSet().getById(job_id)
         job = CodeImportJobSet().getById(job_id)
         assert job is not None
@@ -213,7 +318,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Suspending a new import has no impact on jobs.
         code_import = self.factory.makeCodeImport()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.SUSPENDED},
+            {'review_status': CodeImportReviewStatus.SUSPENDED},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -243,7 +348,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Invalidating a new import has no impact on jobs.
         code_import = self.factory.makeCodeImport()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.INVALID},
+            {'review_status': CodeImportReviewStatus.INVALID},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -273,7 +378,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Marking a new import as failing has no impact on jobs.
         code_import = self.factory.makeCodeImport()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.FAILING},
+            {'review_status': CodeImportReviewStatus.FAILING},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -283,7 +388,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Marking an import with a pending job as failing, removes job.
         code_import = self.makeApprovedImportWithPendingJob()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.FAILING},
+            {'review_status': CodeImportReviewStatus.FAILING},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -293,7 +398,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Marking an import with a running job as failing leaves job.
         code_import = self.makeApprovedImportWithRunningJob()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.FAILING},
+            {'review_status': CodeImportReviewStatus.FAILING},
             self.import_operator)
         self.assertIsNot(None, code_import.import_job)
         self.assertEqual(
@@ -509,7 +614,8 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
         # tryFailingImportAgain only succeeds for imports that are FAILING.
         outcomes = {}
         for status in CodeImportReviewStatus.items:
-            code_import = self.factory.makeCodeImport()
+            code_import = self.factory.makeCodeImport(
+                review_status=CodeImportReviewStatus.NEW)
             code_import.updateFromData(
                 {'review_status': status}, self.factory.makePerson())
             try:
@@ -550,196 +656,63 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
             requester, code_import.import_job.requesting_user)
 
 
-def make_active_import(factory, project_name=None, product_name=None,
-                       branch_name=None, svn_branch_url=None,
-                       cvs_root=None, cvs_module=None, git_repo_url=None,
-                       hg_repo_url=None, last_update=None, rcs_type=None):
-    """Make a new CodeImport for a new Product, maybe in a new Project.
-
-    The import will be 'active' in the sense used by
-    `ICodeImportSet.getActiveImports`.
-    """
-    if project_name is not None:
-        project = factory.makeProject(name=project_name)
-    else:
-        project = None
-    product = factory.makeProduct(
-        name=product_name, displayname=product_name, project=project)
-    code_import = factory.makeCodeImport(
-        product=product, branch_name=branch_name,
-        svn_branch_url=svn_branch_url, cvs_root=cvs_root,
-        cvs_module=cvs_module, git_repo_url=git_repo_url,
-        hg_repo_url=hg_repo_url, rcs_type=None)
-    make_import_active(factory, code_import, last_update)
-    return code_import
-
-
-def make_import_active(factory, code_import, last_update=None):
-    """Make `code_import` active as per `ICodeImportSet.getActiveImports`."""
-    from zope.security.proxy import removeSecurityProxy
-    naked_import = removeSecurityProxy(code_import)
-    if naked_import.review_status != CodeImportReviewStatus.REVIEWED:
-        naked_import.updateFromData(
-            {'review_status': CodeImportReviewStatus.REVIEWED},
-            factory.makePerson())
-    if last_update is None:
-        # If last_update is not specfied, presumably we don't care what it is
-        # so we just use some made up value.
-        last_update = datetime(2008, 1, 1, tzinfo=pytz.UTC)
-    naked_import.date_last_successful = last_update
-
-
-def deactivate(project_or_product):
-    """Mark `project_or_product` as not active."""
-    from zope.security.proxy import removeSecurityProxy
-    removeSecurityProxy(project_or_product).active = False
-
-
-class TestGetActiveImports(TestCaseWithFactory):
-    """Tests for CodeImportSet.getActiveImports()."""
+class TestRequestImport(TestCaseWithFactory):
+    """Tests for `ICodeImport.requestImport`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        """Prepare by deleting all the import data in the sample data.
+        # We have to be logged in to request imports
+        TestCaseWithFactory.setUp(self, user='no-priv@canonical.com')
 
-        This means that the tests only have to care about the import
-        data they create.
-        """
-        super(TestGetActiveImports, self).setUp()
-        nuke_codeimport_sample_data()
-        login('no-priv@canonical.com')
+    def test_requestsJob(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        old_date = code_import.import_job.date_due
+        code_import.requestImport(requester)
+        self.assertEqual(requester, code_import.import_job.requesting_user)
+        self.assertTrue(code_import.import_job.date_due <= old_date)
 
-    def tearDown(self):
-        super(TestGetActiveImports, self).tearDown()
-        logout()
+    def test_noop_if_already_requested(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        code_import.requestImport(requester)
+        old_date = code_import.import_job.date_due
+        code_import.requestImport(requester)
+        # The checks don't matter so much, it's more that we don't get
+        # an exception.
+        self.assertEqual(requester, code_import.import_job.requesting_user)
+        self.assertEqual(old_date, code_import.import_job.date_due)
 
-    def testEmpty(self):
-        # We start out with no code imports, so getActiveImports() returns no
-        # results.
-        results = getUtility(ICodeImportSet).getActiveImports()
-        self.assertEquals(list(results), [])
+    def test_optional_error_if_already_requested(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        code_import.requestImport(requester)
+        e = self.assertRaises(
+            CodeImportAlreadyRequested, code_import.requestImport, requester,
+            error_if_already_requested=True)
+        self.assertEqual(requester, e.requesting_user)
 
-    def testOneSeries(self):
-        # When there is one active import, it is returned.
-        code_import = make_active_import(self.factory)
-        results = getUtility(ICodeImportSet).getActiveImports()
-        self.assertEquals(list(results), [code_import])
+    def test_exception_on_disabled(self):
+        # get an SVN request which is suspended
+        code_import = self.factory.makeCodeImport(
+            svn_branch_url=self.factory.getUniqueURL(),
+            review_status=CodeImportReviewStatus.SUSPENDED)
+        requester = self.factory.makePerson()
+        # which leads to an exception if we try and ask for an import
+        self.assertRaises(
+            CodeImportNotInReviewedState, code_import.requestImport,
+            requester)
 
-    def testOneSeriesWithProject(self):
-        # Code imports for products with a project should be returned too.
-        code_import = make_active_import(
-            self.factory, project_name="whatever")
-        results = getUtility(ICodeImportSet).getActiveImports()
-        self.assertEquals(list(results), [code_import])
-
-    def testExcludeDeactivatedProducts(self):
-        # Deactivating a product means that code imports associated to it are
-        # no longer returned.
-        code_import = make_active_import(self.factory)
-        self.failUnless(code_import.product.active)
-        results = getUtility(ICodeImportSet).getActiveImports()
-        self.assertEquals(list(results), [code_import])
-        deactivate(code_import.product)
-        results = getUtility(ICodeImportSet).getActiveImports()
-        self.assertEquals(list(results), [])
-
-    def testExcludeDeactivatedProjects(self):
-        # Deactivating a project means that code imports associated to
-        # products in it are no longer returned.
-        code_import = make_active_import(
-            self.factory, project_name="whatever")
-        self.failUnless(code_import.product.project.active)
-        results = getUtility(ICodeImportSet).getActiveImports()
-        self.assertEquals(list(results), [code_import])
-        deactivate(code_import.product.project)
-        results = getUtility(ICodeImportSet).getActiveImports()
-        self.assertEquals(list(results), [])
-
-    def testSorting(self):
-        # Returned code imports are sorted by product name, then branch name.
-        prod1_a = make_active_import(
-            self.factory, product_name='prod1', branch_name='a')
-        prod2_a = make_active_import(
-            self.factory, product_name='prod2', branch_name='a')
-        prod1_b = self.factory.makeCodeImport(
-            product=prod1_a.product, branch_name='b')
-        make_import_active(self.factory, prod1_b)
-        results = getUtility(ICodeImportSet).getActiveImports()
-        self.assertEquals(
-            list(results), [prod1_a, prod1_b, prod2_a])
-
-    def testSearchByProduct(self):
-        # Searching can filter by product name and other texts.
-        code_import = make_active_import(
-            self.factory, product_name='product')
-        results = getUtility(ICodeImportSet).getActiveImports(
-            text='product')
-        self.assertEquals(
-            list(results), [code_import])
-
-    def testSearchByProductWithProject(self):
-        # Searching can filter by product name and other texts, and returns
-        # matching imports even if the associated product is in a project
-        # which does not match.
-        code_import = make_active_import(
-            self.factory, project_name='whatever', product_name='product')
-        results = getUtility(ICodeImportSet).getActiveImports(
-            text='product')
-        self.assertEquals(
-            list(results), [code_import])
-
-    def testSearchByProject(self):
-        # Searching can filter by project name and other texts.
-        code_import = make_active_import(
-            self.factory, project_name='project', product_name='product')
-        results = getUtility(ICodeImportSet).getActiveImports(
-            text='project')
-        self.assertEquals(
-            list(results), [code_import])
-
-    def testSearchByProjectWithNonMatchingProduct(self):
-        # If a project matches the text, it's an easy mistake to make to
-        # consider all the products with no project as matching too.
-        code_import_1 = make_active_import(
-            self.factory, product_name='product1')
-        code_import_2 = make_active_import(
-            self.factory, project_name='thisone', product_name='product2')
-        results = getUtility(ICodeImportSet).getActiveImports(
-            text='thisone')
-        self.assertEquals(
-            list(results), [code_import_2])
-
-    def testJoining(self):
-        # Test that the query composed by CodeImportSet.composeQueryString
-        # gets the joins right.  We create code imports for each of the
-        # possibilities of active or inactive product and active or inactive
-        # or absent project.
-        expected = set()
-        source = {}
-        for project_active in [True, False, None]:
-            for product_active in [True, False]:
-                if project_active is not None:
-                    project_name = self.factory.getUniqueString()
-                else:
-                    project_name = None
-                code_import = make_active_import(
-                    self.factory, project_name=project_name)
-                if code_import.branch.product.project and not project_active:
-                    deactivate(code_import.branch.product.project)
-                if not product_active:
-                    deactivate(code_import.branch.product)
-                if project_active != False and product_active:
-                    expected.add(code_import)
-                source[code_import] = (product_active, project_active)
-        results = set(getUtility(ICodeImportSet).getActiveImports())
-        errors = []
-        for extra in results - expected:
-            errors.append(('extra', source[extra]))
-        for missing in expected - results:
-            errors.append(('extra', source[missing]))
-        self.assertEquals(errors, [])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_exception_if_already_running(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        code_import = make_running_import(factory=self.factory,
+            code_import=code_import)
+        requester = self.factory.makePerson()
+        self.assertRaises(
+            CodeImportAlreadyRunning, code_import.requestImport,
+            requester)

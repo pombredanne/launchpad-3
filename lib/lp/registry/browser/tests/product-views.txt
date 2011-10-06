@@ -20,10 +20,10 @@ if one exists.  If the product does not have a driver, then the driver
 for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
+    >>> from canonical.launchpad.ftests import ANONYMOUS
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import ANONYMOUS
     >>> login('foo.bar@canonical.com')
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -128,7 +128,7 @@ cannot access the page.
     >>> view = create_initialized_view(firefox, name='+review-license')
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Product..., 'license_reviewed', 'launchpad.ProjectReview')
+    Unauthorized: (<Product..., 'project_reviewed', 'launchpad.Moderate')
 
 Mark is in the registry admins team and is allowed to access the page.
 
@@ -137,7 +137,8 @@ Mark is in the registry admins team and is allowed to access the page.
     >>> print view.label
     Review project
 
-Adding the Commercial Admin to the registry experts team will allow him access.
+Adding the Commercial Admin to the registry experts team will give
+him access.
 
     >>> commercial_member = getUtility(IPersonSet).getByEmail(
     ...     'commercial-member@canonical.com')
@@ -152,10 +153,11 @@ The view allow the reviewer to see and change project privileges and
 judge the licenses.
 
     >>> view.field_names
-    ['license_reviewed', 'license_approved', 'active', 'private_bugs',
+    ['project_reviewed', 'license_approved', 'active', 'private_bugs',
      'reviewer_whiteboard']
 
-The reviewer can deactivate a project if he concludes it is bogus.
+The reviewer cannot deactivate a project if it is linked
+to a source package.
 
     >>> firefox.active
     True
@@ -168,10 +170,27 @@ The reviewer can deactivate a project if he concludes it is bogus.
     >>> view = create_initialized_view(
     ...     firefox, name='+review-license', form=form)
     >>> view.errors
+    [...This project cannot be deactivated since it is linked to
+    ...source packages</a>.']
+
+The reviewer can deactivate a project if he concludes it is bogus.
+
+    >>> product = factory.makeProduct(name='tomato', title='Tomato')
+    >>> product.active
+    True
+
+    >>> form = {
+    ...     'field.active.used': '', # unchecked
+    ...     'field.reviewer_whiteboard': 'Looks bogus',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name='+review-license', form=form)
+    >>> view.errors
     []
-    >>> firefox.active
+    >>> product.active
     False
-    >>> print firefox.reviewer_whiteboard
+    >>> print product.reviewer_whiteboard
     Looks bogus
 
 The reviewer can enable privileged features like private bugs. He can
@@ -272,14 +291,14 @@ subscription.
     >>> form = {
     ...     'field.active': 'on',
     ...     'field.reviewer_whiteboard': 'This is not a free license',
-    ...     'field.license_reviewed': 'on',
+    ...     'field.project_reviewed': 'on',
     ...     'field.actions.change': 'Change',
     ...     }
     >>> view = create_initialized_view(
     ...     firefox, name='+review-license', form=form)
     >>> view.errors
     []
-    >>> firefox.license_reviewed
+    >>> firefox.project_reviewed
     True
     >>> firefox.license_approved
     False
@@ -307,7 +326,7 @@ approval.
     ...     firefox, name='+review-license', form=form)
     >>> view.errors
     []
-    >>> firefox.license_reviewed
+    >>> firefox.project_reviewed
     True
     >>> firefox.license_approved
     True
@@ -335,7 +354,7 @@ the project must be reviewed again
     ...     firefox, name='+review-license', form=form)
     >>> view.errors
     []
-    >>> firefox.license_reviewed
+    >>> firefox.project_reviewed
     True
     >>> firefox.license_approved
     True
@@ -398,39 +417,29 @@ releasefileglob fields.
     ftp://mozilla.org/firefox.*bz2
 
 
+Viewing series for a product
+============================
+
+All the product series can be viewed in batches.
+
+    >>> product = factory.makeProduct()
+    >>> for name in ('stable', 'testing', '1.1', '1.2', 'extra'):
+    ...     series = factory.makeProductSeries(product=product, name=name)
+    >>> view = create_view(product, name='+series')
+    >>> batch = view.batched_series.currentBatch()
+    >>> print batch.total()
+    6
+    >>> for series in batch:
+    ...     print series.name
+    trunk
+    1.2
+    1.1
+    testing
+    stable
+
+
 Product index view
 ==================
-
-Programming languages
----------------------
-
-When the product has no programming languages specified, nothing is displayed
-on the index page.
-
-    >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    False
-
-But if the project owner logs in, they will see the programming language
-details, so that they can edit them.
-
-    >>> login_person(firefox.owner)
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    True
-
-Once the programming languages are specified though, even users who aren't the
-owner will see the list.
-
-    >>> firefox.programminglang = 'C++'
-    >>> transaction.commit()
-
-    >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    True
-
 
 +index portlets
 ---------------
@@ -440,7 +449,7 @@ officially supports.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
-    >>> product = factory.makeProduct(name='tomato', title='Tomato')
+    >>> product = factory.makeProduct(name='cucumber')
     >>> owner = product.owner
     >>> login_person(owner)
     >>> question = factory.makeQuestion(target=product)
@@ -463,8 +472,9 @@ officially supports.
 The portlet are rendered when a product officially uses the Launchpad
 Answers, Blueprints, and Bugs applications.
 
-    >>> product.official_answers = True
-    >>> product.official_blueprints = True
+    >>> from lp.app.enums import ServiceUsage
+    >>> product.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
 
     >>> view = create_initialized_view(
@@ -478,78 +488,3 @@ Answers, Blueprints, and Bugs applications.
     portlet-latest-bugs
     >>> print find_tag_by_id(content, 'portlet-blueprints')['id']
     portlet-blueprints
-
-
-+portlet-packages
------------------
-
-When the product is not linked to a source package in Ubuntu the
-+portlet-packages will show suggestions on potential matches and ask
-the user to make the connection.
-
-    >>> product = factory.makeProduct(name="bingo")
-    >>> login_person(product.owner)
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages",
-    ...     principal=product.owner)
-    >>> print view.suggestions
-    []
-
-    >>> content = find_tag_by_id(view.render(), 'portlet-packages')
-    >>> print extract_text(content)
-    All packages
-    Packages in Ubuntu
-    Launchpad doesn't know which Ubuntu packages this project
-    provides. Links from distribution packages to upstream projects
-    let distribution and upstream maintainers share bugs, patches, and
-    translations efficiently.
-    There are no unlinked source packages that are a good match.
-    Can you suggest one?
-    Link to Ubuntu package
-
-    >>> spn = factory.makeSourcePackageName(name="bingo")
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> distro_package = factory.makeDistributionSourcePackage(
-    ...     sourcepackagename=spn, distribution=ubuntu)
-    >>> spph = factory.makeSourcePackagePublishingHistory(
-    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages",
-    ...     principal=product.owner)
-    >>> print view.suggestions
-    []
-
-    >>> distro_package = factory.makeDistributionSourcePackage(
-    ...     sourcepackagename=spn, distribution=ubuntu)
-
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages",
-    ...     principal=product.owner)
-    >>> print view.suggestions
-    []
-
-    >>> import transaction
-    >>> #transaction.commit()
-    >>> from canonical.launchpad.scripts import QuietFakeLogger
-    >>> logger = QuietFakeLogger()
-    >>> from canonical.testing.layers import reconnect_stores
-    >>> from canonical.config import config
-    >>> # Switch to the statistician user who is the only user with
-    >>> # write permission to the source package cache tables.
-    >>> reconnect_stores(config.statistician.dbuser)
-    >>> # LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
-    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> updated = ubuntu.updateCompleteSourcePackageCache(
-    ...     archive=ubuntu.main_archive, log=logger, ztm=transaction)
-    >>> transaction.commit()
-    >>> reconnect_stores('launchpad')
-    >>> login(ANONYMOUS)
-    >>> product = getUtility(IProductSet)['bingo']
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages",
-    ...     principal=product.owner)
-    >>> print view.suggestions
-    []

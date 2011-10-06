@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -20,18 +20,16 @@ import _pythonpath
 from optparse import OptionParser
 from canonical.database.postgresql import resetSequences
 from canonical.database.sqlbase import connect
+from canonical.launchpad.scripts import db_options
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option(
-            "-d", "--dbname", dest="dbname", help="database name",
-            )
+    db_options(parser)
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many options given")
     if not options.dbname:
         parser.error("Required option --dbname not given")
-    con = connect(None, options.dbname)
+    con = connect()
     resetSequences(con.cursor())
     con.commit()
-

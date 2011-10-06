@@ -1,7 +1,0 @@
-The following email was unhandled:    
-
-%(url)s
-
-Error message:
-
-%(error_msg)s

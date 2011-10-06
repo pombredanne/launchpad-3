@@ -12,9 +12,9 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-
 from zope.interface import Interface
+
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 
 class ICodeImportSchedulerApplication(ILaunchpadApplication):

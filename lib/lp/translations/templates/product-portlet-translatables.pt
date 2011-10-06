@@ -13,7 +13,7 @@
       <li class="translations"
           tal:repeat="series context/translatable_series">
         <a tal:content="series/title"
-               tal:attributes="href string:${series/fmt:url}/+translations">
+               tal:attributes="href series/fmt:url:translations/+translations">
           series title</a>
       </li>
     </ul>
@@ -30,13 +30,13 @@
         <li class="translations"
             tal:repeat="series view/untranslatable_series">
           <a tal:content="series/title"
-             tal:attributes="href string:${series/fmt:url}/+translations">
+             tal:attributes="href series/fmt:url:translations/+translations">
             series title</a> —
           <a tal:attributes="
-              href string:${series/fmt:url}/+translations-upload">
+              href series/fmt:url:translations/+translations-upload">
             manual</a> or
           <a tal:attributes="
-              href string:${series/fmt:url}/+translations-settings">
+              href series/fmt:url:translations/+translations-settings">
             automatic import</a>.
         </li>
       </ul>
@@ -65,10 +65,10 @@
 </div>
 
 <div class="portlet"
-     tal:condition="context/required:launchpad.Admin"
+     tal:condition="context/required:launchpad.TranslationsAdmin"
      id="custom-language-codes">
   If necessary, you may
-  <a tal:attributes="href context/fmt:url/+custom-language-codes"
+  <a tal:attributes="href context/fmt:url:translations/+custom-language-codes"
      class="edit sprite">
     define custom language codes
   </a>

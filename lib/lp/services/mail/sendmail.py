@@ -1,8 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""
-The One True Way to send mail from the Launchpad application.
+"""The One True Way to send mail from the Launchpad application.
 
 Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
 IMailSentEvent or IMailErrorEvent to record status.
@@ -15,38 +14,50 @@ messaging settings -- stub 2004-10-21
 """
 
 __all__ = [
+    'append_footer',
+    'do_paranoid_envelope_to_validation',
     'format_address',
+    'format_address_for_person',
     'get_msgid',
     'MailController',
     'sendmail',
+    'set_immediate_mail_delivery',
     'simple_sendmail',
     'simple_sendmail_from_person',
-    'raw_sendmail',
     'validate_message',
     ]
 
 
-import hashlib
-
 from binascii import b2a_qp
-from email.Encoders import encode_base64
-from email.Utils import getaddresses, make_msgid, formatdate, formataddr
-from email.Message import Message
-from email.Header import Header
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
 from email import Charset
+from email.Encoders import encode_base64
+from email.Header import Header
+from email.Message import Message
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.Utils import (
+    formataddr,
+    formatdate,
+    getaddresses,
+    make_msgid,
+    )
+import hashlib
 from smtplib import SMTP
+import sys
 
+from lazr.restful.utils import get_current_browser_request
 from zope.app import zapi
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 from zope.sendmail.interfaces import IMailDelivery
-from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
-from canonical.lp import isZopeless
-from canonical.launchpad.helpers import is_ascii_only
+from lp.app import versioninfo
+from lp.services.encoding import is_ascii_only
 from lp.services.mail.stub import TestMailer
-from canonical.launchpad import versioninfo
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -54,6 +65,7 @@ from canonical.launchpad import versioninfo
 del Charset.CHARSETS['utf-8']
 Charset.add_charset('utf-8', Charset.SHORTEST, Charset.QP, 'utf-8')
 Charset.add_alias('utf8', 'utf-8')
+
 
 def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     """Validate various bits of the email.
@@ -91,6 +103,26 @@ def do_paranoid_envelope_to_validation(to_addrs):
             "Address contains carriage returns: %r" % (addr,))
 
 
+def append_footer(main, footer):
+    """Append a footer to an email, following signature conventions.
+
+    If there is no footer, do nothing.
+    If there is already a signature, append an additional footer.
+    If there is no existing signature, append '-- \n' and a footer.
+
+    :param main: The main content, which may have a signature.
+    :param footer: An additional footer to append.
+    :return: a new version of main that includes the footer.
+    """
+    if footer == '':
+        footer_separator = ''
+    elif '\n-- \n' in main:
+        footer_separator = '\n'
+    else:
+        footer_separator = '\n-- \n'
+    return ''.join((main, footer_separator, footer))
+
+
 def format_address(name, address):
     r"""Formats a name and address to be used as an email header.
 
@@ -124,6 +156,26 @@ def format_address(name, address):
     # names are folded, so let's unfold it again.
     name = ''.join(name.splitlines())
     return str(formataddr((name, address)))
+
+
+def format_address_for_person(person):
+    """Helper function to call format_address for a person."""
+    email_address = removeSecurityProxy(person.preferredemail).email
+    return format_address(person.displayname, email_address)
+
+
+_immediate_mail_delivery = False
+
+
+def set_immediate_mail_delivery(enabled):
+    """Enable or disable immediate mail delivery.
+
+    Mail is by default queued until the transaction is committed. But if
+    a script requires that mail violate transactions, immediate mail
+    delivery can be enabled.
+    """
+    global _immediate_mail_delivery
+    _immediate_mail_delivery = enabled
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
@@ -295,13 +347,15 @@ def get_addresses_from_header(email_header):
         formataddr((name, address))
         for name, address in getaddresses([email_header])]
 
+
 def validate_message(message):
     """Validate that the supplied message is suitable for sending."""
-    assert isinstance(message, Message), 'Not an email.Message.Message'
-    assert 'to' in message and bool(message['to']), 'No To: header'
-    assert 'from' in message and bool(message['from']), 'No From: header'
-    assert 'subject' in message and bool(message['subject']), \
-            'No Subject: header'
+    assert isinstance(message, Message), "Not an email.Message.Message"
+    assert 'to' in message and bool(message['to']), "No To: header"
+    assert 'from' in message and bool(message['from']), "No From: header"
+    assert 'subject' in message and bool(message['subject']), (
+            "No Subject: header")
+
 
 def sendmail(message, to_addrs=None, bulk=True):
     """Send an email.Message.Message
@@ -320,6 +374,10 @@ def sendmail(message, to_addrs=None, bulk=True):
 
     Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
+
+    This function looks at the `config` singleton for configuration as to
+    where to send the mail; in particular for whether this code is running in
+    zopeless mode, and for a `sendmail_to_stdout` attribute for testing.
 
     :param bulk: By default, a Precedence: bulk header is added to the
         message. Pass False to disable this.
@@ -382,22 +440,28 @@ def sendmail(message, to_addrs=None, bulk=True):
     message['X-Launchpad-Hash'] = hash.hexdigest()
 
     raw_message = message.as_string()
-    if isZopeless():
-        # Zopeless email sending is not unit tested, and won't be.
-        # The zopeless specific stuff is pretty simple though so this
+    message_detail = message['Subject']
+    if _immediate_mail_delivery:
+        # Immediate email delivery is not unit tested, and won't be.
+        # The immediate-specific stuff is pretty simple though so this
         # should be fine.
+        # TODO: Store a timeline action for immediate mail.
 
-        if config.instance_name == 'testrunner':
+        if config.isTestRunner():
             # when running in the testing environment, store emails
             TestMailer().send(
                 config.canonical.bounce_address, to_addrs, raw_message)
+        elif getattr(config, 'sendmail_to_stdout', False):
+            # For debugging, from process-one-mail, just print it.
+            sys.stdout.write(raw_message)
         else:
-            if config.zopeless.send_email:
+            if config.immediate_mail.send_email:
                 # Note that we simply throw away dud recipients. This is fine,
                 # as it emulates the Z3 API which doesn't report this either
                 # (because actual delivery is done later).
                 smtp = SMTP(
-                    config.zopeless.smtp_host, config.zopeless.smtp_port)
+                    config.immediate_mail.smtp_host,
+                    config.immediate_mail.smtp_port)
 
                 # The "MAIL FROM" is set to the bounce address, to behave in a
                 # way similar to mailing list software.
@@ -411,14 +475,17 @@ def sendmail(message, to_addrs=None, bulk=True):
         # The "MAIL FROM" is set to the bounce address, to behave in a way
         # similar to mailing list software.
         return raw_sendmail(
-            config.canonical.bounce_address, to_addrs, raw_message)
+            config.canonical.bounce_address,
+            to_addrs,
+            raw_message,
+            message_detail)
 
 
 def get_msgid():
     return make_msgid('launchpad')
 
 
-def raw_sendmail(from_addr, to_addrs, raw_message):
+def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
     """Send a raw RFC8222 email message.
 
     All headers and encoding should already be done, as the message is
@@ -429,18 +496,18 @@ def raw_sendmail(from_addr, to_addrs, raw_message):
 
     Returns the message-id.
 
+    :param message_detail: Information about the message to include in the
+        request timeline.
     """
+    # Note that raw_sendail has no tests, unit or otherwise.
     assert not isinstance(to_addrs, basestring), 'to_addrs must be a sequence'
     assert isinstance(raw_message, str), 'Not a plain string'
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'
     mailer = zapi.getUtility(IMailDelivery, 'Mail')
-    return mailer.send(from_addr, to_addrs, raw_message)
-
-
-if __name__ == '__main__':
-    from canonical.lp import initZopeless
-    tm = initZopeless()
-    simple_sendmail(
-            'stuart.bishop@canonical.com', ['stuart@stuartbishop.net'],
-            'Testing Zopeless', 'This is the body')
-    tm.uninstall()
+    request = get_current_browser_request()
+    timeline = get_request_timeline(request)
+    action = timeline.start("sendmail", message_detail)
+    try:
+        return mailer.send(from_addr, to_addrs, raw_message)
+    finally:
+        action.finish()

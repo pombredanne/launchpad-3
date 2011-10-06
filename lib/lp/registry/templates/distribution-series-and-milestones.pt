@@ -2,10 +2,12 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="sandm"
-  tal:condition="context/series">
-    <h2>Series and milestones</h2>
-    <ul tal:condition="context/series">
+  tal:define="addserieslink context/menu:overview/addseries"
+  tal:condition="python:context.series or addserieslink.enabled"
+  class="portlet" id="sandm">
+    <h2>Active series and milestones</h2>
+    <ul tal:condition="context/series"
+      tal:content="cache:public, 1 hour">
       <tal:per_series repeat="series context/series">
         <li tal:condition="series/active">
           <strong>
@@ -27,15 +29,13 @@
     </ul>
 
     <ul class="horizontal">
-      <li
-        tal:define="link context/menu:overview/addseries"
-        tal:condition="link/enabled">
+      <li tal:condition="addserieslink/enabled">
         <a tal:replace="structure context/menu:overview/addseries/fmt:link" />
       </li>
-      <li>
+      <li tal:condition="context/series">
         <a tal:replace="structure context/menu:overview/series/fmt:link" />
       </li>
-      <li>
+      <li tal:condition="context/series">
         <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
       </li>
     </ul>

@@ -14,14 +14,12 @@
     <div metal:fill-slot="extra_info">
       <p>
         Resubmitting this proposal to merge will cause this proposal to be
-        marked as <strong>superseded</strong>.  Another merge proposal will
-        be created, with the same source, target and prerequisite branch
-        (if any).
+        marked as <strong>superseded</strong>.  A new proposal will
+        be created.
       </p>
       <p>
-        Everyone who has reviewed the previous proposal or was requested to
-        review the previous proposal will be requested to review the new
-        proposal.
+        Everyone who has reviewed this proposal or was requested to review this
+        proposal will be requested to review the new proposal.
       </p>
     </div>
   </div>

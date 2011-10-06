@@ -7,12 +7,14 @@ __all__ = [
 
 from zope.component import getUtility
 
-
 from lp.archivepublisher.interfaces.archivesigningkey import (
-    IArchiveSigningKey)
+    IArchiveSigningKey,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class PPAKeyGenerator(LaunchpadCronScript):

@@ -6,12 +6,15 @@
 __metaclass__ = type
 __all__ = [ 'BugLinkTargetMixin' ]
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from zope.event import notify
 from zope.security.interfaces import Unauthorized
 
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectDeletedEvent
-
 from canonical.launchpad.webapp.authorization import check_permission
+
 
 class BugLinkTargetMixin:
     """Mixin class for IBugLinkTarget implementation."""

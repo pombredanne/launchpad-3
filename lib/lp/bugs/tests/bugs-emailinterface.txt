@@ -1,11 +1,13 @@
-= Launchpad Bugs e-mail interface =
+Launchpad Bugs e-mail interface
+===============================
 
 Launchpad's bugtracker has an e-mail interface, with which you may report new
 bugs, add comments, and change the details of existing bug reports. Commands
 can be interleaved within a comment, so to distinguish them from the comment,
 they must be indented with at least one space or tab character.
 
-== Submit a new bug ==
+Submit a new bug
+----------------
 
 To report a bug, you send an OpenPGP-signed e-mail message to
 new@bugs.launchpad-domain. You must have registered your key in
@@ -48,12 +50,16 @@ Now, in order to really submit the bug, this email would have to be PGP
 signed, so that the system can verify the sender. But to avoid having
 to sign each email, we'll create a class which fakes a signed email:
 
-    >>> import email.Utils
+    >>> from lp.testing import sampledata
+
+    >>> import email.Message
     >>> class MockSignedMessage(email.Message.Message):
+    ...     def __init__(self, *args, **kws):
+    ...         email.Message.Message.__init__(self, *args, **kws)
+    ...         self.signature = 'fake'
     ...     @property
     ...     def signedMessage(self):
     ...         return self
-    ...     signature = object()
 
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
@@ -64,22 +70,27 @@ we'll have to authenticate the user manually:
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
 
-    >>> from canonical.launchpad.mail.handlers import MaloneHandler
+    >>> from lp.bugs.mail.handler import MaloneHandler
     >>> handler = MaloneHandler()
-    >>> def process_email(raw_mail):
-    ...     msg = email.message_from_string(raw_mail, _class=MockSignedMessage)
+    >>> def construct_email(raw_mail):
+    ...     msg = email.message_from_string(
+    ...         raw_mail, _class=MockSignedMessage)
     ...     if not msg.has_key('Message-Id'):
     ...         msg['Message-Id'] = factory.makeUniqueRFC822MsgId()
-    ...     handler.process(msg, msg['To'])
+    ...     return msg
+
+    >>> def process_email(raw_mail):
+    ...     msg = construct_email(raw_mail)
+    ...     handler.process(msg, msg['To'],
+    ...         )
 
     >>> process_email(submit_mail)
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.ftests import sync
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> def get_latest_added_bug():
     ...     latest_notification = BugNotification.selectFirst(orderBy='-id')
     ...     return latest_notification.bug
@@ -142,7 +153,7 @@ subscribed "implicitly", because he's the product owner.
 If we would file a bug on Ubuntu instead, we would submit a mail like
 this:
 
-    >>> login('test@canonical.com')
+    >>> login(sampledata.USER_EMAIL)
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
@@ -181,6 +192,21 @@ package:
 
 It's possible to file a bug on more than product/package at once:
 
+    # Make sane data to play this test.
+    >>> from canonical.config import config
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> evolution_dsp = debian.getSourcePackage('evolution')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=debian.currentseries,
+    ...     sourcepackagename=evolution_dsp.sourcepackagename)
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
@@ -205,7 +231,6 @@ It's possible to file a bug on more than product/package at once:
     evolution (Debian)
     mozilla-firefox (Debian)
 
-
 If the subject is folded (i.e spans more than one line), it will be
 unfolded before the bug subject is assigned.
 
@@ -224,7 +249,8 @@ unfolded before the bug subject is assigned.
     u'A folded email subject'
 
 
-== Add a comment ==
+Add a comment
+-------------
 
 After a bug has been submitted a notification is sent out. The reply-to
 address is set to the bug address, $bugid@malone-domain. We can send
@@ -248,7 +274,7 @@ includes commands, the email has to be OpenPGP-signed.
     >>> process_email(comment_mail)
     >>> commit()
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> bug_one = bugset.get(1)
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
     >>> added_message in bug_one.messages
@@ -263,7 +289,8 @@ parent will be set to the bug's initial message.
     True
 
 
-== Edit bugs ==
+Edit bugs
+---------
 
 Sometimes you may want to simply edit a bug, without adding a comment.
 For that you can send mails to edit@malone-domain.
@@ -303,8 +330,55 @@ And the summaries were changed:
     >>> print bug_five.title
     Nicer summary
 
+The email handler requires that a bug be specified to be changed. If no
+bug is specified, no edits occur and a message is sent to the user telling
+them what happened.
 
-== GPG signing and adding comments ==
+    >>> edit_mail = """From: test@canonical.com
+    ... To: edit@malone-domain
+    ... Date: Fri Jun 17 10:10:23 BST 2005
+    ... Subject: Not important
+    ...
+    ...     summary "Even nicer summary"
+    ... """
+
+    >>> process_email(edit_mail)
+    >>> commit()
+
+This time, neither bug four or five were updated.
+
+    >>> print bug_four.title
+    Changed summary
+    >>> print bug_five.title
+    Nicer summary
+
+And the person sending the email has received an error message.
+
+    >>> def print_latest_email():
+    ...     commit()
+    ...     if not stub.test_emails:
+    ...         raise AssertionError("No emails queued!")
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     sent_msg = email.message_from_string(raw_message)
+    ...     error_mail, original_mail = sent_msg.get_payload()
+    ...     print "Subject: %s" % sent_msg['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    The message you sent included commands to modify a bug,
+    but no bug was specified. Please supply a bug before the command
+    to modify it.
+    <BLANKLINE>
+    ...
+
+GPG signing and adding comments
+-------------------------------
 
 In order to include commands in the comment, the email has to be GPG
 signed. The key used to sign the email has to be associated with the
@@ -322,16 +396,20 @@ associated with the authenticated Person in Launchpad, the principal
 will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
 principal with that.
 
-    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> from lp.services.mail.interfaces import (
+    ...     IWeaklyAuthenticatedPrincipal,
+    ...     )
     >>> from zope.interface import directlyProvides, directlyProvidedBy
     >>> from zope.security.management import queryInteraction
-    >>> participations = queryInteraction().participations
-    >>> len(participations)
-    1
-    >>> current_principal = participations[0].principal
-    >>> directlyProvides(
-    ...     current_principal, directlyProvidedBy(current_principal),
-    ...     IWeaklyAuthenticatedPrincipal)
+
+    >>> def simulate_receiving_untrusted_mail():
+    ...     participations = queryInteraction().participations
+    ...     assert len(participations) == 1
+    ...     current_principal = participations[0].principal
+    ...     directlyProvides(
+    ...         current_principal, directlyProvidedBy(current_principal),
+    ...         IWeaklyAuthenticatedPrincipal)
+    >>> simulate_receiving_untrusted_mail()
 
 Now we send a comment containing commands.
 
@@ -366,15 +444,6 @@ changes was made to the bug, and the comment wasn't added.
 And an error message was sent to the Sample Person, telling him what's
 wrong.
 
-    >>> def print_latest_email():
-    ...     commit()
-    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    ...     sent_msg = email.message_from_string(raw_message)
-    ...     error_mail, original_mail = sent_msg.get_payload()
-    ...     print "Subject: %s" % sent_msg['Subject']
-    ...     print "To: %s" % ', '.join(to_addrs)
-    ...     print
-    ...     print error_mail.get_payload(decode=True)
     >>> print_latest_email()
     Subject: Submit Request Failure
     To: test@canonical.com
@@ -392,7 +461,9 @@ The same will happen if we send the same email without signing it:
     ...     signature = None
     >>> msg = email.message_from_string(
     ...     comment_mail, _class=MockUnsignedMessage)
-    >>> handler.process(msg, msg['To'])
+    >>> handler.process(
+    ...     msg, msg['To'],
+    ...     )
     True
     >>> commit()
 
@@ -438,21 +509,19 @@ to the bug:
     >>> added_message in bug_one.messages
     True
 
-Unmark the principal:
+In these tests, every time we log in, we're fully trusted again:
 
-    >>> provided_interfaces = directlyProvidedBy(current_principal)
-    >>> directlyProvides(
-    ...     current_principal,
-    ...     provided_interfaces - IWeaklyAuthenticatedPrincipal)
+    >>> login(sampledata.USER_EMAIL)
 
 
-== Commands == 
+Commands
+--------
 
 Now let's take a closer look at all the commands that are available for
 us to play with. First we define a function to easily submit commands
 to edit bug 4:
 
-    >>> def submit_commands(bug, *commands):
+    >>> def construct_command_email(bug, *commands):
     ...     edit_mail = ("From: test@canonical.com\n"
     ...                  "To: edit@malone-domain\n"
     ...                  "Date: Fri Jun 17 10:10:23 BST 2005\n"
@@ -460,12 +529,21 @@ to edit bug 4:
     ...                  "\n"
     ...                  " bug %d\n" % bug.id)
     ...     edit_mail += ' ' + '\n '.join(commands)
-    ...     process_email(edit_mail)
+    ...     return construct_email(edit_mail)
+
+    >>> def submit_command_email(msg):
+    ...     handler.process(
+    ...         msg, msg['To'],
+    ...         )
     ...     commit()
-    ...     sync(bug)
+
+    >>> def submit_commands(bug, *commands):
+    ...     msg = construct_command_email(bug, *commands)
+    ...     submit_command_email(msg)
 
 
-=== bug $bugid ===
+bug $bugid
+~~~~~~~~~~
 
 Switches what bug you want to edit. Example:
 
@@ -509,7 +587,8 @@ And if we specify neither 'new' or an integer:
     ...
 
 
-=== summary "$summary" ===
+summary "$summary"
+~~~~~~~~~~~~~~~~~~
 
 Changes the summary of the bug. The title has to be enclosed in
 quotes. Example:
@@ -541,12 +620,13 @@ If we omit the quotes, there will be an error:
     ...
 
 
-=== private yes|no ===
+private yes|no
+~~~~~~~~~~~~~~
 
 Changes the visibility of the bug. Example:
 
-(We'll subscribe Sample Person to this bug before marking it private, otherwise
-permission to complete the operation will be denied.)
+(We'll subscribe Sample Person to this bug before marking it private,
+otherwise permission to complete the operation will be denied.)
 
     >>> subscription = bug_four.subscribe(bug_four.owner, bug_four.owner)
 
@@ -598,7 +678,8 @@ Specifying something else than 'yes' or 'no' produces an error:
     ...
 
 
-=== security yes|no ===
+security yes|no
+~~~~~~~~~~~~~~~
 
 Changes the security flag of the bug. Example:
 
@@ -647,7 +728,8 @@ Specifying something else than 'yes' or 'no' produces an error:
         security yes
     ...
 
-=== subscribe [$name|$email] ===
+subscribe [$name|$email]
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Subscribes yourself or someone else to the bug. All arguments are
 optional. If you don't specify a name, the sender of the email will
@@ -688,7 +770,8 @@ If we specify a non-existant user, an error message will be sent:
     non_existant@canonical.com
     ...
 
-=== unsubscribe [$name|$email] ===
+unsubscribe [$name|$email]
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Unsubscribes yourself or someone else from the bug.  If you don't
 specify a name or email, the sender of the email will be
@@ -699,7 +782,7 @@ unsubscribed. Examples:
     >>> 'Foo Bar' in [subscription.person.displayname
     ...               for subscription in bug_four.subscriptions]
     False
-    >>> login('test@canonical.com')
+    >>> login(sampledata.USER_EMAIL)
     >>> submit_commands(bug_four, 'unsubscribe')
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]
@@ -708,10 +791,11 @@ unsubscribed. Examples:
 If the user sending the email does not have permission to perform
 the unsubscribe request, an error message wil be sent.
 
+    >>> login(sampledata.NO_PRIVILEGE_EMAIL)
     >>> submit_commands(bug_four, 'unsubscribe mark')
     >>> print_latest_email()
     Subject: Submit Request Failure
-    To: test@canonical.com
+    To: no-priv@canonical.com
     <BLANKLINE>
     ...
     You do not have permission to unsubcribe Mark Shuttleworth.
@@ -721,7 +805,7 @@ Unsubscribing from a bug also unsubscribes you from its duplicates. To
 demonstrate, let's first make no_privs an indirect subscriber from bug
 #5, by subscribing him directly to a dupe of bug #5, bug #6.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login("no-priv@canonical.com")
 
@@ -736,7 +820,7 @@ demonstrate, let's first make no_privs an indirect subscriber from bug
     [u'Sample Person', u'Ubuntu Team']
 
     >>> bug_six.subscribe(no_priv, no_priv)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> sorted([subscriber.displayname
     ...  for subscriber in bug_five.getIndirectSubscribers()])
@@ -758,9 +842,9 @@ bug #5.
     ...  for subscriber in bug_five.getIndirectSubscribers()])
     [u'Sample Person', u'Ubuntu Team']
 
-(Log back in as test@canonical.com for the tests that follow.)
+(Log back in for the tests that follow.)
 
-    >>> login("test@canonical.com")
+    >>> login(sampledata.USER_EMAIL)
 
 If we specify a non-existant user, an error message will be sent:
 
@@ -782,7 +866,8 @@ one subscriber:
     >>> submit_commands(bug_four, 'subscribe test@canonical.com')
 
 
-=== tag $tag ===
+tag $tag
+~~~~~~~~
 
 The 'tag' command assigns a tag to a bug. Using this command we will add the
 tags foo and bar to the bug. Adding a single tag multiple times should
@@ -865,7 +950,8 @@ after the first character.
     with-hyphen+period.
 
 
-=== duplicate $bug_id ===
+duplicate $bug_id
+~~~~~~~~~~~~~~~~~
 
 The 'duplicate' command marks a bug as a duplicate of another bug.
 
@@ -926,38 +1012,14 @@ telling you that you what bug it's a duplicate of.
     duplicate itself.
     ...
 
-If the specified bug has other bugs marked as a duplicate of it, an
-error message is sent telling you this.
 
-    >>> bug_four = getUtility(IBugSet).get(4)
-    >>> bug_four.duplicateof.id
-    2
-
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(bug_four)
-    >>> submit_commands(bug_four.duplicateof, 'duplicate 1')
-    >>> bug_four.duplicateof.id
-    2
-
-    >>> print_latest_email()
-    Subject: Submit Request Failure
-    To: test@canonical.com
-    <BLANKLINE>
-    ...
-    Failing command:
-        duplicate 1
-    ...
-    There are other bugs already marked as duplicates of Bug 2.
-    These bugs should be changed to be duplicates of another bug
-    if you are certain you would like to perform this change.
-    ...
-
-
-=== cve $cve ===
+cve $cve
+~~~~~~~~
 
 The 'cve' command associates a bug with a CVE reference.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams, IProductSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> def new_firefox_bug():
     ...     firefox = getUtility(IProductSet).getByName('firefox')
     ...     return firefox.createBug(CreateBugParams(
@@ -988,7 +1050,8 @@ user.
     Launchpad can't find the CVE "no-such-cve".
     ...
 
-=== affects, assignee, status, importance, milestone ===
+affects, assignee, status, importance, milestone
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 affects $path [assignee $name|$email|nobody]
               [status $status]
@@ -1066,11 +1129,9 @@ A milestone can be assigned to the current task.
     >>> print firefox_task.milestone
     None
     >>> submit_commands(bug_four, 'milestone 1.0')
-    >>> sync(firefox_task)
     >>> print firefox_task.milestone.name
     1.0
     >>> submit_commands(bug_four, 'milestone -')
-    >>> sync(firefox_task)
     >>> print firefox_task.milestone
     None
 
@@ -1094,7 +1155,7 @@ message:
 Attempting to set the milestone for a bug without sufficient
 permissions also elicits an error message:
 
-    >>> login('test@canonical.com')
+    >>> login(sampledata.USER_EMAIL)
     >>> bug = new_firefox_bug()
     >>> commit()
 
@@ -1105,7 +1166,6 @@ permissions also elicits an error message:
     >>> print bug.bugtasks[0].milestone
     None
     >>> submit_commands(bug, 'milestone 1.0')
-    >>> sync(bug.bugtasks[0])
     >>> print bug.bugtasks[0].milestone
     None
     >>> print_latest_email()
@@ -1120,14 +1180,29 @@ permissions also elicits an error message:
     Only owners, drivers and bug supervisors may assign milestones.
     ...
 
-    >>> login('test@canonical.com')
+Sample person must be a bug supervisor for Ubuntu and Evolution to be able to
+nominate bugs for a release.
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.testing.sampledata import (ADMIN_EMAIL)
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>>
+    >>> login(ADMIN_EMAIL)
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     sampledata.USER_EMAIL)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu = removeSecurityProxy(ubuntu)
+    >>> ubuntu.bug_supervisor = sample_person
+    >>> logout()
+
+    >>> login(sampledata.USER_EMAIL)
 
 Like the web UI, we can assign a bug to nobody.
 
     >>> submit_commands(
     ...     bug_four, 'affects debian',
     ...     'assignee nobody')
-    >>> sync(debian_task)
     >>> debian_task.assignee is None
     True
 
@@ -1206,22 +1281,19 @@ Targeting an existing nomination won't create another nomination.
 If Sample Person would be the Ubuntu driver, he'll be able to target
 bugs directly to series.
 
-    >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     # The script's default user doesn't have permission to change the driver.
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.driver = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
-    >>> login('test@canonical.com')
-     >>> sync(bug)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     ubuntu.driver = getUtility(IPersonSet).getByEmail(
+    ...         sampledata.USER_EMAIL)
 
-Now a new bugtask for the series will be create directly.
+    >>> login(sampledata.USER_EMAIL)
+
+Now a new bugtask for the series will be created directly.
 
     >>> submit_commands(bug, 'affects ubuntu/grumpy')
 
@@ -1264,14 +1336,12 @@ task, and the series specific task.
 As with the example with no source package above; if the user isn't a
 driver of the series, only a nomination will be created.
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.driver = None
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
-    >>> login('test@canonical.com')
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     ubuntu.driver = None
+
+    >>> login(sampledata.USER_EMAIL)
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
@@ -1298,7 +1368,7 @@ nomination is automatically approved.
     ...     print driver.displayname
     Sample Person
 
-    >>> login('test@canonical.com')
+    >>> login(sampledata.USER_EMAIL)
     >>> submit_commands(bug, 'affects /firefox/trunk')
 
     >>> for bugtask in bug.bugtasks:
@@ -1316,6 +1386,13 @@ If the user doesn't have permission to approve the nomination, no series
 bug task will be created, only a nomination. A general product bugtask
 will be created if one doesn't exist.
 
+    >>> login(ADMIN_EMAIL)
+    >>> no_priv = getUtility(IPersonSet).getByEmail("no-priv@canonical.com")
+    >>> evolution = getUtility(IProductSet).getByName("evolution")
+    >>> evolution = removeSecurityProxy(evolution)
+    >>> evolution.bug_supervisor = no_priv
+    >>> logout()
+
     >>> login('no-priv@canonical.com')
     >>> bug = new_firefox_bug()
     >>> submit_commands(bug, 'affects /evolution/trunk')
@@ -1329,7 +1406,7 @@ will be created if one doesn't exist.
     ...     print nomination.target.bugtargetdisplayname
     Evolution trunk
 
-    >>> login('test@canonical.com')
+    >>> login(sampledata.USER_EMAIL)
 
 Let's take on the upstream task on bug four as well. This time we'll
 sneak in a 'subscribe' command between the 'affects' and the other
@@ -1354,37 +1431,36 @@ be grouped together:
     Sample Person
 
 
-=== Restricted bug statuses ===
+Restricted bug statuses
+~~~~~~~~~~~~~~~~~~~~~~~
 
     >>> email_user = getUtility(ILaunchBag).user
 
 Bug supervisors can set some restricted statuses:
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> upstream_task.pillar.setBugSupervisor(email_user, email_user)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
-    >>> sync(bug_four)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     upstream_task.pillar.setBugSupervisor(email_user, email_user)
+
     >>> login_person(email_user)
 
     >>> submit_commands(bug_four, 'status wontfix')
-    >>> sync(upstream_task)
     >>> print upstream_task.status.title
     Won't Fix
 
+    >>> submit_commands(bug_four, 'status expired')
+    >>> print upstream_task.status.title
+    Expired
+
 Everyone else gets an explanatory error message:
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> upstream_task.pillar.setBugSupervisor(None, None)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     upstream_task.pillar.setBugSupervisor(None, None)
+
     >>> login('no-priv@canonical.com')
 
     >>> submit_commands(bug_four, 'affects firefox', 'status wontfix')
@@ -1397,6 +1473,19 @@ Everyone else gets an explanatory error message:
         status wontfix
     ...
     The status cannot be changed to wontfix because you are not the
+    registrant or a bug supervisor for Mozilla Firefox.
+    ...
+
+    >>> submit_commands(bug_four, 'affects firefox', 'status expired')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: no-priv@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        status expired
+    ...
+    The status cannot be changed to expired because you are not the
     registrant or a bug supervisor for Mozilla Firefox.
     ...
 
@@ -1417,7 +1506,8 @@ Invalid status:
         status foo
     ...
     The 'status' command expects any of the following arguments:
-    new, incomplete, invalid, wontfix, confirmed, triaged, inprogress, fixcommitted, fixreleased
+    new, incomplete, opinion, invalid, wontfix, expired, confirmed, triaged,
+    inprogress, fixcommitted, fixreleased
     <BLANKLINE>
     For example:
     <BLANKLINE>
@@ -1443,8 +1533,8 @@ Invalid importance:
         importance critical
     ...
 
-XXX mpt 20060516: "importance undecided" is a silly example, but customizing it
-to a realistic value is difficult (see convertArguments in
+XXX mpt 20060516: "importance undecided" is a silly example, but customizing
+it to a realistic value is difficult (see convertArguments in
 launchpad/mail/commands.py).
 
 Trying to use the obsolete "severity" or "priority" commands:
@@ -1459,8 +1549,8 @@ Trying to use the obsolete "severity" or "priority" commands:
     Failing command:
         severity major
     ...
-    To make life a little simpler, Malone no longer has "priority" and "severity"
-    fields. There is now an "importance" field...
+    To make life a little simpler, Malone no longer has "priority" and
+    "severity" fields. There is now an "importance" field...
     ...
 
     >>> submit_commands(bug_four, 'affects firefox', 'priority low')
@@ -1472,8 +1562,8 @@ Trying to use the obsolete "severity" or "priority" commands:
     Failing command:
         priority low
     ...
-    To make life a little simpler, Malone no longer has "priority" and "severity"
-    fields. There is now an "importance" field...
+    To make life a little simpler, Malone no longer has "priority" and
+    "severity" fields. There is now an "importance" field...
     ...
 
 Invalid assignee:
@@ -1494,7 +1584,8 @@ Invalid assignee:
     >>> stub.test_emails = []
 
 
-== Multiple Commands ==
+Multiple Commands
+-----------------
 
 An email can contain multiple commands, even for different bugs.
 
@@ -1549,7 +1640,8 @@ An email can contain multiple commands, even for different bugs.
     >>> bugtask_created_listener.unregister()
 
 
-== Default 'affects' target ==
+Default 'affects' target
+------------------------
 
 Most of the time it's not necessary to give the 'affects' command. If
 you omit it, the email interface  tries to guess which bug task you
@@ -1560,28 +1652,29 @@ a 'status' command to bug seven, the single upstream task will be
 edited:
 
     >>> login('foo.bar@canonical.com')
-    >>> bug_eigth = getUtility(IBugSet).get(8)
-    >>> len(bug_eigth.bugtasks)
+    >>> bug_ten = getUtility(IBugSet).get(10)
+    >>> len(bug_ten.bugtasks)
     1
-    >>> submit_commands(bug_eigth, 'status confirmed')
-    >>> mozilla_task = bug_eigth.bugtasks[0]
-    >>> print mozilla_task.status.name
+    >>> submit_commands(bug_ten, 'status confirmed')
+    >>> linux_task = bug_ten.bugtasks[0]
+    >>> print linux_task.status.name
     CONFIRMED
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print bug_notification.bug.id
-    8
+    10
     >>> print bug_notification.message.text_contents
-    ** Changed in: mozilla-firefox (Debian)
-        Status: Fix Released => Confirmed
+    ** Changed in: linux-source-2.6.15 (Ubuntu)
+        Status: New => Confirmed
 
 If the bug has more than one bug task, we try to guess which bug task
 the user wanted to edit. We apply the following heuristics for choosing
 which bug task to edit:
 
-=== The user is a bug supervisors of the upstream product ===
+The user is a bug supervisors of the upstream product
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    >>> login('test@canonical.com')
+    >>> login(sampledata.USER_EMAIL)
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> submit_commands(
     ...     bug_one, 'status confirmed', 'assignee test@canonical.com')
@@ -1606,32 +1699,32 @@ which bug task to edit:
            Status: New => Confirmed...
 
 
-=== The user is a package bug supervisor ===
+The user is a package bug supervisor
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet,
+    ...     )
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
-    >>> helge = getUtility(IPersonSet).getByName('kreutzm')
-    >>> mozilla_package = ubuntu.getSourcePackage(mozilla_name)
-    >>> mozilla_package.addBugSubscription(helge, helge)
-    <StructuralSubscription ...>
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     moz_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    ...     helge = getUtility(IPersonSet).getByName('kreutzm')
+    ...     mozilla_package = ubuntu.getSourcePackage(moz_name)
+    ...     ignore = mozilla_package.addBugSubscription(helge, helge)
 
     >>> login('kreutzm@itp.uni-hannover.de')
 
     >>> submit_commands(
-    ...     bug_one, 'status confirmed', 'assignee no-priv@canonical.com')
+    ...     bug_one, 'status confirmed',
+    ...     'assignee kreutzm@itp.uni-hannover.de')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
     ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     Mozilla Firefox: Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
+    mozilla-firefox (Ubuntu): Confirmed, assigned to Helge Kreutzmann
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> pending_notifications = BugNotification.select(orderBy='-id', limit=2)
@@ -1640,17 +1733,19 @@ which bug task to edit:
     ...     print bug_notification.message.text_contents
     1
     ** Changed in: mozilla-firefox (Ubuntu)
-         Assignee: (unassigned) => No Privileges Person (no-priv)
+         Assignee: (unassigned) => Helge Kreutzmann (kreutzm)
     1
     ** Changed in: mozilla-firefox (Ubuntu)
            Status: New => Confirmed
 
-=== The user is a bug supervisor of a distribution ===
+The user is a bug supervisor of a distribution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 XXX: TBD after InitialBugContacts is implemented.
      -- Bjorn Tillenius, 2005-11-30
 
-=== The user is a distribution member ===
+The user is a distribution member
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     >>> login('foo.bar@canonical.com')
     >>> submit_commands(
@@ -1669,17 +1764,19 @@ XXX: TBD after InitialBugContacts is implemented.
     ...     print bug_notification.message.text_contents
     1
     ** Changed in: mozilla-firefox (Ubuntu)
-         Assignee: No Privileges Person (no-priv) => Sample Person (name12)
+         Assignee: Helge Kreutzmann (kreutzm) => Sample Person (name12)
     1
     ** Changed in: mozilla-firefox (Ubuntu)
            Status: Confirmed => New
 
 
-=== No matching bug task ===
+No matching bug task
+~~~~~~~~~~~~~~~~~~~~
 
 If none of the bug tasks can be chosen, an error message is sent to the
 user, telling him that he has to use the 'affects' command.
 
+    >>> del stub.test_emails[:]
     >>> login('stuart.bishop@canonical.com')
     >>> submit_commands(
     ...     bug_one, 'status new', 'assignee foo.bar@canonical.com')
@@ -1703,18 +1800,24 @@ user, telling him that he has to use the 'affects' command.
     ...
 
 
-== More About Error Handling ==
+More About Error Handling
+-------------------------
 
 If an error is encountered, an email is sent to the sender informing
 him about the error. Let's start with trying to submit a bug without
 signing the mail:
 
-    >>> login('test@canonical.com')
+    >>> del stub.test_emails[:]
+    >>> login(sampledata.USER_EMAIL)
+    >>> simulate_receiving_untrusted_mail()
 
-    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> msg = signed_message_from_string(submit_mail)
+    >>> import email.Utils
     >>> msg['Message-Id'] = email.Utils.make_msgid()
-    >>> handler.process(msg, msg['To'])
+    >>> handler.process(
+    ...     msg, msg['To'],
+    ...     )
     True
     >>> print_latest_email()
     Subject: Submit Request Failure
@@ -1727,6 +1830,7 @@ signing the mail:
 
 A submit without specifying on what we want to file the bug on:
 
+    >>> login(sampledata.USER_EMAIL)
     >>> submit_mail_no_bugtask = """From: test@canonical.com
     ... To: new@malone
     ... Date: Fri Jun 17 10:20:23 BST 2005
@@ -1787,7 +1891,7 @@ An empty unsigned mail to new@malone:
 
 If we submit an email with no affects command, it is rejected.
 
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> before_count = Bug.select().count()
     >>> submit_mail = """From: Foo Bar <foo.bar@canonical.com>
     ... To: new@bugs.launchpad.ubuntu.com
@@ -1795,9 +1899,10 @@ If we submit an email with no affects command, it is rejected.
     ... Subject: A bug with no affects
     ...
     ... I'm abusing ltsp-build-client to build a diskless fat client, but dint
-    ... of --late-packages ubuntu-desktop. The dpkg --configure step for eg. HAL
-    ... will try to start the daemon and failing, due to the lack of /proc. This
-    ... is just the tip of the iceberg; I'll file more bugs as I go along.
+    ... of --late-packages ubuntu-desktop. The dpkg --configure step for eg.
+    ... HAL will try to start the daemon and failing, due to the lack of
+    ... /proc.  This is just the tip of the iceberg; I'll file more bugs as I
+    ... go along.
     ... """
 
     >>> process_email(submit_mail)
@@ -1820,7 +1925,6 @@ required. If it is missing, the message is also rejected.
 XXX: Gavin Panella 2009-07-24 bug=404010: The need for this test
 arises from the implementation of MaloneHandler.
 
-    >>> from canonical.launchpad.database import Bug
     >>> before_count = Bug.select().count()
     >>> submit_mail = """From: Foo Bar <foo.bar@canonical.com>
     ... To: new@bugs.launchpad.ubuntu.com
@@ -1854,7 +1958,6 @@ edit@bugs).
 XXX: Gavin Panella 2009-07-24 bug=404010: The need for this test
 arises from the implementation of MaloneHandler.
 
-    >>> from canonical.launchpad.database import Bug
     >>> before_count = Bug.select().count()
     >>> submit_mail = """\
     ... From: Foo Bar <foo.bar@canonical.com>
@@ -1888,7 +1991,6 @@ bug-related commands do blow up before the check for a bugtask is
 reached. For example, unsubscribing oneself from a private bug then
 linking a CVE.
 
-    >>> from canonical.launchpad.database import Bug
     >>> before_count = Bug.select().count()
     >>> submit_mail = """\
     ... From: Foo Bar <foo.bar@canonical.com>
@@ -1897,7 +1999,7 @@ linking a CVE.
     ... Subject: A bug with no affects
     ...
     ...  private yes
-    ...  duplicate 1
+    ...  unsubscribe
     ...  cve 1999-8979
     ... """
 
@@ -1919,7 +2021,7 @@ Let's take a closer look at send_process_error_notification(), which is
 used to send the error messages. It needs the message that caused the
 error, so let's create one.
 
-    >>> msg = email.message_from_string("""From: foo.bar@canonical.com
+    >>> test_msg = email.message_from_string("""From: foo.bar@canonical.com
     ... To: bugs@launchpad.net
     ... Message-Id: <original@msg>
     ... Subject: Original Message Subject
@@ -1935,8 +2037,8 @@ send_process_error_notification().
     >>> from canonical.launchpad.mailnotification import (
     ...     send_process_error_notification)
     >>> send_process_error_notification(
-    ...     'test@canonical.com', 'Some subject', 'Some error message.',
-    ...     msg, failing_command=['foo bar'])
+    ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
+    ...     test_msg, failing_command=['foo bar'])
 
 The To and Subject headers got set to the values we provided:
 
@@ -1988,8 +2090,27 @@ error to happen.
     >>> print msg.get_payload(decode=True)
     Original message body.
 
+Sometimes the original error was caused by the original message being
+too large.  In that case we cannot really return the entire original
+message as our outgoing message will be too big.  So, we can truncate
+the original message.
 
-== Error handling ==
+    >>> max_return_size = len(str(test_msg)) / 2
+    >>> send_process_error_notification(
+    ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
+    ...     test_msg, failing_command=['foo bar'],
+    ...     max_return_size=max_return_size)
+    >>> commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+    >>> msg = original_msg.get_payload()[0]
+    >>> # Fudge due to new line added to the payload.
+    >>> len(str(msg)) <= (max_return_size + 1)
+    True
+
+Error handling
+--------------
 
 When creating a new task and assigning it to a team, it is possible
 that the team will not have a contact address. This is not generally
@@ -1998,7 +2119,7 @@ that action we used to have a bug (See bug #126943).
 
 First, we create a new firefox bug.
 
-    >>> login('test@canonical.com')
+    >>> login(sampledata.USER_EMAIL)
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2006
@@ -2018,19 +2139,20 @@ exist without a contact address.
     None
 
 We send another email, creating a new task (for the package in ubuntu)
-and assigning the bug to `warty-gnome`.
+and assigning the bug to `landscape-developers`.
 
     >>> submit_commands(ff_bug,
-    ...     'affects ubuntu/mozilla-firefox', 'assignee warty-gnome')
+    ...     'affects ubuntu/mozilla-firefox', 'assignee landscape-developers')
 
 The email was handled correctly - A new bugtask was added and assigned
 to the specified team.
 
     >>> print ff_bug.bugtasks[-1].assignee.name
-    warty-gnome
+    landscape-developers
 
 
-== Recovering from errors ==
+Recovering from errors
+----------------------
 
 When a user sends an email with multiple commands, some of them might
 fail (because of bad arguments, for example). Some commands, namely
@@ -2146,7 +2268,8 @@ And the sender receives an email to let them know about the failing
     or send an email to help@launchpad.net
 
 
-== Terminating command input ==
+Terminating command input
+-------------------------
 
 To make it possible to submit emails with lines that look like commands
 (but aren't), a 'done' statement is provided. When the email parser
@@ -2183,7 +2306,8 @@ hasn't changed, since the command to set it came after the 'done' statement.
     CONFIRMED
 
 
-== Requesting help ==
+Requesting help
+---------------
 
 It's possible to ask for the help document for the email interface via
 email too. Just send an email to `help@bugs.launchpad.net`.
@@ -2223,7 +2347,7 @@ Only mail coming from verified Launchpad users is answered.
 The help text is taken from the Launchpad help wiki as raw text, and
 transformed to be a bit more readable as a plain text document.
 
-    >>> from canonical.launchpad.mail.handlers import reformat_wiki_text
+    >>> from lp.services.mail.helpers import reformat_wiki_text
     >>> wiki_text = """
     ... = Sample Wiki Text =
     ... # A comment line
@@ -2238,10 +2362,11 @@ transformed to be a bit more readable as a plain text document.
     See you in {{{#launchpad}}}.
 
 
-== Email attachments ==
+Email attachments
+-----------------
 
-Email attachments are stored as bug attachments (provided that they 
-match the criteria described below).
+Email attachments are stored as bug attachments (provided that they match the
+criteria described below).
 
     >>> def print_attachments(attachments):
     ...     if attachments.count() == 0:
@@ -2486,9 +2611,9 @@ as a bug attachment.
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
     No attachments
- 
-If an attachment has one of the content types application/applefile 
-(the resource fork of a MacOS file), application/pgp-signature, 
+
+If an attachment has one of the content types application/applefile
+(the resource fork of a MacOS file), application/pgp-signature,
 application/pkcs7-signature, application/x-pkcs7-signature,
 text/x-vcard, application/ms-tnef, it is not stored.
 
@@ -2511,7 +2636,7 @@ text/x-vcard, application/ms-tnef, it is not stored.
     ...
     ... -----BEGIN PGP SIGNATURE-----
     ... Version: GnuPG v1.4.6 (GNU/Linux)
-    ... 
+    ...
     ... 123eetsdtdgdg43e4
     ... -----END PGP SIGNATURE-----
     ... --BOUNDARY
@@ -2557,12 +2682,12 @@ text/x-vcard, application/ms-tnef, it is not stored.
     ...  affects firefox
     ... --BOUNDARY
     ... Content-type: multipart/appledouble; boundary="SUBBOUNDARY"
-    ... 
+    ...
     ... --SUBBOUNDARY
     ... Content-type: application/applefile
     ... Content-disposition: attachment; filename="sampledata"
     ... Content-tranfer-encoding: 7bit
-    ... 
+    ...
     ... qwert
     ... --SUBBOUNDARY
     ... Content-type: text/plain
@@ -2602,7 +2727,8 @@ Attachments sent in replies to existing bugs are stored too.
     ... --BOUNDARY"""
     >>>
     >>> process_email(submit_mail)
-    >>> new_message = getUtility(IMessageSet).get('comment-with-attachment')[0]
+    >>> new_message = getUtility(IMessageSet).get(
+    ...     'comment-with-attachment')[0]
     >>> new_message in bug_one.messages
     True
     >>> print_attachments(new_message.bugattachments)
@@ -2748,7 +2874,7 @@ Base64 encoded attachments are decoded before being stored.
     ... Content-Transfer-Encoding: base64
     ... X-Attachment-Id: f_fcuhv1fz0
     ... Content-Disposition: attachment; filename=image.jpg
-    ... 
+    ...
     ... dGhpcyBpcyBub3QgYSByZWFsIEpQRyBmaWxl==
     ... --BOUNDARY"""
     >>>
@@ -2758,10 +2884,8 @@ Base64 encoded attachments are decoded before being stored.
     this is not a real JPG file
 
 Some mail clients append a filename to the content type of attachments.
-This does not affect the processing. Note though that the filename from
-the content-type header is ignored, even if the content-disposition 
-header does not provide a filename. The content type of the PGP signature
-is properly detected and thus no bug attchement created.
+The content type of the PGP signature is properly detected and thus no bug
+attachment is created.
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -2782,7 +2906,7 @@ is properly detected and thus no bug attchement created.
     ... Content-Transfer-Encoding: base64
     ... X-Attachment-Id: f_fcuhv1fz0
     ... Content-Disposition: attachment
-    ... 
+    ...
     ... dGhpcyBpcyBub3QgYSByZWFsIEpQRyBmaWxl==
     ... --BOUNDARY
     ... Content-type: text/x-diff; name="sourcefile1.diff"
@@ -2806,9 +2930,9 @@ is properly detected and thus no bug attchement created.
     >>>
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
-    LibraryFileAlias unnamed image/jpeg; name="image.jpg" UNSPECIFIED
+    LibraryFileAlias ... image/jpeg; name="image.jpg" UNSPECIFIED
     this is not a real JPG file
-    LibraryFileAlias sourcefile.diff text/x-diff; name="sourcefile1.diff" PATCH
+    LibraryFileAlias ... text/x-diff; name="sourcefile1.diff" PATCH
     this should be diff output.
 
 
@@ -2816,7 +2940,8 @@ XXX: Add tests for non-ascii mails.
      -- Bjorn Tillenius, 2005-05-20
 
 
-== Reply to a comment on a remote bug ==
+Reply to a comment on a remote bug
+----------------------------------
 
 If someone uses the email interface to reply to a comment which was
 imported into Launchpad from a remote bugtracker their reply will be
@@ -2826,11 +2951,11 @@ possible).
 To demonstrate this we need to set up some example objects. Firstly,
 we'll create a new bug on firefox and link it to a remote bug.
 
-    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugWatchSet, IProductSet)
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -2855,16 +2980,13 @@ set the datecreated field of the bug's initial message (see bug
     ...     msg=initial_bug_message, datecreated=creation_date))
     >>> commit()
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
-    >>> bug_watch = bug_with_watch.addWatch(
-    ...     bug_tracker, '12345', getUtility(ILaunchpadCelebrities).janitor)
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    ...     bug_tracker = new_bugtracker(BugTrackerType.TRAC)
+    ...     bug_watch = bug_with_watch.addWatch(
+    ...         bug_tracker,
+    ...         '12345',
+    ...         getUtility(ILaunchpadCelebrities).janitor)
 
 Someone comments on the remote bug and that bug is imported into
 Launchpad. We'll simulate this locally rather than using the bug
@@ -2932,7 +3054,7 @@ The BugMessage instance which links the emailed comment to the bug also
 links it to the remote bug via the BugWatch that the original comment
 was imported from.
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
 
     >>> reply_bug_message = getUtility(

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """PackageCopier utilities."""
@@ -9,6 +9,7 @@ __all__ = [
     'PackageCopier',
     'UnembargoSecurityPackage',
     'CopyChecker',
+    'check_copy_permissions',
     'do_copy',
     '_do_delayed_copy',
     '_do_direct_copy',
@@ -16,30 +17,43 @@ __all__ = [
     'update_files_privacy',
     ]
 
-import apt_pkg
 import os
 import tempfile
 
+import apt_pkg
 from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildStatus
+from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.packagelocation import build_package_location
-from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import CannotCopy
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, IPublishingSet,
-    ISourcePackagePublishingHistory, active_publishing_status)
-from lp.soyuz.interfaces.queue import IPackageUpload, IPackageUploadSet
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
-from lp.soyuz.scripts.ftpmasterbase import SoyuzScript, SoyuzScriptError
+    active_publishing_status,
+    IBinaryPackagePublishingHistory,
+    IPublishingSet,
+    ISourcePackagePublishingHistory,
+    )
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload,
+    IPackageUploadCustom,
+    IPackageUploadSet,
+    )
+from lp.soyuz.scripts.ftpmasterbase import (
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
 
-# XXX cprov 2009-06-12: This function could be incorporated in ILFA,
-# I just don't see a clear benefit in doing that right now.
 def re_upload_file(libraryfile, restricted=False):
     """Re-upload a librarian file to the public server.
 
@@ -48,6 +62,9 @@ def re_upload_file(libraryfile, restricted=False):
 
     :return: A new `LibraryFileAlias`.
     """
+    # XXX cprov 2009-06-12: This function could be incorporated in ILFA.
+    # I just don't see a clear benefit in doing that right now.
+
     # Open the the libraryfile for reading.
     libraryfile.open()
 
@@ -71,10 +88,11 @@ def re_upload_file(libraryfile, restricted=False):
 
     return new_lfa
 
+
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):
-    """Update file privacy according the publishing detination
+    """Update file privacy according the publishing destination
 
     :param pub_record: One of a SourcePackagePublishingHistory or
         BinaryPackagePublishingHistory record.
@@ -82,7 +100,9 @@ def update_files_privacy(pub_record):
     :return: a list of re-uploaded `LibraryFileAlias` objects.
     """
     package_files = []
+    archive = None
     if ISourcePackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
         # Re-upload the package files files if necessary.
         sourcepackagerelease = pub_record.sourcepackagerelease
         package_files.extend(
@@ -95,7 +115,9 @@ def update_files_privacy(pub_record):
         # Re-upload the source upload changesfile if necessary.
         package_upload = sourcepackagerelease.package_upload
         package_files.append((package_upload, 'changesfile'))
+        package_files.append((sourcepackagerelease, 'changelog'))
     elif IBinaryPackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
         # Re-upload the binary files if necessary.
         binarypackagerelease = pub_record.binarypackagerelease
         package_files.extend(
@@ -106,11 +128,16 @@ def update_files_privacy(pub_record):
         package_upload = build.package_upload
         package_files.append((package_upload, 'changesfile'))
         # Re-upload the buildlog file as necessary.
-        package_files.append((build, 'buildlog'))
+        package_files.append((build, 'log'))
+    elif IPackageUploadCustom.providedBy(pub_record):
+        # Re-upload the custom files included
+        package_files.append((pub_record, 'libraryfilealias'))
+        # And set archive to the right attribute for PUCs
+        archive = pub_record.packageupload.archive
     else:
         raise AssertionError(
-            "pub_record is not one of SourcePackagePublishingHistory "
-            "or BinaryPackagePublishingHistory.")
+            "pub_record is not one of SourcePackagePublishingHistory, "
+            "BinaryPackagePublishingHistory or PackageUploadCustom.")
 
     re_uploaded_files = []
     for obj, attr_name in package_files:
@@ -119,11 +146,11 @@ def update_files_privacy(pub_record):
         # not the opposite. We don't have a use-case for privatizing
         # files yet.
         if (old_lfa is None or
-            old_lfa.restricted == pub_record.archive.private or
+            old_lfa.restricted == archive.private or
             old_lfa.restricted == False):
             continue
         new_lfa = re_upload_file(
-            old_lfa, restricted=pub_record.archive.private)
+            old_lfa, restricted=archive.private)
         setattr(obj, attr_name, new_lfa)
         re_uploaded_files.append(new_lfa)
 
@@ -171,15 +198,64 @@ class CheckedCopy:
             return {'status': BuildSetStatus.NEEDSBUILD}
 
 
+def check_copy_permissions(person, archive, series, pocket,
+                           sourcepackagenames):
+    """Check that `person` has permission to copy a package.
+
+    :param person: User attempting the upload.
+    :param archive: Destination `Archive`.
+    :param series: Destination `DistroSeries`.
+    :param pocket: Destination `Pocket`.
+    :param sourcepackagenames: Sequence of `SourcePackageName`s for the
+        packages to be copied.
+    :raises CannotCopy: If the copy is not allowed.
+    """
+    if person is None:
+        raise CannotCopy("Cannot check copy permissions (no requester).")
+
+    # If there is a requester, check that he has upload permission into
+    # the destination (archive, component, pocket). This check is done
+    # here rather than in the security adapter because it requires more
+    # info than is available in the security adapter.
+    for spn in set(sourcepackagenames):
+        package = series.getSourcePackage(spn)
+        destination_component = package.latest_published_component
+
+        # If destination_component is not None, make sure the person
+        # has upload permission for this component.  Otherwise, any
+        # upload permission on this archive will do.
+        strict_component = destination_component is not None
+        reason = archive.checkUpload(
+            person, series, spn, destination_component, pocket,
+            strict_component=strict_component)
+
+        if reason is not None:
+            raise CannotCopy(reason)
+
+
 class CopyChecker:
     """Check copy candiates.
 
     Allows the checker function to identify conflicting copy candidates
     within the copying batch.
     """
-    def __init__(self, archive, include_binaries, allow_delayed_copies=True):
+    def __init__(self, archive, include_binaries, allow_delayed_copies=True,
+                 strict_binaries=True):
+        """Initialize a copy checker.
+
+        :param archive: the target `IArchive`.
+        :param include_binaries: controls whether or not the published
+            binaries for each given source should be also copied along
+            with the source.
+        :param allow_delayed_copies: boolean indicating whether or not private
+            sources can be copied to public archives using delayed_copies.
+        :param strict_binaries: If 'include_binaries' is True then setting
+            this to True will make the copy fail if binaries cannot be also
+            copied.
+        """
         self.archive = archive
         self.include_binaries = include_binaries
+        self.strict_binaries = strict_binaries
         self.allow_delayed_copies = allow_delayed_copies
         self._inventory = {}
 
@@ -242,8 +318,11 @@ class CopyChecker:
 
         inventory_conflicts = self.getConflicts(source)
 
-        if (destination_archive_conflicts.count() == 0 and
+        # If there are no conflicts with the same version, we can skip the
+        # rest of the checks, but we still want to check conflicting files
+        if (destination_archive_conflicts.is_empty() and
             len(inventory_conflicts) == 0):
+            self._checkConflictingFiles(source)
             return
 
         # Cache the conflicting publications because they will be iterated
@@ -329,8 +408,28 @@ class CopyChecker:
             if not copied_binaries.issuperset(published_binaries):
                 raise CannotCopy(
                     "binaries conflicting with the existing ones")
+        self._checkConflictingFiles(source)
 
-    def checkCopy(self, source, series, pocket):
+    def _checkConflictingFiles(self, source):
+        # If both the source and destination archive are the same, we don't
+        # need to perform this test, since that guarantees the filenames
+        # do not conflict.
+        if source.archive.id == self.archive.id:
+            return None
+        source_files = [
+            sprf.libraryfile.filename for sprf in
+            source.sourcepackagerelease.files]
+        destination_sha1s = self.archive.getFilesAndSha1s(source_files)
+        for lf in source.sourcepackagerelease.files:
+            if lf.libraryfile.filename in destination_sha1s:
+                sha1 = lf.libraryfile.content.sha1
+                if sha1 != destination_sha1s[lf.libraryfile.filename]:
+                    raise CannotCopy(
+                        "%s already exists in destination archive with "
+                        "different contents." % lf.libraryfile.filename)
+
+    def checkCopy(self, source, series, pocket, person=None,
+                  check_permissions=True):
         """Check if the source can be copied to the given location.
 
         Check possible conflicting publications in the destination archive.
@@ -340,13 +439,24 @@ class CopyChecker:
         higher than any version of the same source present in the
         destination suite (series + pocket).
 
+        If person is not None, check that this person has upload rights to
+        the destination (archive, component, pocket).
+
         :param source: copy candidate, `ISourcePackagePublishingHistory`.
         :param series: destination `IDistroSeries`.
         :param pocket: destination `PackagePublishingPocket`.
+        :param person: requester `IPerson`.
+        :param check_permissions: boolean indicating whether or not the
+            requester's permissions to copy should be checked.
 
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
         """
+        if check_permissions:
+            check_copy_permissions(
+                person, self.archive, series, pocket,
+                [source.sourcepackagerelease.sourcepackagename])
+
         if series not in self.archive.distribution.series:
             raise CannotCopy(
                 "No such distro series %s in distribution %s." %
@@ -360,8 +470,14 @@ class CopyChecker:
                 "Source format '%s' not supported by target series %s." %
                 (source.sourcepackagerelease.dsc_format, series.name))
 
-        if self.include_binaries:
-            built_binaries = source.getBuiltBinaries()
+        # Deny copies of source publications containing files with an
+        # expiration date set.
+        for source_file in source.sourcepackagerelease.files:
+            if source_file.libraryfile.expires is not None:
+                raise CannotCopy('source contains expired files')
+
+        if self.include_binaries and self.strict_binaries:
+            built_binaries = source.getBuiltBinaries(want_files=True)
             if len(built_binaries) == 0:
                 raise CannotCopy("source has no binaries to be copied")
             # Deny copies of binary publications containing files with
@@ -409,7 +525,9 @@ class CopyChecker:
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
-            allow_delayed_copies=True):
+            allow_delayed_copies=True, person=None, check_permissions=True,
+            overrides=None, send_email=False, strict_binaries=True,
+            close_bugs=True, create_dsd_job=True, announce_from_person=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -420,17 +538,38 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 
     Wrapper for `do_direct_copy`.
 
-    :param: sources: a list of `ISourcePackagePublishingHistory`.
-    :param: archive: the target `IArchive`.
-    :param: series: the target `IDistroSeries`, if None is given the same
+    :param sources: a list of `ISourcePackagePublishingHistory`.
+    :param archive: the target `IArchive`.
+    :param series: the target `IDistroSeries`, if None is given the same
         current source distroseries will be used as destination.
-    :param: pocket: the target `PackagePublishingPocket`.
-    :param: include_binaries: optional boolean, controls whether or
+    :param pocket: the target `PackagePublishingPocket`.
+    :param include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source.
     :param allow_delayed_copies: boolean indicating whether or not private
         sources can be copied to public archives using delayed_copies.
         Defaults to True, only set as False in the UnembargoPackage context.
+    :param person: the requester `IPerson`.
+    :param check_permissions: boolean indicating whether or not the
+        requester's permissions to copy should be checked.
+    :param overrides: A list of `IOverride` as returned from one of the copy
+        policies which will be used as a manual override insyead of using the
+        default override returned by IArchive.getOverridePolicy().  There
+        must be the same number of overrides as there are sources and each
+        override must be for the corresponding source in the sources list.
+        Overrides will be ignored for delayed copies.
+    :param send_email: Should we notify for the copy performed?
+        NOTE: If running in zopeless mode, the email is sent even if the
+        transaction is later aborted. (See bug 29744)
+    :param announce_from_person: If send_email is True,
+        then send announcement emails with this person as the From:
+    :param strict_binaries: If 'include_binaries' is True then setting this
+        to True will make the copy fail if binaries cannot be also copied.
+    :param close_bugs: A boolean indicating whether or not bugs on the
+        copied publications should be closed.
+    :param create_dsd_job: A boolean indicating whether or not a dsd job
+         should be created for the new source publication.
+
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -442,7 +581,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     copies = []
     errors = []
     copy_checker = CopyChecker(
-        archive, include_binaries, allow_delayed_copies)
+        archive, include_binaries, allow_delayed_copies,
+        strict_binaries=strict_binaries)
 
     for source in sources:
         if series is None:
@@ -450,14 +590,32 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         else:
             destination_series = series
         try:
-            copy_checker.checkCopy(source, destination_series, pocket)
+            copy_checker.checkCopy(
+                source, destination_series, pocket, person, check_permissions)
         except CannotCopy, reason:
             errors.append("%s (%s)" % (source.displayname, reason))
             continue
 
     if len(errors) != 0:
-        raise CannotCopy("\n".join(errors))
+        error_text = "\n".join(errors)
+        if send_email:
+            source = sources[0]
+            # Although the interface allows multiple sources to be copied
+            # at once, we can only send rejection email if a single source
+            # is specified for now.  This is only relied on by packagecopyjob
+            # which will only process one package at a time.  We need to
+            # make the notification code handle atomic rejections such that
+            # it notifies about multiple packages.
+            if series is None:
+                series = source.distroseries
+            # In zopeless mode this email will be sent immediately.
+            notify(
+                person, source.sourcepackagerelease, [], [], archive,
+                series, pocket, summary_text=error_text,
+                action='rejected')
+        raise CannotCopy(error_text)
 
+    overrides_index = 0
     for source in copy_checker.getCheckedCopies():
         if series is None:
             destination_series = source.distroseries
@@ -465,18 +623,45 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             destination_series = series
         if source.delayed:
             delayed_copy = _do_delayed_copy(
-                source, archive, destination_series, pocket, include_binaries)
+                source, archive, destination_series, pocket,
+                include_binaries)
             sub_copies = [delayed_copy]
         else:
+            override = None
+            if overrides:
+                override = overrides[overrides_index]
+            # Make a note of the destination source's version for use
+            # in sending the email notification and closing bugs.
+            existing = archive.getPublishedSources(
+                name=source.sourcepackagerelease.name, exact_match=True,
+                status=active_publishing_status,
+                distroseries=series, pocket=pocket).first()
+            if existing:
+                old_version = existing.sourcepackagerelease.version
+            else:
+                old_version = None
             sub_copies = _do_direct_copy(
-                source, archive, destination_series, pocket, include_binaries)
+                source, archive, destination_series, pocket,
+                include_binaries, override, close_bugs=close_bugs,
+                create_dsd_job=create_dsd_job,
+                close_bugs_since_version=old_version, creator=person)
+            if send_email:
+                notify(
+                    person, source.sourcepackagerelease, [], [], archive,
+                    destination_series, pocket, changes=None,
+                    action='accepted',
+                    announce_from_person=announce_from_person,
+                    previous_version=old_version)
 
+        overrides_index += 1
         copies.extend(sub_copies)
 
     return copies
 
 
-def _do_direct_copy(source, archive, series, pocket, include_binaries):
+def _do_direct_copy(source, archive, series, pocket, include_binaries,
+                    override=None, close_bugs=True, create_dsd_job=True,
+                    close_bugs_since_version=None, creator=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -486,14 +671,23 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     Also copy published binaries for each source if requested to. Again,
     only copy binaries that were not yet copied before.
 
-    :param: source: an `ISourcePackagePublishingHistory`.
-    :param: archive: the target `IArchive`.
-    :param: series: the target `IDistroSeries`, if None is given the same
+    :param source: an `ISourcePackagePublishingHistory`.
+    :param archive: the target `IArchive`.
+    :param series: the target `IDistroSeries`, if None is given the same
         current source distroseries will be used as destination.
-    :param: pocket: the target `PackagePublishingPocket`.
-    :param: include_binaries: optional boolean, controls whether or
+    :param pocket: the target `PackagePublishingPocket`.
+    :param include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source.
+    :param override: An `IOverride` as per do_copy().
+    :param close_bugs: A boolean indicating whether or not bugs on the
+        copied publication should be closed.
+    :param create_dsd_job: A boolean indicating whether or not a dsd job
+         should be created for the new source publication.
+    :param close_bugs_since_version: If close_bugs is True,
+        then this parameter says which changelog entries to parse looking
+        for bugs to close.  See `close_bugs_for_sourcepackagerelease`.
+    :param creator: the requester `IPerson`.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -507,12 +701,30 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
-    if source_in_destination.count() == 0:
-        source_copy = source.copyTo(series, pocket, archive)
-        close_bugs_for_sourcepublication(source_copy)
+    policy = archive.getOverridePolicy()
+    if source_in_destination.is_empty():
+        # If no manual overrides were specified and the archive has an
+        # override policy then use that policy to get overrides.
+        if override is None and policy is not None:
+            package_names = (source.sourcepackagerelease.sourcepackagename,)
+            # Only one override can be returned so take the first
+            # element of the returned list.
+            overrides = policy.calculateSourceOverrides(
+                archive, series, pocket, package_names)
+            # Only one override can be returned so take the first
+            # element of the returned list.
+            assert len(overrides) == 1, (
+                "More than one override encountered, something is wrong.")
+            override = overrides[0]
+        source_copy = source.copyTo(
+            series, pocket, archive, override, create_dsd_job=create_dsd_job,
+            creator=creator)
+        if close_bugs:
+            close_bugs_for_sourcepublication(
+                source_copy, close_bugs_since_version)
         copies.append(source_copy)
     else:
-        source_copy = source_in_destination[0]
+        source_copy = source_in_destination.first()
 
     if not include_binaries:
         source_copy.createMissingBuilds()
@@ -524,9 +736,10 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
     binary_copies = getUtility(IPublishingSet).copyBinariesTo(
-        source.getBuiltBinaries(), series, pocket, archive)
+        source.getBuiltBinaries(), series, pocket, archive, policy=policy)
 
-    copies.extend(binary_copies)
+    if binary_copies is not None:
+        copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
@@ -558,11 +771,11 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
 
     Also include published builds for each source if requested to.
 
-    :param: source: an `ISourcePackagePublishingHistory`.
-    :param: archive: the target `IArchive`.
-    :param: series: the target `IDistroSeries`.
-    :param: pocket: the target `PackagePublishingPocket`.
-    :param: include_binaries: optional boolean, controls whether or
+    :param source: an `ISourcePackagePublishingHistory`.
+    :param archive: the target `IArchive`.
+    :param series: the target `IDistroSeries`.
+    :param pocket: the target `PackagePublishingPocket`.
+    :param include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source.
 
@@ -587,7 +800,14 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     # If binaries are included in the copy we include binary custom files.
     if include_binaries:
         for build in source.getBuilds():
-            if build.buildstate != BuildStatus.FULLYBUILT:
+            # Don't copy builds that aren't yet done, or those without a
+            # corresponding enabled architecture in the new series.
+            try:
+                target_arch = series[build.arch_tag]
+            except NotFoundError:
+                continue
+            if (not target_arch.enabled or
+                build.status != BuildStatus.FULLYBUILT):
                 continue
             delayed_copy.addBuild(build)
             original_build_upload = build.package_upload
@@ -721,7 +941,8 @@ class PackageCopier(SoyuzScript):
             copies = do_copy(
                 sources, self.destination.archive,
                 self.destination.distroseries, self.destination.pocket,
-                self.options.include_binaries, self.allow_delayed_copies)
+                self.options.include_binaries, self.allow_delayed_copies,
+                check_permissions=False)
         except CannotCopy, error:
             self.logger.error(str(error))
             return []

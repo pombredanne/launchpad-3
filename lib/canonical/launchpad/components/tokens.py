@@ -14,7 +14,7 @@ import random
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 
 def create_token(token_length):

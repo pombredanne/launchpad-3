@@ -7,23 +7,30 @@
 __metaclass__ = type
 
 
-from lp.code.enums import CodeReviewNotificationLevel
-from canonical.launchpad.mail import format_address
-from canonical.launchpad.mailout import append_footer
-from lp.code.mail.branchmergeproposal import BMPMailer
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.webapp import canonical_url
+from lp.code.enums import CodeReviewNotificationLevel
+from lp.code.interfaces.branchmergeproposal import (
+    ICodeReviewCommentEmailJobSource,
+    )
+from lp.code.mail.branchmergeproposal import BMPMailer
+from lp.services.mail.sendmail import (
+    append_footer,
+    format_address,
+    )
 
 
 def send(comment, event):
     """Send a copy of the code review comments to branch subscribers."""
-    CodeReviewCommentMailer.forCreation(comment, event.email).sendAll()
+    getUtility(ICodeReviewCommentEmailJobSource).create(comment)
 
 
 class CodeReviewCommentMailer(BMPMailer):
     """Send email about creation of a CodeReviewComment."""
 
-    def __init__(self, code_review_comment, recipients, original_email,
-                 message_id=None):
+    def __init__(self, code_review_comment, recipients, message_id=None):
         """Constructor."""
         self.code_review_comment = code_review_comment
         self.message = code_review_comment.message
@@ -35,7 +42,12 @@ class CodeReviewCommentMailer(BMPMailer):
             self, self.message.subject, None, recipients, merge_proposal,
             from_address, message_id=message_id)
         self.attachments = []
+        original_email = self.code_review_comment.getOriginalEmail()
         if original_email is not None:
+            # The original_email here is wrapped in a zope security proxy,
+            # which is not helpful as there is no interface defined for
+            # emails, so strip it off here.
+            original_email = removeSecurityProxy(original_email)
             # The attachments for the code review comment are actually
             # library file aliases.
             display_aliases, other_aliases = (
@@ -52,21 +64,22 @@ class CodeReviewCommentMailer(BMPMailer):
                 else:
                     content_type = part['content-type']
                 if (filename, content_type) in include_attachments:
+                    payload = part.get_payload(decode=True)
                     self.attachments.append(
-                        (part.get_payload(), filename, content_type))
+                        (payload, filename, content_type))
         self._generateBodyBits()
 
     @classmethod
-    def forCreation(klass, code_review_comment, original_email=None):
+    def forCreation(klass, code_review_comment):
         """Return a mailer for CodeReviewComment creation."""
         merge_proposal = code_review_comment.branch_merge_proposal
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         return klass(
-            code_review_comment, recipients, original_email,
+            code_review_comment, recipients,
             code_review_comment.message.rfc822msgid)
 
-    def _getSubject(self, email):
+    def _getSubject(self, email, recipient):
         """Don't do any string template insertions on subjects."""
         return self.code_review_comment.message.subject
 
@@ -79,12 +92,12 @@ class CodeReviewCommentMailer(BMPMailer):
                 vote_tag = ''
             else:
                 vote_tag = ' ' + self.code_review_comment.vote_tag
-            self.body_prefix = 'Review: %s%s\n' % (
+            self.body_prefix = 'Review: %s%s\n\n' % (
                 self.code_review_comment.vote.title, vote_tag)
         self.body_main = self.message.text_contents
         self.proposal_url = canonical_url(self.merge_proposal)
 
-    def _getBody(self, email):
+    def _getBody(self, email, recipient):
         """Return the complete body to use for this email.
 
         If there was a vote, we prefix "Review: " to the message.

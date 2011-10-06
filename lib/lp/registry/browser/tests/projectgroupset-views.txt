@@ -5,8 +5,7 @@ Project groups cannot be administered by end-users.  Only members of the
 admins and registry admins teams can list, create, or review them.
 
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> login('no-priv@canonical.com')
     >>> project_set = getUtility(IProjectGroupSet)
@@ -20,7 +19,7 @@ A Launchpad admin has permission to access the +index view.
     >>> view = create_view(project_set, name='+index')
 
     >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.ProjectReview', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
 The view provides a page_title.
@@ -37,7 +36,7 @@ A regular user cannot access the view.
     >>> user.inTeam(registry)
     False
 
-    >>> check_permission('launchpad.ProjectReview', view)
+    >>> check_permission('launchpad.Moderate', view)
     False
 
 A member of the registry team has permission.
@@ -49,7 +48,7 @@ A member of the registry team has permission.
     True
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
 
@@ -60,7 +59,7 @@ A Launchpad admin has permission to access the +all view.
 
     >>> view = create_view(project_set, name='+all')
     >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.ProjectReview', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
 The view provides a page_title.
@@ -71,13 +70,13 @@ The view provides a page_title.
 A regular user cannot access the view.
 
     >>> login_person(user)
-    >>> check_permission('launchpad.ProjectReview', view)
+    >>> check_permission('launchpad.Moderate', view)
     False
 
 A member of the registry team has permission.
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
 
@@ -88,7 +87,7 @@ A Launchpad admin has permission to access the +new view.
 
     >>> view = create_view(project_set, name='+new')
     >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.ProjectReview', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
     >>> print view.page_title
@@ -97,12 +96,11 @@ A Launchpad admin has permission to access the +new view.
 A regular user cannot access the view.
 
     >>> login_person(user)
-    >>> check_permission('launchpad.ProjectReview', view)
+    >>> check_permission('launchpad.Moderate', view)
     False
 
 A member of the registry team has permission.
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
-

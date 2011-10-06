@@ -14,11 +14,11 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 def get_script():
@@ -228,28 +228,19 @@ class UpdateTranslationStatsTest(unittest.TestCase):
             # Get the Spanish IPOFile.
             pofile = template.getPOFileByLang('es')
             if pofile is not None:
-                # This method should not return any IPOFile with variant field
-                # set.
-                assert pofile.variant is None
                 currentcount += pofile.currentCount()
         contributor_count = hoary.getPOFileContributorsByLanguage(
                 spanish).count()
-
-        # As noted in the for loop, we don't count IPOFile objects with
-        # variants. Here we can see that, actually, there are translations
-        # in a IPOFile with the variant field set so it's not just that we
-        # count it with a '0' value.
-        pofile_with_variant = pmount_template.getPOFileByLang('es', u'test')
-        self.failIf(pofile_with_variant.currentCount() <= 0)
-
 
         # The amount of messages to translate in Hoary is the expected.
         self.failUnlessEqual(hoary.messagecount, messagecount)
 
         # And the same for translations and contributors.
         self.failUnlessEqual(spanish_hoary.currentCount(), currentcount)
-        self.failUnlessEqual(spanish_hoary.contributor_count,
-            contributor_count)
+        # XXX Danilo Segan 2010-08-06: we should not assert that
+        # sampledata is correct. Bug #614397.
+        #self.failUnlessEqual(spanish_hoary.contributor_count,
+        #    contributor_count)
 
         # Let's set 'pmount' template as not current for Hoary.
         pmount_template.iscurrent = False
@@ -371,9 +362,3 @@ class UpdateTranslationStatsTest(unittest.TestCase):
         self.failUnlessEqual(
             None, english_dsl, 'The English DistroSeriesLangauge must '
             'not exist.')
-
-
-def test_suite():
-    """Return this module's test suite."""
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -37,7 +37,7 @@
           name=""
           tal:attributes="
             id string:field.text${view/id_suffix};
-            name string:field.text${view/id_suffix};
+            name string:field.text;
             value view/text;
           "
         />

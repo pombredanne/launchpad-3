@@ -3,11 +3,17 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
+
+<metal:side fill-slot="side">
+    <div class="portlet">
+      <a href="/+editmylanguages" class="sprite edit">Change your preferred languages</a>
+    </div>
+</metal:side>
 
 <div metal:fill-slot="heading">
   <h1 tal:content="view/page_title" />
@@ -49,7 +55,7 @@
           By reviewing the following translations, you can help ensure other translators' work is published to software users. (<a href="/+help/reviewing.html" target="help">More about reviewing</a>)
         </p>
         <metal:translations-to-review
-          tal:replace="structure context/@@+translations-to-review-table" />
+          tal:replace="structure view/translations_to_review_table" />
         <div class="see-all"
              tal:condition="python: view.num_projects_and_packages_to_review > 1">
           <a href="+translations-to-review" id="translations-to-review-link">
@@ -68,7 +74,7 @@
       <div id="translations-to-complete-section" class="portlet">
         <h2>Translations you can help complete</h2>
         <metal:translations-to-complete
-          tal:replace="structure context/@@+translations-to-complete-table" />
+          tal:replace="structure view/translations_to_complete_table" />
       </div>
     </tal:translator>
   </tal:me>

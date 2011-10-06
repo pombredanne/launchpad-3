@@ -3,8 +3,8 @@
 In the 'Bugs' facet of a distribution we can find a list of bugs
 reported in that distribution and simple and advanced search forms.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOpenLaunchBag, IDistributionSet)
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> launchbag = getUtility(IOpenLaunchBag)
     >>> debian = getUtility(IDistributionSet).getByName('debian')
 
@@ -230,12 +230,12 @@ distribution context.
 And now we'll change the status of one of the bugtasks, but first we
 need to be logged in.
 
-    >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login
 
     >>> login("test@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
     >>> open_bugtask = getUtility(IBugTaskSet).get(19)
     >>> open_bugtask.status.name
     'NEW'
@@ -283,9 +283,9 @@ The same is true for a sarge package.
     []
 
 
-== Project Search Page ==
+== ProjectGroup Search Page ==
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
 
 The simple search form returns only open bugtasks.

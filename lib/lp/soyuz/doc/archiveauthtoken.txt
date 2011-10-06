@@ -12,7 +12,7 @@ First we create a private PPA for Joe.
     >>> login("admin@canonical.com")
     >>> joe = factory.makePerson(name="joe", displayname="Joe Smith")
     >>> joe_private_ppa = factory.makeArchive(
-    ...     owner=joe, private=True)
+    ...     owner=joe, private=True, name='ppa')
     >>> logout()
 
 == Creating new tokens ==
@@ -21,8 +21,7 @@ New tokens are created using IArchive.newAuthToken() but this is only
 possible if there is already a valid subscription for the user for
 that archive.
 
-First, login as joe and try to create a token for ourselves, even
-though we do not yet have a subscription:
+Create Brad, and his team:
 
     >>> login("admin@canonical.com")
     >>> bradsmith = factory.makePerson(
@@ -30,12 +29,6 @@ though we do not yet have a subscription:
     ...     email="brad@example.com")
     >>> teambrad = factory.makeTeam(
     ...     owner=bradsmith, displayname="Team Brad", name='teambrad')
-    >>> login("brad@example.com")
-    >>> new_token = joe_private_ppa.newAuthToken(bradsmith)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: You do not have a subscription for
-    PPA for Joe Smith.
 
 Create a subscription for Team Brad to joe's archive:
 

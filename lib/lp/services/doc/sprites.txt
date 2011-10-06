@@ -6,13 +6,15 @@ so that browsers do not have to make as many requests when they first
 view a page. An individual sprite is displayed as a background image
 on an element by setting the background position.
 
-A new image can be added to the combined file with the command:
+A new image can be added to the combined file with the command::
+
     make sprite_image
 
 The resulting icon-sprites and icon-sprites.positioning files must
 be committed to the repository. Any changes to the CSS template will
 be automatically picked up when Launchpad is restarted. If you don't
-want to restart launchpad.dev, you can run:
+want to restart launchpad.dev, you can run::
+
     make css_combine
 
 
@@ -23,11 +25,15 @@ SpriteUtil takes a template css file that contains special comments
 indicating that the background-image for a given rule should be
 added to the combined image file and the rule should be updated.
 
-For example:
+For example::
+
     .add {
         background-image: url(/@@/edit.png); /* sprite-ref: group1 */
     }
+
 would become
+::
+
     .add {
         background-image: url(foo/combined_image.png);
         background-position: 0px 234px;

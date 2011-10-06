@@ -31,9 +31,10 @@ import sys
 from itertools import takewhile
 from pprint import pprint
 
+${python-relative-path-setup}
 
 # The test script for this branch.
-TEST = '${buildout:directory}/bin/test'
+TEST = "${buildout:directory/bin/test}"
 
 # Regular expression to match numbered stories.
 STORY_RE = re.compile("(.*)/\d{2}-.*")
@@ -49,14 +50,17 @@ def get_test_name(test):
     match = STORY_RE.match(test)
     if match:
         return match.group(1)
-    return test
 
 
 def gen_test_lines(lines):
     def p_start(line):
-        return line.startswith('Tests with failures:')
+        return (
+            line.startswith('Tests with failures:') or
+            line.startswith('Tests with errors:'))
     def p_take(line):
-        return not line.startswith('Total:')
+        return not (
+            line.isspace() or
+            line.startswith('Total:'))
     lines = iter(lines)
     for line in lines:
         if p_start(line):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugzilla ExternalBugTracker utility."""
@@ -11,41 +11,56 @@ __all__ = [
     'needs_authentication',
     ]
 
-import pytz
+from email.Utils import parseaddr
+from httplib import BadStatusLine
+from urllib2 import URLError
+from xml.dom import minidom
 import re
+import string
 import xml.parsers.expat
 import xmlrpclib
 
-from email.Utils import parseaddr
-from xml.dom import minidom
-
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical import encoding
 from canonical.config import config
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.url import urlappend, urlparse
-from canonical.launchpad.webapp.publisher import canonical_url
-
+from lp.services.messages.interfaces.message import IMessageSet
+from canonical.launchpad.webapp.url import (
+    urlappend,
+    urlparse,
+    )
 from lp.bugs.externalbugtracker.base import (
-    BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
-    ExternalBugTracker, InvalidBugId, LookupTree,
-    UnknownRemoteStatusError, UnparseableBugData,
-    UnparseableBugTrackerVersion)
-from lp.bugs.externalbugtracker.xmlrpc import (
-    UrlLib2Transport)
-from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+    BugNotFound,
+    BugTrackerAuthenticationError,
+    BugTrackerConnectError,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    UnknownRemoteImportanceError,
+    UnknownRemoteStatusError,
+    UnparsableBugData,
+    UnparsableBugTrackerVersion,
+    )
+from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
+    ISupportsBackLinking,
+    ISupportsCommentImport,
+    ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE,
+    )
+from lp.services import encoding
+from lp.services.database.isolation import ensure_no_transaction
 
 
 class Bugzilla(ExternalBugTracker):
     """An ExternalBugTrack for dealing with remote Bugzilla systems."""
 
-    batch_query_threshold = 0 # Always use the batch method.
+    batch_query_threshold = 0  # Always use the batch method.
     _test_xmlrpc_proxy = None
 
     def __init__(self, baseurl, version=None):
@@ -53,8 +68,10 @@ class Bugzilla(ExternalBugTracker):
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
+        self.remote_bug_importance = {}
         self.remote_bug_product = {}
 
+    @ensure_no_transaction
     def _remoteSystemHasBugzillaAPI(self):
         """Return True if the remote host offers the Bugzilla API.
 
@@ -72,7 +89,10 @@ class Bugzilla(ExternalBugTracker):
             # server because it's the most lightweight method there is.
             remote_version = proxy.Bugzilla.version()
         except xmlrpclib.Fault, fault:
-            if fault.faultCode == 'Client':
+            # 'Client' is a hangover. Either Bugzilla or the Perl
+            # XML-RPC lib in use returned it as faultCode. It's wrong,
+            # but it's known wrongness, so we recognize it here.
+            if fault.faultCode in (xmlrpclib.METHOD_NOT_FOUND, 'Client'):
                 return False
             else:
                 raise
@@ -85,7 +105,7 @@ class Bugzilla(ExternalBugTracker):
                 return False
             else:
                 raise
-        except xmlrpclib.ResponseError:
+        except (xmlrpclib.ResponseError, xml.parsers.expat.ExpatError):
             # The server returned an unparsable response.
             return False
         else:
@@ -96,6 +116,7 @@ class Bugzilla(ExternalBugTracker):
                     return True
             return False
 
+    @ensure_no_transaction
     def _remoteSystemHasPluginAPI(self):
         """Return True if the remote host has the Launchpad plugin installed.
         """
@@ -110,7 +131,10 @@ class Bugzilla(ExternalBugTracker):
             # server because it's the most lightweight method there is.
             proxy.Launchpad.plugin_version()
         except xmlrpclib.Fault, fault:
-            if fault.faultCode == 'Client':
+            # 'Client' is a hangover. Either Bugzilla or the Perl
+            # XML-RPC lib in use returned it as faultCode. It's wrong,
+            # but it's known wrongness, so we recognize it here.
+            if fault.faultCode in (xmlrpclib.METHOD_NOT_FOUND, 'Client'):
                 return False
             else:
                 raise
@@ -124,7 +148,7 @@ class Bugzilla(ExternalBugTracker):
                 return False
             else:
                 raise
-        except xmlrpclib.ResponseError:
+        except (xmlrpclib.ResponseError, xml.parsers.expat.ExpatError):
             # The server returned an unparsable response.
             return False
         else:
@@ -135,12 +159,17 @@ class Bugzilla(ExternalBugTracker):
 
         See `IExternalBugTracker`.
         """
-        if self._remoteSystemHasPluginAPI():
-            return BugzillaLPPlugin(self.baseurl)
-        elif self._remoteSystemHasBugzillaAPI():
-            return BugzillaAPI(self.baseurl)
-        else:
-            return self
+        # checkwatches isn't set up to handle errors here, so we supress
+        # known connection issues. They'll be handled and logged later on when
+        # further requests are attempted.
+        try:
+            if self._remoteSystemHasPluginAPI():
+                return BugzillaLPPlugin(self.baseurl)
+            elif self._remoteSystemHasBugzillaAPI():
+                return BugzillaAPI(self.baseurl)
+        except (xmlrpclib.ProtocolError, URLError, BadStatusLine):
+            pass
+        return self
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -149,13 +178,22 @@ class Bugzilla(ExternalBugTracker):
         # encoding that page is in, and then encode() it into the utf-8
         # that minidom requires.
         contents = encoding.guess(contents).encode("utf-8")
+        # Since the string is utf-8 encoded and utf-8 encoded string have the
+        # high bit set for non-ASCII characters, we can now strip out any
+        # ASCII control characters without touching encoded Unicode
+        # characters.
+        bad_chars = ''.join(chr(i) for i in range(0, 32))
+        for char in '\n\r\t':
+            bad_chars = bad_chars.replace(char, '')
+        trans_map = string.maketrans(bad_chars, ' ' * len(bad_chars))
+        contents = contents.translate(trans_map)
         return minidom.parseString(contents)
 
     def _probe_version(self):
         """Retrieve and return a remote bugzilla version.
 
         If the version cannot be parsed from the remote server
-        `UnparseableBugTrackerVersion` will be raised. If the remote
+        `UnparsableBugTrackerVersion` will be raised. If the remote
         server cannot be reached `BugTrackerConnectError` will be
         raised.
         """
@@ -173,7 +211,7 @@ class Bugzilla(ExternalBugTracker):
             if bugzilla:
                 self.is_issuezilla = True
             else:
-                raise UnparseableBugTrackerVersion(
+                raise UnparsableBugTrackerVersion(
                     'Failed to parse version from xml.cgi for %s: could '
                     'not find top-level bugzilla element'
                     % self.baseurl)
@@ -188,7 +226,7 @@ class Bugzilla(ExternalBugTracker):
         as (2, 15).
 
         If the passed version is None, None will be returned.
-        If the version cannot be parsed `UnparseableBugTrackerVersion`
+        If the version cannot be parsed `UnparsableBugTrackerVersion`
         will be raised.
         """
         if version is None:
@@ -196,26 +234,54 @@ class Bugzilla(ExternalBugTracker):
 
         version_numbers = re.findall('[0-9]+', version)
         if len(version_numbers) == 0:
-            raise UnparseableBugTrackerVersion(
+            raise UnparsableBugTrackerVersion(
                 'Failed to parse version %r for %s' %
                 (version, self.baseurl))
 
         return tuple(int(number) for number in version_numbers)
 
-    def convertRemoteImportance(self, remote_importance):
-        """See `ExternalBugTracker`.
+    _importance_lookup = {
+        'blocker': BugTaskImportance.CRITICAL,
+        'critical': BugTaskImportance.CRITICAL,
+        'immediate': BugTaskImportance.CRITICAL,
+        'urgent': BugTaskImportance.CRITICAL,
+        'p5': BugTaskImportance.CRITICAL,
+        'crash': BugTaskImportance.HIGH,
+        'grave': BugTaskImportance.HIGH,
+        'major': BugTaskImportance.HIGH,
+        'high': BugTaskImportance.HIGH,
+        'p4': BugTaskImportance.HIGH,
+        'nor': BugTaskImportance.MEDIUM,
+        'normal': BugTaskImportance.MEDIUM,
+        'medium': BugTaskImportance.MEDIUM,
+        'p3': BugTaskImportance.MEDIUM,
+        'minor': BugTaskImportance.LOW,
+        'low': BugTaskImportance.LOW,
+        'trivial': BugTaskImportance.LOW,
+        'p2': BugTaskImportance.LOW,
+        'p1': BugTaskImportance.LOW,
+        'enhancement': BugTaskImportance.WISHLIST,
+        'wishlist': BugTaskImportance.WISHLIST,
+        }
 
-        This method is implemented here as a stub to ensure that
-        existing functionality is preserved. As a result,
-        BugTaskImportance.UNKNOWN will always be returned.
-        """
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`."""
+        words = remote_importance.lower().split()
+        try:
+            return self._importance_lookup[words.pop()]
+        except KeyError:
+            raise UnknownRemoteImportanceError(remote_importance)
+        except IndexError:
+            return BugTaskImportance.UNKNOWN
+
         return BugTaskImportance.UNKNOWN
 
     _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
     _status_lookup = LookupTree(
         ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
          BugTaskStatus.INPROGRESS),
-        ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
+        ('NEEDINFO', 'NEEDINFO_REPORTER', 'NEEDSINFO', 'WAITING', 'SUSPENDED',
+         'PLEASETEST',
          BugTaskStatus.INCOMPLETE),
         ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
          BugTaskStatus.FIXCOMMITTED),
@@ -223,11 +289,18 @@ class Bugzilla(ExternalBugTracker):
         ('RESOLVED', 'VERIFIED', 'CLOSED',
             LookupTree(
                 ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
-                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE', 'UPSTREAM',
+                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
+                 'DOCUMENTED',
                  BugTaskStatus.FIXRELEASED),
-                ('WONTFIX', BugTaskStatus.WONTFIX),
-                (BugTaskStatus.INVALID,))),
-        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
+                ('WONTFIX', 'WILL_NOT_FIX', 'NOTOURBUG', 'UPSTREAM',
+                 BugTaskStatus.WONTFIX),
+                ('OBSOLETE', 'INSUFFICIENT_DATA', 'INCOMPLETE', 'EXPIRED',
+                 BugTaskStatus.EXPIRED),
+                ('INVALID', 'WORKSFORME', 'NOTABUG', 'CANTFIX',
+                 'UNREPRODUCIBLE', 'DUPLICATE',
+                 BugTaskStatus.INVALID))),
+        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED',
+         BugTaskStatus.CONFIRMED),
         ('UNCONFIRMED', BugTaskStatus.NEW),
         )
 
@@ -257,6 +330,20 @@ class Bugzilla(ExternalBugTracker):
         """See `ExternalBugTracker`."""
         return (bug_id, self.getRemoteBugBatch([bug_id]))
 
+    def _checkBugSearchResult(self, document):
+        """Does `document` appear to be a bug search result page?
+
+        :param document: An `xml.dom.Document` built from a bug search result
+            on the bugzilla instance.
+        :raise UnparsableBugData: If `document` does not appear to be a bug
+            search result.
+        """
+        root = document.documentElement
+        if root.tagName == 'html':
+            raise UnparsableBugData(
+                "Bug search on %s returned a <%s> instead of an RDF page." % (
+                    self.baseurl, root.tagName))
+
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
         # XXX: GavinPanella 2007-10-25 bug=153532: The modification of
@@ -268,16 +355,19 @@ class Bugzilla(ExternalBugTracker):
         # getRemoteStatus.
         if self.is_issuezilla:
             buglist_page = 'xml.cgi'
-            data = {'download_type' : 'browser',
-                    'output_configured' : 'true',
-                    'include_attachments' : 'false',
-                    'include_dtd' : 'true',
-                    'id'      : ','.join(bug_ids),
-                    }
+            data = {
+                'download_type': 'browser',
+                'output_configured': 'true',
+                'include_attachments': 'false',
+                'include_dtd': 'true',
+                'id': ','.join(bug_ids),
+                }
             bug_tag = 'issue'
             id_tag = 'issue_id'
             status_tag = 'issue_status'
             resolution_tag = 'resolution'
+            priority_tag = 'priority'
+            severity_tag = None
         elif self.version < (2, 16):
             buglist_page = 'xml.cgi'
             data = {'id': ','.join(bug_ids)}
@@ -285,28 +375,39 @@ class Bugzilla(ExternalBugTracker):
             id_tag = 'bug_id'
             status_tag = 'bug_status'
             resolution_tag = 'resolution'
+            priority_tag = 'priority'
+            severity_tag = 'bug_severity'
         else:
             buglist_page = 'buglist.cgi'
-            data = {'form_name'   : 'buglist.cgi',
-                    'bug_id_type' : 'include',
-                    'columnlist'  : 'id,product,bug_status,resolution',
-                    'bug_id'      : ','.join(bug_ids),
-                    }
+            data = {
+                'form_name': 'buglist.cgi',
+                'bug_id_type': 'include',
+                'columnlist':
+                    ('id,product,bug_status,resolution,'
+                     'priority,bug_severity'),
+                'bug_id': ','.join(bug_ids),
+                }
             if self.version < (2, 17, 1):
-                data.update({'format' : 'rdf'})
+                data.update({'format': 'rdf'})
             else:
-                data.update({'ctype'  : 'rdf'})
+                data.update({'ctype': 'rdf'})
             bug_tag = 'bz:bug'
             id_tag = 'bz:id'
             status_tag = 'bz:bug_status'
             resolution_tag = 'bz:resolution'
+            priority_tag = 'bz:priority'
+            severity_tag = 'bz:bug_severity'
 
-        buglist_xml = self._postPage(buglist_page, data)
+        buglist_xml = self._postPage(
+            buglist_page, data, repost_on_redirect=True)
+
         try:
             document = self._parseDOMString(buglist_xml)
         except xml.parsers.expat.ExpatError, e:
-            raise UnparseableBugData('Failed to parse XML description for '
-                '%s bugs %s: %s' % (self.baseurl, bug_ids, e))
+            raise UnparsableBugData(
+                "Failed to parse XML description for %s bugs %s: %s"
+                % (self.baseurl, bug_ids, e))
+        self._checkBugSearchResult(document)
 
         bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
@@ -358,6 +459,33 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
+            # Priority (for Importance)
+            priority = ''
+            priority_nodes = bug_node.getElementsByTagName(priority_tag)
+            assert len(priority_nodes) <= 1, (
+                "Should only be one priority node for bug %s" % bug_id)
+            if priority_nodes:
+                bug_priority_node = priority_nodes[0]
+                assert len(bug_priority_node.childNodes) == 1, (
+                    "priority node for bug %s should contain a non-empty "
+                    "text string." % bug_id)
+                priority = bug_priority_node.childNodes[0].data
+
+            # Severity (for Importance)
+            if severity_tag:
+                severity_nodes = bug_node.getElementsByTagName(severity_tag)
+                assert len(severity_nodes) <= 1, (
+                    "Should only be one severity node for bug %s." % bug_id)
+                if severity_nodes:
+                    assert len(severity_nodes[0].childNodes) <= 1, (
+                        "Severity for bug %s should just contain "
+                        "a string." % bug_id)
+                    if severity_nodes[0].childNodes:
+                        severity = severity_nodes[0].childNodes[0].data
+                        priority += ' %s' % severity
+            self.remote_bug_importance[bug_id] = priority
+
+            # Product
             product_nodes = bug_node.getElementsByTagName('bz:product')
             assert len(product_nodes) <= 1, (
                 "Should be at most one product node for bug %s." % bug_id)
@@ -369,13 +497,13 @@ class Bugzilla(ExternalBugTracker):
                     product_node.childNodes[0].data)
 
     def getRemoteImportance(self, bug_id):
-        """See `ExternalBugTracker`.
-
-        This method is implemented here as a stub to ensure that
-        existing functionality is preserved. As a result,
-        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
-        """
-        return UNKNOWN_REMOTE_IMPORTANCE
+        """See `ExternalBugTracker`."""
+        try:
+            if bug_id not in self.remote_bug_importance:
+                return "Bug %s is not in remote_bug_importance" % bug_id
+            return self.remote_bug_importance[bug_id]
+        except:
+            return UNKNOWN_REMOTE_IMPORTANCE
 
     def getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""
@@ -401,6 +529,7 @@ def needs_authentication(func):
     If an `xmlrpclib.Fault` with error code 410 is raised by the
     function, we'll try to authenticate and call the function again.
     """
+
     def decorator(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
@@ -408,6 +537,7 @@ def needs_authentication(func):
             # Catch authentication errors only.
             if fault.faultCode != 410:
                 raise
+
             self._authenticate()
             return func(self, *args, **kwargs)
     return decorator
@@ -463,6 +593,7 @@ class BugzillaAPI(Bugzilla):
             raise BugTrackerAuthenticationError(
                 self.baseurl, "No credentials found.")
 
+    @ensure_no_transaction
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.
 
@@ -487,9 +618,10 @@ class BugzillaAPI(Bugzilla):
             # IDs. We use the aliases dict to look up the correct ID for
             # a bug. This allows us to reference a bug by either ID or
             # alias.
-            if remote_bug['alias'] != '':
+            if remote_bug.get('alias', '') != '':
                 self._bug_aliases[remote_bug['alias']] = remote_bug['id']
 
+    @ensure_no_transaction
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
         time_dict = self.xmlrpc_proxy.Bugzilla.time()
@@ -542,6 +674,7 @@ class BugzillaAPI(Bugzilla):
 
         return bug_ids_to_retrieve
 
+    @ensure_no_transaction
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         # First, discard all those bug IDs about which we already have
@@ -569,13 +702,33 @@ class BugzillaAPI(Bugzilla):
             status = self._bugs[actual_bug_id]['status']
             resolution = self._bugs[actual_bug_id]['resolution']
         except KeyError:
-            raise UnparseableBugData
+            raise UnparsableBugData(
+                "No status or resolution defined for bug %i" % (bug_id))
 
         if resolution != '':
             return "%s %s" % (status, resolution)
         else:
             return status
 
+    def getRemoteImportance(self, bug_id):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(bug_id)
+
+        # Attempt to get the priority and severity from the bug.
+        # If we don't have the data for either, raise an error.
+        try:
+            priority = self._bugs[actual_bug_id]['priority']
+            severity = self._bugs[actual_bug_id]['severity']
+        except KeyError:
+            raise UnparsableBugData(
+                "No priority or severity defined for bug %i" % bug_id)
+
+        if severity != '':
+            return "%s %s" % (priority, severity)
+        else:
+            return priority
+
+    @ensure_no_transaction
     def getModifiedRemoteBugs(self, bug_ids, last_checked):
         """See `IExternalBugTracker`."""
         response_dict = self.xmlrpc_proxy.Bug.search(
@@ -639,12 +792,13 @@ class BugzillaAPI(Bugzilla):
 
         return [str(comment['id']) for comment in bug_comments]
 
+    @ensure_no_transaction
     def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_ids to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a list of
+        # CheckwatchesMaster.importBugComments() will pass us a list of
         # strings (see bug 248938).
         comment_ids = [int(comment_id) for comment_id in comment_ids]
 
@@ -670,7 +824,7 @@ class BugzillaAPI(Bugzilla):
         actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_id to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # CheckwatchesMaster.importBugComments() will pass us a string (see
         # bug 248938).
         comment_id = int(comment_id)
 
@@ -689,7 +843,7 @@ class BugzillaAPI(Bugzilla):
         actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_id to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # CheckwatchesMaster.importBugComments() will pass us a string (see
         # bug 248938).
         comment_id = int(comment_id)
         comment = self._bugs[actual_bug_id]['comments'][comment_id]
@@ -697,6 +851,7 @@ class BugzillaAPI(Bugzilla):
             owner=poster, subject='', content=comment['text'],
             datecreated=comment['time'].replace(tzinfo=pytz.timezone('UTC')))
 
+    @ensure_no_transaction
     @needs_authentication
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Add a comment to the remote bugtracker.
@@ -712,7 +867,7 @@ class BugzillaAPI(Bugzilla):
         return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
 
         # We cast the return value to string, since that's what
-        # BugWatchUpdater will expect (see bug 248938).
+        # CheckwatchesMaster will expect (see bug 248938).
         return str(return_dict['id'])
 
     def getLaunchpadBugId(self, remote_bug):
@@ -726,17 +881,15 @@ class BugzillaAPI(Bugzilla):
         #     this method.
         return None
 
+    @ensure_no_transaction
     @needs_authentication
-    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id,
+                          launchpad_bug_url):
         """Set the Launchpad bug for a given remote bug.
 
         See `ISupportsBackLinking`.
         """
         actual_bug_id = self._getActualBugId(remote_bug)
-
-        # Grab the bug from the database and get its canonical URL.
-        launchpad_bug = getUtility(IBugSet).get(launchpad_bug_id)
-        launchpad_bug_url = canonical_url(launchpad_bug)
 
         request_params = {
             'ids': [actual_bug_id],
@@ -757,6 +910,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         """The Bugzilla LP Plugin has been chosen, so return self."""
         return self
 
+    @ensure_no_transaction
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.
 
@@ -791,6 +945,7 @@ class BugzillaLPPlugin(BugzillaAPI):
             raise BugTrackerAuthenticationError(
                 self.baseurl, message)
 
+    @ensure_no_transaction
     def getModifiedRemoteBugs(self, bug_ids, last_checked):
         """See `IExternalBugTracker`."""
         # We pass permissive=True to ensure that Bugzilla won't error
@@ -805,6 +960,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         self._storeBugs(remote_bugs)
         return [remote_bug['id'] for remote_bug in remote_bugs]
 
+    @ensure_no_transaction
     def initializeRemoteBugDB(self, bug_ids, products=None):
         """See `IExternalBugTracker`."""
         # First, discard all those bug IDs about which we already have
@@ -827,6 +983,7 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         self._storeBugs(remote_bugs)
 
+    @ensure_no_transaction
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
         time_dict = self.xmlrpc_proxy.Launchpad.time()
@@ -836,6 +993,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         server_utc_time = time_dict['utc_time']
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
+    @ensure_no_transaction
     def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(remote_bug_id)
@@ -858,16 +1016,17 @@ class BugzillaLPPlugin(BugzillaAPI):
         bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
 
         # We also need to convert each comment ID to a string, since
-        # that's what BugWatchUpdater.importBugComments() expects (see
+        # that's what CheckwatchesMaster.importBugComments() expects (see
         # bug 248938).
         return [str(comment['id']) for comment in bug_comments]
 
+    @ensure_no_transaction
     def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_ids to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a list of
+        # CheckwatchesMaster.importBugComments() will pass us a list of
         # strings (see bug 248938).
         comment_ids = [int(comment_id) for comment_id in comment_ids]
 
@@ -889,6 +1048,7 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         self._bugs[actual_bug_id]['comments'] = bug_comments
 
+    @ensure_no_transaction
     @needs_authentication
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Add a comment to the remote bugtracker.
@@ -904,7 +1064,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         return_dict = self.xmlrpc_proxy.Launchpad.add_comment(request_params)
 
         # We cast the return value to string, since that's what
-        # BugWatchUpdater will expect (see bug 248938).
+        # CheckwatchesMaster will expect (see bug 248938).
         return str(return_dict['comment_id'])
 
     def getLaunchpadBugId(self, remote_bug):
@@ -929,8 +1089,10 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         return launchpad_bug_id
 
+    @ensure_no_transaction
     @needs_authentication
-    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id,
+                          launchpad_bug_url):
         """Set the Launchpad bug for a given remote bug.
 
         See `ISupportsBackLinking`.

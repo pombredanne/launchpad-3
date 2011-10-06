@@ -5,8 +5,8 @@ hence a distribution.
 
     >>> login('admin@canonical.com')
     >>> mint = factory.makeDistribution(name='mint')
-    >>> old = factory.makeDistroRelease(mint, name='old')
-    >>> stable = factory.makeDistroRelease(mint, name='stable')
+    >>> old = factory.makeDistroSeries(mint, name='old')
+    >>> stable = factory.makeDistroSeries(mint, name='stable')
     >>> eric = factory.makePerson(name='eric')
     >>> twisted = factory.makeSourcePackageName('twisted')
     >>> branch = factory.makePackageBranch(
@@ -23,7 +23,7 @@ The code tab is now enabled at the distribution level.
 
     >>> print_location_apps(browser.contents)
     * Overview (selected) ...
-    * Branches - http://code.launchpad.dev/mint
+    * Code - http://code.launchpad.dev/mint
     ...
 
 Going to this page shows us a listing ordered by most recently changed first.

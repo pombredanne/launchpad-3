@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The implementation of the Notification Rec."""
@@ -11,12 +11,13 @@ __all__ = [
 
 from operator import attrgetter
 
-from zope.security.proxy import isinstance as zope_isinstance
 from zope.interface import implements
+from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.helpers import emailPeople
-from canonical.launchpad.interfaces import (
-    INotificationRecipientSet, UnknownRecipientError)
+from canonical.launchpad.interfaces.launchpad import (
+    INotificationRecipientSet,
+    UnknownRecipientError,
+    )
 from lp.registry.interfaces.person import IPerson
 
 
@@ -43,7 +44,7 @@ class NotificationRecipientSet:
     def getRecipients(self):
         """See `INotificationRecipientSet`."""
         return sorted(
-            self._personToRationale.keys(),  key=attrgetter('displayname'))
+            self._personToRationale.keys(), key=attrgetter('displayname'))
 
     def getRecipientPersons(self):
         """See `INotificationRecipientSet`."""
@@ -86,17 +87,18 @@ class NotificationRecipientSet:
     def add(self, persons, reason, header):
         """See `INotificationRecipientSet`."""
         from zope.security.proxy import removeSecurityProxy
+        from lp.registry.model.person import get_recipients
         if IPerson.providedBy(persons):
             persons = [persons]
 
         for person in persons:
             assert IPerson.providedBy(person), (
-                'You can only add() IPerson: %r' % person)
+                'You can only add() an IPerson: %r' % person)
             # If the person already has a rationale, keep the first one.
             if person in self._personToRationale:
                 continue
             self._personToRationale[person] = reason, header
-            for receiving_person in emailPeople(person):
+            for receiving_person in get_recipients(person):
                 # Bypass zope's security because IEmailAddress.email is not
                 # public.
                 preferred_email = removeSecurityProxy(
@@ -110,6 +112,26 @@ class NotificationRecipientSet:
                 if (old_person is None
                     or (old_person.isTeam() and not person.isTeam())):
                     self._emailToPerson[email] = person
+
+    def remove(self, persons):
+        """See `INotificationRecipientSet`."""
+        from zope.security.proxy import removeSecurityProxy
+        from lp.registry.model.person import get_recipients
+        if IPerson.providedBy(persons):
+            persons = [persons]
+        for person in persons:
+            assert IPerson.providedBy(person), (
+                'You can only remove() an IPerson: %r' % person)
+            if person in self._personToRationale:
+                del self._personToRationale[person]
+            for removed_person in get_recipients(person):
+                # Bypass zope's security because IEmailAddress.email is
+                # not public.
+                preferred_email = removeSecurityProxy(
+                    removed_person.preferredemail)
+                email = str(preferred_email.email)
+                self._receiving_people.discard((email, removed_person))
+                del self._emailToPerson[email]
 
     def update(self, recipient_set):
         """See `INotificationRecipientSet`."""

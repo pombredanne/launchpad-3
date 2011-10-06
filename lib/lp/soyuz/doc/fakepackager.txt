@@ -9,7 +9,7 @@ used in tests.
 
 == Setup and reset ==
 
-When FakePackager is initialised it automatically creates a temporary
+When FakePackager is initialized it automatically creates a temporary
 directory we call 'sandbox'. It's where the packages will get created.
 
     >>> packager = FakePackager('biscuit', '1.0')
@@ -21,7 +21,7 @@ directory we call 'sandbox'. It's where the packages will get created.
     True
 
 Source 'name' and 'version' and 'gpg_key_id' are set according the
-give arguments passed in the initialisation.
+give arguments passed in the initialization.
 
     >>> print packager.name
     biscuit
@@ -127,7 +127,7 @@ The error was raised because no signing key was set.
     >>> print packager.gpg_key_id
     None
 
-A GPG key can only be set on initialisation so we will have to create a
+A GPG key can only be set on initialization so we will have to create a
 new packager passing a filename available in our test_keys directory
 (see launchpad/ftests/keys_for_tests.py)
 
@@ -160,7 +160,7 @@ basically checking we pass the right arguments to it.
     >>> content = open(changesfile_path).read()
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
     >>> sig = gpghandler.verifySignature(content)
 
@@ -234,9 +234,9 @@ enable uploads for it.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
@@ -301,13 +301,13 @@ allow unsigned uploads.
 Since we are using Foo Bar's GPG key to sign packages, in order to test
 PPA uploads we will create a PPA for it.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> print foobar.archive
     None
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> ppa = getUtility(IArchiveSet).new(
     ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 

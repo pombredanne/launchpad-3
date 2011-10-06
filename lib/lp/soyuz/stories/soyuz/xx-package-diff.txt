@@ -30,8 +30,8 @@ We will create a set of `PackageDiff` so we can precisely test how
 they show up in the UI.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login('foo.bar@canonical.com')
 
@@ -57,8 +57,8 @@ Create a series of 'biscuit' sources in ubuntu primary archive.
 
 Activate Foo Bar's PPA and upload another 'biscuit' source version.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ppa = getUtility(IArchiveSet).new(
     ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)
@@ -82,26 +82,24 @@ the first one (new upload).
     ...     requester=name16,
     ...     to_sourcepackagerelease=biscuit_four_pub.sourcepackagerelease)
 
-    >>> from canonical.launchpad.interfaces import IPackageDiffSet
+    >>> from lp.soyuz.interfaces.packagediff import IPackageDiffSet
     >>> diff_set = getUtility(IPackageDiffSet)
     >>> diffs = list(diff_set.getPendingDiffs())
     >>> for diff in diffs:
     ...     print diff.title
-    1.0-1 to 1.0-2
-    1.0-2 to 1.0-3
-    1.0-3 (in Ubuntu) to 1.0-4
+    diff from 1.0-1 to 1.0-2
+    diff from 1.0-2 to 1.0-3
+    diff from 1.0-3 (in Ubuntu) to 1.0-4
 
 Perform some diffs in advance, the first diff in ubuntu and the diff
 in PPA will be performed, the second diff in ubuntu will be performed
 later.
 
-    >>> from StringIO import StringIO
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from StringIO import StringIO
     >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from lp.soyuz.interfaces.packagediff import (
-    ...     PackageDiffStatus)
     >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.soyuz.enums import PackageDiffStatus
 
     >>> def perform_fake_diff(diff, filename):
     ...     naked_diff = removeSecurityProxy(diff)
@@ -109,7 +107,6 @@ later.
     ...     naked_diff.status = PackageDiffStatus.COMPLETED
     ...     naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
     ...         filename, 3, StringIO('Foo'), 'application/gzipped-patch')
-    ...     syncUpdate(diff)
 
     >>> perform_fake_diff(diff_one, 'biscuit_1.0-1_1.0-2.diff.gz')
 
@@ -139,13 +136,13 @@ below the text for each uploaded version.
     Pending in hoary-release
     ...
     Available diffs
-    1.0-2 to 1.0-3 (pending)
+    diff from 1.0-2 to 1.0-3 (pending)
     ==============================
     1.0-2
     Pending in hoary-release
     ...
     Available diffs
-    1.0-1 to 1.0-2 (3 bytes)
+    diff from 1.0-1 to 1.0-2 (3 bytes)
     ==============================
     1.0-1
     Pending in hoary-release
@@ -153,14 +150,14 @@ below the text for each uploaded version.
 
 Diffs already performed are rendered as link to the librarian file.
 
-    >>> print anon_browser.getLink('1.0-1 to 1.0-2').url
+    >>> print anon_browser.getLink('diff from 1.0-1 to 1.0-2').url
     http://.../biscuit_1.0-1_1.0-2.diff.gz
 
 On the other hand, diffs not yet performed are rendered as plain text,
 and "(pending)" is appended to the text as a further hint that it's not
 ready yet.
 
-    >>> anon_browser.getLink('1.0-2 to 1.0-3')
+    >>> anon_browser.getLink('diff from 1.0-2 to 1.0-3')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -176,7 +173,7 @@ the missing link is rendered.
     >>> logout()
 
     >>> anon_browser.reload()
-    >>> print anon_browser.getLink('1.0-2 to 1.0-3').url
+    >>> print anon_browser.getLink('diff from 1.0-2 to 1.0-3').url
     http://.../biscuit_1.0-2_1.0-3.diff.gz
 
 The same page section is presented in the corresponding
@@ -188,9 +185,9 @@ The same page section is presented in the corresponding
     ...     anon_browser.contents, 'diff-for-1.0-3')
     >>> print extract_text(diff_section)
     Available diffs
-      1.0-2 to 1.0-3 (3 bytes)
+      diff from 1.0-2 to 1.0-3 (3 bytes)
 
-    >>> print anon_browser.getLink('1.0-2 to 1.0-3').url
+    >>> print anon_browser.getLink('diff from 1.0-2 to 1.0-3').url
     http://.../biscuit_1.0-2_1.0-3.diff.gz
 
 
@@ -203,7 +200,7 @@ corresponding source row in the PPA overview page.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/~name16/+archive/ppa/+packages')
     >>> login('foo.bar@canonical.com')
-    >>> biscuit_ppa = name16.archive.getPublishedSources()[0]
+    >>> biscuit_ppa = name16.archive.getPublishedSources().first()
     >>> biscuit_ppa_id = biscuit_ppa.id
     >>> diff_three.date_fulfilled = None
     >>> diff_three.status = PackageDiffStatus.PENDING
@@ -218,7 +215,7 @@ The diff starts out as pending:
     Publishing details
     ...
     Available diffs
-      1.0-3 (in Ubuntu) to 1.0-4 (pending)
+      diff from 1.0-3 (in Ubuntu) to 1.0-4 (pending)
     ...
 
 If we complete the diff, the text changes.
@@ -233,11 +230,11 @@ If we complete the diff, the text changes.
     Publishing details
     ...
     Available diffs
-      1.0-3 (in Ubuntu) to 1.0-4 (3 bytes)
+      diff from 1.0-3 (in Ubuntu) to 1.0-4 (3 bytes)
     ...
 
 The text also links to the librarian file containing the diff.
 
     >>> print anon_browser.getLink(
-    ...     '1.0-3 (in Ubuntu) to 1.0-4').url
+    ...     'diff from 1.0-3 (in Ubuntu) to 1.0-4').url
     http://.../biscuit_1.0-3_1.0-4.diff.gz

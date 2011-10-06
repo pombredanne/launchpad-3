@@ -7,13 +7,14 @@ __metaclass__ = type
 
 import unittest
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatInvalidInputError)
-from lp.translations.utilities.mozilla_zip import (
-    MozillaZipTraversal)
+    TranslationFormatInvalidInputError,
+    )
+from lp.translations.utilities.mozilla_zip import MozillaZipTraversal
 from lp.translations.utilities.tests.xpi_helpers import (
-    get_en_US_xpi_file_to_import)
-from canonical.testing import LaunchpadZopelessLayer
+    get_en_US_xpi_file_to_import,
+    )
 
 
 class TraversalRecorder(MozillaZipTraversal):
@@ -110,8 +111,3 @@ class MozillaZipTraversalTestCase(unittest.TestCase):
                 ),
                 '.'
             ])
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
-

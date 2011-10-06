@@ -1,19 +1,19 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <class class="canonical.launchpad.database.Account">
+    <class class="canonical.launchpad.database.account.Account">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IAccountPublic" />
+            interface="canonical.launchpad.interfaces.account.IAccountPublic" />
         <require
             permission="launchpad.View"
-            interface="canonical.launchpad.interfaces.IAccountPrivate" />
+            interface="canonical.launchpad.interfaces.account.IAccountPrivate" />
         <require
             permission="launchpad.Special"
-            interface="canonical.launchpad.interfaces.IAccountSpecialRestricted" />
+            interface="canonical.launchpad.interfaces.account.IAccountSpecialRestricted" />
         <require
             permission="launchpad.Moderate"
             set_attributes="status date_status_set status_comment" />
@@ -23,14 +23,14 @@
     </class>
 
     <securedutility
-        class="canonical.launchpad.database.AccountSet"
-        provides="canonical.launchpad.interfaces.IAccountSet">
-        <allow interface="canonical.launchpad.interfaces.IAccountSet" />
+        class="canonical.launchpad.database.account.AccountSet"
+        provides="canonical.launchpad.interfaces.account.IAccountSet">
+        <allow interface="canonical.launchpad.interfaces.account.IAccountSet" />
     </securedutility>
 
     <adapter
         for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
-        provides="canonical.launchpad.interfaces.IAccount"
+        provides="canonical.launchpad.interfaces.account.IAccount"
         factory="canonical.launchpad.components.account.accountFromPrincipal"
       />
 

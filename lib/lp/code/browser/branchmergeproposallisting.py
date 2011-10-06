@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch merge proposal listings."""
@@ -16,28 +16,44 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.delegates import delegates
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    use_template,
+    )
 from zope.component import getUtility
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.schema import Choice
 
-from lazr.delegates import delegates
-from lazr.enum import EnumeratedType, Item, use_template
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import custom_widget, LaunchpadFormView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.widgets import LaunchpadDropdownWidget
-
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
 from lp.code.interfaces.branchcollection import (
-    IAllBranches, IBranchCollection)
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, IBranchMergeProposalGetter,
-    IBranchMergeProposalListingBatchNavigator)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    IBranchMergeProposal,
+    IBranchMergeProposalGetter,
+    IBranchMergeProposalListingBatchNavigator,
+    )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.services.propertycache import cachedproperty
 
 
 class BranchMergeProposalListingItem:
@@ -267,7 +283,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         collection = collection.visibleByUser(self.user)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW,])
+             BranchMergeProposalStatus.NEEDS_REVIEW, ])
         return proposals
 
     def _getReviewGroup(self, proposal, votes, reviewer):
@@ -315,8 +331,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
                     else:
                         return self.ARE_DOING
                 # Since team reviews are always pending, and we've eliminated
-                # the case where the reviewer is ther person, then if the reviewer
-                # is in the reviewer team, it is a can do.
+                # the case where the reviewer is ther person, then if
+                # the reviewer is in the reviewer team, it is a can do.
                 if reviewer.inTeam(vote.reviewer):
                     result = self.CAN_DO
         return result
@@ -404,7 +420,11 @@ class BranchActiveReviewsView(ActiveReviewsView):
 
     def getProposals(self):
         """See `ActiveReviewsView`."""
-        candidates = self.context.landing_candidates
+        non_final = tuple(
+            set(BranchMergeProposalStatus.items) -
+            set(BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        candidates = self.context.getMergeProposals(
+            status=non_final, eager_load=True, visible_by_user=self.user)
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 

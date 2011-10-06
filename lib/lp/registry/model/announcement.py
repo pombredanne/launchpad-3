@@ -11,19 +11,29 @@ __all__ = [
     'MakesAnnouncements',
     ]
 
-import pytz, datetime
-from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.interface import implements
 
-from lp.registry.interfaces.announcement import (
-    IAnnouncement, IAnnouncementSet)
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.projectgroup import IProjectGroup
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.registry.interfaces.announcement import (
+    IAnnouncement,
+    IAnnouncementSet,
+    )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.utils import utc_now
 
 
 class Announcement(SQLBase):
@@ -43,7 +53,7 @@ class Announcement(SQLBase):
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')
-    project = ForeignKey(dbName='project', foreignKey='Project')
+    project = ForeignKey(dbName='project', foreignKey='ProjectGroup')
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution')
     title = StringCol(notNull=True)
@@ -113,8 +123,7 @@ class Announcement(SQLBase):
         """See `IAnnouncement`."""
         if self.date_announced is None:
             return True
-        return self.date_announced > \
-               datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
+        return self.date_announced > utc_now()
 
     @property
     def published(self):

@@ -1,32 +1,37 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime
 import time
-from unittest import TestLoader
 
 import pytz
-from zope.component import getUtility
-
-from canonical.database.constants import UTC_NOW
-from canonical.testing import LaunchpadZopelessLayer
 from storm.locals import Store
 
-from lp.services.job.model.job import (
-    InvalidTransition, Job, LeaseHeld)
-from lp.services.job.interfaces.job import IJob, JobStatus
-from lp.testing import TestCase
+from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.services.job.interfaces.job import (
+    IJob,
+    JobStatus,
+    )
+from lp.services.job.model.job import (
+    InvalidTransition,
+    Job,
+    LeaseHeld,
+    )
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
-class TestJob(TestCase):
+class TestJob(TestCaseWithFactory):
     """Ensure Job behaves as intended."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def test_implements_IJob(self):
         """Job should implement IJob."""
@@ -36,6 +41,39 @@ class TestJob(TestCase):
         """The default status should be WAITING."""
         job = Job()
         self.assertEqual(job.status, JobStatus.WAITING)
+
+    def test_stores_requester(self):
+        job = Job()
+        random_joe = self.factory.makePerson()
+        job.requester = random_joe
+        self.assertEqual(random_joe, job.requester)
+
+    def test_createMultiple_creates_requested_number_of_jobs(self):
+        job_ids = list(Job.createMultiple(IStore(Job), 3))
+        self.assertEqual(3, len(job_ids))
+        self.assertEqual(3, len(set(job_ids)))
+
+    def test_createMultiple_returns_valid_job_ids(self):
+        job_ids = list(Job.createMultiple(IStore(Job), 3))
+        store = IStore(Job)
+        for job_id in job_ids:
+            self.assertIsNot(None, store.get(Job, job_id))
+
+    def test_createMultiple_sets_status_to_WAITING(self):
+        store = IStore(Job)
+        job = store.get(Job, Job.createMultiple(store, 1)[0])
+        self.assertEqual(JobStatus.WAITING, job.status)
+
+    def test_createMultiple_sets_requester(self):
+        store = IStore(Job)
+        requester = self.factory.makePerson()
+        job = store.get(Job, Job.createMultiple(store, 1, requester)[0])
+        self.assertEqual(requester, job.requester)
+
+    def test_createMultiple_defaults_requester_to_None(self):
+        store = IStore(Job)
+        job = store.get(Job, Job.createMultiple(store, 1)[0])
+        self.assertEqual(None, job.requester)
 
     def test_start(self):
         """Job.start should update the object appropriately.
@@ -162,9 +200,10 @@ class TestJob(TestCase):
             JobStatus.SUSPENDED)
 
     def test_suspend_when_running(self):
-        """When a job is running, attempting to suspend is invalid."""
+        """When a job is running, attempting to suspend is valid."""
         job = Job(_status=JobStatus.RUNNING)
-        self.assertRaises(InvalidTransition, job.suspend)
+        job.suspend()
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
 
     def test_suspend_when_completed(self):
         """When a job is completed, attempting to suspend is invalid."""
@@ -184,6 +223,13 @@ class TestJob(TestCase):
             job.status,
             JobStatus.WAITING)
 
+    def test_resume_clears_lease_expiry(self):
+        """A job that resumes should null out the lease_expiry."""
+        job = Job(_status=JobStatus.SUSPENDED)
+        job.lease_expires = UTC_NOW
+        job.resume()
+        self.assertIs(None, job.lease_expires)
+
     def test_resume_when_running(self):
         """When a job is running, attempting to resume is invalid."""
         job = Job(_status=JobStatus.RUNNING)
@@ -199,15 +245,21 @@ class TestJob(TestCase):
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.resume)
 
+    def test_is_pending(self):
+        """is_pending is True when the job can possibly complete."""
+        for status in JobStatus.items:
+            job = Job(_status=status)
+            self.assertEqual(
+                status in Job.PENDING_STATUSES, job.is_pending)
+
 
 class TestReadiness(TestCase):
     """Test the implementation of readiness."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def _sampleData(self):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return list(store.execute(Job.ready_jobs))
+        return list(IStore(Job).execute(Job.ready_jobs))
 
     def test_ready_jobs(self):
         """Job.ready_jobs should include new jobs."""
@@ -288,7 +340,3 @@ class TestReadiness(TestCase):
         job = Job()
         job.acquireLease(-300)
         self.assertEqual(0, job.getTimeout())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

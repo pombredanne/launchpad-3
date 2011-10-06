@@ -34,3 +34,6 @@ class ITranslationTemplatesBuildJobSource(Interface):
 
     def scheduleTranslationTemplatesBuild(branch):
         """Schedule a translation templates build job, if appropriate."""
+
+    def getByBranch(branch):
+        """Find `TranslationTemplatesBuildJob` for given `Branch`."""

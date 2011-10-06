@@ -7,16 +7,21 @@ arrangement or through a grant that applies to everyone.
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     EntitlementQuota, EntitlementState, EntitlementType,
-    ...     IEntitlement, IEntitlementSet, IPersonSet)
-    >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.entitlement import (
+    ...     EntitlementQuota,
+    ...     EntitlementState,
+    ...     EntitlementType,
+    ...     IEntitlement,
+    ...     IEntitlementSet,
+    ...     )
+    >>> from lp.registry.interfaces.person import IPersonSet
 
 The logged in user must be an admin in order to change the quota.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> login("foo.bar@canonical.com")
     >>> foobar = getUtility(ILaunchBag).user
     >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
@@ -99,8 +104,11 @@ If the quota is UNLIMITED the exceeded quota test is false even when
 using a really large value for amount used.  The entitlement remains
 valid.
 
+We use math.pow here, since __builtin__.pow is overridden by twisted.conch.
+
+    >>> import math
     >>> entitlement.quota = EntitlementQuota.UNLIMITED
-    >>> entitlement.amount_used = pow(10,9)
+    >>> entitlement.amount_used = math.pow(10,9)
     >>> entitlement.exceeded_quota
     False
     >>> entitlement.is_valid
@@ -256,7 +264,7 @@ Add the current user to the team and the user can now access
 attributes.  Since ubuntu-team is restricted, an administrator must be
 listed as a reviewer for the membership to go through.
 
-    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> nopriv = getUtility(ILaunchBag).user
     >>> mark = personset.getByName('mark')
     >>> nopriv.join(ubuntu_team)

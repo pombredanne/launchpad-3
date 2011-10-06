@@ -3,11 +3,12 @@
 A few of the PillarsOfLaunchpad (tm) share a namespace to allow their name
 to unambiguously refer to it. This allows us to make email interfaces
 easier to use and to shorten some of our URLs. Currently, the objects that
-share their name namespace are Product, Project and Distribution.
+share their name namespace are Product, ProjectGroup and Distribution.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPillarNameSet, IProduct, IProjectGroup, IDistribution
-    ...     )
+    >>> from lp.registry.interfaces.distribution import IDistribution
+    >>> from lp.registry.interfaces.pillar import IPillarNameSet
+    >>> from lp.registry.interfaces.product import IProduct
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
     >>> pillar_set = getUtility(IPillarNameSet)
 
     >>> 'ubuntu' in pillar_set
@@ -113,6 +114,9 @@ And our set of pillars will contain the aliases as well.
 
 But only if the pillar which they point to is active.
 
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> 'iceweasel' in pillar_set
     False
@@ -175,14 +179,15 @@ And the same is true for Colin Watson on the Guadalinex distribution.
 == Searching for Pillars ==
 
 We can also use PillarNameSet to do a search across some of our pillars.
-Right now this search is done across Products, Projects and Distributions.
-Products are decorated with ProductWithLicenses to cache the licenses
-that were retrieved in PillarSet.search() to reduce the number of queries.
+Right now this search is done across Products, ProjectGroups and
+Distributions. Products are decorated with ProductWithLicenses to cache the
+licenses that were retrieved in PillarSet.search() to reduce the number of
+queries.
 
     >>> for row in pillar_set.search('mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Project: The Mozilla Project (mozilla)
+    ProjectGroup: The Mozilla Project (mozilla)
     ProductWithLicenses: Mozilla Firefox (firefox)
     ProductWithLicenses: Mozilla Thunderbird (thunderbird)
 
@@ -208,7 +213,7 @@ Note that inactive products and projects won't be included in the results.
     >>> for row in pillar_set.search('mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Project: The Mozilla Project (mozilla)
+    ProjectGroup: The Mozilla Project (mozilla)
     ProductWithLicenses: Mozilla Thunderbird (thunderbird)
 
     >>> pillar_set['applets'].active = False
@@ -227,8 +232,8 @@ Note that inactive products and projects won't be included in the results.
 PillarName objects have a pillar attribute that returns the object referenced
 by that pillar name
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProjectGroupSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.registry.model.pillar import PillarName
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

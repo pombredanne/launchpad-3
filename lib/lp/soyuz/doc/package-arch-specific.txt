@@ -26,46 +26,17 @@ Publication will be added as 'launchpad' DB user.
     >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> test_publisher.addFakeChroots()
 
-Create an architecture-independent source.
-
-    >>> pub_all = test_publisher.getPubSource(
-    ...     sourcename='test-buildd', version='667')
-
-Create an architecture-specific source.
-
-    >>> pub_any = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-2', version='668',
-    ...     architecturehintlist="any")
-
-Create a source with a specific list of architectures to be built.
-
     >>> pub_three = test_publisher.getPubSource(
     ...     sourcename='test-buildd-3', version='669',
     ...     architecturehintlist="i386 hppa amd64")
 
-Create a source with one single specific architecture to be built.
-
-    >>> pub_one = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-4', version='670',
-    ...     architecturehintlist="hppa")
-
-Create sources with 'any-$(ARCH)' and 'linux-$(ARCH)' notation.
-
-    >>> pub_any_foo = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-6', version='672',
-    ...     architecturehintlist="any-hppa")
-
-    >>> pub_linux_foo = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-7', version='673',
-    ...     architecturehintlist="linux-i386")
-
 Create a PPA source publication.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> pub_ppa = test_publisher.getPubSource(
-    ...     sourcename='test-ppa', version='674',
+    ...     sourcename='test-ppa', version='675',
     ...     architecturehintlist="i386 hppa",
     ...     archive=cprov.archive)
 
@@ -102,74 +73,6 @@ each of these options:
     ...     allowed_architectures = determineArchitecturesToBuild(
     ...         pub, legal_archs, hoary, pas_verify)
     ...     print_architectures(allowed_architectures)
-
-    >>> print_build_architectures(pub_all)
-    i386
-
-    >>> print_build_architectures(pub_any)
-    hppa
-    i386
-
-    >>> print_build_architectures(pub_three)
-    hppa
-    i386
-
-    >>> print_build_architectures(pub_one)
-    hppa
-
-
-== Check support for kernel notation in architecture hint list ==
-
-dpkg supports the use of the '<kernel-><arch>' notation in the
-'Architecture' field, where 'kernel-' is one of the kernel platform
-available in debian systems: ['linux-', 'kfreebsd', 'hurd-', 'any-']
-
-See bug 73761 and http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=268709
-for further information about this dpkg feature.
-
-Soyuz will consider only 'any-' and 'linux-' elements as the
-corresponding architecture, since only linux is supported in Ubuntu.
-
-    >>> print_build_architectures(pub_any_foo)
-    hppa
-
-    >>> print_build_architectures(pub_linux_foo)
-    i386
-
-
-== PPA architectures ==
-
-For virtualized archives only architectures with established support for
-PPA will be considered when creating PPA builds. See distroarchseries.txt
-for further information.
-
-    >>> ppa_architectures = [
-    ...     arch for arch in hoary.architectures if arch.supports_virtualized]
-    >>> print_architectures(ppa_architectures)
-    i386
-
-    >>> print_build_architectures(pub_ppa)
-    i386
-
-Conversely, for non-virtual archives, build records are created for all
-architectures supported for the distroseries.
-
-    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
-    >>> pub_ppa.archive.require_virtualized = False
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-
-    >>> print_build_architectures(pub_ppa)
-    hppa
-    i386
-
-Revert the PPA changes.
-
-    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
-    >>> pub_ppa.archive.require_virtualized = True
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-
 
 === Source PAS ===
 
@@ -247,7 +150,7 @@ this aspect below.
 To check binary PAS listings we'll use a source publication for which
 produces a single binary.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> LaunchpadZopelessLayer.switchDbUser("launchpad")

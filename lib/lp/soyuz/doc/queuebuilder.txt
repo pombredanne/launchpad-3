@@ -1,0 +1,378 @@
+= The Queue Builder =
+
+QueueBuilder is a script to sanely initialize new build jobs. It
+verifies each DistroArchSeries that is available for which we are
+able to:
+
+ * Build packages,
+ * Repair broken Build entries, if it makes sense to do so,
+ * Verify the packages pending to build,
+ * Install the jobs in the BuildQueue table, and
+ * Score the build according to a set of parameters, which will be
+   discussed later.
+
+
+== Setting up ==
+
+    >>> from lp.soyuz.scripts.buildd import QueueBuilder
+
+Import the bunch of required database classes:
+
+    >>> from lp.buildmaster.model.buildqueue import BuildQueue
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.registry.model.distroseries import DistroSeries
+    >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    >>> from lp.soyuz.model.distroarchseries import (
+    ...     DistroArchSeries, PocketChroot)
+
+The Master side of Buildd requires access to Launchpad Database, the
+user designed for this kind of access is 'fiera', see
+test_system_documentation.py for more information.
+
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> logger = DevNullLogger()
+
+Now that we have satisfied all of the needs for QueueBuilder, let's
+instantiate it.
+
+If I pass the current 'transaction' to QueueBuilder it will call
+commit() on it for it build created. It apparently mess with the
+transaction manager is a way that the builds created in the sampledata
+catch-up (line 103) do not persist for the test build creation (line
+469). This issue results in new build records exactly for the same
+souces and locations but with higher IDs.
+
+    >>> class FakeZtm:
+    ...     def commit(self):
+    ...         flush_database_updates()
+
+    >>> queue_builder = QueueBuilder(name='queue-builder', test_args=[])
+    >>> queue_builder.txn = FakeZtm()
+    >>> queue_builder.logger = logger
+
+Emulate a PocketChroot entry to validate the following
+distroarchseries:
+
+ * Ubuntu/Warty/i386/RELEASE
+ * Ubuntu/Hoary/i386/RELEASE
+ * Debian/Woody/i386/RELEASE
+
+    >>> warty = DistroSeries.selectOneBy(name="warty")
+    >>> unused = PocketChroot(distroarchseries=warty['i386'], chroot=1)
+
+    >>> hoary = DistroSeries.selectOneBy(name='hoary')
+    >>> unsused = PocketChroot(distroarchseries=hoary['i386'], chroot=1)
+    >>> unused = PocketChroot(distroarchseries=hoary['hppa'], chroot=2)
+
+    >>> ubuntu = hoary.distribution
+    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+    >>> unused = PocketChroot(
+    ...     distroarchseries=breezy_autotest_i386, chroot=3)
+
+    >>> woody = DistroSeries.selectOneBy(name='woody')
+    >>> unused = PocketChroot(distroarchseries=woody['i386'], chroot=4)
+
+Produce a set of available DistroArchSeries, for which the
+build jobs will be created.
+
+    >>> distroseries = set()
+    >>> archseries = set()
+
+    >>> for das in DistroArchSeries.select():
+    ...     distroseries.add(das.distroseries)
+    ...     if das.getChroot():
+    ...         archseries.add(das)
+
+    >>> import operator
+    >>> distroseries = sorted(
+    ...     distroseries, key=operator.attrgetter('name'))
+
+Among all the available distroarchseries only the one with chroot will
+be considered.
+
+    >>> for arch in sorted(archseries, key=operator.attrgetter('id')):
+    ...     print arch.title
+    The Warty Warthog Release for i386 (x86)
+    The Hoary Hedgehog Release for i386 (x86)
+    WOODY for i386 (x86)
+    Breezy Badger Autotest for i386 (x86)
+    The Hoary Hedgehog Release for hppa (hppa)
+
+
+== Ensure sampledata is processed ==
+
+Kick off any pending builds we have to avoid any misleading result in
+our tests (there are a couple that will be created based on our
+sampledata).
+
+This is to allow us to study carefully what is being added as we add
+new series and builds.
+
+    >>> for series in distroseries:
+    ...      queue_builder.createMissingBuilds(series)
+
+Add the missing build queue entries.
+
+    >>> queue_builder.addMissingBuildQueueEntries(archseries)
+
+Store current status of the database:
+
+    >>> old_build_ids = [build.id for build in BinaryPackageBuild.select()]
+    >>> old_job_ids = [build_queue.id for build_queue in BuildQueue.select()]
+
+
+== Create some series and publications ==
+
+We will create a group of source publications that represent the
+exact circumstances we want to test below.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> from canonical.database.sqlbase import commit
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+Let's use SoyuzTestPublisher to create a set of publications in the
+exact state to expose the features that we want to test.
+
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+
+Publishing a source in debian/woody won't result in a new build
+because this distroseries lacks 'nominatedarchindep'.
+
+    >>> pub_woody = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-5', version='671', distroseries=woody,
+    ...     architecturehintlist="hppa",
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+Several source publications for ubuntu/hoary/RELEASE, which is in
+DEVELOPMENT state, so we expect builds to be created respecting
+architecturehintlist and PAS restrictions. See details about the PAS
+system below.
+
+    >>> pub_all = test_publisher.getPubSource(
+    ...     sourcename='test-buildd', version='667', distroseries=hoary,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+    >>> pub_any = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-2', version='668', distroseries=hoary,
+    ...     architecturehintlist="any",
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+    >>> pub_three = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-3', version='669', distroseries=hoary,
+    ...     architecturehintlist="i386 hppa amd64",
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+    >>> pub_one = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-4', version='670', distroseries=hoary,
+    ...     architecturehintlist="hppa",
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+The two publishing sources that are created in this block are only used
+in the 'Check support for kernel notation in architecture hint list'
+section.
+
+    >>> pub_any_foo = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-6', version='672', distroseries=hoary,
+    ...     architecturehintlist="any-hppa",
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+    >>> pub_linux_foo = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-7', version='673', distroseries=hoary,
+    ...     architecturehintlist="linux-i386",
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+Publishing a source in warty/UPDATES, a stable release update (SRU),
+will result in a build. Once a distroseries is released, only
+source publications to post-RELEASE pockets (UPDATES, PROPOSED,
+BACKPORTS, SECURITY) will be considered, preserving the RELEASE pocket
+as it was at the release time.
+
+    >>> pub_updates = test_publisher.getPubSource(
+    ...     sourcename='test-updates', version='665', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.UPDATES)
+
+A source published in warty/RELEASE will be ignored, i.e., it won't
+result in a new build record because we cannot modify the RELEASE
+pocket.
+
+    >>> pub_ignored = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-not', version='666', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+If we publish the same source in warty and hoary, and create a
+corresponding build record that has failed to build in this context,
+we see that the queue-builder triggers a rebuild in the new context
+for published sources that have failed to build in previous
+distroseries (see bug 181328).
+
+    >>> pub_failed = test_publisher.getPubSource(
+    ...     sourcename='test-failed', version='1.0', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+    >>> copied_pub = pub_failed.copyTo(
+    ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
+
+    >>> from lp.buildmaster.enums import BuildStatus
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
+    ...     warty['i386'], PackagePublishingPocket.RELEASE,
+    ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
+
+In contrast with the previous case, if we publish the same source in
+warty and hoary, and attach a successfully built build record in the
+warty context we will see that the queue-builder won't create a new
+build in the hoary context.
+
+    >>> pub_success = test_publisher.getPubSource(
+    ...     sourcename='test-success', version='1.0', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+    >>> copied_pub = pub_success.copyTo(
+    ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
+
+    >>> ok_build = pub_success.sourcepackagerelease.createBuild(
+    ...     warty['i386'], PackagePublishingPocket.RELEASE,
+    ...     warty.main_archive, status=BuildStatus.FULLYBUILT)
+
+If a source is published in Celso's PPA, a build will be created
+for it respecting only 'architecturehintlist' and PPA-supported
+architecture, it won't be submitted to P-a-s restrictions. It allows
+PPA user to work on 'broken' ports of a given source, without
+depending on lifting the PRIMARY archive PAS restrictions.
+
+    >>> pub_hoary_ppa = test_publisher.getPubSource(
+    ...     sourcename='test-ppa', version='674', distroseries=hoary,
+    ...     architecturehintlist="i386 hppa", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+We will remove the virtualization support from
+ubuntu/breezy-autotest/i386, so we can verify that when a distroseries
+exists but does not support any PPA archictecture the source
+publications in PPA context are ignored; they don't result in any
+build nor a misleading error in determineArchitectureToBuild.
+
+    >>> breezy_autotest_i386.supports_virtualized = False
+
+    >>> pub_breezy_autotest_ppa = test_publisher.getPubSource(
+    ...     sourcename='test-no-ppa-support', version='999',
+    ...     distroseries=breezy_autotest, archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+Before committing the previous changes, we have to annotated the
+manually created build IDs so they can be excluded from subsequents
+checks/counters within this test.
+
+    >>> old_build_ids.append(failed_build.id)
+    >>> old_build_ids.append(ok_build.id)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+
+== Create and verify the new builds ==
+
+Create missing builds (packages w/o build entry) for those distroseries.
+
+We expect to have a couple of new builds for the sane hoary/RELEASE,
+one for warty/UPDATES and one for hoary/RELEASE/PPA.
+
+    >>> for series in distroseries:
+    ...      queue_builder.createMissingBuilds(series)
+
+Check that we only created new Build entries for the new hoary releases:
+
+    >>> new_builds = [build for build in BinaryPackageBuild.select()
+    ...               if build.id not in old_build_ids]
+    >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
+    ...   print build.title
+    i386 build of test-buildd 667 in ubuntu hoary RELEASE
+    hppa build of test-buildd-2 668 in ubuntu hoary RELEASE
+    i386 build of test-buildd-2 668 in ubuntu hoary RELEASE
+    hppa build of test-buildd-3 669 in ubuntu hoary RELEASE
+    i386 build of test-buildd-3 669 in ubuntu hoary RELEASE
+    hppa build of test-buildd-4 670 in ubuntu hoary RELEASE
+    hppa build of test-buildd-6 672 in ubuntu hoary RELEASE
+    i386 build of test-buildd-7 673 in ubuntu hoary RELEASE
+    i386 build of test-failed 1.0 in ubuntu hoary RELEASE
+    i386 build of test-ppa 674 in ubuntu hoary RELEASE
+    i386 build of test-updates 665 in ubuntu warty UPDATES
+
+And have a look at our architecture-independent-source's build:
+
+    >>> arch_indep_build = BinaryPackageBuild.selectOneBy(
+    ...     source_package_release=pub_all.sourcepackagerelease)
+
+    >>> print arch_indep_build.title
+    i386 build of test-buildd 667 in ubuntu hoary RELEASE
+
+
+== Create and verify the new queue entries ==
+
+BuildQueue records corresponding to the build records in NEEDSBUILD
+state are immediately created.
+
+    >>> active_jobs = [
+    ...     build_queue for build_queue in BuildQueue.select(orderBy='id')
+    ...     if build_queue.id not in old_job_ids]
+    >>> len(active_jobs)
+    11
+
+The BuildQueue entries created are already 'scored', meaning the job
+can be dispatched once operation is committed, i.e. dispatching can
+happen in parallel with build creation.
+
+    >>> build_queue = active_jobs[0]
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+    ...     build_queue)
+    >>> print build.title
+    i386 build of test-buildd 667 in ubuntu hoary RELEASE
+    >>> build_queue.lastscore
+    2505
+
+Check the published component name retriever, they might be different,
+i.e., the published component can be different than the original component.
+
+    >>> print build.current_component.name
+    main
+    >>> print build.source_package_release.component.name
+    main
+
+Missing BuildQueue records, resulting from given-back builds, are
+created in the last stage of the queue-builder script.
+
+    >>> given_back_build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+    ...     build_queue)
+    >>> build_queue.destroySelf()
+    >>> flush_database_updates()
+
+    >>> print given_back_build.buildqueue_record
+    None
+
+    >>> queue_builder.addMissingBuildQueueEntries(archseries)
+
+    >>> given_back_build.buildqueue_record is not None
+    True

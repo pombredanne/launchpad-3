@@ -3,9 +3,10 @@
 
 __metaclass__ = type
 
-__all__ = [ 'MultiTableCopy' ]
+__all__ = ['MultiTableCopy']
 
 import logging
+import re
 import time
 
 from zope.interface import implements
@@ -109,6 +110,7 @@ class PouringLoop:
         if self.batch_pouring_callback is not None:
             self.batch_pouring_callback(
                 from_table, to_table, batch_size, begin_id, end_id)
+
 
 class MultiTableCopy:
     """Copy interlinked data spanning multiple tables in a coherent fashion.
@@ -253,8 +255,14 @@ class MultiTableCopy:
         """Name for a holding table, but without quotes.  Use with care."""
         if suffix:
             suffix = '_%s' % suffix
-        return "temp_%s_holding_%s%s" % (
+
+        assert re.search(r'[^a-z_]', tablename + suffix) is None, (
+            'Unsupported characters in table name per Bug #179821')
+
+        raw_name = "temp_%s_holding_%s%s" % (
             str(tablename), self.name, str(suffix))
+
+        return raw_name
 
     def getHoldingTableName(self, tablename, suffix=''):
         """Name for a holding table to hold data being copied in tablename.
@@ -371,7 +379,7 @@ class MultiTableCopy:
         holding_table = self.getHoldingTableName(source_table)
 
         self.logger.info('Extracting from %s into %s...' % (
-            source_table,holding_table))
+            source_table, holding_table))
 
         starttime = time.time()
 
@@ -385,7 +393,7 @@ class MultiTableCopy:
         self._indexIdColumn(holding_table, source_table, cur)
 
         self.logger.debug(
-            '...Extracted in %.3f seconds' % (time.time()-starttime))
+            '...Extracted in %.3f seconds' % (time.time() - starttime))
 
     def _selectToHolding(self, source_table, joins, external_joins,
             where_clause, holding_table, id_sequence, inert_where):
@@ -587,7 +595,7 @@ class MultiTableCopy:
 
             self.logger.debug(
                 "Pouring %s took %.3f seconds."
-                % (holding_table, time.time()-tablestarttime))
+                % (holding_table, time.time() - tablestarttime))
 
             cur = self._commit(transaction_manager)
 
@@ -651,7 +659,7 @@ class MultiTableCopy:
             if table_number < self.last_extracted_table:
                 raise AssertionError(
                     "Table '%s' extracted after its turn" % source_table)
-            if table_number > self.last_extracted_table+1:
+            if table_number > self.last_extracted_table + 1:
                 raise AssertionError(
                     "Table '%s' extracted before its turn" % source_table)
             if table_number == self.last_extracted_table:
@@ -696,4 +704,3 @@ class MultiTableCopy:
         self.logger.debug("Committed in %.3f seconds" % (time.time() - start))
         transaction_manager.begin()
         return cursor()
-

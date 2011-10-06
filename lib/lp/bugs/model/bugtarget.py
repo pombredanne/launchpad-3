@@ -9,34 +9,62 @@ __metaclass__ = type
 __all__ = [
     'BugTargetBase',
     'HasBugsBase',
+    'HasBugHeatMixin',
     'OfficialBugTag',
     'OfficialBugTagTargetMixin',
     ]
 
-from storm.locals import Int, Reference, Storm, Unicode
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor, sqlvalues
-from lp.bugs.model.bugtask import (
-    BugTaskSet, get_bug_privacy_filter)
-from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    )
+from canonical.launchpad.searchbuilder import (
+    any,
+    not_equals,
+    NULL,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
+from lp.bugs.interfaces.bugtask import (
+    BugTagsSearchCombinator,
+    BugTaskImportance,
+    BugTaskSearchParams,
+    BugTaskStatus,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
+from lp.bugs.model.bugtask import (
+    BugTaskSet,
+    )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -44,12 +72,14 @@ class HasBugsBase:
     All `IHasBugs` implementations should inherit from this class
     or from `BugTargetBase`.
     """
+
     def searchTasks(self, search_params, user=None,
                     order_by=None, search_text=None,
                     status=None,
                     importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
+                    structural_subscriber=None,
                     affected_user=None, affects_me=False,
                     has_patch=None, has_cve=None, distribution=None,
                     tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
@@ -63,7 +93,9 @@ class HasBugsBase:
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False, linked_branches=None):
+                    hardware_is_linked_to_bug=False, linked_branches=None,
+                    linked_blueprints=None, modified_since=None,
+                    created_since=None, prejoins=[]):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -79,21 +111,22 @@ class HasBugsBase:
             del kwargs['self']
             del kwargs['user']
             del kwargs['search_params']
+            del kwargs['prejoins']
             search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         self._customizeSearchParams(search_params)
-        return BugTaskSet().search(search_params)
+        return BugTaskSet().search(search_params, prejoins=prejoins)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
-        raise NotImplementedError
+        raise NotImplementedError(self._customizeSearchParams)
 
-    def _getBugTaskContextWhereClause(self):
-        """Return an SQL snippet to filter bugtasks on this context."""
-        raise NotImplementedError
+    def getBugSummaryContextWhereClause(self):
+        """Return a storm clause to filter bugsummaries on this context.
 
-    def _getBugTaskContextClause(self):
-        """Return a SQL clause for selecting this target's bugtasks."""
-        raise NotImplementedError(self._getBugTaskContextClause)
+        :return: Either a storm clause to filter bugsummaries, or False if
+            there cannot be any matching bug summaries.
+        """
+        raise NotImplementedError(self.getBugSummaryContextWhereClause)
 
     @property
     def closed_bugtasks(self):
@@ -108,12 +141,7 @@ class HasBugsBase:
     @property
     def open_bugtasks(self):
         """See `IHasBugs`."""
-        open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(open_tasks_query)
+        return self.searchTasks(BugTaskSet().open_bugtask_search)
 
     @property
     def new_bugtasks(self):
@@ -123,6 +151,17 @@ class HasBugsBase:
             omit_dupes=True)
 
         return self.searchTasks(open_tasks_query)
+
+    @property
+    def high_bugtasks(self):
+        """See `IHasBugs`."""
+        high_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            importance=BugTaskImportance.HIGH,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
+        return self.searchTasks(high_tasks_query)
 
     @property
     def critical_bugtasks(self):
@@ -139,7 +178,8 @@ class HasBugsBase:
     def inprogress_bugtasks(self):
         """See `IHasBugs`."""
         inprogress_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.INPROGRESS,
+            user=getUtility(ILaunchBag).user,
+            status=BugTaskStatus.INPROGRESS,
             omit_dupes=True)
 
         return self.searchTasks(inprogress_tasks_query)
@@ -162,8 +202,40 @@ class HasBugsBase:
 
         return self.searchTasks(all_tasks_query)
 
-    def setMaxBugHeat(self, heat):
+    @property
+    def has_bugtasks(self):
         """See `IHasBugs`."""
+        return not self.all_bugtasks.is_empty()
+
+    def getBugTaskWeightFunction(self):
+        """Default weight function is the simple one."""
+        return simple_weight_calculator
+
+
+class BugTargetBase(HasBugsBase):
+    """Standard functionality for IBugTargets.
+
+    All IBugTargets should inherit from this class.
+    """
+
+    # The default implementation of the property, used for
+    # IDistribution, IDistroSeries, IProjectGroup.
+    enable_bugfiling_duplicate_search = True
+
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
+        """See IBugTarget."""
+        from lp.bugs.model.bug import get_bug_tags_open_count
+        return get_bug_tags_open_count(
+            self.getBugSummaryContextWhereClause(),
+            user, tag_limit=tag_limit, include_tags=include_tags)
+
+
+class HasBugHeatMixin:
+    """Standard functionality for objects implementing IHasBugHeat."""
+
+    def setMaxBugHeat(self, heat):
+        """See `IHasBugHeat`."""
         if (IDistribution.providedBy(self)
             or IProduct.providedBy(self)
             or IProjectGroup.providedBy(self)
@@ -173,17 +245,24 @@ class HasBugsBase:
         else:
             raise NotImplementedError
 
-    def recalculateMaxBugHeat(self):
-        """See `IHasBugs`."""
+    def recalculateBugHeatCache(self):
+        """See `IHasBugHeat`.
+
+        DistributionSourcePackage overrides this method.
+        """
         if IProductSeries.providedBy(self):
-            return self.product.recalculateMaxBugHeat()
+            return self.product.recalculateBugHeatCache()
         if IDistroSeries.providedBy(self):
-            return self.distribution.recalculateMaxBugHeat()
+            return self.distribution.recalculateBugHeatCache()
         if ISourcePackage.providedBy(self):
             # Should only happen for nominations, so we can safely skip
             # recalculating max_heat.
             return
 
+        # XXX: deryck The queries here are a source of pain and have
+        # been changed a couple times looking for the best
+        # performaning version.  Use caution and have EXPLAIN ANALYZE
+        # data ready when changing these.
         if IDistribution.providedBy(self):
             sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
@@ -194,6 +273,7 @@ class HasBugsBase:
                       FROM Bug, Bugtask, DistroSeries
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.distroseries = DistroSeries.id
+                      AND Bugtask.distroseries IS NOT NULL
                       AND DistroSeries.distribution = %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProduct.providedBy(self):
@@ -205,22 +285,18 @@ class HasBugsBase:
                    """SELECT Bug.heat
                       FROM Bug, Bugtask, ProductSeries
                       WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.productseries IS NOT NULL
                       AND Bugtask.productseries = ProductSeries.id
                       AND ProductSeries.product = %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT MAX(heat)
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask, Product
-                      WHERE Bugtask.bug = Bug.id AND
-                      Bugtask.product = Product.id AND
-                      Product.project =  %s""" % sqlvalues(self)]
-        elif IDistributionSourcePackage.providedBy(self):
-            sql = ["""SELECT MAX(heat)
-                      FROM Bug, Bugtask
-                      WHERE Bugtask.bug = Bug.id AND
-                      Bugtask.distribution = %s AND
-                      Bugtask.sourcepackagename = %s""" % sqlvalues(
-                 self.distribution, self.sourcepackagename)]
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.product = Product.id
+                      AND Product.project IS NOT NULL
+                      AND Product.project =  %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         else:
             raise NotImplementedError
 
@@ -237,79 +313,38 @@ class HasBugsBase:
         # If the product is part of a project group we calculate the maximum
         # heat for the project group too.
         if IProduct.providedBy(self) and self.project is not None:
-            self.project.recalculateMaxBugHeat()
-
-    @property
-    def has_bugtasks(self):
-        """See `IHasBugs`."""
-        # Check efficiently if any bugtasks exist. We should avoid
-        # expensive calls like all_bugtasks.count(). all_bugtasks
-        # returns a storm.SQLObjectResultSet instance, and this
-        # class does not provide methods like is_empty(). But we can
-        # indirectly call SQLObjectResultSet._result_set.is_empty()
-        # by converting all_bugtasks into a boolean object.
-        return bool(self.all_bugtasks)
-
-    def getBugCounts(self, user, statuses=None):
-        """See `IHasBugs`."""
-        if statuses is None:
-            statuses = BugTaskStatus.items
-        statuses = list(statuses)
-
-        count_column = """
-            COUNT (CASE WHEN BugTask.status = %s
-                        THEN BugTask.id ELSE NULL END)"""
-        select_columns = [count_column % sqlvalues(status)
-                          for status in statuses]
-        conditions = [
-            '(%s)' % self._getBugTaskContextClause(),
-            'BugTask.bug = Bug.id',
-            'Bug.duplicateof is NULL']
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            conditions.append(privacy_filter)
-
-        cur = cursor()
-        cur.execute(
-            "SELECT %s FROM BugTask, Bug WHERE %s" % (
-                ', '.join(select_columns), ' AND '.join(conditions)))
-        counts = cur.fetchone()
-        return dict(zip(statuses, counts))
-
-
-
-class BugTargetBase(HasBugsBase):
-    """Standard functionality for IBugTargets.
-
-    All IBugTargets should inherit from this class.
-    """
+            self.project.recalculateBugHeatCache()
 
 
 class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
-    This class is inteneded to be used as a mixin for the classes
-    Distribution, Product and Project, which can define official
+    This class is intended to be used as a mixin for the classes
+    Distribution, Product and ProjectGroup, which can define official
     bug tags.
 
-    Using this call in Project requires a fix of bug 341203, see
+    Using this call in ProjectGroup requires a fix of bug 341203, see
     below, class OfficialBugTag.
+
+    See also `Bug.official_bug_tags` which calculates this efficiently for
+    a single bug.
     """
+
+    def _getOfficialTagClause(self):
+        if IDistribution.providedBy(self):
+            return (OfficialBugTag.distribution == self)
+        elif IProduct.providedBy(self):
+            return (OfficialBugTag.product == self)
+        else:
+            raise AssertionError(
+                '%s is not a valid official bug target' % self)
 
     def _getOfficialTags(self):
         """Get the official bug tags as a sorted list of strings."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
-        elif IProduct.providedBy(self):
-            target_clause = (OfficialBugTag.product == self)
-        else:
-            raise AssertionError(
-                '%s is not a valid official bug target' % self)
-        tags = [
-            obt.tag for obt
-            in store.find(OfficialBugTag, target_clause).order_by('tag')]
-        return tags
+        target_clause = self._getOfficialTagClause()
+        return list(store.find(
+            OfficialBugTag.tag, target_clause).order_by(OfficialBugTag.tag))
 
     def _setOfficialTags(self, tags):
         """Set the official bug tags from a list of strings."""
@@ -330,12 +365,9 @@ class OfficialBugTagTargetMixin:
         If the tag is not defined for this target, None is returned.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
-        else:
-            target_clause = (OfficialBugTag.product == self)
+        target_clause = self._getOfficialTagClause()
         return store.find(
-            OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
+            OfficialBugTag, OfficialBugTag.tag == tag, target_clause).one()
 
     def addOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
@@ -396,4 +428,3 @@ class OfficialBugTag(Storm):
                 'IDistribution instance or an IProduct instance.')
 
     target = property(target, _settarget, doc=target.__doc__)
-

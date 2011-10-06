@@ -11,7 +11,7 @@ Badges are shown in two main places:
 
 In the object listing views, badges are used to show links between
 objects, such as bug-branch links or bug-spec links, and object
-attribute values such as privacy or mentoring availability.
+attribute values such as privacy.
 
 Listings use small icon sized images, and object details pages use
 larger logo sized images.
@@ -29,7 +29,6 @@ Iterating over this collection gives:
     blueprint
     branch
     bug
-    mentoring
     mergeproposal
     patch
     private
@@ -273,7 +272,7 @@ adapter that is defined for the content class, and as shown below
 through the printed attribute accessors, uses the attributes of the
 content class.
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
     >>> print test_tales('context/badges:small', context=foo)
     Foo.bugs
     Foo.blueprints

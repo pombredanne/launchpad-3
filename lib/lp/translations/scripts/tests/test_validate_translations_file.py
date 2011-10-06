@@ -1,4 +1,4 @@
-#! /usr/bin/python2.5
+#! /usr/bin/python
 #
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -8,16 +8,17 @@
 import logging
 import os.path
 from textwrap import dedent
-from unittest import TestCase, TestLoader
+from unittest import TestCase
 
 from canonical.launchpad.ftests.script import run_script
-
 import lp.translations
-
 from lp.translations.scripts.validate_translations_file import (
-    UnknownFileType, ValidateTranslationsFile)
+    UnknownFileType,
+    ValidateTranslationsFile,
+    )
 from lp.translations.utilities.tests.xpi_helpers import (
-    get_en_US_xpi_file_to_import)
+    get_en_US_xpi_file_to_import,
+    )
 
 
 class TestValidateTranslationsFile(TestCase):
@@ -125,7 +126,3 @@ class TestValidateTranslationsFile(TestCase):
         script = 'scripts/rosetta/validate-translations-file.py'
         result, out, err = run_script(script, [test_input])
         self.assertEqual(0, result)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

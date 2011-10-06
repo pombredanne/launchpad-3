@@ -1,4 +1,5 @@
-= File Attachments of the Bug Report =
+File Attachments of the Bug Report
+==================================
 
 File attachments of the bug report itself are displayed in the list of
 comments. Since the text of this comment is already displayed as the
@@ -21,17 +22,18 @@ If we add an attachment to the bug report...
 
     >>> import StringIO
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login("test@canonical.com")
-    >>> bug_11 =  getUtility(IBugSet).get(11)
+    >>> bug_11 = getUtility(IBugSet).get(11)
+    >>> launchbag = getUtility(ILaunchBag)
+    >>> launchbag.clear()
     >>> attachment = bug_11.addAttachment(
     ...     owner=None, data=StringIO.StringIO('whatever'),
     ...     comment=bug_11.initial_message, filename='test.txt',
     ...     is_patch=False, content_type='text/plain',
     ...     description='sample data')
-    >>> syncUpdate(attachment)
-    >>> syncUpdate(bug_11)
     >>> logout()
 
 ...the first displayed comment shows a link to the attachment, but it
@@ -50,18 +52,23 @@ displayed as the bug report).
     text/plain)
     >>> link = browser.getLink('sample data')
     >>> print link.url
-    http://localhost:58000/.../test.txt
+    http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1/+files/test.txt
+    >>> edit_link = find_tags_by_class(browser.contents, 'edit sprite')[1]
+    >>> print edit_link
+    <a alt="edit" class="sprite edit"...
+    ...href="/jokosher/+bug/11/+attachment/1"></a>
 
-== Patch attachments are shown before non-patch attachments ==
+
+Patch attachments are shown before non-patch attachments
+--------------------------------------------------------
 
     >>> login("test@canonical.com")
+    >>> launchbag.clear()
     >>> patch_attachment = bug_11.addAttachment(
     ...     owner=None, data=StringIO.StringIO('patchy patch patch'),
     ...     comment=bug_11.initial_message, filename='patch.txt',
     ...     is_patch=True, content_type='text/plain',
     ...     description='a patch')
-    >>> syncUpdate(patch_attachment)
-    >>> syncUpdate(bug_11)
     >>> logout()
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> print extract_text(browser.contents)
@@ -70,4 +77,4 @@ displayed as the bug report).
     ...a patch...
     ...Bug attachments...
     ...sample data...
-    ... 
+    ...

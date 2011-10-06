@@ -2,11 +2,11 @@
 
 The team pages have their own navigation menu.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
-    >>> from canonical.launchpad.ftests import test_tales
-    >>> from canonical.lazr.testing.menus import summarise_tal_links
     >>> from zope.component import queryAdapter
+    >>> from lp.testing import test_tales
+    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+    >>> from canonical.lazr.testing.menus import summarise_tal_links
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> personset = getUtility(IPersonSet)
     >>> ubuntu_team = personset.getByName('name18')

@@ -33,8 +33,10 @@ Because no Librarian is running, output from the two loggers should be
 identical. Note the overhead involved in attempting to contact the
 Librarian is not significant.
 
->>> from canonical.testing import LibrarianLayer
+>>> from canonical.testing.layers import LibrarianLayer
 >>> LibrarianLayer.hide()
+
+>>> from lp.services.utils import utc_now
 
 >>> normal_log, normal_out= make_logger(logging.Formatter)
 >>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
@@ -72,10 +74,10 @@ cronjobs
 >>> librarian_log.error('Oops', exc_info=exception)
 >>> print librarian_out.getvalue()
 ERROR Oops
- -> http://localhost:58000/...txt (An Exception)
+ -> http://.../....txt (An Exception)
 >>> url = librarian_out.getvalue().splitlines()[-1].split()[1:2][0]
 >>> print url
-http://localhost:58000/...txt
+http://.../....txt
 >>> print urlopen(url).read()
 Traceback (most recent call last):
     ...
@@ -92,11 +94,10 @@ We keep exceptions from expiring for about 3 months.
 
 >>> match = re.search('/(\d+)/', url)
 >>> alias_id = match.group(1)
->>> from canonical.launchpad.database import LibraryFileAlias
+>>> from canonical.launchpad.database.librarian import LibraryFileAlias
 >>> transaction.abort() # To see db changes made by the librarian
 >>> alias = LibraryFileAlias.get(alias_id)
->>> now = datetime.now().replace(tzinfo=utc)
->>> alias.expires > now + timedelta(days=89)
+>>> alias.expires > utc_now() + timedelta(days=89)
 True
 
 Note that we also need to remain informative with dud exceptions, such as
@@ -116,9 +117,9 @@ at all
 ...     librarian_log.exception('Dud2')
 >>> print librarian_out.getvalue()
 ERROR Dud1
- -> http://localhost:58000/...txt (Dud)
+ -> http://.../....txt (Dud)
 ERROR Dud2
- -> http://localhost:58000/...txt (Dud)
+ -> http://.../....txt (Dud)
 <BLANKLINE>
 
 The end result of this is to not have scripts display exceptions to
@@ -134,8 +135,8 @@ stderr, instead reporting URLs and greatly reducing the verbosity.
 >>> print out
 Script Output
 ERROR   Oops
- -> http://localhost:58000/...txt (Aargh)
+ -> http://.../....txt (Aargh)
 ERROR   Root oops
- -> http://localhost:58000/...txt (Aargh)
+ -> http://.../....txt (Aargh)
 
 

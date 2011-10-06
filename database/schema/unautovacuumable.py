@@ -1,6 +1,6 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Disable autovacuum on all tables in the database and kill off
@@ -16,16 +16,23 @@ Don't run this on any production systems.
 __metaclass__ = type
 __all__ = []
 
-# pylint: disable-msg=W0403
-import _pythonpath
-
 from distutils.version import LooseVersion
 from optparse import OptionParser
 import sys
 import time
 
-from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import logger_options, db_options, logger
+# pylint: disable-msg=W0403
+import _pythonpath
+
+from canonical.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
+from canonical.launchpad.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 
 
 def main():
@@ -41,8 +48,8 @@ def main():
     log = logger(options)
 
     log.debug("Connecting")
-    con = connect(options.dbuser)
-    con.set_isolation_level(0) # Autocommit
+    con = connect()
+    con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cur = con.cursor()
 
     cur.execute('show server_version')

@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.archive import ArchiveAdminView
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -23,19 +23,19 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
         # object.
         login('admin@canonical.com')
 
-    def initialize_admin_view(self, private=True):
+    def initialize_admin_view(self, private=True, buildd_secret=''):
         """Initialize the admin view to set the privacy.."""
         method = 'POST'
         form = {
             'field.enabled': 'on',
             'field.actions.save': 'Save',
             }
+
+        form['field.buildd_secret'] = buildd_secret
         if private is True:
             form['field.private'] = 'on'
-            form['field.buildd_secret'] = 'test'
         else:
             form['field.private'] = 'off'
-            form['field.buildd_secret'] = ''
 
         view = ArchiveAdminView(self.ppa, LaunchpadTestRequest(
             method=method, form=form))
@@ -56,7 +56,7 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
     def test_set_private_without_packages(self):
         # If a ppa does not have packages published, it is possible to
         # update the private attribute.
-        view = self.initialize_admin_view(private=True)
+        view = self.initialize_admin_view(private=True, buildd_secret="test")
         self.assertEqual(0, len(view.errors))
         self.assertTrue(view.context.private)
 
@@ -66,14 +66,22 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
         self.make_ppa_private(self.ppa)
         self.assertTrue(self.ppa.private)
 
-        view = self.initialize_admin_view(private=False)
+        view = self.initialize_admin_view(private=False, buildd_secret='')
         self.assertEqual(0, len(view.errors))
         self.assertFalse(view.context.private)
+
+    def test_set_private_without_buildd_secret(self):
+        """If a PPA is marked private but no buildd secret is specified,
+        one will be generated."""
+        view = self.initialize_admin_view(private=True, buildd_secret='')
+        self.assertEqual(0, len(view.errors))
+        self.assertTrue(view.context.private)
+        self.assertTrue(len(view.context.buildd_secret) > 4)
 
     def test_set_private_with_packages(self):
         # A PPA that does have packages cannot be privatised.
         self.publish_to_ppa(self.ppa)
-        view = self.initialize_admin_view(private=True)
+        view = self.initialize_admin_view(private=True, buildd_secret="test")
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This archive already has published sources. '
@@ -87,9 +95,35 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
         self.assertTrue(self.ppa.private)
         self.publish_to_ppa(self.ppa)
 
-        view = self.initialize_admin_view(private=False)
+        view = self.initialize_admin_view(private=False, buildd_secret='')
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This archive already has published sources. '
             'It is not possible to switch the privacy.',
             view.errors[0])
+
+    def test_cannot_change_enabled_restricted_families(self):
+        # If require_virtualized is False, enabled_restricted_families
+        # cannot be changed.
+        method = 'POST'
+        form = {
+            'field.enabled': 'on',
+            'field.require_virtualized': '',
+            'field.enabled_restricted_families': [],
+            'field.actions.save': 'Save',
+            }
+
+        view = ArchiveAdminView(self.ppa, LaunchpadTestRequest(
+            method=method, form=form))
+        view.initialize()
+
+        error_msg = (
+            u'Main archives can not be restricted to certain '
+            'architectures unless they are set to build on '
+            'virtualized builders.')
+        self.assertEqual(
+           error_msg,
+           view.widget_errors.get('enabled_restricted_families'))
+        self.assertEqual(
+           error_msg,
+           view.widget_errors.get('require_virtualized'))

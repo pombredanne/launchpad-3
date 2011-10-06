@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'ILibraryFileAlias',
+    'ILibraryFileAliasWithParent',
     'ILibraryFileAliasSet',
     'ILibraryFileContent',
     'ILibraryFileDownloadCount',
@@ -16,12 +17,21 @@ __all__ = [
     ]
 
 from datetime import datetime
-from pytz import utc
-
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Date, Datetime, Int, TextLine
 
 from lazr.restful.fields import Reference
+from pytz import utc
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Date,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
@@ -29,6 +39,7 @@ from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
 # Set the expires attribute to this constant to flag a file that
 # should never be removed from the Librarian.
 NEVER_EXPIRES = datetime(2038, 1, 1, 0, 0, 0, tzinfo=utc)
+
 
 class ILibraryFileAlias(Interface):
     id = Int(
@@ -70,16 +81,20 @@ class ILibraryFileAlias(Interface):
     # byte strings.
     http_url = Attribute(_("The http URL to this file"))
     https_url = Attribute(_("The https URL to this file"))
+    private_url = Attribute(_("The secure URL to this file (private files)"))
 
-    def getURL():
+    def getURL(secure=True, include_token=False):
         """Return this file's http or https URL.
 
-        The generated URL will be https if the use_https config variable is
-        set, in order to prevent warnings about insecure objects from
-        happening in some browsers.
+        If the file is a restricted file, the private_url will be returned,
+        which is on https and uses unique domains per file alias.
 
-        If config.launchpad.virtual_host.use_https is set, then return the
-        https URL. Otherwise return the http URL.
+        :param secure: generate HTTPS URLs if the use_https config variable
+            is set, in order to prevent warnings about insecure objects
+            from happening in some browsers (this is used for, e.g.,
+            branding).
+        :param include_token: create a time-limited token and include it in
+            the URL to authorise access to restricted files.
         """
 
     def open(timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
@@ -116,6 +131,13 @@ class ILibraryFileAlias(Interface):
         """
 
 
+class ILibraryFileAliasWithParent(ILibraryFileAlias):
+    """A ILibraryFileAlias that knows about its parent."""
+
+    def createToken(self):
+        """Create a token allowing time-limited access to this file."""
+
+
 class ILibraryFileContent(Interface):
     """Actual data in the Librarian.
 
@@ -125,20 +147,14 @@ class ILibraryFileContent(Interface):
             title=_('Library File Content ID'), required=True, readonly=True,
             )
     datecreated = Datetime(
-            title=_('Date created'), required=True, readonly=True
-            )
-    filesize = Int(
-            title=_('File size'), required=True, readonly=True
-            )
-    sha1 = TextLine(
-            title=_('SHA-1 hash'), required=True, readonly=True
-            )
-    md5 = TextLine(
-            title=_('MD5 hash'), required=True, readonly=True
-            )
+        title=_('Date created'), required=True, readonly=True)
+    filesize = Int(title=_('File size'), required=True, readonly=True)
+    sha1 = TextLine(title=_('SHA-1 hash'), required=True, readonly=True)
+    md5 = TextLine(title=_('MD5 hash'), required=True, readonly=True)
 
 
 class ILibraryFileAliasSet(Interface):
+
     def create(name, size, file, contentType, expires=None, debugID=None,
                restricted=False):
         """Create a file in the Librarian, returning the new alias.

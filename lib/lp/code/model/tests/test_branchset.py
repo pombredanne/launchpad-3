@@ -5,70 +5,34 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
+from testtools.matchers import LessThan
 
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.interfaces.branch import IBranchSet
 from lp.code.model.branch import BranchSet
-from lp.code.enums import BranchLifecycleStatus
-from lp.registry.interfaces.product import IProductSet
-from lp.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
-
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from lp.testing import (
+    logout,
+    TestCaseWithFactory,
+    )
+from lp.testing._webservice import QueryCollector
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBranchSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.product = getUtility(IProductSet).getByName('firefox')
-        self.branch_set = BranchSet()
-
-    def test_limitedByQuantity(self):
-        """When getting the latest branches for a product, we can specify the
-        maximum number of branches we want to know about.
-        """
-        quantity = 3
-        latest_branches = self.branch_set.getLatestBranchesForProduct(
-            self.product, quantity)
-        self.assertEqual(quantity, len(list(latest_branches)))
-
-    def test_onlyForProduct(self):
-        """getLatestBranchesForProduct returns branches only from the
-        requested product.
-        """
-        quantity = 5
-        latest_branches = self.branch_set.getLatestBranchesForProduct(
-            self.product, quantity)
-        self.assertEqual(
-            [self.product.name] * quantity,
-            [branch.product.name for branch in latest_branches])
-
-    def test_abandonedBranchesNotIncluded(self):
-        """getLatestBranchesForProduct does not include branches that have
-        been abandoned, because they are not relevant for those interested
-        in recent activity.
-        """
-        original_branches = list(
-            self.branch_set.getLatestBranchesForProduct(self.product, 5))
-        branch = original_branches[0]
-        # XXX: JonathanLange 2007-07-06: WHITEBOXING. The anonymous user
-        # cannot change branch details, so we remove the security proxy and
-        # change it.
-        branch = removeSecurityProxy(branch)
-        branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
-        latest_branches = list(
-            self.branch_set.getLatestBranchesForProduct(self.product, 5))
-        self.assertEqual(original_branches[1:], latest_branches)
+    def test_provides_IBranchSet(self):
+        # BranchSet instances provide IBranchSet.
+        self.assertProvides(BranchSet(), IBranchSet)
 
     def test_getByUrls(self):
         # getByUrls returns a list of branches matching the list of URLs that
         # it's given.
         a = self.factory.makeAnyBranch()
         b = self.factory.makeAnyBranch()
-        branches = self.branch_set.getByUrls(
+        branches = BranchSet().getByUrls(
             [a.bzr_identity, b.bzr_identity])
         self.assertEqual({a.bzr_identity: a, b.bzr_identity: b}, branches)
 
@@ -76,9 +40,21 @@ class TestBranchSet(TestCaseWithFactory):
         # If a branch cannot be found for a URL, then None appears in the list
         # in place of the branch.
         url = 'http://example.com/doesntexist'
-        branches = self.branch_set.getByUrls([url])
+        branches = BranchSet().getByUrls([url])
         self.assertEqual({url: None}, branches)
 
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    def test_api_branches_query_count(self):
+        webservice = LaunchpadWebServiceCaller()
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        # Get 'all' of the 50 branches this collection is limited to - rather
+        # than the default in-test-suite pagination size of 5.
+        url = "/branches?ws.size=50"
+        logout()
+        response = webservice.get(url,
+            headers={'User-Agent': 'AnonNeedsThis'})
+        self.assertEqual(response.status, 200,
+            "Got %d for url %r with response %r" % (
+            response.status, url, response.body))
+        self.assertThat(collector, HasQueryCount(LessThan(17)))

@@ -4,9 +4,8 @@
 """Functions to detect if intltool can be used to generate a POT file for the
 package in the current directory."""
 
-from __future__ import with_statement
-
 from contextlib import contextmanager
+
 
 __metaclass__ = type
 __all__ = [

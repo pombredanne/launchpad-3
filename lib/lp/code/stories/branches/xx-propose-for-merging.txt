@@ -8,6 +8,14 @@ Propose a branch for merging
     >>> url = canonical_url(branch)
     >>> logout()
 
+The Propose for merging link should be there even if there is no logged in
+user.
+
+    >>> browser = setupBrowser()
+    >>> browser.open(url)
+    >>> browser.getLink('Propose for merging')
+    <Link text='Propose for merging' ...
+
 When proposing a branch for merging, the minimum that is needed is a target
 branch.
 
@@ -35,6 +43,7 @@ branch.
     Status: Needs review
     Proposed branch: ...
     Merge into: lp://dev/fooix
+    To merge this branch: bzr merge ...
 
 
 Work in progress
@@ -57,3 +66,4 @@ needs review checkbox in the extra options.
     Status: Work in progress
     Proposed branch: ...
     Merge into: lp://dev/fooix
+    To merge this branch: bzr merge ...

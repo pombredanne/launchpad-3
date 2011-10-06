@@ -8,13 +8,21 @@ __all__ = [
     'PersonProduct',
     ]
 
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
+from lp.code.model.hasbranches import (
+    HasMergeProposalsMixin,
+    )
 from lp.registry.interfaces.personproduct import (
-    IPersonProduct, IPersonProductFactory)
+    IPersonProduct,
+    IPersonProductFactory,
+    )
 
 
-class PersonProduct:
+class PersonProduct(HasMergeProposalsMixin):
 
     implements(IPersonProduct)
 
@@ -27,3 +35,8 @@ class PersonProduct:
     @staticmethod
     def create(person, product):
         return PersonProduct(person, product)
+
+    @property
+    def displayname(self):
+        return '%s in %s' % (
+            self.person.displayname, self.product.displayname)

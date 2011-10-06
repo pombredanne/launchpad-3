@@ -50,17 +50,6 @@
     <a href="http://ubuntu.com/support/supportoptions/local">support
     in languages other than English</a>.
   </p>
-
-  <tal:needupstream condition="not: context/productseries">
-  <h2>Help us help you</h2>
-  <p class="helpwanted message" tal:condition="not: context/productseries">
-    Launchpad doesn&#8217;t know which project and series this package
-    belongs to.
-    If you can, please <a href="+edit-packaging">let us know</a>,
-    so we can provide you and other people with relevant help sources.
-    Thanks!
-  </p>
-  </tal:needupstream>
   </div>
 </div>
 </body>

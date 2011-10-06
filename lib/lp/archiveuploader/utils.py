@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive uploader utilities."""
@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'DpkgSourceError',
+    'extract_dpkg_source',
     're_taint_free',
     're_isadeb',
     're_issource',
@@ -27,9 +29,27 @@ __all__ = [
 
 import email.Header
 import re
+import signal
+import subprocess
 
-from lp.archiveuploader.tagfiles import TagFileParseError
-from canonical.encoding import guess as guess_encoding, ascii_smash
+from lp.services.encoding import (
+    ascii_smash,
+    guess as guess_encoding,
+    )
+from lp.soyuz.enums import BinaryPackageFileType
+
+
+class DpkgSourceError(Exception):
+
+    _fmt = "Unable to unpack source package (%(result)s): %(output)s"
+
+    def __init__(self, command, output, result):
+        super(DpkgSourceError, self).__init__(
+            self._fmt % {
+                "output": output, "result": result, "command": command})
+        self.output = output
+        self.result = result
+        self.command = command
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
@@ -37,14 +57,14 @@ re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
 
 source_file_exts = [
-    'orig(?:-.+)?\.tar\.(?:gz|bz2)', 'diff.gz',
-    '(?:debian\.)?tar\.(?:gz|bz2)', 'dsc']
+    'orig(?:-.+)?\.tar\.(?:gz|bz2|xz)', 'diff.gz',
+    '(?:debian\.)?tar\.(?:gz|bz2|xz)', 'dsc']
 re_issource = re.compile(
-    r"(.+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
-re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2)$")
-re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2)$")
-re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2)$")
-re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2)$")
+    r"([^_]+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
+re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2|xz)$")
+re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2|xz)$")
+re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2|xz)$")
+re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2|xz)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
 re_no_revision = re.compile(r"-[^-]+$")
@@ -91,13 +111,12 @@ def determine_source_file_type(filename):
 
 def determine_binary_file_type(filename):
     """Determine the BinaryPackageFileType of the given filename."""
-    # Avoid circular imports.
-    from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-
     if filename.endswith(".deb"):
         return BinaryPackageFileType.DEB
     elif filename.endswith(".udeb"):
         return BinaryPackageFileType.UDEB
+    elif filename.endswith(".ddeb"):
+        return BinaryPackageFileType.DDEB
     else:
         return None
 
@@ -128,54 +147,6 @@ def extract_component_from_section(section, default_component="main"):
     return (section, component)
 
 
-def build_file_list(tagfile, is_dsc = False, default_component="main" ):
-    files = {}
-
-    if "files" not in tagfile:
-        raise ValueError("No Files section in supplied tagfile")
-
-    format = tagfile["format"]
-
-    format = float(format)
-
-    if not is_dsc and (format < 1.5 or format > 2.0):
-        raise ValueError("Unsupported format '%s'" % tagfile["format"])
-
-    for line in tagfile["files"].split("\n"):
-        if not line:
-            break
-
-        tokens = line.split()
-
-        section = priority = ""
-
-        try:
-            if is_dsc:
-                (md5, size, name) = tokens
-            else:
-                (md5, size, section, priority, name) = tokens
-        except ValueError:
-            raise TagFileParseError(line)
-
-        if section == "":
-            section = "-"
-        if priority == "":
-            priority = "-"
-
-        (section, component) = extract_component_from_section(
-            section, default_component)
-
-        files[name] = {
-            "md5sum": md5,
-            "size": size,
-            "section": section,
-            "priority": priority,
-            "component": component
-            }
-
-    return files
-
-
 def force_to_utf8(s):
     """Forces a string to UTF-8.
 
@@ -185,7 +156,7 @@ def force_to_utf8(s):
         unicode(s, 'utf-8')
         return s
     except UnicodeError:
-        latin1_s = unicode(s,'iso8859-1')
+        latin1_s = unicode(s, 'iso8859-1')
         return latin1_s.encode('utf-8')
 
 
@@ -221,11 +192,11 @@ class ParseMaintError(Exception):
 
     def __init__(self, message):
         Exception.__init__(self)
-        self.args = (message,)
+        self.args = (message, )
         self.message = message
 
 
-def fix_maintainer (maintainer, field_name="Maintainer"):
+def fix_maintainer(maintainer, field_name="Maintainer"):
     """Parses a Maintainer or Changed-By field and returns:
 
     (1) an RFC822 compatible version,
@@ -264,6 +235,10 @@ def fix_maintainer (maintainer, field_name="Maintainer"):
     # Force the name to be UTF-8
     name = force_to_utf8(name)
 
+    # If the maintainer's name contains a full stop then the whole field will
+    # not work directly as an email address due to a misfeature in the syntax
+    # specified in RFC822; see Debian policy 5.6.2 (Maintainer field syntax)
+    # for details.
     if name.find(',') != -1 or name.find('.') != -1:
         rfc822_maint = "%s (%s)" % (email, name)
         rfc2047_maint = "%s (%s)" % (email, rfc2047_name)
@@ -282,7 +257,7 @@ def safe_fix_maintainer(content, fieldname):
     """Wrapper for fix_maintainer() to handle unicode and string argument.
 
     It verifies the content type and transform it in a unicode with guess()
-    before call ascii_smash(). Then we can safelly call fix_maintainer().
+    before call ascii_smash(). Then we can safely call fix_maintainer().
     """
     if type(content) != unicode:
         content = guess_encoding(content)
@@ -291,3 +266,26 @@ def safe_fix_maintainer(content, fieldname):
 
     return fix_maintainer(content, fieldname)
 
+
+def extract_dpkg_source(dsc_filepath, target):
+    """Extract a source package by dsc file path.
+
+    :param dsc_filepath: Path of the DSC file
+    :param target: Target directory
+    """
+
+    def subprocess_setup():
+        # Python installs a SIGPIPE handler by default. This is usually not
+        # what non-Python subprocesses expect.
+        # http://www.chiark.greenend.org.uk/ucgi/~cjwatson/ \
+        #   blosxom/2009-07-02-python-sigpipe.html
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    args = ["dpkg-source", "-sn", "-x", dsc_filepath]
+    dpkg_source = subprocess.Popen(
+        args, stdout=subprocess.PIPE, cwd=target, stderr=subprocess.PIPE,
+        preexec_fn=subprocess_setup)
+    output, unused = dpkg_source.communicate()
+    result = dpkg_source.wait()
+    if result != 0:
+        dpkg_output = prefix_multi_line_string(output, "  ")
+        raise DpkgSourceError(result=result, output=dpkg_output, command=args)

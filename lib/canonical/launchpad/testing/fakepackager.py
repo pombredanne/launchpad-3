@@ -20,13 +20,13 @@ import time
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.uploadpolicy import findPolicyByName
-from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
-from canonical.launchpad.interfaces import IGPGHandler
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackageUploadStatus)
-from canonical.launchpad.scripts import QuietFakeLogger
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.log.logger import BufferLogger
+from lp.soyuz.enums import PackageUploadStatus
 
 
 changelog_entry_template = (
@@ -278,7 +278,8 @@ class FakePackager:
         if suite is not None:
             policy.setDistroSeriesAndPocket(suite)
 
-        upload = NascentUpload(changesfile_path, policy, logger)
+        upload = NascentUpload.from_changesfile_path(
+            changesfile_path, policy, logger)
         upload.process()
 
         return upload
@@ -317,7 +318,7 @@ class FakePackager:
     def buildVersion(self, version, changelog_text="nicht !",
                      suite='hoary', section=None, arch=None, author='Foo Bar',
                      email='foo.bar@canonical.com', timestamp=None):
-        """Initialise a new version of extracted package."""
+        """Initialize a new version of extracted package."""
         assert version.startswith(self.version), (
             'New versions should start with the upstream version: %s ' % (
                 self.version))
@@ -395,7 +396,7 @@ class FakePackager:
         policy = findPolicyByName(policy)
 
         if logger is None:
-            logger = QuietFakeLogger()
+            logger = BufferLogger()
 
         upload = self._doUpload(
             'source', version, policy, archive, distribution_name, suite,
@@ -420,8 +421,6 @@ class FakePackager:
         if queue_record.status in needs_acceptance_statuses:
             queue_record.acceptFromUploader(changesfile_path, logger)
 
-        pub_record = queue_record.archive.getPublishedSources(
-            name=self.name, version=version, exact_match=True)[0]
-
-        return pub_record
+        return queue_record.archive.getPublishedSources(
+            name=self.name, version=version, exact_match=True).first()
 

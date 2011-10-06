@@ -1,14 +1,15 @@
-= PO Import test with a .po file that has a syntax error =
+PO Import test with a .po file that has a syntax error
+======================================================
 
-When we import a .po file with a syntax error, we should notify
-the user about that error so they have a chance to fix it.
+When we import a .po file with a syntax error, we should notify the user
+about that error so they have a chance to fix it.
 
 In this test, we are going to check that we detect and notify the error.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.model.potemplate import POTemplateSubset
@@ -24,8 +25,7 @@ We need this for the Librarian to work properly.
 
 And also, the DBSchema to change the imports status
 
-    >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     RosettaImportStatus)
+    >>> from lp.translations.enums import RosettaImportStatus
 
 Login as an admin to be able to do changes to the import queue.
 
@@ -42,6 +42,7 @@ Now, is time to create the new potemplate
     >>> release = ProductRelease.get(3)
     >>> release.productseries.product.name
     u'firefox'
+
     >>> series = release.productseries
     >>> subset = POTemplateSubset(productseries=series)
     >>> potemplate = subset.new(
@@ -54,8 +55,8 @@ We create the POFile object where we are going to attach the .po file.
 
     >>> pofile = potemplate.newPOFile('cy')
 
-Let's import a .po file that misses the '"' char after msgstr.
-That's a syntax error.
+Let's import a .po file that misses the '"' char after msgstr. That's a
+syntax error.
 
     >>> pofile_contents = r'''
     ... msgid ""
@@ -66,13 +67,13 @@ That's a syntax error.
     ... "Plural-Forms: nplurals=4; plural=n==1) "
     ...     "? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ... "X-Rosetta-Export-Date: %s\n"
-    ...
+    ... 
     ... msgid "foo"
     ... msgstr blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> published = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -93,6 +94,7 @@ And the code composed an email with the notification of the error.
 
     >>> subject
     u'Import problem - Welsh (cy) - firefox in Mozilla Firefox trunk'
+
     >>> print message
     Hello Mark Shuttleworth,
     <BLANKLINE>
@@ -110,7 +112,7 @@ And the code composed an email with the notification of the error.
     answer or file a question at https://answers.launchpad.net/rosetta/
     <BLANKLINE>
     For your convenience, you can get the file you uploaded at:
-    http://localhost:58000/.../firefox-cy.po
+    http://.../firefox-cy.po
     <BLANKLINE>
     Thank you,
     <BLANKLINE>
@@ -118,7 +120,8 @@ And the code composed an email with the notification of the error.
     <BLANKLINE>
 
 
-== Encoding errors ==
+Encoding errors
+---------------
 
 Encoding problems are similarly reported, but with a different
 explanatory text.
@@ -129,13 +132,13 @@ explanatory text.
     ... msgstr ""
     ... "Content-Type: text/plain; charset=ASCII\\n"
     ... "X-Rosetta-Export-Date: 2009-07-13 00:00+0700\\n"
-    ...
+    ... 
     ... msgid "\xa9 Yoyodine Industries"
     ... msgstr ""
     ... '''.encode('utf-8')
-    >>> published = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> transaction.commit()
@@ -147,6 +150,7 @@ An email describes the problem in relatively helpful terms.
 
     >>> subject
     u'Import problem - Frisian (fy) - firefox in Mozilla Firefox trunk'
+
     >>> print message
     Hello Mark Shuttleworth,
     <BLANKLINE>
@@ -176,13 +180,15 @@ The error output field is more terse.
     range(128)
 
 
-== Invalid numbers of plural forms ==
+Invalid numbers of plural forms
+-------------------------------
 
 Some uploads declare impossible numbers of plural forms.  Those uploads
 are rejected.
 
 
-=== Non-numeric plural forms ===
+Non-numeric plural forms
+........................
 
 In his rush to be the first Sumerian translator for Firefox, Mark
 submits a translation with a nonsensical plurals definition.
@@ -196,7 +202,7 @@ submits a translation with a nonsensical plurals definition.
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=n; plural=0\n"
     ... "X-Rosetta-Export-Date: %s\n"
-    ...
+    ... 
     ... msgid "foo"
     ... msgstr "bar"
     ... ''' % datetime.datetime.now(UTC).isoformat()
@@ -207,7 +213,6 @@ submits a translation with a nonsensical plurals definition.
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
-
 The submission is rejected with a syntax error.
 
     >>> print entry.status.name
@@ -215,6 +220,7 @@ The submission is rejected with a syntax error.
 
     >>> subject
     u'Import problem - Sumerian (sux) - firefox in Mozilla Firefox trunk'
+
     >>> print message
     Hello Mark Shuttleworth,
     ...
@@ -226,7 +232,8 @@ The submission is rejected with a syntax error.
     ...
 
 
-=== Not enough forms ===
+Not enough forms
+................
 
 Mark mistakenly attempts to import a translation with "zero" plural
 forms.  He receives an email notifying him of a syntax error.
@@ -239,7 +246,7 @@ forms.  He receives an email notifying him of a syntax error.
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=0; plural=0\n"
     ... "X-Rosetta-Export-Date: %s\n"
-    ...
+    ... 
     ... msgid "foo"
     ... msgstr "bar"
     ... ''' % datetime.datetime.now(UTC).isoformat()
@@ -255,6 +262,7 @@ forms.  He receives an email notifying him of a syntax error.
 
     >>> subject
     u'Import problem - Sumerian (sux) - firefox in Mozilla Firefox trunk'
+
     >>> print message
     Hello Mark Shuttleworth,
     ...
@@ -264,7 +272,6 @@ forms.  He receives an email notifying him of a syntax error.
     Number of plural forms is impossibly low.
     <BLANKLINE>
     ...
-
 
 On his next attempt, Mark accidentally types a negative number of plural
 forms.  The same error is given.
@@ -277,7 +284,7 @@ forms.  The same error is given.
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=-1; plural=0\n"
     ... "X-Rosetta-Export-Date: %s\n"
-    ...
+    ... 
     ... msgid "foo"
     ... msgstr "bar"
     ... ''' % datetime.datetime.now(UTC).isoformat()
@@ -293,6 +300,7 @@ forms.  The same error is given.
 
     >>> subject
     u'Import problem - Sumerian (sux) - firefox in Mozilla Firefox trunk'
+
     >>> print message
     Hello Mark Shuttleworth,
     ...
@@ -303,7 +311,8 @@ forms.  The same error is given.
     ...
 
 
-== Too many plural forms ==
+Too many plural forms
+---------------------
 
 Next Mark, eclectic polyglot that he is, uploads an Arabic translation.
 He mistakenly defines seven instead of six plural forms.  That would be
@@ -323,7 +332,7 @@ to get that information corrected if need be.
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=7; plural=n%%7\n"
     ... "X-Rosetta-Export-Date: %s\n"
-    ...
+    ... 
     ... msgid "%%d foo"
     ... msgid_plural "%%d foos"
     ... msgstr[0] "bar %%d"
@@ -346,6 +355,7 @@ to get that information corrected if need be.
 
     >>> subject
     u'Import problem - Arabic (ar) - firefox in Mozilla Firefox trunk'
+
     >>> print message
     Hello Mark Shuttleworth,
     <BLANKLINE>
@@ -386,7 +396,7 @@ plural forms, the file imports just fine.
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=6; plural=n%%6\n"
     ... "X-Rosetta-Export-Date: %s\n"
-    ...
+    ... 
     ... msgid "%%d foo"
     ... msgid_plural "%%d foos"
     ... msgstr[0] "bar %%d"
@@ -405,3 +415,5 @@ plural forms, the file imports just fine.
 
     >>> print entry.status.name
     IMPORTED
+
+

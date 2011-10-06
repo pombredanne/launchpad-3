@@ -1,55 +1,118 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Print the YUI modules we are using.
+"""Print the YUI modules we are using."""
 
-It looks into the base-layout-macros.pt file for the yui modules included.
-It prints the path to the minified version of these modules.
-
-The output of this script is meant to be given to the lazr-js build.py script
-so that they are included in the launchpad.js file.
-"""
+from sys import argv
 
 
-__metaclass__ = type
+yui_root = 'lib/canonical/launchpad/icing/yui'
+yui_deps = [
+    'yui/yui',
+    'oop/oop',
+    'dom/dom',
+    'dom/dom-style-ie',
+    'event-custom/event-custom',
+    'event/event',
+    'pluginhost/pluginhost',
+    'node/node',
+    'event/event-base-ie',
+    'node/align-plugin',
+    'attribute/attribute',
+    'base/base',
+    'anim/anim',
+    'async-queue/async-queue',
+    'json/json',
+    'plugin/plugin',
+    'cache/cache',
+    'classnamemanager/classnamemanager',
+    'collection/collection',
+    'dump/dump',
+    'intl/intl',
+    'substitute/substitute',
+    'widget/widget',
+    'widget/widget-base-ie',
+    'console/lang/console.js',
+    'console/console',
+    'console/console-filters',
+    'cookie/cookie',
+    'dataschema/dataschema',
+    'datatype/lang/datatype.js',
+    'datatype/datatype',
+    'querystring/querystring-stringify-simple',
+    'queue-promote/queue-promote',
+    'io/io',
+    'datasource/datasource',
+    'dd/dd',
+    'dd/dd-gestures',
+    'dd/dd-drop-plugin',
+    'event/event-touch',
+    'event-gestures/event-gestures',
+    'dd/dd-plugin',
+    'dom/selector-css3',
+    'editor/editor',
+    'event-simulate/event-simulate',
+    'event-valuechange/event-valuechange',
+    'escape/escape',
+    'text/text-data-wordbreak',
+    'text/text-wordbreak',
+    'text/text-data-accentfold',
+    'text/text-accentfold',
+    'highlight/highlight',
+    'history/history',
+    'history/history-hash-ie',
+    'history-deprecated/history-deprecated',
+    'imageloader/imageloader',
+    'jsonp/jsonp',
+    'jsonp/jsonp-url',
+    'loader/loader',
+    'node/node-event-simulate',
+    'transition/transition',
+    'node-flick/node-flick',
+    'node-focusmanager/node-focusmanager',
+    'node-menunav/node-menunav',
+    'widget/widget-position',
+    'widget/widget-position-align',
+    'widget/widget-position-constrain',
+    'widget/widget-stack',
+    'widget/widget-stdmod',
+    'overlay/overlay',
+    'profiler/profiler',
+    'querystring/querystring',
+    'querystring/querystring-parse-simple',
+    'scrollview/scrollview-base',
+    'scrollview/scrollview-base-ie',
+    'scrollview/scrollview-scrollbars',
+    'scrollview/scrollview',
+    'scrollview/scrollview-paginator',
+    'node/shim-plugin',
+    'slider/slider',
+    'sortable/sortable',
+    'sortable/sortable-scroll',
+    'stylesheet/stylesheet',
+    'swfdetect/swfdetect',
+    'swf/swf',
+    'tabview/tabview-base',
+    'widget/widget-child',
+    'widget/widget-parent',
+    'tabview/tabview',
+    'tabview/tabview-plugin',
+    'test/test',
+    'uploader/uploader',
+    'widget-anim/widget-anim',
+    'widget/widget-locale',
+    'yql/yql',
+]
 
-import os
-import re
-import sys
 
-TOP = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), '..'))
-ICING_ROOT = os.path.join(TOP, 'lib', 'canonical', 'launchpad', 'icing')
-MAIN_TEMPLATE = os.path.join(
-    TOP, 'lib', 'lp', 'app', 'templates', 'base-layout-macros.pt')
-
-YUI_ROOT_RE = re.compile('yui string:\${icingroot}/(.*);')
-YUI_MOD_RE = re.compile('\${yui}/(.*?)\.js')
-
-
-yui_root = None
-template = open(MAIN_TEMPLATE, 'r')
-for line in template:
-    if yui_root is None:
-        match = YUI_ROOT_RE.search(line)
-        if not match:
-            continue
-
-        yui_root = os.path.join(ICING_ROOT, match.group(1))
-        if not os.path.isdir(yui_root):
-            sys.stderr.write(
-                "The found YUI root isn't valid: %s\n" % yui_root)
-            sys.exit(1)
-    else:
-        match = YUI_MOD_RE.search(line)
-        if not match:
-            continue
-        # We want to bundle the minimized version
-        module = os.path.join(yui_root, match.group(1)) + '-min.js'
-        if not os.path.isfile(module):
-            sys.stderr.write(
-                "Found invalid YUI module: %s\n" % module)
+if __name__ == '__main__':
+    ext = "-%s.js" % argv[1] if len(argv) >= 2 else ".js"
+    for yui_dep in yui_deps:
+        # If the yui_dep already has a .js suffix, don't add ext to it.
+        if yui_dep.endswith(".js"):
+            yui_dep_path = "%s/%s" % (yui_root, yui_dep)
         else:
-            print module
+            yui_dep_path = "%s/%s%s" % (yui_root, yui_dep, ext)
+        print yui_dep_path

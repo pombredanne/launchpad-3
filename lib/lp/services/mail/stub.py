@@ -5,11 +5,13 @@
 
 __metaclass__ = type
 
+import email
+from logging import getLogger
+
+from zope.app import zapi
 from zope.interface import implements
 from zope.sendmail.interfaces import IMailer
-from zope.app import zapi
-from logging import getLogger
-import email
+
 
 class StubMailer:
     """
@@ -25,7 +27,7 @@ class StubMailer:
         self.rewrite = rewrite
 
     def send(self, from_addr, to_addrs, message):
-        log = getLogger('canonical.launchpad.mail')
+        log = getLogger('lp.services.mail')
         log.info('Email from %s to %s being redirected to %s' % (
             from_addr, ', '.join(to_addrs), ', '.join(self.to_addrs)
             ))

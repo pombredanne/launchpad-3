@@ -25,9 +25,10 @@ def expand_numbers(unicode_text, fill_digits=4):
 
     """
     assert(isinstance(unicode_text, unicode))
-    def substitude_filled_numbers(match):
+
+    def substitute_filled_numbers(match):
         return match.group(0).zfill(fill_digits)
-    return re.sub(u'\d+', substitude_filled_numbers, unicode_text)
+    return re.sub(u'\d+', substitute_filled_numbers, unicode_text)
 
 
 # Create translation table for numeric ordinals to their

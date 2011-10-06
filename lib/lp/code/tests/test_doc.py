@@ -9,16 +9,28 @@ import os
 
 from zope.security.management import setSecurityPolicy
 
+from canonical.config import config
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs, setUp, tearDown)
-from canonical.launchpad.ftests.test_system_documentation import (
-    branchscannerSetUp)
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+
+def branchscannerSetUp(test):
+    """Setup the user for the branch scanner tests."""
+    LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+    setUp(test)
 
 
 def zopelessLaunchpadSecuritySetUp(test):
@@ -41,12 +53,6 @@ def zopelessLaunchpadSecurityTearDown(test):
 special = {
     'codeimport-machine.txt': LayeredDocFileSuite(
         '../doc/codeimport-machine.txt',
-        setUp=zopelessLaunchpadSecuritySetUp,
-        tearDown=zopelessLaunchpadSecurityTearDown,
-        layer=LaunchpadZopelessLayer,
-        ),
-    'branch-merge-proposals.txt': LayeredDocFileSuite(
-        '../doc/branch-merge-proposals.txt',
         setUp=zopelessLaunchpadSecuritySetUp,
         tearDown=zopelessLaunchpadSecurityTearDown,
         layer=LaunchpadZopelessLayer,

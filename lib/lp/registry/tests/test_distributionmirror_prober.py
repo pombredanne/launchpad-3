@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=W0703
 
 """distributionmirror-prober tests."""
 
@@ -12,37 +10,64 @@ from datetime import datetime
 import httplib
 import logging
 import os
-import re
 from StringIO import StringIO
-import unittest
 
-from twisted.internet import reactor, defer
+from lazr.uri import URI
+from sqlobject import SQLObjectNotFound
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import server
-
-from sqlobject import SQLObjectNotFound
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 import canonical
 from canonical.config import config
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lazr.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.testing.layers import (
+    TwistedLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.scripts import distributionmirror_prober
 from lp.registry.scripts.distributionmirror_prober import (
-    ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,
-    MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
-    InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
-    RedirectAwareProberProtocol, probe_archive_mirror, probe_cdimage_mirror,
-    should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
-    MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
-    restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager,
-    LoggingMixin)
+    _build_request_for_cdimage_file_list,
+    ArchiveMirrorProberCallbacks,
+    BadResponseCode,
+    ConnectionSkipped,
+    InfiniteLoopDetected,
+    LoggingMixin,
+    MAX_REDIRECTS,
+    MIN_REQUEST_TIMEOUT_RATIO,
+    MIN_REQUESTS_TO_CONSIDER_RATIO,
+    MirrorCDImageProberCallbacks,
+    MultiLock,
+    OVERALL_REQUESTS,
+    PER_HOST_REQUESTS,
+    probe_archive_mirror,
+    probe_cdimage_mirror,
+    ProberFactory,
+    ProberTimeout,
+    RedirectAwareProberFactory,
+    RedirectAwareProberProtocol,
+    RedirectToDifferentFile,
+    RequestManager,
+    restore_http_proxy,
+    should_skip_host,
+    UnknownURLSchemeAfterRedirect,
+    )
 from lp.registry.tests.distributionmirror_http_server import (
-    DistributionMirrorTestHTTPServer)
-from canonical.testing import LaunchpadZopelessLayer, TwistedLayer
+    DistributionMirrorTestHTTPServer,
+    )
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -58,8 +83,7 @@ class HTTPServerTestSetup(TacTestSetup):
     def tacfile(self):
         return os.path.abspath(os.path.join(
             os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/distributionmirror_http_server.tac'
-            ))
+            'daemons/distributionmirror_http_server.tac'))
 
     @property
     def pidfile(self):
@@ -174,7 +198,7 @@ class TestProberProtocolAndFactory(TrialTestCase):
         prober = RedirectAwareProberFactory(
             'http://localhost:%s/redirect-unknown-url-scheme' % self.port)
         deferred = prober.probe()
-        return self.assertFailure(deferred, UnknownURLScheme)
+        return self.assertFailure(deferred, UnknownURLSchemeAfterRedirect)
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])
@@ -213,6 +237,25 @@ class TestProberProtocolAndFactory(TrialTestCase):
         return self.assertFailure(d, ProberTimeout)
 
 
+    def test_prober_user_agent(self):
+        protocol = RedirectAwareProberProtocol()
+
+        orig_sendHeader = protocol.sendHeader
+        headers = {}
+
+        def mySendHeader(header, value):
+            orig_sendHeader(header, value)
+            headers[header] = value
+
+        protocol.sendHeader = mySendHeader
+
+        protocol.factory = FakeFactory('http://foo.bar/')
+        protocol.makeConnection(FakeTransport())
+        self.assertEquals(
+            'Launchpad Mirror Prober ( https://launchpad.net/ )',
+            headers['User-Agent'])
+
+
 class FakeTimeOutCall:
     resetCalled = False
 
@@ -237,7 +280,7 @@ class FakeFactory(RedirectAwareProberFactory):
         self.redirectedTo = url
 
 
-class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
+class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
     """Tests to ensure we stop issuing requests on a given host if the
     requests/timeouts ratio on that host is too low.
 
@@ -249,6 +292,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
     host = 'foo.bar'
 
     def setUp(self):
+        super(TestProberFactoryRequestTimeoutRatioWithoutTwisted, self).setUp()
         self.orig_host_requests = dict(
             distributionmirror_prober.host_requests)
         self.orig_host_timeouts = dict(
@@ -258,6 +302,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
         # Restore the globals that our tests fiddle with.
         distributionmirror_prober.host_requests = self.orig_host_requests
         distributionmirror_prober.host_timeouts = self.orig_host_timeouts
+        super(TestProberFactoryRequestTimeoutRatioWithoutTwisted, self).tearDown()
 
     def _createProberStubConnectAndProbe(self, requests, timeouts):
         """Create a ProberFactory object with a URL inside self.host and call
@@ -392,9 +437,10 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
         return self.assertFailure(d, ConnectionSkipped)
 
 
-class TestMultiLock(unittest.TestCase):
+class TestMultiLock(TestCase):
 
     def setUp(self):
+        super(TestMultiLock, self).setUp()
         self.lock_one = defer.DeferredLock()
         self.lock_two = defer.DeferredLock()
         self.multi_lock = MultiLock(self.lock_one, self.lock_two)
@@ -471,7 +517,7 @@ class TestMultiLock(unittest.TestCase):
         self.assertEquals(self.count, 1, "self.callback should have run.")
 
 
-class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
+class TestRedirectAwareProberFactoryAndProtocol(TestCase):
 
     def test_redirect_resets_timeout(self):
         prober = RedirectAwareProberFactory('http://foo.bar')
@@ -560,36 +606,46 @@ class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
         self.failUnless(protocol.transport.disconnecting)
 
 
-class TestMirrorCDImageProberCallbacks(unittest.TestCase):
-    layer = LaunchpadZopelessLayer
+class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
 
-    def setUp(self):
-        self.layer.switchDbUser(config.distributionmirrorprober.dbuser)
-        self.logger = logging.getLogger('distributionmirror-prober')
-        self.logger.errorCalled = False
+    layer = ZopelessDatabaseLayer
+
+    def makeMirrorProberCallbacks(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        distroseries = removeSecurityProxy(
+            self.factory.makeDistroSeries(distribution=ubuntu))
+        mirror = removeSecurityProxy(
+            self.factory.makeMirror(distroseries.distribution))
+        callbacks = MirrorCDImageProberCallbacks(
+            mirror, distroseries, 'ubuntu', StringIO())
+        return callbacks
+
+    def getLogger(self):
+        logger = logging.getLogger('distributionmirror-prober')
+        logger.errorCalled = False
         def error(msg):
-            self.logger.errorCalled = True
-        self.logger.error = error
-        mirror = DistributionMirror.get(1)
-        warty = DistroSeries.get(1)
-        flavour = 'ubuntu'
-        log_file = StringIO()
-        self.callbacks = MirrorCDImageProberCallbacks(
-            mirror, warty, flavour, log_file)
+            logger.errorCalled = True
+        logger.error = error
+        return logger
 
-    def test_mirrorcdimageseries_creation_and_deletion(self):
-        callbacks = self.callbacks
+    def test_mirrorcdimageseries_creation_and_deletion_all_success(self):
+        callbacks = self.makeMirrorProberCallbacks()
         all_success = [(defer.SUCCESS, '200'), (defer.SUCCESS, '200')]
         mirror_cdimage_series = callbacks.ensureOrDeleteMirrorCDImageSeries(
              all_success)
-        self.failUnless(
-            mirror_cdimage_series is not None,
+        self.assertIsNot(
+            mirror_cdimage_series, None,
             "If the prober gets a list of 200 Okay statuses, a new "
             "MirrorCDImageSeries should be created.")
 
+    def test_mirrorcdimageseries_creation_and_deletion_some_404s(self):
         not_all_success = [
             (defer.FAILURE, Failure(BadResponseCode(str(httplib.NOT_FOUND)))),
             (defer.SUCCESS, '200')]
+        callbacks = self.makeMirrorProberCallbacks()
+        all_success = [(defer.SUCCESS, '200'), (defer.SUCCESS, '200')]
+        mirror_cdimage_series = callbacks.ensureOrDeleteMirrorCDImageSeries(
+             all_success)
         callbacks.ensureOrDeleteMirrorCDImageSeries(not_all_success)
         # If the prober gets at least one 404 status, we need to make sure
         # there's no MirrorCDImageSeries for that series and flavour.
@@ -602,65 +658,80 @@ class TestMirrorCDImageProberCallbacks(unittest.TestCase):
         # ignored by ensureOrDeleteMirrorCDImageSeries() because they've been
         # logged by logMissingURL() already and they're expected to happen
         # some times.
-        self.failUnlessEqual(
-            set(self.callbacks.expected_failures),
-            set([BadResponseCode, ProberTimeout, ConnectionSkipped]))
+        logger = self.getLogger()
+        callbacks = self.makeMirrorProberCallbacks()
+        self.assertEqual(
+            set(callbacks.expected_failures),
+            set([
+                BadResponseCode,
+                ProberTimeout,
+                ConnectionSkipped,
+                RedirectToDifferentFile,
+                UnknownURLSchemeAfterRedirect,
+                ]))
         exceptions = [BadResponseCode(str(httplib.NOT_FOUND)),
                       ProberTimeout('http://localhost/', 5),
-                      ConnectionSkipped()]
+                      ConnectionSkipped(),
+                      RedirectToDifferentFile('/foo', '/bar'),
+                      UnknownURLSchemeAfterRedirect('https://localhost')]
         for exception in exceptions:
-            failure = self.callbacks.ensureOrDeleteMirrorCDImageSeries(
+            failure = callbacks.ensureOrDeleteMirrorCDImageSeries(
                 [(defer.FAILURE, Failure(exception))])
             # Twisted callbacks may raise or return a failure; that's why we
             # check the return value.
             self.failIf(isinstance(failure, Failure))
             # Also, these failures are not logged to stdout/stderr since
             # they're expected to happen.
-            self.failIf(self.logger.errorCalled)
+            self.failIf(logger.errorCalled)
 
     def test_unexpected_failures_are_logged_but_not_raised(self):
         # Errors which are not expected as logged using the
         # prober's logger to make sure people see it while still alowing other
         # mirrors to be probed.
-        failure = self.callbacks.ensureOrDeleteMirrorCDImageSeries(
+        logger = self.getLogger()
+        callbacks = self.makeMirrorProberCallbacks()
+        failure = callbacks.ensureOrDeleteMirrorCDImageSeries(
             [(defer.FAILURE, Failure(ZeroDivisionError()))])
         # Twisted callbacks may raise or return a failure; that's why we
         # check the return value.
         self.failIf(isinstance(failure, Failure))
         # Unlike the expected failures, these ones must be logged as errors to
         # stdout/stderr.
-        self.failUnless(self.logger.errorCalled)
+        self.failUnless(logger.errorCalled)
 
 
-class TestArchiveMirrorProberCallbacks(unittest.TestCase):
-    layer = LaunchpadZopelessLayer
+class TestArchiveMirrorProberCallbacks(TestCaseWithFactory):
+    layer = ZopelessDatabaseLayer
 
-    def setUp(self):
-        mirror = DistributionMirror.get(1)
-        warty = DistroSeries.get(1)
-        pocket = PackagePublishingPocket.RELEASE
-        component = warty.components[0]
-        log_file = StringIO()
-        url = 'foo'
-        self.callbacks = ArchiveMirrorProberCallbacks(
-            mirror, warty, pocket, component, url, log_file)
+    def makeMirrorProberCallbacks(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        distroseries = removeSecurityProxy(
+            self.factory.makeDistroSeries(distribution=ubuntu))
+        mirror = removeSecurityProxy(
+            self.factory.makeMirror(distroseries.distribution))
+        component = self.factory.makeComponent()
+        callbacks = ArchiveMirrorProberCallbacks(
+            mirror, distroseries, PackagePublishingPocket.RELEASE,
+            component, 'foo', StringIO())
+        return callbacks
 
     def test_failure_propagation(self):
         # Make sure that deleteMirrorSeries() does not propagate
         # ProberTimeout, BadResponseCode or ConnectionSkipped failures.
+        callbacks = self.makeMirrorProberCallbacks()
         try:
-            self.callbacks.deleteMirrorSeries(
+            callbacks.deleteMirrorSeries(
                 Failure(ProberTimeout('http://localhost/', 5)))
         except Exception, e:
             self.fail("A timeout shouldn't be propagated. Got %s" % e)
         try:
-            self.callbacks.deleteMirrorSeries(
+            callbacks.deleteMirrorSeries(
                 Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
         except Exception, e:
             self.fail(
                 "A bad response code shouldn't be propagated. Got %s" % e)
         try:
-            self.callbacks.deleteMirrorSeries(Failure(ConnectionSkipped()))
+            callbacks.deleteMirrorSeries(Failure(ConnectionSkipped()))
         except Exception, e:
             self.fail("A ConnectionSkipped exception shouldn't be "
                       "propagated. Got %s" % e)
@@ -668,7 +739,7 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
         # Make sure that deleteMirrorSeries() propagate any failure that is
         # not a ProberTimeout, a BadResponseCode or a ConnectionSkipped.
         d = defer.Deferred()
-        d.addErrback(self.callbacks.deleteMirrorSeries)
+        d.addErrback(callbacks.deleteMirrorSeries)
         def got_result(result):
             self.fail(
                 "Any failure that's not a timeout/bad-response/skipped "
@@ -681,15 +752,16 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
         self.assertEqual([1], ok)
 
     def test_mirrorseries_creation_and_deletion(self):
-        mirror_distro_series_source = self.callbacks.ensureMirrorSeries(
+        callbacks = self.makeMirrorProberCallbacks()
+        mirror_distro_series_source = callbacks.ensureMirrorSeries(
              str(httplib.OK))
-        self.failUnless(
-            mirror_distro_series_source is not None,
+        self.assertIsNot(
+            mirror_distro_series_source, None,
             "If the prober gets a 200 Okay status, a new "
             "MirrorDistroSeriesSource/MirrorDistroArchSeries should be "
             "created.")
 
-        self.callbacks.deleteMirrorSeries(
+        callbacks.deleteMirrorSeries(
             Failure(BadResponseCode(str(httplib.NOT_FOUND))))
         # If the prober gets a 404 status, we need to make sure there's no
         # MirrorDistroSeriesSource/MirrorDistroArchSeries referent to
@@ -699,19 +771,28 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
             mirror_distro_series_source.id)
 
 
-class TestProbeFunctionSemaphores(unittest.TestCase):
+class TestProbeFunctionSemaphores(TestCase):
     """Make sure we use one DeferredSemaphore for each hostname when probing
     mirrors.
     """
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
+        super(TestProbeFunctionSemaphores, self).setUp()
         self.logger = None
         # RequestManager uses a mutable class attribute (host_locks) to ensure
         # all of its instances share the same locks. We don't want our tests
         # to interfere with each other, though, so we'll clean
         # RequestManager.host_locks here.
         RequestManager.host_locks.clear()
+
+    def tearDown(self):
+        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+        # calls around.  They need to be updated to use Twisted correctly.
+        # For the meantime, just blat the reactor.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
+        super(TestProbeFunctionSemaphores, self).tearDown()
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')
@@ -788,7 +869,7 @@ class TestProbeFunctionSemaphores(unittest.TestCase):
         restore_http_proxy(orig_proxy)
 
 
-class TestCDImageFileListFetching(unittest.TestCase):
+class TestCDImageFileListFetching(TestCase):
 
     def test_no_cache(self):
         url = 'http://releases.ubuntu.com/.manifest'
@@ -797,7 +878,7 @@ class TestCDImageFileListFetching(unittest.TestCase):
         self.failUnlessEqual(request.headers['Cache-control'], 'no-cache')
 
 
-class TestLoggingMixin(unittest.TestCase):
+class TestLoggingMixin(TestCase):
 
     def _fake_gettime(self):
         # Fake the current time.
@@ -811,7 +892,8 @@ class TestLoggingMixin(unittest.TestCase):
         logger.logMessage("Ubuntu Warty Released")
         logger.log_file.seek(0)
         message = logger.log_file.read()
-        self.failUnlessEqual('Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
+        self.failUnlessEqual(
+            'Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
             message)
 
     def test_logMessage_integration(self):
@@ -821,7 +903,3 @@ class TestLoggingMixin(unittest.TestCase):
         logger.log_file.seek(0)
         message = logger.log_file.read()
         self.assertNotEqual(None, message)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

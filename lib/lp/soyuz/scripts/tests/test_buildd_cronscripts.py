@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """cronscripts/buildd-* tests."""
@@ -9,24 +9,36 @@ import logging
 import os
 import subprocess
 import sys
-import unittest
+from unittest import TestCase
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import (
-    DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import (
+    DatabaseLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.build import Build
-from lp.soyuz.scripts.buildd import QueueBuilder, RetryDepwait
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.scripts.buildd import (
+    QueueBuilder,
+    RetryDepwait,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 
-class TestCronscriptBase(unittest.TestCase):
+class TestCronscriptBase(TestCase):
     """Buildd cronscripts test classes."""
 
     def runCronscript(self, name, extra_args):
@@ -34,6 +46,10 @@ class TestCronscriptBase(unittest.TestCase):
 
         Always set verbosity level.
         """
+        # Scripts will write to the database.  The test runner won't see
+        # this and not know that the database needs restoring.
+        DatabaseLayer.force_dirty_database()
+
         script = os.path.join(config.root, "cronscripts", name)
         args = [sys.executable, script, "-v"]
         args.extend(extra_args)
@@ -46,11 +62,6 @@ class TestCronscriptBase(unittest.TestCase):
         if extra_args is None:
             extra_args = []
         return self.runCronscript("buildd-queue-builder.py", extra_args)
-
-    def runBuilddSlaveScanner(self, extra_args=None):
-        if extra_args is None:
-            extra_args = []
-        return self.runCronscript("buildd-slave-scanner.py", extra_args)
 
     def runBuilddRetryDepwait(self, extra_args=None):
         if extra_args is None:
@@ -66,21 +77,7 @@ class TestCronscriptBase(unittest.TestCase):
         rc, out, err = runner()
         self.assertEqual(0, rc, "Err:\n%s" % err)
 
-        # 'runners' commit to the launchpad_ftest database in
-        # subprocesses, so we need to tell the layer to fully
-        # tear down and restore the database.
-        DatabaseLayer.force_dirty_database()
-
         return rc, out, err
-
-
-class TestSlaveScanner(TestCronscriptBase):
-    """Test SlaveScanner buildd script class."""
-    layer = LaunchpadLayer
-
-    def testRunSlaveScanner(self):
-        """Check if buildd-slave-scanner runs without errors."""
-        self.assertRuns(runner=self.runBuilddSlaveScanner)
 
 
 class TestQueueBuilder(TestCronscriptBase):
@@ -103,7 +100,7 @@ class TestQueueBuilder(TestCronscriptBase):
 
         queue_builder = QueueBuilder(
             name='queue-builder', test_args=test_args)
-        queue_builder.logger = QuietFakeLogger()
+        queue_builder.logger = BufferLogger()
 
         return queue_builder
 
@@ -145,12 +142,12 @@ class TestQueueBuilder(TestCronscriptBase):
         qb = self.getQueueBuilder(distribution='boing')
         self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
 
-        qb = self.getQueueBuilder(suites=('hoary-test',))
+        qb = self.getQueueBuilder(suites=('hoary-test', ))
         self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
 
         # A single valid suite argument results in a list with one
         # distroseries (pockets are completely ignored).
-        qb = self.getQueueBuilder(suites=('warty-security',))
+        qb = self.getQueueBuilder(suites=('warty-security', ))
         self.assertEqual(
             ['warty'],
             [distroseries.name
@@ -175,7 +172,7 @@ class TestQueueBuilder(TestCronscriptBase):
         # Restricting the build creation to another distroseries
         # does not create any builds.
         source = self.getSourceWithoutBuilds()
-        queue_builder = self.getQueueBuilder(suites=('warty',))
+        queue_builder = self.getQueueBuilder(suites=('warty', ))
         queue_builder.main()
         self.assertEqual(0, len(source.getBuilds()))
 
@@ -183,7 +180,7 @@ class TestQueueBuilder(TestCronscriptBase):
         # A build is created when queue-builder is restricted to the
         # distroseries where the testing source is published
         source = self.getSourceWithoutBuilds()
-        queue_builder = self.getQueueBuilder(suites=('hoary',))
+        queue_builder = self.getQueueBuilder(suites=('hoary', ))
         queue_builder.main()
         self.assertEqual(1, len(source.getBuilds()))
 
@@ -228,7 +225,13 @@ class TestRetryDepwait(TestCronscriptBase):
         self.number_of_pending_builds = self.getPendingBuilds().count()
 
     def getPendingBuilds(self):
-        return Build.selectBy(buildstate=BuildStatus.NEEDSBUILD)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        pending_builds = store.find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD)
+        return pending_builds
 
     def getRetryDepwait(self, distribution=None):
         test_args = ['-n']
@@ -237,7 +240,7 @@ class TestRetryDepwait(TestCronscriptBase):
 
         retry_depwait = RetryDepwait(
             name='retry-depwait', test_args=test_args)
-        retry_depwait.logger = QuietFakeLogger()
+        retry_depwait.logger = BufferLogger()
 
         # `IBuildSet.retryDepwait` retrieve a specific logger instance
         # from the global registry, we have to silence that too.
@@ -268,7 +271,7 @@ class TestRetryDepwait(TestCronscriptBase):
 
     def testWorkingRun(self):
         """Modify sampledata and expects a new pending build to be created."""
-        depwait_build = Build.get(12)
+        depwait_build = BinaryPackageBuild.get(12)
 
         # Moving the target source to universe, so it can reach the only
         # published binary we have in sampledata.
@@ -278,7 +281,7 @@ class TestRetryDepwait(TestCronscriptBase):
 
         # Make it dependend on the only binary that can be satisfied in
         # the sampledata.
-        depwait_build.dependencies = 'pmount'
+        depwait_build.dependencies = u'pmount'
 
         self.layer.commit()
 
@@ -287,13 +290,9 @@ class TestRetryDepwait(TestCronscriptBase):
         self.layer.commit()
 
         # Reload the build record after the multiple commits.
-        depwait_build = Build.get(12)
+        depwait_build = BinaryPackageBuild.get(12)
         self.assertEqual(
             self.number_of_pending_builds + 1,
             self.getPendingBuilds().count())
-        self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(depwait_build.status.name, 'NEEDSBUILD')
         self.assertEqual(depwait_build.buildqueue_record.lastscore, 1755)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'IBranchMergeProposalStatusChangeEvent',
+    'IBranchMergeProposalNeedsReviewEvent',
     'INewBranchMergeProposalEvent',
     'INewCodeReviewCommentEvent',
     'IReviewerNominatedEvent',
@@ -34,3 +35,7 @@ class IReviewerNominatedEvent(IObjectEvent):
 
 class INewCodeReviewCommentEvent(IObjectEvent):
     """A new comment has been added to the merge proposal."""
+
+
+class IBranchMergeProposalNeedsReviewEvent(IObjectEvent):
+    """The merge proposal has moved from work in progress to needs reivew."""

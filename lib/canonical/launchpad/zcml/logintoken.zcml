@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -11,48 +11,32 @@
 <facet facet="overview">
 
     <!-- LoginToken -->
-    <class class="canonical.launchpad.database.LoginToken">
+    <class class="canonical.launchpad.database.logintoken.LoginToken">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.ILoginToken" />
+            interface="canonical.launchpad.interfaces.logintoken.ILoginToken" />
     </class>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+index" />
 
     <browser:url
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         path_expression="token"
-        parent_utility="canonical.launchpad.interfaces.ILoginTokenSet"
+        parent_utility="canonical.launchpad.interfaces.logintoken.ILoginTokenSet"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+index"
         permission="zope.Public"
-        class="canonical.launchpad.browser.LoginTokenView"
+        class="canonical.launchpad.browser.logintoken.LoginTokenView"
         template="../templates/logintoken-index.pt"
         />
 
     <browser:page
-        name="+newaccount"
-        for="canonical.launchpad.interfaces.ILoginToken"
-        class="canonical.launchpad.browser.logintoken.NewUserAccountView"
-        permission="zope.Public"
-        template="../../launchpad/templates/logintoken-newaccount.pt"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
-        name="+resetpassword"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.logintoken.ResetPasswordView"
-        template="../templates/logintoken-resetpassword.pt"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validateemail"
         permission="zope.Public"
         class="canonical.launchpad.browser.logintoken.ValidateEmailView"
@@ -60,7 +44,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validateteamemail"
         permission="zope.Public"
         class="canonical.launchpad.browser.logintoken.ValidateTeamEmailView"
@@ -68,63 +52,56 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validategpg"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateGPGKeyView"
+        class="canonical.launchpad.browser.logintoken.ValidateGPGKeyView"
         template="../templates/logintoken-validategpg.pt"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validatesignonlygpg"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateGPGKeyView"
+        class="canonical.launchpad.browser.logintoken.ValidateGPGKeyView"
         template="../templates/logintoken-validatesignonlygpg.pt"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+accountmerge"
         permission="zope.Public"
-        class="canonical.launchpad.browser.MergePeopleView"
+        class="canonical.launchpad.browser.logintoken.MergePeopleView"
         template="../templates/logintoken-mergepeople.pt"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
-        name="+claimprofile"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ClaimProfileView"
-        template="../templates/logintoken-claimprofile.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+claimteam"
         permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.ClaimTeamView"
+        class="canonical.launchpad.browser.logintoken.ClaimTeamView"
         template="../templates/logintoken-claimteam.pt" />
 
     <browser:page
         name="+bugtracker-handshake"
-        for="canonical.launchpad.interfaces.ILoginToken"
-        class="canonical.launchpad.browser.BugTrackerHandshakeView"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
+        class="canonical.launchpad.browser.logintoken.BugTrackerHandshakeView"
         permission="zope.Public"
         />
 
     <!-- LoginTokenSet -->
-    <class class="canonical.launchpad.database.LoginTokenSet">
-        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
+    <class class="canonical.launchpad.database.logintoken.LoginTokenSet">
+        <allow interface="canonical.launchpad.interfaces.logintoken.ILoginTokenSet" />
     </class>
 
     <securedutility
-        class="canonical.launchpad.database.LoginTokenSet"
-        provides="canonical.launchpad.interfaces.ILoginTokenSet">
-        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
+        class="canonical.launchpad.database.logintoken.LoginTokenSet"
+        provides="canonical.launchpad.interfaces.logintoken.ILoginTokenSet">
+        <allow interface="canonical.launchpad.interfaces.logintoken.ILoginTokenSet" />
     </securedutility>
 
     <browser:navigation
-        module="canonical.launchpad.browser"
+        module="canonical.launchpad.browser.logintoken"
         classes="LoginTokenSetNavigation"
         />
 

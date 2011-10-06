@@ -6,18 +6,21 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, IAccountSet)
+    AccountCreationRationale,
+    IAccountSet,
+    )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
-    IPerson, PersonCreationRationale)
+    IPerson,
+    PersonCreationRationale,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class CreatePersonTests(TestCaseWithFactory):
@@ -91,6 +94,22 @@ class CreatePersonTests(TestCaseWithFactory):
         self.failUnlessEqual(
             "when importing He-3 from the Moon",
             person.creation_comment)
+
+    def test_getByEmail_non_ascii_bytes(self):
+        """Lookups for non-ascii addresses should raise LookupError.
+
+        This tests the case where input is a bytestring.
+        """
+        with ExpectedException(LookupError, r"'SaraS\\xe1nchez@cocolee.net'"):
+            getUtility(IAccountSet).getByEmail('SaraS\xe1nchez@cocolee.net')
+
+    def test_getByEmail_non_ascii_unicode(self):
+        """Lookups for non-ascii addresses should raise LookupError.
+
+        This tests the case where input is a unicode string.
+        """
+        with ExpectedException(LookupError, r"u'SaraS\\xe1nchez@.*.net'"):
+            getUtility(IAccountSet).getByEmail(u'SaraS\xe1nchez@cocolee.net')
 
 
 class EmailManagementTests(TestCaseWithFactory):
@@ -179,7 +198,3 @@ class EmailManagementTests(TestCaseWithFactory):
             EmailAddressStatus.OLD)
         transaction.commit()
         self.assertContentEqual(account.guessed_emails, [new_email])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

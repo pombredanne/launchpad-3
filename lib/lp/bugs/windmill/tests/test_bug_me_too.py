@@ -3,20 +3,22 @@
 
 from itertools import count
 
-import unittest
-
 from windmill.authoring import WindmillTestClientException
 
-from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
+
 
 AFFECTS_ME_TOO_XPATH = u"//span[@id='affectsmetoo']"
 DYNAMIC_SPAN_XPATH = AFFECTS_ME_TOO_XPATH + u"/span[@class='dynamic']"
 VALUE_LOCATION_XPATH = DYNAMIC_SPAN_XPATH + u"//span[@class='value']"
 EDIT_ICON_XPATH = DYNAMIC_SPAN_XPATH + u"//img[@class='editicon']"
 
-OVERLAY_XPATH = u"//div[@id='yui-pretty-overlay-modal']"
+OVERLAY_XPATH = u"//div[@id='yui3-pretty-overlay-modal']"
 
 def retry(client, attempts=3, delay=2000, initial_delay=1000):
     """Decorator for attempting Windmill operations multiple times.
@@ -50,13 +52,11 @@ class TestMeToo(WindmillTestCase):
         This test ensures that, with Javascript enabled, the "me too"
         status can be edited in-page.
         """
-        client = self.client
 
         # Open bug 11 and wait for it to finish loading.
-        client.open(
-            url=u'http://bugs.launchpad.dev:8085/jokosher/+bug/11/+index')
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
+        client, start_url = self.getClientFor(
+            '/jokosher/+bug/11', user=lpuser.SAMPLE_PERSON,
+            view_name='+index')
 
         # Ensure the link for "Does this bug affect you?" is setup.
         client.waits.forElement(
@@ -72,11 +72,11 @@ class TestMeToo(WindmillTestCase):
         client.click(xpath=EDIT_ICON_XPATH)
 
         # Wait for the modal dialog to appear.
-        client.waits.forElement(id=u'yui-pretty-overlay-modal')
+        client.waits.forElement(id=u'yui3-pretty-overlay-modal')
 
         # There's a close button if we change our mind.
         client.click(
-            xpath=(u"//div[@id='yui-pretty-overlay-modal']//"
+            xpath=(u"//div[@id='yui3-pretty-overlay-modal']//"
                    u"a[@class='close-button']"))
 
         # Wait for the modal dialog to disappear. Unfortunately the test
@@ -84,7 +84,7 @@ class TestMeToo(WindmillTestCase):
         # could think of, so it's commented out.
 
         # client.asserts.assertElemJS(
-        #     id=u'yui-pretty-overlay-modal',
+        #     id=u'yui3-pretty-overlay-modal',
         #     js=(u'getComputedStyle(element, '
         #         u'"visibility").visibility == "hidden"'))
 
@@ -92,7 +92,7 @@ class TestMeToo(WindmillTestCase):
         # user. We can also click on the content box of the "me too"
         # widget; we are not forced to use the edit icon.
         client.click(xpath=AFFECTS_ME_TOO_XPATH)
-        client.waits.forElement(id=u'yui-pretty-overlay-modal')
+        client.waits.forElement(id=u'yui3-pretty-overlay-modal')
 
         # Let's say the bug does not affect the logged-in user.
         client.click(
@@ -109,7 +109,7 @@ class TestMeToo(WindmillTestCase):
         # Hah! But this bug does affect the logged-in user! The logged-in
         # user made a mistake, oh noes. Better fix that.
         client.click(xpath=AFFECTS_ME_TOO_XPATH)
-        client.waits.forElement(id=u'yui-pretty-overlay-modal')
+        client.waits.forElement(id=u'yui3-pretty-overlay-modal')
         client.click(
             xpath=OVERLAY_XPATH + u"//a[contains(@href, '#true')]")
 
@@ -119,6 +119,3 @@ class TestMeToo(WindmillTestCase):
             client.asserts.assertText(
                 xpath=VALUE_LOCATION_XPATH,
                 validator=u"This bug affects you")
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

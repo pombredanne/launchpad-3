@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -13,16 +13,26 @@ __all__ = [
     'IEmailAddressSet',
     'InvalidEmailAddress']
 
-from zope.schema import Choice, Int, Object, TextLine
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.schema import (
+    Choice,
+    Int,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import IAccount
 from lp.registry.interfaces.role import IHasOwner
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
-from lazr.restful.fields import Reference
 
 
 class InvalidEmailAddress(Exception):
@@ -105,7 +115,7 @@ class IEmailAddress(IHasOwner):
 
     def destroySelf():
         """Destroy this email address and any associated subscriptions.
-        
+
         :raises UndeletableEmailAddress: When the email address is a person's
             preferred one or a hosted mailing list's address.
         """
@@ -135,7 +145,7 @@ class IEmailAddressSet(Interface):
     def getByPerson(person):
         """Return all email addresses for the given person."""
 
-    def getPreferredEmailForPeople(self, people):
+    def getPreferredEmailForPeople(people):
         """Return preferred email addresses for the people provided."""
 
     def getByEmail(email):
@@ -143,4 +153,3 @@ class IEmailAddressSet(Interface):
 
         Return None if there is no such email address.
         """
-

@@ -5,12 +5,12 @@
 
 __metaclass__ = type
 
+from cgi import escape
 import unittest
 
-from cgi import escape
-
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatSyntaxError)
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.utilities.xpi_header import XpiHeader
 
 
@@ -127,7 +127,3 @@ class XpiHeaderTestCase(unittest.TestCase):
             u"\u0e40\u0e2d\u0e4b <eai@example.com>"])
         self.assertEqual(header.getLastTranslator(),
             (u"\u0e40\u0e2d\u0e4b", 'eai@example.com'))
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
-

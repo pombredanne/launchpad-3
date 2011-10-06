@@ -6,12 +6,12 @@
 set -e
 set -u
 
-ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
+ARCHIVEROOT=${TEST_ARCHIVEROOT:-/srv/launchpad.net/ubuntu-archive/ubuntu}
 MISCROOT=$ARCHIVEROOT/../ubuntu-misc
 LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
 
-LAUNCHPADROOT=/srv/launchpad.net/codelines/current
+LAUNCHPADROOT=${TEST_LAUNCHPADROOT:-/srv/launchpad.net/codelines/current}
 MAINTAINCE_CHECK=$LAUNCHPADROOT/cronscripts/publishing/maintenance-check.py
 
 ## Check to see if another germinate run is in progress
@@ -28,37 +28,41 @@ cleanup () {
 
 trap cleanup EXIT
 
-LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 suite=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py development`
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT
 
 # Clean up temporary files
-rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MYTHBUNTU-* NETBOOK-*
+rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MYTHBUNTU-* LUBUNTU-* UBUNTUSTUDIO-*
 rm -f all_* all.sources_*
+rm -rf dists
 
-# Grab a local copy of Sources files
+# Grab local copies of Sources and Packages files, to avoid problems in case
+# the archive changes under our feet.
 for component in main universe restricted multiverse; do
-  zcat $ARCHIVEROOT/dists/"$suite"/"$component"/source/Sources.gz > archive.ubuntu.com_"$suite"_"$component"_Sources;
+  base="dists/$suite/$component"
+  mkdir -p "$base/source"
+  zcat "$ARCHIVEROOT/$base/source/Sources.gz" > "$base/source/Sources"
+  for arch in i386 amd64 powerpc armel; do
+    mkdir -p "$base/binary-$arch" "$base/debian-installer/binary-$arch"
+    zcat "$ARCHIVEROOT/$base/binary-$arch/Packages.gz" \
+      > "$base/binary-$arch/Packages"
+    zcat "$ARCHIVEROOT/$base/debian-installer/binary-$arch/Packages.gz" \
+      > "$base/debian-installer/binary-$arch/Packages"
+  done
 done
 
 > "$MISCROOT/more-extra.override.$suite.main.new"
 
 germinate_components=main,universe,restricted,multiverse
-for distro in ubuntu kubuntu edubuntu xubuntu mythbuntu netbook; do
+for distro in ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu ubuntustudio; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
-  for arch in i386 amd64 powerpc sparc ia64 armel; do
-    # Grab local copy of Packages and InstallerPackages files
-    for component in main universe restricted multiverse; do
-      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/binary-$arch/Packages.gz > archive.ubuntu.com_"$suite"_"$component"_Packages
-      zcat $ARCHIVEROOT/dists/"$suite"/"$component"/debian-installer/binary-$arch/Packages.gz > archive.ubuntu.com_"$suite"_"$component"_InstallerPackages
-    done
-
+  for arch in i386 amd64 powerpc armel; do
     # Run germinate
     echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
-    germinate --no-rdepends -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
+    germinate --no-rdepends -m "file://$(pwd)/" -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
 
     # The structure file is generally useful; keep per distro/suite/arch
     # copies for convenience
@@ -126,10 +130,27 @@ for distro in ubuntu kubuntu edubuntu xubuntu mythbuntu netbook; do
 done
 echo " done."
 
-# now generate the Supported extra overrides
-$MAINTAINCE_CHECK $suite > "$MISCROOT/more-extra.override.$suite.main.supported"
-if [ $? -eq 0 ]; then
-    cat "$MISCROOT/more-extra.override.$suite.main.supported" >> "$MISCROOT/more-extra.override.$suite.main.new"
-fi
-
 mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.override.$suite.main"
+
+# Now generate the Supported extra overrides for all supported distros.
+SUITES=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py supported`
+for supported_suite in $SUITES; do
+    echo -n "Running maintenance-check for $supported_suite... "
+    # The support timeframe information is stored here
+    SUPPORTED="$MISCROOT/more-extra.override.$supported_suite.main.supported"
+    # This is the target override file that contains germinate plus support info
+    TARGET="$MISCROOT/more-extra.override.$supported_suite.main"
+    # Debug/Log information 
+    LOG="_maintenance-check.$supported_suite.stderr"
+    if $MAINTAINCE_CHECK $supported_suite > $SUPPORTED 2> $LOG; then
+        # The target file may be missing on the server and the script should
+        # not fail if that is the case.
+        touch $TARGET
+        # Remove old "Supported" info from extra-overrides as it may be 
+        # stale now and we replace it with fresh content below.
+        sed /"^.* Supported"/d $TARGET > ${TARGET}.new
+        cat $SUPPORTED >> ${TARGET}.new
+        mv ${TARGET}.new $TARGET
+    fi
+    echo " done"
+done

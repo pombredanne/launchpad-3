@@ -8,9 +8,9 @@ received, a summary of the last request, recent OOPS IDs and last
 executed SQL statement is printed for each thread.
 """
 
-import threading
-import signal
 import logging
+import signal
+import threading
 
 
 def sigusr1_handler(signum, frame):

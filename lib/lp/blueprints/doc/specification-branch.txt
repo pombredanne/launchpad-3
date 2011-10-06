@@ -1,7 +1,9 @@
-= Specification Branch Links =
+Specification Branch Links
+==========================
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ISpecificationBranch
+    >>> from lp.blueprints.interfaces.specificationbranch import (
+    ...     ISpecificationBranch)
     >>> from lp.blueprints.model.specification import SpecificationBranch
     >>> verifyObject(ISpecificationBranch, SpecificationBranch.get(1))
     True
@@ -10,9 +12,10 @@ A specification can be linked to a number of branches.  For example,
 the Ubuntu media-integrity-check specifcation has a branch link:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
+    >>> from lp.registry.interfaces.person import IPersonSet
+
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> spec = ubuntu.getSpecification('media-integrity-check')
 

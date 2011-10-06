@@ -13,20 +13,75 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, Text, TextLine
+from zope.schema import (
+    Datetime,
+    Text,
+    TextLine,
+    )
+
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+
+from lp.services.fields import (
+    BugField,
+    PersonChoice,
+    )
 
 from canonical.launchpad import _
 
+
 class IBugActivity(Interface):
     """A log of all things that have happened to a bug."""
+    export_as_webservice_entry()
 
-    bug = Int(title=_('Bug ID'))
-    datechanged = Datetime(title=_('Date Changed'))
-    person = Int(title=_('Person'))
-    whatchanged = TextLine(title=_('What Changed'))
-    oldvalue = TextLine(title=_('Old Value'))
-    newvalue = TextLine(title=_('New Value'))
-    message = Text(title=_('Message'))
+    bug = exported(
+        BugField(title=_('Bug'), readonly=True))
+
+    datechanged = exported(
+        Datetime(title=_('Date Changed'),
+                 description=_("The date on which this activity occurred."),
+                 readonly=True))
+
+    person = exported(PersonChoice(
+        title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
+        readonly=True, description=_("The person's Launchpad ID or "
+        "e-mail address.")))
+
+    whatchanged = exported(
+        TextLine(title=_('What Changed'),
+                 description=_("The property of the bug that changed."),
+                 readonly=True))
+
+    target = TextLine(
+        title=_('Change Target'), required=False, readonly=True,
+        description=_(
+            'The target of what changed, if the change occurred on a '
+            'bugtask.'))
+
+    attribute = TextLine(
+        title=_('Changed Attribute'), required=True, readonly=True,
+        description=_(
+            "The attribute that changed.  If the change occurred on a "
+            "bugtask, this will be the bugtask's attribute; otherwise "
+            "it will be the bug attribute, and the same as 'what "
+            "changed'."))
+
+    oldvalue = exported(
+        TextLine(title=_('Old Value'),
+                 description=_("The value before the change."),
+                 readonly=True))
+
+    newvalue = exported(
+        TextLine(title=_('New Value'),
+                 description=_("The value after the change."),
+                 readonly=True))
+
+    message = exported(
+        Text(title=_('Message'),
+             description=_("Additional information about what changed."),
+             readonly=True))
 
 
 class IBugActivitySet(Interface):

@@ -1,4 +1,5 @@
-= Questions Expiration =
+Questions Expiration
+====================
 
 It is not productive to have questions lying around forever in
 the Answer Tracker. That's why we have a script which runs daily to
@@ -18,10 +19,11 @@ somebody are subject to expiration.
 
     # Sanity check in case somebody modifies the question sampledata and
     # forget to update this script.
+    >>> from lp.answers.enums import QuestionStatus
     >>> from lp.answers.model.question import Question
-    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> Question.select('status IN (%i,%i)' % (
-    ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
+    ...     QuestionStatus.OPEN.value,
+    ...     QuestionStatus.NEEDSINFO.value)).count()
     9
 
     # By default, all open and needs info question should expire. Make
@@ -40,8 +42,9 @@ somebody are subject to expiration.
     >>> now = datetime.now(UTC)
     >>> two_weeks_ago = now - timedelta(days=14)
     >>> a_month_ago = now - timedelta(days=31)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchBag, IPersonSet, IQuestionSet)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
 
@@ -79,7 +82,7 @@ somebody are subject to expiration.
     >>> old_open_question.subscribe(admin_team)
     <QuestionSubscription...>
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> old_open_question.target.addAnswerContact(salgado)
+    >>> old_open_question.target.addAnswerContact(salgado, salgado)
     True
 
     # Link it to a FAQ item for the same reason. We are setting the
@@ -94,7 +97,8 @@ somebody are subject to expiration.
     >>> removeSecurityProxy(old_open_question).faq = faq
 
     # A question linked to an non-Invalid bug is not expirable.
-    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> fixed_bug = getUtility(IBugSet).get(9)
     >>> bugtasks = fixed_bug.bugtasks
     >>> bugtasks[1].transitionToStatus(BugTaskStatus.INVALID, no_priv)
@@ -132,7 +136,7 @@ somebody are subject to expiration.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-expire-questions.lock
     INFO    Expiring OPEN and NEEDSINFO questions without activity for the
             last 15 days.
     INFO    Found 5 questions to expire.

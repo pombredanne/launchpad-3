@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -24,8 +24,7 @@ class CodeImportDispatcherScript(LaunchpadScript):
             default=config.codeimportdispatcher.max_jobs_per_machine,
             help="The maximum number of jobs to run on this machine.")
 
-    def run(self, use_web_security=False, implicit_begin=True,
-            isolation=None):
+    def run(self, use_web_security=False, isolation=None):
         """See `LaunchpadScript.run`.
 
         We override to avoid all of the setting up all of the component

@@ -5,7 +5,7 @@ source package name.
 
     >>> login('admin@canonical.com')
     >>> mint = factory.makeDistribution(name='mint')
-    >>> stable = factory.makeDistroRelease(mint, name='stable')
+    >>> stable = factory.makeDistroSeries(mint, name='stable')
     >>> eric = factory.makePerson(name='eric')
     >>> twisted = factory.makeSourcePackageName('twisted')
     >>> branch = factory.makePackageBranch(
@@ -23,7 +23,7 @@ The code tab is now enabled at the distribution series level.
 
     >>> print_location_apps(browser.contents)
     * Overview (selected) ...
-    * Branches - http://code.launchpad.dev/mint/stable
+    * Code - http://code.launchpad.dev/mint/stable
     ...
 
 Going to this page shows us a listing of all branches associated with that

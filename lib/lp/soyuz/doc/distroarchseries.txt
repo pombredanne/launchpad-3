@@ -4,12 +4,11 @@ Distro Arch Series
 
    >>> from canonical.launchpad.webapp.testing import verifyObject
 
-   >>> from canonical.launchpad.interfaces import (
-   ...    IDistroArchSeriesBinaryPackage,
-   ...    IBinaryPackagePublishingHistory,
-   ...    ISectionSet)
+   >>> from lp.soyuz.interfaces.distroarchseriesbinarypackage import IDistroArchSeriesBinaryPackage
+   >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
+   >>> from lp.soyuz.interfaces.section import ISectionSet
 
-   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> from lp.registry.interfaces.distribution import IDistributionSet
    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
    >>> hoary = ubuntu.getSeries('hoary')
 
@@ -23,6 +22,27 @@ or getDistroArchSeries():
 
 # XXX: daniels 2005-10-17 bug=3257:
 #      This needs many more tests to be effective.
+
+
+Properties
+==========
+
+Enabled is a boolean flag that says whether the arch will receive new builds
+and publish them.
+
+    >>> print hoary_i386.enabled
+    True
+
+`DistroSeries.enabled_architectures` is a `ResultSet` containing the
+architectures with that flag set.
+
+    >>> hoary_i386 in hoary.enabled_architectures
+    True
+    >>> from lp.testing import celebrity_logged_in
+    >>> with celebrity_logged_in('admin'):
+    ...     hoary_i386.enabled = False
+    >>> hoary_i386 in hoary.enabled_architectures
+    False
 
 
 DistroArchSeries can tell you about their published releases
@@ -123,12 +143,11 @@ Override information about 'pmount' is pending publication:
 
 Supersede current publication:
 
-   >>> pmount_pubrec = pmount_hoary_i386_released.current_publishing_record
-   >>> superseded_pmount = pmount_pubrec.supersede()
+   >>> pub = pmount_hoary_i386_released.current_publishing_record
+   >>> pub.supersede()
    >>> pmount_hoary_i386.publishing_history.count()
    3
 
-   >>> pub = superseded_pmount
    >>> print pub.status.name, pub.datesuperseded is not None
    SUPERSEDED True
 
@@ -144,8 +163,8 @@ In order to test its behavior we will create a bunch of sample
 publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest/i386, which is empty:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory)
@@ -326,7 +345,7 @@ Let's activate ppa support for hoary/hppa and check if
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
-There is also `DistroSeries.enabled_architectures` which returns a
+There is also `DistroSeries.buildable_architectures` which returns a
 `ResultSet` containing only the `DistroArchSeries` with available
 chroots tarballs (the ones for which we can build packages).
 
@@ -334,21 +353,21 @@ In the sampledata, none of the hoary architectures have chroot
 tarballs. Once it is available the corresponding architecture is
 returned.
 
-    >>> hoary.enabled_architectures.count()
+    >>> hoary.buildable_architectures.count()
     0
 
     # Create a chroot tarball for hoary/hppa.
     >>> chroot = factory.makeLibraryFileAlias()
     >>> unused = hoary.getDistroArchSeries('hppa').addOrUpdateChroot(chroot)
 
-    >>> print_architectures(hoary.enabled_architectures)
+    >>> print_architectures(hoary.buildable_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
 
 The architecture also has a 'chroot_url' attribute directly referencing
 the file.
 
     >>> print hoary.getDistroArchSeries('hppa').chroot_url
-    http://localhost:58000/.../filename...
+    http://.../filename...
     >>> hoary.getDistroArchSeries('hppa').chroot_url == \
     ...     chroot.http_url
     True
@@ -358,13 +377,13 @@ If there is no chroot, chroot_url will be None.
     >>> print hoary.getDistroArchSeries('i386').chroot_url
     None
 
-`DistroSeries.enabled_architectures` results are ordered
+`DistroSeries.buildable_architectures` results are ordered
 alphabetically by 'architecturetag'.
 
     # Create a chroot tarball for hoary/i386.
     >>> unused = hoary.getDistroArchSeries('i386').addOrUpdateChroot(chroot)
 
-    >>> print_architectures(hoary.enabled_architectures)
+    >>> print_architectures(hoary.buildable_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
@@ -374,7 +393,7 @@ DistroArchSeriesSet Methods
 ===========================
 
 The `DistroArchSeriesSet` class provides a helper method
-getIdsForArchitectures() - not exposed through the `IDistroArchSeriesSet` 
+getIdsForArchitectures() - not exposed through the `IDistroArchSeriesSet`
 interface - which will filter an iterable of DistroArchSeries
 using an optional arch_tag and return a list of their IDs.
 

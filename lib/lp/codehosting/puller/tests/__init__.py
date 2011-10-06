@@ -7,77 +7,38 @@ __metaclass__ = type
 
 import os
 import shutil
+import socket
 from StringIO import StringIO
 
-from bzrlib.tests import TestCaseWithTransport
 from bzrlib import urlutils
+from bzrlib.tests import (
+    TestCaseWithTransport,
+    )
+from bzrlib.tests.http_server import (
+    HttpServer,
+    )
+from bzrlib.tests.http_server import (
+    TestingHTTPServer,
+    TestingThreadingHTTPServer,
+    )
 
-from lp.codehosting.vfs import branch_id_to_path
-from lp.codehosting.puller.worker import (
-    BranchMirrorer, PullerWorker, PullerWorkerProtocol)
-from lp.codehosting.tests.helpers import LoomTestMixin
-from lp.codehosting.vfs.branchfs import BadUrl, BranchPolicy
 from canonical.config import config
+from lp.codehosting.puller.worker import (
+    BranchMirrorer,
+    BranchMirrorerPolicy,
+    PullerWorker,
+    PullerWorkerProtocol,
+    )
+from lp.codehosting.tests.helpers import LoomTestMixin
+from lp.codehosting.safe_open import AcceptAnythingPolicy
+from lp.codehosting.vfs import branch_id_to_path
 from lp.testing import TestCaseWithFactory
 
 
-class BlacklistPolicy(BranchPolicy):
-    """Branch policy that forbids certain URLs."""
+class AcceptAnythingBranchMirrorerPolicy(AcceptAnythingPolicy,
+                                         BranchMirrorerPolicy):
+    """A branch mirror policy that supports mirrorring from anywhere."""
 
-    def __init__(self, should_follow_references, unsafe_urls=None):
-        if unsafe_urls is None:
-            unsafe_urls = set()
-        self._unsafe_urls = unsafe_urls
-        self._should_follow_references = should_follow_references
-
-    def shouldFollowReferences(self):
-        return self._should_follow_references
-
-    def checkOneURL(self, url):
-        if url in self._unsafe_urls:
-            raise BadUrl(url)
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        This class is not used for testing our smarter stacking features so we
-        just do the simplest thing: return the URL that would be used anyway
-        and don't check it.
-        """
-        return urlutils.join(branch.base, url), False
-
-
-class AcceptAnythingPolicy(BlacklistPolicy):
-    """Accept anything, to make testing easier."""
-
-    def __init__(self):
-        super(AcceptAnythingPolicy, self).__init__(True, set())
-
-
-class WhitelistPolicy(BranchPolicy):
-    """Branch policy that only allows certain URLs."""
-
-    def __init__(self, should_follow_references, allowed_urls=None,
-                 check=False):
-        if allowed_urls is None:
-            allowed_urls = []
-        self.allowed_urls = set(url.rstrip('/') for url in allowed_urls)
-        self.check = check
-
-    def shouldFollowReferences(self):
-        return self._should_follow_references
-
-    def checkOneURL(self, url):
-        if url.rstrip('/') not in self.allowed_urls:
-            raise BadUrl(url)
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        Here we return the URL that would be used anyway and optionally check
-        it.
-        """
-        return urlutils.join(branch.base, url), self.check
 
 
 class PullerWorkerMixin:
@@ -98,7 +59,7 @@ class PullerWorkerMixin:
             oops_prefix = ''
         if branch_type is None:
             if policy is None:
-                policy = AcceptAnythingPolicy()
+                policy = AcceptAnythingBranchMirrorerPolicy()
             opener = BranchMirrorer(policy, protocol)
         else:
             opener = None
@@ -107,6 +68,37 @@ class PullerWorkerMixin:
             branch_type=branch_type,
             default_stacked_on_url=default_stacked_on_url, protocol=protocol,
             branch_mirrorer=opener, oops_prefix=oops_prefix)
+
+# XXX MichaelHudson, bug=564375: With changes to the SocketServer module in
+# Python 2.6 the thread created in serveOverHTTP cannot be joined, because
+# HttpServer.stop_server doesn't do enough to get the thread out of the select
+# call in SocketServer.BaseServer.handle_request().  So what follows is
+# slightly horrible code to use the version of handle_request from Python 2.5.
+
+def fixed_handle_request(self):
+    """Handle one request, possibly blocking. """
+    try:
+        request, client_address = self.get_request()
+    except socket.error:
+        return
+    if self.verify_request(request, client_address):
+        try:
+            self.process_request(request, client_address)
+        except:
+            self.handle_error(request, client_address)
+            self.close_request(request)
+
+
+class FixedTHS(TestingHTTPServer):
+    handle_request = fixed_handle_request
+
+
+class FixedTTHS(TestingThreadingHTTPServer):
+    handle_request = fixed_handle_request
+
+
+class FixedHttpServer(HttpServer):
+    http_server_class = {'HTTP/1.0': FixedTHS, 'HTTP/1.1': FixedTTHS}
 
 
 class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
@@ -135,6 +127,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
         if os.path.exists(path):
             shutil.rmtree(path)
         os.makedirs(path)
+        self.addCleanup(shutil.rmtree, path)
 
     def pushToBranch(self, branch, tree):
         """Push a Bazaar branch to a given Launchpad branch's hosted area.
@@ -150,3 +143,18 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
             retcode=None)
         # We want to be sure that a new branch was indeed created.
         self.assertEqual("Created new branch.\n", err)
+
+    def serveOverHTTP(self):
+        """Serve the current directory over HTTP, returning the server URL."""
+        http_server = FixedHttpServer()
+        http_server.start_server()
+        # Join cleanup added before the tearDown so the tearDown is executed
+        # first as this tells the thread to die.  We then join explicitly as
+        # the HttpServer.tearDown does not join.  There is a check in the
+        # BaseLayer to make sure that threads are not left behind by the
+        # tests, and the default behaviour of the HttpServer is to use daemon
+        # threads and let the garbage collector get them, however this causes
+        # issues with the test runner.
+        self.addCleanup(http_server._server_thread.join)
+        self.addCleanup(http_server.stop_server)
+        return http_server.get_url().rstrip('/')

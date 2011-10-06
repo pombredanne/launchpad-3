@@ -13,11 +13,10 @@
         tal:condition="view/allow_selection"
         tal:attributes="value context/id;
                         id string:field.selected_sources.${context/id}"/>
-      <a class="expander"
-         tal:attributes="id string:pub${context/id}-expander;
-                         href string:+sourcepub/${context/id}/+listing-archive-extra">
-        <img src="/@@/treeCollapsed" alt="Show details" title="Show details"
-             tal:attributes="id string:pub${context/id}-arrow" />
+      <a tal:attributes="
+           href string:+sourcepub/${context/id}/+listing-archive-extra;
+           id string:pub${context/id}-expander"
+         class="sprite expander">
         <img src="/@@/package-source" />
         <tal:source_name replace="context/sourcepackagerelease/title">
           foo - 1.0
@@ -64,13 +63,13 @@
                           condition="not:view/builds_successful_and_published">
         <a tal:attributes="href build/fmt:url;
                            title build_status_summary/description">
-          <tal:arch content="build/distroarchseries/architecturetag" />
+          <tal:arch content="build/distro_arch_series/architecturetag" />
         </a>
       </tal:related_builds>
     </td>
   </tr>
-  <tr tal:attributes="id string:pub${context/id}" style="display: none">
-    <td colspan="7">
+  <tr tal:attributes="id string:pub${context/id}">
+    <td colspan="7" style="padding: 0px;">
       <div class="package-details"
            tal:attributes="id string:pub${context/id}-container" />
     </td>

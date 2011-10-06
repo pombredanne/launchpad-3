@@ -6,9 +6,11 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
-
+    <include package=".browser"/>
+    <authorizations module=".security" />
 
     <!-- Builder -->
     <class
@@ -42,6 +44,55 @@
         permission="zope.Public"/>
 
 
+    <!-- BuildFarmJob -->
+    <class
+        class="lp.buildmaster.model.buildfarmjob.BuildFarmJob">
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob" />
+        <require
+            permission="launchpad.Edit"
+            set_attributes="status"/>
+        <require
+            permission="launchpad.Admin"
+            set_attributes="failure_count"/>
+    </class>
+    <securedutility
+        component="lp.buildmaster.model.buildfarmjob.BuildFarmJob"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSource">
+
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSource" />
+    </securedutility>
+    <securedutility
+        class="lp.buildmaster.model.buildfarmjob.BuildFarmJobSet"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSet">
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSet" />
+    </securedutility>
+
+    <!-- PackageBuild -->
+    <class
+        class="lp.buildmaster.model.packagebuild.PackageBuild">
+        <allow
+            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuild" />
+        <require
+            permission="launchpad.Edit"
+            set_attributes="dependencies"/>
+    </class>
+
+    <securedutility
+        component="lp.buildmaster.model.packagebuild.PackageBuild"
+        provides="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource">
+        <allow
+            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource" />
+    </securedutility>
+    <securedutility
+        class="lp.buildmaster.model.packagebuild.PackageBuildSet"
+        provides="lp.buildmaster.interfaces.packagebuild.IPackageBuildSet">
+        <allow
+            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildSet" />
+    </securedutility>
+
     <!-- BuildQueue -->
     <class
         class="lp.buildmaster.model.buildqueue.BuildQueue">
@@ -53,7 +104,7 @@
         <!-- Grant permissions to write on BuildQueue and Build. -->
         <require
             permission="zope.Public"
-            set_attributes="lastscore builder logtail date_started"/>
+            set_attributes="lastscore estimated_duration builder logtail date_started"/>
     </class>
 
 
@@ -64,4 +115,7 @@
         <allow
             interface="lp.buildmaster.interfaces.buildqueue.IBuildQueueSet"/>
     </securedutility>
+
+    <webservice:register module="lp.buildmaster.interfaces.webservice" />
+
 </configure>

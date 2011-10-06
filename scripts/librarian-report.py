@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -48,7 +48,7 @@ def main():
     else:
         until_date = ''
 
-    con = connect(options.dbuser)
+    con = connect()
     cur = con.cursor()
 
     # Collect direct references to the LibraryFileAlias table.

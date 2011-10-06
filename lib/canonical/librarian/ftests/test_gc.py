@@ -1,59 +1,50 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Librarian garbage collection tests"""
 
 __metaclass__ = type
 
-import shutil
-import sys
-import os
-from subprocess import Popen, PIPE, STDOUT
 from cStringIO import StringIO
-from unittest import TestCase, TestLoader
-from datetime import datetime, timedelta
+from datetime import timedelta
+import os
+import shutil
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
+import sys
+import tempfile
 
-from pytz import utc
 from sqlobject import SQLObjectNotFound
 import transaction
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    connect, cursor, ISOLATION_LEVEL_AUTOCOMMIT)
-from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
+    connect,
+    cursor,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
-from canonical.testing import LaunchpadZopelessLayer
-
-
-class MockLogger:
-    def __init__(self, fail_on_error=True, fail_on_warning=True):
-        self.fail_on_error = fail_on_error
-        self.fail_on_warning = fail_on_warning
-
-    def error(self, *args, **kw):
-        if self.fail_on_error:
-            raise RuntimeError("An error was indicated: %r %r" % (args, kw))
-
-    def warning(self, *args, **kw):
-        if self.fail_on_warning:
-            raise RuntimeError("A warning was indicated: %r %r" % (args, kw))
-
-    def debug(self, *args, **kw):
-        #print '%r %r' % (args, kw)
-        pass
-
-    def info(self, *args, **kw):
-        #print '%r %r' % (args, kw)
-        pass
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import BufferLogger
+from lp.services.utils import utc_now
+from lp.testing import TestCase
 
 
 class TestLibrarianGarbageCollection(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestLibrarianGarbageCollection, self).setUp()
         self.client = LibrarianClient()
-        librariangc.log = MockLogger()
+        self.patch(librariangc, 'log', BufferLogger())
 
         # A value we use in a number of tests. This represents the
         # stay of execution hard coded into the garbage collector.
@@ -64,12 +55,9 @@ class TestLibrarianGarbageCollection(TestCase):
         # far enough so that how long it takes the test to run
         # is not an issue. 'stay_of_excution - 1 hour' fits these
         # criteria.
-        self.recent_past = (
-            datetime.utcnow().replace(tzinfo=utc)
-            - timedelta(days=6, hours=23))
+        self.recent_past = utc_now() - timedelta(days=6, hours=23)
         # A time beyond the stay of execution.
-        self.ancient_past = (
-            datetime.utcnow().replace(tzinfo=utc) - timedelta(days=30))
+        self.ancient_past = utc_now() - timedelta(days=30)
 
         self.f1_id, self.f2_id = self._makeDupes()
 
@@ -96,14 +84,15 @@ class TestLibrarianGarbageCollection(TestCase):
                 open(path, 'w').write('whatever')
         self.ztm.abort()
 
-        self.con = connect(config.librarian_gc.dbuser)
-        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.con = connect(
+            user=config.librarian_gc.dbuser,
+            isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
     def tearDown(self):
         self.con.rollback()
         self.con.close()
         del self.con
-        librariangc.log = None
+        super(TestLibrarianGarbageCollection, self).tearDown()
 
     def _makeDupes(self):
         """Create two duplicate LibraryFileContent entries with one
@@ -181,8 +170,8 @@ class TestLibrarianGarbageCollection(TestCase):
         self.ztm.begin()
 
         # Confirm that the LibaryFileContents are still there.
-        c1 = LibraryFileContent.get(c1_id)
-        c2 = LibraryFileContent.get(c2_id)
+        LibraryFileContent.get(c1_id)
+        LibraryFileContent.get(c2_id)
 
         # But the LibraryFileAliases should be gone
         self.assertRaises(SQLObjectNotFound, LibraryFileAlias.get, self.f1_id)
@@ -298,7 +287,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # recent past.
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
-        f1.expires = self.recent_past # Within stay of execution.
+        f1.expires = self.recent_past  # Within stay of execution.
         del f1
         self.ztm.commit()
 
@@ -492,9 +481,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
     def test_deleteUnwantedFilesIgnoresNoise(self):
         # Directories with invalid names in the storage area are
-        # ignored. They are reported as warnings though, so don't let
-        # warnings fail this test.
-        librariangc.log = MockLogger(fail_on_warning=False)
+        # ignored. They are reported as warnings though.
 
         # Not a hexidecimal number.
         noisedir1_path = os.path.join(config.librarian_server.root, 'zz')
@@ -521,8 +508,10 @@ class TestLibrarianGarbageCollection(TestCase):
             # Pretend it is tomorrow to ensure the files don't count as
             # recently created, and run the delete_unwanted_files process.
             org_time = librariangc.time
+
             def tomorrow_time():
                 return org_time() + 24 * 60 * 60 + 1
+
             try:
                 librariangc.time = tomorrow_time
                 librariangc.delete_unwanted_files(self.con)
@@ -544,6 +533,12 @@ class TestLibrarianGarbageCollection(TestCase):
             shutil.rmtree(noisedir2_path)
             shutil.rmtree(noisedir3_path)
 
+        # Can't check the ordering, so we'll just check that one of the
+        # warnings are there.
+        self.assertIn(
+            "WARNING Ignoring invalid directory zz",
+            librariangc.log.getLogBuffer())
+
     def test_delete_unwanted_files_bug437084(self):
         # There was a bug where delete_unwanted_files() would die
         # if the last file found on disk was unwanted.
@@ -558,6 +553,36 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # This should cope.
         librariangc.delete_unwanted_files(self.con)
+
+    def test_delete_unwanted_files_follows_symlinks(self):
+        # In production, our tree has symlinks in it now.  We need to be able
+        # to cope.
+        # First, let's make sure we have some trash.
+        self.layer.switchDbUser(dbuser='testadmin')
+        content = 'foo'
+        self.client.addFile(
+            'foo.txt', len(content), StringIO(content), 'text/plain')
+        # Roll back the database changes, leaving the file on disk.
+        transaction.abort()
+
+        self.layer.switchDbUser(config.librarian_gc.dbuser)
+
+        # Now, we will move the directory containing the trash somewhere else
+        # and make a symlink to it.
+        original = os.path.join(config.librarian_server.root, '00', '00')
+        newdir = tempfile.mkdtemp()
+        alt = os.path.join(newdir, '00')
+        shutil.move(original, alt)
+        os.symlink(alt, original)
+
+        # Now we will do our thing.  This is the actual test.  It used to
+        # fail.
+        librariangc.delete_unwanted_files(self.con)
+
+        # Clean up.
+        os.remove(original)
+        shutil.move(alt, original)
+        shutil.rmtree(newdir)
 
     def test_cronscript(self):
         script_path = os.path.join(
@@ -609,6 +634,7 @@ class TestBlobCollection(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestBlobCollection, self).setUp()
         # Add in some sample data
         cur = cursor()
 
@@ -637,6 +663,19 @@ class TestBlobCollection(TestCase):
             """, (self.expired_lfa_id,))
         cur.execute("""SELECT currval('temporaryblobstorage_id_seq')""")
         self.expired_blob_id = cur.fetchone()[0]
+
+        # Add ApportJob and Job entries - these need to be removed
+        # too.
+        cur.execute("""
+            INSERT INTO Job (status, date_finished)
+            VALUES (0, CURRENT_TIMESTAMP - interval '2 days') RETURNING id
+            """)
+        self.expired_job_id = cur.fetchone()[0]
+        cur.execute("""
+            INSERT INTO ApportJob (job, blob, job_type)
+            VALUES (%s, %s, 0) RETURNING id
+            """, (self.expired_job_id, self.expired_blob_id))
+        self.expired_apportjob_id = cur.fetchone()[0]
 
         # Next a blob that has expired, but claimed and now linked to
         # elsewhere in the database
@@ -716,15 +755,16 @@ class TestBlobCollection(TestCase):
         self.layer.switchDbUser(config.librarian_gc.dbuser)
 
         # Open a connection for our test
-        self.con = connect(config.librarian_gc.dbuser)
-        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.con = connect(
+            user=config.librarian_gc.dbuser,
+            isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
-        librariangc.log = MockLogger()
+        self.patch(librariangc, 'log', BufferLogger())
 
     def tearDown(self):
         self.con.rollback()
         self.con.close()
-        librariangc.log = None
+        super(TestBlobCollection, self).tearDown()
 
     def test_DeleteExpiredBlobs(self):
         # Delete expired blobs from the TemporaryBlobStorage table
@@ -837,7 +877,3 @@ class TestBlobCollection(TestCase):
                 ))
         count = cur.fetchone()[0]
         self.failIfEqual(count, 2)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -106,7 +106,7 @@ information.
     >>> print find_spoken_languages(country_portlet)
     []
     >>> print country_portlet.first('a')['href']
-    http://answers.launchpad.dev/rosetta
+    http://answers.launchpad.dev/launchpad
 
 Back home in Brazil, Joao gets the equivalent for Brazil, where the
 equivalent information is known.

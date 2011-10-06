@@ -4,7 +4,11 @@
 """Implementation of the cache: namespace in TALES."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'MemcacheExpr',
+    'MemcacheHit',
+    'MemcacheMiss',
+    ]
 
 
 from hashlib import md5
@@ -13,14 +17,24 @@ import os.path
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.tal.talinterpreter import TALInterpreter, I18nMessageTypes
+from zope.tal.talinterpreter import (
+    I18nMessageTypes,
+    TALInterpreter,
+    )
+from zope.tales.expressions import (
+    PathExpr,
+    simpleTraverse,
+    )
 from zope.tales.interfaces import ITALESExpression
 
-from canonical.base import base
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.utils import compress_hash
+
+# Request annotation key.
+COUNTER_KEY = 'lp.services.memcache.tales.counter'
 
 
 class MemcacheExpr:
@@ -34,7 +48,12 @@ class MemcacheExpr:
     </div>
     """
     implements(ITALESExpression)
-    def __init__(self, name, expr, engine):
+
+    static_max_age = None # cache expiry if fixed
+    dynamic_max_age = None # callable if cache expiry is dynamic.
+    dynamic_max_age_unit = None # Multiplier for dynamic cache expiry result.
+
+    def __init__(self, name, expr, engine, traverser=simpleTraverse):
         """expr is in the format "visibility, 42 units".
 
         visibility is one of...
@@ -67,41 +86,72 @@ class MemcacheExpr:
         """
         self._s = expr
 
-        if ',' in expr:
-            try:
-                self.visibility, max_age = (s.strip() for s in expr.split(','))
-            except ValueError:
-                raise SyntaxError("Too many arguments in cache: expression")
-        else:
-            self.visibility = expr.strip()
+        components = [component.strip() for component in expr.split(',')]
+        num_components = len(components)
+        if num_components == 1:
+            self.visibility = components[0]
             max_age = None
-        assert self.visibility in (
-            'anonymous', 'public', 'private', 'authenticated',
-            ), 'visibility must be anonymous, public, private or authenticated'
-
-        if max_age is None:
-            self.max_age = 0
+            self.extra_key = None
+        elif num_components == 2:
+            self.visibility, max_age = components
+            self.extra_key = None
+        elif num_components == 3:
+            self.visibility, max_age, extra_key = components
+            # Construct a callable that will evaluate the subpath
+            # expression when passed a context.
+            self.extra_key = PathExpr(name, extra_key, engine, traverser)
         else:
+            raise SyntaxError("Too many arguments in cache: expression")
+
+        try:
+            self.visibility, modifier = self.visibility.split()
+            if modifier == 'param':
+                self.include_params = True
+            elif modifier == 'noparam':
+                self.include_params = False
+            else:
+                raise SyntaxError(
+                    'visibility modifier must be param or noparam')
+        except ValueError:
+            self.include_params = True
+
+        if self.visibility not in (
+            'anonymous', 'public', 'private', 'authenticated'):
+            raise SyntaxError(
+                'visibility must be anonymous, public, private or '
+                'authenticated')
+
+        # Convert the max_age string to an integer number of seconds.
+        if max_age is None:
+            self.static_max_age = 0 # Never expire.
+        else:
+            # Extract the unit, if there is one. Unit defaults to seconds.
             try:
                 value, unit = max_age.split(' ')
+                if unit[-1] == 's':
+                    unit = unit[:-1]
+                if unit == 'second':
+                    unit = 1
+                elif unit == 'minute':
+                    unit = 60
+                elif unit == 'hour':
+                    unit = 60 * 60
+                elif unit == 'day':
+                    unit = 24 * 60 * 60
+                else:
+                    raise SyntaxError(
+                        "Unknown unit %s in cache: expression %s"
+                        % (repr(unit), repr(expr)))
             except ValueError:
-                raise SyntaxError(
-                    "Unparsable age %s in cache: expression"
-                    % repr(self.max_age))
-            value = float(value)
-            if unit[-1] == 's':
-                unit = unit[:-1]
-            if unit == 'second':
-                pass
-            elif unit == 'minute':
-                value *= 60
-            elif unit == 'hour':
-                value *= 60 * 60
-            elif unit == 'day':
-                value *= 24 * 60 * 60
-            else:
-                raise AssertionError("Unknown unit %s" % unit)
-            self.max_age = int(value)
+                value = max_age
+                unit = 1
+
+            try:
+                self.static_max_age = float(value) * unit
+            except (ValueError, TypeError):
+                self.dynamic_max_age = PathExpr(
+                    name, value, engine, traverser)
+                self.dynamic_max_age_unit = unit
 
     # For use with str.translate to sanitize keys. No control characters
     # allowed, and we skip ':' too since it is a magic separator.
@@ -110,7 +160,9 @@ class MemcacheExpr:
         + ''.join(chr(i) for i in range(ord(':')+1, 127)) + '_' * 129)
 
     # We strip digits from our LPCONFIG when generating the key
-    # to ensure that edge1 and edge4 share cache.
+    # to ensure that multiple appserver instances sharing a memcache instance
+    # can get hits from each other. For instance edge1 and edge4 are in this
+    # situation.
     _lpconfig = config.instance_name.rstrip('0123456789')
 
     def getKey(self, econtext):
@@ -130,7 +182,9 @@ class MemcacheExpr:
         # We use a sanitized version in the human readable chunk of
         # the key.
         request = econtext.getValue('request')
-        url = str(request.URL) + '?' + str(request.get('QUERY_STRING', ''))
+        url = str(request.URL)
+        if self.include_params:
+            url += '?' + str(request.get('QUERY_STRING', ''))
         url = url.encode('utf8') # Ensure it is a byte string.
         sanitized_url = url.translate(self._key_translate_map)
 
@@ -156,21 +210,27 @@ class MemcacheExpr:
             else: # private visibility
                 uid = str(logged_in_user.id)
 
-        # We include a counter in the key, reset at the start of the
-        # request, to ensure we get unique but repeatable keys inside
-        # tal:repeat loops.
-        counter_key = 'lp.services.memcache.tales.counter'
-        counter = request.annotations.get(counter_key, 0) + 1
-        request.annotations[counter_key] = counter
+        # The extra_key is used to differentiate items inside loops.
+        if self.extra_key is not None:
+            # Encode it to to a memcached key safe string. base64
+            # isn't suitable for this because it can contain whitespace.
+            extra_key = unicode(self.extra_key(econtext)).encode('hex')
+        else:
+            # If no extra_key was specified, we include a counter in the
+            # key that is reset at the start of the request. This
+            # ensures we get unique but repeatable keys inside
+            # tal:repeat loops.
+            extra_key = request.annotations.get(COUNTER_KEY, 0) + 1
+            request.annotations[COUNTER_KEY] = extra_key
 
         # We use pt: as a unique prefix to ensure no clashes with other
         # components using the memcached servers. The order of components
         # below only matters for human readability and memcached reporting
         # tools - it doesn't really matter provided all the components are
         # included and separators used.
-        key = "pt:%s:%s,%s:%s:%d,%d:%d,%s" % (
+        key = "pt:%s:%s,%s:%s:%d,%d:%s,%s" % (
             self._lpconfig, source_file, versioninfo.revno, uid,
-            econtext.position[0], econtext.position[1], counter,
+            econtext.position[0], econtext.position[1], extra_key,
             sanitized_url,
             )
 
@@ -178,17 +238,20 @@ class MemcacheExpr:
         # with a hash. A short hash is good, provided it is still unique,
         # to preserve readability as much as possible. We include the
         # unsanitized URL in the hash to ensure uniqueness.
-        key_hash = base(int(md5(key + url).hexdigest(), 16), 62)
+        key_hash = compress_hash(md5(key + url))
         key = key[:250-len(key_hash)] + key_hash
 
         return key
 
-    def __call__(self, econtext):
+    def getMaxAge(self, econtext):
+        if self.dynamic_max_age is not None:
+            return self.dynamic_max_age(econtext) * self.dynamic_max_age_unit
+        return self.static_max_age
 
+    def __call__(self, econtext):
         # If we have an 'anonymous' visibility chunk and are logged in,
         # we don't cache. Return the 'default' magic token to interpret
         # the contents.
-        request = econtext.getValue('request')
         if (self.visibility == 'anonymous'
             and getUtility(ILaunchBag).user is not None):
             return econtext.getDefault()
@@ -200,7 +263,7 @@ class MemcacheExpr:
 
         if cached_chunk is None:
             logging.debug("Memcache miss for %s", key)
-            return MemcacheMiss(key, self.max_age)
+            return MemcacheMiss(key, self.getMaxAge(econtext), self)
         else:
             logging.debug("Memcache hit for %s", key)
             return MemcacheHit(cached_chunk)
@@ -219,16 +282,20 @@ class MemcacheMiss:
     tag contents and invokes this callback, which will store the
     result in memcache against the key calculated by the MemcacheExpr.
     """
-    def __init__(self, key, max_age):
+
+    def __init__(self, key, max_age, memcache_expr):
         self._key = key
         self._max_age = max_age
+        self._memcache_expr = memcache_expr
 
     def __call__(self, value):
-        if getUtility(IMemcacheClient).set(
-            self._key, value, self._max_age):
-            logging.debug("Memcache set succeeded for %s", self._key)
-        else:
-            logging.warn("Memcache set failed for %s", self._key)
+        if not config.launchpad.is_lpnet:
+            # For debugging and testing purposes, prepend a description of
+            # the memcache expression used to the stored value.
+            rule = '%s [%s seconds]' % (self._memcache_expr, self._max_age)
+            value = "<!-- Cache hit: %s -->%s<!-- End cache hit: %s -->" % (
+                rule, value, rule)
+        getUtility(IMemcacheClient).set(self._key, value, self._max_age)
 
     def __repr__(self):
         return "<MemcacheCallback %s %d>" % (self._key, self._max_age)
@@ -240,6 +307,7 @@ class MemcacheHit:
     We use a special object so the TALInterpreter knows that this
     information should not be quoted.
     """
+
     def __init__(self, value):
         self.value = value
 
@@ -283,9 +351,13 @@ def do_insertText_tal(self, stuff):
 TALInterpreter.bytecode_handlers_tal["insertText"] = do_insertText_tal
 
 
-# Just like the original, except MemcacheHit and MemcacheMiss
-# instances are also passed through unharmed.
 def evaluateText(self, expr):
+    """Replacement for zope.pagetemplate.engine.ZopeContextBase.evaluateText.
+
+    Just like the original, except MemcacheHit and MemcacheMiss
+    instances are also passed through unharmed.
+    """
+
     text = self.evaluate(expr)
     if (text is None
         or isinstance(text, (basestring, MemcacheHit, MemcacheMiss))
@@ -294,4 +366,3 @@ def evaluateText(self, expr):
     return unicode(text)
 import zope.pagetemplate.engine
 zope.pagetemplate.engine.ZopeContextBase.evaluateText = evaluateText
-

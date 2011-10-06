@@ -16,8 +16,7 @@ Check that the Bazaar home page works.
     >>> print extract_text(footer)
     30 branches registered in
     6 projects
-    0 imported branches
-    2 branches associated with bug reports
+    1 imported branches
     Launchpad uses Bazaar 0.92.0.
 
 
@@ -31,8 +30,7 @@ with a link to the complete listing.
 
     >>> preview = find_tag_by_id(browser.contents, 'project-cloud-preview')
     >>> print extract_text(preview)
-    Projects with active branches
-    firefox
+    Most active projects in the last month
     see all projects&#8230;
 
     >>> print preview.fetch('a')[-1]['href']
@@ -79,14 +77,13 @@ registered is the ordering, the registered date is also shown.
     >>> links.renderContents()
     '...1...&rarr;...6...of...28...results...'
 
-    >>> browser.goBack()
-
 
 == Recently changed ==
 
 Recently changed branches are ordered with the branches with the most
 recent commits first.
 
+    >>> browser.open('http://code.launchpad.dev/')
     >>> changed = find_tag_by_id(browser.contents, 'recently-changed')
     >>> print changed.fetch('a')[-1]['href']
     /+recently-changed-branches
@@ -105,7 +102,6 @@ recent commits first.
     Last Modified
     Last Commit
 
-    >>> browser.goBack()
 
 
 == Recently imported ==
@@ -113,6 +109,7 @@ recent commits first.
 Recently imported branches are ordered by recent commits only in
 imported branches.
 
+    >>> browser.open('http://code.launchpad.dev/')
     >>> imported = find_tag_by_id(browser.contents, 'recent-imports')
     >>> print imported.fetch('a')[-1]['href']
     /+recently-imported-branches
@@ -134,3 +131,15 @@ imported branch listings.
     Project
     Last Modified
     Last Commit
+
+
+== Recently built recipes ==
+
+Source package recipes have their own section on the home page.
+
+    >>> browser.open('http://code.launchpad.dev/')
+    >>> changed = find_tag_by_id(browser.contents, 'build-recipes')
+    >>> print changed.fetch('a')[0]['href']
+    /+daily-builds
+    >>> print changed.fetch('a')[-1]['href']
+    https://help.launchpad.net/Packaging/SourceBuilds

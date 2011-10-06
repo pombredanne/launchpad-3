@@ -18,11 +18,12 @@ product. He does not provide bug watch information.
     >>> browser.addHeader("Authorization", 'Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils/')
     >>> browser.getLink('Report a bug').click()
-    >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Summary', index=0).value = 'Test Bug 1'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
     Thank you for your bug report...
 
     >>> browser.getLink('Also affects project').click()
@@ -35,6 +36,11 @@ product. He does not provide bug watch information.
 Sample Person visits the advanced search page for alsa-utils, and
 chooses to search for all bugs that need to be forwarded upstream.
 He sees one match.
+
+    >>> # alsa-utils must use an external bugtracker to view bugs
+    >>> # forwarded to an upstream.
+    >>> from lp.testing.service_usage_helpers import set_service_usage
+    >>> set_service_usage('alsa-utils', bug_tracking_usage='EXTERNAL')
 
     >>> browser.open('http://bugs.launchpad.dev/alsa-utils/+bugs?advanced=1')
     >>> pending_bugwatch_label = (

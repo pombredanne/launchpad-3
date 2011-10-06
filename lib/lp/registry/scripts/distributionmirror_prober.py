@@ -1,28 +1,43 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+__metaclass__ = type
+__all__ = [
+    'DistroMirrorProber',
+    ]
+
+from datetime import datetime
 import httplib
 import itertools
 import logging
 import os
+from StringIO import StringIO
 import urllib2
 import urlparse
 
-from datetime import datetime
-
+from twisted.internet import (
+    defer,
+    protocol,
+    reactor,
+    )
+from twisted.internet.defer import DeferredSemaphore
+from twisted.python.failure import Failure
+from twisted.web.http import HTTPClient
 from zope.component import getUtility
 
-from twisted.internet import defer, protocol, reactor
-from twisted.internet.defer import DeferredSemaphore
-from twisted.web.http import HTTPClient
-from twisted.python.failure import Failure
-
 from canonical.config import config
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distributionmirror import (
-    MirrorFreshness, UnableToFetchCDImageFileList)
+    IDistributionMirrorSet,
+    MirrorContent,
+    MirrorFreshness,
+    UnableToFetchCDImageFileList,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+
 # The requests/timeouts ratio has to be at least 3 for us to keep issuing
 # requests on a given host. (This ratio is per run, rather than held long
 # term)
@@ -49,8 +64,6 @@ PER_HOST_REQUESTS = 2
 # them from stalling and timing out before they even get a chance to
 # start connecting.
 OVERALL_REQUESTS = 100
-
-__metaclass__ = type
 
 
 class LoggingMixin:
@@ -122,6 +135,8 @@ class ProberProtocol(HTTPClient):
         """
         self.sendCommand('HEAD', self.factory.connect_path)
         self.sendHeader('HOST', self.factory.connect_host)
+        self.sendHeader('User-Agent',
+            'Launchpad Mirror Prober ( https://launchpad.net/ )')
         self.endHeaders()
 
     def handleStatus(self, version, status, message):
@@ -320,8 +335,13 @@ class RedirectAwareProberFactory(ProberFactory):
             # XXX Guilherme Salgado 2007-04-23 bug=109223:
             # We can't assume url to be absolute here.
             self.setURL(url)
-        except (InfiniteLoopDetected, UnknownURLScheme), e:
+        except (UnknownURLScheme,), e:
+            # Since we've got the UnknownURLScheme after a redirect, we need
+            # to raise it in a form that can be ignored in the layer above.
+            self.failed(UnknownURLSchemeAfterRedirect(url))
+        except (InfiniteLoopDetected,), e:
             self.failed(e)
+
         else:
             self.connect()
 
@@ -390,6 +410,13 @@ class UnknownURLScheme(ProberError):
     def __str__(self):
         return ("The mirror prober doesn't know how to check this kind of "
                 "URLs: %s" % self.url)
+
+
+class UnknownURLSchemeAfterRedirect(UnknownURLScheme):
+
+    def __str__(self):
+        return ("The mirror prober was redirected to: %s. It doesn't know how"
+                "to check this kind of URL." % self.url)
 
 
 class ArchiveMirrorProberCallbacks(LoggingMixin):
@@ -533,7 +560,13 @@ class ArchiveMirrorProberCallbacks(LoggingMixin):
 
 class MirrorCDImageProberCallbacks(LoggingMixin):
 
-    expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
+    expected_failures = (
+        BadResponseCode,
+        ConnectionSkipped,
+        ProberTimeout,
+        RedirectToDifferentFile,
+        UnknownURLSchemeAfterRedirect,
+        )
 
     def __init__(self, mirror, distroseries, flavour, log_file):
         self.mirror = mirror
@@ -729,3 +762,142 @@ def _parse(url, defaultPort=80):
         port = int(port)
     return scheme, host, port, path
 
+
+class DistroMirrorProber:
+    """Main entry point for the distribution mirror prober."""
+
+    def __init__(self, txn, logger):
+        self.txn = txn
+        self.logger = logger
+
+    def _sanity_check_mirror(self, mirror):
+        """Check that the given mirror is official and has an http_base_url.
+        """
+        assert mirror.isOfficial(), (
+            'Non-official mirrors should not be probed')
+        if mirror.base_url is None:
+            self.logger.warning(
+                "Mirror '%s' of distribution '%s' doesn't have a base URL; "
+                "we can't probe it." % (
+                    mirror.name, mirror.distribution.name))
+            return False
+        return True
+
+    def _create_probe_record(self, mirror, logfile):
+        """Create a probe record for the given mirror with the given logfile.
+        """
+        logfile.seek(0)
+        filename = '%s-probe-logfile.txt' % mirror.name
+        log_file = getUtility(ILibraryFileAliasSet).create(
+            name=filename, size=len(logfile.getvalue()),
+            file=logfile, contentType='text/plain')
+        mirror.newProbeRecord(log_file)
+
+    def probe(self, content_type, no_remote_hosts, ignore_last_probe,
+              max_mirrors, notify_owner):
+        """Probe distribution mirrors.
+
+        :param content_type: The type of mirrored content, as a
+            `MirrorContent`.
+        :param no_remote_hosts: If True, restrict access to localhost.
+        :param ignore_last_probe: If True, ignore the results of the last
+            probe and probe again anyway.
+        :param max_mirrors: The maximum number of mirrors to probe. If None,
+            no maximum.
+        :param notify_owner: Send failure notification to the owners of the
+            mirrors.
+        """
+        if content_type == MirrorContent.ARCHIVE:
+            probe_function = probe_archive_mirror
+        elif content_type == MirrorContent.RELEASE:
+            probe_function = probe_cdimage_mirror
+        else:
+            raise ValueError(
+                "Unrecognized content_type: %s" % (content_type,))
+
+        self.txn.begin()
+
+        # To me this seems better than passing the no_remote_hosts value
+        # through a lot of method/function calls, until it reaches the probe()
+        # method. (salgado)
+        if no_remote_hosts:
+            localhost_only_conf = """
+                [distributionmirrorprober]
+                localhost_only: True
+                """
+            config.push('localhost_only_conf', localhost_only_conf)
+
+        self.logger.info('Probing %s Mirrors' % content_type.title)
+
+        mirror_set = getUtility(IDistributionMirrorSet)
+        results = mirror_set.getMirrorsToProbe(
+            content_type, ignore_last_probe=ignore_last_probe,
+            limit=max_mirrors)
+        mirror_ids = [mirror.id for mirror in results]
+        unchecked_keys = []
+        logfiles = {}
+        probed_mirrors = []
+
+        for mirror_id in mirror_ids:
+            mirror = mirror_set[mirror_id]
+            if not self._sanity_check_mirror(mirror):
+                continue
+
+            # XXX: salgado 2006-05-26:
+            # Some people registered mirrors on distros other than Ubuntu back
+            # in the old times, so now we need to do this small hack here.
+            if not mirror.distribution.full_functionality:
+                self.logger.debug(
+                    "Mirror '%s' of distribution '%s' can't be probed --we "
+                    "only probe Ubuntu mirrors."
+                    % (mirror.name, mirror.distribution.name))
+                continue
+
+            probed_mirrors.append(mirror)
+            logfile = StringIO()
+            logfiles[mirror_id] = logfile
+            probe_function(mirror, logfile, unchecked_keys, self.logger)
+
+        if probed_mirrors:
+            reactor.run()
+            self.logger.info('Probed %d mirrors.' % len(probed_mirrors))
+        else:
+            self.logger.info('No mirrors to probe.')
+
+        disabled_mirrors = []
+        reenabled_mirrors = []
+        # Now that we finished probing all mirrors, we check if any of these
+        # mirrors appear to have no content mirrored, and, if so, mark them as
+        # disabled and notify their owners.
+        expected_iso_images_count = len(get_expected_cdimage_paths())
+        for mirror in probed_mirrors:
+            log = logfiles[mirror.id]
+            self._create_probe_record(mirror, log)
+            if mirror.shouldDisable(expected_iso_images_count):
+                if mirror.enabled:
+                    log.seek(0)
+                    mirror.disable(notify_owner, log.getvalue())
+                    disabled_mirrors.append(canonical_url(mirror))
+            else:
+                # Ensure the mirror is enabled, so that it shows up on public
+                # mirror listings.
+                if not mirror.enabled:
+                    mirror.enabled = True
+                    reenabled_mirrors.append(canonical_url(mirror))
+
+        if disabled_mirrors:
+            self.logger.info(
+                'Disabling %s mirror(s): %s'
+                % (len(disabled_mirrors), ", ".join(disabled_mirrors)))
+        if reenabled_mirrors:
+            self.logger.info(
+                'Re-enabling %s mirror(s): %s'
+                % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
+        # XXX: salgado 2007-04-03:
+        # This should be done in LaunchpadScript.lock_and_run() when
+        # the isolation used is ISOLATION_LEVEL_AUTOCOMMIT. Also note
+        # that replacing this with a flush_database_updates() doesn't
+        # have the same effect, it seems.
+        self.txn.commit()
+
+        self.logger.info('Done.')

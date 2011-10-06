@@ -1,4 +1,5 @@
-= Bug statistics portlet =
+Bug statistics portlet
+======================
 
 The distribution, project group and project bug listings contain a
 portlet that shows bug statistics for the target. Each statistic is a
@@ -6,7 +7,8 @@ link to filter the listing to show just those bugs. This portlet is
 served in a separate request; the request is issued via Javascript and
 inserted into the page later.
 
-== Distribution ==
+Distribution
+------------
 
     >>> path = 'debian'
 
@@ -17,45 +19,61 @@ general stats.
     ...     print_bugfilters_portlet_unfilled,
     ...     print_bugfilters_portlet_filled)
     >>> print_bugfilters_portlet_unfilled(anon_browser, path)
-    Open bugs
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs - CVE reports
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
     Bugs with patches
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/+subscribe
+    Bugs fixed elsewhere
+    Open CVE bugs - CVE reports
+
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
-    3 Open bugs
-    0 Critical bugs
-    0 Bugs fixed elsewhere
     1 New bug
-    2 Open CVE bugs - CVE reports
+    3 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    0 High importance bugs
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    2 Open CVE bugs - CVE reports
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned and
+reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
-    Open bugs
-    Bugs assigned to me
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs - CVE reports
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
+    Bugs assigned to me
+    Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/+subscribe
+    Bugs fixed elsewhere
+    Open CVE bugs - CVE reports
+
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
-    3 Open bugs
-    0 Bugs assigned to me
-    0 Critical bugs
-    0 Bugs fixed elsewhere
     1 New bug
-    2 Open CVE bugs - CVE reports
+    3 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    0 High importance bugs
+    <BLANKLINE>
+    0 Bugs assigned to me
+    0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    2 Open CVE bugs - CVE reports
 
 The content includes a link to the distribution CVE report.
 
@@ -63,7 +81,8 @@ The content includes a link to the distribution CVE report.
     http://bugs.launchpad.dev/debian/+cve
 
 
-== Distribution Series ==
+Distribution Series
+-------------------
 
     >>> path = 'debian/woody'
 
@@ -71,49 +90,63 @@ If the user is not logged-in general stats are shown. There is also a
 link to review nominations.
 
     >>> print_bugfilters_portlet_unfilled(anon_browser, path)
-    Open bugs
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs - CVE reports
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
     Bugs with patches
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/woody/+subscribe
+    Bugs fixed elsewhere
+    Open CVE bugs - CVE reports
     Review nominations
       --> http://bugs.launchpad.dev/debian/woody/+nominations
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
-    2 Open bugs
-    0 Critical bugs
-    0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bug - CVE report
+    2 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    0 High importance bugs
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    1 Open CVE bug - CVE report
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned and
+reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
-    Open bugs
-    Bugs assigned to me
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs - CVE reports
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
+    Bugs assigned to me
+    Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/woody/+subscribe
+    Bugs fixed elsewhere
+    Open CVE bugs - CVE reports
     Review nominations
       --> http://bugs.launchpad.dev/debian/woody/+nominations
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
-    2 Open bugs
-    0 Bugs assigned to me
-    0 Critical bugs
-    0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bug - CVE report
+    2 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    0 High importance bugs
+    <BLANKLINE>
+    0 Bugs assigned to me
+    0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    1 Open CVE bug - CVE report
 
 The content includes a link to the distribution CVE report.
 
@@ -121,52 +154,67 @@ The content includes a link to the distribution CVE report.
     http://bugs.launchpad.dev/debian/woody/+cve
 
 
-== Distribution Source Package ==
+Distribution Source Package
+---------------------------
 
     >>> path = 'debian/+source/mozilla-firefox'
 
 If the user is not logged-in general stats are shown.
 
     >>> print_bugfilters_portlet_unfilled(anon_browser, path)
-    Open bugs
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
     Bugs with patches
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
+    Bugs fixed elsewhere
+    Open CVE bugs
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
-    3 Open bugs
-    0 Critical bugs
-    0 Bugs fixed elsewhere
     1 New bug
-    2 Open CVE bugs
+    3 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    0 High importance bugs
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    2 Open CVE bugs
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned and
+reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
-    Open bugs
-    Bugs assigned to me
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
+    Bugs assigned to me
+    Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
+    Bugs fixed elsewhere
+    Open CVE bugs
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
-    3 Open bugs
-    0 Bugs assigned to me
-    0 Critical bugs
-    0 Bugs fixed elsewhere
     1 New bug
-    2 Open CVE bugs
+    3 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    0 High importance bugs
+    <BLANKLINE>
+    0 Bugs assigned to me
+    0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    2 Open CVE bugs
 
 Note that the "CVE reports" link is not shown above; distribution
 source packages do not have a CVE reports page.
@@ -177,7 +225,8 @@ source packages do not have a CVE reports page.
     LinkNotFoundError
 
 
-== Source Package in Distribution Series ==
+Source Package in Distribution Series
+-------------------------------------
 
     >>> path = 'debian/woody/+source/mozilla-firefox'
 
@@ -185,41 +234,59 @@ If the user is not logged-in general stats are shown. There is no
 option to subscribe to bug mail.
 
     >>> print_bugfilters_portlet_unfilled(anon_browser, path)
-    Open bugs
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
     Bugs with patches
+    Bugs fixed elsewhere
+    Open CVE bugs
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
-    2 Open bugs
-    0 Critical bugs
-    0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bug
+    2 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    0 High importance bugs
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    1 Open CVE bug
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned and
+reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
-    Open bugs
-    Bugs assigned to me
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
+    Bugs assigned to me
+    Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
-    
+    Bugs fixed elsewhere
+    Open CVE bugs
+
     >>> print_bugfilters_portlet_filled(user_browser, path)
-    2 Open bugs
-    0 Bugs assigned to me
-    0 Critical bugs
-    0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bug
+    2 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    0 High importance bugs
+    <BLANKLINE>
+    0 Bugs assigned to me
+    0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    1 Open CVE bug
 
 Note that the "CVE reports" link is not shown above; source packages
 do not have a CVE reports page.
@@ -230,52 +297,72 @@ do not have a CVE reports page.
     LinkNotFoundError
 
 
-== Project group ==
+Project group
+-------------
 
     >>> path = 'mozilla'
 
 If the user is not logged-in general stats are shown.
 
     >>> print_bugfilters_portlet_unfilled(anon_browser, path)
-    Open bugs
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
     Bugs with patches
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/mozilla/+subscribe
+    Bugs fixed elsewhere
+    Open CVE bugs
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
-    4 Open bugs
-    1 Critical bug
-    0 Bugs fixed elsewhere
     4 New bugs
-    1 Open CVE bug
+    4 Open bugs
+    0 In-progress bugs
+    1 Critical bug
+    0 High importance bugs
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    1 Open CVE bug
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned
+and reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
-    Open bugs
-    Bugs assigned to me
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
+    Bugs assigned to me
+    Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
+    Bugs fixed elsewhere
+    Open CVE bugs
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/mozilla/+subscribe
+    Edit bug mail
+      --> http://bugs.launchpad.dev/mozilla/+subscriptions
+
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
-    4 Open bugs
-    0 Bugs assigned to me
-    1 Critical bug
-    0 Bugs fixed elsewhere
     4 New bugs
-    1 Open CVE bug
+    4 Open bugs
+    0 In-progress bugs
+    1 Critical bug
+    0 High importance bugs
+    <BLANKLINE>
+    0 Bugs assigned to me
+    0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    1 Open CVE bug
 
 Note that the "CVE reports" link is not shown above; project groups do
 not have a CVE reports page.
@@ -286,52 +373,72 @@ not have a CVE reports page.
     LinkNotFoundError
 
 
-== Project ==
+Project
+-------
 
     >>> path = 'firefox'
 
 If the user is not logged-in general stats are shown.
 
     >>> print_bugfilters_portlet_unfilled(anon_browser, path)
-    Open bugs
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs - CVE reports
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
     Bugs with patches
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/firefox/+subscribe
+    Bugs fixed elsewhere
+    Open CVE bugs - CVE reports
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
-    3 Open bugs
-    1 Critical bug
-    0 Bugs fixed elsewhere
     3 New bugs
-    1 Open CVE bug - CVE report
+    3 Open bugs
+    0 In-progress bugs
+    1 Critical bug
+    0 High importance bugs
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    1 Open CVE bug - CVE report
 
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
-    Open bugs
-    Bugs assigned to me
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
-    Open CVE bugs - CVE reports
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
+    Bugs assigned to me
+    Bugs reported by me
+    Bugs affecting me
+    <BLANKLINE>
     Bugs with patches
+    Bugs fixed elsewhere
+    Open CVE bugs - CVE reports
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/firefox/+subscribe
+    Edit bug mail
+      --> http://bugs.launchpad.dev/firefox/+subscriptions
+
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
-    3 Open bugs
-    0 Bugs assigned to me
-    1 Critical bug
-    0 Bugs fixed elsewhere
     3 New bugs
-    1 Open CVE bug - CVE report
+    3 Open bugs
+    0 In-progress bugs
+    1 Critical bug
+    0 High importance bugs
+    <BLANKLINE>
+    0 Bugs assigned to me
+    0 Bugs reported by me
+      Bugs affecting me
+    <BLANKLINE>
     0 Bugs with patches
+    0 Bugs fixed elsewhere
+    1 Open CVE bug - CVE report
 
 
 The content includes a link to the distribution CVE report.

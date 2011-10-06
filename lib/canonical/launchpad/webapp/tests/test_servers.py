@@ -1,31 +1,55 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E1002
 
 __metaclass__ = type
 
+from doctest import (
+    DocTestSuite,
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    )
 import StringIO
 import unittest
 
-from zope.component import getGlobalSiteManager, getUtility
-from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
-from zope.interface import implements, Interface
-
 from lazr.restful.interfaces import (
-    IServiceRootResource, IWebServiceConfiguration)
+    IServiceRootResource,
+    IWebServiceConfiguration,
+    )
 from lazr.restful.simple import RootResource
 from lazr.restful.testing.webservice import (
-    IGenericCollection, IGenericEntry, WebServiceTestCase)
+    IGenericCollection,
+    IGenericEntry,
+    WebServiceTestCase,
+    )
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from lp.testing import TestCase
-
+from canonical.launchpad.webapp.interfaces import IFinishReadOnlyRequestEvent
+from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    AnswersBrowserRequest, ApplicationServerSettingRequestFactory,
-    BugsBrowserRequest, BugsPublication, LaunchpadBrowserRequest,
-    TranslationsBrowserRequest, VHostWebServiceRequestPublicationFactory,
-    VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
-    WebServiceClientRequest, WebServicePublication, WebServiceTestRequest)
+    ApplicationServerSettingRequestFactory,
+    LaunchpadBrowserRequest,
+    LaunchpadTestRequest,
+    VHostWebServiceRequestPublicationFactory,
+    VirtualHostRequestPublicationFactory,
+    web_service_request_to_browser_request,
+    WebServiceClientRequest,
+    WebServicePublication,
+    WebServiceRequestPublicationFactory,
+    WebServiceTestRequest,
+    )
+from lp.testing import (
+    EventRecorder,
+    TestCase,
+    )
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):
@@ -99,35 +123,42 @@ class TestApplicationServerSettingRequestFactory(TestCase):
 
 class TestVhostWebserviceFactory(WebServiceTestCase):
 
+    class VHostTestBrowserRequest(LaunchpadBrowserRequest):
+        pass
+
+    class VHostTestPublication(LaunchpadBrowserRequest):
+        pass
+
     def setUp(self):
         super(TestVhostWebserviceFactory, self).setUp()
+        # XXX We have to use a real hostname.
         self.factory = VHostWebServiceRequestPublicationFactory(
-            'bugs', BugsBrowserRequest, BugsPublication)
+            'bugs', self.VHostTestBrowserRequest, self.VHostTestPublication)
 
     def wsgi_env(self, path, method='GET'):
         """Simulate a WSGI application environment."""
         return {
             'PATH_INFO': path,
             'HTTP_HOST': 'bugs.launchpad.dev',
-            'REQUEST_METHOD': method
+            'REQUEST_METHOD': method,
             }
 
     @property
-    def working_api_path(self):
-        """A path to the webservice API that should work every time."""
+    def api_path(self):
+        """Requests to this path should be treated as webservice requests."""
         return '/' + getUtility(IWebServiceConfiguration).path_override
 
     @property
-    def failing_api_path(self):
-        """A path that should not work with the webservice API."""
+    def non_api_path(self):
+        """Requests to this path should not be treated as webservice requests.
+        """
         return '/foo'
 
     def test_factory_produces_webservice_objects(self):
         """The factory should produce WebService request and publication
         objects for requests to the /api root URL.
         """
-        env = self.wsgi_env(
-            '/' + getUtility(IWebServiceConfiguration).path_override)
+        env = self.wsgi_env(self.api_path)
 
         # Necessary preamble and sanity check.  We need to call
         # the factory's canHandle() method with an appropriate
@@ -153,7 +184,7 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
         specified in it's constructor if the request is not bound for the
         web service.
         """
-        env = self.wsgi_env('/foo')
+        env = self.wsgi_env(self.non_api_path)
         self.assert_(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
@@ -162,12 +193,12 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
         # We need to unwrap the real request factory.
         request_factory = wrapped_factory.requestfactory
 
-        self.assertEqual(request_factory, BugsBrowserRequest,
-            "Requests to normal paths should return a Bugs "
+        self.assertEqual(request_factory, self.VHostTestBrowserRequest,
+            "Requests to normal paths should return a VHostTest "
             "request object.")
         self.assertEqual(
-            publication_factory, BugsPublication,
-            "Requests to normal paths should return a Bugs "
+            publication_factory, self.VHostTestPublication,
+            "Requests to normal paths should return a VHostTest "
             "publication object.")
 
     def test_factory_processes_webservice_http_methods(self):
@@ -177,7 +208,7 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
         allowed_methods = WebServiceRequestPublicationFactory.default_methods
 
         for method in allowed_methods:
-            env = self.wsgi_env(self.working_api_path, method)
+            env = self.wsgi_env(self.api_path, method)
             self.assert_(self.factory.canHandle(env),
                 "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
@@ -198,7 +229,7 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
         denied_methods = set(ws_methods) - set(vhost_methods)
 
         for method in denied_methods:
-            env = self.wsgi_env(self.failing_api_path, method)
+            env = self.wsgi_env(self.non_api_path, method)
             self.assert_(self.factory.canHandle(env),
                 "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
@@ -220,9 +251,6 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
 
         self.assert_(
             self.factory.isWebServicePath('/api'),
-            "The factory should handle URLs that start with /api.")
-        self.assert_(
-            self.factory.isWebServicePath('/api/'),
             "The factory should handle URLs that start with /api.")
 
         self.assert_(
@@ -256,6 +284,7 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
 
     def setUp(self):
         super(TestWebServiceRequestTraversal, self).setUp()
+
         # For this test we need to make the URL "/foo" resolve to a
         # resource.  To this end, we'll define a top-level collection
         # named 'foo'.
@@ -263,8 +292,10 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
             implements(IGenericCollection)
 
         class MyRootResource(RootResource):
+
             def _build_top_level_objects(self):
-                return ({'foo' : (IGenericEntry, GenericCollection())}, {})
+                return ({'foo': (IGenericEntry, GenericCollection())}, {})
+
         getGlobalSiteManager().registerUtility(
             MyRootResource(), IServiceRootResource)
 
@@ -315,8 +346,7 @@ class TestWebServiceRequest(WebServiceTestCase):
     def test_response_should_vary_based_on_content_type(self):
         request = WebServiceClientRequest(StringIO.StringIO(''), {})
         self.assertEquals(
-            request.response.getHeader('Vary'),
-            'Cookie, Authorization, Accept')
+            request.response.getHeader('Vary'), 'Accept')
 
 
 class TestBasicLaunchpadRequest(TestCase):
@@ -335,6 +365,90 @@ class TestBasicLaunchpadRequest(TestCase):
         self.assertEquals(
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
+
+
+class TestLaunchpadBrowserRequestMixin:
+    """Tests for `LaunchpadBrowserRequestMixin`.
+
+    As `LaunchpadBrowserRequestMixin` is a mixin, it needs to be tested when
+    mixed into another class, hence why this does not inherit from `TestCase`.
+    """
+
+    request_factory = None  # Specify in subclasses.
+
+    def test_is_ajax_false(self):
+        """Normal requests do not define HTTP_X_REQUESTED_WITH."""
+        request = self.request_factory(StringIO.StringIO(''), {})
+
+        self.assertFalse(request.is_ajax)
+
+    def test_is_ajax_true(self):
+        """Requests with HTTP_X_REQUESTED_WITH set are ajax requests."""
+        request = self.request_factory(StringIO.StringIO(''), {
+            'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+            })
+
+        self.assertTrue(request.is_ajax)
+
+    def test_getURL(self):
+        """
+        getURL() overrides HTTPRequest.getURL(), but behaves identically by
+        default.
+        """
+        environ = {
+            "SERVER_URL": "http://geturl.example.com",
+            "SCRIPT_NAME": "/sabbra/cadabra",
+            "QUERY_STRING": "tuesday=gone",
+            }
+        request = self.request_factory(StringIO.StringIO(''), environ)
+        self.assertEqual(
+            "http://geturl.example.com/sabbra/cadabra",
+            request.getURL())
+        self.assertEqual(
+            "http://geturl.example.com/sabbra",
+            request.getURL(level=1))
+        self.assertEqual(
+            "/sabbra/cadabra",
+            request.getURL(path_only=True))
+
+    def test_getURL_include_query(self):
+        """
+        getURL() overrides HTTPRequest.getURL(), but appends the query string
+        if include_query=True.
+        """
+        environ = {
+            "SERVER_URL": "http://geturl.example.com",
+            "SCRIPT_NAME": "/sabbra/cadabra",
+            "QUERY_STRING": "tuesday=gone",
+            }
+        request = self.request_factory(StringIO.StringIO(''), environ)
+        self.assertEqual(
+            "http://geturl.example.com/sabbra/cadabra?tuesday=gone",
+            request.getURL(include_query=True))
+        self.assertEqual(
+            "http://geturl.example.com/sabbra?tuesday=gone",
+            request.getURL(include_query=True, level=1))
+        self.assertEqual(
+            "/sabbra/cadabra?tuesday=gone",
+            request.getURL(include_query=True, path_only=True))
+
+
+class TestLaunchpadBrowserRequestMixinWithLaunchpadBrowserRequest(
+    TestLaunchpadBrowserRequestMixin, TestCase):
+    """
+    Tests for `LaunchpadBrowserRequestMixin` as found in
+    `LaunchpadBrowserRequest`.
+    """
+    request_factory = LaunchpadBrowserRequest
+
+
+class TestLaunchpadBrowserRequestMixinWithLaunchpadTestRequest(
+    TestLaunchpadBrowserRequestMixin, TestCase):
+    """
+    Tests for `LaunchpadBrowserRequestMixin` as found in
+    `LaunchpadTestRequest`.
+    """
+    request_factory = LaunchpadTestRequest
 
 
 class IThingSet(Interface):
@@ -384,26 +498,6 @@ class TestLaunchpadBrowserRequest_getNearest(TestCase):
         # (None, None) is returned.
         self.request.traversed_objects.extend([self.thing_set])
         self.assertEquals(self.request.getNearest(IThing), (None, None))
-
-
-class TestAnswersBrowserRequest(TestCase):
-    """Tests for the Answers request class."""
-
-    def test_response_should_vary_based_on_language(self):
-        request = AnswersBrowserRequest(StringIO.StringIO(''), {})
-        self.assertEquals(
-            request.response.getHeader('Vary'),
-            'Cookie, Authorization, Accept-Language')
-
-
-class TestTranslationsBrowserRequest(TestCase):
-    """Tests for the Translations request class."""
-
-    def test_response_should_vary_based_on_language(self):
-        request = TranslationsBrowserRequest(StringIO.StringIO(''), {})
-        self.assertEquals(
-            request.response.getHeader('Vary'),
-            'Cookie, Authorization, Accept-Language')
 
 
 class TestLaunchpadBrowserRequest(TestCase):
@@ -469,18 +563,73 @@ class TestLaunchpadBrowserRequest(TestCase):
             "The query_string_params dict correctly interprets encoded "
             "parameters.")
 
-    def test_isRedirectInhibited_without_cookie(self):
-        # When the request doesn't include the inhibit_beta_redirect cookie,
-        # isRedirectInhibited() returns False.
-        request = LaunchpadBrowserRequest('', {})
-        self.assertFalse(request.isRedirectInhibited())
 
-    def test_isRedirectInhibited_with_cookie(self):
-        # When the request includes the inhibit_beta_redirect cookie,
-        # isRedirectInhibited() returns True.
-        request = LaunchpadBrowserRequest(
-            '', dict(HTTP_COOKIE="inhibit_beta_redirect=1"))
-        self.assertTrue(request.isRedirectInhibited())
+class TestWebServiceRequestToBrowserRequest(WebServiceTestCase):
+
+    def test_unicode_path_info(self):
+        web_service_request = WebServiceTestRequest(
+            PATH_INFO=u'/api/devel\u1234'.encode('utf-8'))
+        browser_request = web_service_request_to_browser_request(
+            web_service_request)
+        self.assertEqual(
+            web_service_request.get('PATH_INFO'),
+            browser_request.get('PATH_INFO'))
+
+
+class LoggingTransaction:
+
+    def __init__(self):
+        self.log = []
+
+    def commit(self):
+        self.log.append("COMMIT")
+
+    def abort(self):
+        self.log.append("ABORT")
+
+
+class TestFinishReadOnlyRequest(TestCase):
+    # Publications that have a finishReadOnlyRequest() method are obliged to
+    # fire an IFinishReadOnlyRequestEvent.
+
+    def _test_publication(self, publication, expected_transaction_log):
+        # publication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and alters the transaction.
+        fake_request = object()
+        fake_object = object()
+        fake_transaction = LoggingTransaction()
+
+        with EventRecorder() as event_recorder:
+            publication.finishReadOnlyRequest(
+                fake_request, fake_object, fake_transaction)
+
+        self.assertEqual(
+            expected_transaction_log,
+            fake_transaction.log)
+
+        finish_events = [
+            event for event in event_recorder.events
+            if IFinishReadOnlyRequestEvent.providedBy(event)]
+        self.assertEqual(
+            1, len(finish_events), (
+                "Expected only one IFinishReadOnlyRequestEvent, but "
+                "got: %r" % finish_events))
+
+        [finish_event] = finish_events
+        self.assertIs(fake_request, finish_event.request)
+        self.assertIs(fake_object, finish_event.object)
+
+    def test_WebServicePub_fires_FinishReadOnlyRequestEvent(self):
+        # WebServicePublication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and commits the transaction.
+        publication = WebServicePublication(None)
+        self._test_publication(publication, ["COMMIT"])
+
+    def test_LaunchpadBrowserPub_fires_FinishReadOnlyRequestEvent(self):
+        # LaunchpadBrowserPublication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and aborts the transaction.
+        publication = LaunchpadBrowserPublication(None)
+        self._test_publication(publication, ["ABORT"])
 
 
 def test_suite():

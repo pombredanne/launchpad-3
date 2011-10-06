@@ -16,8 +16,11 @@ shouldn't have any bugs linked to it at the start of the test.)
     # to a registered user.
     >>> login('no-priv@canonical.com')
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugLinkTarget, IBugLink, IBugSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.buglink import (
+    ...     IBugLink,
+    ...     IBugLinkTarget,
+    ...     )
 
     >>> verifyObject(IBugLinkTarget, target)
     True
@@ -83,7 +86,7 @@ if he is an administrator:
 
     >>> login('no-priv@canonical.com')
     >>> private_bug = bugset.get(6)
-    >>> private_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    >>> private_bug.setPrivate(True, factory.makePerson())
     True
     >>> target.linkBug(private_bug)
     Traceback (most recent call last):

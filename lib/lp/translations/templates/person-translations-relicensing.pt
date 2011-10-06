@@ -26,7 +26,7 @@
         </p>
         <p>
           For more about why we ask this from you, see our
-          <a href="http://help.launchpad.net/Translations/LicensingFAQ"
+          <a href="https://help.launchpad.net/Translations/LicensingFAQ"
           >translations&nbsp;licensing&nbsp;FAQ</a>.
         </p>
         <div metal:use-macro="context/@@launchpad_form/form" />

@@ -1,6 +1,6 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Monitor scripts."""
@@ -8,22 +8,29 @@
 __metaclass__ = type
 __all__ = ['check_script']
 
-import _pythonpath
-
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from email.MIMEText import MIMEText
 from optparse import OptionParser
-from time import strftime
 import smtplib
 import sys
+from time import strftime
+
+import _pythonpath
 
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import db_options, logger_options, logger
+from canonical.launchpad.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 from canonical.launchpad.scripts.scriptmonitor import check_script
 
 
 def main():
-    # XXX: Tom Haddon 2007-07-12 
+    # XXX: Tom Haddon 2007-07-12
     # There's a lot of untested stuff here: parsing options and sending
     # emails - this should be moved into a testable location.
     # Also duplicated code in scripts/script-monitor-nagios.py
@@ -46,7 +53,8 @@ def main():
         start_date = datetime.now() - timedelta(minutes=minutes_ago)
 
         completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
-        completed_to = strftime("%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
+        completed_to = strftime(
+            "%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
 
         hosts_scripts = []
         for arg in args:
@@ -64,28 +72,30 @@ def main():
 
     try:
         log.debug("Connecting to database")
-        con = connect(options.dbuser)
+        con = connect()
         error_found = False
         msg, subj = [], []
         for hostname, scriptname in hosts_scripts:
-            failure_msg = check_script(con, log, hostname, 
+            failure_msg = check_script(con, log, hostname,
                 scriptname, completed_from, completed_to)
             if failure_msg is not None:
                 msg.append(failure_msg)
                 subj.append("%s:%s" % (hostname, scriptname))
                 error_found = 2
         if error_found:
-            # Construct our email
+            # Construct our email.
             msg = MIMEText('\n'.join(msg))
             msg['Subject'] = "Scripts failed to run: %s" % ", ".join(subj)
             msg['From'] = 'script-failures@launchpad.net'
             msg['Reply-To'] = 'launchpad@lists.canonical.com'
             msg['To'] = 'launchpad@lists.canonical.com'
-            
-            # Send out the email
+
+            # Send out the email.
             smtp = smtplib.SMTP()
             smtp.connect()
-            smtp.sendmail('script-failures@launchpad.net', ['launchpad@lists.canonical.com'], msg.as_string())
+            smtp.sendmail(
+                'script-failures@launchpad.net',
+                ['launchpad@lists.canonical.com'], msg.as_string())
             smtp.close()
             return 2
     except:

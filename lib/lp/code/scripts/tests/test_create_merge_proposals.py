@@ -1,4 +1,4 @@
-#! /usr/bin/python2.5
+#! /usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -6,20 +6,19 @@
 """Test the create_merge_proposals script"""
 
 from cStringIO import StringIO
-import unittest
 
 from bzrlib import errors as bzr_errors
 from bzrlib.branch import Branch
 import transaction
 from zope.component import getUtility
 
-from canonical.testing import ZopelessAppServerLayer
 from canonical.launchpad.ftests import import_secret_test_key
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.scripts.tests import run_script
+from canonical.testing.layers import ZopelessAppServerLayer
+from lp.code.model.branchmergeproposaljob import CreateMergeProposalJob
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
-from canonical.launchpad.scripts.tests import run_script
-from lp.code.model.branchmergeproposaljob import CreateMergeProposalJob
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 
 class TestCreateMergeProposals(TestCaseWithFactory):
@@ -33,15 +32,16 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         email, file_alias, source, target = (
             self.factory.makeMergeDirectiveEmail(
                 signing_context=signing_context))
-        CreateMergeProposalJob.create(file_alias)
+        job = CreateMergeProposalJob.create(file_alias)
         self.assertEqual(0, source.landing_targets.count())
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual(
-            'INFO    creating lockfile\n'
-            'INFO    Ran 1 CreateMergeProposalJobs.\n', stderr)
+            'INFO    Creating lockfile: /var/lock/launchpad-create_merge_proposals.lock\n'
+            'INFO    Running CreateMergeProposalJob (ID %d) in status Waiting\n'
+            'INFO    Ran 1 CreateMergeProposalJobs.\n' % job.job.id, stderr)
         self.assertEqual('', stdout)
         self.assertEqual(1, source.landing_targets.count())
 
@@ -67,25 +67,19 @@ class TestCreateMergeProposals(TestCaseWithFactory):
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-create_merge_proposals.lock\n'
             'INFO    Ran 1 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
-        # The hosted location should be populated, not the mirror.
         bmp = branch.landing_candidates[0]
-        self.assertRaises(
-            bzr_errors.NotBranchError, Branch.open,
-            bmp.source_branch.warehouse_url)
-        local_source = Branch.open(bmp.source_branch.getPullURL())
-        # The hosted branch has the correct last revision.
+        local_source = bmp.source_branch.getBzrBranch()
+        # The branch has the correct last revision.
         self.assertEqual(
             source.branch.last_revision(), local_source.last_revision())
-        # A mirror should be scheduled.
-        self.assertIsNot(None, bmp.source_branch.next_mirror_time)
 
     def disabled_test_merge_directive_with_bundle(self):
         """Merge directives with bundles generate branches."""
         # XXX TimPenhey 2009-04-01 bug 352800
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         source = self.createJob(branch, tree)
         self.jobOutputCheck(branch, source)
@@ -93,7 +87,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
     def disabled_test_merge_directive_with_project(self):
         """Bundles are handled when the target branch has a project."""
         # XXX TimPenhey 2009-04-01 bug 352800
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         product = self.factory.makeProduct(project=self.factory.makeProject())
         branch, tree = self.create_branch_and_tree(product=product)
         source = self.createJob(branch, tree)
@@ -106,11 +100,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
-        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn('INFO    Creating lockfile:', stderr)
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -19,16 +19,25 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.interfaces.launchpad import IFeedsApplication
+from canonical.launchpad.webapp import (
+    canonical_url,
+    urlappend,
+    )
+from canonical.lazr.feed import (
+    FeedBase,
+    FeedEntry,
+    FeedPerson,
+    FeedTypedData,
+    )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.registry.interfaces.announcement import (
-    IAnnouncementSet, IHasAnnouncements)
+    IAnnouncementSet,
+    IHasAnnouncements,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from canonical.launchpad.interfaces.launchpad import IFeedsApplication
-from canonical.launchpad.webapp.tales import FormattersAPI
-from canonical.lazr.feed import (
-    FeedBase, FeedEntry, FeedPerson, FeedTypedData)
 
 
 class AnnouncementsFeedBase(FeedBase):

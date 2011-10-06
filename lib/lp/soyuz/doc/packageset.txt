@@ -500,6 +500,20 @@ Which package sets include 'mozilla-firefox' directly? Remember that
       1 -> umbrella
       5 -> firefox
 
+We can filter the package sets by series:
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> print_data(
+    ...     ps_set.setsIncludingSource(firefox_spn,
+    ...                                distroseries=ubuntu['hoary']))
+      1 -> umbrella
+      4 -> mozilla
+      5 -> firefox
+    >>> print_data(
+    ...     ps_set.setsIncludingSource(firefox_spn,
+    ...                                distroseries=ubuntu['warty']))
+   
 It is also possible to ask the same question by providing the mere name of
 the source package.
 
@@ -558,8 +572,7 @@ use, which enforces the user to be an admin or a member of the "techboard"
 
     >>> from zope.security.checker import canAccess
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.teammembership import (
     ...     TeamMembershipStatus)
@@ -597,8 +610,8 @@ Create a new package set.
 As it stands package sets will first be used for governing source package
 uploads i.e. in conjunction with `ArchivePermission` data.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, IArchivePermissionSet)
+    >>> from lp.soyuz.enums import ArchivePermissionType
+    >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
     >>> ap_set = getUtility(IArchivePermissionSet)
 
 So, let's assign upload permissions for the 'mozilla' package set to our
@@ -622,10 +635,8 @@ happy hacker.
 Introduce a copy archive that will be used to disambiguate archive
 permissions.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> rebuild_archive = getUtility(IArchiveSet).new(
     ...     owner=person1, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='copy-archive',
@@ -1107,7 +1118,7 @@ The new package sets are added to 'umbrella' by passing their names. Please
 note that non-existent package sets (e.g. 'not-there') are simply ignored.
 
     >>> to_be_added = (
-    ...     'gnome', 'x-win', 'universe', 'multiverse', 'not-there')
+    ...     u'gnome', u'x-win', u'universe', u'multiverse', u'not-there')
     >>> umbrella_ps.addSubsets(to_be_added)
     >>> print_data(umbrella_ps.setsIncluded(direct_inclusion=True))
       4 -> mozilla
@@ -1119,7 +1130,7 @@ note that non-existent package sets (e.g. 'not-there') are simply ignored.
 Package subsets can be removed in a similar fashion. Non-existent sets
 or sets which are not (direct) subsets are ignored again.
 
-    >>> to_be_removed = ('umbrella', 'universe', 'multiverse', 'not-mine')
+    >>> to_be_removed = (u'umbrella', u'universe', u'multiverse', u'not-mine')
     >>> umbrella_ps.removeSubsets(to_be_removed)
     >>> print_data(umbrella_ps.setsIncluded(direct_inclusion=True))
       4 -> mozilla

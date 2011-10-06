@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -14,37 +14,54 @@ __all__ = [
 
 from datetime import timedelta
 
-from storm.expr import Select, And, Desc, Func
+from lazr.lifecycle.event import ObjectCreatedEvent
+from sqlobject import (
+    ForeignKey,
+    IntervalCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Desc,
+    Func,
+    Select,
+    )
 from storm.locals import Store
 from storm.references import Reference
-from sqlobject import (
-    ForeignKey, IntervalCol, StringCol, SQLMultipleJoin,
-    SQLObjectNotFound)
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-from canonical.launchpad.interfaces import IStore
-from lp.code.model.codeimportjob import CodeImportJobWorkflow
-from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.errors import NotFoundError
 from lp.code.enums import (
-    BranchType, CodeImportJobState, CodeImportResultStatus,
-    CodeImportReviewStatus, RevisionControlSystems)
-from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
+    BranchType,
+    CodeImportJobState,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
+from lp.code.errors import (
+    CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState,
+    )
+from lp.code.interfaces.codeimport import (
+    ICodeImport,
+    ICodeImportSet,
+    )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace)
-from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.mail.codeimport import code_import_updated
+from lp.code.model.codeimportjob import CodeImportJobWorkflow
+from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -68,18 +85,8 @@ class CodeImport(SQLBase):
         dbName='assignee', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
 
-    @property
-    def product(self):
-        """See `ICodeImport`."""
-        return self.branch.product
-
-    @property
-    def series(self):
-        """See `ICodeImport`."""
-        return ProductSeries.selectOneBy(branch=self.branch)
-
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
-        default=CodeImportReviewStatus.NEW)
+        default=CodeImportReviewStatus.REVIEWED)
 
     rcs_type = EnumCol(schema=RevisionControlSystems,
         notNull=False, default=None)
@@ -109,6 +116,8 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_git,
             RevisionControlSystems.HG:
                 config.codeimport.default_interval_hg,
+            RevisionControlSystems.BZR:
+                config.codeimport.default_interval_bzr,
             }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
@@ -126,11 +135,12 @@ class CodeImport(SQLBase):
             RevisionControlSystems.SVN,
             RevisionControlSystems.GIT,
             RevisionControlSystems.BZR_SVN,
-            RevisionControlSystems.HG):
+            RevisionControlSystems.HG,
+            RevisionControlSystems.BZR):
             return self.url
         else:
             raise AssertionError(
-                'Unknown rcs type: %s'% self.rcs_type.title)
+                "Unknown rcs type: %s" % self.rcs_type.title)
 
     def _removeJob(self):
         """If there is a pending job, remove it."""
@@ -139,7 +149,6 @@ class CodeImport(SQLBase):
             if job.state == CodeImportJobState.PENDING:
                 CodeImportJobWorkflow().deletePendingJob(self)
             else:
-                # XXX thumper 2008-03-19
                 # When we have job killing, we might want to kill a running
                 # job.
                 pass
@@ -189,7 +198,8 @@ class CodeImport(SQLBase):
             setattr(self, name, value)
         if 'review_status' in data:
             if data['review_status'] == CodeImportReviewStatus.REVIEWED:
-                CodeImportJobWorkflow().newJob(self)
+                if self.import_job is None:
+                    CodeImportJobWorkflow().newJob(self)
             else:
                 self._removeJob()
         event = event_set.newModify(self, user, token)
@@ -209,14 +219,37 @@ class CodeImport(SQLBase):
             {'review_status': CodeImportReviewStatus.REVIEWED}, user)
         getUtility(ICodeImportJobWorkflow).requestJob(self.import_job, user)
 
+    def requestImport(self, requester, error_if_already_requested=False):
+        """See `ICodeImport`."""
+        if self.import_job is None:
+            # Not in automatic mode.
+            raise CodeImportNotInReviewedState(
+                "This code import is %s, and must be Reviewed for you to "
+                "call requestImport."
+                % self.review_status.name)
+        if self.import_job.state != CodeImportJobState.PENDING:
+            assert self.import_job.state == CodeImportJobState.RUNNING
+            raise CodeImportAlreadyRunning(
+                "This code import is already running.")
+        elif self.import_job.requesting_user is not None:
+            if error_if_already_requested:
+                raise CodeImportAlreadyRequested("This code import has "
+                    "already been requested to run.",
+                    self.import_job.requesting_user)
+        else:
+            getUtility(ICodeImportJobWorkflow).requestJob(
+                self.import_job, requester)
+        return None
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""
 
     implements(ICodeImportSet)
 
-    def new(self, registrant, product, branch_name, rcs_type,
-            url=None, cvs_root=None, cvs_module=None, review_status=None):
+    def new(self, registrant, target, branch_name, rcs_type,
+            url=None, cvs_root=None, cvs_module=None, review_status=None,
+            owner=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
@@ -224,28 +257,29 @@ class CodeImportSet:
         elif rcs_type in (RevisionControlSystems.SVN,
                           RevisionControlSystems.BZR_SVN,
                           RevisionControlSystems.GIT,
-                          RevisionControlSystems.HG):
+                          RevisionControlSystems.HG,
+                          RevisionControlSystems.BZR):
             assert cvs_root is None and cvs_module is None
             assert url is not None
         else:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
-                "rcs_type %s"%rcs_type)
+                "rcs_type %s" % rcs_type)
         if review_status is None:
-            # Auto approve git and hg imports.
-            if rcs_type in (
-                RevisionControlSystems.GIT, RevisionControlSystems.HG):
-                review_status = CodeImportReviewStatus.REVIEWED
-            else:
-                review_status = CodeImportReviewStatus.NEW
+            # Auto approve imports.
+            review_status = CodeImportReviewStatus.REVIEWED
+        if not target.supports_code_imports:
+            raise AssertionError("%r doesn't support code imports" % target)
+        if owner is None:
+            owner = registrant
         # Create the branch for the CodeImport.
-        namespace = get_branch_namespace(registrant, product)
+        namespace = target.getNamespace(owner)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
             registrant=registrant)
 
         code_import = CodeImport(
-            registrant=registrant, owner=registrant, branch=import_branch,
+            registrant=registrant, owner=owner, branch=import_branch,
             rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
             review_status=review_status)
@@ -265,51 +299,6 @@ class CodeImportSet:
         if code_import.import_job is not None:
             CodeImportJob.delete(code_import.import_job.id)
         CodeImport.delete(code_import.id)
-
-    def getActiveImports(self, text=None):
-        """See `ICodeImportSet`."""
-        query = self.composeQueryString(text)
-        return CodeImport.select(
-            query, orderBy=['product.name', 'branch.name'],
-            clauseTables=['Product', 'Branch'])
-
-    def composeQueryString(self, text=None):
-        """Build SQL "where" clause for `CodeImport` search.
-
-        :param text: Text to search for in the product and project titles and
-            descriptions.
-        """
-        conditions = [
-            "date_last_successful IS NOT NULL",
-            "review_status=%s" % sqlvalues(CodeImportReviewStatus.REVIEWED),
-            "CodeImport.branch = Branch.id",
-            "Branch.product = Product.id",
-            ]
-        if text == u'':
-            text = None
-
-        # First filter on text, if supplied.
-        if text is not None:
-            conditions.append("""
-                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
-                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
-
-        # Exclude deactivated products.
-        conditions.append('Product.active IS TRUE')
-
-        # Exclude deactivated projects, too.
-        conditions.append(
-            "((Product.project = Project.id AND Project.active) OR"
-            " Product.project IS NULL)")
-
-        # And build the query.
-        query = " AND ".join(conditions)
-        return """
-            codeimport.id IN
-            (SELECT codeimport.id FROM codeimport, branch, product, project
-             WHERE %s)
-            AND codeimport.branch = branch.id
-            AND branch.product = product.id""" % query
 
     def get(self, id):
         """See `ICodeImportSet`."""

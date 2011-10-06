@@ -19,9 +19,11 @@ what users are the top contributors for a given product/distribution.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IKarma, IPersonSet, IProductSet,
-    ...     ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.karma import IKarma
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -31,7 +33,7 @@ The assignKarma() method is the one to be used when assigning karma to a
 person. It must trigger a KarmaAssignedEvent, notifying that karma was
 assigned to a given person.
 
-    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
+    >>> from lp.testing.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
     >>> karma_helper.listener.event_type
@@ -74,7 +76,7 @@ or message to indicate nothing happed. The method assignKarma
 silently returns, so callsites do not need to know who may be awarded
 karma.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> dummy = janitor.assignKarma('specreviewed', product=firefox)
     <BLANKLINE>
@@ -101,14 +103,6 @@ show the 5 most active projects.
     Mozilla Thunderbird [u'bugs']
     Mozilla Firefox [u'bugs']
 
-As we can see, the results are ordered descending by the karma of the person
-on that project.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> print removeSecurityProxy(foobar)._getProjectsWithTheMostKarma()
-    [(u'evolution', 175), (u'ubuntu', 26), (u'gnomebaker', 15),
-     (u'thunderbird', 15), (u'firefox', 8), (u'bazaar', 2)]
-
 
 Karma Updater
 =============
@@ -131,7 +125,7 @@ is updated by the foaf-update-karma-cache.py cronscript.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-karma-update.lock
     INFO    Updating Launchpad karma caches
     INFO    Step A: Calculating individual KarmaCache entries
     INFO    Scaling bugs by a factor of 2.6667 (capped to 2.0000)

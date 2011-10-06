@@ -10,7 +10,6 @@ __all__ = [
     'get_current_view',
     'get_facet',
     'structured',
-    'translate_if_msgid',
     'FacetMenu',
     'ApplicationMenu',
     'ContextMenu',
@@ -24,22 +23,39 @@ __all__ = [
 import cgi
 import types
 
-from zope.i18n import translate, Message
-from zope.interface import implements
-from zope.component import getMultiAdapter
-from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
-
 from lazr.delegates import delegates
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
+from zope.component import getMultiAdapter
+from zope.i18n import (
+    Message,
+    translate,
+    )
+from zope.interface import implements
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.launchpad.webapp.interfaces import (
-    IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
-    IMenuBase, INavigationMenu, IStructuredString)
+    IApplicationMenu,
+    IContextMenu,
+    IFacetLink,
+    IFacetMenu,
+    ILink,
+    ILinkData,
+    IMenuBase,
+    INavigationMenu,
+    IStructuredString,
+    )
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, get_current_browser_request,
-    LaunchpadView, UserAttributeCache)
-from canonical.launchpad.webapp.authorization import check_permission
-from lazr.uri import InvalidURIError, URI
+    canonical_url,
+    get_current_browser_request,
+    LaunchpadView,
+    UserAttributeCache,
+    )
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -55,13 +71,21 @@ class structured:
                 "You must provide either positional arguments or keyword "
                 "arguments to structured(), not both.")
         if replacements:
-            self.escapedtext = text % tuple(
-                cgi.escape(unicode(replacement))
-                for replacement in replacements)
+            escaped = []
+            for replacement in replacements:
+                if isinstance(replacement, structured):
+                    escaped.append(unicode(replacement.escapedtext))
+                else:
+                    escaped.append(cgi.escape(unicode(replacement)))
+            self.escapedtext = text % tuple(escaped)
         elif kwreplacements:
-            self.escapedtext = text % dict(
-                (key, cgi.escape(unicode(value)))
-                for key, value in kwreplacements.iteritems())
+            escaped = {}
+            for key, value in kwreplacements.iteritems():
+                if isinstance(value, structured):
+                    escaped[key] = unicode(value.escapedtext)
+                else:
+                    escaped[key] = cgi.escape(unicode(value))
+            self.escapedtext = text % escaped
         else:
             self.escapedtext = unicode(text)
 
@@ -83,7 +107,7 @@ def get_current_view(request=None):
     # among the traversed_names. We need to get it from a private attribute.
     view = request._last_obj_traversed
     # Note: The last traversed object may be a view's instance method.
-    bare =  removeSecurityProxy(view)
+    bare = removeSecurityProxy(view)
     if zope_isinstance(view, types.MethodType):
         return bare.im_self
     return bare
@@ -103,7 +127,7 @@ class LinkData:
     implements(ILinkData)
 
     def __init__(self, target, text, summary=None, icon=None, enabled=True,
-                 site=None, menu=None):
+                 site=None, menu=None, hidden=False):
         """Create a new link to 'target' with 'text' as the link text.
 
         'target' is a relative path, an absolute path, or an absolute url.
@@ -123,15 +147,17 @@ class LinkData:
 
         :param menu: The sub menu used by the page that the link represents.
         """
+
         self.target = target
         self.text = text
         self.summary = summary
         self.icon = icon
         if not isinstance(enabled, bool):
-            raise AssertionError, "enabled must be boolean, got %r" % enabled
+            raise AssertionError("enabled must be boolean, got %r" % enabled)
         self.enabled = enabled
         self.site = site
         self.menu = menu
+        self.hidden = hidden
 
 Link = LinkData
 
@@ -216,8 +242,8 @@ class MenuBase(UserAttributeCache):
     _baseclassname = 'MenuBase'
     _initialized = False
     _forbiddenlinknames = set(
-        ['user', 'initialize', 'links', 'enable_only', 'isBetaUser',
-         'iterlinks', 'extra_attributes'])
+        ['user', 'initialize', 'links', 'enable_only', 'iterlinks',
+         'initLink', 'updateLink', 'extra_attributes'])
 
     def __init__(self, context):
         # The attribute self.context is defined in IMenuBase.
@@ -227,6 +253,12 @@ class MenuBase(UserAttributeCache):
     def initialize(self):
         """Override this in subclasses to do initialization."""
         pass
+
+    def _check_links(self):
+        assert self.links is not None, (
+            'Subclasses of %s must provide self.links' % self._baseclassname)
+        assert isinstance(self.links, (tuple, list)), (
+            "self.links must be a tuple or list.")
 
     def _buildLink(self, name):
         method = getattr(self, name, None)
@@ -263,15 +295,12 @@ class MenuBase(UserAttributeCache):
         except KeyError:
             raise AssertionError('unknown site', site)
 
-    def iterlinks(self, request_url=None):
-        """See IMenu."""
-        if not self._initialized:
-            self.initialize()
-            self._initialized = True
-        assert self.links is not None, (
-            'Subclasses of %s must provide self.links' % self._baseclassname)
-        assert isinstance(self.links, (tuple, list)), (
-            "self.links must be a tuple or list.")
+    def _init_link_data(self):
+        if self._initialized:
+            return
+        self._initialized = True
+        self.initialize()
+        self._check_links()
         links_set = set(self.links)
         assert not links_set.intersection(self._forbiddenlinknames), (
             "The following names may not be links: %s" %
@@ -285,14 +314,14 @@ class MenuBase(UserAttributeCache):
         else:
             context = self.context
 
-        contexturlobj = URI(canonical_url(context))
+        self._contexturlobj = URI(canonical_url(context))
 
         if self.enable_only is ALL_LINKS:
-            enable_only_set = links_set
+            self._enable_only_set = links_set
         else:
-            enable_only_set = set(self.enable_only)
+            self._enable_only_set = set(self.enable_only)
 
-        unknown_links = enable_only_set - links_set
+        unknown_links = self._enable_only_set - links_set
         if len(unknown_links) > 0:
             # There are links named in enable_only that do not exist in
             # self.links.
@@ -300,36 +329,53 @@ class MenuBase(UserAttributeCache):
                 "Links in 'enable_only' not found in 'links': %s" %
                 ', '.join(sorted(unknown_links)))
 
-        for idx, linkname in enumerate(self.links):
-            link = self._get_link(linkname)
-            link.name = linkname
+    def initLink(self, linkname, request_url=None):
+        self._init_link_data()
+        link = self._get_link(linkname)
+        link.name = linkname
 
-            # Set the .enabled attribute of the link to False if it is not
-            # in enable_only.
-            if linkname not in enable_only_set:
-                link.enabled = False
+        # Set the .enabled attribute of the link to False if it is not
+        # in enable_only.
+        if linkname not in self._enable_only_set:
+            link.enabled = False
 
-            # Set the .url attribute of the link, using the menu's context.
-            if link.site is None:
-                rootsite = contexturlobj.resolve('/')
+        # Set the .url attribute of the link, using the menu's context.
+        if link.site is None:
+            rootsite = self._contexturlobj.resolve('/')
+        else:
+            rootsite = self._rootUrlForSite(link.site)
+        # Is the target a full URI already?
+        try:
+            link.url = URI(link.target)
+        except InvalidURIError:
+            if link.target.startswith('/'):
+                link.url = rootsite.resolve(link.target)
             else:
-                rootsite = self._rootUrlForSite(link.site)
-            # Is the target a full URI already?
-            try:
-                link.url = URI(link.target)
-            except InvalidURIError:
-                if link.target.startswith('/'):
-                    link.url = rootsite.resolve(link.target)
-                else:
-                    link.url = rootsite.resolve(contexturlobj.path).append(
-                        link.target)
+                link.url = rootsite.resolve(self._contexturlobj.path).append(
+                    link.target)
 
-            # Make the link unlinked if it is a link to the current page.
-            if request_url is not None:
-                if request_url.ensureSlash() == link.url.ensureSlash():
-                    link.linked = False
+        # Make the link unlinked if it is a link to the current page.
+        if request_url is not None:
+            if request_url.ensureSlash() == link.url.ensureSlash():
+                link.linked = False
 
-            link.sort_key = idx
+        idx = self.links.index(linkname)
+        link.sort_key = idx
+        return link
+
+    def updateLink(self, link, request_url, **kwargs):
+        """Called each time a link is rendered.
+
+        Override to update the link state as required for the given request.
+        """
+        pass
+
+    def iterlinks(self, request_url=None, **kwargs):
+        """See IMenu."""
+        self._check_links()
+        for linkname in self.links:
+            link = self.initLink(linkname, request_url)
+            self.updateLink(link, request_url, **kwargs)
             yield link
 
 
@@ -351,16 +397,18 @@ class FacetMenu(MenuBase):
         return IFacetLink(
             self._filterLink(name, MenuBase._get_link(self, name)))
 
-    def iterlinks(self, request_url=None, selectedfacetname=None):
-        """See IFacetMenu."""
+    def initLink(self, linkname, request_url=None):
+        link = super(FacetMenu, self).initLink(linkname, request_url)
+        link.url = link.url.ensureNoSlash()
+        return link
+
+    def updateLink(self, link, request_url=None, selectedfacetname=None):
+        super(FacetMenu, self).updateLink(link, request_url)
         if selectedfacetname is None:
             selectedfacetname = self.defaultlink
-        for link in super(FacetMenu, self).iterlinks(request_url=request_url):
-            if (selectedfacetname is not None and
-                selectedfacetname == link.name):
-                link.selected = True
-            link.url = link.url.ensureNoSlash()
-            yield link
+        if (selectedfacetname is not None and
+            selectedfacetname == link.name):
+            link.selected = True
 
 
 class ApplicationMenu(MenuBase):
@@ -389,6 +437,20 @@ class NavigationMenu(MenuBase):
     title = None
     disabled = False
 
+    def initLink(self, linkname, request_url):
+        link = super(NavigationMenu, self).initLink(linkname, request_url)
+        link.url = link.url.ensureNoSlash()
+        return link
+
+    def updateLink(self, link, request_url=None, view=None):
+        super(NavigationMenu, self).updateLink(link, request_url)
+        # The link should be unlinked if it is the current URL, or if
+        # the menu for the current view is the link's menu.
+        if view is None:
+            view = get_current_view(self.request)
+        link.linked = not (self._is_current_url(request_url, link.url)
+                           or self._is_menulink_for_view(link, view))
+
     def iterlinks(self, request_url=None):
         """See `INavigationMenu`.
 
@@ -401,12 +463,8 @@ class NavigationMenu(MenuBase):
         if request_url is None:
             request_url = URI(request.getURL())
 
-        for link in super(NavigationMenu, self).iterlinks():
-            # The link should be unlinked if it is the current URL, or if
-            # the menu for the current view is the link's menu.
-            link.url = link.url.ensureNoSlash()
-            link.linked = not (self._is_current_url(request_url, link.url)
-                               or self._is_menulink_for_view(link, view))
+        for link in super(NavigationMenu, self).iterlinks(
+            request_url=request_url, view=view):
             yield link
 
     def _is_current_url(self, request_url, link_url):
@@ -469,6 +527,11 @@ class enabled_with_permission:
         called.
         """
         permission = self.permission
+
+        # This is imported here to forestall an import-time config read that
+        # wreaks havoc.
+        from canonical.launchpad.webapp.authorization import check_permission
+
         def enable_if_allowed(self):
             link = func(self)
             if not check_permission(permission, self.context):
@@ -485,7 +548,6 @@ class enabled_with_permission:
 # XXX: mars 2008-02-12:
 # This entire block should be extracted into its own module, along
 # with the structured() class.
-
 
 def escape(message):
     """Performs translation and sanitizes any HTML present in the message.

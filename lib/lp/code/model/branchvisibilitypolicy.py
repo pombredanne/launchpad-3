@@ -12,23 +12,21 @@ __all__ = [
     'BranchVisibilityPolicyMixin',
     ]
 
-from zope.interface import implements
-
 from sqlobject import ForeignKey
-
-from canonical.cachedproperty import cachedproperty
+from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-
 from canonical.launchpad.helpers import shortlist
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.branchvisibilitypolicy import (
-    IBranchVisibilityTeamPolicy, InvalidVisibilityPolicy)
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+    IBranchVisibilityTeamPolicy,
+    InvalidVisibilityPolicy,
+    )
+from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 class BranchVisibilityTeamPolicy(SQLBase):
@@ -37,11 +35,11 @@ class BranchVisibilityTeamPolicy(SQLBase):
     implements(IBranchVisibilityTeamPolicy)
     _table = 'BranchVisibilityPolicy'
 
-    project = ForeignKey(dbName='project', foreignKey='Project')
+    project = ForeignKey(dbName='project', foreignKey='ProjectGroup')
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         default=None)
     rule = EnumCol(
         dbName="policy", enum=BranchVisibilityRule, notNull=True,

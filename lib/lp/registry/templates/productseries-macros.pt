@@ -4,48 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<metal:detailed_display define-macro="detailed_display">
-  <tal:comment replace="nothing">
-    This macro expects two variables to be defined:
-      - 'series': The ProductSeries
-      - 'is_focus': A boolean saying whether this is the series in which
-                    development is focused.
-  </tal:comment>
-
-  <strong><a tal:attributes="href series/fmt:url"
-             tal:content="series/name" >
-      1.0
-    </a> series
-  </strong>
-  <em tal:condition="is_focus">focus of development</em>
-  <em tal:condition="not: is_focus" tal:content="series/status/title">
-    This series' status
-  </em>
-  <div>
-    <tal:milestones condition="series/milestones">
-      Milestones:
-      <tal:milestone repeat="milestone series/milestones">
-        <a tal:attributes="href milestone/fmt:url" tal:content="milestone/name"
-          >name</a><tal:comma condition="not:repeat/milestone/end">,</tal:comma>
-      </tal:milestone>
-    </tal:milestones>
-    <tal:release repeat="release series/releases">
-      <tal:release-start condition="repeat/release/start">
-        <tal:comment condition="nothing">
-          Releases may be a list or an resultset. We cannot easily know if there
-          releases until the first one is returned.
-        </tal:comment>
-        <tal:space condition="series/milestones"> &nbsp &nbsp </tal:space>
-        Releases:
-      </tal:release-start>
-      <a tal:attributes="href release/fmt:url" tal:content="release/version"
-        >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
-    </tal:release>
-  </div>
-  <metal:extra define-slot="extra" />
-</metal:detailed_display>
-
-
 <metal:branch_display define-macro="branch_display">
   <tal:comment condition="nothing">
     This macro expects two variables to be defined:
@@ -72,7 +30,7 @@
               1.0
             </a>
           </strong>
-          <em tal:condition="is_focus">focus of development</em>
+          <em tal:condition="is_focus">Focus of Development</em>
         </td>
       </tr>
 

@@ -1,6 +1,6 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize the cluster.
@@ -9,32 +9,42 @@ This script is run once to convert a singledb Launchpad instance to
 a replicated setup.
 """
 
-import _pythonpath
-
 from optparse import OptionParser
 import subprocess
 import sys
 
+import _pythonpath
 import helpers
 
 from canonical.config import config
-from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.database.postgresql import (
-        all_sequences_in_schema, all_tables_in_schema, ConnectionString
-        )
+    all_sequences_in_schema,
+    all_tables_in_schema,
+    ConnectionString,
+    )
+from canonical.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
 from canonical.launchpad.scripts import (
-        logger, logger_options, db_options
-        )
+    db_options,
+    logger,
+    logger_options,
+    )
+
 
 __metaclass__ = type
 __all__ = []
 
 
-log = None # Global logger, initialized in main()
+# Global logger, initialized in main().
+log = None
 
-options = None # Parsed command line options, initialized in main()
+# Parsed command line options, initialized in main().
+options = None
 
-cur = None # Shared database cursor to the master, initialized in main()
+# Shared database cursor to the master, initialized in main().
+cur = None
 
 
 def duplicate_schema():
@@ -42,9 +52,7 @@ def duplicate_schema():
     log.info('Duplicating database schema')
 
     master_cs = ConnectionString(config.database.rw_main_master)
-    master_cs.user = options.dbuser
     slave1_cs = ConnectionString(config.database.rw_main_slave)
-    slave1_cs.user = options.dbuser
 
     # We can't use pg_dump to replicate security as not all of the roles
     # may exist in the slave databases' clusters yet.
@@ -85,57 +93,17 @@ def initialize_cluster():
 
 def ensure_live():
     log.info('Ensuring slon daemons are live and propagating events.')
-    helpers.sync(120) # Will exit on failure.
+    # This will exit on failure.
+    helpers.sync(120)
 
 
-def create_replication_sets(
-    authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences):
+def create_replication_sets(lpmain_tables, lpmain_sequences):
     """Create the replication sets."""
     log.info('Creating Slony-I replication sets.')
 
-    # Instead of creating both the authdb and lpmain replication sets,
-    # we just create the lpmain replication set containing everything.
-    # This way, we can then test the populate_auth_replication_set.py
-    # migration script that moves the relevant tables from the lpmain
-    # replication set to the authdb replication set.
-    # We will turn this behavior off once we are running two
-    # replication sets in production and remove the migration script.
-    lpmain_tables = lpmain_tables.union(authdb_tables)
-    lpmain_sequences = lpmain_sequences.union(authdb_sequences)
-
     script = ["try {"]
-    # script,append("""
-    #     echo 'Creating AuthDB replication set (@authdb_set)';
-    #     create set (
-    #         id=@authdb_set, origin=@master_node,
-    #         comment='AuthDB tables and sequences');
-    #     """)
 
-    # entry_id = 1
-    # for table in sorted(authdb_tables):
-    #     script.append("""
-    #         echo 'Adding %(table)s to replication set @authdb_set';
-    #         set add table (
-    #             set id=@authdb_set,
-    #             origin=@master_node,
-    #             id=%(entry_id)d,
-    #             fully qualified name='%(table)s');
-    #         """ % vars())
-    #     entry_id += 1
-    # entry_id = 1
-    # for sequence in sorted(authdb_sequences):
-    #     script.append("""
-    #         echo 'Adding %(sequence)s to replication set @authdb_set';
-    #         set add sequence (
-    #             set id=@authdb_set,
-    #             origin=@master_node,
-    #             id=%(entry_id)d,
-    #             fully qualified name='%(sequence)s');
-    #         """ % vars())
-    #     entry_id += 1
-    #
-    # assert entry_id < 200, 'authdb replcation set has > 200 objects???'
-    entry_id = 200
+    entry_id = 1
 
     script.append("""
         echo 'Creating LPMain replication set (@lpmain_set)';
@@ -157,7 +125,7 @@ def create_replication_sets(
             """ % vars())
         entry_id += 1
 
-    entry_id = 200
+    entry_id = 1
     script.append(
         "echo 'Adding %d sequences to replication set @lpmain_set';"
         % len(lpmain_sequences))
@@ -177,7 +145,8 @@ def create_replication_sets(
         """)
     helpers.execute_slonik('\n'.join(script), sync=600)
 
-    helpers.validate_replication(cur) # Explode now if we have messed up.
+    # Explode now if we have messed up.
+    helpers.validate_replication(cur)
 
 
 def main():
@@ -195,13 +164,10 @@ def main():
 
     # Generate lists of sequences and tables for our replication sets.
     log.debug("Connecting as %s" % options.dbuser)
-    con = connect(options.dbuser)
+    con = connect()
     con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     global cur
     cur = con.cursor()
-    log.debug("Calculating authdb replication set.")
-    authdb_tables, authdb_sequences = helpers.calculate_replication_set(
-        cur, helpers.AUTHDB_SEED)
     log.debug("Calculating lpmain replication set.")
     lpmain_tables, lpmain_sequences = helpers.calculate_replication_set(
         cur, helpers.LPMAIN_SEED)
@@ -212,8 +178,7 @@ def main():
     fails = 0
     for table in all_tables_in_schema(cur, 'public'):
         times_seen = 0
-        for table_set in [
-            authdb_tables, lpmain_tables, helpers.IGNORED_TABLES]:
+        for table_set in [lpmain_tables, helpers.IGNORED_TABLES]:
             if table in table_set:
                 times_seen += 1
         if times_seen == 0:
@@ -224,8 +189,7 @@ def main():
             fails += 1
     for sequence in all_sequences_in_schema(cur, 'public'):
         times_seen = 0
-        for sequence_set in [
-            authdb_sequences, lpmain_sequences, helpers.IGNORED_SEQUENCES]:
+        for sequence_set in [lpmain_sequences, helpers.IGNORED_SEQUENCES]:
             if sequence in sequence_set:
                 times_seen += 1
         if times_seen == 0:
@@ -242,8 +206,7 @@ def main():
 
     ensure_live()
 
-    create_replication_sets(
-        authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences)
+    create_replication_sets(lpmain_tables, lpmain_sequences)
 
     helpers.sync(0)
 

@@ -16,40 +16,65 @@ __all__ = [
     'BugNominationStatus',
     'NominationSeriesObsoleteError']
 
-from zope.schema import Int, Datetime, Choice, Set
-from zope.interface import Interface
-from lazr.enum import DBEnumeratedType, DBItem
+import httplib
+
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, export_write_operation, exported,
-    webservice_error)
-from lazr.restful.fields import Reference, ReferenceChoice
+    call_with,
+    error_status,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Set,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
+from canonical.launchpad.interfaces.launchpad import (
+    IHasBug,
+    IHasDateCreated,
+    )
+from canonical.launchpad.interfaces.validation import (
+    can_be_nominated_for_series,
+    )
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IHasOwner
-from canonical.launchpad.interfaces.validation import (
-    can_be_nominated_for_series)
+from lp.services.fields import PublicPersonChoice
 
 
+@error_status(httplib.BAD_REQUEST)
 class NominationError(Exception):
     """The bug cannot be nominated for this release."""
-    webservice_error(400)
 
 
+@error_status(httplib.BAD_REQUEST)
 class NominationSeriesObsoleteError(Exception):
     """A bug cannot be nominated for an obsolete series."""
-    webservice_error(400)
 
 
+@error_status(httplib.BAD_REQUEST)
 class BugNominationStatusError(Exception):
     """A error occurred while trying to set a bug nomination status."""
-    webservice_error(400)
 
 
 class BugNominationStatus(DBEnumeratedType):
@@ -85,7 +110,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
 
     A nomination can apply to an IDistroSeries or an IProductSeries.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     # We want to customize the titles and descriptions of some of the
     # attributes of our parent interfaces, so we redefine those specific
@@ -110,6 +135,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     owner = exported(PublicPersonChoice(
         title=_('Submitter'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam'))
+    ownerID = Attribute('The db id of the owner.')
     decider = exported(PublicPersonChoice(
         title=_('Decided By'), required=False, readonly=True,
         vocabulary='ValidPersonOrTeam'))
@@ -183,5 +209,3 @@ class IBugNominationForm(Interface):
         title=_("Series that can be nominated"), required=True,
         value_type=Choice(vocabulary="BugNominatableSeries"),
         constraint=can_be_nominated_for_series)
-
-

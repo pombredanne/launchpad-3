@@ -302,6 +302,8 @@ you might notice seven new items in the checkout.
         develop = .
                   lazr_uri_branch
 
+    See `Developing a Dependent Library In Parallel`_ for more on this.
+
     The other basic key in the ``[buildout]`` section that we'll highlight here
     is ``parts``.  This key identifies the other sections in buildout.cfg that
     will be processed.  A section that is not identified in the ``[buildout]``
@@ -455,16 +457,19 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     include or ignore the uncommitted distributions, it will refuse to start
     an instance.
 
-6.  Commit the changes (``cd download-cache``, ``bzr up``,
+6. Check old versions in the download-cache.  If you are sure that they are
+   not in use any more, *anywhere*, then remove them to save checkout space.
+   More explicitly, check with the LOSAs to see if they are in use in
+   production and send an email to launchpad-dev@lists.launchpad.net before
+   deleting anything if you are unsure.
+
+7.  Commit the changes (``cd download-cache``, ``bzr up``,
     ``bzr commit -m 'Add lazr.foom 1.1.2 and depdendencies to the download
     cache'``) to the shared download cache when you are sure it is what you
     want.
 
-You should only add packages to the download-cache.
-
 *Never* modify a package in the download-cache.
 
-Only remove a package if you have explicit permission to do so.
 
 Upgrade a Package
 =================
@@ -575,11 +580,65 @@ project with a name like this: ``lazr.restful-0.9.1DEV-20090512.tar.gz``.
 See the setuptools documentation for more information about `the egg_info
 command`_.
 
+It is also possible that setup.py does not support the egg_info command and
+it is sufficient to just run the sdist command. It adds the current revision
+of the bzr branch to the version number::
+
+    python setup.py sdist
+
+For instance, this might produce a distribution for the ``testtools``
+project with a name like this: ``testtools-0.9.12-r228.tar.gz``.
+
 .. _FeedValidator: http://feedvalidator.org/
 
 .. _`other answers`: http://pypi.python.org/pypi/zc.buildoutsftp
 
 .. _`the egg_info command`: http://peak.telecommunity.com/DevCenter/setuptools#tagging-and-daily-build-or-snapshot-releases
+
+Developing a Dependent Library In Parallel
+==========================================
+
+Sometimes you need to iterate on change to a library used by Launchpad
+that is managed by buildout as an egg. You could just edit what it is in
+the ``eggs`` directory, but it is harder to produce a patch while doing
+this. You could instead grab a branch of the libarary and produce an egg
+everytime you make a change and make buildout use the new egg, but this is
+slow.
+
+buildout defaults to only using the current directory as code that will
+be used without creating a distribution. We can arrange for it to use other
+paths as well, so we can use a checkout of any code we like, with changes
+being picked up instantly without us having to create a distribution.
+
+To do this add the extra paths to the ``develop`` key in the ``[buildout]``
+section of ``buildout.cfg``::
+
+    [buildout]
+    develop = .
+              path/to/branch
+
+and re-run ``make``.
+
+Now any changes you make in that path will be picked up, and you are free
+to make the changes you need and test them in the Launchpad environment.
+
+Once you are finished you can produce a distribution as above for inclusion
+in to Launchpad, as well as sending your patch upstream. At that point you
+are free to revert the configuration to only develop Launchpad. You should
+not submit your branch with this change in the configuration as it will
+not work for others.
+
+Be aware that you may have to change the version for the package in
+``versions.cfg`` if there is a difference between the version in the
+``eggs`` directory and the one in the ``setup.py`` that you pointed to
+in the ``develop`` key.
+
+One thing to be wary of is that setuptools treats "develop eggs" created
+by this process with the same precedence as system packages. That means
+that if the version in the ``setup.py`` at the path that you put in the
+``develop`` key is the same as the version installed system wide, setuptools
+may pick the wrong one. If that happens then increase the version in
+setup.py and setuptools will take it.
 
 =====================
 Possible Future Goals

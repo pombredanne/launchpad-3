@@ -11,7 +11,7 @@
     <browser:url
         for="lp.hardwaredb.interfaces.hwdb.IHWDBApplication"
         path_expression="string:+hwdb"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:page
         for="lp.hardwaredb.interfaces.hwdb.IHWDBApplication"
         class="lp.hardwaredb.browser.hwdb.HWDBUploadView"
@@ -35,7 +35,7 @@
         permission="zope.Public"
         name="+text"/>
     <browser:page
-        for="canonical.launchpad.interfaces.IPerson"
+        for="lp.registry.interfaces.person.IPerson"
         permission="zope.Public"
         class="lp.hardwaredb.browser.hwdb.HWDBPersonSubmissionsView"
         template="../templates/person-hwdb-submissions.pt"

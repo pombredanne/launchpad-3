@@ -5,16 +5,19 @@
 
 __metaclass__ = type
 
-import unittest
-import logging
 from cStringIO import StringIO
+import logging
+import unittest
 
 from zope.testing.loghandler import Handler
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.scripts.entitlement import (
-    EntitlementExchange, EntitlementImporter,
-    InvalidFormat, UnsupportedVersion)
+    EntitlementExchange,
+    EntitlementImporter,
+    InvalidFormat,
+    UnsupportedVersion,
+    )
 
 
 class EntitlementExchangeTestCase(unittest.TestCase):
@@ -179,6 +182,3 @@ class EntitlementImporterTestCase(unittest.TestCase):
         self.handler.assertLogsMessage(
             "[E0] You may not change the person for the entitlement.",
             level=logging.INFO)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

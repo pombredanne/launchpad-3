@@ -13,11 +13,14 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from lp.code.enums import BranchType
-from lp.code.model.branch import Branch
-from lp.code.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.code.enums import BranchType
+from lp.code.interfaces.branchpuller import IBranchPuller
+from lp.code.model.branch import Branch
 
 
 class BranchPuller:
@@ -31,8 +34,7 @@ class BranchPuller:
     def acquireBranchToPull(self, *branch_types):
         """See `IBranchPuller`."""
         if not branch_types:
-            branch_types = (
-                BranchType.HOSTED, BranchType.MIRRORED, BranchType.IMPORTED)
+            branch_types = (BranchType.MIRRORED, BranchType.IMPORTED)
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch = store.find(
             Branch,

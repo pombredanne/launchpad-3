@@ -1,12 +1,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import os
 import operator
+import os
 
 from sqlobject import SQLObjectNotFound
 
-from lp.soyuz.interfaces.archive import ArchivePurpose
 
 class BuildDaemonPackagesArchSpecific:
     """Parse and implement "PackagesArchSpecific"."""
@@ -96,7 +95,7 @@ class BuildDaemonPackagesArchSpecific:
             return None
 
         # The source produces a single binary, so it can be restricted.
-        source_name = build.sourcepackagerelease.name
+        source_name = build.source_package_release.name
 
         # The arch-independent builder /must/ be included in the
         # arch_tags, regardless of whether the binary PAS line allows
@@ -132,8 +131,8 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
     known-failures build attempts and thus saving build-farm time.
 
     For PPA publications we only consider architectures supported by PPA
-    subsystem (`DistroArchSeries`.supports_virtualized flag) and P-a-s is turned
-    off to give the users the chance to test their fixes for upstream
+    subsystem (`DistroArchSeries`.supports_virtualized flag) and P-a-s is
+    turned off to give the users the chance to test their fixes for upstream
     problems.
 
     :param: pubrec: `ISourcePackagePublishingHistory` representing the
@@ -150,7 +149,7 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
     assert hint_string, 'Missing arch_hint_list'
 
     # Ignore P-a-s for PPA publications.
-    if pubrec.archive.purpose == ArchivePurpose.PPA:
+    if pubrec.archive.is_ppa:
         pas_verify = None
 
     # The 'PPA supported' flag only applies to virtualized archives
@@ -165,24 +164,33 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
         if not legal_archseries:
             return []
 
-    legal_arch_tags = set(arch.architecturetag for arch in legal_archseries)
+    legal_arch_tags = set(
+        arch.architecturetag for arch in legal_archseries if arch.enabled)
 
-    if hint_string == 'any':
+    hint_archs = set(hint_string.split())
+
+    # If a *-any architecture wildcard is present, build for everything
+    # we can. We only support Linux-based architectures at the moment,
+    # and any-any isn't a valid wildcard. See bug #605002.
+    if hint_archs.intersection(('any', 'linux-any')):
         package_tags = legal_arch_tags
-    elif hint_string == 'all':
-        nominated_arch = distroseries.nominatedarchindep
-        legal_archseries_ids = [arch.id for arch in legal_archseries]
-        assert nominated_arch.id in legal_archseries_ids, (
-            'nominatedarchindep is not present in legal_archseries: %s' %
-            ' '.join(legal_arch_tags))
-        package_tags = set([nominated_arch.architecturetag])
     else:
-        my_archs = hint_string.split()
-        # Allow any-foo or linux-foo to mean foo. See bug 73761.
-        my_archs = [arch.replace("any-", "") for arch in my_archs]
-        my_archs = [arch.replace("linux-", "") for arch in my_archs]
-        my_archs = set(my_archs)
-        package_tags = my_archs.intersection(legal_arch_tags)
+        # We need to support arch tags like any-foo and linux-foo, so remove
+        # supported kernel prefixes. See bug #73761.
+        stripped_archs = hint_archs
+        for kernel in ('linux', 'any'):
+            stripped_archs = set(
+                arch.replace("%s-" % kernel, "") for arch in stripped_archs)
+        package_tags = stripped_archs.intersection(legal_arch_tags)
+
+        # 'all' is only used as a last resort, to create an arch-indep
+        # build where no builds would otherwise exist.
+        if len(package_tags) == 0 and 'all' in hint_archs:
+            nominated_arch = distroseries.nominatedarchindep
+            if nominated_arch in legal_archseries:
+                package_tags = set([nominated_arch.architecturetag])
+            else:
+                package_tags = set()
 
     if pas_verify:
         build_tags = set()

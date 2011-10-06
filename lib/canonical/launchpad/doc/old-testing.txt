@@ -18,17 +18,6 @@ and hide errors (eg. if this object is supposed to be usable outside of
 zope, we should not be testing it with the full Z3 functional test
 harness).
 
-If you are wondering why we use `PgTestSetup().setUp()` and
-`PgTestSetup.tearDown()` instead of `pgtestsetup.setUp()` or
-`pgtestsetup.tearDown()`, it is because I'm mirroring the design used in
-Zope3's `FunctionalTestSetup`.
-
-canonical.functional.FunctionalTestCase
----------------------------------------
-
-This is a customised zope3 FunctionalTestCase and should be used when you
-simply need the zope3 utilities etc available.
-
 PgTestSetup
 -----------
 
@@ -36,17 +25,18 @@ PgTestSetup is used for tests that require access to a PostgreSQL backend.
 For example, we would use this for testing SQLObject or our custom
 extentions to it.
 
-The class is defined in canonical.ftests.pgsql
+The class is defined in lp.testing.pgsql
 
->>> from canonical.ftests.pgsql import PgTestSetup
+>>> from lp.testing.pgsql import PgTestSetup
 
 The setup procedure builds us a fresh, empty database
 
->>> PgTestSetup().setUp()
+>>> fixture = PgTestSetup()
+>>> fixture.setUp()
 
 We can get connections to this database
 
->>> connection = PgTestSetup().connect()
+>>> connection = fixture.connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute("""CREATE TABLE Beer (
 ...     id serial PRIMARY KEY, name text, stamp timestamp without time zone
@@ -68,28 +58,29 @@ True
 When we have finished, we need to call the tearDown method which closes
 all outstanding connections and destroys the database
 
->>> PgTestSetup().tearDown()
+>>> fixture.tearDown()
 
 Because the database has been destroyed, further tests will not be
 affected.
 
->>> PgTestSetup().setUp()
->>> connection = PgTestSetup().connect()
+>>> fixture.setUp()
+>>> connection = fixture.connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute("CREATE TABLE Beer (id serial PRIMARY KEY, name text)")
->>> PgTestSetup().tearDown()
+>>> fixture.tearDown()
 
 We can also specify a different template to duplicate than the default
 clean one (template1). For example, if you need a launchpad database
 containing no data, you can use `launchpad_empty` as the template.
 
->>> PgTestSetup('launchpad_empty').setUp()
->>> connection = PgTestSetup().connect()
+>>> fixture = PgTestSetup('launchpad_empty')
+>>> fixture.setUp()
+>>> connection = fixture.connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute("SELECT COUNT(*) FROM Person")
 >>> int(cursor.fetchone()[0])
 0
->>> PgTestSetup().tearDown()
+>>> fixture.tearDown()
 
 We can also specify the user that we connect as to avoid connecting as the
 PostgreSQL default user.
@@ -108,14 +99,12 @@ LaunchpadTestSetup
 ------------------
 
 LaunchpadTestSetup is identical to PgTestSetup, except that it creates a
-fresh copy of the Launchpad database filled with our sample data. This
-class is defined in canonical.launchpad.ftests.harness.
+fresh copy of the Launchpad database filled with our sample data.
 
-Note that at this level, you cannot access any of the SQLBase objects
-
->>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
->>> LaunchpadTestSetup().setUp()
->>> connection = LaunchpadTestSetup().connect()
+>>> from canonical.testing.layers import LaunchpadTestSetup
+>>> fixture = LaunchpadTestSetup()
+>>> fixture.setUp()
+>>> connection = fixture.connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute("SELECT displayname FROM person WHERE name='carlos'")
 >>> cursor.fetchone()[0]
@@ -127,7 +116,7 @@ By default, LaunchpadTestSetup connects as the 'launchpad' user:
 >>> cursor.fetchone()[0]
 u'launchpad'
 
->>> LaunchpadTestSetup().tearDown()
+>>> fixture.tearDown()
 
 You can connect as a different database user using the same mechanism
 described above for PgTestSetup
@@ -143,124 +132,24 @@ u'statistician'
 >>> lpsetup.tearDown()
 
 
-LaunchpadZopelessTestSetup
---------------------------
-
-LaunchpadZopelessTestSetup builds on LaunchpadTestSetup, calling
-initZopeless for you so you can access the SQLBase objects without needing
-the Zope3 infrastructure.
-
->>> from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
->>> LaunchpadZopelessTestSetup().setUp()
->>> from lp.registry.model.person import Person
->>> stub = Person.byName('stub')
->>> stub.displayname
-u'Stuart Bishop'
->>> stub.displayname = u'The Walrus'
->>> stub.displayname
-u'The Walrus'
-
-You have access to the zopeless transaction
-
->>> LaunchpadZopelessTestSetup().txn.abort()
->>> stub.displayname
-u'Stuart Bishop'
-
-And always remember to tearDown or you will victimize other tests!
-
->>> LaunchpadZopelessTestSetup().tearDown()
-
-
-In general, Zopeless tests should never be running as the launchpad user.
-You can select the user you connect as:
-
->>> setup = LaunchpadZopelessTestSetup(dbuser=config.librarian.dbuser)
->>> setup.setUp()
->>> from lp.registry.model.sourcepackagename import SourcePackageName
->>> SourcePackageName.get(1).name
-Traceback (most recent call last):
-...
-ProgrammingError: permission denied for relation sourcepackagename
-<BLANKLINE>
->>> setup.tearDown()
-
-
-LaunchpadFunctionalTestSetup
-----------------------------
-
-One with the lot. A LaunchpadTestSetup which also loads in the Zope3
-environment.
-
->>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
->>> LaunchpadFunctionalTestSetup().setUp()
-
-You have full access to the SQLBase objects
-
->>> mark = Person.byName('mark')
->>> mark.displayname
-u'Mark Shuttleworth'
-
-You also have access to the Zope3 component architecture, as registered
-by ftesting.zcml
-
->>> from zope.app import zapi
->>> from zope.sendmail.interfaces import IMailer
->>> zapi.getUtility(IMailer, 'smtp') is not None
-True
-
->>> LaunchpadFunctionalTestSetup().tearDown()
-
-You can change the user that the tests connect as:
-
-  XXX 2008-05-29 jamesh:
-  Using LaunchpadFunctionalLayer for non-webapp db users is generally
-  a sign of a bug.  These bits of code should generally be using
-  LaunchpadZopelessLayer.
-
-##>>> setup = LaunchpadFunctionalTestSetup(dbuser=config.librarian.dbuser)
-##>>> setup.setUp()
-##>>> connection = setup.connect()
-##>>> cursor = connection.cursor()
-##>>> cursor.execute('SELECT current_user')
-##>>> cursor.fetchone()[0]
-##u'librarian'
-##>>> SourcePackageName.get(1).name
-##Traceback (most recent call last):
-##...
-##ProgrammingError: permission denied ...
-##>>> setup.tearDown()
-
-And the next test will be unaffected:
-
->>> setup = LaunchpadFunctionalTestSetup()
->>> setup.setUp()
->>> connection = setup.connect()
->>> cursor = connection.cursor()
->>> cursor.execute('SELECT current_user')
->>> cursor.fetchone()[0]
-u'launchpad'
->>> SourcePackageName.get(1).name
-u'mozilla-firefox'
->>> setup.tearDown()
-
-
-LibrarianTestSetup
-------------------
+LibrarianServerFixture
+----------------------
 
 Code that needs to access the Librarian can do so easily. Note that
-LibrarianTestSetup requires the Launchpad database to be available, and
+LibrarianServerFixture requires the Launchpad database to be available, and
 thus requires LaunchpadTestSetup or similar to be used in tandam.
-You probably really want LaunchpadFunctionalTestSetup so you can access
+You probably really want LaunchpadFunctionalLayer so you can access
 the Librarian as a Utility.
 
->>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+>>> from canonical.librarian.testing.server import LibrarianServerFixture
 >>> from canonical.launchpad.ftests import login, ANONYMOUS
 >>> from zope.app import zapi
 >>> from canonical.librarian.interfaces import ILibrarianClient
 >>> from StringIO import StringIO
 
->>> LaunchpadFunctionalTestSetup().setUp()
->>> LibrarianTestSetup().setUp()
+>>> from canonical.testing.layers import BaseLayer
+>>> librarian = LibrarianServerFixture(BaseLayer.config_fixture)
+>>> librarian.setUp()
 >>> login(ANONYMOUS)
 
 >>> some_content = StringIO()
@@ -283,8 +172,7 @@ the same transaction it was added
 >>> data == some_content.getvalue()
 True
 
->>> LibrarianTestSetup().tearDown()
->>> LaunchpadFunctionalTestSetup().tearDown()
+>>> librarian.tearDown()
 
 >>> from canonical.testing import reset_logging
 >>> reset_logging()

@@ -24,13 +24,18 @@
         </lp:changelog>
         <lp:creationDate tal:content="context/datecreated/fmt:datetime">
             1970-01-01 00:00:00
-        </lp:creationDate> 
+        </lp:creationDate>
         <lp:inProductSeries>
             <lp:ProductSeries>
                 <lp:specifiedAt tal:attributes="rdf:resource
                     string:${context/product/fmt:url}/${context/productseries/name}/+rdf" />
             </lp:ProductSeries>
         </lp:inProductSeries>
-        <lp:owner tal:content="structure context/owner/@@+rdf-contents/template" />
+        <lp:owner>
+            <foaf:Agent>
+                <foaf:Account
+                    tal:attributes="rdf:resource string:${context/owner/fmt:url}/+rdf"/>
+            </foaf:Agent>
+        </lp:owner>
     </lp:ProductRelease>
 </rdf:RDF>

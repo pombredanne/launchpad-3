@@ -12,17 +12,20 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
+from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 
 
 class ArchiveOverriderError(SoyuzScriptError):
     """ArchiveOverrider specific exception.
 
-    Mostly used to describe errors in the initialisation of this object.
+    Mostly used to describe errors in the initialization of this object.
     """
 
 
@@ -69,9 +72,6 @@ class ChangeOverride(SoyuzScript):
          * 'section': ISection or None;
          * 'priority': PackagePublishingPriority or None.
         """
-        # Avoiding circular imports.
-        from lp.soyuz.interfaces.publishing import PackagePublishingPriority
-
         if self.options.component is not None:
             try:
                 self.component = getUtility(IComponentSet)[

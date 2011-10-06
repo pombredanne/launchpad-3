@@ -3,22 +3,21 @@
 
 """Tests for branch traversal."""
 
-import unittest
-
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-from zope.publisher.interfaces import NotFound
-
 from lazr.restful.testing.webservice import FakeRequest
+from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.servers import StepsToGo
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonNavigation
 from lp.registry.browser.personproduct import PersonProductNavigation
 from lp.registry.interfaces.personproduct import (
-    IPersonProduct, IPersonProductFactory)
+    IPersonProduct,
+    IPersonProductFactory,
+    )
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class LocalFakeRequest(FakeRequest):
@@ -158,7 +157,3 @@ class TestPersonProductBranchTraversal(TestCaseWithFactory):
         # NotFound is raised if the branch name doesn't exist.
         branch_name = self.factory.getUniqueString()
         self.assertRaises(NotFound, self.traverse, [branch_name])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

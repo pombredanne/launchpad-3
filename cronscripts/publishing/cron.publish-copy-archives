@@ -10,7 +10,6 @@ if [ -z $LPCONFIG ]; then
     exit 1
 fi
 
-set -x
 set -e
 set -u
 
@@ -20,24 +19,23 @@ set -u
 
 
 # Informational -- this *MUST* match the database.
-ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
+ARCHIVEROOT=/srv/launchpad.net/rebuild-test/ubuntu
 DISTSROOT=$ARCHIVEROOT/dists
 OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
 INDICES=$ARCHIVEROOT/indices
-PRODUCTION_CONFIG=ftpmaster
+PRODUCTION_CONFIG=ftpmaster-publish
 
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
-    GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
+    GNUPGHOME=/srv/launchpad.net/rebuild-test/gnupg-home
 else
     echo GPG keys will come from ~/.gnupg
     # GNUPGHOME does not need to be set, keys can come from ~/.gnupg.
 fi
 
 # Configuration options.
-LAUNCHPADROOT=/srv/launchpad.net/codelines/current
-LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
+LAUNCHPADROOT=/srv/launchpad.net/production/launchpad
+LOCKFILE=/srv/launchpad.net/rebuild-test/cron.daily.lock
 DISTRONAME=ubuntu
-TRACEFILE=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
 
 # Manipulate the environment.
 export GNUPGHOME
@@ -64,20 +62,5 @@ process-accepted.py --copy-archive -v -v -v $DISTRONAME
 # Publish the packages to disk.
 publish-distro.py -v -v --copy-archive -d $DISTRONAME
 
-set +x
-
 echo Removing uncompressed Packages and Sources files
 find ${DISTSROOT} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
-
-# Copy in the indices.
-if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
-    echo Copying the indices into place.
-    rm -f $INDICES/override.*
-    cp $OVERRIDEROOT/override.* $INDICES
-fi
-
-# Timestamp our trace file to track when the last archive publisher run took
-# place.
-if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
-    date -u > "$TRACEFILE"
-fi

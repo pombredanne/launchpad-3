@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -7,34 +7,79 @@
 
 __metaclass__ = type
 
+import codecs
 import os
-import unittest
+import re
+import sys
+import xmlrpclib
+from StringIO import StringIO
 
 from bzrlib import errors
-from bzrlib.bzrdir import BzrDir
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.tests import (
-    TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
+    TestCase as BzrTestCase,
+    TestCaseInTempDir,
+    TestCaseWithTransport,
+    )
 from bzrlib.transport import (
-    get_transport, _get_protocol_handlers, register_transport, Server,
-    unregister_transport)
-from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.urlutils import escape, local_path_to_url
+    _get_protocol_handlers,
+    get_transport,
+    register_transport,
+    Server,
+    unregister_transport,
+    )
+from bzrlib.transport.chroot import ChrootTransport
+from bzrlib.transport.memory import (
+    MemoryServer,
+    MemoryTransport,
+    )
+from bzrlib.urlutils import (
+    escape,
+    local_path_to_url,
+    )
+
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    )
 
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase as TrialTestCase
 
-from lp.codehosting.vfs.branchfs import (
-    AsyncLaunchpadTransport, BranchTransportDispatch,
-    DirectDatabaseLaunchpadServer, LaunchpadInternalServer, LaunchpadServer,
-    TransportDispatch, UnknownTransportType, branch_id_to_path)
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
-from lp.codehosting.sftp import FatLocalTransport
-from lp.codehosting.vfs.transport import AsyncVirtualTransport
+from canonical.launchpad.webapp import errorlog
+from canonical.testing.layers import (
+    ZopelessDatabaseLayer,
+    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
-from lp.testing import TestCase, TestCaseWithFactory
-from canonical.testing import TwistedLayer, ZopelessDatabaseLayer
+    branch_id_alias,
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    )
+from lp.codehosting.inmemory import (
+    InMemoryFrontend,
+    XMLRPCWrapper,
+    )
+from lp.codehosting.sftp import FatLocalTransport
+from lp.codehosting.vfs.branchfs import (
+    AsyncLaunchpadTransport,
+    branch_id_to_path,
+    BranchTransportDispatch,
+    DirectDatabaseLaunchpadServer,
+    get_lp_server,
+    LaunchpadInternalServer,
+    LaunchpadServer,
+    TransportDispatch,
+    UnknownTransportType,
+    )
+from lp.codehosting.vfs.transport import AsyncVirtualTransport
+from lp.services.job.runner import TimeoutError
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 def branch_to_path(branch, add_slash=True):
@@ -93,11 +138,8 @@ class TestTransportDispatch(TestCase):
         memory_server.start_server()
         base_transport = get_transport(memory_server.get_url())
         base_transport.mkdir('hosted')
-        base_transport.mkdir('mirrored')
         self.hosted_transport = base_transport.clone('hosted')
-        self.mirrored_transport = base_transport.clone('mirrored')
-        self.factory = TransportDispatch(
-            self.hosted_transport, self.mirrored_transport)
+        self.factory = TransportDispatch(self.hosted_transport)
 
     def test_control_conf_read_only(self):
         transport = self.factory._makeControlTransport(
@@ -134,14 +176,6 @@ class TestTransportDispatch(TestCase):
         self.assertEqual(
             ['.bzr'], self.hosted_transport.list_dir('00/00/00/05'))
 
-    def test_read_only_returns_mirrored(self):
-        self.mirrored_transport.mkdir_multi(
-            ['00', '00/00', '00/00/00', '00/00/00/05', '00/00/00/05/.bzr'])
-        self.mirrored_transport.put_bytes('00/00/00/05/.bzr/README', "Hello")
-        transport = self.factory._makeBranchTransport(id=5, writable=False)
-        data = transport.get_bytes(".bzr/README")
-        self.assertEqual("Hello", data)
-
     def test_makeTransport_control(self):
         # makeTransport returns a control transport for the tuple.
         log = []
@@ -164,7 +198,7 @@ class TestTransportDispatch(TestCase):
         self.assertEqual([(1, True)], log)
 
 
-class TestBranchIDToPath(unittest.TestCase):
+class TestBranchIDToPath(TestCase):
     """Tests for branch_id_to_path."""
 
     def test_branch_id_to_path(self):
@@ -182,17 +216,15 @@ class TestBranchIDToPath(unittest.TestCase):
 class MixinBaseLaunchpadServerTests:
     """Common tests for _BaseLaunchpadServer subclasses."""
 
-    layer = TwistedLayer
-
     def setUp(self):
         frontend = InMemoryFrontend()
-        self.authserver = frontend.getFilesystemEndpoint()
+        self.codehosting_api = frontend.getCodehostingEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.requester = self.factory.makePerson()
         self.server = self.getLaunchpadServer(
-            self.authserver, self.requester.id)
+            self.codehosting_api, self.requester.id)
 
-    def getLaunchpadServer(self, authserver, user_id):
+    def getLaunchpadServer(self, codehosting_api, user_id):
         raise NotImplementedError(
             "Override this with a Launchpad server factory.")
 
@@ -213,20 +245,17 @@ class MixinBaseLaunchpadServerTests:
             self.server.get_url() in _get_protocol_handlers().keys())
 
 
-class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
-                          BzrTestCase):
+class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         BzrTestCase.setUp(self)
         MixinBaseLaunchpadServerTests.setUp(self)
 
-    def getLaunchpadServer(self, authserver, user_id):
+    def getLaunchpadServer(self, codehosting_api, user_id):
         return LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, MemoryTransport(),
-            MemoryTransport())
+            XMLRPCWrapper(codehosting_api), user_id, MemoryTransport())
 
     def test_translateControlPath(self):
         branch = self.factory.makeProductBranch(owner=self.requester)
@@ -234,9 +263,10 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         deferred = self.server.translateVirtualPath(
             '~%s/%s/.bzr/control.conf'
             % (branch.owner.name, branch.product.name))
+
         def check_control_file((transport, path)):
             self.assertEqual(
-                'default_stack_on = /%s\n' % branch.unique_name,
+                'default_stack_on = %s\n' % branch_id_alias(branch),
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
 
@@ -252,6 +282,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 
         deferred = self.server.translateVirtualPath(
             '%s/.bzr/README' % (branch.unique_name,))
+
         def check_branch_transport((transport, path)):
             self.assertEqual(expected_path, path)
             # Can't test for equality of transports, since URLs and object
@@ -268,6 +299,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         deferred = self.server.translateVirtualPath(
             '%s/.bzr/README' % (branch.unique_name,))
+
         def check_branch_transport((transport, path)):
             self.assertEqual('.bzr/README', path)
             self.assertEqual(True, transport.is_readonly())
@@ -278,7 +310,8 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         # for, say, a product that doesn't exist.
         branch_url = '/~%s/no-such-product/new-branch' % (self.requester.name)
         deferred = self.server.createBranch(branch_url)
-        deferred = self.assertFailure(deferred, errors.PermissionDenied)
+        deferred = assert_fails_with(deferred, errors.PermissionDenied)
+
         def check_exception(exception):
             self.assertEqual(branch_url, exception.path)
             self.assertEqual(
@@ -307,6 +340,7 @@ class LaunchpadInternalServerTests:
 
         deferred = self.server.translateVirtualPath(
             '/%s/.bzr/README' % (branch.unique_name,))
+
         def check_branch_transport((transport, path)):
             self.assertEqual(expected_path, path)
             # Can't test for equality of transports, since URLs and object
@@ -341,31 +375,29 @@ class LaunchpadInternalServerTests:
 
 
 class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
-                                  TrialTestCase, BzrTestCase,
+                                  BzrTestCase,
                                   LaunchpadInternalServerTests):
     """Tests for `LaunchpadInternalServer`, used by the puller and scanner."""
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         BzrTestCase.setUp(self)
         self.disable_directory_isolation()
         MixinBaseLaunchpadServerTests.setUp(self)
 
-    def getLaunchpadServer(self, authserver, user_id):
+    def getLaunchpadServer(self, codehosting_api, user_id):
         return LaunchpadInternalServer(
-            'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
+            'lp-test:///', XMLRPCWrapper(codehosting_api), MemoryTransport())
 
 
-class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
+class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory,
                                         LaunchpadInternalServerTests):
     """Tests for `DirectDatabaseLaunchpadServer`."""
 
     layer = ZopelessDatabaseLayer
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         super(TestDirectDatabaseLaunchpadServer, self).setUp()
@@ -374,14 +406,10 @@ class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
             'lp-test://', MemoryTransport())
 
 
-
-class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
+class TestAsyncVirtualTransport(TestCaseInTempDir):
     """Tests for `AsyncVirtualTransport`."""
 
-    layer = TwistedLayer
-
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     class VirtualServer(Server):
         """Very simple server that provides a AsyncVirtualTransport."""
@@ -477,18 +505,14 @@ class LaunchpadTransportTests:
     `_ensureDeferred`. See these methods for more information.
     """
 
-    # See comment on TestLaunchpadServer.
-    layer = TwistedLayer
-
     def setUp(self):
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        authserver = frontend.getFilesystemEndpoint()
+        codehosting_api = frontend.getCodehostingEndpoint()
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
         self.server = self.getServer(
-            authserver, self.requester.id, self.backing_transport,
-            MemoryTransport())
+            codehosting_api, self.requester.id, self.backing_transport)
         self.server.start_server()
         self.addCleanup(self.server.stop_server)
 
@@ -501,7 +525,7 @@ class LaunchpadTransportTests:
 
         :return: A `Deferred`. You must return this from your test.
         """
-        return self.assertFailure(
+        return assert_fails_with(
             self._ensureDeferred(function, *args, **kwargs), exception)
 
     def assertFiresFailureWithSubstring(self, exc_type, msg, function,
@@ -519,11 +543,9 @@ class LaunchpadTransportTests:
         """Call `function` and return an appropriate Deferred."""
         raise NotImplementedError
 
-    def getServer(self, authserver, user_id, backing_transport,
-                  mirror_transport):
+    def getServer(self, codehosting_api, user_id, backing_transport):
         return LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, backing_transport,
-            mirror_transport)
+            XMLRPCWrapper(codehosting_api), user_id, backing_transport)
 
     def getTransport(self):
         """Return the transport to be tested."""
@@ -597,6 +619,7 @@ class LaunchpadTransportTests:
         deferred = self._ensureDeferred(
             transport.readv, '%s/.bzr/hello.txt' % branch.unique_name,
             [(3, 2)])
+
         def get_chunk(generator):
             return generator.next()[1]
         deferred.addCallback(get_chunk)
@@ -612,6 +635,7 @@ class LaunchpadTransportTests:
         deferred = self._ensureDeferred(
             transport.put_bytes,
             '%s/.bzr/goodbye.txt' % branch.unique_name, "Goodbye")
+
         def check_bytes_written(ignored):
             self.assertEqual(
                 "Goodbye", backing_transport.get_bytes('goodbye.txt'))
@@ -773,6 +797,17 @@ class LaunchpadTransportTests:
             errors.PermissionDenied, message,
             transport.mkdir, '~%s/%s/some-name' % (person.name, product.name))
 
+    def test_createBranch_invalid_package_name(self):
+        # When createBranch raises faults.InvalidSourcePackageName, the
+        # transport should translate this to a PermissionDenied exception
+        transport = self.getTransport()
+        series = self.factory.makeDistroSeries()
+        unique_name = '~%s/%s/%s/spaced%%20name/branch' % (
+            self.requester.name, series.distribution.name, series.name)
+        return self.assertFiresFailureWithSubstring(
+            errors.PermissionDenied, "is not a valid source package name",
+            transport.mkdir, unique_name)
+
     def test_rmdir(self):
         transport = self.getTransport()
         self.assertFiresFailure(
@@ -780,12 +815,12 @@ class LaunchpadTransportTests:
             transport.rmdir, '~testuser/firefox/baz')
 
 
-class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
+class TestLaunchpadTransportSync(LaunchpadTransportTests, TestCase):
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def _ensureDeferred(self, function, *args, **kwargs):
+
         def call_function_and_check_not_deferred():
             ret = function(*args, **kwargs)
             self.assertFalse(
@@ -795,21 +830,20 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
         return defer.maybeDeferred(call_function_and_check_not_deferred)
 
     def setUp(self):
-        TrialTestCase.setUp(self)
+        TestCase.setUp(self)
         LaunchpadTransportTests.setUp(self)
 
     def getTransport(self):
         return get_transport(self.server.get_url())
 
     def test_ensureDeferredFailsWhenDeferredReturned(self):
-        return self.assertFailure(
+        return assert_fails_with(
             self._ensureDeferred(defer.succeed, None), AssertionError)
 
 
-class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
+class TestLaunchpadTransportAsync(LaunchpadTransportTests, TestCase):
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def _ensureDeferred(self, function, *args, **kwargs):
         deferred = function(*args, **kwargs)
@@ -817,7 +851,7 @@ class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
         return deferred
 
     def setUp(self):
-        TrialTestCase.setUp(self)
+        TestCase.setUp(self)
         LaunchpadTransportTests.setUp(self)
 
     def getTransport(self):
@@ -825,62 +859,280 @@ class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
         return AsyncLaunchpadTransport(self.server, url)
 
 
-class TestRequestMirror(TestCaseWithTransport):
-    """Test request mirror behaviour."""
+class TestBranchChangedNotification(TestCaseWithTransport):
+    """Test notification of branch changes."""
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         self._server = None
-        self._request_mirror_log = []
+        self._branch_changed_log = []
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.authserver = frontend.getFilesystemEndpoint()
-        self.authserver.requestMirror = (
-            lambda *args: self._request_mirror_log.append(args))
+        self.codehosting_api = frontend.getCodehostingEndpoint()
+        self.codehosting_api.branchChanged = self._replacement_branchChanged
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
-        self.mirror_transport = MemoryTransport()
+        self.disable_directory_isolation()
+
+    def _replacement_branchChanged(self, user_id, branch_id, stacked_on_url,
+                                   last_revision, *format_strings):
+        self._branch_changed_log.append(dict(
+            user_id=user_id, branch_id=branch_id,
+            stacked_on_url=stacked_on_url, last_revision=last_revision,
+            format_strings=format_strings))
 
     def get_server(self):
         if self._server is None:
             self._server = LaunchpadServer(
-                XMLRPCWrapper(self.authserver), self.requester.id,
-                self.backing_transport, self.mirror_transport)
+                XMLRPCWrapper(self.codehosting_api), self.requester.id,
+                self.backing_transport)
             self._server.start_server()
             self.addCleanup(self._server.stop_server)
         return self._server
 
     def test_no_mirrors_requested_if_no_branches_changed(self):
-        self.assertEqual([], self._request_mirror_log)
+        self.assertEqual([], self._branch_changed_log)
 
-    def test_creating_branch_requests_mirror(self):
+    def test_creating_branch_calls_branchChanged(self):
         # Creating a branch requests a mirror.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(db_branch.unique_name)
-        self.assertEqual(
-            [(self.requester.id, db_branch.id)], self._request_mirror_log)
+        self.make_branch(db_branch.unique_name)
+        self.assertEqual(1, len(self._branch_changed_log))
 
-    def test_branch_unlock_requests_mirror(self):
-        # Unlocking a branch requests a mirror.
+    def test_branch_unlock_calls_branchChanged(self):
+        # Unlocking a branch calls branchChanged on the branch filesystem
+        # endpoint.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
-        self._request_mirror_log = []
+        del self._branch_changed_log[:]
         branch.lock_write()
         branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
+
+    def test_branch_unlock_reports_users_id(self):
+        # Unlocking a branch calls branchChanged on the branch filesystem
+        # endpoint with the logged in user's id.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        del self._branch_changed_log[:]
+        branch.lock_write()
+        branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
         self.assertEqual(
-            [(self.requester.id, db_branch.id)], self._request_mirror_log)
+            self.requester.id, self._branch_changed_log[0]['user_id'])
+
+    def test_branch_unlock_reports_stacked_on_url(self):
+        # Unlocking a branch reports the stacked on URL to the branch
+        # filesystem endpoint.
+        db_branch1 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        db_branch2 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        self.make_branch(db_branch1.unique_name)
+        branch = self.make_branch(db_branch2.unique_name)
+        del self._branch_changed_log[:]
+        branch.lock_write()
+        branch.set_stacked_on_url('/' + db_branch1.unique_name)
+        branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
+        self.assertEqual(
+            '/' + db_branch1.unique_name,
+            self._branch_changed_log[0]['stacked_on_url'])
+
+    def test_branch_unlock_reports_last_revision(self):
+        # Unlocking a branch reports the tip revision of the branch to the
+        # branch filesystem endpoint.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        revid = branch.create_checkout('tree').commit('')
+        del self._branch_changed_log[:]
+        branch.lock_write()
+        branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
+        self.assertEqual(
+            revid,
+            self._branch_changed_log[0]['last_revision'])
+
+    def test_branch_unlock_relativizes_absolute_stacked_on_url(self):
+        # When a branch that has been stacked on the absolute URL of another
+        # Launchpad branch is unlocked, the branch is mutated to be stacked on
+        # the path part of that URL, and this relative path is passed to
+        # branchChanged().
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        del self._branch_changed_log[:]
+        branch.lock_write()
+        branch.get_config().set_user_option(
+            'stacked_on_location',
+            'http://bazaar.launchpad.dev/~user/product/branch')
+        branch.unlock()
+        self.assertEqual('/~user/product/branch', branch.get_stacked_on_url())
+        self.assertEqual(1, len(self._branch_changed_log))
+        self.assertEqual(
+            '/~user/product/branch',
+            self._branch_changed_log[0]['stacked_on_url'])
+
+    def test_branch_unlock_ignores_non_launchpad_stacked_url(self):
+        # When a branch that has been stacked on the absolute URL of a branch
+        # that is not on Launchpad, it is passed unchanged to branchChanged().
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        del self._branch_changed_log[:]
+        stacked_on_url = 'http://example.com/~user/foo'
+        branch.lock_write()
+        branch.get_config().set_user_option(
+            'stacked_on_location', stacked_on_url)
+        branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
+        self.assertEqual(
+            stacked_on_url, self._branch_changed_log[0]['stacked_on_url'])
+        self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
+
+    def test_branch_unlock_ignores_odd_scheme_stacked_url(self):
+        # When a branch that has been stacked on the absolute URL of a branch
+        # on Launchpad with a scheme we don't understand, it is passed
+        # unchanged to branchChanged().
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        del self._branch_changed_log[:]
+        stacked_on_url = 'gopher://bazaar.launchpad.dev/~user/foo'
+        branch.lock_write()
+        branch.get_config().set_user_option(
+            'stacked_on_location', stacked_on_url)
+        branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
+        self.assertEqual(
+            stacked_on_url, self._branch_changed_log[0]['stacked_on_url'])
+        self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
+
+    def assertFormatStringsPassed(self, branch):
+        self.assertEqual(1, len(self._branch_changed_log))
+        control_string = branch.bzrdir._format.get_format_string()
+        branch_string = branch._format.get_format_string()
+        repository_string = branch.repository._format.get_format_string()
+        self.assertEqual(
+            (control_string, branch_string, repository_string),
+            self._branch_changed_log[0]['format_strings'])
+
+    def test_format_2a(self):
+        # Creating a 2a branch reports the format to branchChanged.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(
+            db_branch.unique_name, format=format_registry.get('2a')())
+        self.assertFormatStringsPassed(branch)
 
 
-class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
+class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
+    """Test handling of errors when branchChange is called."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self._server = None
+        frontend = InMemoryFrontend()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.codehosting_api = frontend.getCodehostingEndpoint()
+        self.codehosting_api.branchChanged = self._replacement_branchChanged
+        self.requester = self.factory.makePerson()
+        self.backing_transport = MemoryTransport()
+        self.disable_directory_isolation()
+
+        # Trap stderr.
+        self.addCleanup(setattr, sys, 'stderr', sys.stderr)
+        self._real_stderr = sys.stderr
+        sys.stderr = codecs.getwriter('utf8')(StringIO())
+
+        # To record generated oopsids
+        self.generated_oopsids = []
+
+    def _replacement_branchChanged(self, user_id, branch_id, stacked_on_url,
+                                   last_revision, *format_strings):
+        """Log an oops and raise an xmlrpc fault."""
+
+        request = errorlog.ScriptRequest([
+                ('source', branch_id),
+                ('error-explanation', "An error occurred")])
+        try:
+            raise TimeoutError()
+        except TimeoutError:
+            f = sys.exc_info()
+            report = errorlog.globalErrorUtility.raising(f, request)
+            # Record the id for checking later.
+            self.generated_oopsids.append(report['id'])
+            raise xmlrpclib.Fault(-1, report)
+
+    def get_server(self):
+        if self._server is None:
+            self._server = LaunchpadServer(
+                XMLRPCWrapper(self.codehosting_api), self.requester.id,
+                self.backing_transport)
+            self._server.start_server()
+            self.addCleanup(self._server.stop_server)
+        return self._server
+
+    def test_branchChanged_stderr_text(self):
+        # An unexpected error invoking branchChanged() results in a user
+        # friendly error printed to stderr (and not a traceback).
+
+        # Unlocking a branch calls branchChanged x 2 on the branch filesystem
+        # endpoint. We will then check the error handling.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        branch.lock_write()
+        branch.unlock()
+        stderr_text = sys.stderr.getvalue()
+
+        # The text printed to stderr should be like this:
+        # (we need the prefix text later for extracting the oopsid)
+        expected_fault_text_prefix = """
+        <Fault 380: 'An unexpected error has occurred while updating a
+        Launchpad branch. Please report a Launchpad bug and quote:"""
+        expected_fault_text = expected_fault_text_prefix + " OOPS-.*'>"
+
+        # For our test case, branchChanged() is called twice, hence 2 errors.
+        expected_stderr = ' '.join([expected_fault_text for x in range(2)])
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected_stderr, stderr_text)
+
+        # Extract an oops id from the std error text.
+        # There will be 2 oops ids. The 2nd will be the oops for the last
+        # logged error report and the 1st will be in the error text from the
+        # error report.
+        oopsids = []
+        stderr_text = ' '.join(stderr_text.split())
+        expected_fault_text_prefix = ' '.join(
+            expected_fault_text_prefix.split())
+        parts = re.split(expected_fault_text_prefix, stderr_text)
+        for txt in parts:
+            if len(txt) == 0:
+                continue
+            txt = txt.strip()
+            # The oopsid ends with a '.'
+            oopsid = txt[:txt.find('.')]
+            oopsids.append(oopsid)
+
+        # Now check the error report - we just check the last one.
+        self.assertEqual(len(oopsids), 2)
+        error_report = self.oopses[-1]
+        # The error report oopsid should match what's print to stderr.
+        self.assertEqual(error_report['id'], oopsids[1])
+        # The error report text should contain the root cause oopsid.
+        self.assertContainsString(
+            error_report['tb_text'], self.generated_oopsids[1])
+
+
+class TestLaunchpadTransportReadOnly(BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
-    # See comment on TestLaunchpadServer.
-    layer = TwistedLayer
-
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -888,12 +1140,11 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         memory_server = self._setUpMemoryServer()
         memory_transport = get_transport(memory_server.get_url())
         backing_transport = memory_transport.clone('backing')
-        mirror_transport = memory_transport.clone('mirror')
 
         self._frontend = InMemoryFrontend()
         self.factory = self._frontend.getLaunchpadObjectFactory()
 
-        authserver = self._frontend.getFilesystemEndpoint()
+        codehosting_api = self._frontend.getCodehostingEndpoint()
         self.requester = self.factory.makePerson()
 
         self.writable_branch = self.factory.makeAnyBranch(
@@ -903,8 +1154,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
             branch_type=BranchType.HOSTED).unique_name
 
         self.lp_server = self._setUpLaunchpadServer(
-            self.requester.id, authserver, backing_transport,
-            mirror_transport)
+            self.requester.id, codehosting_api, backing_transport)
         self.lp_transport = get_transport(self.lp_server.get_url())
         self.lp_transport.mkdir(os.path.dirname(self.writable_file))
         self.lp_transport.put_bytes(self.writable_file, 'Hello World!')
@@ -915,11 +1165,10 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self.addCleanup(memory_server.stop_server)
         return memory_server
 
-    def _setUpLaunchpadServer(self, user_id, authserver, backing_transport,
-                              mirror_transport):
+    def _setUpLaunchpadServer(self, user_id, codehosting_api,
+                              backing_transport):
         server = LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, backing_transport,
-            mirror_transport)
+            XMLRPCWrapper(codehosting_api), user_id, backing_transport)
         server.start_server()
         self.addCleanup(server.stop_server)
         return server
@@ -940,6 +1189,12 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
             '/%s/.bzr/goodbye.txt' % self.read_only_branch)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestGetLPServer(TestCase):
+    """Tests for `get_lp_server`."""
 
+    def test_chrooting(self):
+        # Test that get_lp_server return a server that ultimately backs onto a
+        # ChrootTransport.
+        lp_server = get_lp_server(1, 'http://xmlrpc.example.invalid', '')
+        transport = lp_server._transport_dispatch._rw_dispatch.base_transport
+        self.assertIsInstance(transport, ChrootTransport)

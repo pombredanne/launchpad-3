@@ -6,7 +6,7 @@ via email.
     >>> from lp.services.mail import stub
     >>> from lp.testing.mail_helpers import (
     ...     pop_notifications, print_emails)
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
 
     >>> from lp.registry.tests.mailinglists_helper import (
@@ -85,7 +85,7 @@ sub-teams.  If a sub-team has a primary contact email address, that
 address will be ignored, and the message will be sent to the
 individual team members.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
 
     >>> super_team = new_team('super-team', with_list=False)
@@ -107,7 +107,7 @@ individual team members.
 
     # Make sure the sub-team has a preferred email, so we can show
     # that it is being bypassed.
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> emailset = getUtility(IEmailAddressSet)
     >>> email = emailset.new('foo@baz.com', sub_team)
     >>> transaction.commit()
@@ -214,7 +214,7 @@ Notification messages are not sent out when a list is reactivated.
 
     # Fully rebuild our list from the ground up.
     >>> renewed_list.deactivate()
-    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
     >>> renewed_list.transitionToStatus(MailingListStatus.INACTIVE)
     >>> renewed_list.reactivate()
     >>> renewed_list.startConstructing()

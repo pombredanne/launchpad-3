@@ -6,43 +6,38 @@ back into the main replication set as part of login server seperation.
 In addition to what Storm provides, we also have some Launchpad
 specific Storm tools to cope with our master and slave store arrangement.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, IAccountSet, IEmailAddressSet,
-    ...     IMasterObject, IMasterStore, ISlaveStore, IStore)
-    >>> from canonical.launchpad.database import (
-    ...     Account, AccountPassword, EmailAddress)
-    >>> from lp.registry.model.person import Person
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus,
+    ...     IEmailAddressSet,
+    ...     )
+    >>> from canonical.launchpad.interfaces.lpstorm import (
+    ...     IMasterObject,
+    ...     IMasterStore,
+    ...     ISlaveStore,
+    ...     IStore,
+    ...     )
+    >>> from canonical.launchpad.database.account import (
+    ...     Account,
+    ...     AccountPassword,
+    ...     )
+    >>> from canonical.launchpad.database.emailaddress import EmailAddress
     >>> from zope.security.proxy import ProxyFactory
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.person import Person
 
 
 You need to use the correct master Store to make changes to
 a Launchpad database object. You can use adapters to
 retrieve the correct Store.
 
-    >>> auth_master = IMasterStore(Account)
     >>> main_master = IMasterStore(Person)
-    >>> auth_master is main_master
-    False
-
-
-You can read most tables from any Store, which is required for doing
-fast joins in the database. However, when it is not necessary to
-retrieve objects from the same store as another object, it is better to
-explicitly use the explicit Store for its replication set. Some tables
-are only available from this store, such as the AccountPassword table.
-
-    >>> auth_slave = ISlaveStore(AccountPassword)
-    >>> main_slave = ISlaveStore(Person)
-    >>> auth_slave is main_slave
-    False
-
 
 You can detect if a store is writable by checking what interfaces it
 provides.
 
-    >>> IMasterStore.providedBy(auth_master)
+    >>> IMasterStore.providedBy(main_master)
     True
-    >>> ISlaveStore.providedBy(auth_master)
+    >>> ISlaveStore.providedBy(main_master)
     False
 
 
@@ -53,7 +48,6 @@ slave store if it is sure all your recent changes have been replicated.
 Otherwise, it gives you the master. See IStoreSelector for details.
 
     >>> main_default = IStore(Person)
-    >>> main_master = IMasterStore(Person)
     >>> main_slave = ISlaveStore(Person)
     >>> main_default is main_master
     True
@@ -78,11 +72,10 @@ Good defensive programming is to use this adapter if you want to make
 changes to an object, just in case you have been passed an instance
 from a store other than the correct Master.
 
-    >>> auth_slave = ISlaveStore(Account)
+    >>> main_slave = ISlaveStore(Person)
     >>> t = transaction.begin()
-    >>> account = auth_slave.find(
-    ...     Account, openid_identifier='mark_oid').one()
-    >>> account.displayname = 'Cannot change'
+    >>> person = main_slave.find(Person, name='mark').one()
+    >>> person.displayname = 'Cannot change'
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
@@ -90,9 +83,8 @@ from a store other than the correct Master.
 
     >>> transaction.abort()
     >>> t = transaction.begin()
-    >>> account = auth_slave.find(
-    ...     Account, openid_identifier='mark_oid').one()
-    >>> IMasterObject(account).displayname = 'Can change'
+    >>> person = main_slave.find(Person, name='mark').one()
+    >>> IMasterObject(person).displayname = 'Can change'
     >>> transaction.commit()
 
 
@@ -100,61 +92,60 @@ If the adapted object was security proxied, the master copy is
 similarly wrapped.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> account = getUtility(IAccountSet).getByEmail('no-priv@canonical.com')
-    >>> removeSecurityProxy(account) is account
+    >>> person = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    >>> removeSecurityProxy(person) is person
     False
-    >>> account.displayname
+    >>> person.displayname
     u'No Privileges Person'
-    >>> account.password
+    >>> person.name = 'foo'
     Traceback (most recent call last):
     ...
     Unauthorized: ...
 
-    >>> account = IMasterObject(account)
-    >>> removeSecurityProxy(account) is account
+    >>> person = IMasterObject(person)
+    >>> removeSecurityProxy(person) is person
     False
-    >>> account.displayname
+    >>> person.displayname
     u'No Privileges Person'
-    >>> account.password
+    >>> person.name = 'foo'
     Traceback (most recent call last):
     ...
     Unauthorized: ...
 
-    >>> account = IMasterObject(removeSecurityProxy(account))
-    >>> removeSecurityProxy(account) is account
+    >>> person = IMasterObject(removeSecurityProxy(person))
+    >>> removeSecurityProxy(person) is person
     True
-    >>> account.displayname
+    >>> person.displayname
     u'No Privileges Person'
-    >>> account.password
-    u'...'
+    >>> person.name = 'foo'
 
 Our objects may compare equal even if they have come from different
 stores.
 
-    >>> auth_master_email = IMasterStore(EmailAddress).find(
+    >>> master_email = IMasterStore(EmailAddress).find(
     ...     EmailAddress, Person.name == 'janitor',
     ...     EmailAddress.person==Person.id).one()
-    >>> auth_slave_email = ISlaveStore(EmailAddress).find(
+    >>> slave_email = ISlaveStore(EmailAddress).find(
     ...     EmailAddress, Person.name == 'janitor',
     ...     EmailAddress.person==Person.id).one()
-    >>> auth_master_email is auth_slave_email
+    >>> master_email is slave_email
     False
-    >>> auth_master_email == auth_slave_email
+    >>> master_email == slave_email
     True
-    >>> auth_master_email != auth_slave_email
+    >>> master_email != slave_email
     False
 
 Comparison works for security wrapped objects too.
 
     >>> wrapped_email = getUtility(IEmailAddressSet).getByEmail(
-    ...     auth_master_email.email)
-    >>> removeSecurityProxy(wrapped_email) is auth_master_email
+    ...     master_email.email)
+    >>> removeSecurityProxy(wrapped_email) is master_email
     True
-    >>> wrapped_email is auth_master_email
+    >>> wrapped_email is master_email
     False
-    >>> wrapped_email == auth_master_email
+    >>> wrapped_email == master_email
     True
-    >>> wrapped_email != auth_master_email
+    >>> wrapped_email != master_email
     False
 
 Objects not yet flushed to the database also compare equal.
@@ -176,10 +167,9 @@ Objects not yet flushed to the database also compare equal.
 
 Objects differing by class never compare equal.
 
-    >>> account_one = IMasterStore(Account).get(Account, 1)
-    >>> person_one = IMasterStore(Account).get(Person, 1)
-    >>> account_one == person_one
+    >>> email_one = IMasterStore(EmailAddress).get(EmailAddress, 1)
+    >>> person_one = IMasterStore(Person).get(Person, 1)
+    >>> email_one == person_one
     False
-    >>> account_one != person_one
+    >>> email_one != person_one
     True
-

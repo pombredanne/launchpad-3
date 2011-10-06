@@ -11,10 +11,12 @@ nl_phrase_search in order to construct a suitable search string.
 It doesn't make much sense to find bugs similar to an empty string, so
 no results will be returned.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTaskSet, IPersonSet, IProductSet)
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     sample_person, '', product=firefox)
     >>> similar_bugs.count()
@@ -52,15 +54,15 @@ are found there.
 We can also search for distribution bugs:
 
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
-    ...     sample_person, "Thunderbird crashes when displaying SVG",
+    ...     sample_person, "Thunderbird SVG",
     ...     distribution=ubuntu)
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
-    Thunderbird crashes
     Firefox does not support SVG
+    Thunderbird crashes
 
 As well as limiting it to a specific source package:
 
@@ -80,13 +82,11 @@ Only bugs that the user has access to view will be searched. If we set
 the Firefox bug to private, and repeat the search as a user who isn't
 allowed to view it, only the Thunderbird bug will be returned this time.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> firefox_svg_bug = getUtility(IBugSet).get(1)
     >>> firefox_svg_bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
-    >>> syncUpdate(firefox_svg_bug)
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> login('no-priv@canonical.com')
@@ -94,7 +94,7 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     False
     >>> no_priv = getUtility(ILaunchBag).user
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
-    ...     no_priv, "Thunderbird chrashes when displaying SVG",
+    ...     no_priv, "Thunderbird SVG",
     ...     distribution=ubuntu)
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
@@ -103,7 +103,6 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     >>> login('test@canonical.com')
     >>> firefox_svg_bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> syncUpdate(firefox_svg_bug)
 
 
 == Ordering of search results ==
@@ -118,13 +117,16 @@ When searching for similar bugs, the results are ordered by ranking the
 results of the fulltext search on the Bug table, so bugs that have a
 summary or description that match the phrase will be displayed first.
 
+Due to the sample data assuming a way-to-wide search facility, this test
+has been narrowed - see bug 612384.
+
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     sample_person, "Another test bug for Thunderbird",
     ...     distribution=ubuntu)
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
     another test bug
-    Thunderbird crashes
+    >>> #Thunderbird crashes
 
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     sample_person, "Another Thunderbird crash",
@@ -132,4 +134,22 @@ summary or description that match the phrase will be displayed first.
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
     Thunderbird crashes
-    another test bug
+    >>> #another test bug
+
+== Not returning the same bug ==
+
+findSimilarBugs() does not include the bug of the bugtask upon which
+it is invoked.
+
+    >>> orig_bug = factory.makeBug(
+    ...     title="So you walk into this restaurant",
+    ...     owner=firefox.owner, product=firefox)
+
+    >>> dupe_bug = factory.makeBug(
+    ...     title="So you walk into this restaurant",
+    ...     owner=firefox.owner, product=firefox)
+    >>> dupe_bug.markAsDuplicate(orig_bug)
+
+    >>> similar_bugs = orig_bug.default_bugtask.findSimilarBugs(firefox.owner)
+    >>> orig_bug in similar_bugs
+    False

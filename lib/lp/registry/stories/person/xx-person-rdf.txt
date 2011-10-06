@@ -1,4 +1,5 @@
-= Person RDF Pages =
+Person RDF Pages
+================
 
 We export FOAF RDF metadata from the /~Person.name/+index document.
 
@@ -9,7 +10,9 @@ We export FOAF RDF metadata from the /~Person.name/+index document.
     >>> print soup.renderContents()
     <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf" />
 
-== Individual RDF ==
+
+Individual RDF
+--------------
 
 And this is what the FOAF document for an individual actually looks
 like. It includes GPG information, if the user has any.
@@ -54,13 +57,15 @@ And it's valid XML and RDF:
     >>> print document.documentElement.nodeName
     rdf:RDF
 
-== Team RDF ==
+
+Team RDF
+--------
 
 Teams also have an RDF export, which includes information for each
 member of the team. Let's add a logo to Mark's user so we can see the
 output:
 
-    >>> from canonical.launchpad.ftests import set_branding
+    >>> from lp.testing.branding import set_branding
     >>> mark_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> mark_browser.open('http://launchpad.dev/~mark/+branding')
     >>> set_branding(mark_browser, icon=False)
@@ -79,54 +84,26 @@ Now, generate the RDF itself:
       <foaf:Group>
         <foaf:name>testing Spanish team</foaf:name>
         <foaf:nick>testing-spanish-team</foaf:nick>
-        <foaf:member>
-            <foaf:Person>
-              <foaf:name>Carlos Perell\xf3 Mar\xedn</foaf:name>
-              <foaf:nick>carlos</foaf:nick>
-               <foaf:mbox_sha1sum>BCB3DF72647D7B136A3C33005318D63974179452</foaf:mbox_sha1sum>
-            </foaf:Person>
-        </foaf:member>
-        <foaf:member>
-          <foaf:Person>
-            <foaf:name>Foo Bar</foaf:name>
-            <foaf:nick>name16</foaf:nick>
-            <foaf:mbox_sha1sum>D248D2313390766929B6CEC214BD9B640F5EA7E7</foaf:mbox_sha1sum>
-            <wot:hasKey>
-              <wot:PubKey>
-                <wot:hex_id>12345678</wot:hex_id>
-    ...
-              </wot:PubKey>
-            </wot:hasKey>
-          </foaf:Person>
-        </foaf:member>
-        <foaf:member>
-          <foaf:Person>
-            <foaf:name>Mark Shuttleworth</foaf:name>
-            <foaf:nick>mark</foaf:nick>
-            <foaf:img rdf:resource="http://.../logo.png"/>
-            <foaf:img rdf:resource="http://.../mugshot.png"/>
-            <foaf:mbox_sha1sum>3CB9B47B0C0ADC68633D899805A9ADDF0045F922</foaf:mbox_sha1sum>
-            <lp:sshPubKey>AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==</lp:sshPubKey>
+        <foaf:member rdf:resource="/~carlos/+rdf"/>
+        <foaf:member rdf:resource="/~name16/+rdf"/>
+        <foaf:member rdf:resource="/~mark/+rdf"/>
     ...
       </foaf:Group>
     </rdf:RDF>
 
 
-== Corner Cases ==
+Corner Cases
+------------
 
 Note how ascii and non-ascii names are rendered properly:
 
+    >>> anon_browser.open("http://launchpad.dev/~carlos/+rdf")
     >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
     >>> strainer = SoupStrainer(['foaf:name'])
     >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
     >>> for tag in soup:
     ...   tag.renderContents()
-    'testing Spanish team'
     'Carlos Perell\xc3\xb3 Mar\xc3\xadn'
-    'Foo Bar'
-    'Mark Shuttleworth'
-    'Miroslav Kure'
-    'Valentina Commissari'
 
 If the team has no active members no <foaf:member> elements will be
 present:
@@ -150,17 +127,3 @@ And nothing about them is rendered at all:
         <foaf:nick>name21</foaf:nick>
       </foaf:Group>
     </rdf:RDF>
-
-The pages still work fine for teams whose members have not set up
-mugshots or images for them:
-
-    >>> anon_browser.open("http://launchpad.dev/~name18/+rdf")
-    >>> strainer = SoupStrainer(['foaf:member'])
-    >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
-    >>> len(soup)
-    6
-    >>> strainer = SoupStrainer(['foaf:img'])
-    >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
-    >>> len(soup)
-    0
-

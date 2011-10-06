@@ -10,12 +10,17 @@
 <body>
 
 <metal:block fill-slot="head_epilogue">
-  <tal:devmode condition="devmode">
-    <tal:archive_js define="lp_js string:${icingroot}/build">
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/soyuz/base.js"></script>
-    </tal:archive_js>
-  </tal:devmode>
+  <tal:uses_launchpad_bugtracker
+     condition="context/distribution/bug_tracking_usage/enumvalue:LAUNCHPAD">
+    <script type="text/javascript">
+      LPS.use('lp.registry.structural_subscription', function(Y) {
+          var module = Y.lp.registry.structural_subscription;
+          Y.on('domready', function() {
+            module.setup({content_box: "#structural-subscription-content-box"});
+          });
+      });
+    </script>
+  </tal:uses_launchpad_bugtracker>
 </metal:block>
 
 <tal:side metal:fill-slot="side">
@@ -28,21 +33,30 @@
 </tal:side>
 
 <tal:main metal:fill-slot="main">
+  <div class="yui-u">
+    <div id="structural-subscription-content-box"></div>
+  </div>
   <div class="top-portlet" id="bugs-and-questions-summary"
        tal:define="newbugs context/new_bugtasks/count;
                    open_questions view/open_questions/count">
-    This package has
-    <a tal:attributes="href view/menu:overview/new_bugs/url">
-      <strong class="bugs-stat">
-        <tal:newbugs content="newbugs"/> new bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
-      </strong>
-    </a>
-    and
-    <a tal:attributes="href view/menu:overview/open_questions/url">
-    <strong class="answers-stat">
-      <tal:openq content="open_questions"/> open question<tal:plural content="string:s" condition="python: open_questions!=1"/>.
-      </strong>
-    </a>
+    <div id="summary"
+      tal:content="structure context/summary/fmt:text-to-html" />
+
+    <p tal:condition="view/bugs_answers_usage/uses_either">
+      This package has
+      <a tal:attributes="href view/menu:overview/new_bugs/url"
+        tal:condition="view/bugs_answers_usage/uses_bugs"
+        ><tal:newbugs content="newbugs"/> new
+        bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
+      </a>
+      <tal:both condition="view/bugs_answers_usage/uses_both">and</tal:both>
+      <a tal:attributes="href view/menu:overview/open_questions/url"
+        tal:condition="view/bugs_answers_usage/uses_answers"
+        ><tal:openq content="open_questions"/> open
+        question<tal:plural content="string:s"
+          condition="python: open_questions!=1"/>.
+      </a>
+    </p>
   </div>
 
   <div class="yui-g">
@@ -88,25 +102,14 @@
 
     <div class="yui-u">
       <div class="portlet" id="upstream">
-        <tal:project define="project context/upstream_product">
-          <div tal:condition="project">
-            <h2>Upstream</h2>
-            <div style="float:left; padding:0 1em 1em 0;">
-              <a
-                tal:attributes="href project/fmt:url"
-                tal:content="structure project/image:logo" />
-            </div>
-            <div> 
-              <a 
-                tal:attributes="href project/fmt:url"
-                tal:content="project/displayname" />
-            </div>
-            <div tal:content="structure project/summary" />
-          </div>
-          <tal:noproject condition="not: project">
-              This package is not linked to an upstream product.
-          </tal:noproject>
-        </tal:project>
+        <div tal:condition="not: view/active_series">
+          <h2>Upstream</h2>
+          This package is no longer tracking upstream.
+        </div>
+        <tal:published_series
+          condition="view/active_series"
+          replace="structure view/latest_sourcepackage/@@+portlet-associations"
+          />
       </div><!--portlet -->
     </div><!--yui-u -->
 
@@ -127,7 +130,7 @@
              tal:content="row/distroseries/title"/>
           (<span tal:replace="row/distroseries/status/title/lower"/>)
           <div style="float:right; white-space: nowrap">
-            <a tal:condition="not: row/packaging"
+            <a tal:condition="row/show_set_upstream_link"
                tal:replace="structure row/series_package/menu:overview/set_upstream/fmt:link"/>
             <tal:has_packaging condition="row/packaging">
               <img tal:replace="structure row/packaging/productseries/image:icon"/>
@@ -148,9 +151,7 @@
           <a class="expander"
              tal:attributes="id string:pub${pubid}-expander;
                              href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra">
-            <img style="padding-right:0.5em;" src="/@@/treeCollapsed"
-                 alt="Show details" title="Show details"
-                 tal:attributes="id string:pub${pubid}-arrow"/>
+            &nbsp;
           </a>
           <a tal:attributes="href row/version">
             <img src="/@@/package-source" />
@@ -171,10 +172,10 @@
                content="string:(not published)"/>
         </td>
       </tr>
-      <tr tal:attributes="id string:pub${pubid}" style="display: none">
+      <tr tal:attributes="id string:pub${pubid}">
         <td colspan="3">
           <div class="package-details"
-               tal:attributes="id string:pub${pubid}-container" />
+               tal:attributes="id string:pub${pubid}-container"></div>
         </td>
       </tr>
 
@@ -187,8 +188,6 @@
 
       </tal:rows>
     </table>
-    <script
-       tal:content="string:LP.client.cache['archive_context_url'] = '${archive/fmt:url}';"></script>
     <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
 
   </div>
@@ -237,37 +236,17 @@
       </p>
     </div>
 <script type="text/javascript">
-YUI({
-        base: '../../lib/yui/current/build/',
-        filter: 'raw'
-    }).use('node', 'event', 'lazr.effects', function(Y) {
+LPS.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
 
     // XXX Michael Nelson 20090702 bug=340497 This slider
     // needs an integration test.
-    // Collapse the body of the slider widget initially.
-    Y.one('#related-ppa-versions .widget-bd').addClass('lazr-closed');
 
-    // Ensure that the widget header uses the correct sprite icon
-    // and gets the styling for javascript actions applied.
-    var widget_header = Y.one('#related-ppa-versions .widget-hd');
-    widget_header.addClass('sprite');
-    widget_header.addClass('treeCollapsed');
-    widget_header.addClass('js-action');
-
-    var slide;
-    Y.on('click', function(e) {
-        if (!slide) {
-            slide = Y.lazr.effects.slide_out('#related-ppa-versions .widget-bd');
-            widget_header.replaceClass('treeCollapsed', 'treeExpanded');
-        } else {
-            slide.set('reverse', !slide.get('reverse'));
-            widget_header.toggleClass('treeExpanded');
-            widget_header.toggleClass('treeCollapsed');
-        }
-        slide.stop();
-        slide.run();
-
-    }, '#slide-trigger');
+    var related_ppas = Y.one('#related-ppa-versions');
+    var widget_header = related_ppas.one('.widget-hd');
+    var widget_body = related_ppas.one('.widget-bd');
+    var expander = new Y.lp.app.widgets.expander.Expander(
+        widget_header, widget_body);
+    expander.setUp(true);
 });
 </script>
 

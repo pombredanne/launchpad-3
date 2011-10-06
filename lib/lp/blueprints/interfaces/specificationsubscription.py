@@ -11,13 +11,30 @@ __all__ = [
     'ISpecificationSubscription',
     ]
 
-from zope.interface import Interface
-from zope.schema import Int, Bool
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    operation_for_version,
+    REQUEST_USER,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Int,
+    )
+
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
+
 
 class ISpecificationSubscription(Interface):
     """A subscription for a person to a specification."""
+
+    export_as_webservice_entry(publish_web_link=False, as_of='devel')
 
     id = Int(
         title=_('ID'), required=True, readonly=True)
@@ -28,8 +45,10 @@ class ISpecificationSubscription(Interface):
             'The person you would like to subscribe to this blueprint. '
             'They will be notified of the subscription by e-mail.')
             )
+    personID = Attribute('db person value')
     specification = Int(title=_('Specification'), required=True,
         readonly=True)
+    specificationID = Attribute('db specification value')
     essential = Bool(title=_('Participation essential'), required=True,
         description=_('Check this if participation in the design and '
         'discussion of the feature is essential. This will '
@@ -37,3 +56,8 @@ class ISpecificationSubscription(Interface):
         'attends meetings about this feature.'),
         default=False)
 
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def canBeUnsubscribedByUser(user):
+        """Can the user unsubscribe the subscriber from the specification?"""

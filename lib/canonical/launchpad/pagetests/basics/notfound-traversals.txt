@@ -103,7 +103,6 @@ status is returned.
 >>> check("/projectgroups/+all", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
->>> check("/mozilla/+branches")
 >>> check_redirect("/mozilla/+translations", status=301)
 >>> check("/mozilla/+translations", host='translations.launchpad.dev')
 
@@ -135,7 +134,6 @@ status is returned.
 
 >>> check_not_found("/firefox/+milestone")
 >>> check("/firefox/+milestone/1.0")
->>> check("/firefox/+branches")
 
 >>> check("/distros")
 >>> check("/distros/+add", auth=True)
@@ -149,8 +147,8 @@ status is returned.
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
 >>> check("/ubuntu/+selectmemberteam", auth=True)
->>> check("/ubuntu/+settings", host='translations.launchpad.dev',
-...       auth=True)
+>>> check("/ubuntu/+configure-translations",
+...       host='translations.launchpad.dev', auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
 >>> check("/ubuntu/+addspec", auth=True)
 >>> check("/ubuntu/+imports", host='translations.launchpad.dev')
@@ -191,7 +189,6 @@ Test the DARBPR page for a REMOVED package:
 
 >>> check("/ubuntu/hoary/+source/evolution/+changelog")
 >>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
->>> check("/ubuntu/hoary/+source/evolution/+gethelp")
 
 The +translate page in the main host is obsolete so it's now a redirect to the
 translations site. This way, we don't break existing links to it. Before
@@ -224,7 +221,7 @@ is still pointing to this old URL (see bug #138090).
 >>> check("/ubuntu/hoary")
 >>> check("/ubuntu/hoary/+edit", auth=True)
 >>> check("/ubuntu/hoary/+specs")
->>> check("/ubuntu/hoary/+reassign", auth=True)
+>>> check_not_found("/ubuntu/hoary/+reassign")
 >>> check("/ubuntu/hoary/+packaging")
 >>> check("/ubuntu/hoary/+bugs")
 
@@ -276,6 +273,7 @@ at +attachment/<id>. The old attachments/<id> form is deprecated.
 >>> check_not_found("/firefox/+bug/1/attachments")
 >>> check_not_found("/firefox/+bug/1/+attachment")
 >>> check_redirect("/firefox/+bug/1/attachments/1", status=301)
+>>> check_redirect("/firefox/+bug/1/attachments/1/+edit", status=301)
 >>> check("/firefox/+bug/1/+attachment/1", auth=True)
 
 Bug attachments in the context of a bug are all redirected to be at
@@ -284,14 +282,15 @@ Bug attachments in the context of a bug are all redirected to be at
 >>> check_not_found("/bugs/2/attachments")
 >>> check_not_found("/bugs/2/+attachment")
 >>> check_redirect("/bugs/1/attachments/1", status=301)
+>>> check_redirect("/bugs/1/attachments/1/+edit", status=301)
 >>> check("/bugs/1/+attachment/1", auth=True)
 
 If a requested bug attachment is not associated with the bug already
 traversed we will get a 404. For paths using the old attachments/<id>
 form, a 404 will be issued immediately; no redirect will be sent.
 
->>> check_not_found("/firefox/+bug/2/attachments/1")
->>> check_not_found("/firefox/+bug/2/+attachment/1")
+>>> check_not_found("/tomcat/+bug/2/attachments/1")
+>>> check_not_found("/tomcat/+bug/2/+attachment/1")
 >>> check_not_found("/bugs/2/attachments/1")
 >>> check_not_found("/bugs/2/+attachment/1")
 
@@ -317,7 +316,7 @@ Viewing a bug in a distribution that doesn't use Bugs officially, where the
 bugtask is also assigned to a milestone (a corner case, but one that was causing
 OOPS's all the same!):
 
->>> check("/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus")
+>>> check("/debian/sarge/+source/mozilla-firefox/+bug/3")
 
 The bug filing pages.
 
@@ -378,13 +377,8 @@ This is for a team:
 And this is for a person:
 
 >>> check("/~name16/+edit", auth=True)
->>> check("/~name16/+branches")
 >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/", status=301)
 >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/+edit", auth=True, status=301)
->>> check("/~name12/gnome-terminal/pushed/")
->>> check_not_found("/~name12/+branch/gnome-terminal/fubared/")
->>> check_not_found("/~name12/gnome-terminal/fubared/")
->>> check("/~name12/gnome-terminal/pushed/+edit", auth=True)
 >>> check_not_found("/~name16/+bugs/1")
 >>> check("/~name16/+reportedbugs")
 >>> check("/~name16/+assignedbugs")
@@ -394,12 +388,10 @@ And this is for a person:
 >>> check("/~name16/+related-software")
 >>> check("/~name16/+editsshkeys", auth=True)
 >>> check("/~name16/+editpgpkeys", auth=True)
->>> check("/~name16/+editwikinames", auth=True)
 >>> check("/~name16/+editjabberids", auth=True)
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)
 >>> check("/~name16/+review", auth=True)
->>> check("/~name16/+portlet-team-assignedbugs")
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 
@@ -408,12 +400,9 @@ mark owns many packages, so he's a better test for some pages:
 >>> check("/~mark/+packagebugs")
 >>> check("/~mark/+related-software")
 
->>> check("/+code")
-
 >>> check("/builders")
 >>> check("/builders/bob/")
 >>> check_redirect("/+builds", status=301)
->>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
 
 >>> check_redirect("/support/", status=301)
 
@@ -453,8 +442,7 @@ Check redirects of Unicode URLs works
 
 Icing resources.
 
->>> from canonical.launchpad.versioninfo import revno
->>> check("/+icing/lazr/build/lazr.js")
+>>> from lp.app.versioninfo import revno
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)
 

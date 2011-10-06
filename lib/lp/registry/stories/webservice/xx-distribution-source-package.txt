@@ -9,8 +9,9 @@ Source packages can be obtained from the context of a distribution.
     ...     name='mozilla-firefox').jsonBody()
 
     >>> print pretty(mozilla_firefox)
-    {u'bug_reporting_guidelines': None,
-     u'display_name': u'mozilla-firefox in debian',
+    {u'bug_reported_acknowledgement': None,
+     u'bug_reporting_guidelines': None,
+     u'display_name': u'mozilla-firefox in Debian',
      u'distribution_link': u'http://.../debian',
      u'http_etag': u'...',
      u'name': u'mozilla-firefox',
@@ -18,7 +19,8 @@ Source packages can be obtained from the context of a distribution.
      u'resource_type_link': u'http://.../#distribution_source_package',
      u'self_link': u'http://.../debian/+source/mozilla-firefox',
      u'title': u'\u201cmozilla-firefox\u201d package in Debian',
-     u'upstream_product_link': None}
+     u'upstream_product_link': None,
+     u'web_link': u'http://launchpad.../debian/+source/mozilla-firefox'}
 
 You can obtain a collection of bug tasks associated with the source
 package using the "getBugTasks" method.

@@ -111,18 +111,7 @@ know that they have fixed the problem.
     (Cannot access branch at "example.com".)
     Launchpad will try again shortly.
 
-Someone who is a bazaar expert is also able to see the detailed message.
-
-    >>> bazaar_expert_browser = setupBrowser(
-    ...     auth='Basic tim@canonical.com:test')
-    >>> bazaar_expert_browser.open(branch_location)
-    >>> print_browser_tag(bazaar_expert_browser, 'mirror-failure')
-    This branch may be out of date, as Launchpad has not been able to
-    access between 2007-12-25 and ... ago.
-    (Cannot access branch at "example.com".)
-    Launchpad will try again shortly.
-
-Launchpad admins can also see the detailed message.
+Launchpad admins can see the detailed message.
 
     >>> admin_browser.open(branch_location)
     >>> print_browser_tag(admin_browser, 'mirror-failure')
@@ -131,9 +120,8 @@ Launchpad admins can also see the detailed message.
     (Cannot access branch at "example.com".)
     Launchpad will try again shortly.
 
-If the user is not logged in, or is not the owner of the branch (or
-not in some expert team like bazaar experts, or Launchpad Admins) they
-get a summary failure message.
+If the user is not logged in, or is not the owner of the branch, or an admin
+they get a summary failure message.
 
     >>> anon_browser.open(branch_location)
     >>> print_browser_tag(anon_browser, 'mirror-failure')
@@ -163,7 +151,9 @@ display any failure-related information.
     >>> login(ANONYMOUS)
     >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.startMirroring()
-    >>> mirror_branch.mirrorComplete('some-revision-id')
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(mirror_branch).branchChanged(
+    ...     '', 'some-revision-id', None, None, None)
     >>> logout()
 
     >>> browser.open(branch_location)
@@ -211,19 +201,3 @@ then there is no error shown.
     None
     >>> print find_tag_by_id(browser.contents, 'mirror-of-ssh')
     None
-
-
-== Hosted branch mirror failure messages ==
-
-A hosted branch with an error message does show a mirror-failure.
-
-    >>> login(ANONYMOUS)
-    >>> hosted_branch = factory.makeAnyBranch()
-    >>> hosted_branch.mirrorFailed('Some weird internal failure.')
-    >>> branch_location = canonical_url(hosted_branch)
-    >>> logout()
-
-    >>> browser = setupBrowser()
-    >>> browser.open(branch_location)
-    >>> print_browser_tag(browser, 'mirror-failure')
-    Some weird internal failure.

@@ -3,14 +3,17 @@
 
 __metaclass__ = type
 
-from canonical.ftests.pgsql import PgTestSetup
-from zope.testing.doctest import DocTestSuite
+from doctest import DocTestSuite
+
+from canonical.testing.layers import BaseLayer
+from lp.testing.pgsql import PgTestSetup
 
 def setUp(test):
 
     # Build a fresh, empty database and connect
-    PgTestSetup().setUp()
-    con = PgTestSetup().connect()
+    test._db_fixture = PgTestSetup()
+    test._db_fixture.setUp()
+    con = test._db_fixture.connect()
 
     # Create a test schema demonstrating the edge cases
     cur = con.cursor()
@@ -52,13 +55,15 @@ def setUp(test):
     test.globs['cur'] = cur
 
 def tearDown(test):
-    PgTestSetup().tearDown()
     test.globs['con'].close()
+    test._db_fixture.tearDown()
+    del test._db_fixture
 
 def test_suite():
     suite = DocTestSuite(
             "canonical.database.postgresql",
             setUp=setUp, tearDown=tearDown
             )
+    suite.layer = BaseLayer
     return suite
 

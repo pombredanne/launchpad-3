@@ -1,4 +1,5 @@
-= Package sets =
+Package sets
+------------
 
 Package sets facilitate the grouping of packages for purposes like the
 control of upload permissions, the calculation of build and runtime package
@@ -19,13 +20,13 @@ Please refer to the tests contained in the file above if you are really
 interested in package sets and the complete functionality they offer.
 
 
-== General package set properties ==
+General package set properties
+==============================
 
 We start off by creating an 'umbrella' package set that will include all
 source packages.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> name12 = webservice.get("/~name12").jsonBody()
     >>> response = webservice.named_post(
@@ -71,11 +72,9 @@ When a `PackageSet` cannot be found, an error is returned.
     >>> response = webservice.named_get(
     ...     '/package-sets', 'getByName', {}, name=u'not-found')
     >>> print response
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
     No such package set (in the specified distro series): 'not-found'.
-    ...
-    <BLANKLINE>
 
 Here's an example with a funny URL concoted by a "smart" user.
 
@@ -87,7 +86,7 @@ Here's an example with a funny URL concoted by a "smart" user.
 Populate the 'umbrella' package set with source packages.
 
     >>> from canonical.launchpad.webapp.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     >>> all_spns = store.find(SourcePackageName)
@@ -185,7 +184,7 @@ sorted by name.
     ...     for entry in body['entries']:
     ...         print entry['self_link']
 
-    >>> response = webservice.get("/package-sets/")
+    >>> response = anon_webservice.get("/package-sets/")
     >>> print_payload(response)
     http://api.launchpad.dev/beta/package-sets/hoary/umbrella
 
@@ -197,7 +196,7 @@ however, we only have the 'umbrella' package set. It hence has no subsets.
     >>> print response
     HTTP/1.1 200 Ok
     ...
-    {"total_size": 0, "start": null, "entries": []}
+    {"total_size": 0, "start": 0, "entries": []}
 
 Let's create a few more package sets and set up a package set hierarchy.
 
@@ -218,7 +217,8 @@ Let's create a few more package sets and set up a package set hierarchy.
     ...
 
 
-=== Package sets and distro series ===
+Package sets and distro series
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Every package set is associated with a distro series.
 
@@ -231,8 +231,21 @@ Every package set is associated with a distro series.
     >>> print mozilla['self_link']
     http://api.launchpad.dev/beta/package-sets/hoary/mozilla
 
+A collection of package sets belonging to a given distro series can be
+obtained via the `getBySeries` call.
 
-=== Related package sets ===
+    >>> packagesets = webservice.named_get(
+    ...     '/package-sets', 'getBySeries', {},
+    ...     distroseries=mozilla['distroseries_link']).jsonBody()
+    >>> for entry in packagesets["entries"]:
+    ...     print "{entry[name]}: {entry[description]}".format(entry=entry)
+    gnome: Contains all gnome packages
+    mozilla: Contains all mozilla packages
+    umbrella: Contains all source packages
+
+
+Related package sets
+~~~~~~~~~~~~~~~~~~~~
 
 When adding a package set we can specify that is to be related to another set
 that exists already.
@@ -269,7 +282,8 @@ it is related to 'mozilla' in 'hoary'.
     http://api.launchpad.dev/beta/package-sets/grumpy/mozilla
 
 
-== Package set hierarchy ==
+Package set hierarchy
+=====================
 
 More package sets are needed to set up the hierarchy described below.
 
@@ -331,7 +345,8 @@ set hierarchy:
     ...
 
     >>> response = webservice.named_post(
-    ...     '/package-sets/hoary/gnome', 'addSubsets', {}, names=[u'languagepack'])
+    ...     '/package-sets/hoary/gnome', 'addSubsets', {},
+    ...     names=[u'languagepack'])
     >>> print response
     HTTP/1.1 200 Ok
     ...
@@ -485,15 +500,15 @@ If a non-existing source package name is passed it returns an error.
     ...     '/package-sets/', 'setsIncludingSource', {},
     ...     sourcepackagename=u'does-not-exist')
     >>> print response
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
     No such source package: 'does-not-exist'.
-    ...
 
 What source packages are shared by the 'firefox' and the 'thunderbird'
 package sets?
 
-    >>> thunderbird = webservice.get("/package-sets/hoary/thunderbird").jsonBody()
+    >>> thunderbird = webservice.get(
+    ...     "/package-sets/hoary/thunderbird").jsonBody()
     >>> response = webservice.named_get(
     ...     '/package-sets/hoary/firefox', 'getSourcesSharedBy', {},
     ...     other_package_set=thunderbird['self_link'])
@@ -522,7 +537,8 @@ How about the complement set i.e. the packages not shared?
     ["cnews", "thunderbird"]
 
 
-== Archive permissions and package sets ==
+Archive permissions and package sets
+====================================
 
 Operating on package set based archive permissions is possible via
 the Launchpad API as well.
@@ -547,7 +563,6 @@ main archive.
 
 Let's see what we've got:
 
-    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> new_permission = webservice.get(
     ...     response.getHeader('Location')).jsonBody()
     >>> pprint_entry(new_permission)
@@ -822,14 +837,16 @@ Now we see the upload permission granted to 'cprov' via the 'mozilla' package
 set listed as well.
 
 
-== Archive permission URLs ==
+Archive permission URLs
+=======================
 
 Archive permissions can be accessed via their URLs in direct fashion.
 
 If we do *not* specify the distro series for package set based archive
 permission URLs a 404 will result.
 
-    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird'
+    >>> url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=thunderbird')
     >>> response = webservice.get(url)
     >>> print response
     HTTP/1.1 404 Not Found
@@ -838,7 +855,8 @@ permission URLs a 404 will result.
 The same happens if a user tries to doctor an URL with an invalid distro
 series.
 
-    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=foobar'
+    >>> url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=thunderbird&series=foobar')
     >>> response = webservice.get(url)
     >>> print response
     HTTP/1.1 404 Not Found
@@ -846,7 +864,8 @@ series.
 
 The user 'name12' has no upload permission for 'thunderbird' in 'hoary'..
 
-    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=hoary'
+    >>> url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=thunderbird&series=hoary')
     >>> response = webservice.get(url)
     >>> print response
     HTTP/1.1 404 Not Found
@@ -854,7 +873,8 @@ The user 'name12' has no upload permission for 'thunderbird' in 'hoary'..
 
 .. but is allowed to upload to 'thunderbird' in 'grumpy'.
 
-    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=grumpy'
+    >>> url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=thunderbird&series=grumpy')
     >>> permission = webservice.get(url).jsonBody()
     >>> print permission['package_set_name']
     thunderbird
@@ -863,7 +883,8 @@ The user 'name12' has no upload permission for 'thunderbird' in 'hoary'..
 
 The user 'cprov' has no upload permission for 'thunderbird' in 'hoary'.
 
-    >>> url = '/ubuntu/+archive/primary/+upload/cprov?type=packageset&item=thunderbird&series=hoary'
+    >>> url = ('/ubuntu/+archive/primary/+upload/cprov'
+    ...     '?type=packageset&item=thunderbird&series=hoary')
     >>> permission = webservice.get(url).jsonBody()
     >>> pprint_entry(permission)
     archive_link: u'http://api.launchpad.dev/beta/ubuntu/+archive/primary'

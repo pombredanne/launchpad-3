@@ -9,7 +9,7 @@
     <tr tal:attributes="class string:secondary ${dismissable} ${submission/translation_html_id};
                         id submission/row_html_id">
       <th colspan="3" tal:content="section_title">
-        Packaged:
+        In Upstream:
       </th>
       <td class="icon left right">
         <tal:form-writeable condition="form_is_writeable">
@@ -41,8 +41,11 @@
         </tal:form-writeable>
       </td>
       <td>
+        <div tal:condition="not:submission/suggestion_text">
+          (not translated yet)
+        </div>
         <div
-          tal:condition="not:user_is_official_translator"
+          tal:condition="python: not user_is_official_translator and submission.suggestion_text"
           tal:attributes="
             lang submission/language/dashedcode;
             dir submission/language/abbreviated_text_dir;
@@ -52,7 +55,7 @@
         </div>
         <label
           style="white-space: normal"
-          tal:condition="user_is_official_translator"
+          tal:condition="python: user_is_official_translator and submission.suggestion_text"
           tal:attributes="
             lang submission/language/dashedcode;
             dir submission/language/abbreviated_text_dir;
@@ -64,12 +67,13 @@
       </td>
     </tr>
     <tr
+      tal:condition="submission/suggestion_text"
       tal:attributes="id string:${submission/origin_html_id};
                       class string:discreet secondary ${dismissable}">
       <td colspan="3"></td>
       <td class="icon left right">
         <tal:legal-warning condition="submission/legal_warning">
-          <a href="http://help.launchpad.net/Translations/ReusingPackagedTranslations"
+          <a href="https://help.launchpad.net/Translations/ReusingPackagedTranslations"
              class="legal-warning">
             <img alt="Legal warning" title="Do not use this translation before checking for license compatibility" src="/@@/warning" /></a>
         </tal:legal-warning>
@@ -126,6 +130,17 @@
             tal:define="link navigation_menu/details"
             tal:condition="link/enabled"
             tal:content="structure link/render"></li>
+        <li tal:condition="view/user_is_official_translator"
+            id="translation-switch-working-mode-container"
+            class="unseen">
+          <span>
+          <a id="translation-switch-working-mode"
+             class="sprite edit js-action widget-hd">
+             Reviewer mode</a>&nbsp;<!--
+            -->(<a href="/+help/working-modes.html" target="help"><!--
+                -->What's&nbsp;this?</a>)
+          </span>
+        </li>
       </ul>
 </metal:nav-pofile-subpages>
 
@@ -133,7 +148,7 @@
 <metal:pofile-js-footer define-macro="pofile-js-footer">
     <script type="text/javascript"
         tal:content="
-        structure string:<!-- 
+        structure string:<!--
         var autofocus_field = '${view/autofocus_html_id}';
         var translations_order = '${view/translations_order}';
         var plural_forms = ${context/plural_forms};
@@ -152,14 +167,13 @@
 
 <metal:languages-table-js define-macro="languages-table-js">
       <script type="text/javascript">
-      LPS.use("node", "translations", function(Y) {
+      LPS.use('lp.translations.languages', 'event', function(Y) {
           Y.on("click", function(e) {
-            Y.translations.toggle_languages_visibility(e);
+            Y.lp.translations.languages.toggle_languages_visibility(e);
           }, "#toggle-languages-visibility");
-      });
-      LPS.use( 'translations', 'event', function(Y) {
+
           Y.on('domready', function(e) {
-              Y.translations.initialize_languages_table(Y);
+              Y.lp.translations.languages.initialize_languages_table(Y);
           });
       });
       </script>
@@ -168,7 +182,7 @@
 
 <metal:languages-table-actions define-macro="languages-table-actions">
   <div align="right">
-    [ <a href="/+editmylanguages">Choose preferred languages...</a>
+    [ <a href="/+editmylanguages">Change your preferred languages...</a>
       <tal:has-preferred condition="view/translatable_languages">&mdash;
         <a href="#" id="toggle-languages-visibility">
           View all languages</a>

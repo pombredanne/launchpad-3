@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for IBugLinkTarget."""
@@ -11,20 +11,38 @@ __all__ = [
     'BugsUnlinkView',
     ]
 
+from collections import defaultdict
+from operator import attrgetter
+
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
+from canonical.config import config
 from canonical.launchpad import _
-from lp.bugs.interfaces.buglink import IBugLinkForm, IUnlinkBugsForm
-from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView)
+from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.bugs.browser.bugtask import BugListingBatchNavigator
+from lp.bugs.interfaces.buglink import (
+    IBugLinkForm,
+    IUnlinkBugsForm,
+    )
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 
 class BugLinkView(LaunchpadFormView):
@@ -67,26 +85,42 @@ class BugLinkView(LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
 
-class BugLinksListingView:
+class BugLinksListingView(LaunchpadView):
     """View for displaying buglinks."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
+    @cachedproperty
     def buglinks(self):
         """Return a list of dict with bug, title and can_see_bug keys
         for the linked bugs. It makes the Right Thing(tm) with private bug.
         """
+        # Do a regular search to get the bugtasks so that visibility is
+        # evaluated and eager loading is performed.
+        bug_ids = map(attrgetter('bugID'), self.context.bug_links)
+        if not bug_ids:
+            return []
+        bugtask_set = getUtility(IBugTaskSet)
+        query = BugTaskSearchParams(user=self.user, bug=any(*bug_ids))
+        bugtasks = list(bugtask_set.search(query))
+        # collate by bug
+        bugs = defaultdict(list)
+        for task in bugtasks:
+            bugs[task.bug].append(task)
+        badges = bugtask_set.getBugTaskBadgeProperties(bugtasks)
         links = []
-        for bug in self.context.bugs:
-            try:
-                links.append(
-                    {'bug': bug, 'title': bug.title, 'can_view_bug': True})
-            except Unauthorized:
-                links.append(
-                    {'bug': bug, 'title': _('private bug'),
-                     'can_view_bug': False})
+        columns_to_show = ["id", "summary", "bugtargetdisplayname",
+            "importance", "status"]
+        for bug, tasks in bugs.items():
+            navigator = BugListingBatchNavigator(tasks, self.request,
+                columns_to_show=columns_to_show,
+                size=config.malone.buglist_batch_size)
+            get_property_cache(navigator).bug_badge_properties = badges
+            links.append({
+                'bug': bug,
+                'title': bug.title,
+                'can_view_bug': True,
+                'tasks': tasks,
+                'batch_navigator': navigator,
+                })
         return links
 
 

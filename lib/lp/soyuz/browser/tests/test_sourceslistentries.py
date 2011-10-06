@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -10,18 +10,16 @@ __all__ = [
     'TestDefaultSelectedSeries',
     'TestOneDistroSeriesOnly',
     'TestSourcesListComment',
-    'test_suite',
     ]
 
-import unittest
-
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
 from lp.testing import TestCaseWithFactory
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
-
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
 
 class TestDefaultSelectedSeries(TestCaseWithFactory):
     """Ensure that default selected series set from user-agent."""
@@ -33,9 +31,9 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
         self.distribution = self.factory.makeDistribution(
             name='ibuntu', displayname="Ibuntu")
         self.series = [
-            self.factory.makeDistroRelease(name="feasty", version='9.04'),
-            self.factory.makeDistroRelease(name="getsy", version='10.09'),
-            self.factory.makeDistroRelease(name="ibix", version='11.04'),
+            self.factory.makeDistroSeries(name="feasty", version='9.04'),
+            self.factory.makeDistroSeries(name="getsy", version='10.09'),
+            self.factory.makeDistroSeries(name="ibix", version='11.04'),
         ]
         self.entries = SourcesListEntries(
             self.distribution, 'http://example.com/my/archive',
@@ -115,7 +113,7 @@ class TestSourcesListComment(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.distribution = self.factory.makeDistribution(name='ibuntu')
         self.series = [
-            self.factory.makeDistroRelease(name="feasty", version='9.04'),
+            self.factory.makeDistroSeries(name="feasty", version='9.04'),
             ]
         self.entries = SourcesListEntries(
             self.distribution, 'http://example.com/my/archive',
@@ -147,7 +145,7 @@ class TestOneDistroSeriesOnly(TestCaseWithFactory):
 
         # Ensure there is only one series available.
         self.series = [
-            self.factory.makeDistroRelease(name="feasty", version='9.04'),
+            self.factory.makeDistroSeries(name="feasty", version='9.04'),
             ]
         self.entries = SourcesListEntries(
             self.distribution, 'http://example.com/my/archive',
@@ -166,6 +164,3 @@ class TestOneDistroSeriesOnly(TestCaseWithFactory):
         # When there is only one distro series it should always be the
         # default.
         self.failUnless(self.view.default_series == self.series[0])
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

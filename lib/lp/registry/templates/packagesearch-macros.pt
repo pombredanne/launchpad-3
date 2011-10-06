@@ -53,4 +53,35 @@
 
   </div>
 </metal:search_results>
+<metal:distroseries_localdiff_search_form
+       define-macro="distroseries-localdiff-search-form">
+  <tal:comment replace="nothing">
+    Present the filtering form used on a few archive pages.
+  </tal:comment>
+  <form
+    id="distroseries-localdiff-search-filter"
+    class="distroseries-localdiff-search-filter"
+    action="" method="GET">
+    <div style="float:left; margin-right:1px;">
+      <label for="field.name_filter">Show packages or packagesets named:</label>
+    </div>
+    <div style="float:left;"
+      tal:define="widget nocall:view/widgets/package_type;
+                  field_name widget/context/__name__;
+                  error python:view.getFieldError(field_name);">
+      <input
+        id="field.name_filter" title="Package Name" size="20"
+        type="text" name="field.name_filter"
+        tal:attributes="value request/field.name_filter|nothing"/>
+      <input type="submit" value="Filter" />
+      <br />
+      <tal:package_type
+        replace="structure widget" />
+      <div class="error message" tal:condition="error"
+        tal:content="structure error">Error message</div>
+      </div>
+    <div class="clearfix"></div>
+  </form>
+
+</metal:distroseries_localdiff_search_form>
 </tal:root>

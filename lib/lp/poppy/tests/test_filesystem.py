@@ -7,7 +7,6 @@ import os
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
-
 # The setUp() and tearDown() functions ensure that this doctest is not umask
 # dependent.
 def setUp(testobj):

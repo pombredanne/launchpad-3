@@ -14,9 +14,12 @@ The icon is dependent on the importance of the IBugTask object.
 Let's use a few examples to demonstrate:
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import BugTaskImportance, IBugTaskSet
-  >>> from canonical.launchpad.ftests import test_tales
-  >>> from canonical.launchpad.ftests import login
+  >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+  >>> from lp.bugs.interfaces.bugtask import BugTaskImportance, IBugTaskSet
+  >>> from lp.testing import (
+  ...     login,
+  ...     test_tales,
+  ...     )
 
   >>> login("foo.bar@canonical.com")
   >>> bugtaskset = getUtility(IBugTaskSet)
@@ -62,7 +65,7 @@ Let's use a few examples to demonstrate:
 The logo for a bug task display the corresponding logo for its
 target.
 
-  >>> from canonical.launchpad.interfaces import IBugSet
+  >>> from lp.bugs.interfaces.bug import IBugSet
   >>> bug1 = getUtility(IBugSet).get(1)
   >>> upstream_task = bug1.bugtasks[0]
   >>> print upstream_task.product.name
@@ -96,9 +99,10 @@ you might prefer that to read, simply:
 We define a helper that uses the BugTaskListingView class (obtained via
 +listing-view) to render the status:
 
-  >>> from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
   >>> from zope.component import getMultiAdapter
+  >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
 
   >>> def render_bugtask_status(task):
   ...   view = getMultiAdapter(
@@ -146,20 +150,10 @@ Let's see some examples of how this works:
   >>> render_bugtask_status(test_task)
   u'Fix released, assigned to ...Foo Bar...'
 
-This code also works for null bug tasks:
-
-  >>> from canonical.launchpad.database import Bug, NullBugTask
-  >>> from lp.registry.model.product import Product
-  >>> bug_one = Bug.get(1)
-  >>> netapplet = Product.selectOneBy(name="netapplet")
-  >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
-  >>> render_bugtask_status(null_bugtask)
-  u'Not reported in netapplet'
-
 Lastly, some cleanup:
 
   >>> test_task.transitionToStatus(
-  ...   ORIGINAL_STATUS, getUtility(ILaunchBag).user)
+  ...   ORIGINAL_STATUS, test_task.distribution.owner)
   >>> test_task.transitionToAssignee(ORIGINAL_ASSIGNEE)
 
 
@@ -201,9 +195,3 @@ statuselsewhere value is affected:
 
   >>> related_task.transitionToStatus(
   ...   ORIGINAL_STATUS, getUtility(ILaunchBag).user)
-
-Null tasks are also supported:
-
-  >>> render_bugtask_status_elsewhere(null_bugtask)
-  'filed in 3 other places'
-

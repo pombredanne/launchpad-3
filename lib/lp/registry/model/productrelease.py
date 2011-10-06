@@ -13,27 +13,44 @@ __all__ = [
 
 from StringIO import StringIO
 
-from zope.interface import implements
-from zope.component import getUtility
-
-from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
-from storm.expr import And, Desc
+from sqlobject import (
+    ForeignKey,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Desc,
+    )
 from storm.store import EmptyResultSet
+from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFile, IProductReleaseSet,
-    UpstreamFileType)
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.person import (
+    validate_person,
+    validate_public_person,
+    )
+from lp.registry.interfaces.productrelease import (
+    IProductRelease,
+    IProductReleaseFile,
+    IProductReleaseSet,
+    UpstreamFileType,
+    )
 
 
 SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.
@@ -52,7 +69,7 @@ class ProductRelease(SQLBase):
         dbName='datecreated', notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
@@ -226,12 +243,21 @@ class ProductReleaseSet(object):
 
     def getBySeriesAndVersion(self, productseries, version, default=None):
         """See `IProductReleaseSet`."""
-        query = AND(ProductRelease.q.version==version,
-                    ProductRelease.q.productseriesID==productseries.id)
-        productrelease = ProductRelease.selectOne(query)
-        if productrelease is None:
-            return default
-        return productrelease
+        # Local import of Milestone to avoid circular imports.
+        from lp.registry.model.milestone import Milestone
+        store = IStore(productseries)
+        # The Milestone is cached too because most uses of a ProductRelease
+        # need it.
+        result = store.find(
+            (ProductRelease, Milestone),
+            Milestone.productseries == productseries,
+            ProductRelease.milestone == Milestone.id,
+            Milestone.name == version)
+        found = result.one()
+        if found is None:
+            return None
+        product_release, milestone = found
+        return product_release
 
     def getReleasesForSeries(self, series):
         """See `IProductReleaseSet`."""

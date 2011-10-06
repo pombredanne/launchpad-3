@@ -22,10 +22,12 @@ our use cases.
 So, with textwrap:
 
     >>> import textwrap
-    >>> description = """\
-    ... A new description that is quite long. But the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent.
-    ...
-    ... It's also smart enough to preserve whitespace, finally!"""
+    >>> description = (
+    ...     "A new description that is quite long. But the nice thing is "
+    ...     "that the edit notification email generator knows how to indent "
+    ...     "and wrap descriptions, so this will appear quite nice in the "
+    ...     "actual email that gets sent.\n\n"
+    ...     "It's also smart enough to preserve whitespace, finally!""")
     >>> wrapped_description = textwrap.fill(description, width=56)
     >>> print wrapped_description  #doctest: -NORMALIZE_WHITESPACE
     A new description that is quite long. But the nice thing
@@ -57,9 +59,11 @@ preserved.
 
 Let's just make sure that it handles a single paragraph as well.
 
-    >>> single_paragraph = """\
-    ... A new description that is quite long. But the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent.
-    ... """
+    >>> single_paragraph = (
+    ...     "A new description that is quite long. But the nice thing is "
+    ...     "that the edit notification email generator knows how to indent "
+    ...     "and wrap descriptions, so this will appear quite nice in the "
+    ...     "actual email that gets sent.")
     >>> wrapped_text = mailwrapper.format(single_paragraph)
     >>> print wrapped_text #doctest: -NORMALIZE_WHITESPACE
     A new description that is quite long. But the nice thing
@@ -120,13 +124,15 @@ allowed length. These shouldn't be wrapped.
 Let's see how it behaves when it contains words that can't fit on a
 single line, such as URLs.
 
-    >>> long_word = """\
-    ... This paragraph includes a long URL, https://launchpad.net/products/malone/+bug/1733/+viewstatus. Even though it's longer than 56 characters, it stays on a single line.
-    ... """
+    >>> long_word = (
+    ...     "This paragraph includes a long URL, "
+    ...     "https://launchpad.net/greenishballoon/+bug/1733/+subscriptions. "
+    ...     "Even though it's longer than 56 characters, it stays on a "
+    ...     "single line.")
     >>> wrapped_text = mailwrapper.format(long_word)
     >>> print wrapped_text #doctest: -NORMALIZE_WHITESPACE
     This paragraph includes a long URL,
-    https://launchpad.net/products/malone/+bug/1733/+viewstatus.
+    https://launchpad.net/greenishballoon/+bug/1733/+subscriptions.
     Even though it's longer than 56 characters, it stays on
     a single line.
 
@@ -242,7 +248,7 @@ Sometimes certain paragraphs should not be wrapped, e.g. a line containing a
 long hyphenated URL.  Under normal circumstances, this will get wrapped.
 
     >>> from canonical.launchpad.helpers import get_email_template
-    >>> template = get_email_template('new-held-message.txt')
+    >>> template = get_email_template('new-held-message.txt', app='registry')
     >>> text = template % dict(
     ...     user="Scarlett O'Hara",
     ...     team='frankly-my-dear-i-dont-give-a-damn',
@@ -294,7 +300,8 @@ The callable's argument is the pre-wrapped paragraph.
     >>> print body
     Hello Scarlett O'Hara,
     <BLANKLINE>
-    frankly-my-dear-i-dont-give-a-damn has a new message requiring your approval.
+    frankly-my-dear-i-dont-give-a-damn has a new message requiring your
+    approval.
     <BLANKLINE>
         Subject: Thing
         Author name: Rhett Butler

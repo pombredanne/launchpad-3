@@ -55,9 +55,9 @@ Bart does not leave the team though, his subscription merely gets disabled.
 
     # Change Anne's email address to her alternative.
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from lp.registry.tests import mailinglists_helper
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.tests import mailinglists_helper
 
     >>> login('admin@canonical.com')
     >>> person_set = getUtility(IPersonSet)
@@ -107,7 +107,7 @@ before she can validate this address, subscriptions for the list are
 synchronized with Mailman.  Anne's non-validated address does not appear in
 the membership list, either as an enabled or disabled address.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> login('admin@canonical.com')
     >>> email_set = getUtility(IEmailAddressSet)
     >>> email = email_set.new(
@@ -129,7 +129,7 @@ the membership list, either as an enabled or disabled address.
 
 Once Anne validates her address though, she may post from it.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
     >>> logout()

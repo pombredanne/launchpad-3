@@ -4,7 +4,7 @@ Held message view
 The HeldMessageView formats a held message so that it can be moderated by
 the mailing list administrator.
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
 
     >>> team, mlist = factory.makeTeamAndMailingList('parrot', 'owner')
 

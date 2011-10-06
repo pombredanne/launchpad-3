@@ -10,10 +10,9 @@
       :version_url: The version link
   </tal:comment>
   <tr>
-    <td style="white-space: nowrap"><span
-        tal:attributes="id string:pub${context/id}-expander"
-        ><img src="/@@/treeCollapsed" alt=""
-                tal:attributes="id string:pub${context/id}-arrow" /></span>
+    <td style="white-space: nowrap">
+      <span tal:attributes="id string:pub${context/id}-expander"
+            class="expander-icon">&nbsp;</span>
     </td>
     <td tal:content="view/date_last_changed/fmt:datetime"
         >2005-08-24</td>
@@ -31,11 +30,11 @@
       >2.0.39</a>
     </td>
   </tr>
-  <tr tal:attributes="id string:pub${context/id}" style="display: none">
+  <tr tal:attributes="id string:pub${context/id}">
     <td colspan="8">
       <tal:block replace="structure context/@@+record-details" />
     </td>
   </tr>
-  <tal:js_glue replace="structure view/js_connector" />
+
 </metal:header>
 

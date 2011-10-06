@@ -8,12 +8,11 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
-from canonical.testing import LaunchpadZopelessLayer
 from lp.translations.utilities.tests.helpers import (
     import_pofile_or_potemplate,
     )
@@ -71,7 +70,6 @@ class XpiSearchTestCase(unittest.TestCase):
                            u'FooZilla Zilla Thingy'],
                           message_list)
 
-
     def test_templateSearchingForMsgIDs(self):
         """Searching returns no results for internal msg IDs."""
         entry = self.setUpTranslationImportQueueForTemplate('en-US')
@@ -83,7 +81,3 @@ class XpiSearchTestCase(unittest.TestCase):
             text='foozilla.title'))
 
         self.assertEquals(potmsgsets, [])
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

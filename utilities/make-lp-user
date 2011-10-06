@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -13,10 +13,9 @@ help you test a locally running copy of Launchpad.
 You can add this user to teams by specifying them on the command-line. For
 example:
 
-  make-lp-user fred vcs-imports bazaar-experts
+  make-lp-user fred vcs-imports
 
-will create a user 'fred' and add them to the 'vcs-imports' and
-'bazaar-experts' teams.
+will create a user 'fred' and add them to the 'vcs-imports' team.
 
 In addition, this script will look in your ~/.ssh directory for public keys
 and register them for the created user.
@@ -43,15 +42,12 @@ from storm.store import Store
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IPersonSet,
-    ISSHKeySet,
-    SSHKeyType,
-    TeamMembershipStatus,
-    )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing.factory import LaunchpadObjectFactory
 
 # Shut up, pyflakes.
@@ -110,23 +106,20 @@ def add_ssh_public_keys(person):
     """
     ssh_dir = os.path.expanduser('~/.ssh')
     key_set = getUtility(ISSHKeySet)
-    key_guesses = [
-        (SSHKeyType.RSA, 'id_rsa.pub'),
-        (SSHKeyType.DSA, 'id_dsa.pub'),
-        ]
-    for key_type, guessed_filename in key_guesses:
-        guessed_filename = os.path.join(ssh_dir, guessed_filename)
+    for filename in ('id_rsa.pub', 'id_dsa.pub'):
         try:
-            public_key_file = open(guessed_filename, 'r')
+            public_key_file = open(os.path.join(ssh_dir, filename), 'r')
             try:
                 public_key = public_key_file.read()
             finally:
                 public_key_file.close()
         except (OSError, IOError):
             continue
-        public_key = public_key.split()[1]
-        key_set.new(person, key_type, public_key, 'Added by utility script.')
-        print 'Registered SSH key: %s' % (guessed_filename,)
+        key_set.new(person, public_key)
+        print 'Registered SSH key: %s' % (filename,)
+        break
+    else:
+        print 'No SSH key files found in %s' % ssh_dir 
 
 
 def parse_fingerprints(gpg_output):

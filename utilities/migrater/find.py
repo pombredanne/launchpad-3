@@ -20,11 +20,43 @@ from optparse import OptionParser
 mimetypes.init()
 
 
-def find_matches(root_dir, file_pattern, match_pattern, substitution=None):
+def extract_match(file_path, match_re, substitution=None):
+    """Return a summary of matches in a file."""
+    lines = []
+    content = []
+    match = None
+    file_ = open(file_path, 'r')
+    try:
+        for lineno, line in enumerate(file_):
+            match = match_re.search(line)
+            if match:
+                lines.append(
+                    {'lineno': lineno + 1, 'text': line.strip(),
+                     'match': match})
+                if substitution is not None:
+                    line = match_re.sub(substitution, line)
+            if substitution is not None:
+                content.append(line)
+    finally:
+        file_.close()
+    if lines:
+        if substitution is not None:
+            file_ = open(file_path, 'w')
+            try:
+                file_.write(''.join(content))
+            finally:
+                file_.close()
+        return {'file_path': file_path, 'lines': lines}
+    return None
+
+
+def find_matches(root_dir, file_pattern, match_pattern,
+                 substitution=None, extract_match=extract_match):
     """Iterate a summary of matching lines in a file."""
     match_re = re.compile(match_pattern)
     for file_path in find_files(root_dir, file_pattern=file_pattern):
-        summary = extract_match(file_path, match_re, substitution=substitution)
+        summary = extract_match(
+            file_path, match_re, substitution=substitution)
         if summary:
             yield summary
 
@@ -44,36 +76,6 @@ def find_files(root_dir, skip_dir_pattern='^[.]', file_pattern='.*'):
             if mime_type is None or 'text/' in mime_type:
                 if file_re.match(file_path) is not None:
                     yield file_path
-
-
-def extract_match(file_path, match_re, substitution=None):
-    """Return a summary of matches in a file."""
-    lines = []
-    content = []
-    match = None
-    file_ = open(file_path, 'r')
-    try:
-        for lineno, line in enumerate(file_):
-            match = match_re.search(line)
-            if match:
-                lines.append(
-                    {'lineno' : lineno + 1, 'text' : line.strip(),
-                     'match': match})
-                if substitution is not None:
-                    line = match_re.sub(substitution, line)
-            if substitution is not None:
-                content.append(line)
-    finally:
-        file_.close()
-    if lines:
-        if substitution is not None:
-            file_ = open(file_path, 'w')
-            try:
-                file_.write(''.join(content))
-            finally:
-                file_.close()
-        return {'file_path' : file_path, 'lines' : lines}
-    return None
 
 
 def get_option_parser():

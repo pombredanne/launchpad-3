@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,15 +6,12 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
-import unittest
-
-from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.packagediff import ProcessPendingPackageDiffs
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
@@ -56,7 +53,7 @@ class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
         :param limit: if passed, it will be used as the 'limit' script
            argument.
 
-        :return the initialised script object using `QuietFakeLogger` and
+        :return the initialized script object using `BufferLogger` and
            the given parameters.
         """
         test_args = []
@@ -65,7 +62,7 @@ class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
 
         diff_processor = ProcessPendingPackageDiffs(
             name='process-pending-packagediffs', test_args=test_args)
-        diff_processor.logger = QuietFakeLogger()
+        diff_processor.logger = BufferLogger()
         diff_processor.txn = self.layer.txn
         return diff_processor
 
@@ -107,6 +104,3 @@ class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
         # The next run process the remaining one.
         diff_processor.main()
         self.assertEqual(self.getPendingDiffs().count(), 0)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

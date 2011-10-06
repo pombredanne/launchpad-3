@@ -6,11 +6,33 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="malone"
 >
-  <body>
+
+<metal:block fill-slot="head_epilogue">
+  <meta condition="not: view/should_show_bug_information"
+        name="robots" content="noindex,nofollow" />
+
+    <tal:comment replace="nothing">
+        The javascript below should only be executed (or indeed even exist)
+        when the bug subscription links exist. They don't exist on the
+        advanced search form, so we don't show the js for that case.
+    </tal:comment>
+    <script type="text/javascript"
+      tal:condition="not: view/shouldShowAdvancedForm">
+    LPS.use('lp.registry.structural_subscription', function(Y) {
+        Y.on('domready', function() {
+            Y.lp.registry.structural_subscription.setup(
+                {content_box: "#structural-subscription-content-box"});
+        });
+    });
+  </script>
+</metal:block>
+
+<body>
 
   <div metal:fill-slot="main">
-    <div class="top-portlet">
-      <tal:block condition="view/_projectContext">
+    <div tal:condition="not: view/bug_tracking_usage/enumvalue:UNKNOWN"
+         class="top-portlet">
+      <tal:is_project_group condition="view/_projectContext">
         <tal:block condition="view/required:launchpad.Edit">
           <p tal:condition="not: context/products" class="warning message">
             There are no projects registered for
@@ -21,51 +43,86 @@
             associate an existing project with it.
           </p>
         </tal:block>
-      </tal:block>
-      <h1
-        tal:condition="view/shouldShowAdvancedForm"
-        tal:content="view/getAdvancedSearchPageHeading"
-      >Bugs in Fooix: Advanced search</h1>
 
-      <tal:do_not_show_advanced_form
-        condition="not: view/shouldShowAdvancedForm">
-      <div tal:define="batch_navigator view/search">
+        <tal:has_products condition="context/products">
+          <tal:no_bug_info condition="not:view/should_show_bug_information">
+            <p tal:define="name context/displayname">
+              <strong>
+                You cannot report a bug for <tal:name replace="name"/> as none
+                of the projects within the group use Launchpad for bug
+                tracking.  Please check the individual projects for details of
+                where bugs are reported.
+              </strong>
+            </p>
+            <p id="getting-started-help">
+              <a class="sprite maybe"
+                 href="https://help.launchpad.net/Bugs">Getting started
+                with bug tracking in Launchpad</a>.
+            </p>
+          </tal:no_bug_info>
+        </tal:has_products>
+      </tal:is_project_group>
 
-        <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
-        <tal:buglisting content="structure batch_navigator/@@+table-view" />
+        <tal:do_not_show_advanced_form
+          condition="not: view/shouldShowAdvancedForm">
+          <div tal:define="batch_navigator view/search">
+            <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form"></div>
+            <tal:buglisting content="structure batch_navigator/@@+table-view" />
+          </div>
+        </tal:do_not_show_advanced_form>
+
+        <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
+          <metal:advanced_form
+             use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
+        </tal:show_advanced_form>
+
+      <div class="yui-u">
+        <div id="structural-subscription-content-box"></div>
       </div>
-      </tal:do_not_show_advanced_form>
 
-      <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
-        <metal:advanced_form
-          use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
-      </tal:show_advanced_form>
+    </div>
+    <div tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN"
+          class="top-portlet">
+      <p>
+        <strong>
+          <tal:displayname replace="context/displayname" />
+          does not use Launchpad for bug tracking.
+        </strong>
+      </p>
+      <p id="getting-started-help">
+        <a class="sprite maybe"
+          href="https://help.launchpad.net/Bugs">Getting started
+        with bug tracking in Launchpad</a>.
+      </p>
     </div>
   </div>
+
   <tal:side metal:fill-slot="side">
-    <div id="involvement" class="portlet involvement">
-      <ul>
-        <li style="border: 0">
-          <a href="+filebug" class="menu-link-filebug sprite bugs">
-            Report a bug
-          </a>
-        </li>
-      </ul>
-    </div>
-    <tal:menu replace="structure view/@@+related-pages" />
-    <tal:do_not_show_portlets_advanced_form
-      condition="not: view/shouldShowAdvancedForm">
-      <tal:block content="structure context/@@+portlet-bugfilters" />
-      <tal:block
-          content="structure context/@@+portlet-publishing-details | nothing"/>
-      <tal:block content="structure context/@@+portlet-bugtags" />
-      <tal:releasecriticalbugs
+    <div id="bug-portlets" tal:condition="view/should_show_bug_information">
+      <div id="involvement" class="portlet involvement">
+        <ul>
+          <li style="border: 0">
+            <a href="+filebug" class="menu-link-filebug sprite bugs">
+              Report a bug
+            </a>
+          </li>
+        </ul>
+      </div>
+      <tal:menu replace="structure view/@@+related-pages" />
+      <tal:do_not_show_portlets_advanced_form
+        condition="not: view/shouldShowAdvancedForm">
+        <tal:block content="structure context/@@+portlet-bugfilters" />
+        <tal:block
+            content="structure context/@@+portlet-publishing-details | nothing"/>
+        <tal:block content="structure context/@@+portlet-bugtags"/>
+        <tal:releasecriticalbugs
+            tal:condition="view/shouldShowReleaseCriticalPortlet"
+            tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+        <tal:milestonecriticalbugs
           tal:condition="view/shouldShowReleaseCriticalPortlet"
-          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
-      <tal:milestonecriticalbugs
-        tal:condition="view/shouldShowReleaseCriticalPortlet"
-        tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
-     </tal:do_not_show_portlets_advanced_form>
+          tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
+       </tal:do_not_show_portlets_advanced_form>
+    </div>
   </tal:side>
 </body>
 

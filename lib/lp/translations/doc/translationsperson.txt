@@ -1,10 +1,11 @@
-= TranslationsPerson =
+TranslationsPerson
+==================
 
 Adapting IPerson to an ITranslationsPerson yields a TranslationsPerson
 object which provides translatable languages and translation history.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> from lp.translations.interfaces.translationsperson import (
     ...     ITranslationsPerson)

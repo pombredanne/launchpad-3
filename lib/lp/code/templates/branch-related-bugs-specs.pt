@@ -2,13 +2,30 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  tal:define="context_menu context/menu:context">
+  tal:define="context_menu view/context/menu:context">
 
+  <h3>Related bugs</h3>
   <div id="buglinks" class="actions">
     <div id="buglink-list">
       <tal:bugs tal:define="branch context;
                             show_edit python:True;">
-        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+
+        <ul tal:repeat="bugtask view/linked_bugtasks">
+          <li tal:condition="bugtask/required:launchpad.View"
+              tal:define="show_edit show_edit|Nothing"
+              tal:attributes="id string:buglink-${bugtask/bug/id}"
+              class="bug-branch-summary">
+            <tal:buglink content="structure bugtask/fmt:link" />
+            <tal:buglink-edit condition="show_edit|nothing">
+              <a title="Remove link"
+                 class="delete-buglink"
+                 tal:attributes="href string:+bug/${bugtask/bug/id}/+delete;
+                                 id string:delete-buglink-${bugtask/bug/id}">
+                <img src="/@@/remove" alt="Remove"/>
+              </a>
+            </tal:buglink-edit>
+          </li>
+        </ul>
       </tal:bugs>
     </div>
 
@@ -21,14 +38,28 @@
          tal:attributes="href link/url"
          tal:content="link/text" />
     </div>
-
   </div>
 
+  <h3>Related blueprints</h3>
   <div class="actions">
     <tal:blueprints tal:define="branch context;
                             show_edit python:True;">
-      <metal:spec-branch-links
-          use-macro="context/@@+macros/spec-branch-links"/>
+      <ul tal:repeat="spec_branch context/spec_links">
+      <li tal:define="has_edit_permission spec_branch/required:launchpad.AnyPerson;
+                      show_edit show_edit|nothing;
+                      show_edit python: show_edit and has_edit_permission;
+                      spec spec_branch/specification;"
+          class="spec-branch-summary">
+          <tal:link replace="structure spec/fmt:link" />
+          <tal:show-edit condition="show_edit|nothing">
+            <a tal:attributes="href spec_branch/fmt:url;
+                               onclick string:return switchSpecBranchFormAndSummary('${spec_branch/id}')">
+              edit<img src="/@@/edit"/>
+            </a>
+          </tal:show-edit>
+        </li>
+
+      </ul>
     </tal:blueprints>
     <div
       tal:define="link context_menu/link_blueprint"
@@ -49,7 +80,11 @@
     }
 
     Y.on('domready', function() {
-        Y.lp.code.branch.bugspeclinks.connect_branchlinks();
+        var logged_in = LP.links['me'] !== undefined;
+
+        if (logged_in) {
+            Y.lp.code.branch.bugspeclinks.connect_branchlinks();
+        }
     });
 
     });

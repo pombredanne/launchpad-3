@@ -1,5 +1,6 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=F0401
 
 """Browser code for PO templates."""
 
@@ -28,40 +29,79 @@ import cgi
 import datetime
 import operator
 import os.path
-import pytz
+
+from lazr.restful.utils import smartquote
+from storm.info import ClassAlias
+from storm.expr import (
+    And,
+    Or,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
+import pytz
 
-from canonical.lazr.utils import smartquote
-
-from canonical.launchpad import helpers, _
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
-from lp.translations.browser.poexportrequest import BaseExportView
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.launchpadform import ReturnToReferrerMixin
+from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.enums import (
+    service_uses_launchpad,
+    ServiceUsage,
+    )
+from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.registry.browser.productseries import ProductSeriesFacets
-from lp.translations.browser.translations import TranslationsMixin
 from lp.registry.browser.sourcepackage import SourcePackageFacets
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.packaging import Packaging
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.browser.poexportrequest import BaseExportView
+from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.translationsharing import (
+    TranslationSharingDetailsMixin,
+    )
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
     IPOTemplateSet,
-    IPOTemplateSubset)
+    IPOTemplateSubset,
+    )
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, GetitemNavigation,
-    LaunchpadView, LaunchpadEditFormView, Link, Navigation, NavigationMenu,
-    StandardLaunchpadFacets)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
-from canonical.launchpad.webapp.menu import structured
+    ITranslationImportQueue,
+    )
 
 
 class POTemplateNavigation(Navigation):
@@ -89,15 +129,17 @@ class POTemplateNavigation(Navigation):
         elif self.request.method in ['GET', 'HEAD']:
             # It's just a query, get a fake one so we don't create new
             # POFiles just because someone is browsing the web.
-            return self.context.getDummyPOFile(name, requester=user)
+            language = getUtility(ILanguageSet).getLanguageByCode(name)
+            if language is None:
+                raise NotFoundError(name)
+            return self.context.getDummyPOFile(
+                language, requester=user, check_for_existing=False)
         else:
             # It's a POST.
             # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should
             # check the kind of POST we got.  A logout will also be a
             # POST and we should not create a POFile in that case.
-            pofile = self.context.newPOFile(name)
-            pofile.setOwnerIfPrivileged(user)
-            return pofile
+            return self.context.newPOFile(name, owner=user)
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
@@ -147,11 +189,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         specifications_link = self.target_facets.specifications()
         specifications_link.target = self.target
         return specifications_link
-
-    def calendar(self):
-        calendar_link = self.target_facets.calendar()
-        calendar_link.target = self.target
-        return calendar_link
 
     def branches(self):
         branches_link = self.target_facets.branches()
@@ -204,7 +241,8 @@ class POTemplateSubsetView:
         self.request.response.redirect('../+translations')
 
 
-class POTemplateView(LaunchpadView, TranslationsMixin):
+class POTemplateView(LaunchpadView,
+                     TranslationsMixin, TranslationSharingDetailsMixin):
 
     SHOW_RELATED_TEMPLATES = 4
 
@@ -273,12 +311,6 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 translation_group.translation_guide_url is not None)
 
     @property
-    def has_related_templates(self):
-        by_source = self.context.relatives_by_source
-        by_name = self.context.relatives_by_name
-        return bool(by_source) or bool(by_name)
-
-    @property
     def related_templates_by_source(self):
         by_source = list(
             self.context.relatives_by_source[:self.SHOW_RELATED_TEMPLATES])
@@ -290,12 +322,11 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         if (by_source_count > self.SHOW_RELATED_TEMPLATES):
             other = by_source_count - self.SHOW_RELATED_TEMPLATES
             if (self.context.distroseries):
-                # XXX adiroiban 2009-12-21 bug=499058: A canonical_url for
-                # SourcePackageName is needed to avoid hardcoding this URL.
-                url = (canonical_url(
-                    self.context.distroseries, rootsite="translations") +
-                    "/+source/" + self.context.sourcepackagename.name +
-                    "/+translations")
+                sourcepackage = self.context.distroseries.getSourcePackage(
+                    self.context.sourcepackagename)
+                url = canonical_url(
+                    sourcepackage, rootsite="translations",
+                    view_name='+translations')
             else:
                 url = canonical_url(
                     self.context.productseries,
@@ -308,17 +339,6 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     url, other)
         else:
             return ""
-
-    @property
-    def related_templates_by_name(self):
-        by_name = list(
-            self.context.relatives_by_name[:self.SHOW_RELATED_TEMPLATES])
-        return by_name
-
-    @property
-    def has_more_templates_by_name(self):
-        by_name_count = self.context.relatives_by_name.count()
-        return by_name_count > self.SHOW_RELATED_TEMPLATES
 
     @property
     def has_pofiles(self):
@@ -335,6 +355,26 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             pofileset = getUtility(IPOFileSet)
             pofile = pofileset.getDummy(self.context, language)
         return pofile
+
+    @property
+    def is_upstream_template(self):
+        return self.context.translation_side == TranslationSide.UPSTREAM
+
+    def is_sharing(self):
+        potemplate = self.context.getOtherSidePOTemplate()
+        return potemplate is not None
+
+    @property
+    def sharing_template(self):
+        return self.context.getOtherSidePOTemplate()
+
+    def getTranslationSourcePackage(self):
+        """See `TranslationSharingDetailsMixin`."""
+        if self.is_upstream_template:
+            productseries = self.context.productseries
+            return productseries.getUbuntuTranslationFocusPackage()
+        else:
+            return self.context.sourcepackage
 
 
 class POTemplateUploadView(LaunchpadView, TranslationsMixin):
@@ -424,8 +464,8 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     'should be imported, it will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        canonical_url(self.context.translationtarget))))
+                    '<a href="%s/+imports">Translation Import Queue</a>',
+                        canonical_url(self.context.translationtarget)))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -446,14 +486,14 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     itthey = 'they'
                 self.request.response.addInfoNotification(
                     structured(
-                    'Thank you for your upload. %d file%s from the tarball '
+                    'Thank you for your upload. %s file%s from the tarball '
                     'will be automatically '
                     'reviewed in the next few hours.  If that is not enough '
                     'to determine whether and where your file%s should '
                     'be imported, %s will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                    '<a href="%s/+imports">Translation Import Queue</a>' % (
                         num, plural_s, plural_s, itthey,
                         canonical_url(self.context.translationtarget))))
                 if len(conflicts) > 0:
@@ -462,26 +502,26 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                             "A file could not be uploaded because its "
                             "name matched multiple existing uploads, for "
                             "different templates.")
-                        ul_conflicts = (
+                        ul_conflicts = structured(
                             "The conflicting file name was:<br /> "
-                            "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
+                            "<ul><li>%s</li></ul>", conflicts[0])
                     else:
-                        warning = (
-                            "%d files could not be uploaded because their "
+                        warning = structured(
+                            "%s files could not be uploaded because their "
                             "names matched multiple existing uploads, for "
-                            "different templates." % len(conflicts))
-                        ul_conflicts = (
+                            "different templates.", len(conflicts))
+                        ul_conflicts = structured(
                             "The conflicting file names were:<br /> "
                             "<ul><li>%s</li></ul>" % (
                             "</li><li>".join(map(cgi.escape, conflicts))))
                     self.request.response.addWarningNotification(
                         structured(
-                        warning + "  This makes it "
+                        "%s  This makes it "
                         "impossible to determine which template the new "
                         "upload was for.  Try uploading to a specific "
                         "template: visit the page for the template that you "
                         "want to upload to, and select the upload option "
-                        "from there.<br />"+ ul_conflicts))
+                        "from there.<br />%s", warning, ul_conflicts))
             else:
                 if len(conflicts) == 0:
                     self.request.response.addWarningNotification(
@@ -515,14 +555,56 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
-    field_names = ['translation_domain', 'description', 'priority',
-        'path', 'owner', 'iscurrent']
     label = 'Edit translation template details'
     page_title = 'Edit details'
+    PRIORITY_MIN_VALUE = 0
+    PRIORITY_MAX_VALUE = 100000
+
+    @property
+    def field_names(self):
+        field_names = [
+            'name', 'translation_domain', 'description', 'priority',
+            'path', 'iscurrent']
+        if self.context.distroseries:
+            field_names.extend([
+                'sourcepackagename',
+                'languagepack',
+                ])
+        else:
+            field_names.append('owner')
+        return field_names
+
+    @property
+    def _return_url(self):
+        # We override the ReturnToReferrerMixin _return_url because it might
+        # change when any of the productseries, distroseries,
+        # sourcepackagename or name attributes change, and the basic version
+        # only supports watching changes to a single attribute.
+
+        # The referer header is a hidden input in the form.
+        referrer = self.request.form.get('_return_url')
+        returnChanged = False
+        if referrer is None:
+            # "referer" is misspelled in the HTTP specification.
+            referrer = self.request.getHeader('referer')
+            # If we were looking at the actual template, we want a new
+            # URL constructed.
+            if referrer is not None and '/+pots/' in referrer:
+                returnChanged = True
+
+        if (referrer is not None
+            and not returnChanged
+            and referrer.startswith(self.request.getApplicationURL())
+            and referrer != self.request.getHeader('location')):
+            return referrer
+        else:
+            return canonical_url(self.context)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
         context = self.context
+        iscurrent = data.get('iscurrent', context.iscurrent)
+        context.setActive(iscurrent)
         old_description = context.description
         old_translation_domain = context.translation_domain
         self.updateContextFromData(data)
@@ -537,6 +619,87 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
             # care about regarding the date of last update.
             naked_context = removeSecurityProxy(context)
             naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
+
+    def _validateTargetAndGetTemplates(self, data):
+        """Return a POTemplateSubset corresponding to the chosen target."""
+        sourcepackagename = data.get('sourcepackagename',
+                                     self.context.sourcepackagename)
+        return getUtility(IPOTemplateSet).getSubset(
+            distroseries=self.context.distroseries,
+            sourcepackagename=sourcepackagename,
+            productseries=self.context.productseries)
+
+    def validate(self, data):
+        name = data.get('name', None)
+        if name is None or not valid_name(name):
+            self.setFieldError(
+                'name',
+                'Template name can only start with lowercase letters a-z '
+                'or digits 0-9, and other than those characters, can only '
+                'contain "-", "+" and "." characters.')
+
+        distroseries = data.get('distroseries', self.context.distroseries)
+        sourcepackagename = data.get(
+            'sourcepackagename', self.context.sourcepackagename)
+        productseries = data.get('productseries', None)
+        sourcepackage_changed = (
+            distroseries is not None and
+            (distroseries != self.context.distroseries or
+             sourcepackagename != self.context.sourcepackagename))
+        productseries_changed = (productseries is not None and
+                                 productseries != self.context.productseries)
+        similar_templates = self._validateTargetAndGetTemplates(data)
+        if similar_templates is not None:
+            self.validateName(
+                name, similar_templates, sourcepackage_changed,
+                productseries_changed)
+            self.validateDomain(
+                data.get('translation_domain'), similar_templates,
+                sourcepackage_changed, productseries_changed)
+
+        priority = data.get('priority')
+        if priority is None:
+            return
+
+        if (priority < self.PRIORITY_MIN_VALUE or
+            priority > self.PRIORITY_MAX_VALUE):
+            self.setFieldError(
+                'priority',
+                'The priority value must be between %s and %s.' % (
+                self.PRIORITY_MIN_VALUE, self.PRIORITY_MAX_VALUE))
+
+    def validateName(self, name, similar_templates,
+                     sourcepackage_changed, productseries_changed):
+        """Check that the name does not clash with an existing template."""
+        if similar_templates.getPOTemplateByName(name) is not None:
+            if sourcepackage_changed:
+                self.setFieldError(
+                    'sourcepackagename',
+                    "Source package already has a template with "
+                    "that same name.")
+            elif productseries_changed:
+                self.setFieldError(
+                    'productseries',
+                    "Series already has a template with that same name.")
+            elif name != self.context.name:
+                self.setFieldError('name', "Name is already in use.")
+
+    def validateDomain(self, domain, similar_templates,
+                       sourcepackage_changed, productseries_changed):
+        clashes = similar_templates.getPOTemplatesByTranslationDomain(domain)
+        if not clashes.is_empty():
+            if sourcepackage_changed:
+                self.setFieldError(
+                    'sourcepackagename',
+                    "Source package already has a template with "
+                    "that same domain.")
+            elif productseries_changed:
+                self.setFieldError(
+                    'productseries',
+                    "Series already has a template with that same domain.")
+            elif domain != self.context.translation_domain:
+                self.setFieldError(
+                    'translation_domain', "Domain is already in use.")
 
     @property
     def _return_attribute_name(self):
@@ -555,29 +718,8 @@ class POTemplateAdminView(POTemplateEditView):
     label = 'Administer translation template'
     page_title = "Administer"
 
-    def validateName(self, name, similar_templates):
-        """Form submission changes template name.  Validate it."""
-        if name == self.context.name:
-            # Not changed.
-            return
-
-        if similar_templates.getPOTemplateByName(name) is not None:
-            self.setFieldError('name', "Name is already in use.")
-            return
-
-    def validateDomain(self, domain, similar_templates):
-        if domain == self.context.translation_domain:
-            # Not changed.
-            return
-
-        other_template = similar_templates.getPOTemplateByTranslationDomain(
-            domain)
-        if other_template is not None:
-            self.setFieldError(
-                'translation_domain', "Domain is already in use.")
-            return
-
-    def validate(self, data):
+    def _validateTargetAndGetTemplates(self, data):
+        """Return a POTemplateSubset corresponding to the chosen target."""
         distroseries = data.get('distroseries')
         sourcepackagename = data.get('sourcepackagename')
         productseries = data.get('productseries')
@@ -593,19 +735,10 @@ class POTemplateAdminView(POTemplateEditView):
 
         if message is not None:
             self.addError(message)
-            return
-
-        # Validate name and domain; they should be unique within the
-        # template's translation target (productseries or source
-        # package).  Validate against the target selected by the form,
-        # not the template's existing target; the form may change the
-        # template's target as well.
-        similar_templates = getUtility(IPOTemplateSet).getSubset(
+            return None
+        return getUtility(IPOTemplateSet).getSubset(
             distroseries=distroseries, sourcepackagename=sourcepackagename,
             productseries=productseries)
-
-        self.validateName(data.get('name'), similar_templates)
-        self.validateDomain(data.get('translation_domain'), similar_templates)
 
 
 class POTemplateExportView(BaseExportView):
@@ -629,14 +762,8 @@ class POTemplateExportView(BaseExportView):
             pofiles = []
             export_potemplate = 'potemplate' in self.request.form
 
-            for key in self.request.form:
-                if '@' in key:
-                    code, variant = key.split('@', 1)
-                else:
-                    code = key
-                    variant = None
-
-                pofile = self.context.getPOFileByLang(code, variant)
+            for code in self.request.form:
+                pofile = self.context.getPOFileByLang(code)
                 if pofile is not None:
                     pofiles.append(pofile)
         else:
@@ -746,8 +873,8 @@ class POTemplateSubsetNavigation(Navigation):
     def traverse(self, name):
         """Return the IPOTemplate associated with the given name."""
 
-        assert self.request.method in ['GET', 'HEAD', 'POST'], (
-            'We only know about GET, HEAD, and POST')
+        assert self.request.method in ['GET', 'HEAD', 'PATCH', 'POST'], (
+            'We only know about GET, HEAD, PATCH and POST')
 
         # Get the requested potemplate.
         potemplate = self.context.getPOTemplateByName(name)
@@ -757,18 +884,18 @@ class POTemplateSubsetNavigation(Navigation):
 
         # Get whether the target for the requested template is officially
         # using Launchpad Translations.
-        if potemplate.distribution is not None:
-            official_rosetta = potemplate.distribution.official_rosetta
-        elif potemplate.product is not None:
-            official_rosetta = potemplate.product.official_rosetta
+        if potemplate.distribution is None:
+            product_or_distro = potemplate.productseries.product
         else:
-            raise AssertionError('Unknown context for %s' % potemplate.title)
+            product_or_distro = potemplate.distroseries.distribution
+        translations_usage = product_or_distro.translations_usage
 
-        if ((official_rosetta and potemplate.iscurrent) or
-            check_permission('launchpad.Edit', potemplate)):
-            # The target is using officially Launchpad Translations and the
-            # template is available to be translated, or the user is a is a
-            # Launchpad administrator in which case we show everything.
+        if (service_uses_launchpad(translations_usage) and
+           potemplate.iscurrent):
+            # This template is available for translation.
+            return potemplate
+        elif check_permission('launchpad.TranslationsAdmin', potemplate):
+            # User has Edit privileges for this template and can access it.
             return potemplate
         else:
             raise NotFoundError(name)
@@ -790,20 +917,60 @@ class BaseSeriesTemplatesView(LaunchpadView):
     productseries = None
     label = "Translation templates"
     page_title = "All templates"
+    can_edit = None
+    can_admin = None
 
     def initialize(self, series, is_distroseries=True):
+        self._template_name_cache = {}
+        self._packaging_cache = {}
         self.is_distroseries = is_distroseries
         if is_distroseries:
             self.distroseries = series
         else:
             self.productseries = series
+        user = IPersonRoles(self.user, None)
+        self.can_admin = (user is not None and
+                          (user.in_admin or user.in_rosetta_experts))
+        self.can_edit = (
+            self.can_admin or
+            check_permission('launchpad.TranslationsAdmin', series))
 
-    def iter_templates(self):
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-            productseries=self.productseries,
-            distroseries=self.distroseries,
-            ordered_by_names=True)
+        self.user_is_logged_in = (self.user is not None)
+
+    def iter_data(self):
+        # If this is not a distroseries, then the query is much simpler.
+        if not self.is_distroseries:
+            potemplateset = getUtility(IPOTemplateSet)
+            # The "shape" of the data returned by POTemplateSubset isn't quite
+            # right so we have to run it through zip first.
+            return zip(potemplateset.getSubset(
+                productseries=self.productseries,
+                distroseries=self.distroseries,
+                ordered_by_names=True))
+
+        # Otherwise we have to do more work, primarily for the "sharing"
+        # column.
+        OtherTemplate = ClassAlias(POTemplate)
+        join = (self.context.getTemplatesCollection()
+            .joinOuter(Packaging, And(
+                Packaging.distroseries == self.context.id,
+                Packaging.sourcepackagename ==
+                    POTemplate.sourcepackagenameID))
+            .joinOuter(ProductSeries,
+                ProductSeries.id == Packaging.productseriesID)
+            .joinOuter(Product, And(
+                Product.id == ProductSeries.productID,
+                Or(
+                    Product._translations_usage == ServiceUsage.LAUNCHPAD,
+                    Product._translations_usage == ServiceUsage.EXTERNAL)))
+            .joinOuter(OtherTemplate, And(
+                OtherTemplate.productseriesID == ProductSeries.id,
+                OtherTemplate.name == POTemplate.name))
+            .joinInner(SourcePackageName,
+                SourcePackageName.id == POTemplate.sourcepackagenameID))
+
+        return join.select(POTemplate, Packaging, ProductSeries, Product,
+            OtherTemplate, SourcePackageName)
 
     def rowCSSClass(self, template):
         if template.iscurrent:
@@ -811,9 +978,185 @@ class BaseSeriesTemplatesView(LaunchpadView):
         else:
             return "inactive-template"
 
-    def isVisible(self, template):
-        if (template.iscurrent or
-            check_permission('launchpad.Edit', template)):
-            return True
+    def _renderSourcePackage(self, template):
+        """Render the `SourcePackageName` for `template`."""
+        if self.is_distroseries:
+            return cgi.escape(template.sourcepackagename.name)
         else:
-            return False
+            return None
+
+    def _renderTemplateLink(self, template, url):
+        """Render a link to `template`.
+
+        :param template: The target `POTemplate`.
+        :param url: The cached URL for `template`.
+        :return: HTML for a link to `template`.
+        """
+        text = '<a href="%s">%s</a>' % (url, cgi.escape(template.name))
+        if not template.iscurrent:
+            text += ' (inactive)'
+        return text
+
+    def _renderSharing(self, template, packaging, productseries, upstream,
+            other_template, sourcepackagename):
+        """Render a link to `template`.
+
+        :param template: The target `POTemplate`.
+        :return: HTML for the "sharing" status of `template`.
+        """
+        # Testing is easier if we are willing to extract the sourcepackagename
+        # from the template.
+        if sourcepackagename is None:
+            sourcepackagename = template.sourcepackagename
+        # Build the edit link.
+        escaped_source = cgi.escape(sourcepackagename.name)
+        source_url = '+source/%s' % escaped_source
+        details_url = source_url + '/+sharing-details'
+        edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
+
+        # If all the conditions are met for sharing...
+        if packaging and upstream and other_template is not None:
+            escaped_series = cgi.escape(productseries.name)
+            escaped_template = cgi.escape(template.name)
+            pot_url = ('/%s/%s/+pots/%s' %
+                (escaped_source, escaped_series, escaped_template))
+            return (edit_link + '<a href="%s">%s/%s</a>'
+                % (pot_url, escaped_source, escaped_series))
+        else:
+            # Otherwise just say that the template isn't shared and give them
+            # a link to change the sharing.
+            return edit_link + 'not shared'
+
+    def _renderLastUpdateDate(self, template):
+        """Render a template's "last updated" column."""
+        formatter = DateTimeFormatterAPI(template.date_last_updated)
+        full_time = formatter.datetime()
+        date = formatter.approximatedate()
+        return ''.join([
+            '<span class="sortkey">%s</span>' % full_time,
+            '<span class="lastupdate_column" title="%s">%s</span>' % (
+                full_time, date),
+            ])
+
+    def _renderAction(self, base_url, name, path, sprite, enabled):
+        """Render an action for the "actions" column.
+
+        :param base_url: The cached URL for `template`.
+        :param name: Action name for display in the UI.
+        :param path: Path suffix for the action (relative to `base_url`).
+        :param sprite: Sprite class for the action.
+        :param enabled: Show this action?  If not, return empty string.
+        :return: HTML for the contents of the "actions" column.
+        """
+        if not enabled:
+            return ''
+
+        parameters = {
+            'base_url': base_url,
+            'name': name,
+            'path': path,
+            'sprite': sprite,
+        }
+        return (
+            '<a class="sprite %(sprite)s" href="%(base_url)s/%(path)s">'
+            '%(name)s'
+            '</a>') % parameters
+
+    def _renderActionsColumn(self, template, base_url):
+        """Render a template's "actions" column."""
+        if not self.user_is_logged_in:
+            return None
+
+        actions = [
+            ('Edit', '+edit', 'edit', self.can_edit),
+            ('Upload', '+upload', 'add', self.can_edit),
+            ('Download', '+export', 'download', self.user_is_logged_in),
+            ('Administer', '+admin', 'edit', self.can_admin),
+        ]
+        links = [
+            self._renderAction(base_url, *action) for action in actions]
+        html = '<div class="template_links">\n%s</div>'
+        return html % '\n'.join(links)
+
+    def _renderField(self, column_class, content, tag='td'):
+        """Create a table field of the given class and contents.
+
+        :param column_class: CSS class for this column.
+        :param content: HTML to go into the column.  If None, the field
+            will be omitted entirely.  (To produce an empty column, pass
+            the empty string instead.)
+        :param tag: The HTML tag to surround the field in.
+        :return: HTML for the entire table field, or the empty string if
+            `content` was None.
+        """
+        if content is None:
+            return ''
+        else:
+            return '<%s class="%s">%s</%s>' % (
+                tag, column_class, content, tag)
+
+    def constructTemplateURL(self, template):
+        """Build the URL for `template`.
+
+        Since this is performance-critical, views are allowed to
+        override it with optimized implementations.
+        """
+        return canonical_url(template)
+
+    def renderTemplatesHeader(self):
+        """Render HTML for the templates table header."""
+        if self.is_distroseries:
+            sourcepackage_header = "Source package"
+        else:
+            sourcepackage_header = None
+        if self.user_is_logged_in:
+            actions_header = "Actions"
+        else:
+            actions_header = None
+
+        columns = [
+            ('priority_column', "Priority"),
+            ('sourcepackage_column', sourcepackage_header),
+            ('template_column', "Template name"),
+            ('length_column', "Length"),
+            ('lastupdate_column', "Updated"),
+            ('actions_column', actions_header),
+            ]
+
+        if self.is_distroseries:
+            columns[3:3] = [('sharing', "Shared with")]
+
+        return '\n'.join([
+            self._renderField(css, text, tag='th')
+            for (css, text) in columns])
+
+    def renderTemplateRow(self, template, packaging=None, productseries=None,
+            upstream=None, other_template=None, sourcepackagename=None):
+        """Render HTML for an entire template row."""
+        if not self.can_edit and not template.iscurrent:
+            return ""
+
+        # Cached URL for template.
+        base_url = self.constructTemplateURL(template)
+
+        fields = [
+            ('priority_column', template.priority),
+            ('sourcepackage_column', self._renderSourcePackage(template)),
+            ('template_column', self._renderTemplateLink(template, base_url)),
+            ('length_column', template.messagecount),
+            ('lastupdate_column', self._renderLastUpdateDate(template)),
+            ('actions_column', self._renderActionsColumn(template, base_url)),
+        ]
+
+        if self.is_distroseries:
+            fields[3:3] = [(
+                'sharing', self._renderSharing(template, packaging,
+                    productseries, upstream, other_template,
+                    sourcepackagename)
+                )]
+
+        tds = [self._renderField(*field) for field in fields]
+
+        css = self.rowCSSClass(template)
+        return '<tr class="template_row %s">\n%s</tr>\n' % (
+            css, '\n'.join(tds))

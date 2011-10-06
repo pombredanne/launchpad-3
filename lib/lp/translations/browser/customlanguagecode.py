@@ -11,23 +11,30 @@ __all__ = [
     'CustomLanguageCodeView',
     'HasCustomLanguageCodesNavigation',
     'HasCustomLanguageCodesTraversalMixin',
-	]
+    ]
 
 
 import re
 
-from canonical.lazr.utils import smartquote
-
-from lp.translations.interfaces.customlanguagecode import (
-    ICustomLanguageCode, IHasCustomLanguageCodes)
+from lazr.restful.utils import smartquote
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView, Navigation,
-    stepthrough)
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
-
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
+from lp.translations.interfaces.customlanguagecode import (
+    ICustomLanguageCode,
+    IHasCustomLanguageCodes,
+    )
 
 # Regex for allowable custom language codes.
 CODE_PATTERN = "[a-zA-Z0-9_-]+$"
@@ -40,6 +47,7 @@ def check_code(custom_code):
 
 class CustomLanguageCodeBreadcrumb(Breadcrumb):
     """Breadcrumb for a `CustomLanguageCode`."""
+
     @property
     def text(self):
         return smartquote(
@@ -89,7 +97,7 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
                 self.setFieldError(
                     'language_code',
                     structured(
-                        "There already is a custom language code '%s'." %
+                        "There already is a custom language code '%s'.",
                             self.language_code))
                 return
         else:
@@ -103,20 +111,29 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
 
     @property
     def action_url(self):
-        return "%s/+add-custom-language-code" % canonical_url(self.context)
+        return canonical_url(
+            self.context, rootsite='translations',
+            view_name='+add-custom-language-code')
 
     @property
     def next_url(self):
         """See `LaunchpadFormView`."""
-        return "%s/+custom-language-codes" % canonical_url(self.context)
+        return canonical_url(
+            self.context, rootsite='translations',
+            view_name='+custom-language-codes')
 
-    @property
-    def cancel_url(self):
-        return self.next_url
+    cancel_url = next_url
 
 
 class CustomLanguageCodeView(LaunchpadView):
     schema = ICustomLanguageCode
+
+    @property
+    def label(self):
+        target_displayname = self.context.translation_target.displayname
+        return smartquote(
+            'Custom language code "%s" for %s' % (
+                self.context.language_code, target_displayname))
 
 
 class CustomLanguageCodeRemoveView(LaunchpadFormView):
@@ -145,17 +162,18 @@ class CustomLanguageCodeRemoveView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        return "%s/+custom-language-codes" % canonical_url(
-            self.context.translation_target)
+        """See `LaunchpadFormView`."""
+        return canonical_url(
+            self.context.translation_target, rootsite='translations',
+            view_name='+custom-language-codes')
 
-    @property
-    def cancel_url(self):
-        return self.next_url
+    cancel_url = next_url
 
 
 class HasCustomLanguageCodesTraversalMixin:
     """Navigate from an `IHasCustomLanguageCodes` to a `CustomLanguageCode`.
     """
+
     @stepthrough('+customcode')
     def traverseCustomCode(self, name):
         """Traverse +customcode URLs."""

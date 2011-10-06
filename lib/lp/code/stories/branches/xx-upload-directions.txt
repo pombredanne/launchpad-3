@@ -70,7 +70,7 @@ URL for the branch.
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
     Update this branch:
-    bzr push lp://dev/~name12/gnome-terminal/pushed
+    bzr push --use-existing lp://dev/~name12/gnome-terminal/pushed
 
 
 == SSH key directions ==
@@ -80,8 +80,7 @@ key registered, point to the SSH keys form.
 
 First, unregister the existing SSH key for Sample Person.
 
-    >>> name12_browser.open('http://launchpad.dev/')
-    >>> name12_browser.getLink('Sample Person').click()
+    >>> name12_browser.open(url='http://launchpad.dev/~name12')
     >>> name12_browser.getLink(url='editsshkeys').click()
     >>> name12_browser.getControl('Remove').click()
 
@@ -178,7 +177,8 @@ owning team's name.
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
     Update this branch:
-    bzr push lp://dev/~landscape-developers/gnome-terminal/pushed
+    bzr push --use-existing
+    lp://dev/~landscape-developers/gnome-terminal/pushed
 
 
 == Import branch ==

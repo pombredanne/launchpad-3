@@ -1,83 +1,69 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # arch-tag: 52e0c871-49a3-4186-beb8-9817d02d5465
 
-import apt_pkg
 import unittest
-from lp.archiveuploader.tests import datadir
+
+import apt_pkg
 
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile, TagFile, TagFileParseError)
+    parse_tagfile,
+    TagFileParseError,
+    )
+from lp.archiveuploader.tests import datadir
+
 
 class Testtagfiles(unittest.TestCase):
-
-    def testTagFileOnSingular(self):
-        """lp.archiveuploader.tagfiles.TagFile should parse a singular stanza
-        """
-        f = TagFile(file(datadir("singular-stanza"), "r"))
-        seenone = False
-        for stanza in f:
-            self.assertEquals(seenone, False)
-            seenone = True
-            self.assertEquals("Format" in stanza, True)
-            self.assertEquals("Source" in stanza, True)
-            self.assertEquals("FooBar" in stanza, False)
-
-    def testTagFileOnSeveral(self):
-        """TagFile should parse multiple stanzas."""
-        f = TagFile(file(datadir("multiple-stanzas"), "r"))
-        seen = 0
-        for stanza in f:
-            seen += 1
-            self.assertEquals("Format" in stanza, True)
-            self.assertEquals("Source" in stanza, True)
-            self.assertEquals("FooBar" in stanza, False)
-        self.assertEquals(seen > 1, True)
 
     def testCheckParseChangesOkay(self):
         """lp.archiveuploader.tagfiles.parse_tagfile should work on a good
            changes file
         """
-        p = parse_tagfile(datadir("good-signed-changes"))
+        parse_tagfile(datadir("good-signed-changes"))
 
-    def testCheckParseBadChangesRaises(self):
-        """lp.archiveuploader.tagfiles.parse_chantges should raise
-           TagFileParseError on failure
+    def testCheckParseBadChanges(self):
+        """Malformed but somewhat readable files do not raise an exception.
+
+        We let apt_pkg make of them what it can, and dpkg-source will
+        reject them if it can't understand.
         """
-        self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("badformat-changes"), 1)
+        parsed = parse_tagfile(datadir("bad-multiline-changes"))
+        self.assertEqual('unstable', parsed['Distribution'])
+
+    def testCheckParseMalformedMultiline(self):
+        """Malformed but somewhat readable files do not raise an exception.
+
+        We let apt_pkg make of them what it can, and dpkg-source will
+        reject them if it can't understand.
+        """
+        parsed = parse_tagfile(datadir("bad-multiline-changes"))
+        self.assertEqual('unstable', parsed['Distribution'])
+        self.assertRaises(KeyError, parsed.__getitem__, 'Fish')
 
     def testCheckParseEmptyChangesRaises(self):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on empty
         """
         self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("empty-file"), 1)
+                          parse_tagfile, datadir("empty-file"))
 
     def testCheckParseMalformedSigRaises(self):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on malformed signatures
         """
         self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("malformed-sig-changes"), 1)
-
-    def testCheckParseMalformedMultilineRaises(self):
-        """lp.archiveuploader.tagfiles.parse_chantges should raise
-           TagFileParseError on malformed continuation lines"""
-        self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("bad-multiline-changes"), 1)
+                          parse_tagfile, datadir("malformed-sig-changes"))
 
     def testCheckParseUnterminatedSigRaises(self):
-        """lp.archiveuploader.tagfiles.parse_chantges should raise
+        """lp.archiveuploader.tagfiles.parse_changes should raise
            TagFileParseError on unterminated signatures
         """
         self.assertRaises(TagFileParseError,
                           parse_tagfile,
-                          datadir("unterminated-sig-changes"),
-                          1)
+                          datadir("unterminated-sig-changes"))
 
     def testParseChangesNotVulnerableToArchExploit(self):
         """lp.archiveuploader.tagfiles.parse_tagfile should not be vulnerable
@@ -99,8 +85,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         self.apt_pkg_parsed_version = apt_pkg.ParseTagFile(tagfile)
         self.apt_pkg_parsed_version.Step()
 
-        self.parse_tagfile_version = parse_tagfile(
-            tagfile_path, allow_unsigned = True)
+        self.parse_tagfile_version = parse_tagfile(tagfile_path)
 
     def test_parse_tagfile_with_multiline_values(self):
         """parse_tagfile should not leave trailing '\n' on multiline values.
@@ -123,7 +108,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         self.assertEqual(
             expected_text,
-            self.parse_tagfile_version['binary'])
+            self.parse_tagfile_version['Binary'])
 
     def test_parse_tagfile_with_newline_delimited_field(self):
         """parse_tagfile should not leave leading or tailing '\n' when
@@ -152,7 +137,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
 
         self.assertEqual(
             expected_text,
-            self.parse_tagfile_version['files'])
+            self.parse_tagfile_version['Files'])
 
     def test_parse_description_field(self):
         """Apt-pkg preserves the blank-line indicator and does not strip
@@ -181,8 +166,4 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         # replaced by ParseTagFiles).
         self.assertEqual(
             expected_text,
-            self.parse_tagfile_version['description'])
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
+            self.parse_tagfile_version['Description'])

@@ -4,15 +4,19 @@
 __metaclass__ = type
 
 import unittest
+
 from zope.interface.verify import verifyObject
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
-from lp.translations.utilities.gettext_po_exporter import (
-    GettextPOChangedExporter)
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from canonical.testing import LaunchpadZopelessLayer
+    TranslationFileFormat,
+    )
+from lp.translations.utilities.gettext_po_exporter import (
+    GettextPOChangedExporter,
+    )
 
 
 class GettextPOChangedExporterTestCase(unittest.TestCase):
@@ -42,9 +46,3 @@ class GettextPOChangedExporterTestCase(unittest.TestCase):
             "Expected GettextPOChangedExporter to support no source formats "
             "but got %r instead." % (
                 self.translation_exporter.supported_source_formats))
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPOChangedExporterTestCase))
-    return suite

@@ -1,9 +1,31 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
-<configure xmlns="http://namespaces.zope.org/zope">
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+
     <include package="lp.archivepublisher.zcml"
              file="archivesigningkey.zcml" />
-</configure>
 
+    <securedutility
+        class="lp.archivepublisher.model.publisherconfig.PublisherConfigSet"
+        provides="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfigSet">
+        <allow
+            interface="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfigSet"/>
+    </securedutility>
+
+    <class
+        class="lp.archivepublisher.model.publisherconfig.PublisherConfig">
+        <require
+            permission="launchpad.Admin"
+            interface="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"
+            set_schema="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"/>
+    </class>
+
+</configure>

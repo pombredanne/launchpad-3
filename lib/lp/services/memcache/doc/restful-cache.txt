@@ -1,0 +1,143 @@
+****************************************
+The Storm/memcached representation cache
+****************************************
+
+The web service library lazr.restful will store the representations it
+generates in a cache, if a suitable cache implementation is
+provided. We implement a cache that stores representations of Storm
+objects in memcached.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> from lp.services.memcache.restful import (
+    ...     MemcachedStormRepresentationCache)
+    >>> cache = MemcachedStormRepresentationCache()
+
+An object's cache key is derived from its Storm metadata: its database
+table name and its primary key.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> person = getUtility(IPersonSet).getByName('salgado')
+
+    >>> cache_key = cache.key_for(
+    ...     person, 'media/type', 'web-service-version')
+    >>> print person.id, cache_key
+    29 Person(29,),testrunner...,media/type,web-service-version
+
+    >>> from operator import attrgetter
+    >>> languages = sorted(person.languages, key=attrgetter('englishname'))
+    >>> for language in languages:
+    ...     cache_key = cache.key_for(
+    ...         language, 'media/type', 'web-service-version')
+    ...     print language.id, cache_key
+    119 Language(119,),testrunner...,media/type,web-service-version
+    521 Language(521,),testrunner...,media/type,web-service-version
+
+The cache starts out empty.
+
+    >>> json_type = 'application/json'
+
+    >>> print cache.get(person, json_type, "v1", default="missing")
+    missing
+
+Add a representation to the cache, and you can retrieve it later.
+
+    >>> cache.set(person, json_type, "beta",
+    ...           "This is a representation for version beta.")
+
+    >>> print cache.get(person, json_type, "beta")
+    This is a representation for version beta.
+
+If an object has no Storm metadata, it is currently not cached at all.
+
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+    >>> hwdb_app = getUtility(IHWDBApplication)
+    >>> cache.set(hwdb_app, 'media/type', 'web-service-version', 'data')
+    >>> print cache.get(hwdb_app, 'media/type', 'web-service-version')
+    None
+
+A single object can cache different representations for different
+web service versions.
+
+    >>> cache.set(person, json_type, '1.0',
+    ...           'This is a different representation for version 1.0.')
+
+    >>> print cache.get(person, json_type, "1.0")
+    This is a different representation for version 1.0.
+
+The web service version doesn't have to actually be defined in the
+configuration. (But you shouldn't use this--see below!)
+
+    >>> cache.set(person, json_type, 'no-such-version',
+    ...           'This is a representation for a nonexistent version.')
+
+    >>> print cache.get(person, json_type, "no-such-version")
+    This is a representation for a nonexistent version.
+
+A single object can also cache different representations for different
+media types, not just application/json. (But you shouldn't use
+this--see below!)
+
+    >>> cache.set(person, 'media/type', '1.0',
+    ...           'This is a representation for a strange media type.')
+
+    >>> print cache.get(person, "media/type", "1.0")
+    This is a representation for a strange media type.
+
+When a Launchpad object is modified, its JSON representations for
+recognized web service versions are automatically removed from the
+cache.
+
+    >>> person.homepage_content = "Whatever"
+    >>> from storm.store import Store
+    >>> Store.of(person).flush()
+
+    >>> print cache.get(person, json_type, "beta", default="missing")
+    missing
+
+    >>> print cache.get(person, json_type, "1.0", default="missing")
+    missing
+
+But non-JSON representations, and representations for unrecognized web
+service versions, are _not_ removed from the cache. (This is why you
+shouldn't put such representations into the cache.)
+
+    >>> print cache.get(person, json_type, "no-such-version")
+    This is a representation for a nonexistent version.
+
+    >>> print cache.get(person, "media/type", "1.0")
+    This is a representation for a strange media type.
+
+Expiration time
+===============
+
+Objects will automatically be purged from the cache after a
+configurable time. The default is 4 hours (14400 seconds)
+
+    >>> from canonical.config import config
+    >>> print config.vhost.api.representation_cache_expiration_time
+    14400
+
+Let's change that.
+
+    >>> from canonical.config import config
+    >>> config.push('short expiration time', """\
+    ... [vhost.api]
+    ... representation_cache_expiration_time: 1
+    ... """)
+
+    >>> cache.set(person, "some/type", "version", "Some representation")
+    >>> print cache.get(person, "some/type", "version")
+    Some representation
+
+Now objects are purged from the cache after one second.
+
+    >>> import time
+    >>> time.sleep(2)
+    >>> print cache.get(person, "some/type", "version")
+    None
+
+Cleanup.
+
+    >>> ignore = config.pop("short expiration time")

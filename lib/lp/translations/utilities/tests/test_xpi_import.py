@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for XPI file format"""
@@ -9,15 +9,13 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
-from lp.translations.utilities.mozilla_xpi_importer import (
-    MozillaXpiImporter)
-from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
 from lp.translations.utilities.tests.helpers import (
     import_pofile_or_potemplate,
     )
@@ -79,7 +77,7 @@ class XpiTestCase(unittest.TestCase):
             file_contents=es_xpi.read(),
             person=self.importer,
             pofile=self.spanish_firefox,
-            is_imported=True)
+            by_maintainer=True)
 
     def _assertXpiMessageInvariant(self, message):
         """Check whether invariant part of all messages are correct."""
@@ -250,19 +248,19 @@ class XpiTestCase(unittest.TestCase):
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
             u'foozilla.name', context='main/test1.dtd')
-        translation = potmsgset.getCurrentTranslationMessage(
-            self.firefox_template, self.spanish_firefox.language)
+        translation = potmsgset.getCurrentTranslation(
+            self.firefox_template, self.spanish_firefox.language,
+            self.firefox_template.translation_side)
 
         # It's a normal message that lacks any comment.
         self.assertEquals(potmsgset.singular_text, u'FooZilla!')
 
-        # With this first import, published and active texts must
-        # match.
+        # With this first import, upstream and Ubuntu translations must match.
         self.assertEquals(
             translation.translations,
-            potmsgset.getImportedTranslationMessage(
-                self.firefox_template,
-                self.spanish_firefox.language).translations)
+            potmsgset.getOtherTranslation(
+                self.spanish_firefox.language,
+                self.firefox_template.translation_side).translations)
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
             u'foozilla.menu.accesskey', context='main/subdir/test2.dtd')
@@ -277,9 +275,9 @@ class XpiTestCase(unittest.TestCase):
             unwrap(access_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
-            potmsgset.getImportedTranslationMessage(
-                self.firefox_template,
-                self.spanish_firefox.language).translations,
+            potmsgset.getOtherTranslation(
+                self.spanish_firefox.language,
+                self.firefox_template.translation_side).translations,
             [u'M'])
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
@@ -295,9 +293,9 @@ class XpiTestCase(unittest.TestCase):
             unwrap(command_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
-            potmsgset.getImportedTranslationMessage(
-                self.firefox_template,
-                self.spanish_firefox.language).translations,
+            potmsgset.getOtherTranslation(
+                self.spanish_firefox.language,
+                self.firefox_template.translation_side).translations,
             [u'm'])
 
     def test_GetLastTranslator(self):
@@ -365,7 +363,3 @@ class XpiTestCase(unittest.TestCase):
         self.assertEqual(msgids, [
             ('firststring', 'First translatable string'),
             ('secondstring', 'Second translatable string')])
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

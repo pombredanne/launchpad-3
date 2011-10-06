@@ -2,7 +2,8 @@
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
-    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
@@ -129,9 +130,9 @@ to the user who is trying to access a given content.
 Before checking if it works as expected we will setup an environment
 where builder 'Frog' is building a job from Celso's private PPA.
 
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.buildmaster.model.buildqueue import BuildQueue
-    >>> from canonical.launchpad.interfaces import (
-    ...    IBuilderSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov_private_ppa = factory.makeArchive(
@@ -140,10 +141,10 @@ where builder 'Frog' is building a job from Celso's private PPA.
 SoyuzTestPublisher is used to make a new publication only in Celso's
 private PPA.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> test_publisher = SoyuzTestPublisher()
@@ -176,7 +177,7 @@ is widely available:
     >>> print frog.builderok
     True
 
-    >>> build_set = getUtility(IBuildSet)
+    >>> build_set = getUtility(IBinaryPackageBuildSet)
     >>> build = build_set.getByQueueEntry(frog.currentjob)
     >>> print build.title
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
@@ -240,7 +241,7 @@ in categories. They are:
  * 'PPA build machines': a group of builders capable of building
    'untrusted' sources, PPA packages. The 'virtualized' build-farm.
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> builderset = getUtility(IBuilderSet)
 
     >>> builderset_view = getMultiAdapter(
@@ -250,7 +251,7 @@ In order to have a proper dataset for the tests we will populate the
 builder table with several builders for different categories and
 architectures.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> from lp.soyuz.model.processor import Processor
@@ -389,10 +390,13 @@ processor queue in the PPA category.
     >>> any_failed_build.retry()
     >>> removeSecurityProxy(
     ...     any_failed_build.buildqueue_record).estimated_duration = one_minute
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 Now the pending build is included in the right category and group.
 
+    >>> builderset_view = getMultiAdapter(
+    ...     (builderset, empty_request), name="+index")
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
     386    2  2  0:01:00

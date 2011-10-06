@@ -10,7 +10,8 @@
   </tal:comment>
 
 <script type="text/javascript">
-LPS.use('node', 'io-base', 'lazr.anim', 'soyuz-base', function(Y) {
+LPS.use('node', 'io-base', 'lp.anim', 'lp.soyuz.base',
+        'lp.app.widgets.expander', function(Y) {
 
 
 /*
@@ -18,19 +19,13 @@ LPS.use('node', 'io-base', 'lazr.anim', 'soyuz-base', function(Y) {
  * the operation.
  */
 function informFailure(transaction_id, response, args) {
-    function retry_handler(e) {
-        e.preventDefault();
-        startUpdate(args.container);
-    };
+    var failure_message = Y.lp.soyuz.base.makeFailureNode(
+        'Failed to fetch package details.');
 
-    var failure_message = Y.soyuz.makeFailureNode(
-        'Failed to fetch package details.', retry_handler);
+    args.expander.receive(failure_message);
 
-    args.container.set('innerHTML', '');
-    args.container.appendChild(failure_message);
-
-    var anim = Y.lazr.anim.red_flash({
-        node: args.container
+    var anim = Y.lp.anim.red_flash({
+        node: args.expander.content_node
         });
     anim.run();
 }
@@ -40,19 +35,16 @@ function informFailure(transaction_id, response, args) {
  * Update the row with the XHR response.
  */
 function doUpdate(transaction_id, response, args) {
-    args.container.set('innerHTML', response.responseText);
+    var node = Y.Node.create('<div />')
+                 .set('innerHTML', response.responseText);
+    args.expander.receive(node);
 }
 
 
-/*
- * Dispatch a XHR for updating the given container.
+/**
+ * Dispatch a XHR to load the given container.
  */
-function startUpdate(container) {
-    in_progress_message = Y.soyuz.makeInProgressNode(
-        'Fetching package details ...')
-
-    container.set('innerHTML', '');
-    container.appendChild(in_progress_message);
+function loadDetails(expander) {
 
     var config = {
         on: {
@@ -60,77 +52,51 @@ function startUpdate(container) {
             'failure': informFailure
         },
         arguments: {
-            'container': container,
+            'expander': expander
         }
     };
 
-    /*
+    /**
      * If a page wants to use this outside of an archive context then it
-     * can define LP.client.cache['archive_context'], which should be a
+     * can define LP.cache['archive_context'], which should be a
      * full or relative URL to the context archive page required.
      */
     var base_url = (
-        typeof(LP.client.cache['archive_context_url']) != "undefined")
-            ? LP.client.cache['archive_context_url']
+        typeof(LP.cache['archive_context_url']) != "undefined")
+            ? LP.cache['archive_context_url']
             : '';
     if (base_url !== '') {
-        base_url += '/'
+        base_url += '/';
     }
-    var pub_id = container.get('id').replace(
-        '-container', '').replace('pub', '');
+    var pub_id = expander.content_node.get('id')
+                   .replace('pub', '')
+                   .replace('-container', '');
     var uri = base_url + '+sourcepub/' + pub_id + '/+listing-archive-extra';
     Y.io(uri, config);
 }
 
-
-/*
- * Toggle the visibility of the expander targeted and the visual of
- * the expander itself.
- */
-function toggleExpandableRow(expander) {
-    var row = Y.one('#' + expander.get('id').replace('-expander', ''));
-    var icon = expander.one('img');
-
-    var row_display = row.getStyle('display');
-    if (row_display == 'none') {
-        row.setStyle('display', 'table-row');
-        icon.set('src', '/@@/treeExpanded');
-        var container = Y.one('#' + row.get('id') + '-container');
-        if (trim(container.get('innerHTML')) == ''){
-            startUpdate(container);
-        }
-    }
-    else {
-        row.setStyle('display', 'none');
-        icon.set('src', '/@@/treeCollapsed');
-    }
-}
-
-
-/*
- * Setup expander handlers and pre-load 'treeExpanded', 'no' and
- * 'spinner' images for better reponsiveness.
+/**
+ * Setup expander handlers.
  */
 function setupPackageListExpanders() {
-    var spinner = new Image();
-    spinner.src = '/@@/spinner';
-
-    var no = new Image();
-    no.src = '/@@/no';
-
-    var tree_expanded = new Image();
-    tree_expanded.src = '/@@/treeExpanded';
-
-    function expander_handler (e) {
-        e.preventDefault();
-        toggleExpandableRow(e.currentTarget);
-    };
-
-    // Note: there are situations, such as displaying empty result
-    // sets, when there will not be any links for expanders on the page.
     var expanders = Y.all('#packages_list a.expander');
-    if (expanders !== null){
-        expanders.on("click", expander_handler);
+    var widget;
+    if (expanders !== null) {
+       function setupExpander(expander) {
+         var base_id = expander.get('id').replace('-expander', '');
+         var container = Y.one('#' + base_id);
+         var content = container.one('td div.package-details');
+         var in_progress_message = Y.lp.soyuz.base.makeInProgressNode(
+           'Fetching package details ...');
+         content.empty();
+         content.appendChild(in_progress_message);
+
+         widget = new Y.lp.app.widgets.expander.Expander(
+             expander, container, { loader: loadDetails,
+                                    animate_node: content });
+         widget.setUp();
+       };
+       expanders.each(setupExpander);
     }
 }
 
@@ -219,7 +185,7 @@ div.package-details {
     </p>
 
     <tal:request_list tal:condition="requests">
-      <table id="package-requests" class="listing"
+      <table id="package-requests" class="wide listing"
         tal:attributes="summary
                         string:Package copy requests for ${context/name}">
         <thead>

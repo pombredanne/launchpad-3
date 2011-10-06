@@ -3,15 +3,15 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# This script performs nightly chores. It should be run from 
+# This script performs nightly chores. It should be run from
 # cron as the launchpad user once a day. Typically the output
 # will be sent to an email address for inspection.
 
-# Note that http/ftp proxies are needed by the product 
+# Note that http/ftp proxies are needed by the product
 # release finder
 
 # Only run this script on loganberry
-THISHOST=`uname -n`
+THISHOST=$(uname -n)
 if [ "loganberry" != "$THISHOST" ]
 then
         echo "This script must be run on loganberry."
@@ -19,7 +19,7 @@ then
 fi
 
 # Only run this as the launchpad user
-USER=`whoami`
+USER=$(whoami)
 if [ "launchpad" != "$USER" ]
 then
         echo "Must be launchpad user to run this script."
@@ -31,52 +31,59 @@ export LPCONFIG=production
 export http_proxy=http://squid.internal:3128/
 export ftp_proxy=http://squid.internal:3128/
 
+LOGDIR=/srv/launchpad.net/production-logs/nightly
+LOGFILE=$LOGDIR/nightly.log
+
 LOCK=/var/lock/launchpad_nightly.lock
 lockfile -r0 -l 259200 $LOCK
 if [ $? -ne 0 ]; then
-    echo Unable to grab $LOCK lock - aborting
+    echo $(date): Unable to grab $LOCK lock - aborting | tee -a $LOGFILE
     ps fuxwww
     exit 1
 fi
 
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
-echo == Expiring memberships `date` ==
-python2.5 flag-expired-memberships.py -q
+echo $(date): Grabbed lock >> $LOGFILE
 
-echo == Allocating revision karma `date` ==
-python2.5 allocate-revision-karma.py -q
+echo $(date): Expiring memberships >> $LOGFILE
+python -S flag-expired-memberships.py -q --log-file=DEBUG:$LOGDIR/flag-expired-memberships.log
 
-echo == Recalculating karma `date` ==
-python2.5 foaf-update-karma-cache.py -q
+echo $(date): Allocating revision karma >> $LOGFILE
+python -S allocate-revision-karma.py -q --log-file=DEBUG:$LOGDIR/allocate-revision-karma.log
 
-echo == Updating cached statistics `date` ==
-python2.5 update-stats.py -q
+echo $(date): Recalculating karma >> $LOGFILE
+python -S foaf-update-karma-cache.py -q --log-file=INFO:$LOGDIR/foaf-update-karma-cache.log
 
-echo == Expiring questions `date` ==
-python2.5 expire-questions.py
+echo $(date): Updating cached statistics >> $LOGFILE
+python -S update-stats.py -q --log-file=DEBUG:$LOGDIR/update-stats.log
 
-### echo == Expiring bugs `date` ==
-### python2.5 expire-bugtasks.py
+echo $(date): Expiring questions >> $LOGFILE
+python -S expire-questions.py -q --log-file=DEBUG:$LOGDIR/expire-questions.log
 
-# checkwatches.py is scheduled in the /code/pqm/launchpad_crontabs branch.
-### echo == Updating bug watches `date` ==
-### python2.5 checkwatches.py
+### echo == Expiring bugs $(date) ==
+### python -S expire-bugtasks.py
 
-echo == Updating bugtask target name caches `date` ==
-python2.5 update-bugtask-targetnamecaches.py -q
+# checkwatches.py is scheduled in lp-production-crontabs.
+### echo == Updating bug watches $(date) ==
+### python -S checkwatches.py
 
-echo == Updating personal standings `date` ==
-python2.5 update-standing.py -q
+echo $(date): Updating bugtask target name caches >> $LOGFILE
+python -S update-bugtask-targetnamecaches.py -q --log-file=DEBUG:$LOGDIR/update-bugtask-targetnamecaches.log
 
-echo == Updating CVE database `date` ==
-python2.5 update-cve.py -q
+echo $(date): Updating personal standings >> $LOGFILE
+python -S update-standing.py -q --log-file=DEBUG:$LOGDIR/update-standing.log
 
-echo == Updating package cache `date` ==
-python2.5 update-pkgcache.py -q
+echo $(date): Updating CVE database >> $LOGFILE
+python -S update-cve.py -q --log-file=DEBUG:$LOGDIR/update-cve.log
 
-echo == Product Release Finder `date` ==
-python2.5 product-release-finder.py -q
+# update-pkgcache.py is scheduled in lp-production-crontabs.
+#echo == Updating package cache $(date) ==
+#python -S update-pkgcache.py -q
 
+# Release finder is scheduled in lp-production-crontabs.
+#echo == Product Release Finder $(date) ==
+#python -S product-release-finder.py -q
 
+echo $(date): Removing lock >> $LOGFILE
 rm -f $LOCK

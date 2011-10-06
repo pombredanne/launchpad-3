@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Acceptance tests for the codehosting server."""
@@ -7,36 +7,137 @@ __metaclass__ = type
 
 import atexit
 import os
+import re
+import signal
+import subprocess
+import sys
+import time
 import unittest
+import urllib2
 import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.tests import multiply_tests, TestCaseWithTransport
+from bzrlib.tests import (
+    multiply_tests,
+    TestCaseWithTransport,
+    )
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
+from zope.component import getUtility
 
+from canonical.config import config
+from canonical.testing.layers import ZopelessAppServerLayer
+from canonical.testing.profiled import profiled
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranchSet
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.tests.helpers import (
+    get_non_existant_source_package_branch_unique_name,
+    )
+from lp.codehosting import (
+    get_bzr_path,
+    get_BZR_PLUGIN_PATH_for_subprocess,
+    )
 from lp.codehosting.bzrutils import DenyingServer
 from lp.codehosting.tests.helpers import (
-    adapt_suite, LoomTestMixin)
+    adapt_suite,
+    LoomTestMixin,
+    )
 from lp.codehosting.tests.servers import (
-    CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
-from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
+    CodeHostingTac,
+    set_up_test_user,
+    SSHCodeHostingServer,
+    )
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
-from canonical.config import config
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.testing import ZopelessAppServerLayer
-from canonical.testing.profiled import profiled
+from lp.testing import TestCaseWithFactory
 
-from lp.code.enums import BranchType
-from lp.code.interfaces.branchnamespace import get_branch_namespace
+
+class ForkingServerForTests(object):
+    """Map starting/stopping a LPForkingService to setUp() and tearDown()."""
+
+    def __init__(self):
+        self.process = None
+        self.socket_path = None
+
+    def setUp(self):
+        bzr_path = get_bzr_path()
+        BZR_PLUGIN_PATH = get_BZR_PLUGIN_PATH_for_subprocess()
+        env = os.environ.copy()
+        env['BZR_PLUGIN_PATH'] = BZR_PLUGIN_PATH
+        # TODO: We probably want to use a random disk path for
+        #       forking_daemon_socket, but we need to update config so that
+        #       the CodeHosting service can find it.
+        #       The main problem is that CodeHostingTac seems to start a tac
+        #       server directly from the disk configs, and doesn't use the
+        #       in-memory config. So we can't just override the memory
+        #       settings, we have to somehow pass it a new config-on-disk to
+        #       use.
+        self.socket_path = config.codehosting.forking_daemon_socket
+        command = [sys.executable, bzr_path, 'launchpad-forking-service',
+                   '--path', self.socket_path, '-Derror']
+        process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        self.process = process
+        stderr = []
+        # The first line should be "Preloading" indicating it is ready
+        stderr.append(process.stderr.readline())
+        # The next line is the "Listening on socket" line
+        stderr.append(process.stderr.readline())
+        # Now it should be ready.  If there were any errors, let's check, and
+        # report them.
+        if (process.poll() is not None or
+            not stderr[1].strip().startswith('Listening on socket')):
+            if process.poll() is None:
+                time.sleep(1)  # Give the traceback a chance to render.
+                os.kill(process.pid, signal.SIGTERM)
+                process.wait()
+                self.process = None
+            # Looks like there was a problem. We cannot use the "addDetail"
+            # method because this class is not a TestCase and does not have
+            # access to one.  It runs as part of a layer. A "print" is the
+            # best we can do.  That should still be visible on buildbot, which
+            # is where we have seen spurious failures so far.
+            print
+            print "stdout:"
+            print process.stdout.read()
+            print "-" * 70
+            print "stderr:"
+            print ''.join(stderr)
+            print process.stderr.read()
+            print "-" * 70
+            raise RuntimeError(
+                'Bzr server did not start correctly.  See stdout and stderr '
+                'reported above. Command was "%s".  PYTHONPATH was "%s".  '
+                'BZR_PLUGIN_PATH was "%s".' %
+                (' '.join(command),
+                 env.get('PYTHONPATH'),
+                 env.get('BZR_PLUGIN_PATH')))
+
+    def tearDown(self):
+        # SIGTERM is the graceful exit request, potentially we could wait a
+        # bit and send something stronger?
+        if self.process is not None and self.process.poll() is None:
+            os.kill(self.process.pid, signal.SIGTERM)
+            self.process.wait()
+            self.process = None
+        # We want to make sure the socket path has been cleaned up, so that
+        # future runs can work correctly
+        if os.path.exists(self.socket_path):
+            # Should there be a warning/error here?
+            os.remove(self.socket_path)
 
 
 class SSHServerLayer(ZopelessAppServerLayer):
 
     _tac_handler = None
+    _forker_service = None
 
     @classmethod
     def getTacHandler(cls):
@@ -47,18 +148,27 @@ class SSHServerLayer(ZopelessAppServerLayer):
         return cls._tac_handler
 
     @classmethod
+    def getForker(cls):
+        if cls._forker_service is None:
+            cls._forker_service = ForkingServerForTests()
+        return cls._forker_service
+
+    @classmethod
     @profiled
     def setUp(cls):
         tac_handler = SSHServerLayer.getTacHandler()
         tac_handler.setUp()
         SSHServerLayer._reset()
         atexit.register(tac_handler.tearDown)
+        forker = SSHServerLayer.getForker()
+        forker.setUp()
 
     @classmethod
     @profiled
     def tearDown(cls):
         SSHServerLayer._reset()
         SSHServerLayer.getTacHandler().tearDown()
+        SSHServerLayer.getForker().tearDown()
 
     @classmethod
     @profiled
@@ -78,7 +188,7 @@ class SSHServerLayer(ZopelessAppServerLayer):
         SSHServerLayer._reset()
 
 
-class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
+class SSHTestCase(TestCaseWithTransport, LoomTestMixin, TestCaseWithFactory):
     """TestCase class that runs an SSH server as well as the app server."""
 
     layer = SSHServerLayer
@@ -100,12 +210,12 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         self.addCleanup(ssh_denier.stop_server)
 
         # Create a local branch with one revision
-        tree = self.make_branch_and_tree('.')
+        tree = self.make_branch_and_tree('local')
         self.local_branch = tree.branch
         self.local_branch_path = local_path_from_url(self.local_branch.base)
-        self.build_tree(['foo'])
+        self.build_tree(['local/foo'])
         tree.add('foo')
-        tree.commit('Added foo', rev_id='rev1')
+        self.revid = tree.commit('Added foo')
 
     def __str__(self):
         return self.id()
@@ -163,11 +273,11 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         """
         return get_bzr_path()
 
-    def push(self, local_directory, remote_url, use_existing_dir=False):
+    def push(self, local_directory, remote_url, extra_args=None):
         """Push the local branch to the given URL."""
         args = ['push', '-d', local_directory, remote_url]
-        if use_existing_dir:
-            args.append('--use-existing-dir')
+        if extra_args is not None:
+            args.extend(extra_args)
         self._run_bzr(args)
 
     def assertCantPush(self, local_directory, remote_url, error_messages=()):
@@ -223,21 +333,19 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         """
         authserver = xmlrpclib.ServerProxy(
             config.codehosting.authentication_endpoint)
-        branchfs = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+        codehosting_api = xmlrpclib.ServerProxy(
+            config.codehosting.codehosting_endpoint)
         if creator is None:
             creator_id = authserver.getUserAndSSHKeys(user)['id']
         else:
             creator_id = authserver.getUserAndSSHKeys(creator)['id']
         if branch_root is None:
             branch_root = self.server._mirror_root
-        branch_id = branchfs.createBranch(
+        branch_id = codehosting_api.createBranch(
             creator_id, '/~%s/%s/%s' % (user, product, branch))
         branch_url = 'file://' + os.path.abspath(
             os.path.join(branch_root, branch_id_to_path(branch_id)))
-        self.runInChdir(
-            self.local_branch_path,
-            self.run_bzr, ['push', '--create-prefix', branch_url],
-            retcode=None)
+        self.push(self.local_branch_path, branch_url, ['--create-prefix'])
         return branch_url
 
 
@@ -315,18 +423,19 @@ class AcceptanceTests(SSHTestCase):
             url=url)
 
     def test_push_to_new_branch(self):
-        """
-        The bzr client should be able to read and write to the codehosting
-        server just like another other server.  This means that actions
-        like:
-            * `bzr push bzr+ssh://testinstance/somepath`
-            * `bzr log sftp://testinstance/somepath`
-        (and/or their bzrlib equivalents) and so on should work, so long as
-        the user has permission to read or write to those URLs.
-        """
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
+        ZopelessAppServerLayer.txn.begin()
+        db_branch = getUtility(IBranchSet).getByUniqueName(
+            '~testuser/+junk/test-branch')
+        self.assertEqual(
+            RepositoryFormat.BZR_CHK_2A, db_branch.repository_format)
+        self.assertEqual(
+            BranchFormat.BZR_BRANCH_7, db_branch.branch_format)
+        self.assertEqual(
+            ControlFormat.BZR_METADIR_1, db_branch.control_format)
+        ZopelessAppServerLayer.txn.commit()
 
     def test_push_to_existing_branch(self):
         """Pushing to an existing branch must work."""
@@ -334,7 +443,7 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(self.local_branch_path, remote_url)
         remote_revision = self.getLastRevision(remote_url)
-        self.assertEqual(remote_revision, 'rev1')
+        self.assertEqual(self.revid, remote_revision)
         # Add a single revision to the local branch.
         tree = WorkingTree.open(self.local_branch.base)
         tree.commit('Empty commit', rev_id='rev2')
@@ -342,79 +451,39 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    def test_rename_branch(self):
+    def test_branch_renaming(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and
         those renames should be immediately reflected in subsequent SFTP
         connections.
 
-        Also, the renames may happen in the database for other reasons, e.g.
-        if the DBA running a one-off script.
+        Changing the owner or product, or changing the name of the owner,
+        product or branch can change the URL of the branch, so we change
+        everything in this test.
         """
-
         # Push the local branch to the server
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(self.local_branch_path, remote_url)
 
-        # Rename branch in the database
-        LaunchpadZopelessTestSetup().txn.begin()
+        # Rename owner, product and branch in the database
+        ZopelessAppServerLayer.txn.begin()
         branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        branch.name = 'renamed-branch'
-        LaunchpadZopelessTestSetup().txn.commit()
-
-        # Check that it's not at the old location.
-        self.assertNotBranch(
-            self.getTransportURL('~testuser/+junk/test-branch'))
-
-        # Check that it *is* at the new location.
-        self.assertBranchesMatch(
-            self.local_branch_path,
-            self.getTransportURL('~testuser/+junk/renamed-branch'))
-
-
-    def test_rename_product(self):
-        # Push the local branch to the server
-        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
-        self.push(self.local_branch_path, remote_url)
-
-        # Assign to a different product in the database. This is effectively a
-        # rename as far as bzr is concerned: the URL changes.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        branch.setTarget(user=branch.owner, project=Product.byName('firefox'))
-        LaunchpadZopelessTestSetup().txn.commit()
-
-        self.assertNotBranch(
-            self.getTransportURL('~testuser/+junk/test-branch'))
-
-        self.assertBranchesMatch(
-            self.local_branch_path,
-            self.getTransportURL('~testuser/firefox/test-branch'))
-
-    def test_rename_user(self):
-        # Rename person in the database. Again, the URL changes (and so does
-        # the username we have to connect as!).
-        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
-        self.push(self.local_branch_path, remote_url)
-
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        # Renaming a person requires a Zope interaction.
-        login(ANONYMOUS)
         branch.owner.name = 'renamed-user'
-        logout()
-        LaunchpadZopelessTestSetup().txn.commit()
+        branch.setTarget(user=branch.owner, project=Product.byName('firefox'))
+        branch.name = 'renamed-branch'
+        ZopelessAppServerLayer.txn.commit()
 
         # Check that it's not at the old location.
         self.assertNotBranch(
             self.getTransportURL(
-                '~testuser/+junk/test-branch', 'renamed-user'))
+                '~testuser/+junk/test-branch', username='renamed-user'))
 
         # Check that it *is* at the new location.
         self.assertBranchesMatch(
             self.local_branch_path,
             self.getTransportURL(
-                '~renamed-user/+junk/test-branch', 'renamed-user'))
+                '~renamed-user/firefox/renamed-branch',
+                username='renamed-user'))
 
     def test_push_team_branch(self):
         remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
@@ -422,48 +491,76 @@ class AcceptanceTests(SSHTestCase):
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     def test_push_new_branch_creates_branch_in_database(self):
+        # pushing creates a branch in the database with the correct name and
+        # last_mirrored_id.
         remote_url = self.getTransportURL(
             '~testuser/+junk/totally-new-branch')
         self.push(self.local_branch_path, remote_url)
 
-        # Retrieve the branch from the database.
-        LaunchpadZopelessTestSetup().txn.begin()
+        ZopelessAppServerLayer.txn.begin()
         branch = self.getDatabaseBranch(
             'testuser', None, 'totally-new-branch')
-        LaunchpadZopelessTestSetup().txn.abort()
 
         self.assertEqual(
-            '~testuser/+junk/totally-new-branch', branch.unique_name)
+            ['~testuser/+junk/totally-new-branch', self.revid],
+            [branch.unique_name, branch.last_mirrored_id])
+        ZopelessAppServerLayer.txn.abort()
 
-    def test_push_triggers_mirror_request(self):
-        # Pushing new data to a branch should trigger a mirror request.
-        remote_url = self.getTransportURL(
-            '~testuser/+junk/totally-new-branch')
-        self.push(self.local_branch_path, remote_url)
+    def test_record_default_stacking(self):
+        # If the location being pushed to has a default stacked-on branch,
+        # then branches pushed to that location end up stacked on it by
+        # default.
+        product = self.factory.makeProduct()
+        ZopelessAppServerLayer.txn.commit()
 
-        # Retrieve the branch from the database.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch(
-            'testuser', None, 'totally-new-branch')
-        # Confirm that the branch hasn't had a mirror requested yet. Not core
-        # to the test, but helpful for checking internal state.
-        self.assertNotEqual(None, branch.next_mirror_time)
-        branch.next_mirror_time = None
-        LaunchpadZopelessTestSetup().txn.commit()
+        ZopelessAppServerLayer.txn.begin()
 
-        # Add a single revision to the local branch.
-        tree = WorkingTree.open(self.local_branch.base)
-        tree.commit('Empty commit', rev_id='rev2')
+        self.make_branch_and_tree('stacked-on')
+        trunk_unique_name = '~testuser/%s/trunk' % product.name
+        self.push('stacked-on', self.getTransportURL(trunk_unique_name))
+        db_trunk = getUtility(IBranchSet).getByUniqueName(trunk_unique_name)
 
-        # Push the new revision.
-        self.push(self.local_branch_path, remote_url)
+        self.factory.enableDefaultStackingForProduct(
+            db_trunk.product, db_trunk)
 
-        # Retrieve the branch from the database.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch(
-            'testuser', None, 'totally-new-branch')
-        self.assertNotEqual(None, branch.next_mirror_time)
-        LaunchpadZopelessTestSetup().txn.abort()
+        ZopelessAppServerLayer.txn.commit()
+
+        stacked_unique_name = '~testuser/%s/stacked' % product.name
+        self.push(
+            self.local_branch_path, self.getTransportURL(stacked_unique_name))
+        db_stacked = getUtility(IBranchSet).getByUniqueName(
+            stacked_unique_name)
+
+        self.assertEqual(db_trunk, db_stacked.stacked_on)
+
+    def test_explicit_stacking(self):
+        # If a branch is pushed to launchpad --stacked-on the absolute URL of
+        # another Launchpad branch, this is recorded as the stacked_on
+        # attribute of the database branch, and stacked on location of the new
+        # branch is normalized to be a relative path.
+        product = self.factory.makeProduct()
+        ZopelessAppServerLayer.txn.commit()
+
+        self.make_branch_and_tree('stacked-on')
+        trunk_unique_name = '~testuser/%s/trunk' % product.name
+        trunk_url = self.getTransportURL(trunk_unique_name)
+        self.push('stacked-on', self.getTransportURL(trunk_unique_name))
+
+        stacked_unique_name = '~testuser/%s/stacked' % product.name
+        stacked_url = self.getTransportURL(stacked_unique_name)
+        self.push(
+            self.local_branch_path, stacked_url,
+            extra_args=['--stacked-on', trunk_url])
+
+        branch_set = getUtility(IBranchSet)
+        db_trunk = branch_set.getByUniqueName(trunk_unique_name)
+        db_stacked = branch_set.getByUniqueName(stacked_unique_name)
+
+        self.assertEqual(db_trunk, db_stacked.stacked_on)
+
+        output, error = self._run_bzr(['info', stacked_url])
+        actually_stacked_on = re.search('stacked on: (.*)$', output).group(1)
+        self.assertEqual('/' + trunk_unique_name, actually_stacked_on)
 
     def test_cant_access_private_branch(self):
         # Trying to get information about a private branch should fail as if
@@ -490,41 +587,73 @@ class AcceptanceTests(SSHTestCase):
             '~landscape-developers/landscape/some-branch')
         self.assertNotBranch(remote_url)
 
+    def test_push_to_new_full_branch_alias(self):
+        # We can also push branches to URLs like /+branch/~foo/bar/baz.
+        unique_name = '~testuser/firefox/new-branch'
+        remote_url = self.getTransportURL('+branch/%s' % unique_name)
+        self.push(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(
+            self.local_branch_path, self.getTransportURL(unique_name))
+
+    def test_push_to_new_short_branch_alias(self):
+        # We can also push branches to URLs like /+branch/firefox
+        # Hack 'firefox' so we have permission to do this.
+        ZopelessAppServerLayer.txn.begin()
+        firefox = Product.selectOneBy(name='firefox')
+        testuser = Person.selectOneBy(name='testuser')
+        firefox.development_focus.owner = testuser
+        ZopelessAppServerLayer.txn.commit()
+        remote_url = self.getTransportURL('+branch/firefox')
+        self.push(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
+
     def test_can_push_to_existing_hosted_branch(self):
         # If a hosted branch exists in the database, but not on the
         # filesystem, and is writable by the user, then the user is able to
         # push to it.
-        LaunchpadZopelessTestSetup().txn.begin()
+        ZopelessAppServerLayer.txn.begin()
         branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
-        LaunchpadZopelessTestSetup().txn.commit()
-        self.push(self.local_branch_path, remote_url, use_existing_dir=True)
+        ZopelessAppServerLayer.txn.commit()
+        self.push(
+            self.local_branch_path, remote_url,
+            extra_args=['--use-existing-dir'])
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     def test_cant_push_to_existing_mirrored_branch(self):
         # Users cannot push to mirrored branches.
-        LaunchpadZopelessTestSetup().txn.begin()
+        ZopelessAppServerLayer.txn.begin()
         branch = self.makeDatabaseBranch(
             'testuser', 'firefox', 'some-branch', BranchType.MIRRORED)
         remote_url = self.getTransportURL(branch.unique_name)
-        LaunchpadZopelessTestSetup().txn.commit()
+        ZopelessAppServerLayer.txn.commit()
         self.assertCantPush(
             self.local_branch_path, remote_url,
             ['Permission denied:', 'Transport operation not possible:'])
 
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
-        LaunchpadZopelessTestSetup().txn.begin()
+        ZopelessAppServerLayer.txn.begin()
         branch = self.makeDatabaseBranch('mark', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
-        LaunchpadZopelessTestSetup().txn.commit()
+        ZopelessAppServerLayer.txn.commit()
         self.assertCantPush(
             self.local_branch_path, remote_url,
             ['Permission denied:', 'Transport operation not possible:'])
 
+    def test_push_new_branch_of_non_existant_source_package_name(self):
+        ZopelessAppServerLayer.txn.begin()
+        unique_name = get_non_existant_source_package_branch_unique_name(
+            'testuser', self.factory)
+        ZopelessAppServerLayer.txn.commit()
+        remote_url = self.getTransportURL(unique_name)
+        self.push(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
+
     def test_can_push_loom_branch(self):
         # We can push and pull a loom branch.
-        tree = self.makeLoomBranchAndTree('loom')
+        self.makeLoomBranchAndTree('loom')
         remote_url = self.getTransportURL('~testuser/+junk/loom')
         self.push('loom', remote_url)
         self.assertBranchesMatch('loom', remote_url)
@@ -538,12 +667,12 @@ class SmartserverTests(SSHTestCase):
             person_name, product_name, branch_name)
 
         # Mark as mirrored.
-        LaunchpadZopelessTestSetup().txn.begin()
+        ZopelessAppServerLayer.txn.begin()
         branch = self.getDatabaseBranch(
             person_name, product_name, branch_name)
         branch.branch_type = BranchType.MIRRORED
         branch.url = "http://example.com/smartservertest/branch"
-        LaunchpadZopelessTestSetup().txn.commit()
+        ZopelessAppServerLayer.txn.commit()
         return ro_branch_url
 
     def test_can_read_readonly_branch(self):
@@ -557,9 +686,7 @@ class SmartserverTests(SSHTestCase):
 
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
-        ro_branch_url = self.createBazaarBranch(
-            'mark', '+junk', 'ro-branch')
-        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        self.createBazaarBranch('mark', '+junk', 'ro-branch')
 
         # Create a new revision on the local branch.
         tree = WorkingTree.open(self.local_branch.base)
@@ -589,15 +716,24 @@ class SmartserverTests(SSHTestCase):
         self.assertEqual(revision, remote_revision)
 
     def test_authserver_error_propagation(self):
-        # Errors raised by createBranch on the authserver should be displayed
-        # sensibly by the client.  We test this by pushing to a product that
-        # does not exist (the other error message possibilities are covered by
-        # unit tests).
+        # Errors raised by createBranch in the XML-RPC server should be
+        # displayed sensibly by the client.  We test this by pushing to a
+        # product that does not exist (the other error message possibilities
+        # are covered by unit tests).
         remote_url = self.getTransportURL('~mark/no-such-product/branch')
         message = "Project 'no-such-product' does not exist."
         last_line = self.assertCantPush(self.local_branch_path, remote_url)
         self.assertTrue(
             message in last_line, '%r not in %r' % (message, last_line))
+
+    def test_web_status_available(self):
+        # There is an HTTP service that reports whether the SSH server is
+        # available for new connections.
+        # Munge the config value in strport format into a URL.
+        self.assertEqual('tcp:', config.codehosting.web_status_port[:4])
+        port = int(config.codehosting.web_status_port[4:])
+        web_status_url = 'http://localhost:%d/' % port
+        urllib2.urlopen(web_status_url)
 
 
 def make_server_tests(base_suite, servers):

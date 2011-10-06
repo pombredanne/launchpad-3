@@ -13,9 +13,9 @@ export from.
     >>> from lp.bugs.externalbugtracker import Mantis
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> alsa_mantis = Mantis('http://example.com/')
 
     >>> verifyObject(IExternalBugTracker, alsa_mantis)
@@ -49,7 +49,8 @@ If the status can't be converted an UnknownRemoteStatusError is raised.
 Let's set up a BugTracker and some watches for the Example.com Bug
 Tracker:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestMantis)
 
@@ -57,7 +58,7 @@ Tracker:
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1550',
@@ -77,10 +78,12 @@ Collect the Example.com watches:
 
 And have our special Mantis instance process them:
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> transaction.commit()
+
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, example_bug_tracker.watches)
     INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
@@ -91,7 +94,7 @@ And have our special Mantis instance process them:
 
 Let's add a few more watches:
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> expected_remote_statuses = dict(
@@ -139,8 +142,8 @@ updateBugWatches() issues only one request to update all watches:
     CALLED _getPage(u'view.php?id=1738')
     CALLED _getPage(u'view.php?id=1748')
     CALLED _getPage(u'view.php?id=1798')
-    WARNING:...:Didn't find bug u'1798' on http://bugs.some.where
-    (local bugs: 10). (OOPS-...)
+    INFO:...:Didn't find bug u'1798' on http://bugs.some.where
+    (local bugs: 10).
 
     >>> remote_statuses = dict(
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
@@ -179,7 +182,7 @@ now no bug watches are in need of updating:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
+    >>> example_bug_tracker.watches_needing_update.count()
     0
 
 If the status isn't different, the lastchanged attribute doesn't get

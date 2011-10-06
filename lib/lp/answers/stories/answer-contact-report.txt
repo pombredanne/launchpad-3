@@ -1,4 +1,5 @@
-= Answer Contact Report =
+Answer Contact Report
+=====================
 
 To view the answer contact report for a given person, the user chooses
 the 'Answer Contact For' link from the actions portlet while viewing
@@ -55,8 +56,8 @@ he will see a link after each project to manage his registration.
     >>> content = find_tag_by_id(
     ... browser.contents, "team-answer-contacts-for-list")
     >>> print extract_text(content)
-    Gnome Baker &mdash; Remove team
-    The Gnome Panel Applets &mdash; Remove team
+    Gnome Baker Unsubscribe team
+    The Gnome Panel Applets Unsubscribe team
 
     >>> browser.getLink(id="gnomebaker-setteamanswercontact").click()
     >>> print browser.title
@@ -71,7 +72,8 @@ see the link for other users
     >>> print browser.title
     Projects for which...
 
-    >>> content = find_tag_by_id(browser.contents, "direct-answer-contacts-for-list")
+    >>> content = find_tag_by_id(
+    ...     browser.contents, "direct-answer-contacts-for-list")
     >>> print extract_text(content).encode('ascii', 'backslashreplace')
     Gnome Baker
     ...mozilla-firefox... package in Ubuntu

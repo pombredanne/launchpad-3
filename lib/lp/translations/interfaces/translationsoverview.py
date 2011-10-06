@@ -17,6 +17,7 @@ from zope.schema import Int
 
 from canonical.launchpad import _
 
+
 class MalformedKarmaCacheData(Exception):
     """KarmaCache values are missing product or distribution identifier."""
 

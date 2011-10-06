@@ -13,7 +13,11 @@ __all__ = [
     'ILabel',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 class ISchemaSet(Interface):
     """The collection of schemas."""

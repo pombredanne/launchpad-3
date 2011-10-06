@@ -13,17 +13,9 @@
         color: lightgray;
     }
     </style>
-    <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
     <script type="text/javascript">
-      LPS.use('node', 'lp.pofile', function(Y) {
-          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
-          Y.on('domready', Y.lp.pofile.initializeKeyBindings);
-          Y.on('domready', function(e) {
-            Y.lp.pofile.setFocus(autofocus_field);
-          });
+      LPS.use('lp.translations.pofile', function(Y) {
+        Y.on('domready', Y.lp.translations.pofile.initializeTranslationMessage);
       });
     </script>
     </div>
@@ -33,7 +25,7 @@
       <tal:havepluralforms condition="view/has_plural_form_information">
 
       <!--  Navigation -->
-      <metal:nav-pofile-subpages 
+      <metal:nav-pofile-subpages
         use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
         <!-- Alternative suggestions. -->
@@ -92,9 +84,9 @@
         <!-- Paging doodads. -->
         <tal:navigation
           replace="structure view/batchnav/@@+navigation-links-lower" />
-      <tal:status replace="structure context/pofile/@@+access" />
+      <tal:status replace="structure context/browser_pofile/@@+access" />
       </tal:havepluralforms>
-      <metal:pofile-js-footer 
+      <metal:pofile-js-footer
         use-macro="context/@@+translations-macros/pofile-js-footer" />
     </div>
 

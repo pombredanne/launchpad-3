@@ -3,9 +3,12 @@
 
 __metaclass__ = type
 
-import unittest
 from doctest import DocTestSuite
-import sys, os
+import os
+import sys
+import unittest
+
+
 sys.path.insert(0, os.path.join(
     os.path.dirname(__file__),
     os.pardir, os.pardir, os.pardir, os.pardir, os.pardir, 'utilities'))

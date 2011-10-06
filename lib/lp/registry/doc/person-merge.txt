@@ -1,14 +1,15 @@
-= Merging =
+Merging
+=======
 
 For many reasons (i.e. a gina run) we could have duplicated accounts in
-Launchpad. Once a duplicated account is identified, we need to allow the user
-to merge two accounts into a single one, because both represent the same
-person and they're there just because each of those was created using a
-different email address.
+Launchpad. Once a duplicated account is identified, we need to allow the
+user to merge two accounts into a single one, because both represent the
+same person and they're there just because each of those was created
+using a different email address.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import sqlvalues
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
 
     >>> login(ANONYMOUS)
@@ -19,7 +20,8 @@ different email address.
     >>> marilize = personset.getByName('marilize')
 
 
-== Sanity checks ==
+Sanity checks
+-------------
 
 We can't merge an account that still has email addresses attached to it
 
@@ -29,13 +31,15 @@ We can't merge an account that still has email addresses attached to it
     AssertionError: ...
 
 
-== Preparing test person for the merge ==
+Preparing test person for the merge
+-----------------------------------
 
 Merging people involves updating the merged person relationships. Let's
 put the person we will merge into some of those.
 
     # To assign marilize as the ubuntu team owner, we must log on as the
     # previous owner.
+
     >>> login('mark@example.com')
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
@@ -49,26 +53,29 @@ put the person we will merge into some of those.
 Karma gets reassigned to the person we merge into. Let's assign karma to
 Marilize and save it for later comparison.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> marilize_karma = marilize.assignKarma('bugfixed', product=firefox)
     >>> saved_marilize_karma_id = marilize_karma.id
     >>> print marilize_karma.person.name
     marilize
+
     >>> sampleperson_old_karma = sample.karma
 
-Branches whose owner is being merged are uniquified by appending '-N' where N
-is a unique integer. We create "peoplemerge" and "peoplemerge-1" branches owned
-by marilize, and a "peoplemerge" and "peoplemerge-1" branches owned by 'Sample
-Person' to test that branch name uniquifying works.
+Branches whose owner is being merged are uniquified by appending '-N'
+where N is a unique integer. We create "peoplemerge" and "peoplemerge-1"
+branches owned by marilize, and a "peoplemerge" and "peoplemerge-1"
+branches owned by 'Sample Person' to test that branch name uniquifying
+works.
 
-Branches with smaller IDs will be processed first, so we create "peoplemerge"
-first, and it will be renamed "peoplemerge-2". The extant "peoplemerge-1"
-branch will be renamed "peoplemerge-1-1". The "peoplemerge-0" branch will not
-be renamed since it will not conflict.
+Branches with smaller IDs will be processed first, so we create
+"peoplemerge" first, and it will be renamed "peoplemerge-2". The extant
+"peoplemerge-1" branch will be renamed "peoplemerge-1-1". The
+"peoplemerge-0" branch will not be renamed since it will not conflict.
 
-That is not a particularly sensible way of renaming branches, but it is simple
-to implement, and it be should extremely rare for the case to occur.
+That is not a particularly sensible way of renaming branches, but it is
+simple to implement, and it be should extremely rare for the case to
+occur.
 
     >>> peoplemerge = factory.makePersonalBranch(
     ...     name='peoplemerge', owner=sample)
@@ -81,35 +88,26 @@ to implement, and it be should extremely rare for the case to occur.
     >>> peoplemerge11 = factory.makePersonalBranch(
     ...     name='peoplemerge-1', owner=marilize)
 
-'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
-while marilize is an active member. After the merge, 'Sample Person' will be an
-active member of that team.
+'Sample Person' is a deactivated member of the 'Ubuntu Translators'
+team, while marilize is an active member. After the merge, 'Sample
+Person' will be an active member of that team.
 
     >>> sample in ubuntu_translators.inactivemembers
     True
+
     >>> marilize in ubuntu_translators.activemembers
     True
 
-Marilize has used OpenID to Login. The OpenIDRPSummaries will be
-transferred to Sample Person.
-
-    >>> from lp.services.openid.interfaces.openidrpsummary import (
-    ...     IOpenIDRPSummarySet)
-    >>> openidrpsummaryset = getUtility(IOpenIDRPSummarySet)
-    >>> summaries = openidrpsummaryset.getByIdentifier(
-    ...     'http://openid.launchpad.dev/+id/marilize_oid')
-    >>> summaries[0].account.displayname
-    u'Marilize Coetzee'
-
-
-== Do the merge! ==
+Do the merge!
+-------------
 
     # Now we remove the only email address marilize had, so that we can merge
     # it.  First we need to change its status, though, because we can't delete
     # a person's preferred email.
+
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     EmailAddressStatus)
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
     >>> email = IMasterObject(marilize.preferredemail)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> email.destroySelf()
@@ -119,13 +117,15 @@ transferred to Sample Person.
     >>> personset.merge(marilize, sample)
 
 
-== Merge results ==
+Merge results
+-------------
 
 Check that 'Sample Person' has indeed become an active member of 'Ubuntu
 Translators'
 
     >>> sample in ubuntu_translators.activemembers
     True
+
     >>> sample.inTeam(ubuntu_translators)
     True
 
@@ -136,32 +136,37 @@ Check that the branches have been renamed properly.
     >>> sample_junk = get_branch_namespace(sample)
     >>> sample_junk.getByName('peoplemerge') == peoplemerge
     True
+
     >>> sample_junk.getByName('peoplemerge-0') == peoplemerge0
     True
+
     >>> sample_junk.getByName('peoplemerge-1') == peoplemerge1
     True
+
     >>> sample_junk.getByName('peoplemerge-2') == peoplemerge2
     True
+
     >>> sample_junk.getByName('peoplemerge-1-1') == peoplemerge11
     True
 
-The Karma that was previously assigned to marilize is now assigned to name12
-(Sample Person).
+The Karma that was previously assigned to marilize is now assigned to
+name12 (Sample Person).
 
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> saved_marilize_karma_id == marilize_karma.id
     True
+
     >>> print marilize_karma.person.name
     name12
 
-Note that we don't bother migrating karma caches - it will just be reset next
-time the caches are rebuilt.
+Note that we don't bother migrating karma caches - it will just be reset
+next time the caches are rebuilt.
 
     >>> sample.karma == sampleperson_old_karma
     True
 
-A merged account gets a -merged suffix on its name.
+A merged person gets a -merged suffix on its name.
 
     >>> from storm.store import Store
     >>> store = Store.of(marilize)
@@ -186,8 +191,8 @@ A merged account gets a -merged suffix on its name.
     >>> results.get_one()[0]
     u'name12'
 
-The account that has been merged is flagged. We can use this to eliminate
-merged accounts from lists etc.
+The person that has been merged is flagged. We can use this to eliminate
+merged persons from lists etc.
 
     >>> results = store.execute(
     ...     "SELECT merged FROM Person WHERE name='marilize-merged'")
@@ -199,8 +204,8 @@ merged accounts from lists etc.
     >>> results.get_one()[0] is None
     True
 
-An email is sent to the user informing him that he should review his email
-and mailing list subscription settings.
+An email is sent to the user informing him that he should review his
+email and mailing list subscription settings.
 
     >>> from lp.registry.interfaces.personnotification import (
     ...     IPersonNotificationSet)
@@ -209,11 +214,14 @@ and mailing list subscription settings.
     >>> notifications = notification_set.getNotificationsToSend()
     >>> notifications.count()
     1
+
     >>> notification = notifications[0]
     >>> print notification.person.name
     name12
+
     >>> print notification.subject
     Launchpad accounts merged
+
     >>> print notification.body
     The Launchpad account named 'marilize-merged' was merged into the account
     named 'name12'. ...
@@ -226,16 +234,16 @@ and mailing list subscription settings.
 Person decoration
 -----------------
 
-Several tables "extend" the Person table by having additional information
-that is UNIQUEly keyed to Person.id. We have a utility function that merges
-information in those tables, we test it here.
+Several tables "extend" the Person table by having additional
+information that is UNIQUEly keyed to Person.id. We have a utility
+function that merges information in those tables, we test it here.
 
-We will use PersonLocation as an example. There are many permutations and
-combinations, we will exercise them all, and in each case we'll create, and
-then delete, the needed two people.
+We will use PersonLocation as an example. There are many permutations
+and combinations, we will exercise them all, and in each case we'll
+create, and then delete, the needed two people.
 
     >>> from lp.registry.model.person import PersonSet, Person
-    >>> from canonical.launchpad.interfaces import PersonCreationRationale
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> personset = PersonSet()
 
     >>> skip = []
@@ -272,11 +280,12 @@ First, we will test a merge where there is no decoration.
     >>> winner, loser = endless_supply_of_players.next()
     >>> print decorator_refs(store, winner, loser)
     <BLANKLINE>
+
     >>> personset._merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
-"Skip" should have been updated with the table and unique reference column
-name.
+"Skip" should have been updated with the table and unique reference
+column name.
 
     >>> print skip
     [('personlocation', 'person')]
@@ -286,42 +295,44 @@ There should still be no columns that reference the winner or loser.
     >>> print decorator_refs(store, winner, loser)
     <BLANKLINE>
 
-OK, now, this time, we will add some decorator information to the winner but
-not the loser.
+OK, now, this time, we will add some decorator information to the winner
+but not the loser.
 
     >>> winner, loser = endless_supply_of_players.next()
     >>> winner.setLocation(None, None, 'America/Santiago', winner)
     >>> print decorator_refs(store, winner, loser)
     winner, winner,
+
     >>> personset._merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
-There should now still be one decorator, with all columns pointing to the
-winner:
+There should now still be one decorator, with all columns pointing to
+the winner:
 
     >>> print decorator_refs(store, winner, loser)
     winner, winner,
 
-This time, we will have a decorator for the person that is being merged INTO
-another person, but nothing on the target person.
+This time, we will have a decorator for the person that is being merged
+INTO another person, but nothing on the target person.
 
     >>> winner, loser = endless_supply_of_players.next()
     >>> loser.setLocation(None, None, 'America/Santiago', loser)
     >>> print decorator_refs(store, winner, loser)
     loser, loser,
+
     >>> personset._merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
-There should now still be one decorator, with all columns pointing to the
-winner:
+There should now still be one decorator, with all columns pointing to
+the winner:
 
     >>> print decorator_refs(store, winner, loser)
     winner, winner,
 
 Now, we want to show what happens when there is a decorator for both the
-to_person and the from_person. We expect that the from_person record will
-remain as noise but non-unique columns will have been updated to point to
-the winner, and the to_person will be unaffected.
+to_person and the from_person. We expect that the from_person record
+will remain as noise but non-unique columns will have been updated to
+point to the winner, and the to_person will be unaffected.
 
     >>> winner, loser = endless_supply_of_players.next()
     >>> winner.setLocation(None, None, 'America/Santiago', winner)
@@ -329,6 +340,7 @@ the winner, and the to_person will be unaffected.
     >>> print decorator_refs(store, winner, loser)
     winner, winner,
     loser, loser,
+
     >>> personset._merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
     >>> print decorator_refs(store, winner, loser)
@@ -336,16 +348,17 @@ the winner, and the to_person will be unaffected.
     loser, winner,
 
 
-== Merging teams ==
+Merging teams
+-------------
 
 Merging of teams is also possible and uses the same API used for merging
 people.  Note, though, that when merging teams, its polls will not be
-carried over to the remaining team.  Team memberships, on the other hand,
-are carried over just like when merging people.
+carried over to the remaining team.  Team memberships, on the other
+hand, are carried over just like when merging people.
 
     >>> from datetime import datetime, timedelta
     >>> import pytz
-    >>> from canonical.launchpad.interfaces import IPollSubset, PollSecrecy
+    >>> from lp.registry.interfaces.poll import IPollSubset, PollSecrecy
     >>> test_team = personset.newTeam(sample, 'test-team', 'Test team')
     >>> launchpad_devs = personset.getByName('launchpad')
     >>> ignored = launchpad_devs.addMember(
@@ -357,82 +370,30 @@ are carried over just like when merging people.
     ...     PollSecrecy.OPEN, allowspoilt=True)
 
     # test_team has a superteam, one active member and a poll.
+
     >>> [team.name for team in test_team.super_teams]
     [u'launchpad']
+
     >>> test_team.teamowner.name
     u'name12'
+
     >>> [member.name for member in test_team.allmembers]
     [u'name12']
+
     >>> list(IPollSubset(test_team).getAll())
     [<Poll at ...]
 
     # Landscape-developers has no super teams, two members and no polls.
+
     >>> landscape = personset.getByName('landscape-developers')
     >>> [team.name for team in landscape.super_teams]
     []
+
     >>> landscape.teamowner.name
     u'name12'
+
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
-    >>> list(IPollSubset(landscape).getAll())
-    []
 
-Now we try to merge them, but since test_team has active members it can't be
-merged.
-
-    >>> personset.merge(test_team, landscape)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Only teams without active members can be merged
-
-A team with a mailing list can only be merged if has no mailing list or if the
-mailing list is in the PURGED state.  This state indicates that there are no
-artifacts of the list on the Mailman side.
-
-    >>> from canonical.launchpad.interfaces import IMailingListSet
-    >>> mailing_list = getUtility(IMailingListSet).new(landscape)
-    >>> from lp.registry.tests.mailinglists_helper import mailman
-    >>> mailman.act()
-    >>> print mailing_list.status.name
-    ACTIVE
-    >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> personset.merge(landscape, ubuntu_team)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Can't merge teams which have mailing lists...
-
-Purging the associated mailing list doesn't delete it, but puts it into a
-state that essentially treats it as nonexistent.  It still can't be merged
-until all the members are deactivated though.
-
-    >>> mailing_list.deactivate()
-    >>> mailman.act()
-    >>> mailing_list.purge()
-    >>> print mailing_list.status.name
-    PURGED
-    >>> personset.merge(landscape, ubuntu_team)
-    Traceback (most recent call last):
-    ...
-    AssertionError: from_person still has email addresses.
-
-For cases like this we have an API which takes care of deactivating all
-active members of the team so that we can perform the merge.
-
-    # Only admins can use that API, though, so we need to login as an admin.
-    >>> login('foo.bar@canonical.com')
-
-    >>> comment = "We're merging this team into another one."
-    >>> test_team.deactivateAllMembers(comment, personset.getByName('name16'))
-    >>> personset.merge(test_team, landscape)
-
-    # The resulting Landscape-developers has now a super team, but has
-    # no polls and its members are still the same two from before the
-    # merge.
-    >>> landscape.teamowner.name
-    u'name12'
-    >>> [member.name for member in landscape.allmembers]
-    [u'salgado', u'name12']
-    >>> [team.name for team in landscape.super_teams]
-    [u'launchpad']
     >>> list(IPollSubset(landscape).getAll())
     []

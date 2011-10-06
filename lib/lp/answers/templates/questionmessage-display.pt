@@ -2,22 +2,25 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
-
-<div class="boardComment">
-
+<div
+  tal:define="css_classes view/getBoardCommentCSSClass"
+  tal:attributes="class string:${css_classes};
+                  id string:comment-${context/index}">
   <div class="boardCommentDetails">
     <tal:bestanswer condition="view/isBestAnswer">
       <img src="/@@/favourite-yes" style="float:right;" alt="Best"
            title="Marked as best answer" />
     </tal:bestanswer>
     <tal:comment_has_owner>
-      <tal:comment_owner replace="structure context/owner/fmt:link" />
+      <tal:comment_owner replace="structure context/owner/fmt:link-display-name-id" />
     </tal:comment_has_owner>
     said
     <span
       tal:attributes="title context/datecreated/fmt:datetime"
       tal:content="context/datecreated/fmt:displaydate">Thursday
     13:21</span>:
+    <span style="float:right;"
+       tal:content="string: #${context/display_index}" />
   </div>
 
   <div class="boardCommentBody"
@@ -38,6 +41,17 @@
               name="field.actions.confirm"
               value="This Solved My Problem" />
     </form>
+  </div>
+
+  <div
+    tal:condition="view/canSeeSpamControls"
+    class="boardCommentFooter">
+    <a tal:attributes="id string:mark-spam-${context/index};"
+       class="js-action sprite edit mark-spam" href="#">
+       <tal:not-spam
+         condition="not: context/visible">Unhide comment</tal:not-spam>
+       <tal:spam condition="context/visible">Hide comment</tal:spam>
+    </a>
   </div>
 </div>
 </tal:root>

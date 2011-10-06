@@ -19,13 +19,16 @@ from storm.locals import Join
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.helpers import emailPeople
 from canonical.launchpad.webapp import canonical_url
-from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.model.person import get_recipients
+from lp.services.propertycache import cachedproperty
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+from lp.soyuz.enums import ArchivePurpose
 
 
 class PPAReportScript(LaunchpadScript):
@@ -72,7 +75,6 @@ class PPAReportScript(LaunchpadScript):
         with matching owner names.
         """
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.archive import ArchivePurpose
         from lp.soyuz.model.archive import Archive
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         from lp.registry.model.person import Person
@@ -179,7 +181,7 @@ class PPAReportScript(LaunchpadScript):
         self.output.write('= PPA user emails =\n')
         people_to_email = set()
         for ppa in self.ppas:
-            people_to_email.update(emailPeople(ppa.owner))
+            people_to_email.update(get_recipients(ppa.owner))
         sorted_people_to_email = sorted(
             people_to_email, key=operator.attrgetter('name'))
         for user in sorted_people_to_email:

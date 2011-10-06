@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -11,8 +11,6 @@ __metaclass__ = type
 
 __all__ = [
     'IBranchJob',
-    'IBranchDiffJob',
-    'IBranchDiffJobSource',
     'IBranchScanJob',
     'IBranchScanJobSource',
     'IBranchUpgradeJob',
@@ -28,16 +26,32 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Bytes,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
-from lp.services.job.interfaces.job import IJob, IRunnableJob, IJobSource
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    IRunnableJob,
+    )
 
 
 class IBranchJob(Interface):
     """A job related to a branch."""
+
+    id = Int(title=_('Unique id of BranchScanJob.'))
 
     branch = Object(
         title=_('Branch to use for this job.'), required=False,
@@ -49,31 +63,6 @@ class IBranchJob(Interface):
 
     def destroySelf():
         """Destroy this object."""
-
-
-class IBranchDiffJob(Interface):
-    """A job to create a static diff from a branch."""
-
-    from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
-
-    to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
-
-    def run():
-        """Acquire the static diff this job requires.
-
-        :return: the generated StaticDiff.
-        """
-
-
-class IBranchDiffJobSource(Interface):
-
-    def create(branch, from_revision_spec, to_revision_spec):
-        """Construct a new object that implements IBranchDiffJob.
-
-        :param branch: The database branch to diff.
-        :param from_revision_spec: The revision spec to diff from.
-        :param to_revision_spec: The revision spec to diff to.
-        """
 
 
 class IBranchScanJob(IRunnableJob):
@@ -88,16 +77,18 @@ class IBranchScanJobSource(IJobSource):
         :param branch: The database branch to upgrade.
         """
 
+
 class IBranchUpgradeJob(IRunnableJob):
     """A job to upgrade branches with out-of-date formats."""
 
 
 class IBranchUpgradeJobSource(IJobSource):
 
-    def create(branch):
+    def create(branch, requester):
         """Upgrade a branch to a more current format.
 
         :param branch: The database branch to upgrade.
+        :param requester: The person requesting the upgrade.
         """
 
 
@@ -108,8 +99,6 @@ class IRevisionMailJob(IRunnableJob):
 
     from_address = Bytes(title=u'The address to send mail from.')
 
-    perform_diff = Text(title=u'Determine whether diff should be performed.')
-
     body = Text(title=u'The main text of the email to send.')
 
     subject = Text(title=u'The subject of the email to send.')
@@ -118,7 +107,7 @@ class IRevisionMailJob(IRunnableJob):
 class IRevisionMailJobSource(Interface):
     """A utility to create and retrieve RevisionMailJobs."""
 
-    def create(db_branch, revno, email_from, message, perform_diff, subject):
+    def create(db_branch, revno, email_from, message, subject):
         """Create and return a new object that implements IRevisionMailJob."""
 
     def iterReady():
@@ -189,20 +178,6 @@ class IRosettaUploadJobSource(Interface):
         :param branch: The `IBranch` that is being scanned.
         :return: Boolean.
         """
-
-    def findProductSeries(branch, force_translations_upload=False):
-        """Find `ProductSeries` that import translation files from branch.
-
-        :param branch: The `IBranch` that is being scanned.
-        :param force_translations_upload: If True, return all
-            `ProductSeries` attached to this branch regardless of their
-            import mode settings.
-        :return: a list of `IProductSeries`.
-        """
-        # XXX JeroenVermeulen 2010-01-12 bug=521095: 
-        # force_translations_upload was meant to ignore import settings
-        # for one specific ProductSeries attached to the branch, not any
-        # ProductSeries attached to the branch.
 
 
 class IReclaimBranchSpaceJob(IRunnableJob):

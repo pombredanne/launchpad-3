@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,29 +8,32 @@ import os
 import subprocess
 import sys
 import time
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import BufferLogger
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.packagecopyrequest import (
-    IPackageCopyRequestSet, PackageCopyStatus)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.scripts.ftpmaster import PackageLocationError, SoyuzScriptError
+from lp.services.log.logger import BufferLogger
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.scripts.ftpmaster import (
+    PackageLocationError,
+    SoyuzScriptError,
+    )
 from lp.soyuz.scripts.populate_archive import ArchivePopulator
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.faketransaction import FakeTransaction
 
 
 def get_spn(build):
@@ -72,11 +75,24 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
+    def getScript(self, test_args=None):
+        """Return an ArchivePopulator instance."""
+        if test_args is None:
+            test_args = []
+        script = ArchivePopulator("test copy archives", test_args=test_args)
+        script.logger = BufferLogger()
+        script.txn = self.layer.txn
+        return script
+
     def testCopyArchiveCreation(self):
         """Start archive population, check data before and after.
 
         Use the hoary-RELEASE suite along with the main component.
         """
+        # XXX: JamesWestby 2010-06-21 bug=596984: it is not clear
+        # what this test is testing that is not covered in more
+        # specific tests. It should be removed if there is nothing
+        # else as it is fragile due to use of sampledata.
         DatabaseLayer.force_dirty_database()
         # Make sure a copy archive with the desired name does
         # not exist yet.
@@ -103,7 +119,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', archive_name, '--to-user', 'salgado', '--reason',
             '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '--component', 'main'
             ]
 
         # Start archive population now!
@@ -118,19 +133,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             distro, ArchivePurpose.COPY, archive_name)
         self.assertTrue(copy_archive is not None)
 
-        # Ascertain that the new copy archive was created with the 'enabled'
-        # flag turned off.
-        self.assertFalse(copy_archive.enabled)
-
-        # Also, make sure that the builds for the new copy archive will be
-        # carried out on non-virtual builders.
-        self.assertTrue(copy_archive.require_virtualized)
-
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
         # Now check that we have build records for the sources cloned.
-        builds = list(getUtility(IBuildSet).getBuildsForArchive(
+        builds = list(getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
             copy_archive, status=BuildStatus.NEEDSBUILD))
 
         # Please note: there will be no build for the pmount package
@@ -146,7 +153,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self, archive_name=None, suite='hoary', user='salgado',
         exists_before=None, exists_after=None, exception_type=None,
         exception_text=None, extra_args=None, copy_archive_name=None,
-        reason=None, output_substr=None):
+        reason=None, output_substr=None, nonvirtualized=False):
         """Run the script to test.
 
         :type archive_name: `str`
@@ -177,11 +184,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             the script
         :param output_substr: this must be part of the script's output
         """
-        class FakeZopeTransactionManager:
-            def commit(self):
-                pass
-            def begin(self):
-                pass
 
         if copy_archive_name is None:
             now = int(time.time())
@@ -209,7 +211,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         script_args = [
             '--from-distribution', distro_name, '--from-suite', suite,
             '--to-distribution', distro_name, '--to-suite', suite,
-            '--to-archive', archive_name, '--to-user', user
+            '--to-archive', archive_name, '--to-user', user,
             ]
 
         # Empty reason string indicates that the '--reason' command line
@@ -220,6 +222,9 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             reason = "copy archive, %s" % datetime.ctime(datetime.utcnow())
             script_args.extend(['--reason', reason])
 
+        if nonvirtualized:
+            script_args.append('--nonvirtualized')
+
         if extra_args is not None:
             script_args.extend(extra_args)
 
@@ -228,7 +233,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             test_args=script_args)
 
         script.logger = BufferLogger()
-        script.txn = FakeZopeTransactionManager()
+        script.txn = FakeTransaction()
 
         if exception_type is not None:
             self.assertRaisesWithContent(
@@ -238,7 +243,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         # Does the script's output contain the specified sub-string?
         if output_substr is not None and not output_substr.isspace():
-            output = script.logger.buffer.getvalue()
+            output = script.logger.getLogBuffer()
             self.assertTrue(output_substr in output)
 
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
@@ -261,7 +266,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         the script should fail with an appropriate error message.
         """
         now = int(time.time())
-        # The colons in the name make it invalid.
+        # The slashes in the name make it invalid.
         invalid_name = "ra//%s" % now
 
         extra_args = ['-a', '386']
@@ -305,76 +310,27 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_type=SoyuzScriptError,
             exception_text="Invalid user name: '%s'" % invalid_user)
 
-    def testArchWithoutBuilds(self):
-        """Try copy archive population with no builds.
+    def testUnknownPackagesetName(self):
+        """Try copy archive population with an unknown packageset name.
 
-        The user may specify a number of given architecture tags on the
-        command line.
-        The script should create build records only for the specified
-        architecture tags that are supported by the destination distro series.
-
-        In this (test) case the specified architecture tag should have the
-        effect that no build records are created.
+        The caller can request copying specific packagesets. We test
+        what happens if they request a packageset that doesn't exist.
         """
-        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+        unknown_packageset = "unknown"
+        extra_args = ['-a', '386', "--package-set", unknown_packageset]
+        self.runScript(
+            extra_args=extra_args,
+            exception_type=PackageLocationError,
+            exception_text="Could not find packageset No such package set"
+            " (in the specified distro series): '%s'." % unknown_packageset)
 
-        # Verify that we have the right source packages in the sample data.
-        self._verifyPackagesInSampleData(hoary)
-
-        # Restrict the builds to be created to the 'amd64' architecture
-        # only. This should result in zero builds.
-        extra_args = ['-a', 'amd64']
+    def testNonvirtualized(self):
+        """--nonvirtualized means the archive won't require virtualization."""
         copy_archive = self.runScript(
-            extra_args=extra_args, exists_after=True, reason="zero builds")
-
-        # Make sure the right source packages were cloned.
-        self._verifyClonedSourcePackages(copy_archive, hoary)
-
-        # Now check that we have zero build records for the sources cloned.
-        builds = list(getUtility(IBuildSet).getBuildsForArchive(
-            copy_archive, status=BuildStatus.NEEDSBUILD))
-        build_spns = [
-            get_spn(removeSecurityProxy(build)).name for build in builds]
-
-        self.assertTrue(len(build_spns) == 0)
-
-        # Also, make sure the package copy request status was updated.
-        [pcr] = getUtility(
-            IPackageCopyRequestSet).getByTargetArchive(copy_archive)
-        self.assertTrue(pcr.status == PackageCopyStatus.COMPLETE)
-
-        # This date is set when the copy request makes the transition to
-        # the "in progress" state.
-        self.assertTrue(pcr.date_started is not None)
-        # This date is set when the copy request makes the transition to
-        # the "completed" state.
-        self.assertTrue(pcr.date_completed is not None)
-        self.assertTrue(pcr.date_started <= pcr.date_completed)
-
-        # Last but not least, check that the copy archive creation reason was
-        # captured as well.
-        self.assertTrue(pcr.reason == 'zero builds')
-
-    def testCopyFromPPA(self):
-        """Try copy archive population from a PPA.
-
-        In this (test) case an archive is populated from a PPA.
-        """
-        warty = getUtility(IDistributionSet)['ubuntu']['warty']
-        archive_set = getUtility(IArchiveSet)
-        ppa = archive_set.getPPAByDistributionAndOwnerName(
-            warty.distribution, 'cprov', 'ppa')
-
-        # Verify that we have the right source packages in the sample data.
-        packages = self._getPendingPackageNames(ppa, warty)
-
-        # Take a snapshot of the PPA.
-        extra_args = ['-a', 'amd64', '--from-user', 'cprov']
-        copy_archive = self.runScript(
-            suite='warty', extra_args=extra_args, exists_after=True)
-
-        copies = self._getPendingPackageNames(copy_archive, warty)
-        self.assertEqual(packages, copies)
+            archive_name="copy-archive-test", exists_before=False,
+            exists_after=True, nonvirtualized=True,
+            extra_args=['-a', '386'])
+        self.assertFalse(copy_archive.require_virtualized)
 
     def testPackagesetDelta(self):
         """Try to calculate the delta between two source package sets."""
@@ -396,13 +352,13 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # Check which source packages are fresher or new in the second stage
         # archive.
         expected_output = (
-            "INFO: Fresher packages: 1\n"
-            "INFO: * alsa-utils (2.0 > 1.0.9a-4ubuntu1)\n"
-            "INFO: New packages: 1\n"
-            "INFO: * new-in-second-round (1.0)\n")
+            "INFO Fresher packages: 1\n"
+            "INFO * alsa-utils (2.0 > 1.0.9a-4ubuntu1)\n"
+            "INFO New packages: 1\n"
+            "INFO * new-in-second-round (1.0)\n")
 
         extra_args = ['--package-set-delta']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args, reason='', output_substr=expected_output,
             copy_archive_name=first_stage.name)
 
@@ -437,9 +393,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             # The set of packages that were superseded in the target archive.
             obsolete=set(['alsa-utils 1.0.9a-4ubuntu1 in hoary']),
             # The set of packages that are new/fresher in the source archive.
-            new=set(['alsa-utils 2.0 in hoary',
-                     'new-in-second-round 1.0 in hoary'])
-            )
+            new=set([
+                'alsa-utils 2.0 in hoary',
+                'new-in-second-round 1.0 in hoary',
+                ]))
 
         # Now populate a 3rd copy archive from the first ubuntu/hoary
         # snapshot.
@@ -467,9 +424,10 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             # The set of packages that were superseded in the target archive.
             obsolete=set(['alsa-utils 1.0.9a-4ubuntu1 in hoary']),
             # The set of packages that are new/fresher in the source archive.
-            new=set(['alsa-utils 2.0 in hoary',
-                     'new-in-second-round 1.0 in hoary'])
-            )
+            new=set([
+                'alsa-utils 2.0 in hoary',
+                'new-in-second-round 1.0 in hoary',
+                ]))
 
     def testUnknownOriginArchive(self):
         """Try copy archive population with a unknown origin archive.
@@ -477,7 +435,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         This test should provoke a `SoyuzScriptError` exception.
         """
         extra_args = ['-a', 'amd64', '--from-archive', '9th-level-cache']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="Origin archive does not exist: '9th-level-cache'")
@@ -488,7 +446,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         This test should provoke a `SoyuzScriptError` exception.
         """
         extra_args = ['-a', 'amd64', '--from-user', 'king-kong']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="No PPA for user: 'king-kong'")
@@ -500,7 +458,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         """
         extra_args = [
             '-a', 'amd64', '--from-archive', '//']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="Invalid origin archive name: '//'")
@@ -511,7 +469,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         This test should provoke a `SoyuzScriptError` exception.
         """
         extra_args = ['-a', 'wintel']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text="Invalid architecture tag: 'wintel'")
@@ -531,7 +489,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             extra_args=extra_args, exists_before=False)
 
         extra_args = ['--merge-copy', '-a', '386', '-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args, copy_archive_name=copy_archive.name,
             exception_type=SoyuzScriptError,
             exception_text=(
@@ -549,7 +507,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         needed.
         """
         extra_args = ['-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             # Pass an empty reason parameter string to indicate that no
             # '--reason' command line argument is to be provided.
             extra_args=extra_args, reason='',
@@ -566,7 +524,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         *existing* archives.
         """
         extra_args = ['--merge-copy', '-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
             exception_text=(
@@ -581,11 +539,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         with the same name and distribution.
         """
         extra_args = ['-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args, exists_after=True,
             copy_archive_name='hello-1')
         extra_args = ['-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args,
             copy_archive_name='hello-1', exception_type=SoyuzScriptError,
             exception_text=(
@@ -596,66 +554,17 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
 
         This test should provoke a `SoyuzScriptError` exception.
         """
-        copy_archive = self.runScript(
+        self.runScript(
             exception_type=SoyuzScriptError,
             exception_text="error: architecture tags not specified.")
 
-    def testMultipleArchTags(self):
-        """Try copy archive population with multiple architecture tags.
-
-        The user may specify a number of given architecture tags on the
-        command line.
-        The script should create build records only for the specified
-        architecture tags that are supported by the destination distro series.
-
-        In this (test) case the script should create the build records for the
-        '386' architecture.
-        """
-        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
-
-        # Verify that we have the right source packages in the sample data.
-        self._verifyPackagesInSampleData(hoary)
-
-        # Please note:
-        #   * the 'amd64' DistroArchSeries has no resulting builds.
-        #   * the '-a' command line parameter is cumulative in nature
-        #     i.e. the 'amd64' architecture tag specified after the '386'
-        #     tag does not overwrite the latter but is added to it.
-        extra_args = ['-a', '386', '-a', 'amd64']
-        copy_archive = self.runScript(
-            extra_args=extra_args, exists_after=True)
-
-        # Make sure the right source packages were cloned.
-        self._verifyClonedSourcePackages(copy_archive, hoary)
-
-        # Now check that we have the build records expected.
-        builds = list(getUtility(IBuildSet).getBuildsForArchive(
-            copy_archive, status=BuildStatus.NEEDSBUILD))
-        build_spns = [
-            get_spn(removeSecurityProxy(build)).name for build in builds]
-        self.assertEqual(build_spns, self.expected_build_spns)
-
-        def get_family_names(result_set):
-            """Extract processor family names from result set."""
-            family_names = []
-            for archivearch in rset:
-                family_names.append(
-                    removeSecurityProxy(archivearch).processorfamily.name)
-
-            family_names.sort()
-            return family_names
-
-        # Make sure that the processor family names specified for the copy
-        # archive at hand were stored in the database.
-        rset = getUtility(IArchiveArchSet).getByArchive(copy_archive)
-        self.assertEqual(get_family_names(rset), [u'amd64', u'x86'])
-
     def testBuildsPendingAndSuspended(self):
         """All builds in the new copy archive are pending and suspended."""
+
         def build_in_wrong_state(build):
             """True if the given build is not (pending and suspended)."""
             return not (
-                build.buildstate == BuildStatus.NEEDSBUILD and
+                build.status == BuildStatus.NEEDSBUILD and
                 build.buildqueue_record.job.status == JobStatus.SUSPENDED)
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
@@ -669,7 +578,8 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self._verifyClonedSourcePackages(archive, hoary)
 
         # Get the binary builds generated for the copy archive at hand.
-        builds = list(getUtility(IBuildSet).getBuildsForArchive(archive))
+        builds = list(getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+            archive))
         # At least one binary build was generated for the target copy archive.
         self.assertTrue(len(builds) > 0)
         # Now check that the binary builds and their associated job records
@@ -677,7 +587,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         #   - binary build: pending
         #   - job: suspended
         builds_in_wrong_state = filter(build_in_wrong_state, builds)
-        self.assertEqual (
+        self.assertEqual(
             [], builds_in_wrong_state,
             "The binary builds generated for the target copy archive "
             "should all be pending and suspended. However, at least one of "
@@ -694,11 +604,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # We will make a private PPA and then attempt to copy from it.
         joe = self.factory.makePerson(name='joe')
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        joes_private_ppa = self.factory.makeArchive(
+        self.factory.makeArchive(
             owner=joe, private=True, name="ppa", distribution=ubuntu)
 
         extra_args = ['--from-user', 'joe', '-a', 'amd64']
-        copy_archive = self.runScript(
+        self.runScript(
             extra_args=extra_args, exception_type=SoyuzScriptError,
             exception_text=(
                 "Cannot copy from private archive ('joe/ppa')"))
@@ -718,7 +628,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             enabled=False)
 
         extra_args = ['--from-user', 'cprov', '--merge-copy']
-        copy_archive = self.runScript(
+        self.runScript(
             copy_archive_name=disabled_archive.name, reason='',
             extra_args=extra_args, exception_type=SoyuzScriptError,
             exception_text='error: cannot copy to disabled archive')
@@ -757,11 +667,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher.addFakeChroots(hoary)
-        unused = test_publisher.setUpDefaultDistroSeries(hoary)
-        new_package = test_publisher.getPubSource(
+        test_publisher.setUpDefaultDistroSeries(hoary)
+        test_publisher.getPubSource(
             sourcename="new-in-second-round", version="1.0",
             distroseries=hoary, archive=ubuntu.main_archive)
-        fresher_package = test_publisher.getPubSource(
+        test_publisher.getPubSource(
             sourcename="alsa-utils", version="2.0", distroseries=hoary,
             archive=ubuntu.main_archive)
         sources = ubuntu.main_archive.getPublishedSources(
@@ -791,6 +701,3 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # Make sure the source to be copied are the ones we expect (this
         # should break in case of a sample data change/corruption).
         self.assertEqual(src_names, self.expected_src_names)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

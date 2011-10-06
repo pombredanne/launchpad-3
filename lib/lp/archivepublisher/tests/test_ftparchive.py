@@ -1,45 +1,51 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ftparchive.py"""
 
 __metaclass__ = type
 
-import os
-import shutil
 import difflib
+import os
+import re
+import shutil
 from tempfile import mkdtemp
 import unittest
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import LaunchpadZopelessLayer
-from lp.archivepublisher.config import Config
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.ftparchive import FTPArchiveHandler, f_touch
+from lp.archivepublisher.model.ftparchive import (
+    AptFTPArchiveFailure,
+    f_touch,
+    FTPArchiveHandler,
+    )
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import TestCaseWithFactory
 
 
-def sanitize_feisty_apt_ftparchive_output(text):
-    # See XXX BarryWarsaw 2007-05-18 bug=116048:
-    #
-    # This function filters feisty's apt-ftparchive output to look more like
-    # dapper's output.  Specifically, it removes any lines that start with
-    # SHA1: or SHA256: since dapper's version doesn't have these lines.  Start
-    # by splitting the original text by lines, keeping the original line
-    # endings.
-    lines = text.splitlines(True)
-    return ''.join(line for line in lines
-                   if not (line.startswith('SHA256:') or
-                           line.startswith('SHA1:')))
+def sanitize_apt_ftparchive_Sources_output(text):
+    # XXX: maxb 2010-04-15 bug=563503: Filter Checksums-* stanzas out of
+    # apt-ftparchive Sources file content, such that the output of lucid
+    # apt-ftparchive is the same as on karmic.
+    return re.subn(r'(?sm)^Checksums-.*?(?=^[^ ])', '', text)[0]
 
 
 class SamplePublisher:
     """Publisher emulation test class."""
+
     def __init__(self, archive):
         self.archive = archive
 
@@ -60,15 +66,16 @@ class FakeSelectResult:
         return self._result[i:j]
 
 
-class TestFTPArchive(unittest.TestCase):
+class TestFTPArchive(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestFTPArchive, self).setUp()
         self.layer.switchDbUser(config.archivepublisher.dbuser)
 
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
         self._archive = self._distribution.main_archive
-        self._config = Config(self._distribution)
+        self._config = getPubConfig(self._archive)
         self._config.setupArchiveDirs()
         self._sampledir = os.path.join(
             config.root, "lib", "lp", "archivepublisher", "tests",
@@ -79,11 +86,12 @@ class TestFTPArchive(unittest.TestCase):
         self._overdir = self._config.overrideroot
         self._listdir = self._config.overrideroot
         self._tempdir = self._config.temproot
-        self._logger = QuietFakeLogger()
+        self._logger = BufferLogger()
         self._dp = DiskPool(self._pooldir, self._tempdir, self._logger)
         self._publisher = SamplePublisher(self._archive)
 
     def tearDown(self):
+        super(TestFTPArchive, self).tearDown()
         shutil.rmtree(self._config.distroroot)
 
     def _verifyFile(self, filename, directory, output_filter=None):
@@ -161,7 +169,7 @@ class TestFTPArchive(unittest.TestCase):
             hoary, PackagePublishingPocket.RELEASE)
         expectedBinaries = [
             ('pmount', 'hoary', 'main', 'base', 'extra'),
-            ('pmount', 'hoary', 'universe', 'editors', 'important')
+            ('pmount', 'hoary', 'universe', 'editors', 'important'),
             ]
         self.assertEqual(expectedBinaries, list(published_binaries))
 
@@ -226,9 +234,13 @@ class TestFTPArchive(unittest.TestCase):
 
         binary_files = fa.getBinaryFiles(
             hoary, PackagePublishingPocket.RELEASE)
-        expected_files = [
-            ('pmount', 'hoary', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa')
-            ]
+        expected_files = [(
+            'pmount',
+            'hoary',
+            'pmount_1.9-1_all.deb',
+            'main',
+            'binary-hppa',
+            )]
         self.assertEqual(expected_files, list(binary_files))
 
     def test_publishFileLists(self):
@@ -236,9 +248,9 @@ class TestFTPArchive(unittest.TestCase):
         fa = self._setUpFTPArchiveHandler()
 
         source_files = FakeSelectResult(
-            [('foo', 'hoary-test',  'foo.dsc', 'main')])
+            [('foo', 'hoary-test', 'foo_1.dsc', 'main')])
         binary_files = FakeSelectResult(
-            [('foo', 'hoary-test', 'foo.deb', 'main', 'binary-i386')])
+            [('foo', 'hoary-test', 'foo_1_i386.deb', 'main', 'binary-i386')])
         fa.publishFileLists(source_files, binary_files)
 
         # Check that the file lists generated by LP exist and have the
@@ -258,21 +270,28 @@ class TestFTPArchive(unittest.TestCase):
 
         # Calculate overrides.
         source_overrides = FakeSelectResult(
-            [('foo', 'hoary-test', 'main', 'misc'),])
+            [('foo', 'hoary-test', 'main', 'misc'), ])
         binary_overrides = FakeSelectResult(
             [('foo', 'hoary-test', 'main', 'misc', 'extra')])
         fa.publishOverrides(source_overrides, binary_overrides)
 
         # Calculate filelists.
         source_files = FakeSelectResult(
-            [('foo', 'hoary-test',  'foo.dsc', 'main')])
+            [('foo', 'hoary-test', 'foo_1.dsc', 'main')])
         binary_files = FakeSelectResult(
-            [('foo', 'hoary-test', 'foo.deb', 'main', 'binary-i386')])
+            [('foo', 'hoary-test', 'foo_1_i386.deb', 'main', 'binary-i386')])
         fa.publishFileLists(source_files, binary_files)
 
         # Add mentioned files in the repository pool/.
-        self._addRepositoryFile('main', 'foo', 'foo.dsc')
-        self._addRepositoryFile('main', 'foo', 'foo.deb')
+        self._addRepositoryFile('main', 'foo', 'foo_1.dsc')
+        self._addRepositoryFile('main', 'foo', 'foo_1_i386.deb')
+
+        # When include_long_descriptions is set, apt.conf has
+        # LongDescription "true" for that series.
+        hoary_test = self._distribution.getSeries('hoary-test')
+        self.assertTrue(hoary_test.include_long_descriptions)
+        breezy_autotest = self._distribution.getSeries('breezy-autotest')
+        breezy_autotest.include_long_descriptions = False
 
         # XXX cprov 2007-03-21: Relying on byte-to-byte configuration file
         # comparing is weak. We should improve this methodology to avoid
@@ -285,31 +304,22 @@ class TestFTPArchive(unittest.TestCase):
         # those kind of tests and avoid to run it when performing 'make
         # check'. Although they should remain active in PQM to avoid possible
         # regressions.
-        assert fa.runApt(apt_conf) == 0
-        # XXX barry 2007-05-18 bug=116048:
-        # This is a hack to make this test pass on dapper and feisty.
-        # Feisty's apt-ftparchive outputs SHA256 and MD5 hash
-        # lines which don't appear in dapper's version.  We can't change the
-        # sample data to include these lines because that would break pqm,
-        # which runs dapper.  But without those lines, a straight byte
-        # comparison will fail on developers' feisty boxes.  The hack then is
-        # to filter these lines out of the output from apt-ftparchive.
-        # Feisty's apt-ftparchive also includes an extra blank line. :(
+        fa.runApt(apt_conf)
         self._verifyFile("Packages",
-            os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"),
-                         sanitize_feisty_apt_ftparchive_output)
+            os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"))
         self._verifyFile("Sources",
-            os.path.join(self._distsdir, "hoary-test", "main", "source"))
+            os.path.join(self._distsdir, "hoary-test", "main", "source"),
+            sanitize_apt_ftparchive_Sources_output)
 
         # XXX cprov 2007-03-21: see above, byte-to-byte configuration
         # comparing is weak.
         # Test that a publisher run now will generate an empty apt
         # config and nothing else.
         apt_conf = fa.generateConfig()
-        assert len(file(apt_conf).readlines()) == 23
+        assert len(file(apt_conf).readlines()) == 24
 
         # XXX cprov 2007-03-21: see above, do not run a-f on dev machines.
-        assert fa.runApt(apt_conf) == 0
+        fa.runApt(apt_conf)
 
     def test_generateConfig_empty_and_careful(self):
         # Generate apt-ftparchive config for an specific empty suite.
@@ -336,6 +346,22 @@ class TestFTPArchive(unittest.TestCase):
 
         fa.createEmptyPocketRequests(fullpublish=True)
 
+        # createEmptyPocketRequests creates empty override and file
+        # listings.
+        lists = (
+            'hoary-test-updates_main_source',
+            'hoary-test-updates_main_binary-i386',
+            'hoary-test-updates_main_debian-installer_binary-i386',
+            'override.hoary-test-updates.main',
+            'override.hoary-test-updates.extra.main',
+            'override.hoary-test-updates.main.src',
+            )
+
+        for listname in lists:
+            path = os.path.join(self._config.overrideroot, listname)
+            self.assertTrue(os.path.exists(path))
+            self.assertEquals("", open(path).read())
+
         # XXX cprov 2007-03-21: see above, byte-to-byte configuration
         # comparing is weak.
         apt_conf = fa.generateConfig(fullpublish=True)
@@ -347,7 +373,7 @@ class TestFTPArchive(unittest.TestCase):
         self.assertEqual(apt_conf_content, sample_content)
 
         # XXX cprov 2007-03-21: see above, do not run a-f on dev machines.
-        self.assertEqual(fa.runApt(apt_conf), 0)
+        fa.runApt(apt_conf)
         self.assertTrue(os.path.exists(
             os.path.join(self._distsdir, "hoary-test-updates", "main",
                          "binary-i386", "Packages")))
@@ -361,6 +387,84 @@ class TestFTPArchive(unittest.TestCase):
         self.assertFalse(os.path.exists(
             os.path.join(self._distsdir, "hoary-test", "main",
                          "source", "Sources")))
+
+
+class TestFTPArchiveRunApt(TestCaseWithFactory):
+    """Test `FTPArchive`'s execution of apt-ftparchive."""
+
+    layer = ZopelessDatabaseLayer
+
+    def _makeMatchingDistroArchSeries(self):
+        """Create two `DistroArchSeries` for the same distro and processor."""
+        distro = self.factory.makeDistribution()
+        processor = self.factory.makeProcessor()
+        return (
+            self.factory.makeDistroArchSeries(
+                distroseries=self.factory.makeDistroSeries(distro),
+                processorfamily=processor.family,
+                architecturetag=processor.name)
+            for counter in (1, 2))
+
+    def test_getArchitectureTags_starts_out_empty(self):
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None, self.factory.makeDistribution(),
+            None)
+        self.assertContentEqual([], fa._getArchitectureTags())
+
+    def test_getArchitectureTags_includes_enabled_architectures(self):
+        distroarchseries = self.factory.makeDistroArchSeries()
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            distroarchseries.distroseries.distribution, None)
+        self.assertContentEqual(
+            [distroarchseries.architecturetag], fa._getArchitectureTags())
+
+    def test_getArchitectureTags_considers_all_series(self):
+        distro = self.factory.makeDistribution()
+        affluent_antilope = self.factory.makeDistroSeries(distribution=distro)
+        bilious_baboon = self.factory.makeDistroSeries(distribution=distro)
+        affluent_arch = self.factory.makeDistroArchSeries(
+            distroseries=affluent_antilope)
+        bilious_arch = self.factory.makeDistroArchSeries(
+            distroseries=bilious_baboon)
+        fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
+        self.assertContentEqual(
+            [affluent_arch.architecturetag, bilious_arch.architecturetag],
+            fa._getArchitectureTags())
+
+    def test_getArchitectureTags_ignores_disabled_architectures(self):
+        distroarchseries = self.factory.makeDistroArchSeries()
+        distroarchseries.enabled = False
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            distroarchseries.distroseries.distribution, None)
+        self.assertContentEqual([], fa._getArchitectureTags())
+
+    def test_getArchitectureTags_contains_no_duplicates(self):
+        ominous_okapi, pilfering_puppy = self._makeMatchingDistroArchSeries()
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            ominous_okapi.distroseries.distribution, None)
+        self.assertEqual(1, len(list(fa._getArchitectureTags())))
+        self.assertContentEqual(
+            [ominous_okapi.architecturetag], fa._getArchitectureTags())
+
+    def test_getArchitectureTags_counts_any_architecture_enabled_once(self):
+        manic_mantis, nervous_nit = self._makeMatchingDistroArchSeries()
+        nervous_nit.enabled = False
+        fa = FTPArchiveHandler(
+            DevNullLogger(), None, None,
+            manic_mantis.distroseries.distribution, None)
+        self.assertContentEqual(
+            [manic_mantis.architecturetag], fa._getArchitectureTags())
+
+    def test_runApt_reports_failure(self):
+        # If we sabotage apt-ftparchive, runApt notices that it failed
+        # and raises an exception.
+        distroarchseries = self.factory.makeDistroArchSeries()
+        distro = distroarchseries.distroseries.distribution
+        fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
+        self.assertRaises(AptFTPArchiveFailure, fa.runApt, "bogus-config")
 
 
 class TestFTouch(unittest.TestCase):
@@ -391,8 +495,3 @@ class TestFTouch(unittest.TestCase):
         f.close()
 
         self.assertEqual("", contents)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

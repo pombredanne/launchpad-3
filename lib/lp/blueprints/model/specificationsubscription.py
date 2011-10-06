@@ -7,15 +7,17 @@ __metaclass__ = type
 
 __all__ = ['SpecificationSubscription']
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    )
 from zope.interface import implements
 
-from sqlobject import ForeignKey, BoolCol
-
-from lp.blueprints.interfaces.specificationsubscription import (
-    ISpecificationSubscription)
-from lp.registry.interfaces.person import validate_public_person
-
 from canonical.database.sqlbase import SQLBase
+from lp.blueprints.interfaces.specificationsubscription import (
+    ISpecificationSubscription,
+    )
+from lp.registry.interfaces.person import validate_public_person
 
 
 class SpecificationSubscription(SQLBase):
@@ -31,4 +33,10 @@ class SpecificationSubscription(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     essential = BoolCol(notNull=True, default=False)
 
-
+    def canBeUnsubscribedByUser(self, user):
+        """See `ISpecificationSubscription`."""
+        if user is None:
+            return False
+        if self.person.is_team:
+            return user.inTeam(self.person)
+        return user == self.person

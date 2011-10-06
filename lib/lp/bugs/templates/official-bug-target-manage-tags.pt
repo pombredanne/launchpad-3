@@ -21,15 +21,11 @@
             <div metal:use-macro="context/@@launchpad_form/form" />
         </noscript>
 
-        <script type="text/javascript"
-                tal:define="lp_js string:${icingroot}/build"
-                tal:attributes="src string:${lp_js}/bugs/offical_bug_tags.js">
-        </script>
         <script tal:replace="structure view/tags_js_data" />
         <script type="text/javascript">
-            LPS.use('event', 'bugs.official_bug_tag_management', function(Y) {
+            LPS.use('event', 'lp.bugs.official_bug_tags', function(Y) {
                 Y.on('domready', function(e) {
-                    Y.bugs.setup_official_bug_tag_management();
+                   Y.lp.bugs.official_bug_tags.setup_official_bug_tag_management();
                 });
             });
         </script>
@@ -97,7 +93,7 @@
           <tr>
             <td class="actions" colspan="3">
               <input type="submit" value="Save" id="save-button" disabled="true" />
-              or <a id="cancel-link" tal:attributes="href view/cancel_url">Cancel</a>        
+              or <a id="cancel-link" tal:attributes="href view/cancel_url">Cancel</a>
             </td>
           </tr>
         </table>
