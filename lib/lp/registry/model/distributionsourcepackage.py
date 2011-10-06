@@ -66,6 +66,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackage,
     SourcePackageQuestionTargetMixin,
     )
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -206,6 +207,14 @@ class DistributionSourcePackage(BugTargetBase,
         # into the database but we need access to some of the fields
         # in the database.
         return self._get(self.distribution, self.sourcepackagename)
+
+    @property
+    def is_official(self):
+        """See `DistributionSourcePackage`."""
+        # This will need to verify that the package has not been deleted
+        # in the future.
+        return self._get(
+            self.distribution, self.sourcepackagename) is not None
 
     def delete(self):
         """See `DistributionSourcePackage`."""
@@ -376,6 +385,16 @@ class DistributionSourcePackage(BugTargetBase,
     def publishing_history(self):
         """See `IDistributionSourcePackage`."""
         return self._getPublishingHistoryQuery()
+
+    @cachedproperty
+    def binary_names(self):
+        """See `IDistributionSourcePackage`."""
+        names = []
+        history = self.publishing_history
+        if history.count() > 0:
+            binaries = history[0].getBuiltBinaries()
+            names = [binary.binary_package_name for binary in binaries]
+        return names
 
     @property
     def upstream_product(self):
