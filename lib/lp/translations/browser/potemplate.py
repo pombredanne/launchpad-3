@@ -30,6 +30,7 @@ import datetime
 import operator
 import os.path
 
+from lazr.restful.utils import smartquote
 from storm.info import ClassAlias
 from storm.expr import (
     And,
@@ -64,7 +65,6 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     )
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import (
@@ -76,6 +76,7 @@ from lp.app.validators.name import valid_name
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.registry.browser.sourcepackage import SourcePackageFacets
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.product import Product
@@ -685,9 +686,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
 
     def validateDomain(self, domain, similar_templates,
                        sourcepackage_changed, productseries_changed):
-        other_template = similar_templates.getPOTemplateByTranslationDomain(
-            domain)
-        if other_template is not None:
+        clashes = similar_templates.getPOTemplatesByTranslationDomain(domain)
+        if not clashes.is_empty():
             if sourcepackage_changed:
                 self.setFieldError(
                     'sourcepackagename',
@@ -928,7 +928,9 @@ class BaseSeriesTemplatesView(LaunchpadView):
             self.distroseries = series
         else:
             self.productseries = series
-        self.can_admin = check_permission('launchpad.Admin', series)
+        user = IPersonRoles(self.user, None)
+        self.can_admin = (user is not None and
+                          (user.in_admin or user.in_rosetta_experts))
         self.can_edit = (
             self.can_admin or
             check_permission('launchpad.TranslationsAdmin', series))

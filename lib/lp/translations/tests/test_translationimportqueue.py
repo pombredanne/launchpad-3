@@ -3,14 +3,17 @@
 
 __metaclass__ = type
 
+from operator import attrgetter
 import os.path
-
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
@@ -20,9 +23,14 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.fakemethod import FakeMethod
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
+    )
+from lp.translations.model.translationimportqueue import (
+    compose_approval_conflict_notice,
+    TranslationImportQueueEntry,
     )
 
 
@@ -429,3 +437,110 @@ class TestTranslationImportQueue(TestCaseWithFactory):
             productseries=self.productseries)
         stripped_path = path.lstrip('/')
         self.assertEqual([stripped_path], self._getQueuePaths())
+
+    def test_addOrUpdateEntry_detects_conflicts(self):
+        pot = self.factory.makePOTemplate(translation_domain='domain')
+        uploader = self.factory.makePerson()
+        pofile = self.factory.makePOFile(potemplate=pot, language_code='fr')
+
+        # Add an import queue entry with a single pofile for a template.
+        tiqe1 = self.factory.makeTranslationImportQueueEntry(
+            path=pofile.path, productseries=pot.productseries,
+            potemplate=pot, uploader=uploader)
+
+        # Add an import queue entry for a the same pofile, but done
+        # directly on the pofile object (i.e. more specific).
+        tiqe2 = self.factory.makeTranslationImportQueueEntry(
+            path=pofile.path, productseries=pot.productseries,
+            potemplate=pot, pofile=pofile, uploader=uploader)
+
+        self.assertEquals(tiqe1, tiqe2)
+
+    def test_reportApprovalConflict_sets_error_output_just_once(self):
+        # Repeated occurrence of the same approval conflict will not
+        # result in repeated setting of error_output.
+        series = self.factory.makeProductSeries()
+        domain = self.factory.getUniqueString()
+        templates = [
+            self.factory.makePOTemplate(
+                productseries=series, translation_domain=domain)
+            for counter in xrange(3)]
+        entry = removeSecurityProxy(
+            self.factory.makeTranslationImportQueueEntry())
+
+        entry.reportApprovalConflict(domain, len(templates), templates)
+        original_error = entry.error_output
+        transaction.commit()
+
+        # Try reporting the conflict again, with the templates
+        # reshuffled to see if reportApprovalConflict can be fooled into
+        # thinking it's a different error.  Make as sure as we can that
+        # entry.error_output is not modified.
+        slave_entry = ISlaveStore(entry).get(
+            TranslationImportQueueEntry, entry.id)
+        slave_entry.setErrorOutput = FakeMethod()
+        slave_entry.reportApprovalConflict(
+            domain, len(templates), reversed(templates))
+        self.assertEqual(original_error, slave_entry.error_output)
+        self.assertIn(domain, original_error)
+        self.assertEqual(0, slave_entry.setErrorOutput.call_count)
+
+
+class TestHelpers(TestCaseWithFactory):
+    """Tests for stand-alone helper functions in the module."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_compose_approval_conflict_notice_summarizes_conflict(self):
+        # The output from compose_approval_conflict_notice summarizes
+        # the conflict: what translation domain is affected and how many
+        # clashing templates are there?
+        domain = self.factory.getUniqueString()
+        num_templates = self.factory.getUniqueInteger()
+
+        notice = compose_approval_conflict_notice(domain, num_templates, [])
+
+        self.assertIn("translation domain '%s'" % domain, notice)
+        self.assertIn(
+            "There are %d competing templates" % num_templates, notice)
+
+    def test_compose_approval_conflict_notice_shows_sample(self):
+        # The notice includes the list of sample templates' display
+        # names, one per line, separated by semicolons but terminated
+        # with a full stop.
+        class FakePOTemplate:
+            def __init__(self, displayname):
+                self.displayname = displayname
+
+        domain = self.factory.getUniqueString()
+        samples = [
+            FakePOTemplate(self.factory.getUniqueString())
+            for counter in range(3)]
+        sorted_samples = sorted(samples, key=attrgetter('displayname'))
+
+        notice = compose_approval_conflict_notice(domain, 3, samples)
+
+        self.assertIn(
+            ';\n'.join([
+                '"%s"' % sample.displayname for sample in sorted_samples]),
+            notice)
+        self.assertIn('"%s".\n' % sorted_samples[-1].displayname, notice)
+
+    def test_compose_approval_conflict_notice_says_when_there_is_more(self):
+        # If there are more clashing templates than the sample lists,
+        # the list of names ends with a note to that effect.
+        class FakePOTemplate:
+            def __init__(self, displayname):
+                self.displayname = displayname
+
+        domain = self.factory.getUniqueString()
+        samples = [
+            FakePOTemplate(self.factory.getUniqueString())
+            for counter in range(3)]
+        samples.sort(key=attrgetter('displayname'))
+
+        notice = compose_approval_conflict_notice(domain, 4, samples)
+
+        self.assertIn(
+            '"%s";\nand more (not shown here).\n' % samples[-1].displayname,
+            notice)

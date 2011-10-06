@@ -13,6 +13,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.utils import smartquote
 from storm.locals import (
     And,
     Desc,
@@ -30,7 +31,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.lazr.utils import smartquote
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (
@@ -542,6 +542,11 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not series-specific) source package.")
 
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.distroseries.distribution
+
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
@@ -754,6 +759,14 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             SeriesSourcePackageBranchSet.new(
                 self.distroseries, pocket, self.sourcepackagename, branch,
                 registrant)
+            # Avoid circular imports.
+            from lp.registry.model.distributionsourcepackage import (
+                DistributionSourcePackage,
+                )
+            DistributionSourcePackage.ensure(sourcepackage=self)
+        else:
+            # Delete the official DSP if there is no publishing history.
+            self.distribution_sourcepackage.delete()
 
     @property
     def linked_branches(self):

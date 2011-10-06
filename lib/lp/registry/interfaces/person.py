@@ -1240,6 +1240,14 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         for each source package name, distribution series combination.
         """
 
+    def getLatestSynchronisedPublishings():
+        """Return `SourcePackagePublishingHistory`s synchronised by this
+        person.
+
+        This method will only include the latest publishings for each source
+        package name, distribution series combination.
+        """
+
     def getLatestUploadedButNotMaintainedPackages():
         """Return `SourcePackageRelease`s created by this person but
         not maintained by him.

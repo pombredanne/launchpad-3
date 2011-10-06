@@ -12,7 +12,7 @@ wants to contact Salgado.
     >>> user_browser.open('http://launchpad.dev/~salgado')
     >>> user_browser.getLink('Contact this user').click()
     >>> print user_browser.title
-    Contact user : Guilherme Salgado
+    Contact this user : Guilherme Salgado
 
     >>> user_browser.getControl('Subject').value = 'Hi Salgado'
     >>> user_browser.getControl('Message').value = 'Just saying hello'

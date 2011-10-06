@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests of the HWDB submissions parser."""
@@ -493,6 +493,7 @@ class TestHWDBSubmissionParser(TestCase):
     def testDevice(self):
         """A device node is converted into a dictionary."""
         test = self
+
         def _parseProperties(self, node):
             test.assertTrue(isinstance(self, SubmissionParser))
             test.assertEqual(node.tag, 'device')
@@ -533,6 +534,7 @@ class TestHWDBSubmissionParser(TestCase):
     def testHal(self):
         """The <hal> node is converted into a Python dict."""
         test = self
+
         def _parseDevice(self, node):
             test.assertTrue(isinstance(self, SubmissionParser))
             test.assertEqual(node.tag, 'device')
@@ -559,6 +561,7 @@ class TestHWDBSubmissionParser(TestCase):
         The list elements represent the <processor> nodes.
         """
         test = self
+
         def _parseProperties(self, node):
             test.assertTrue(isinstance(self, SubmissionParser))
             test.assertEqual(node.tag, 'processor')
@@ -925,7 +928,7 @@ invalid line
         All "method substitutes" return a valid result.
         """
 
-        def __init__(self, logger=None):
+        def __init__(self, logger=None, record_warnings=True):
             super(self.__class__, self).__init__(logger)
             self.hal_result = 'parsed HAL data'
             self.processors_result = 'parsed processor data'
@@ -1346,7 +1349,7 @@ invalid line
         All "method substitutes" return a valid result.
         """
 
-        def __init__(self, logger=None):
+        def __init__(self, logger=None, record_warnings=True):
             SubmissionParser.__init__(self, logger)
             self.summary_result = 'parsed summary'
             self.hardware_result = 'parsed hardware'
@@ -2255,7 +2258,6 @@ invalid line
             "SCSI udev device found without required sysfs attributes: "
             "set(['model']) "
             "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
-
 
     class UdevTestSubmissionParser(SubmissionParser):
         """A variant of SubmissionParser that shortcuts udev related tests.

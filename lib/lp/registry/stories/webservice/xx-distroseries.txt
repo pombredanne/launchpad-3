@@ -74,6 +74,7 @@ For distroseries we publish a subset of its attributes.
     driver_link: None
     drivers_collection_link: u'http://.../ubuntu/hoary/drivers'
     fullseriesname: u'Ubuntu Hoary'
+    include_long_descriptions: True
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     name: u'hoary'
     official_bug_tags: []

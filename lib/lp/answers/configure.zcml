@@ -182,6 +182,14 @@
     factory=".adapters.sourcepackage_to_faqtarget"
     />
 
+  <securedutility
+    name="UsesAnswersDistribution"
+    component=".vocabulary.UsesAnswersDistributionVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
   <!-- QuestionSet -->
   <class class=".model.question.QuestionSet">
     <allow interface=".interfaces.questioncollection.IQuestionSet" />

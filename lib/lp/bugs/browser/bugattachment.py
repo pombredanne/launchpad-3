@@ -12,6 +12,7 @@ __all__ = [
     'BugAttachmentURL',
     ]
 
+from lazr.restful.utils import smartquote
 from zope.component import (
     getMultiAdapter,
     getUtility,
@@ -37,7 +38,6 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     )
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,

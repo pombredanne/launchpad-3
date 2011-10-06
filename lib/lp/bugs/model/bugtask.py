@@ -312,8 +312,7 @@ class BugTaskDelta:
     implements(IBugTaskDelta)
 
     def __init__(self, bugtask, status=None, importance=None,
-                 assignee=None, milestone=None, statusexplanation=None,
-                 bugwatch=None, target=None):
+                 assignee=None, milestone=None, bugwatch=None, target=None):
         self.bugtask = bugtask
 
         self.assignee = assignee
@@ -321,7 +320,6 @@ class BugTaskDelta:
         self.importance = importance
         self.milestone = milestone
         self.status = status
-        self.statusexplanation = statusexplanation
         self.target = target
 
 
@@ -482,7 +480,6 @@ class BugTask(SQLBase):
         schema=BugTaskStatus,
         default=BugTaskStatus.NEW,
         storm_validator=validate_status)
-    statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
         schema=BugTaskImportance,
@@ -566,14 +563,7 @@ class BugTask(SQLBase):
     @property
     def pillar(self):
         """See `IBugTask`."""
-        if self.product is not None:
-            return self.product
-        elif self.productseries is not None:
-            return self.productseries.product
-        elif self.distribution is not None:
-            return self.distribution
-        else:
-            return self.distroseries.distribution
+        return self.target.pillar
 
     @property
     def other_affected_pillars(self):
@@ -846,12 +836,17 @@ class BugTask(SQLBase):
             and self._checkAutoconfirmFeatureFlag()
             # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
             ):
-            user = getUtility(ILaunchpadCelebrities).janitor
+            janitor = getUtility(ILaunchpadCelebrities).janitor
             bugtask_before_modification = Snapshot(
                 self, providing=providedBy(self))
-            self.transitionToStatus(BugTaskStatus.CONFIRMED, user)
+            # Create a bug message explaining why the janitor auto-confirmed
+            # the bugtask.
+            msg = ("Status changed to 'Confirmed' because the bug "
+                   "affects multiple users.")
+            self.bug.newMessage(owner=janitor, content=msg)
+            self.transitionToStatus(BugTaskStatus.CONFIRMED, janitor)
             notify(ObjectModifiedEvent(
-                self, bugtask_before_modification, ['status'], user=user))
+                self, bugtask_before_modification, ['status'], user=janitor))
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
@@ -1118,10 +1113,8 @@ class BugTask(SQLBase):
             # are product tasks).
             distros = set()
             for potential_target in (target, self.target):
-                if IDistribution.providedBy(potential_target):
-                    distros.add(potential_target)
-                elif IDistributionSourcePackage.providedBy(potential_target):
-                    distros.add(potential_target.distribution)
+                if IDistribution.providedBy(potential_target.pillar):
+                    distros.add(potential_target.pillar)
                 else:
                     distros.add(None)
             if len(distros) > 1:
@@ -1149,7 +1142,6 @@ class BugTask(SQLBase):
         name in this distribution will have their names updated to
         match. This should only be used by _syncSourcePackages.
         """
-
         if self.target == target:
             return
 
@@ -1158,7 +1150,7 @@ class BugTask(SQLBase):
         target_before_change = self.target
 
         if (self.milestone is not None and
-            self.milestone.target != target):
+            self.milestone.target != target.pillar):
             # If the milestone for this bugtask is set, we
             # have to make sure that it's a milestone of the
             # current target, or reset it to None
@@ -1402,7 +1394,45 @@ def get_bug_privacy_filter_with_decorator(user):
     # part of the WHERE condition (i.e. the bit below.) The
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
-    return ("""
+    pillar_privacy_filters = ''
+    if features.getFeatureFlag(
+        'disclosure.private_bug_visibility_rules.enabled'):
+        pillar_privacy_filters = """
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, Product
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = Product.owner AND
+                   BugTask.product = Product.id AND
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, ProductSeries
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = ProductSeries.owner AND
+                   BugTask.productseries = ProductSeries.id AND
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, Distribution
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = Distribution.owner AND
+                   BugTask.distribution = Distribution.id AND
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
+             UNION
+             SELECT BugTask.bug
+             FROM BugTask, TeamParticipation, DistroSeries, Distribution
+             WHERE TeamParticipation.person = %(personid)s AND
+                   TeamParticipation.team = Distribution.owner AND
+                   DistroSeries.distribution = Distribution.id AND
+                   BugTask.distroseries = DistroSeries.id AND
+                   BugTask.bug = Bug.id AND
+                   Bug.security_related IS False
+        """ % sqlvalues(personid=user.id)
+    query = """
         (Bug.private = FALSE OR EXISTS (
              SELECT BugSubscription.bug
              FROM BugSubscription, TeamParticipation
@@ -1415,9 +1445,12 @@ def get_bug_privacy_filter_with_decorator(user):
              WHERE TeamParticipation.person = %(personid)s AND
                    TeamParticipation.team = BugTask.assignee AND
                    BugTask.bug = Bug.id
+             %(extra_filters)s
                    ))
-                     """ % sqlvalues(personid=user.id),
-        _make_cache_user_can_view_bug(user))
+        """ % dict(
+                personid=quote(user.id),
+                extra_filters=pillar_privacy_filters)
+    return query, _make_cache_user_can_view_bug(user)
 
 
 def build_tag_set_query(joiner, tags):
@@ -2004,9 +2037,10 @@ class BugTaskSet:
                 distroseries = params.distribution.currentseries
             elif params.distroseries:
                 distroseries = params.distroseries
-            assert distroseries, (
-                "Search by component requires a context with a distribution "
-                "or distroseries.")
+            if distroseries is None:
+                raise ValueError(
+                    "Search by component requires a context with a "
+                    "distribution or distroseries.")
 
             if zope_isinstance(params.component, any):
                 component_ids = sqlvalues(*params.component.query_values)
@@ -2078,25 +2112,10 @@ class BugTaskSet:
             extra_clauses.append(bug_reporter_clause)
 
         if params.bug_commenter:
-            bugmessage_owner = bool(features.getFeatureFlag(
-                'malone.bugmessage_owner'))
-            bug_commenter_old_clause = """
-            BugTask.id IN (
-                SELECT DISTINCT BugTask.id FROM BugTask, BugMessage, Message
-                WHERE Message.owner = %(bug_commenter)s
-                    AND Message.id = BugMessage.message
-                    AND BugTask.bug = BugMessage.bug
-                    AND BugMessage.index > 0
-            )
-            """ % sqlvalues(bug_commenter=params.bug_commenter)
-            bug_commenter_new_clause = """
+            bug_commenter_clause = """
             Bug.id IN (SELECT DISTINCT bug FROM Bugmessage WHERE
             BugMessage.index > 0 AND BugMessage.owner = %(bug_commenter)s)
             """ % sqlvalues(bug_commenter=params.bug_commenter)
-            if bugmessage_owner:
-                bug_commenter_clause = bug_commenter_new_clause
-            else:
-                bug_commenter_clause = bug_commenter_old_clause
             extra_clauses.append(bug_commenter_clause)
 
         if params.affects_me:

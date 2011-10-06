@@ -29,7 +29,6 @@ from canonical.launchpad.scripts import (
     logger,
     logger_options,
     )
-from canonical import lp
 import replication.helpers
 
 
@@ -41,7 +40,15 @@ SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios', 'lagmon'])
 # added here. The preflight check will fail if any of these users are
 # connected, so these systems will need to be shut down manually before
 # a database update.
-FRAGILE_USERS = frozenset(['archivepublisher'])
+FRAGILE_USERS = frozenset([
+    'buildd_manager',
+    # process_accepted is fragile, but also fast so we likely shouldn't
+    # need to ever manually shut it down.
+    'process_accepted',
+    'process_upload',
+    'publish_distro',
+    'publish_ftpmaster',
+    ])
 
 # How lagged the cluster can be before failing the preflight check.
 MAX_LAG = timedelta(seconds=60)
@@ -49,8 +56,7 @@ MAX_LAG = timedelta(seconds=60)
 
 class DatabasePreflight:
     def __init__(self, log):
-        master_con = connect(lp.dbuser)
-        master_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        master_con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.log = log
         self.is_replicated = replication.helpers.slony_installed(master_con)
@@ -164,7 +170,7 @@ class DatabasePreflight:
                 % ', '.join(FRAGILE_USERS))
         return success
 
-    def check_long_running_transactions(self, max_secs=10):
+    def check_long_running_transactions(self, max_secs=60):
         """Return False if any nodes have long running transactions open.
 
         max_secs defines what is long running. For database rollouts,

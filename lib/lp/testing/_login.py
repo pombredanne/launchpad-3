@@ -25,15 +25,17 @@ __all__ = [
 from contextlib import contextmanager
 
 from zope.component import getUtility
-from zope.security.management import endInteraction
+from zope.security.management import (
+    endInteraction,
+    queryInteraction,
+    thread_local as zope_security_thread_local,
+    )
 
 from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,
-    get_current_principal,
     setupInteractionByEmail,
     setupInteractionForPerson,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -149,16 +151,19 @@ def logout():
 
 def _with_login(login_method, identifier):
     """Make a context manager that runs with a particular log in."""
-    current_person = getUtility(ILaunchBag).user
-    current_principal = get_current_principal()
+    interaction = queryInteraction()
     login_method(identifier)
     try:
         yield
     finally:
-        if current_principal is None:
+        if interaction is None:
             logout()
         else:
-            login_person(current_person)
+            # This reaches under the covers of the zope.security.management
+            # module's interface in order to provide true nestable
+            # interactions.  This means that real requests can be maintained
+            # across these calls, such as is desired for yuixhr fixtures.
+            zope_security_thread_local.interaction = interaction
 
 
 @contextmanager

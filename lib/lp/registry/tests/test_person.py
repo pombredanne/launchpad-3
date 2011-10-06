@@ -61,6 +61,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import (
     KarmaCategory,
@@ -436,6 +437,88 @@ class TestPerson(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             list(user.getBugSubscriberPackages())
         self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def createCopiedPackage(self, spph, copier, dest_distroseries=None,
+                            dest_archive=None):
+        if dest_distroseries is None:
+            dest_distroseries = self.factory.makeDistroSeries()
+        if dest_archive is None:
+            dest_archive = dest_distroseries.main_archive
+        return spph.copyTo(
+            dest_distroseries, creator=copier,
+            pocket=PackagePublishingPocket.UPDATES,
+            archive=dest_archive)
+
+    def test_getLatestSynchronisedPublishings_most_recent_first(self):
+        # getLatestSynchronisedPublishings returns the latest copies sorted
+        # by most recent first.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        copied_spph1 = self.createCopiedPackage(spph, copier)
+        copied_spph2 = self.createCopiedPackage(spph, copier)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertContentEqual(
+            [copied_spph2, copied_spph1],
+            synchronised_spphs)
+
+    def test_getLatestSynchronisedPublishings_other_creator(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        self.createCopiedPackage(spph, copier)
+        someone_else = self.factory.makePerson()
+        synchronised_spphs = someone_else.getLatestSynchronisedPublishings()
+
+        self.assertEqual(
+            0,
+            synchronised_spphs.count())
+
+    def test_getLatestSynchronisedPublishings_latest(self):
+        # getLatestSynchronisedPublishings returns only the latest copy of
+        # a package in a distroseries
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        self.createCopiedPackage(
+            spph, copier, dest_distroseries)
+        copied_spph2 = self.createCopiedPackage(
+            spph, copier, dest_distroseries)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertContentEqual(
+            [copied_spph2],
+            synchronised_spphs)
+
+    def test_getLatestSynchronisedPublishings_cross_archive_copies(self):
+        # getLatestSynchronisedPublishings returns only the copies copied
+        # cross archive.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        dest_distroseries2 = self.factory.makeDistroSeries(
+            distribution=spph.distroseries.distribution)
+        self.createCopiedPackage(
+            spph, copier, dest_distroseries2)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertEqual(
+            0,
+            synchronised_spphs.count())
+
+    def test_getLatestSynchronisedPublishings_main_archive(self):
+        # getLatestSynchronisedPublishings returns only the copies copied in
+        # a primary archive (as opposed to a ppa).
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copier = self.factory.makePerson()
+        dest_distroseries = self.factory.makeDistroSeries()
+        ppa = self.factory.makeArchive(
+            distribution=dest_distroseries.distribution)
+        self.createCopiedPackage(
+            spph, copier, dest_distroseries, ppa)
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        self.assertEqual(
+            0,
+            synchronised_spphs.count())
 
 
 class TestPersonStates(TestCaseWithFactory):
@@ -941,7 +1024,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         duplicate, mergee = self._do_merge(duplicate, mergee)
         branches = [b.name for b in mergee.getBranches()]
         self.assertEqual(2, len(branches))
-        self.assertEqual([u'foo', u'foo-1'], branches)
+        self.assertContentEqual([u'foo', u'foo-1'], branches)
 
     def test_merge_moves_recipes(self):
         # When person/teams are merged, recipes owned by the from person are
@@ -1636,3 +1719,36 @@ class TestGetRecipients(TestCaseWithFactory):
                               super_team_member_person,
                               super_team_member_team]),
                          set(recipients))
+
+    def test_get_recipients_team_with_disabled_owner_account(self):
+        """Mail is not sent to a team owner whose account is disabled.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/855150>
+        """
+        owner = self.factory.makePerson(email='foo@bar.com')
+        team = self.factory.makeTeam(owner)
+        owner.account.status = AccountStatus.DEACTIVATED
+        self.assertContentEqual([], get_recipients(team))
+
+    def test_get_recipients_team_with_disabled_member_account(self):
+        """Mail is not sent to a team member whose account is disabled.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/855150>
+        """
+        person = self.factory.makePerson(email='foo@bar.com')
+        person.account.status = AccountStatus.DEACTIVATED
+        team = self.factory.makeTeam(members=[person])
+        self.assertContentEqual([team.teamowner], get_recipients(team))
+
+    def test_get_recipients_team_with_nested_disabled_member_account(self):
+        """Mail is not sent to transitive team member with disabled account.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/855150>
+        """
+        person = self.factory.makePerson(email='foo@bar.com')
+        person.account.status = AccountStatus.DEACTIVATED
+        team1 = self.factory.makeTeam(members=[person])
+        team2 = self.factory.makeTeam(members=[team1])
+        self.assertContentEqual(
+            [team2.teamowner],
+            get_recipients(team2))

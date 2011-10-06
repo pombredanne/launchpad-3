@@ -9,6 +9,7 @@ __all__ = [
     'LocationWidget',
     ]
 
+from lazr.restful.utils import safe_js_escape
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import InputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
@@ -31,7 +32,6 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     IMultiLineWidgetLayout,
     )
-from canonical.lazr.utils import safe_js_escape
 from lp.app.browser.tales import ObjectImageDisplayAPI
 from lp.app.validators import LaunchpadValidationError
 from lp.registry.interfaces.location import IObjectWithLocation

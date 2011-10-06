@@ -58,8 +58,10 @@ setup(
         'oauth',
         'oops',
         'oops_datedir_repo',
+        'oops_timeline',
         'oops_wsgi',
         'paramiko',
+        'pgbouncer',
         'psycopg2',
         'python-memcached',
         'pyasn1',
@@ -80,6 +82,7 @@ setup(
         'timeline',
         'transaction',
         'Twisted',
+        'txlongpollfixture',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
@@ -158,10 +161,12 @@ setup(
             'killservice = lp.scripts.utilities.killservice:main',
             'jsbuild = lp.scripts.utilities.js.jsbuild:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
+            'run-testapp = '
+                'canonical.launchpad.scripts.runlaunchpad:start_testapp',
             'harness = canonical.database.harness:python',
             'twistd = twisted.scripts.twistd:run',
-            'start_librarian '
-                '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
+            'start_librarian = '
+                'canonical.launchpad.scripts.runlaunchpad:start_librarian',
             'ec2 = devscripts.ec2test.entrypoint:main',
         ]
     ),

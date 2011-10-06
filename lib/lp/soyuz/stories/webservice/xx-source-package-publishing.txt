@@ -45,7 +45,8 @@ Search by name and version using an exact match:
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
-    ...     source_name="iceweasel", version="1.0", exact_match=True).jsonBody()
+    ...     source_name="iceweasel", version="1.0",
+    ...     exact_match=True).jsonBody()
     >>> print_publications(pubs)
     iceweasel 1.0 in warty
 
@@ -117,6 +118,7 @@ publication to play with first.
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
     component_name: u'main'
+    creator_link: u'http://api.launchpad.dev/beta/~name16'
     date_created: ...
     date_made_pending: None
     date_published: None
@@ -237,7 +239,6 @@ Privacy
 Create a private PPA for Celso with some binaries.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)

@@ -97,10 +97,9 @@ class BugJanitor:
                     owner=self.janitor,
                     subject=bugtask.bug.followup_subject(),
                     content=content)
-                bugtask.statusexplanation = content
                 notify(ObjectModifiedEvent(
                     bugtask, bugtask_before_modification,
-                    ['status', 'statusexplanation'], user=self.janitor))
+                    ['status'], user=self.janitor))
                 # XXX sinzui 2007-08-02 bug=29744:
                 # We commit after each expiration because emails are sent
                 # immediately in zopeless. This minimize the risk of

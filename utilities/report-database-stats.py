@@ -1,12 +1,10 @@
 #!/usr/bin/python -S
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generate the database statistics report."""
 
 __metaclass__ = type
-
-import _pythonpath
 
 from datetime import datetime
 from operator import attrgetter
@@ -15,7 +13,12 @@ from textwrap import (
     fill,
     )
 
-from canonical.database.sqlbase import connect, sqlvalues
+import _pythonpath
+
+from canonical.database.sqlbase import (
+    connect,
+    sqlvalues,
+    )
 from canonical.launchpad.scripts import db_options
 from lp.scripts.helpers import LPOptionParser
 from lp.services.database.namedrow import named_fetchall
@@ -229,10 +232,10 @@ def main():
     parser.add_option(
         "-i", "--interval", dest="interval", type=str,
         default=None, metavar="INTERVAL",
-        help=
+        help=(
             "Use statistics collected over the last INTERVAL period. "
             "INTERVAL is a string parsable by PostgreSQL "
-            "such as '5 minutes'.")
+            "such as '5 minutes'."))
     parser.add_option(
         "-n", "--limit", dest="limit", type=int,
         default=15, metavar="NUM",
@@ -252,7 +255,7 @@ def main():
         parser.error(
             "Only two of --from, --until and --interval may be specified.")
 
-    con = connect(options.dbuser)
+    con = connect()
     cur = con.cursor()
 
     tables = list(get_table_stats(cur, options))

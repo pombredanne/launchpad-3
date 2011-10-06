@@ -7,10 +7,10 @@ __all__ = ['ParseApacheLogs']
 import glob
 import os
 
+from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lazr.utils import safe_hasattr
 from lp.app.errors import NotFoundError
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry,

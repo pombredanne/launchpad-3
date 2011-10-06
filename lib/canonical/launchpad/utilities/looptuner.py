@@ -13,6 +13,7 @@ __all__ = [
 from datetime import timedelta
 import time
 
+from lazr.restful.utils import safe_hasattr
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -24,7 +25,6 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.lazr.utils import safe_hasattr
 
 
 class LoopTuner:
@@ -155,15 +155,15 @@ class LoopTuner:
                 # a reasonable minimum for time_taken, just in case we
                 # get weird values for whatever reason and destabilize
                 # the algorithm.
-                time_taken = max(self.goal_seconds/10, time_taken)
-                chunk_size *= (1 + self.goal_seconds/time_taken)/2
+                time_taken = max(self.goal_seconds / 10, time_taken)
+                chunk_size *= (1 + self.goal_seconds / time_taken) / 2
                 chunk_size = max(chunk_size, self.minimum_chunk_size)
                 chunk_size = min(chunk_size, self.maximum_chunk_size)
                 iteration += 1
 
             total_time = last_clock - self.start_time
-            average_size = total_size/max(1, iteration)
-            average_speed = total_size/max(1, total_time)
+            average_size = total_size / max(1, iteration)
+            average_speed = total_size / max(1, total_time)
             self.log.debug2(
                 "Done. %d items in %d iterations, %3f seconds, "
                 "average size %f (%s/s)",
@@ -234,10 +234,10 @@ class DBLoopTuner(LoopTuner):
     """
 
     # We block until replication lag is under this threshold.
-    acceptable_replication_lag = timedelta(seconds=30) # In seconds.
+    acceptable_replication_lag = timedelta(seconds=30)  # In seconds.
 
     # We block if there are transactions running longer than this threshold.
-    long_running_transaction = 30*60 # In seconds
+    long_running_transaction = 30 * 60  # In seconds.
 
     def _blockWhenLagged(self):
         """When database replication lag is high, block until it drops."""
@@ -256,7 +256,8 @@ class DBLoopTuner(LoopTuner):
                     "Database replication lagged %s. "
                     "Sleeping up to 10 minutes.", lag)
 
-            transaction.abort() # Don't become a long running transaction!
+            # Don't become a long running transaction!
+            transaction.abort()
             self._sleep(10)
 
     def _blockForLongRunningTransactions(self):
@@ -291,7 +292,8 @@ class DBLoopTuner(LoopTuner):
                         "Blocked on %s old xact %s@%s/%d - %s.",
                         runtime, usename, datname, procpid, query)
                 self.log.info("Sleeping for up to 10 minutes.")
-            transaction.abort() # Don't become a long running transaction!
+            # Don't become a long running transaction!
+            transaction.abort()
             self._sleep(10)
 
     def _coolDown(self, bedtime):
@@ -311,9 +313,9 @@ class TunableLoop:
     """A base implementation of `ITunableLoop`."""
     implements(ITunableLoop)
 
-    goal_seconds = 4
+    goal_seconds = 2
     minimum_chunk_size = 1
-    maximum_chunk_size = None # Override
+    maximum_chunk_size = None  # Override.
     cooldown_time = 0
 
     def __init__(self, log, abort_time=None):

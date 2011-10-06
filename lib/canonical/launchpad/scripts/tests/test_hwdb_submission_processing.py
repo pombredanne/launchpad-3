@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests of the HWDB submissions parser."""
@@ -52,6 +52,16 @@ from lp.testing import (
     TestCase,
     validate_mock_class,
     )
+
+
+def evaluate_property(value):
+    """Evaluate a property.
+
+    This function does nothing in itself; passing it a property evaluates the
+    property.  But it lets the code express that the evaluation is all that's
+    needed, without assigning to an unused variable etc.
+    """
+    return value
 
 
 class TestCaseHWDB(TestCase):
@@ -482,7 +492,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         # The warning appears only once per submission, even if the
         # property kernel_package_name is accessed more than once.
         num_warnings = len(self.handler.records)
-        test = parser.kernel_package_name
+        evaluate_property(parser.kernel_package_name)
         self.assertEqual(
             num_warnings, len(self.handler.records),
             'Warning for missing HAL property system.kernel.version '
@@ -524,7 +534,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         # The warning appears only once per submission, even if the
         # property kernel_package_name is accessed more than once.
         num_warnings = len(self.handler.records)
-        test = parser.kernel_package_name
+        evaluate_property(parser.kernel_package_name)
         self.assertEqual(
             num_warnings, len(self.handler.records),
             'Warning for missing HAL property system.kernel.version '
@@ -637,7 +647,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         # The warning appears only once per submission, even if the
         # property kernel_package_name is accessed more than once.
         num_warnings = len(self.handler.records)
-        test = parser.kernel_package_name
+        evaluate_property(parser.kernel_package_name)
         self.assertEqual(
             num_warnings, len(self.handler.records),
             'Warning for missing HAL property system.kernel.version '
@@ -675,7 +685,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         # The warning appears only once per submission, even if the
         # property kernel_package_name is accessed more than once.
         num_warnings = len(self.handler.records)
-        test = parser.kernel_package_name
+        evaluate_property(parser.kernel_package_name)
         self.assertEqual(
             num_warnings, len(self.handler.records),
             'Warning for missing HAL property system.kernel.version '
@@ -924,7 +934,6 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.assertEqual(device.raw_bus, 'scsi',
                          'Unexpected value of HALDevice.raw_bus for '
                          'HAL property info.bus.')
-
 
     def test_HALDevice_scsi_controller_usb_storage_device(self):
         """test of HALDevice.scsi_controller.
@@ -1309,7 +1318,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             (1, HWBus.IDE),
             (2, HWBus.FLOPPY),
             (3, HWBus.IPI),
-            (4, None), # subclass RAID is ignored.
+            (4, None),  # subclass RAID is ignored.
             (5, HWBus.ATA),
             (6, HWBus.SATA),
             (7, HWBus.SAS),
@@ -1694,7 +1703,6 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         'scsi_generic', 'scsi_host', 'sound', 'ssb', 'tty', 'usb'
         or 'video4linux'.
         """
-        UDI_SSB = '/org/freedesktop/Hal/devices/ssb__null__0'
         devices = [
             {
                 'id': 1,
@@ -1762,12 +1770,12 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
 
         pci_subclass_bus = (
-            (0, True), # a real SCSI controller
-            (1, True), # an IDE device
-            (4, False), # subclass RAID is ignored.
-            (5, True), # an ATA device
-            (6, True), # a SATA device
-            (7, True), # a SAS device
+            (0, True),  # a real SCSI controller
+            (1, True),  # an IDE device
+            (4, False),  # subclass RAID is ignored.
+            (5, True),  # an ATA device
+            (6, True),  # a SATA device
+            (7, True),  # a SAS device
             )
 
         parser = SubmissionParser(self.log)
@@ -2095,11 +2103,11 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 },
             }
         parser = SubmissionParser(self.log)
-        properties = devices[0]['properties']
         parser.buildHalDeviceList(parsed_data)
         device = parser.devices[self.UDI_COMPUTER]
-        self.failUnless(device.has_reliable_data,
-                        'Root device not treated as having reliable data.')
+        self.failUnless(
+            device.has_reliable_data,
+            "Root device not treated as having reliable data.")
 
     def testHasReliableDataForInsuffientData(self):
         """Test of HALDevice.has_reliable_data, insufficent device data.
@@ -3164,7 +3172,7 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
             parser.submission_key,
             'USB device found with vendor ID==0, product ID==0, where the '
             'parent device does not look like a USB host controller: '
-            +  self.UDI_USB_CONTROLLER_USB_SIDE)
+            + self.UDI_USB_CONTROLLER_USB_SIDE)
 
         self.renameInfoBusToInfoSubsystem()
         parser.buildHalDeviceList(self.parsed_data)
@@ -3177,7 +3185,7 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
             parser.submission_key,
             'USB device found with vendor ID==0, product ID==0, where the '
             'parent device does not look like a USB host controller: '
-            +  self.UDI_USB_CONTROLLER_USB_SIDE)
+            + self.UDI_USB_CONTROLLER_USB_SIDE)
 
     def testUSBHostControllerUnexpectedParentBus(self):
         """Test of HALDevice.is_real_device: info.bus == 'usb_device'.
@@ -4094,7 +4102,6 @@ class TestUdevDevice(TestCaseHWDB):
         for kwargs in device_data:
             device = UdevDevice(parser, **kwargs)
             devices[device.device_id] = device
-            parent = device
 
         # Build the parent-child relations so that the parent device
         # is that device which has the longest path matching the
@@ -4111,7 +4118,7 @@ class TestUdevDevice(TestCaseHWDB):
 
         device_paths = sorted(devices, key=len, reverse=True)
         for path_index, path in enumerate(device_paths):
-            for parent_path in device_paths[path_index+1:]:
+            for parent_path in device_paths[path_index + 1:]:
                 if path.startswith(parent_path):
                     devices[parent_path].addChild(devices[path])
                     break
@@ -4366,7 +4373,6 @@ class TestUdevDevice(TestCaseHWDB):
             "<DBItem HWBus.SYSTEM, (0) System> None 'LIFEBOOK E8210' "
             "'LIFEBOOK E8210' /devices/LNXSYSTM:00")
 
-
     def test_has_reliable_data_system_no_product_name(self):
         """Test of UdevDevice.has_reliable_data for a system.
 
@@ -4443,6 +4449,24 @@ class TestUdevDevice(TestCaseHWDB):
             'A UdevDevice that is supposed to be a real device does not '
             'provide bus, vendor ID, product ID or product name: None None '
             'None None /devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0')
+
+    def test_warnings_not_suppressed(self):
+        """Logging of warnings can be allowed."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = "log_with_warnings"
+        parser._logWarning("This message is logged.")
+        self.assertWarningMessage(
+            parser.submission_key, "This message is logged.")
+
+    def test_warnings_suppressed(self):
+        """Logging of warnings can be suppressed."""
+        number_of_existing_log_messages = len(self.handler.records)
+        parser = SubmissionParser(self.log, record_warnings=False)
+        parser.submission_key = "log_without_warnings"
+        parser._logWarning("This message is not logged.")
+        # No new warnings are recorded
+        self.assertEqual(
+            number_of_existing_log_messages, len(self.handler.records))
 
     def test_device_id(self):
         """Each UdevDevice has a property 'id'."""
@@ -5085,7 +5109,6 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
     def assertSampleDeviceCreated(
         self, bus, vendor_id, product_id, driver_name, submission):
         """Assert that data for the device exists in HWDB tables."""
-        device_set = getUtility(IHWDeviceSet)
         device = getUtility(IHWDeviceSet).getByDeviceID(
             bus, vendor_id, product_id)
         self.assertNotEqual(

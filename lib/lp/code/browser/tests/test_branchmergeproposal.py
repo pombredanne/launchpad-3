@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -15,8 +15,12 @@ from datetime import (
     )
 from difflib import unified_diff
 
+from lazr.restful.interfaces import IJSONRequestCache
 import pytz
-from soupmatchers import HTMLContains, Tag
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
 from testtools.matchers import (
     MatchesRegex,
     Not,
@@ -26,7 +30,6 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.messages.model.message import MessageSet
 from canonical.launchpad.webapp.interfaces import (
     BrowserNotificationLevel,
     IPrimaryContext,
@@ -54,20 +57,18 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
-from lp.code.model.diff import (
-    PreviewDiff,
-    StaticDiff,
-    )
+from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.services.messages.model.message import MessageSet
 from lp.testing import (
     BrowserTestCase,
     feature_flags,
     login_person,
-    set_feature_flag,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     time_counter,
     )
@@ -725,43 +726,11 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          view.preview_diff_text)
 
-    def addReviewDiff(self):
-        review_diff_bytes = ''.join(unified_diff('', 'review'))
-        review_diff = StaticDiff.acquireFromText('x', 'y', review_diff_bytes)
-        self.bmp.review_diff = review_diff
-        return review_diff
-
-    def addBothDiffs(self):
-        self.addReviewDiff()
-        preview_diff_bytes = ''.join(unified_diff('', 'preview'))
-        return self.setPreviewDiff(preview_diff_bytes)
-
     def setPreviewDiff(self, preview_diff_bytes):
         preview_diff = PreviewDiff.create(
             preview_diff_bytes, u'a', u'b', None, u'')
         removeSecurityProxy(self.bmp).preview_diff = preview_diff
         return preview_diff
-
-    def test_preview_diff_prefers_preview_diff(self):
-        """The preview will be used for BMP with both a review and preview."""
-        preview_diff = self.addBothDiffs()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(preview_diff, view.preview_diff)
-
-    def test_preview_diff_uses_review_diff(self):
-        """The review diff will be used if there is no preview."""
-        review_diff = self.addReviewDiff()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(review_diff.diff,
-                         view.preview_diff)
-
-    def test_review_diff_text_prefers_preview_diff(self):
-        """The preview will be used for BMP with both a review and preview."""
-        preview_diff = self.addBothDiffs()
-        transaction.commit()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(
-            preview_diff.text, view.preview_diff_text)
 
     def test_linked_bugs_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""
@@ -853,6 +822,26 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         with person_logged_in(bmp.source_branch.owner):
             bmp.source_branch.branchChanged(None, 'rev-1', None, None, None)
         self.assertTrue(view.pending_diff)
+
+    def test_subscribe_to_merge_proposal_events_flag_disabled(self):
+        # If the longpoll.merge_proposals.enabled flag is not enabled the user
+        # is *not* subscribed to events relating to the merge proposal.
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_initialized_view(bmp, '+index', current_request=True)
+        cache = IJSONRequestCache(view.request)
+        self.assertNotIn("longpoll", cache.objects)
+        self.assertNotIn("merge_proposal_event_key", cache.objects)
+
+    def test_subscribe_to_merge_proposal_events_flag_enabled(self):
+        # If the longpoll.merge_proposals.enabled flag is enabled the user is
+        # subscribed to events relating to the merge proposal.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.useContext(feature_flags())
+        set_feature_flag(u'longpoll.merge_proposals.enabled', u'enabled')
+        view = create_initialized_view(bmp, '+index', current_request=True)
+        cache = IJSONRequestCache(view.request)
+        self.assertIn("longpoll", cache.objects)
+        self.assertIn("merge_proposal_event_key", cache.objects)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

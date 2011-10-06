@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -98,7 +98,6 @@ from lp.code.model.branch import (
     update_trigger_modified_fields,
     )
 from lp.code.model.branchjob import (
-    BranchDiffJob,
     BranchJob,
     BranchJobType,
     ReclaimBranchSpaceJob,
@@ -1228,8 +1227,9 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_relatedBranchJobsDeleted(self):
         # A branch with an associated branch job will delete those jobs.
-        branch = self.factory.makeAnyBranch()
-        BranchDiffJob.create(branch, 'from-spec', 'to-spec')
+        branch = self.factory.makeBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        removeSecurityProxy(branch).requestUpgrade(branch.owner)
         branch.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
@@ -2240,6 +2240,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
         stacked_on = self.factory.makeBranch(private=True)
         branch = self.factory.makeBranch(stacked_on=stacked_on, private=False)
         self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertFalse(branch.explicitly_private)
 
     def test_private_stacked_on_public_is_private(self):
@@ -2247,6 +2248,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
         stacked_on = self.factory.makeBranch(private=False)
         branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
         self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
 
 
@@ -2265,6 +2267,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertFalse(branch.private)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
+        self.assertFalse(removeSecurityProxy(branch).transitively_private)
+        self.assertFalse(branch.explicitly_private)
 
     def test_public_to_private_allowed(self):
         # If there is a privacy policy allowing the branch owner to have
@@ -2274,6 +2278,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             branch.owner, BranchVisibilityRule.PRIVATE)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
+        self.assertTrue(branch.explicitly_private)
 
     def test_public_to_private_not_allowed(self):
         # If there are no privacy policies allowing private branches, then
@@ -2292,6 +2298,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         admins = getUtility(ILaunchpadCelebrities).admin
         branch.setPrivate(True, admins.teamowner)
         self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
+        self.assertTrue(branch.explicitly_private)
 
     def test_private_to_private(self):
         # Setting a private branch to be private is a no-op.
@@ -2299,6 +2307,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertTrue(branch.private)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
+        self.assertTrue(removeSecurityProxy(branch).transitively_private)
+        self.assertTrue(branch.explicitly_private)
 
     def test_private_to_public_allowed(self):
         # If the namespace policy allows public branches, then changing from
@@ -2306,6 +2316,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(private=True)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
+        self.assertFalse(removeSecurityProxy(branch).transitively_private)
+        self.assertFalse(branch.explicitly_private)
 
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
