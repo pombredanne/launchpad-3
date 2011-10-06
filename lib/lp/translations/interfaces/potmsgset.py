@@ -193,9 +193,9 @@ class IPOTMsgSet(Interface):
         :param language: language we want translations for.
         """
 
-    def getExternallySuggestedOrUsedTranslationMessages(suggested_languages=(),
-        used_languages=()):
-        """Find externally suggested or used translations for the same message.
+    def getExternallySuggestedOrUsedTranslationMessages(
+        suggested_languages=(), used_languages=()):
+        """Find externally suggested/used translations for the same message.
 
         This returns a mapping: language -> namedtuple (suggested, used)
         containing the results of
@@ -340,7 +340,7 @@ class IPOTMsgSet(Interface):
     translation_credits_type = Choice(
         title=u"The type of translation credit of this message.",
         required=True,
-        vocabulary = TranslationCreditsType)
+        vocabulary=TranslationCreditsType)
 
     def makeHTMLID(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.

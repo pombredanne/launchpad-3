@@ -18,7 +18,6 @@ import re
 
 from sqlobject import (
     ForeignKey,
-    IntCol,
     SQLObjectNotFound,
     StringCol,
     )

@@ -29,7 +29,7 @@
     <tal:translations condition="messages">
       <p tal:condition="view/person">
         <a tal:replace="structure view/person/fmt:link"/> has
-        submitted the following strings to 
+        submitted the following strings to
         <a tal:attributes="href view/context/fmt:url">this translation</a>.
         Contributions are visually coded:
         <span class="usedtranslation">currently used translations</span>,
