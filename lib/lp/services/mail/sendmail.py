@@ -221,6 +221,7 @@ class MailController(object):
         if charset:
             attachment.add_header(
                 'Content-Type', content_type, charset=charset)
+            attachment['Content-Transfer-Encoding'] = 'base64'
         else:
             attachment.add_header('Content-Type', content_type)
         if inline:
@@ -233,7 +234,10 @@ class MailController(object):
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
         attachment.set_payload(content, charset)
-        self.encodeOptimally(attachment)
+        if charset:
+            encode_base64(attachment)
+        else:
+            self.encodeOptimally(attachment)
         self.attachments.append(attachment)
 
     @staticmethod
