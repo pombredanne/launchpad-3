@@ -314,13 +314,17 @@ class IParticipationExtras(Interface):
     """Extra attributes we make all our participations have.
 
     If you add something here, you should go and edit
-    `canonical.launchpad.webapp.interaction.Participation` and
-    `canonical.launchpad.webapp.servers.BasicLaunchpadRequest`.
+    `canonical.launchpad.webapp.interaction.Participation`,
+    `canonical.launchpad.webapp.servers.BasicLaunchpadRequest`, and
+    `canonical.launchpad.webapp.servers.LaunchpadTestRequest`.
     """
 
     permit_timeout_from_features = Attribute(
-        "A boolean indicating whether to read the 'hard_timeout' feature "
-        "flag.  XXX explain more here.")
+        """A boolean indicating whether to read the 'hard_timeout' feature
+        flag.  We can't check the feature flags early on in request processing
+        because this can trigger nested db lookups.  See the docstring of
+        `canonical.launchpad.webapp.servers.set_permit_timeout_from_features`
+        for more.""")
 
 
 #
