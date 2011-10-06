@@ -25,6 +25,8 @@ from canonical.testing.layers import (
     )
 from lp.bugs.interfaces.apportjob import (
     ApportJobType,
+    IApportJob,
+    IProcessApportBlobJob,
     IProcessApportBlobJobSource,
     )
 from lp.bugs.model.apportjob import (
@@ -65,6 +67,7 @@ class ApportJobTestCase(TestCaseWithFactory):
         # passed in.
         metadata_expected = [u'some', u'arbitrary', u'metadata']
         self.assertEqual(metadata_expected, apport_job.metadata)
+        self.assertProvides(apport_job, IApportJob)
 
 
 class ApportJobDerivedTestCase(TestCaseWithFactory):
@@ -172,6 +175,11 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
                     attachment['file_alias'],
                     "The attachment's file alias doesn't match it's "
                     "file_alias_id")
+
+    def test_interface(self):
+        # ProcessApportBlobJob instances provide IProcessApportBlobJobSource.
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
+        self.assertProvides(job, IProcessApportBlobJob)
 
     def test_run(self):
         # IProcessApportBlobJobSource.run() extracts salient data from an

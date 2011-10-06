@@ -62,9 +62,6 @@ class IApportJob(Interface):
 
     metadata = Attribute('A dict of data about the job.')
 
-    def destroySelf():
-        """Destroy this object."""
-
 
 class IApportJobSource(IJobSource):
     """An interface for acquiring IApportJobs."""
