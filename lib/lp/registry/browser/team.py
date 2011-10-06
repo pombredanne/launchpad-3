@@ -98,7 +98,6 @@ from canonical.lazr.interfaces import IObjectPrivacy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
-    LaunchpadEditFormView,
     LaunchpadFormView,
     )
 from lp.app.browser.tales import PersonFormatterAPI
@@ -119,6 +118,7 @@ from lp.registry.browser.person import (
     CommonMenuLinks,
     PersonIndexView,
     PersonNavigation,
+    PersonRenameFormMixin,
     PPANavigationMenuMixIn,
     )
 from lp.registry.browser.teamjoin import (
@@ -260,8 +260,8 @@ class TeamFormMixin:
             self.form_fields = self.form_fields.omit('visibility')
 
 
-class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
-                   LaunchpadEditFormView):
+class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
+                   HasRenewalPolicyMixin):
     """View for editing team details."""
     schema = ITeam
 
@@ -310,38 +310,6 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         return canonical_url(self.context)
 
     cancel_url = next_url
-
-    def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        When a team has a mailing list, a PPA or is private, renames
-        are prohibited.
-        """
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        has_mailing_list = (
-            mailing_list is not None and
-            mailing_list.status != MailingListStatus.PURGED)
-        has_ppa = self.context.archive is not None
-
-        block_renaming = (has_mailing_list or has_ppa)
-        if block_renaming:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-
-        super(TeamEditView, self).setUpWidgets()
-
-        # Tweak the field form-help including an explanation for the
-        # read-only mode if necessary.
-        if block_renaming:
-            # Group the read-only mode reasons in textual form.
-            reasons = []
-            if has_mailing_list:
-                reasons.append('has a mailing list')
-            if has_ppa:
-                reasons.append('has a PPA')
-            reason = ' and '.join(reasons)
-            self.widgets['name'].hint = _(
-                'This team cannot be renamed because it %s.' % reason)
 
 
 def generateTokenAndValidationEmail(email, team):
