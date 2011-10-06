@@ -1,3 +1,9 @@
+launchpad-buildd (80) hardy-cat; urgency=low
+
+  * binfmt-support demonstrated umount ordering issues for us.  LP: #851934
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 19 Sep 2011 04:56:58 -0600
+
 launchpad-buildd (79) hardy-cat; urgency=low
 
   * Fix sudoers.d/buildd permissions
@@ -137,7 +143,7 @@ launchpad-buildd (63) hardy-cat; urgency=low
 
 launchpad-buildd (62) hardy-cat; urgency=low
 
-  * Make the buildds cope with not having a sourcepackagename LP#587109 
+  * Make the buildds cope with not having a sourcepackagename LP#587109
 
  -- LaMont Jones <lamont@canonical.com>  Tue, 08 Jun 2010 13:02:31 -0600
 
@@ -319,7 +325,7 @@ launchpad-buildd (44) dapper-cat; urgency=low
 launchpad-buildd (43) dapper-cat; urgency=low
 
   * unpack-chroot: Move the ntpdate calls below the bunzip/exec bit,
-    so we don't run ntpdate twice when unzipping tarballs, which 
+    so we don't run ntpdate twice when unzipping tarballs, which
     happens on every single build on Xen hosts (like the PPA hosts).
   * debian/control: We use adduser in postinst, depending on it helps.
   * debian/control: Set myself as the Maintainer, since I'm in here.
@@ -598,7 +604,7 @@ launchpad-buildd (12) unstable; urgency=low
   * If upgrading from < v12, will remove -A from sbuildargs and add in
     a default ogrepath to any buildd configs found in /etc/launchpad-buildd
   * Prevent launchpad-buildd init from starting ~ files
-  
+
  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Sun,  2 Oct 2005 23:20:08 +0100
 
 launchpad-buildd (11) unstable; urgency=low

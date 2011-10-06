@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad database policies."""
@@ -88,10 +88,6 @@ class BaseDatabasePolicy:
     """Base class for database policies."""
     implements(IDatabasePolicy)
 
-    # The section name to retrieve database connection details from.
-    # None means the default.
-    config_section = None
-
     # The default flavor to use.
     default_flavor = MASTER_FLAVOR
 
@@ -103,9 +99,7 @@ class BaseDatabasePolicy:
         if flavor == DEFAULT_FLAVOR:
             flavor = self.default_flavor
 
-        config_section = self.config_section or dbconfig.getSectionName()
-
-        store_name = '%s-%s-%s' % (config_section, name, flavor)
+        store_name = '%s-%s' % (name, flavor)
         store = getUtility(IZStorm).get(
             store_name, 'launchpad:%s' % store_name)
         if not getattr(store, '_lp_store_initialized', False):
@@ -341,7 +335,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
             logging.error(
                 "No data in DatabaseReplicationLag for node %d"
                 % slave_node_id)
-            return timedelta(days=999) # A long, long time.
+            return timedelta(days=999)
         return lag[0]
 
 

@@ -155,7 +155,7 @@
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.AskAQuestionButtonView"
+        class="lp.answers.browser.questiontarget.AskAQuestionButtonView"
         permission="zope.Public"/>
     <browser:page
         name="+missingpackages"
@@ -332,7 +332,7 @@
         <browser:page
             name="+ask-a-question-button"
             for="lp.registry.interfaces.projectgroup.IProjectGroup"
-            class="canonical.launchpad.browser.AskAQuestionButtonView"
+            class="lp.answers.browser.questiontarget.AskAQuestionButtonView"
             permission="zope.Public"/>
     </facet>
     <browser:navigation
@@ -392,7 +392,7 @@
     <browser:page
         name="+register-a-blueprint-button"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+        class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonView"
         permission="zope.Public"/>
     <browser:page
         name="+edit"
@@ -794,9 +794,10 @@
         facet="overview">
         <browser:navigation
             module="lp.registry.browser.person"
-            classes="
-                TeamNavigation
-                PersonNavigation"/>
+            classes="PersonNavigation"/>
+        <browser:navigation
+            module="lp.registry.browser.team"
+            classes="TeamNavigation"/>
         <browser:menus
             module="lp.registry.browser.person"
             classes="
@@ -809,15 +810,19 @@
                 PersonSetActionNavigationMenu
                 PersonSetContextMenu
                 PersonSpecsMenu
-                TeamEditMenu
-                TeamIndexMenu
-                TeamOverviewMenu
-                TeamOverviewNavigationMenu
                 "/>
         <browser:menus
             module="lp.registry.browser.menu"
             classes="
                 RegistryCollectionNavigationMenu
+                "/>
+        <browser:menus
+            module="lp.registry.browser.team"
+            classes="
+                TeamEditMenu
+                TeamIndexMenu
+                TeamOverviewMenu
+                TeamOverviewNavigationMenu
                 "/>
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
@@ -1100,12 +1105,12 @@
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
-            class="lp.registry.browser.person.TeamIndexView"
+            class="lp.registry.browser.team.TeamIndexView"
             name="+index"
             template="../templates/team-index.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.person.TeamIndexView"
+            class="lp.registry.browser.team.TeamIndexView"
             permission="zope.Public"
             name="+portlet-polls"
             template="../templates/team-portlet-polls.pt"/>
@@ -1143,7 +1148,7 @@
             permission="zope.Public"
             name="+mugshots"
             template="../templates/team-mugshots.pt"
-            class="lp.registry.browser.person.TeamMugshotView"/>
+            class="lp.registry.browser.team.TeamMugshotView"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamMapLtdView"
@@ -1152,7 +1157,7 @@
             template="../templates/team-portlet-map.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.person.TeamIndexView"
+            class="lp.registry.browser.team.TeamIndexView"
             permission="zope.Public"
             name="+portlet-membership"
             template="../templates/team-portlet-membership.pt"/>
@@ -1195,37 +1200,37 @@
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.Owner"
-            class="lp.registry.browser.person.TeamReassignmentView"
+            class="lp.registry.browser.team.TeamReassignmentView"
             name="+reassign"
             template="../../app/templates/object-reassignment.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.AnyPerson"
-            class="lp.registry.browser.person.TeamAddMyTeamsView"
+            class="lp.registry.browser.team.TeamAddMyTeamsView"
             name="+add-my-teams"
             template="../templates/team-add-my-teams.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.AnyPerson"
-            class="lp.registry.browser.person.TeamJoinView"
+            class="lp.registry.browser.team.TeamJoinView"
             name="+join"
             template="../templates/team-join.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.AnyPerson"
-            class="lp.registry.browser.person.TeamLeaveView"
+            class="lp.registry.browser.team.TeamLeaveView"
             name="+leave"
             template="../templates/team-leave.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
-            class="lp.registry.browser.person.PersonView"
+            class="lp.registry.browser.poll.TeamPollsView"
             name="+polls"
             template="../templates/team-polls.pt"/>
         <browser:page
             name="+newpoll"
             for="lp.registry.interfaces.person.ITeam"
-            class="canonical.launchpad.browser.PollAddView"
+            class="lp.registry.browser.poll.PollAddView"
             permission="launchpad.Edit"
             template="../templates/team-newpoll.pt"/>
         <browser:page
@@ -1233,7 +1238,7 @@
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
             template="../templates/team-members.pt"
-            class="lp.registry.browser.person.TeamMembershipView"/>
+            class="lp.registry.browser.team.TeamMembershipView"/>
         <browser:page
             name="+invitations"
             for="lp.registry.interfaces.person.ITeam"
@@ -1282,13 +1287,13 @@
         <browser:page
             name="+requestmerge"
             for="lp.registry.interfaces.person.IPersonSet"
-            class="canonical.launchpad.browser.RequestPeopleMergeView"
+            class="lp.registry.browser.peoplemerge.RequestPeopleMergeView"
             permission="launchpad.AnyPerson"
             template="../templates/people-requestmerge.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPersonSet"
             permission="launchpad.Admin"
-            class="canonical.launchpad.browser.AdminPeopleMergeView"
+            class="lp.registry.browser.peoplemerge.AdminPeopleMergeView"
             name="+adminpeoplemerge"
             template="../templates/people-adminrequestmerge.pt"/>
         <browser:page
@@ -1300,7 +1305,7 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="launchpad.AnyPerson"
-            class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
+            class="lp.registry.browser.peoplemerge.RequestPeopleMergeMultipleEmailsView">
             <browser:page
                 name="+requestmerge-multiple"
                 template="../templates/people-requestmerge-multiple.pt"/>
@@ -1308,7 +1313,7 @@
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="launchpad.AnyPerson"
-            class="canonical.launchpad.browser.FinishedPeopleMergeRequestView">
+            class="lp.registry.browser.peoplemerge.FinishedPeopleMergeRequestView">
             <browser:page
                 name="+mergerequest-sent"
                 template="../templates/people-mergerequest-sent.pt"/>
@@ -1405,7 +1410,7 @@
     <browser:page
         name="+moderation"
         for="lp.registry.interfaces.mailinglist.IMessageApproval"
-        class="canonical.launchpad.browser.HeldMessageView"
+        class="lp.registry.browser.mailinglists.HeldMessageView"
         template="../templates/message-moderation.pt"
         permission="launchpad.View"/>
     <browser:url
@@ -1480,10 +1485,14 @@
             name="+portlet-license-missing"
             facet="overview"
             template="../templates/product-portlet-license-missing.pt"/>
-        <browser:page
-            name="+purchase-subscription"
-            template="../templates/product-purchase-subscription.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        name="+purchase-subscription"
+        facet="overview"
+        class="lp.registry.browser.product.ProductPurchaseSubscriptionView"
+        template="../templates/product-purchase-subscription.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
@@ -1847,7 +1856,7 @@
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.browser.AskAQuestionButtonView"
+        class="lp.answers.browser.questiontarget.AskAQuestionButtonView"
         permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeriesSet"
@@ -1936,7 +1945,7 @@
         name="+newmirror"
         facet="overview"
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="canonical.launchpad.browser.DistributionMirrorAddView"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorAddView"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
         </browser:page>

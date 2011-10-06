@@ -37,7 +37,8 @@ def referenced_oops():
     # Note that the POSIX regexp syntax is subtly different to the Python,
     # and that we need to escape all \ characters to keep the SQL interpreter
     # happy.
-    posix_oops_match = r"~* '^(oops\\s*-?\\s*\\d*[a-z]+\\d+)|[^=]+(\\moops\\s*-?\\s*\\d*[a-z]+\\d+)'"
+    posix_oops_match = (r"~* '^(oops\\s*-?\\s*\\d*[a-z]+\\d+)"
+        "|[^=]+(\\moops\\s*-?\\s*\\d*[a-z]+\\d+)'")
     query = """
         SELECT DISTINCT subject FROM Message
         WHERE subject %(posix_oops_match)s AND subject IS NOT NULL
@@ -48,14 +49,11 @@ def referenced_oops():
         FROM Bug WHERE title %(posix_oops_match)s
             OR description %(posix_oops_match)s
         UNION ALL
-        SELECT statusexplanation FROM BugTask
-        WHERE statusexplanation %(posix_oops_match)s
-        UNION ALL
         SELECT title || ' ' || description || ' ' || COALESCE(whiteboard,'')
         FROM Question WHERE title %(posix_oops_match)s
             OR description %(posix_oops_match)s
             OR whiteboard %(posix_oops_match)s
-        """ % vars()
+        """ % {'posix_oops_match': posix_oops_match}
 
     referenced_codes = set()
 
@@ -63,7 +61,6 @@ def referenced_oops():
         cur = cursor()
         cur.execute(query)
         for content in (row[0] for row in cur.fetchall()):
-            found = False
             for match in FormattersAPI._re_linkify.finditer(content):
                 if match.group('oops') is not None:
                     code_string = match.group('oopscode')
@@ -133,6 +130,7 @@ def old_oops_files(root_path, days):
                     ) is not None:
                 yield os.path.join(dirpath, filename)
 
+
 def prune_empty_oops_directories(root_path):
     for filename in os.listdir(root_path):
         if re.search(r'^\d\d\d\d-\d\d-\d\d$', filename) is None:
@@ -143,4 +141,3 @@ def prune_empty_oops_directories(root_path):
         if os.listdir(path):
             continue
         os.rmdir(path)
-

@@ -19,6 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -35,6 +36,7 @@ from lp.bugs.mail.handler import (
     BugTaskCommandGroup,
     MaloneHandler,
     )
+from lp.bugs.model.bugnotification import BugNotification
 from lp.services.mail import stub
 from lp.testing import (
     celebrity_logged_in,
@@ -110,10 +112,28 @@ class TestMaloneHandler(TestCaseWithFactory):
             'affects malone',
             ])
 
+    def test_mailToHelpFromNonActiveUser(self):
+        """Mail from people without a preferred email get a help message."""
+        self.factory.makePerson(
+            email='non@eg.dom',
+            email_address_status=EmailAddressStatus.NEW)
+        message = self.factory.makeSignedMessage(email_address='non@eg.dom')
+        handler = MaloneHandler()
+        response = handler.extractAndAuthenticateCommands(
+            message, 'help@bugs.launchpad.net')
+        mail_handled, add_comment_to_bug, commands = response
+        self.assertEquals(mail_handled, True)
+        emails = self.getSentMail()
+        self.assertEquals(1, len(emails))
+        self.assertEquals(['non@eg.dom'], emails[0][1])
+        self.assertTrue(
+            'Subject: Launchpad Bug Tracker Email Interface' in emails[0][2])
+
     def test_mailToHelpFromUnknownUser(self):
         """Mail from people of no account to help@ is simply dropped.
         """
-        message = self.factory.makeSignedMessage()
+        message = self.factory.makeSignedMessage(
+            email_address='unregistered@eg.dom')
         handler = MaloneHandler()
         mail_handled, add_comment_to_bug, commands = \
             handler.extractAndAuthenticateCommands(message,
@@ -123,15 +143,19 @@ class TestMaloneHandler(TestCaseWithFactory):
 
     def test_mailToHelp(self):
         """Mail to help@ generates a help command."""
-        message = self.factory.makeSignedMessage()
+        user = self.factory.makePerson(email='user@dom.eg')
+        message = self.factory.makeSignedMessage(email_address='user@dom.eg')
         handler = MaloneHandler()
-        with person_logged_in(self.factory.makePerson()):
+        with person_logged_in(user):
             mail_handled, add_comment_to_bug, commands = \
                 handler.extractAndAuthenticateCommands(message,
                     'help@bugs.launchpad.net')
         self.assertEquals(mail_handled, True)
-        self.assertEquals(len(self.getSentMail()), 1)
-        # TODO: Check the right mail was sent. -- mbp 20100923
+        emails = self.getSentMail()
+        self.assertEquals(1, len(emails))
+        self.assertEquals([message['From']], emails[0][1])
+        self.assertTrue(
+            'Subject: Launchpad Bug Tracker Email Interface' in emails[0][2])
 
     def getSentMail(self):
         # Sending mail is (unfortunately) a side effect of parsing the
@@ -202,6 +226,102 @@ class TestMaloneHandler(TestCaseWithFactory):
         message = self.getFailureForMessage('1@bugs.launchpad.dev')
         self.assertIn(
             "There is no such bug in Launchpad: 1", message)
+
+
+class MaloneHandlerProcessTestCase(TestCaseWithFactory):
+    """Test the bug mail processing loop."""
+    layer = LaunchpadFunctionalLayer
+
+    @staticmethod
+    def getLatestBugNotification():
+        return BugNotification.selectFirst(orderBy='-id')
+
+    def test_new_bug(self):
+        project = self.factory.makeProduct(name='fnord')
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='borked\n affects fnord',
+                subject='subject borked',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual(
+            [project.owner], list(bug.getDirectSubscribers()))
+        self.assertEqual(project.owner, bug.owner)
+        self.assertEqual('subject borked', bug.title)
+        self.assertEqual(1, bug.messages.count())
+        self.assertEqual('borked\n affects fnord', bug.description)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
+
+    def test_new_bug_with_one_misplaced_affects_line(self):
+        # Affects commands in the wrong position are processed as the user
+        # intended when the bug is new and there is only one affects.
+        project = self.factory.makeProduct(name='fnord')
+        assignee = self.factory.makePerson(name='pting')
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='borked\n assignee pting\n affects fnord',
+                subject='affects after assignee',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual('affects after assignee', bug.title)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
+        self.assertEqual(assignee, bug.bugtasks[0].assignee)
+
+    def test_new_affect_command_interleaved_with_bug_commands(self):
+        # The bug commands can appear before and after the affects command.
+        project = self.factory.makeProduct(name='fnord')
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='unsecure\n security yes\n affects fnord\n tag ajax',
+                subject='unsecure code',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual('unsecure code', bug.title)
+        self.assertEqual(True, bug.security_related)
+        self.assertEqual(['ajax'], bug.tags)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
+
+    def test_new_security_bug(self):
+        # Structural subscribers are not notified of security bugs.
+        maintainer = self.factory.makePerson(name='maintainer')
+        project = self.factory.makeProduct(name='fnord', owner=maintainer)
+        subscriber = self.factory.makePerson(name='subscriber')
+        with person_logged_in(subscriber):
+            project.addBugSubscription(subscriber, subscriber)
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='bad thing\n security yes\n affects fnord',
+                subject='security issue',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual('security issue', bug.title)
+        self.assertEqual(True, bug.security_related)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
+        recipients = set()
+        for notification in BugNotification.select():
+            for recipient in notification.recipients:
+                recipients.add(recipient.person)
+        self.assertContentEqual([maintainer], recipients)
 
 
 class BugTaskCommandGroupTestCase(TestCase):
@@ -308,6 +428,24 @@ class BugCommandGroupTestCase(TestCase):
         self.assertEqual(group._groups, group.groups)
         self.assertFalse(group._groups is group.groups)
         self.assertEqual([bugtask_group_1, bugtask_group_2], group.groups)
+
+    def test_BugCommandGroup_groups_new_bug_with_fixable_affects(self):
+        # A new bug that affects only one target does not require the
+        # affects command to be first.
+        group = BugCommandGroup(
+            BugEmailCommands.get('bug', ['new']))
+        status_command = BugEmailCommands.get('status', ['triaged'])
+        bugtask_group_1 = BugTaskCommandGroup(status_command)
+        group.add(bugtask_group_1)
+        affects_command = BugEmailCommands.get('affects', ['fnord'])
+        bugtask_group_2 = BugTaskCommandGroup(affects_command)
+        group.add(bugtask_group_2)
+        self.assertEqual(1, len(group.groups))
+        self.assertIsNot(
+            group._groups, group.groups,
+            "List reference returned instead of copy.")
+        self.assertEqual(
+            [affects_command, status_command], group.groups[0].commands)
 
     def test_BugCommandGroup__nonzero__false(self):
         # A BugCommandGroup is zero is it has no commands or groups.
@@ -479,6 +617,32 @@ class BugCommandGroupsTestCase(TestCase):
             ])
         self.assertEqual(3, len(ordered_commands.groups))
         self.assertEqual(expected, str(ordered_commands))
+
+    def test_BugCommandGroups__iter_(self):
+        email_commands = [
+            ('bug', '1234'),
+            ('importance', 'high'),
+            ('private', 'yes'),
+            ('bug', 'new'),
+            ('security', 'yes'),
+            ('status', 'triaged'),
+            ('affects', 'fnord'),
+            ]
+        commands = [
+            BugEmailCommands.get(name=name, string_args=[args])
+            for name, args in email_commands]
+        ordered_commands = list(BugCommandGroups(commands))
+        expected = [
+            'bug 1234',
+            'private yes',
+            'importance high',
+            'bug new',
+            'security yes',
+            'affects fnord',
+            'status triaged',
+            ]
+        self.assertEqual(
+            expected, [str(command) for command in ordered_commands])
 
 
 class FakeSignature:

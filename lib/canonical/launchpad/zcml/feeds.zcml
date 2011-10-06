@@ -27,7 +27,7 @@
         />
 
     <browser:navigation
-        module="canonical.launchpad.browser"
+        module="canonical.launchpad.browser.feeds"
         classes="FeedsNavigation"
         />
 

@@ -162,7 +162,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
-    StaticDiff,
     )
 from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
@@ -307,6 +306,9 @@ from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
@@ -315,9 +317,6 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
 from lp.translations.interfaces.translator import ITranslatorSet
-from lp.translations.model.translationimportqueue import (
-    TranslationImportQueueEntry,
-    )
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
@@ -506,7 +505,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    def loginAsAnyone(self):
+    def loginAsAnyone(self, participation=None):
         """Log in as an arbitrary person.
 
         If you want to log in as a celebrity, including admins, see
@@ -514,7 +513,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         login(ANONYMOUS)
         person = self.makePerson()
-        login_as(person)
+        login_as(person, participation)
         return person
 
     @with_celebrity_logged_in('admin')
@@ -1126,6 +1125,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             url=url, **optional_branch_args)
         if private:
             removeSecurityProxy(branch).explicitly_private = True
+            removeSecurityProxy(branch).transitively_private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
         if reviewer is not None:
@@ -1433,10 +1433,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, prerequisite_branch=None,
-                                product=None, review_diff=None,
-                                initial_comment=None, source_branch=None,
-                                preview_diff=None, date_created=None,
-                                description=None, reviewer=None):
+                                product=None, initial_comment=None,
+                                source_branch=None, preview_diff=None,
+                                date_created=None, description=None,
+                                reviewer=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -1466,8 +1466,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             review_requests.append((reviewer, None))
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, review_requests=review_requests,
-            prerequisite_branch=prerequisite_branch, review_diff=review_diff,
-            description=description, date_created=date_created)
+            prerequisite_branch=prerequisite_branch, description=description,
+            date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         if preview_diff is not None:
@@ -1557,11 +1557,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
 
-    def makeStaticDiff(self):
-        return StaticDiff.acquireFromText(
-            self.getUniqueUnicode(), self.getUniqueUnicode(),
-            self.getUniqueString())
-
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
         """Create a single `Revision`."""
@@ -1633,8 +1628,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, date_closed=None, title=None,
-                date_created=None, description=None, comment=None,
+                private=False, security_related=False, date_closed=None,
+                title=None, date_created=None, description=None, comment=None,
                 status=None, distribution=None, milestone=None, series=None,
                 tags=None, sourcepackagename=None):
         """Create and return a new, arbitrary Bug.
@@ -1685,6 +1680,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, private=private,
+            security_related=security_related,
             datecreated=date_created, description=description,
             status=status, tags=tags)
         create_bug_params.setBugTarget(
@@ -2351,7 +2347,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          aliases=None, bug_supervisor=None, driver=None,
                          security_contact=None, publish_root_dir=None,
                          publish_base_url=None, publish_copy_base_url=None,
-                         no_pubconf=False, icon=None):
+                         no_pubconf=False, icon=None, summary=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2360,7 +2356,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString()
         description = self.getUniqueString()
-        summary = self.getUniqueString()
+        if summary is None:
+            summary = self.getUniqueString()
         domainname = self.getUniqueString()
         if registrant is None:
             registrant = self.makePerson()
@@ -2958,7 +2955,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None,
-                       copy_pofiles=True, side=None, sourcepackage=None):
+                       copy_pofiles=True, side=None, sourcepackage=None,
+                       iscurrent=True):
         """Make a new translation template."""
         if sourcepackage is not None:
             assert distroseries is None, (
@@ -2999,7 +2997,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if path is None:
             path = 'messages.pot'
 
-        return subset.new(name, translation_domain, path, owner, copy_pofiles)
+        pot = subset.new(name, translation_domain, path, owner, copy_pofiles)
+        removeSecurityProxy(pot).iscurrent = iscurrent
+        return pot
 
     def makePOTemplateAndPOFiles(self, language_codes, **kwargs):
         """Create a POTemplate and associated POFiles.
@@ -3247,9 +3247,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if content is None:
             content = self.getUniqueString()
-        content_reference = getUtility(ILibraryFileAliasSet).create(
-            name=os.path.basename(path), size=len(content),
-            file=StringIO(content), contentType='text/plain')
 
         if format is None:
             format = TranslationFileFormat.PO
@@ -3257,11 +3254,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status is None:
             status = RosettaImportStatus.NEEDS_REVIEW
 
-        return TranslationImportQueueEntry(
-            path=path, productseries=productseries, distroseries=distroseries,
-            sourcepackagename=sourcepackagename, importer=uploader,
-            content=content_reference, status=status, format=format,
-            by_maintainer=by_maintainer)
+        if type(content) == unicode:
+            content = content.encode('utf-8')
+
+        entry = getUtility(ITranslationImportQueue).addOrUpdateEntry(
+            path=path, content=content, by_maintainer=by_maintainer,
+            importer=uploader, productseries=productseries,
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
+            potemplate=potemplate, pofile=pofile, format=format)
+        entry.setStatus(
+            status, getUtility(ILaunchpadCelebrities).rosetta_experts)
+        return entry
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""
@@ -3690,8 +3693,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            date_uploaded=UTC_NOW,
                                            scheduleddeletiondate=None,
                                            ancestor=None,
-                                           **kwargs
-                                           ):
+                                           **kwargs):
         """Make a `SourcePackagePublishingHistory`.
 
         :param sourcepackagerelease: The source package release to publish
@@ -4095,7 +4097,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          emailaddress=u'test@canonical.com',
                          distroarchseries=None, private=False,
                          contactable=False, system=None,
-                         submission_data=None):
+                         submission_data=None, status=None):
         """Create a new HWSubmission."""
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
@@ -4116,10 +4118,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         format = HWSubmissionFormat.VERSION_1
         submission_set = getUtility(IHWSubmissionSet)
 
-        return submission_set.createSubmission(
+        submission = submission_set.createSubmission(
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+        if status is not None:
+            removeSecurityProxy(submission).status = status
+        return submission
 
     def makeHWSubmissionDevice(self, submission, device, driver, parent,
                                hal_device_id):

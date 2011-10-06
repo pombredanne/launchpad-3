@@ -1,10 +1,12 @@
-= Hardware Database Device Tables =
+Hardware Database Device Tables
+===============================
 
 These tables represent devices and complete systems in the database. They
 allow look up of devices by their bus IDs and by their human readable
 vendor and product names. They also link devices to drivers.
 
-== HWVendorName ==
+HWVendorName
+------------
 
 HWVendorName is a simple list of vendor names. A new entry is created by
 IHWVendorNameSet.create().
@@ -144,7 +146,8 @@ returns None.
     None
 
 
-== HWVendorID ==
+HWVendorID
+----------
 
 HWVendorID associates a bus, as enumerated by HWBus, with a bus-specific
 vendor ID and a vendor name. We store the IDs as a string, because not all
@@ -467,7 +470,8 @@ HWVendorIDSet.idsForBus() returns all known HWVendorIDs for a given bus.
     PCI 0x8086
 
 
-== HWDevice ==
+HWDevice
+--------
 
 A HWDevice instance stores core data about a hardware device: The bus
 it can connect to, the vendor ID, the product ID, the human readable
@@ -711,7 +715,8 @@ Strings with less than 16 characters are not allowed as SCSI product IDs...
     ParameterError: '12345678901234567' is not a valid product ID for SCSI
 
 
-=== Unknown Vendor IDs ===
+Unknown Vendor IDs
+..................
 
 If IHWDevice.create is called with a vendor ID that for which there
 is no IHWVendorID record, the latter is automatically created. Since
@@ -735,7 +740,9 @@ http://standards.ieee.org/regauth/oui/oui.txt
     >>> print new_vendor_device.bus_vendor.vendor_name.name
     Unknown
 
-=== Device Variants ===
+
+Device Variants
+...............
 
 While most devices can be uniquely identified by their vendor and product
 IDs, there are some cases, where different devices have identical IDs:
@@ -843,7 +850,8 @@ IntegrityError error.
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
-=== Retrieving HWDevice records ===
+Retrieving HWDevice records
+...........................
 
 Existing HWDevice records can be retrieved by calling
 HWDeviceSet.getByDeviceID()
@@ -1110,6 +1118,8 @@ We can also search for submissions from a particular user.
     >>> sata_controller.getSubmissions(owner=not_owner).count()
     0
 
+    >>> import transaction
+    >>> transaction.abort()
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 HWDevice.drivers is the set of drivers that are associated via
@@ -1120,7 +1130,8 @@ HWDeviceDriverLink (see below) with this device.
     linux-image-2.6.24-19-generic ahci
 
 
-== HWDeviceNameVariant ==
+HWDeviceNameVariant
+-------------------
 
 Many OEM products are sold by more than one vendor under different
 product names; some manufacturers sell the same device under
@@ -1166,7 +1177,8 @@ IntegrityError error.
     >>> LaunchpadZopelessLayer.txn.abort()
 
 
-== HWDriver ==
+HWDriver
+--------
 
 If a device is reported as having problems, then we are more
 interested in which drivers are involved rather than the fact that
@@ -1410,6 +1422,7 @@ HWDriverSet.getByID() returns None if no record with the passed ID exists.
     >>> print driver
     None
 
+    >>> transaction.abort()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
 We can search all the submissions related to a driver.
@@ -1458,10 +1471,12 @@ And We can search for submissions from a particular user.
     >>> driver.getSubmissions(owner=not_owner).count()
     0
 
+    >>> transaction.abort()
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 
-== Driver names and package names ==
+Driver names and package names
+------------------------------
 
 The same driver names can appear multiple times in HWDriver.
 HWDriverSet.all_driver_names() returns a list of distinct driver
@@ -1498,7 +1513,8 @@ is not included.
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 
-== HWDeviceDriverLink ==
+HWDeviceDriverLink
+------------------
 
 This table links devices and drivers.
 
@@ -1639,7 +1655,8 @@ the given parameters or creates a new one, if no existing record matches.
     None
 
 
-== HWDeviceClass ==
+HWDeviceClass
+-------------
 
 This table specifies the class or classes of a device. A device class
 describes the capabilities of a device, i.e, if it is a printer,
@@ -1707,7 +1724,8 @@ IHWDevice.removeDeviceClass().
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 
-== HWSubmissionDevice ==
+HWSubmissionDevice
+------------------
 
 This table links devices listed in a submission to the
 HWDeviceDriverLink table. Additionally it links a device of a
@@ -1846,7 +1864,8 @@ This method returns None if a nonexistent ID is passed.
     None
 
 
-== Statistical functions ==
+Statistical functions
+---------------------
 
 HWSubmissionDeviceSet.numDevicesInSubmissions() returns how often a
 device appears in HWDB submissions.
@@ -2262,7 +2281,8 @@ We can specify a distro target as well as a driver or package name.
     (0L, 2L)
 
 
-== Relations between bugs and HWDB submissions ==
+Relations between bugs and HWDB submissions
+-------------------------------------------
 
 We can query which owners of a device, or which people owning a device
 controlled by a given driver, are related to a set of bugs. We must
@@ -2452,7 +2472,8 @@ Owners of private submissions are only included if the optional parameter
     Sample Person
 
 
-=== Searching for drivers instead of devices ===
+Searching for drivers instead of devices
+........................................
 
 We can also look for people using a given driver and being affected by a
 bug.

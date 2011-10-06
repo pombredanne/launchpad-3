@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # <james.troup@canonical.com>
@@ -14,9 +14,8 @@ Long term once soyuz is monitoring other archives regularly, syncing
 will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
-import commands
+
 import errno
-import optparse
 import os
 import re
 import shutil
@@ -28,8 +27,6 @@ import urllib
 import _pythonpath
 from _syncorigins import origins
 import apt_pkg
-from contrib.glock import GlobalLock
-import dak_utils
 from debian.deb822 import Dsc
 from zope.component import getUtility
 
@@ -37,13 +34,7 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts,
-    logger,
-    logger_options,
-    )
 from canonical.librarian.client import LibrarianClient
-from canonical.lp import initZopeless
 from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
@@ -51,6 +42,10 @@ from lp.archiveuploader.utils import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     re_bug_numbers,
@@ -65,6 +60,7 @@ from lp.soyuz.scripts.ftpmaster import (
 
 
 reject_message = ""
+re_no_epoch = re.compile(r"^\d+\:")
 re_strip_revision = re.compile(r"-([^-]+)$")
 re_changelog_header = re.compile(
     r"^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*")
@@ -72,7 +68,6 @@ re_changelog_header = re.compile(
 
 Blacklisted = None
 Library = None
-Lock = None
 Log = None
 Options = None
 
@@ -112,40 +107,10 @@ def urgency_from_numeric(n):
     return urgency_map.get(n, 'low')
 
 
-def sign_changes(changes, dsc):
-    # XXX cprov 2007-07-06: hardcoded file locations and parameters for
-    # production.
-    temp_filename = "unsigned-changes"
-    keyid = "0C12BDD7"
-    secret_keyring = "/srv/launchpad.net/dot-gnupg/secring.gpg"
-    pub_keyring = "/srv/launchpad.net/dot-gnupg/pubring.gpg"
-
-    filehandle = open(temp_filename, 'w')
-    filehandle.write(changes)
-    filehandle.close()
-
-    output_filename = "%s_%s_source.changes" % (
-        dsc["source"], dak_utils.re_no_epoch.sub('', dsc["version"]))
-
-    cmd = ("gpg --no-options --batch --no-tty --secret-keyring=%s "
-           "--keyring=%s --default-key=0x%s --output=%s --clearsign %s" %
-           (secret_keyring, pub_keyring, keyid, output_filename,
-            temp_filename))
-    result, output = commands.getstatusoutput(cmd)
-
-    if (result != 0):
-        print " * command was '%s'" % (cmd)
-        print (dak_utils.prefix_multi_line_string(
-                output, " [gpg output:] "), "")
-        dak_utils.fubar("%s: signing .changes failed [return code: %s]." %
-                        (output_filename, result))
-
-    os.unlink(temp_filename)
-
-
 def parse_changelog(changelog_filename, previous_version):
     if not os.path.exists(changelog_filename):
-        dak_utils.fubar("debian/changelog not found in extracted source.")
+        raise LaunchpadScriptFailure(
+            "debian/changelog not found in extracted source.")
     urgency = urgency_to_numeric('low')
     changes = ""
     is_debian_changelog = 0
@@ -165,7 +130,7 @@ def parse_changelog(changelog_filename, previous_version):
         changes += line
 
     if not is_debian_changelog:
-        dak_utils.fubar("header not found in debian/changelog")
+        raise LaunchpadScriptFailure("header not found in debian/changelog")
 
     closes = []
     for match in re_closes.finditer(changes):
@@ -224,7 +189,8 @@ def parse_control(control_filename):
     source_description = ""
 
     if not os.path.exists(control_filename):
-        dak_utils.fubar("debian/control not found in extracted source.")
+        raise LaunchpadScriptFailure(
+            "debian/control not found in extracted source.")
     control_filehandle = open(control_filename)
     Control = apt_pkg.ParseTagFile(control_filehandle)
     while Control.Step():
@@ -258,7 +224,7 @@ def extract_source(dsc_filename):
     except DpkgSourceError, e:
         print " * command was '%s'" % (e.command)
         print e.output
-        dak_utils.fubar(
+        raise LaunchpadScriptFailure(
             "'dpkg-source -x' failed for %s [return code: %s]." %
             (dsc_filename, e.result))
 
@@ -270,7 +236,8 @@ def cleanup_source(tmpdir, old_cwd, dsc):
     # Sanity check that'll probably break if people set $TMPDIR, but
     # WTH, shutil.rmtree scares me
     if not tmpdir.startswith("/tmp/"):
-        dak_utils.fubar("%s: tmpdir doesn't start with /tmp" % (tmpdir))
+        raise LaunchpadScriptFailure(
+            "%s: tmpdir doesn't start with /tmp" % (tmpdir))
 
     # Move back and cleanup the temporary tree
     os.chdir(old_cwd)
@@ -278,7 +245,7 @@ def cleanup_source(tmpdir, old_cwd, dsc):
         shutil.rmtree(tmpdir)
     except OSError, e:
         if errno.errorcode[e.errno] != 'EACCES':
-            dak_utils.fubar(
+            raise LaunchpadScriptFailure(
                 "%s: couldn't remove tmp dir for source tree."
                 % (dsc["source"]))
 
@@ -289,10 +256,11 @@ def cleanup_source(tmpdir, old_cwd, dsc):
         cmd = "chmod -R u+rwx %s" % (tmpdir)
         result = os.system(cmd)
         if result != 0:
-            dak_utils.fubar("'%s' failed with result %s." % (cmd, result))
+            raise LaunchpadScriptFailure(
+                "'%s' failed with result %s." % (cmd, result))
         shutil.rmtree(tmpdir)
     except:
-        dak_utils.fubar(
+        raise LaunchpadScriptFailure(
             "%s: couldn't remove tmp dir for source tree." % (dsc["source"]))
 
 
@@ -310,11 +278,11 @@ def check_dsc(dsc, current_sources, current_binaries):
             # override a main binary package
             if current_component == "main" and source_component != "main":
                 if not Options.forcemore:
-                    dak_utils.fubar(
+                    raise LaunchpadScriptFailure(
                         "%s is in main but its source (%s) is not." %
                         (binary, source))
                 else:
-                    dak_utils.warn(
+                    Log.warning(
                         "%s is in main but its source (%s) is not - "
                         "continuing anyway." % (binary, source))
 
@@ -322,7 +290,7 @@ def check_dsc(dsc, current_sources, current_binaries):
             # ubuntu-modified binary package
             ubuntu_bin = current_binaries[binary][0].find("ubuntu")
             if not Options.force and ubuntu_bin != -1:
-                dak_utils.fubar(
+                raise LaunchpadScriptFailure(
                     "%s is trying to override %s_%s without -f/--force." %
                     (source, binary, current_version))
             print "I: %s [%s] -> %s_%s [%s]." % (
@@ -340,13 +308,14 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         dsc_file.seek(0)
         (gpg_pre, payload, gpg_post) = Dsc.split_gpg_and_payload(dsc_file)
         if gpg_pre == [] and gpg_post == []:
-            dak_utils.fubar("signature required for %s but not present"
-                % dsc_filename)
+            raise LaunchpadScriptFailure(
+                "signature required for %s but not present" % dsc_filename)
         if signing_rules == "must be signed and valid":
             if (gpg_pre[0] != "-----BEGIN PGP SIGNED MESSAGE-----" or
                 gpg_post[0] != "-----BEGIN PGP SIGNATURE-----"):
-                dak_utils.fubar("signature for %s invalid %r %r" % (
-                    dsc_filename, gpg_pre, gpg_post))
+                raise LaunchpadScriptFailure(
+                    "signature for %s invalid %r %r" %
+                    (dsc_filename, gpg_pre, gpg_post))
 
     dsc_files = dict((entry['name'], entry) for entry in dsc['files'])
     check_dsc(dsc, current_sources, current_binaries)
@@ -360,7 +329,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     (old_cwd, tmpdir) = extract_source(dsc_filename)
 
     # Get the upstream version
-    upstr_version = dak_utils.re_no_epoch.sub('', dsc["version"])
+    upstr_version = re_no_epoch.sub('', dsc["version"])
     if re_strip_revision.search(upstr_version):
         upstr_version = re_strip_revision.sub('', upstr_version)
 
@@ -384,10 +353,8 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         section, priority, description, files_from_librarian, requested_by,
         origin)
 
-    # XXX cprov 2007-07-03: Soyuz wants an unsigned changes
-    #sign_changes(changes, dsc)
     output_filename = "%s_%s_source.changes" % (
-        dsc["source"], dak_utils.re_no_epoch.sub('', dsc["version"]))
+        dsc["source"], re_no_epoch.sub('', dsc["version"]))
 
     filehandle = open(output_filename, 'w')
     try:
@@ -423,7 +390,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
 
         if (valid_component is not None and
             component != valid_component.name):
-            dak_utils.warn(
+            Log.warning(
                 "%s/%s: skipping because it is not in %s component" % (
                 pkg, version, component))
             continue
@@ -432,7 +399,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
             S[pkg] = [version, component]
         else:
             if apt_pkg.VersionCompare(S[pkg][0], version) < 0:
-                dak_utils.warn(
+                Log.warning(
                     "%s: skipping because %s is < %s" % (
                     pkg, version, S[pkg][0]))
                 S[pkg] = [version, component]
@@ -544,7 +511,8 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
 
     # Check it's in the Sources file
     if pkg not in Sources:
-        dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
+        raise LaunchpadScriptFailure(
+            "%s doesn't exist in the Sources file." % (pkg))
 
     syncsource = SyncSource(Sources[pkg]["files"], origin, Log,
         urllib.urlretrieve, Options.todistro)
@@ -553,15 +521,26 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         dsc_filename = syncsource.fetchSyncFiles()
         syncsource.checkDownloadedFiles()
     except SyncSourceError, e:
-        dak_utils.fubar("Fetching files failed: %s" % (str(e),))
+        raise LaunchpadScriptFailure("Fetching files failed: %s" % (str(e),))
 
     if dsc_filename is None:
-        dak_utils.fubar(
+        raise LaunchpadScriptFailure(
             "No dsc filename in %r" % Sources[pkg]["files"].keys())
 
     import_dsc(os.path.abspath(dsc_filename), suite, previous_version,
                origin["dsc"], files_from_librarian, requested_by, origin,
                current_sources, current_binaries)
+
+
+class Percentages:
+    """Helper to compute percentage ratios compared to a fixed total."""
+
+    def __init__(self, total):
+        self.total = total
+
+    def get_ratio(self, number):
+        """Report the ration of `number` to `self.total`, as a percentage."""
+        return (float(number) / self.total) * 100
 
 
 def do_diff(Sources, Suite, origin, arguments, current_binaries):
@@ -585,7 +564,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
 
         if pkg not in Sources:
             if not Options.all:
-                dak_utils.fubar("%s: not found" % (pkg))
+                raise LaunchpadScriptFailure("%s: not found" % (pkg))
             else:
                 print "[Ubuntu Specific] %s_%s" % (pkg, dest_version)
                 stat_us += 1
@@ -628,86 +607,25 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
                         % (pkg, dest_version, source_version))
 
     if Options.all:
+        percentages = Percentages(stat_count)
         print
         print ("Out-of-date BUT modified: %3d (%.2f%%)"
-               % (stat_cant_update, (float(stat_cant_update)/stat_count)*100))
+            % (stat_cant_update, percentages.get_ratio(stat_cant_update)))
         print ("Updated:                  %3d (%.2f%%)"
-               % (stat_updated, (float(stat_updated)/stat_count)*100))
+            % (stat_updated, percentages.get_ratio(stat_updated)))
         print ("Ubuntu Specific:          %3d (%.2f%%)"
-               % (stat_us, (float(stat_us)/stat_count)*100))
+            % (stat_us, percentages.get_ratio(stat_us)))
         print ("Up-to-date [Modified]:    %3d (%.2f%%)"
-               % (stat_uptodate_modified,
-                  (float(stat_uptodate_modified)/stat_count)*100))
+            % (stat_uptodate_modified, percentages.get_ratio(
+                stat_uptodate_modified)))
         print ("Up-to-date:               %3d (%.2f%%)"
-               % (stat_uptodate, (float(stat_uptodate)/stat_count)*100))
+               % (stat_uptodate, percentages.get_ratio(stat_uptodate)))
         print ("Blacklisted:              %3d (%.2f%%)"
-               % (stat_blacklisted, (float(stat_blacklisted)/stat_count)*100))
+               % (stat_blacklisted, percentages.get_ratio(stat_blacklisted)))
         print ("Broken:                   %3d (%.2f%%)"
-               % (stat_broken, (float(stat_broken)/stat_count)*100))
+               % (stat_broken, percentages.get_ratio(stat_broken)))
         print "                          -----------"
         print "Total:                    %s" % (stat_count)
-
-
-def options_setup():
-    global Log, Options
-
-    parser = optparse.OptionParser()
-    logger_options(parser)
-    parser.add_option("-a", "--all", dest="all",
-                      default=False, action="store_true",
-                      help="sync all packages")
-    parser.add_option("-b", "--requested-by", dest="requestor",
-                      help="who the sync was requested by")
-    parser.add_option("-f", "--force", dest="force",
-                      default=False, action="store_true",
-                      help="force sync over the top of Ubuntu changes")
-    parser.add_option("-F", "--force-more", dest="forcemore",
-                      default=False, action="store_true",
-                      help="force sync even when components don't match")
-    parser.add_option("-n", "--noaction", dest="action",
-                      default=True, action="store_false",
-                      help="don't do anything")
-
-    # XXX cprov 2007-07-03: Why the heck doesn't -v provide by logger provide
-    # Options.verbose?
-    parser.add_option("-V", "--moreverbose", dest="moreverbose",
-                      default=False, action="store_true",
-                      help="be even more verbose")
-
-    # Options controlling where to sync packages to:
-    parser.add_option("-c", "--to-component", dest="tocomponent",
-                      help="limit syncs to packages in COMPONENT")
-    parser.add_option("-d", "--to-distro", dest="todistro",
-                      default='ubuntu', help="sync to DISTRO")
-    parser.add_option("-s", "--to-suite", dest="tosuite",
-                      help="sync to SUITE (aka distroseries)")
-
-    # Options controlling where to sync packages from:
-    parser.add_option("-C", "--from-component", dest="fromcomponent",
-                      help="sync from COMPONENT")
-    parser.add_option("-D", "--from-distro", dest="fromdistro",
-                      default='debian', help="sync from DISTRO")
-    parser.add_option("-S", "--from-suite", dest="fromsuite",
-                      help="sync from SUITE (aka distroseries)")
-    parser.add_option("-B", "--blacklist", dest="blacklist_path",
-                      default="/srv/launchpad.net/dak/sync-blacklist.txt",
-                      help="Blacklist file path.")
-
-
-    (Options, arguments) = parser.parse_args()
-
-    distro = Options.fromdistro.lower()
-    if not Options.fromcomponent:
-        Options.fromcomponent = origins[distro]["default component"]
-    if not Options.fromsuite:
-        Options.fromsuite = origins[distro]["default suite"]
-
-    # Sanity checks on options
-    if not Options.all and not arguments:
-        dak_utils.fubar(
-            "Need -a/--all or at least one package name as an argument.")
-
-    return arguments
 
 
 def objectize_options():
@@ -729,7 +647,7 @@ def objectize_options():
     if Options.tocomponent is not None:
 
         if Options.tocomponent not in valid_components:
-            dak_utils.fubar(
+            raise LaunchpadScriptFailure(
                 "%s is not a valid component for %s/%s."
                 % (Options.tocomponent, Options.todistro.name,
                    Options.tosuite.name))
@@ -743,8 +661,8 @@ def objectize_options():
     PersonSet = getUtility(IPersonSet)
     person = PersonSet.getByName(Options.requestor)
     if not person:
-        dak_utils.fubar("Unknown LaunchPad user id '%s'."
-                        % (Options.requestor))
+        raise LaunchpadScriptFailure(
+            "Unknown LaunchPad user id '%s'." % (Options.requestor))
     Options.requestor = "%s <%s>" % (person.displayname,
                                      person.preferredemail.email)
     Options.requestor = Options.requestor.encode("ascii", "replace")
@@ -770,7 +688,7 @@ def parseBlacklist(path):
     try:
         blacklist_file = open(path)
     except IOError:
-        dak_utils.warn('Could not find blacklist file on %s' % path)
+        Log.warning('Could not find blacklist file on %s' % path)
         return blacklist
 
     for line in blacklist_file:
@@ -787,45 +705,77 @@ def parseBlacklist(path):
     return blacklist
 
 
-def init():
-    global Blacklisted, Library, Lock, Log, Options
+class SyncSourceScript(LaunchpadScript):
 
-    apt_pkg.init()
+    def add_my_options(self):
+        self.parser.add_option("-a", "--all", dest="all",
+                        default=False, action="store_true",
+                        help="sync all packages")
+        self.parser.add_option("-b", "--requested-by", dest="requestor",
+                        help="who the sync was requested by")
+        self.parser.add_option("-f", "--force", dest="force",
+                        default=False, action="store_true",
+                        help="force sync over the top of Ubuntu changes")
+        self.parser.add_option("-F", "--force-more", dest="forcemore",
+                        default=False, action="store_true",
+                        help="force sync even when components don't match")
+        self.parser.add_option("-n", "--noaction", dest="action",
+                        default=True, action="store_false",
+                        help="don't do anything")
 
-    arguments = options_setup()
+        # Options controlling where to sync packages to:
+        self.parser.add_option("-c", "--to-component", dest="tocomponent",
+                        help="limit syncs to packages in COMPONENT")
+        self.parser.add_option("-d", "--to-distro", dest="todistro",
+                        default='ubuntu', help="sync to DISTRO")
+        self.parser.add_option("-s", "--to-suite", dest="tosuite",
+                        help="sync to SUITE (aka distroseries)")
 
-    Log = logger(Options, "sync-source")
+        # Options controlling where to sync packages from:
+        self.parser.add_option("-C", "--from-component", dest="fromcomponent",
+                        help="sync from COMPONENT")
+        self.parser.add_option("-D", "--from-distro", dest="fromdistro",
+                        default='debian', help="sync from DISTRO")
+        self.parser.add_option("-S", "--from-suite", dest="fromsuite",
+                        help="sync from SUITE (aka distroseries)")
+        self.parser.add_option("-B", "--blacklist", dest="blacklist_path",
+                        default="/srv/launchpad.net/dak/sync-blacklist.txt",
+                        help="Blacklist file path.")
 
-    Log.debug("Acquiring lock")
-    Lock = GlobalLock('/var/lock/launchpad-sync-source.lock')
-    Lock.acquire(blocking=True)
+    def main(self):
+        global Blacklisted, Library, Log, Options
 
-    Log.debug("Initializing connection.")
-    execute_zcml_for_scripts()
-    initZopeless(dbuser="ro")
+        Log = self.logger
+        Options = self.options
 
-    Library = LibrarianClient()
+        distro = Options.fromdistro.lower()
+        if not Options.fromcomponent:
+            Options.fromcomponent = origins[distro]["default component"]
+        if not Options.fromsuite:
+            Options.fromsuite = origins[distro]["default suite"]
 
-    objectize_options()
+        # Sanity checks on options
+        if not Options.all and not self.args:
+            raise LaunchpadScriptFailure(
+                "Need -a/--all or at least one package name as an argument.")
 
-    Blacklisted = parseBlacklist(Options.blacklist_path)
+        apt_pkg.init()
+        Library = LibrarianClient()
 
-    return arguments
+        objectize_options()
 
+        Blacklisted = parseBlacklist(Options.blacklist_path)
 
-def main():
-    arguments = init()
+        origin = origins[Options.fromdistro]
+        origin["suite"] = Options.fromsuite
+        origin["component"] = Options.fromcomponent
 
-    origin = origins[Options.fromdistro]
-    origin["suite"] = Options.fromsuite
-    origin["component"] = Options.fromcomponent
-
-    Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(
-        Options.tosuite, Options.tocomponent, arguments)
-    current_binaries = read_current_binaries(Options.tosuite)
-    do_diff(Sources, Suite, origin, arguments, current_binaries)
+        Sources = read_Sources("Sources", origin)
+        Suite = read_current_source(
+            Options.tosuite, Options.tocomponent, self.args)
+        current_binaries = read_current_binaries(Options.tosuite)
+        do_diff(Sources, Suite, origin, self.args, current_binaries)
 
 
 if __name__ == '__main__':
-    main()
+    SyncSourceScript('sync-source', 'ro').lock_and_run()

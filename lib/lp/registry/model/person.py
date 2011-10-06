@@ -40,6 +40,7 @@ import subprocess
 import weakref
 
 from lazr.delegates import delegates
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from sqlobject import (
     BoolCol,
@@ -168,7 +169,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     )
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.lazr.utils import get_current_browser_request
 from lp.answers.model.questionsperson import QuestionsPersonMixin
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
@@ -297,6 +297,7 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -2072,9 +2073,7 @@ class Person(
             ('BranchSubscription', 'person'),
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
-            ('POSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
-            ('PackageBugSupervisor', 'bug_supervisor'),
             ('AnswerContact', 'person')]
         cur = cursor()
         for table, person_id_column in removals:
@@ -2587,6 +2586,40 @@ class Person(
     def getLatestMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery()
+
+    def getLatestSynchronisedPublishings(self):
+        """See `IPerson`."""
+        query = """
+            SourcePackagePublishingHistory.id IN (
+                SELECT DISTINCT ON (spph.distroseries,
+                                    spr.sourcepackagename)
+                    spph.id
+                FROM
+                    SourcePackagePublishingHistory as spph, archive,
+                    SourcePackagePublishingHistory as ancestor_spph,
+                    SourcePackageRelease as spr
+                WHERE
+                    spph.sourcepackagerelease = spr.id AND
+                    spph.creator = %(creator)s AND
+                    spph.ancestor = ancestor_spph.id AND
+                    spph.archive = archive.id AND
+                    ancestor_spph.archive != spph.archive AND
+                    archive.purpose = %(archive_purpose)s
+                ORDER BY spph.distroseries,
+                    spr.sourcepackagename,
+                    spph.datecreated DESC,
+                    spph.id DESC
+            )
+            """ % dict(
+                   creator=quote(self.id),
+                   archive_purpose=quote(ArchivePurpose.PRIMARY),
+                   )
+
+        return SourcePackagePublishingHistory.select(
+            query,
+            orderBy=['-SourcePackagePublishingHistory.datecreated',
+                     '-SourcePackagePublishingHistory.id'],
+            prejoins=['sourcepackagerelease', 'archive'])
 
     def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
@@ -3500,28 +3533,6 @@ class PersonSet:
             DELETE FROM BranchSubscription WHERE person=%(from_id)d
             ''' % vars())
 
-    def _mergeBountySubscriptions(self, cur, from_id, to_id):
-        # XXX: JonathanLange 2009-08-31: Even though all of the other bounty
-        # code has been removed from Launchpad, the merging code has to stay
-        # until the tables themselves are removed. Otherwise, the person
-        # merging code raises consistency errors (and rightly so).
-        #
-        # Update only the BountySubscriptions that will not conflict.
-        cur.execute('''
-            UPDATE BountySubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND bounty NOT IN
-                (
-                SELECT bounty
-                FROM BountySubscription
-                WHERE person = %(to_id)d
-                )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM BountySubscription WHERE person=%(from_id)d
-            ''' % vars())
-
     def _mergeBugAffectsPerson(self, cur, from_id, to_id):
         # Update only the BugAffectsPerson that will not conflict
         cur.execute('''
@@ -3599,13 +3610,6 @@ class PersonSet:
         cur.execute('''
             DELETE FROM BugNotificationRecipient
             WHERE person=%(from_id)d
-            ''' % vars())
-
-    def _mergePackageBugSupervisor(self, cur, from_id, to_id):
-        # Update PackageBugSupervisor entries.
-        cur.execute('''
-            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
-            WHERE bug_supervisor=%(from_id)d
             ''' % vars())
 
     def _mergeStructuralSubscriptions(self, cur, from_id, to_id):
@@ -3730,20 +3734,6 @@ class PersonSet:
             DELETE FROM SprintAttendance WHERE attendee=%(from_id)d
             ''' % vars())
 
-    def _mergePOSubscription(self, cur, from_id, to_id):
-        # Update only the POSubscriptions that will not conflict
-        cur.execute('''
-            UPDATE POSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id
-                    FROM POSubscription AS a, POSubscription AS b
-                    WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                    AND a.language = b.language
-                    AND a.potemplate = b.potemplate
-                    )
-            ''' % vars())
-
     def _mergePOExportRequest(self, cur, from_id, to_id):
         # Update only the POExportRequests that will not conflict
         # and trash the rest
@@ -3807,22 +3797,6 @@ class PersonSet:
                 WHERE a.reviewer = %(from_id)d AND b.reviewer = %(to_id)d
                 AND a.branch_merge_proposal = b.branch_merge_proposal
                 )
-            ''' % vars())
-
-    def _mergeWebServiceBan(self, cur, from_id, to_id):
-        # Update only the WebServiceBan that will not conflict
-        cur.execute('''
-            UPDATE WebServiceBan
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id FROM WebServiceBan AS a, WebServiceBan AS b
-                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
-                )
-            ''' % vars())
-        # And delete the rest
-        cur.execute('''
-            DELETE FROM WebServiceBan WHERE person=%(from_id)d
             ''' % vars())
 
     def _mergeTeamMembership(self, cur, from_id, to_id):
@@ -4082,18 +4056,11 @@ class PersonSet:
         self._mergeBugAffectsPerson(cur, from_id, to_id)
         skip.append(('bugaffectsperson', 'person'))
 
-        self._mergeBountySubscriptions(cur, from_id, to_id)
-        skip.append(('bountysubscription', 'person'))
-
         self._mergeAnswerContact(cur, from_id, to_id)
         skip.append(('answercontact', 'person'))
 
         self._mergeQuestionSubscription(cur, from_id, to_id)
         skip.append(('questionsubscription', 'person'))
-
-        # DELETE when the mentoring table is deleted.
-        skip.append(('mentoringoffer', 'owner'))
-        skip.append(('mentoringoffer', 'team'))
 
         self._mergeBugNotificationRecipient(cur, from_id, to_id)
         skip.append(('bugnotificationrecipient', 'person'))
@@ -4103,9 +4070,6 @@ class PersonSet:
 
         # We ignore BugMutes.
         skip.append(('bugmute', 'person'))
-
-        self._mergePackageBugSupervisor(cur, from_id, to_id)
-        skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         self._mergeStructuralSubscriptions(cur, from_id, to_id)
         skip.append(('structuralsubscription', 'subscriber'))
@@ -4119,9 +4083,6 @@ class PersonSet:
 
         self._mergeSprintAttendance(cur, from_id, to_id)
         skip.append(('sprintattendance', 'attendee'))
-
-        self._mergePOSubscription(cur, from_id, to_id)
-        skip.append(('posubscription', 'person'))
 
         self._mergePOExportRequest(cur, from_id, to_id)
         skip.append(('poexportrequest', 'person'))
@@ -4148,9 +4109,6 @@ class PersonSet:
 
         self._mergeCodeReviewVote(cur, from_id, to_id)
         skip.append(('codereviewvote', 'reviewer'))
-
-        self._mergeWebServiceBan(cur, from_id, to_id)
-        skip.append(('webserviceban', 'person'))
 
         self._mergeKarmaCache(cur, from_id, to_id, from_person.karma)
         skip.append(('karmacache', 'person'))
@@ -4716,7 +4674,8 @@ def get_recipients(person):
     If <person> has a preferred email, the set will contain only that
     person.  If <person> doesn't have a preferred email but is a team,
     the set will contain the preferred email address of each member of
-    <person>, including indirect members.
+    <person>, including indirect members, that has an active account and an
+    preferred (active) address.
 
     Finally, if <person> doesn't have a preferred email and is not a team,
     the set will be empty.
@@ -4724,7 +4683,8 @@ def get_recipients(person):
     if person.preferredemail:
         return [person]
     elif person.is_team:
-        # Get transitive members of team without a preferred email.
+        # Get transitive members of a team that does not itself have a
+        # preferred email.
         return _get_recipients_for_team(person)
     else:
         return []
@@ -4743,13 +4703,15 @@ def _get_recipients_for_team(team):
                                   And(
                                       EmailAddress.person == Person.id,
                                       EmailAddress.status ==
-                                        EmailAddressStatus.PREFERRED)))
+                                        EmailAddressStatus.PREFERRED)),
+                         LeftJoin(Account,
+                             Person.accountID == Account.id))
     pending_team_ids = [team.id]
     recipient_ids = set()
     seen = set()
     while pending_team_ids:
-        # Find Persons that have a preferred email address, or are a
-        # team, or both.
+        # Find Persons that have a preferred email address and an active
+        # account, or are a team, or both.
         intermediate_transitive_results = source.find(
             (TeamMembership.personID, EmailAddress.personID),
             In(TeamMembership.status,
@@ -4757,7 +4719,8 @@ def _get_recipients_for_team(team):
                 TeamMembershipStatus.APPROVED.value]),
             In(TeamMembership.teamID, pending_team_ids),
             Or(
-                EmailAddress.personID != None,
+                And(EmailAddress.personID != None,
+                    Account.status == AccountStatus.ACTIVE),
                 Person.teamownerID != None)).config(distinct=True)
         next_ids = []
         for (person_id,

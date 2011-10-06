@@ -10,6 +10,7 @@ __all__ = [
 
 from collections import defaultdict
 
+from lazr.restful.utils import safe_hasattr
 from storm.expr import (
     And,
     Count,
@@ -39,7 +40,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.vocabulary import CountableIterator
-from canonical.lazr.utils import safe_hasattr
 from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     BugTaskSearchParams,
@@ -368,7 +368,7 @@ class GenericBranchCollection:
         scope_tables = [Branch] + self._tables.values()
         scope_expressions = self._branch_filter_expressions
         select = self.store.using(*scope_tables).find(
-            (Branch.id, Branch.explicitly_private, Branch.ownerID),
+            (Branch.id, Branch.transitively_private, Branch.ownerID),
             *scope_expressions)
         branches_query = select._get_select()
         with_expr = [With("scope_branches", branches_query)
@@ -719,7 +719,7 @@ class AnonymousBranchCollection(GenericBranchCollection):
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility."""
-        return [branch_class.explicitly_private == False]
+        return [branch_class.transitively_private == False]
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
@@ -730,7 +730,8 @@ class AnonymousBranchCollection(GenericBranchCollection):
         # Anonymous users get public branches only.
         return [
             With("candidate_branches",
-                SQL("select id from scope_branches where not private"))
+                SQL("""select id from scope_branches
+                    where not transitively_private"""))
             ]
 
 
@@ -818,7 +819,7 @@ class VisibleBranchCollection(GenericBranchCollection):
                        BranchSubscription.person ==
                        TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.explicitly_private == True)))
+                       Branch.transitively_private == True)))
         return private_branches
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
@@ -827,7 +828,7 @@ class VisibleBranchCollection(GenericBranchCollection):
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        public_branches = branch_class.explicitly_private == False
+        public_branches = branch_class.transitively_private == False
         if self._private_branch_ids is None:
             # Public only.
             return [public_branches]
@@ -848,21 +849,24 @@ class VisibleBranchCollection(GenericBranchCollection):
             # Really an anonymous sitation
             return [
                 With("candidate_branches",
-                    SQL("select id from scope_branches where not private"))
+                    SQL("""
+                        select id from scope_branches
+                        where not transitively_private"""))
                 ]
         return [
             With("teams", self.store.find(TeamParticipation.teamID,
                 TeamParticipation.personID == person.id)._get_select()),
             With("private_branches", SQL("""
                 SELECT scope_branches.id FROM scope_branches WHERE
-                scope_branches.private AND (
+                scope_branches.transitively_private AND (
                     (scope_branches.owner in (select team from teams) OR
                      EXISTS(SELECT true from BranchSubscription, teams WHERE
                          branchsubscription.branch = scope_branches.id AND
                          branchsubscription.person = teams.team)))""")),
             With("candidate_branches", SQL("""
                 (SELECT id FROM private_branches) UNION
-                (select id FROM scope_branches WHERE not private)"""))
+                (select id FROM scope_branches
+                WHERE not transitively_private)"""))
             ]
 
     def visibleByUser(self, person):

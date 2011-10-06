@@ -145,15 +145,6 @@
         <allow
             interface="lp.bugs.interfaces.bugtrackerperson.IBugTrackerPerson"/>
     </class>
-    <class
-        class="lp.bugs.model.packagebugsupervisor.PackageBugSupervisor">
-        <allow
-            attributes="
-                id
-                distribution
-                sourcepackagename
-                bug_supervisor"/>
-    </class>
 
     <!-- CveReference -->
 
@@ -223,7 +214,6 @@
                     distroseries
                     milestone
                     status
-                    statusexplanation
                     importance
                     assignee
                     bugwatch
@@ -277,7 +267,6 @@
                     setStatusFromDebbugs
                     statusdisplayhtml
                     statuselsewhere
-                    statusexplanation
                     targetname
                     title
                     "/>
@@ -740,6 +729,7 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getActivityForDateRange
                     getBugTask
                     getDirectSubscribers
                     getDirectSubscribersWithDetails
@@ -855,6 +845,7 @@
                     removeWatch
                     setPrivate
                     setSecurityRelated
+                    setPrivacyAndSecurityRelated
                     setStatus
                     subscribe
                     unlinkBranch
@@ -1122,7 +1113,7 @@
         <!-- BugNotificationRecipients provides the following
              attributes/methods in addition. -->
         <allow
-            attributes="subscription_filters addFilter"/>
+            attributes="subscription_filters addFilter addBugSupervisor addMaintainer"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"
@@ -1198,4 +1189,11 @@
   <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
 
+  <securedutility
+    name="UsesBugsDistribution"
+    component="lp.bugs.vocabulary.UsesBugsDistributionVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 </configure>

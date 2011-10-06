@@ -259,10 +259,8 @@ class TranslationImporterTestCase(TestCaseWithFactory):
         """ % potmsgset2.msgid_singular.msgid
 
         entry = self.factory.makeTranslationImportQueueEntry(
-            'foo.po', potemplate=template,
+            'foo.po', potemplate=template, pofile=pofile,
             status=RosettaImportStatus.APPROVED, content=text)
-        entry.pofile = pofile
-        entry.status = RosettaImportStatus.APPROVED
         transaction.commit()
 
         self.assertTrue(existing_translation.is_current_upstream)

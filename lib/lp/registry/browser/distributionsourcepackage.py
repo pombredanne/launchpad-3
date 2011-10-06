@@ -22,6 +22,7 @@ import operator
 
 from lazr.delegates import delegates
 from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.utils import smartquote
 import pytz
 from zope.component import (
     adapter,
@@ -51,7 +52,6 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
-from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
@@ -343,6 +343,8 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     @property
     def label(self):
         return self.context.title
+
+    page_title = label
 
     @property
     def next_url(self):

@@ -320,7 +320,9 @@ class TestSyncSourceScript(TestCase):
 
         self.assertEqual(
             err.splitlines(),
-            ['W: Could not find blacklist file on '
+            ['INFO    Creating lockfile: '
+             '/var/lock/launchpad-sync-source.lock',
+             'WARNING Could not find blacklist file on '
              '/srv/launchpad.net/dak/sync-blacklist.txt',
              'INFO      - <bar_1.0-1.diff.gz: cached>',
              'INFO      - <bar_1.0.orig.tar.gz: cached>',
@@ -392,7 +394,9 @@ class TestSyncSourceScript(TestCase):
 
         self.assertEqual(
             err.splitlines(),
-            ['W: Could not find blacklist file on '
+            ['INFO    Creating lockfile: '
+             '/var/lock/launchpad-sync-source.lock',
+             'WARNING Could not find blacklist file on '
              '/srv/launchpad.net/dak/sync-blacklist.txt',
              'INFO      - <sample1_1.0.orig-component3.tar.gz: cached>',
              'INFO      - <sample1_1.0-1.dsc: cached>',

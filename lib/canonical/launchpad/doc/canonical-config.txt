@@ -1,4 +1,5 @@
-= Canonical Config =
+Canonical Config
+================
 
 `canonical.config` provides singleton access to the Launchpad
 configuration, accessed via the `config` module global. It is
@@ -6,22 +7,27 @@ responsible for loading the Launchpad schema and the environment's
 correct config.
 
 
-== CanonicalConfig AKA config ==
+CanonicalConfig AKA config
+--------------------------
 
-CanonicalConfig is a singleton that manages access to the config.
-Cached copies are kept in thread locals ensuring the configuration
-is thread safe (not that this will be a problem if we stick with
-simple configuration).
+CanonicalConfig is a singleton that manages access to the config. Cached
+copies are kept in thread locals ensuring the configuration is thread
+safe (not that this will be a problem if we stick with simple
+configuration).
 
     >>> from canonical.config import config
     >>> from canonical.testing.layers import DatabaseLayer
-    >>> expected = 'dbname=%s' % DatabaseLayer._db_fixture.dbname
+    >>> expected = (
+    ...     'dbname=%s host=localhost' % DatabaseLayer._db_fixture.dbname)
     >>> expected == config.database.rw_main_master
     True
+
     >>> config.database.db_statement_timeout is None
     True
+
     >>> config.launchpad.dbuser
     'launchpad_main'
+
     >>> config.librarian.dbuser
     'librarian'
 
@@ -39,17 +45,19 @@ will choose the conf file that matches its process_name if it exists,
 otherwise it loads launchpad-lazr.conf. The general rule is
 configs/<instance_name>/<process_name>.conf. The testrunner sets the
 instance_name to 'testrunner' and additionally uses unique temporary
-configs to permit changing the config during tests (but not if we
-are using persistent helpers - see canonical.testing.layers).
+configs to permit changing the config during tests (but not if we are
+using persistent helpers - see canonical.testing.layers).
 
     >>> (config.instance_name == 'testrunner' or
-    ...  config.instance_name == os.environ['LPCONFIG'])
+    ...     config.instance_name == os.environ['LPCONFIG'])
     True
+
     >>> config.process_name
     'test'
 
     >>> config.filename
     '.../launchpad-lazr.conf'
+
     >>> config.extends.filename
     '.../launchpad-lazr.conf'
 
@@ -68,6 +76,7 @@ The application root directory is assigned to the root attribute.
     >>> example_path = canonical.config.__file__
     >>> config.root in example_path
     True
+
     >>> example_path[len(config.root):]
     '/lib/canonical/...'
 
@@ -76,15 +85,19 @@ ZConfig.
 
     >>> config.devmode
     True
+
     >>> len(config.servers)
     4
+
     >>> config.threads
     4
 
-== Working with test configurations ==
 
-Tests can update the config with test data. For example, the domain
-can be changed for a feature.
+Working with test configurations
+--------------------------------
+
+Tests can update the config with test data. For example, the domain can
+be changed for a feature.
 
     >>> test_data = ("""
     ...     [answertracker]
@@ -97,18 +110,19 @@ And the test can remove the data when it is done to restore the config.
 
     >>> config.pop('test_data')
     (<lazr.config...ConfigData ...>,)
+
     >>> config.answertracker.email_domain
     'answers.launchpad.net'
 
 
-== Selecting the conf file with instance and process names ==
+Selecting the conf file with instance and process names
+-------------------------------------------------------
 
-The name of the conf file, and the directory from which is resides,
-is controlled by the config's process_name and instance_name. These
-may be set by their corresponding methods, *before* accessing the
-config, to set where the config values are loaded from. After the
-config is loaded, changing the instance and process names will have
-no affect.
+The name of the conf file, and the directory from which is resides, is
+controlled by the config's process_name and instance_name. These may be
+set by their corresponding methods, *before* accessing the config, to
+set where the config values are loaded from. After the config is loaded,
+changing the instance and process names will have no affect.
 
 Setting just the instance_name will change the directory from which the
 conf file is loaded.
@@ -121,6 +135,7 @@ conf file is loaded.
 
     >>> test_config.filename
     '.../configs/development/launchpad-lazr.conf'
+
     >>> test_config.extends.filename
     '.../config/schema-lazr.conf'
 
@@ -143,14 +158,15 @@ conf file name that is loaded.
 
     >>> test_config.filename
     '.../configs/testrunner/test-process-lazr.conf'
+
     >>> test_config.extends.filename
     '.../configs/testrunner/launchpad-lazr.conf'
 
     >>> test_config.answertracker.days_before_expiration
     300
 
-The default 'launchpad-lazr.conf' is loaded if no conf files match
-the process's name.
+The default 'launchpad-lazr.conf' is loaded if no conf files match the
+process's name.
 
     >>> test_config.setInstance('testrunner')
     >>> test_config.instance_name
@@ -162,20 +178,19 @@ the process's name.
 
     >>> test_config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
+
     >>> test_config.extends.filename
     '.../configs/development/launchpad-lazr.conf'
 
     >>> test_config.answertracker.days_before_expiration
     15
 
-    >>> # setInstance sets the LPCONFIG environment variable, so set it
-    >>> # back to the real value.
     >>> config.setInstance(config.instance_name)
 
 The initial instance_name is set via the LPCONFIG environment variable.
 Because Config is designed to failover to the default development
-environment, and the testrunner overrides the environment and config,
-we need to reconfigure the environment and reload the canonical.config
+environment, and the testrunner overrides the environment and config, we
+need to reconfigure the environment and reload the canonical.config
 module to test CanonicalConfig's behaviour.
 
 Alternatively, the instance name and process name can be specified as
@@ -184,6 +199,7 @@ argument to the constructor.
     >>> dev_config = CanonicalConfig('development', 'authserver')
     >>> dev_config.instance_name
     'development'
+
     >>> dev_config.process_name
     'authserver'
 
@@ -192,7 +208,6 @@ argument to the constructor.
 
 # XXX sinzui 2008-03-25 bug=78545: This cannot be tested until the
 # config can be restored when this test is torn down.
-
 #    >>> true_config = config
 #    >>> import os
 #    >>> from canonical.config import LPCONFIG, DEFAULT_SECTION
@@ -202,7 +217,6 @@ argument to the constructor.
 #    # reload the CanonicalConfig class object.
 #    >>> config_module = reload(canonical.config)
 #    >>> from canonical.config import config
-
 #    >>> config.filename
 #    '.../configs/mailman-itests/launchpad-lazr.conf'
 #    >>> config.extends.filename
@@ -218,7 +232,7 @@ argument to the constructor.
 #    <SectionValue for canonical 'default'>
 #    >>> config._cache.testrunner
 #    Traceback (most recent call last):
-#     ...
+#    ...
 #    AttributeError: 'zope.thread.local' object has no attribute 'testrunner'
 
 #We need to reset the config for the testrunner.

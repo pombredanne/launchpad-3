@@ -156,6 +156,29 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             [bugtask.owner for bugtask in bugtasks]
         self.assertThat(recorder, HasQueryCount(Equals(2)))
 
+    def test_search_components_error(self):
+        # Searching for using components for bug targets that are not a distro
+        # or distroseries will report an error, but not OOPS.  See bug
+        # 838957.
+        product = self.factory.makeProduct()
+        form = {
+            'search': 'Search',
+            'advanced': 1,
+            'field.component': 1,
+            'field.component-empty-marker': 1}
+        with person_logged_in(product.owner):
+            view = create_initialized_view(product, '+bugs', form=form)
+            view.searchUnbatched()
+        response = view.request.response
+        self.assertEqual(1, len(response.notifications))
+        expected = (
+            "Search by component requires a context with "
+            "a distribution or distroseries.")
+        self.assertEqual(expected, response.notifications[0].message)
+        self.assertEqual(
+            canonical_url(product, rootsite='bugs', view_name='+bugs'),
+            response.getHeader('Location'))
+
 
 class BugTargetTestCase(TestCaseWithFactory):
     """Test helpers for setting up `IBugTarget` tests."""
@@ -224,6 +247,26 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
         link = canonical_url(
             bug_target.ubuntu_packages[0], force_local_path=True)
         self.assertEqual(link, content.a['href'])
+
+    def test_ask_question_does_not_use_launchpad(self):
+        bug_target = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        login_person(bug_target.owner)
+        bug_target.official_answers = False
+        view = create_initialized_view(
+            bug_target, '+bugs', principal=bug_target.owner)
+        self.assertEqual(None, view.addquestion_url)
+
+    def test_ask_question_uses_launchpad(self):
+        bug_target = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        login_person(bug_target.owner)
+        bug_target.official_answers = True
+        view = create_initialized_view(
+            bug_target, '+bugs', principal=bug_target.owner)
+        url = canonical_url(
+            bug_target, rootsite='answers', view_name='+addquestion')
+        self.assertEqual(url, view.addquestion_url)
 
 
 class TestBugTaskSearchListingViewDSP(BugTargetTestCase):

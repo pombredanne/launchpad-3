@@ -3,7 +3,6 @@
 
 """Initialize a distroseries from its parent distroseries."""
 
-
 __metaclass__ = type
 __all__ = [
     'InitializationError',
@@ -19,6 +18,7 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.app.errors import NotFoundError
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -33,6 +33,7 @@ from lp.soyuz.interfaces.archive import (
     CannotCopy,
     IArchiveSet,
     )
+from lp.soyuz.interfaces.buildpackagejob import COPY_ARCHIVE_SCORE_PENALTY
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
@@ -144,14 +145,15 @@ class InitializeDistroSeries:
     def check(self):
         if self.distroseries.isDerivedSeries():
             raise InitializationError(
-                ("DistroSeries {child.name} has already been initialized"
+                ("Series {child.name} has already been initialised"
                  ".").format(
                     child=self.distroseries))
+        self._checkPublisherConfig()
         if (self.distroseries.distribution.has_published_sources and
             self.distroseries.previous_series is None):
             raise InitializationError(
-                ("DistroSeries {child.name} has no previous series and "
-                 "the distribution already has initialized series"
+                ("Series {child.name} has no previous series and "
+                 "the distribution already has initialised series"
                  ".").format(
                     child=self.distroseries))
         self._checkParents()
@@ -160,17 +162,28 @@ class InitializeDistroSeries:
             self._checkQueue(parent)
         self._checkSeries()
 
+    def _checkPublisherConfig(self):
+        """A series cannot be initialized if it has no publisher config
+        set up.
+        """
+        publisherconfigset = getUtility(IPublisherConfigSet)
+        config = publisherconfigset.getByDistribution(
+            self.distroseries.distribution)
+        if config is None:
+            raise InitializationError(
+                ("Distribution {child.name} has no publisher configuration. "
+                 "Please ask an administrator to set this up"
+                 ".").format(
+                    child=self.distroseries.distribution))
+
     def _checkParents(self):
         """If self.first_derivation, the parents list cannot be empty."""
         if self.first_derivation:
             # Use-case #1.
             if len(self.parent_ids) == 0:
                 raise InitializationError(
-                    ("Distroseries {child.name} cannot be initialized: "
-                     "No other series in the distribution is initialized "
-                     "and no parent was passed to the initilization method"
-                     ".").format(
-                        child=self.distroseries))
+                    "No other series in the distribution is initialised "
+                    "and a parent was not explicitly specified.")
 
     def _checkBuilds(self, parent):
         """Assert there are no pending builds for the given parent series.
@@ -195,8 +208,8 @@ class InitializeDistroSeries:
 
         if not pending_builds.is_empty():
             raise InitializationError(
-                "Parent series has pending builds for selected sources, "
-                "see help text for more information.")
+                "The parent series has pending builds "
+                "for selected sources.")
 
     def _checkQueue(self, parent):
         """Assert upload queue is empty on the given parent series.
@@ -222,14 +235,14 @@ class InitializeDistroSeries:
             parent, statuses, INIT_POCKETS, spns)
         if not items.is_empty():
             raise InitializationError(
-                "Parent series has sources waiting in its upload queues "
-                "that match your selection, see help text for more "
-                "information.")
+                "The parent series has sources waiting in its upload "
+                "queues that match your selection.")
 
     def _checkSeries(self):
         error = (
-            "Can not copy distroarchseries from parent, there are "
-            "already distroarchseries(s) initialized for this series.")
+            "Cannot copy distroarchseries from parent; there are "
+            "already one or more distroarchseries initialised for "
+            "this series.")
         sources = self.distroseries.getAllPublishedSources()
         binaries = self.distroseries.getAllPublishedBinaries()
         if not all(
@@ -330,6 +343,9 @@ class InitializeDistroSeries:
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = any(
             parent.backports_not_automatic
+                for parent in self.derivation_parents)
+        self.distroseries.include_long_descriptions = any(
+            parent.include_long_descriptions
                 for parent in self.derivation_parents)
 
     def _copy_architectures(self):
@@ -500,11 +516,21 @@ class InitializeDistroSeries:
                             check_permissions=False, strict_binaries=False,
                             close_bugs=False, create_dsd_job=False)
                         if self.rebuild:
+                            rebuilds = []
                             for pubrec in sources_published:
-                                pubrec.createMissingBuilds(
+                                builds = pubrec.createMissingBuilds(
                                    list(self.distroseries.architectures))
+                                rebuilds.extend(builds)
+                            self._rescore_rebuilds(rebuilds)
                     except CannotCopy, error:
                         raise InitializationError(error)
+
+    def _rescore_rebuilds(self, builds):
+        """Rescore the passed builds so that they have an appropriately low
+         score.
+        """
+        for build in builds:
+            build.buildqueue_record.lastscore -= COPY_ARCHIVE_SCORE_PENALTY
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parents

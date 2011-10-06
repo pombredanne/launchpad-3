@@ -26,6 +26,10 @@ from storm.locals import (
     Storm,
     )
 from storm.store import Store
+from testtools.matchers import (
+    Equals,
+    GreaterThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -39,12 +43,14 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthNonce,
     )
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
@@ -85,7 +91,9 @@ from lp.scripts.garbo import (
     BulkPruner,
     DailyDatabaseGarbageCollector,
     DuplicateSessionPruner,
+    FrequentDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
+    LoginTokenPruner,
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
@@ -370,11 +378,22 @@ class TestGarbo(TestCaseWithFactory):
         # starting us in a known state.
         self.runDaily()
         self.runHourly()
+        self.runFrequently()
 
         # Capture garbo log output to tests can examine it.
         self.log_buffer = StringIO()
         handler = logging.StreamHandler(self.log_buffer)
         self.log.addHandler(handler)
+
+    def runFrequently(self, maximum_chunk_size=2, test_args=()):
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        collector = FrequentDatabaseGarbageCollector(
+            test_args=list(test_args))
+        collector._maximum_chunk_size = maximum_chunk_size
+        collector.logger = self.log
+        collector.main()
+        return collector
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
         transaction.commit()
@@ -417,7 +436,8 @@ class TestGarbo(TestCaseWithFactory):
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
-        self.runHourly(maximum_chunk_size=60)  # 1 minute maximum chunk size
+        self.runFrequently(
+            maximum_chunk_size=60)  # 1 minute maximum chunk size
 
         store = IMasterStore(OAuthNonce)
 
@@ -460,7 +480,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
-        self.runHourly(maximum_chunk_size=60)  # 1 minute maximum chunks.
+        self.runFrequently(maximum_chunk_size=60)  # 1 minute maximum chunks.
 
         store = IMasterStore(OpenIDConsumerNonce)
 
@@ -583,7 +603,7 @@ class TestGarbo(TestCaseWithFactory):
 
         # Expire all those expirable rows, and possibly a few more if this
         # test is running slow.
-        self.runHourly()
+        self.runFrequently()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
@@ -947,6 +967,26 @@ class TestGarbo(TestCaseWithFactory):
 
         self.assertEqual(1, count)
 
+    def test_BugSummaryJournalRollup(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        # Generate a load of entries in BugSummaryJournal.
+        store.execute("UPDATE BugTask SET status=42")
+
+        # We only need a few to test.
+        num_rows = store.execute(
+            "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
+        self.assertThat(num_rows, GreaterThan(10))
+
+        self.runFrequently()
+
+        # We just care that the rows have been removed. The bugsummary
+        # tests confirm that the rollup stored method is working correctly.
+        num_rows = store.execute(
+            "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
+        self.assertThat(num_rows, Equals(0))
+
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
         # UnusedPOTMsgSetPruner removes any POTMsgSet that are
         # participating in a POTemplate only as obsolete messages.
@@ -985,3 +1025,60 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, unreferenced_msgsets.count())
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
+
+    def test_SPPH_and_BPPH_populator(self):
+        # If SPPHs (or BPPHs) do not have sourcepackagename (or
+        # binarypackagename) set, the populator will set it.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        spn = spph.sourcepackagename
+        removeSecurityProxy(spph).sourcepackagename = None
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        bpn = bpph.binarypackagename
+        removeSecurityProxy(bpph).binarypackagename = None
+        transaction.commit()
+        self.assertIs(None, spph.sourcepackagename)
+        self.assertIs(None, bpph.binarypackagename)
+        self.runHourly()
+        self.assertEqual(spn, spph.sourcepackagename)
+        self.assertEqual(bpn, bpph.binarypackagename)
+
+
+class TestGarboTasks(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def test_LoginTokenPruner(self):
+        store = IMasterStore(LoginToken)
+        now = datetime.now(UTC)
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # It is configured as a daily task.
+        self.assertTrue(
+            LoginTokenPruner in DailyDatabaseGarbageCollector.tunable_loops)
+
+        # Create a token that will be pruned.
+        old_token = LoginToken(
+            email='whatever', tokentype=LoginTokenType.NEWACCOUNT)
+        old_token.date_created = now - timedelta(days=666)
+        old_token_id = old_token.id
+        store.add(old_token)
+
+        # Create a token that will not be pruned.
+        current_token = LoginToken(
+            email='whatever', tokentype=LoginTokenType.NEWACCOUNT)
+        current_token_id = current_token.id
+        store.add(current_token)
+
+        # Run the pruner. Batching is tested by the BulkPruner tests so
+        # no need to repeat here.
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        pruner = LoginTokenPruner(logging.getLogger('garbo'))
+        while not pruner.isDone():
+            pruner(10)
+        pruner.cleanUp()
+
+        # Only the old LoginToken is gone.
+        self.assertEqual(
+            store.find(LoginToken, id=old_token_id).count(), 0)
+        self.assertEqual(
+            store.find(LoginToken, id=current_token_id).count(), 1)

@@ -448,28 +448,29 @@ passing both a comment /and/ a msg would have raised an AssertionError:
     >>> params.setBugTarget(product=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     Traceback (most recent call last):
-      ...
+    ...
     AssertionError: Expected either a comment or a msg, but got both.
 
 
 So, let's continue:
 
-    >>> [subscription.person.name for subscription in public_bug.subscriptions]
-    [u'name16']
+    >>> for subscription in public_bug.subscriptions:
+    ...     print subscription.person.name
+    name16
 
 The first comment made (this is submitted in the bug report) is set to
 the description of the bug:
 
-    >>> public_bug.description
-    u'blah blah blah'
+    >>> print public_bug.description
+    blah blah blah
 
 The bug description can also be accessed through the task:
 
-    >>> public_bug.bugtasks[0].bug.description
-    u'blah blah blah'
+    >>> print public_bug.bugtasks[0].bug.description
+    blah blah blah
     >>> public_bug.description = 'a new description'
-    >>> public_bug.bugtasks[0].bug.description
-    u'a new description'
+    >>> print public_bug.bugtasks[0].bug.description
+    a new description
 
 When a private bug is filed:
 
@@ -750,7 +751,8 @@ Changing bug security.
 
     >>> firefox_bug.security_related
     False
-    >>> changed = firefox_bug.setSecurityRelated(True)
+    >>> changed = firefox_bug.setSecurityRelated(True,
+    ...     getUtility(ILaunchBag).user)
 
     >>> bug_security_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["security_related"])
@@ -1129,9 +1131,10 @@ show messages in the bugtask index template in one shot.
 It's done in a way that we only issue two queries to fetch all this
 information, too:
 
-XXX: bug=https://bugs.launchpad.net/storm/+bug/619017 means that this sometimes
-does 3 queries, depending on the precise state of the storm cache. To avoid
-spurious failures it has been changed to tolerate this additional query.
+XXX RobertCollins <unknown date> bug=619017: Storm bug 619017 means that this
+sometimes does 3 queries, depending on the precise state of the storm cache.
+To avoid spurious failures it has been changed to tolerate this additional
+query.
 
     >>> len(CursorWrapper.last_executed_sql) - queries <= 3
     True
@@ -1164,9 +1167,12 @@ exported using the webservice API.
     ...     print '%s\t%s\t%s' % (
     ...         indexed_message.index, indexed_message.subject,
     ...         indexed_message.inside.title)
-    0 PEBCAK                                      Bug #2 in Tomcat: "Blackhole Trash folder"
-    1 Fantastic idea, I'd really like to see this Bug #2 in Tomcat: "Blackhole Trash folder"
-    2 Strange bug with duplicate messages.        Bug #2 in Tomcat: "Blackhole Trash folder"
+    0 PEBCAK
+    Bug #2 in Tomcat: "Blackhole Trash folder"
+    1 Fantastic idea, I'd really like to see this
+    Bug #2 in Tomcat: "Blackhole Trash folder"
+    2 Strange bug with duplicate messages.
+    Bug #2 in Tomcat: "Blackhole Trash folder"
 
 
 Affected users

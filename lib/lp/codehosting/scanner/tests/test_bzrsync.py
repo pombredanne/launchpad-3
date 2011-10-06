@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0141
@@ -44,15 +44,14 @@ from lp.codehosting.bzrutils import (
     read_locked,
     write_locked,
     )
-from lp.codehosting.safe_open import (
-    SafeBranchOpener,
-    )
+from lp.codehosting.safe_open import SafeBranchOpener
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
 from lp.testing import (
     temp_dir,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -65,14 +64,8 @@ def run_as_db_user(username):
     def _run_with_different_user(f):
 
         def decorated(*args, **kwargs):
-            current_user = LaunchpadZopelessLayer.txn._dbuser
-            if current_user == username:
+            with dbuser(username):
                 return f(*args, **kwargs)
-            LaunchpadZopelessLayer.switchDbUser(username)
-            try:
-                return f(*args, **kwargs)
-            finally:
-                LaunchpadZopelessLayer.switchDbUser(current_user)
         return mergeFunctionMetadata(f, decorated)
 
     return _run_with_different_user
