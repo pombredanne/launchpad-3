@@ -10,7 +10,10 @@ __all__ = [
     'IQuestionEmailJobSource',
     ]
 
-from zope.interface import Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Choice,
     Field,
@@ -27,7 +30,7 @@ from lp.services.job.interfaces.job import (
     )
 
 
-class IQuestionJob(IRunnableJob):
+class IQuestionJob(Interface):
     """A Job related to a question."""
 
     id = Int(
@@ -49,7 +52,7 @@ class IQuestionJob(IRunnableJob):
     metadata = Attribute('A dict of data about the job.')
 
 
-class IQuestionEmailJob(IQuestionJob):
+class IQuestionEmailJob(IQuestionJob, IRunnableJob):
 
     user = Attribute('The `IPerson` who triggered the email.')
 
