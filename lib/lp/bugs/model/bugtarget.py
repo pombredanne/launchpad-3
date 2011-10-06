@@ -54,7 +54,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
 from lp.bugs.model.bugtask import (
     BugTaskSet,
-    get_bug_privacy_filter,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -123,7 +122,7 @@ class HasBugsBase:
 
     def getBugSummaryContextWhereClause(self):
         """Return a storm clause to filter bugsummaries on this context.
-        
+
         :return: Either a storm clause to filter bugsummaries, or False if
             there cannot be any matching bug summaries.
         """
@@ -223,7 +222,8 @@ class BugTargetBase(HasBugsBase):
     # IDistribution, IDistroSeries, IProjectGroup.
     enable_bugfiling_duplicate_search = True
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
         """See IBugTarget."""
         from lp.bugs.model.bug import get_bug_tags_open_count
         return get_bug_tags_open_count(
@@ -367,7 +367,7 @@ class OfficialBugTagTargetMixin:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         target_clause = self._getOfficialTagClause()
         return store.find(
-            OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
+            OfficialBugTag, OfficialBugTag.tag == tag, target_clause).one()
 
     def addOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
