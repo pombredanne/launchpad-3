@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231,E0702,W0108
@@ -27,10 +27,7 @@ import xmlrpclib
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    commit,
-    ZopelessTransactionManager,
-    )
+from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import (
     login,
     logout,
@@ -82,8 +79,6 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     closed. After returning from this function, a new connection using
     the checkwatches db user is created.
     """
-    assert ZopelessTransactionManager._installed is not None, (
-        "This function can only be used for Zopeless tests.")
     LaunchpadZopelessLayer.switchDbUser('launchpad')
     owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     bugtracker_set = getUtility(IBugTrackerSet)

@@ -12,17 +12,19 @@ documentation of the very simple 'protocol' Apache uses to talk to us, and
 lp.codehosting.rewrite.BranchRewriter for the logic of the rewritemap.
 """
 
-import _pythonpath
-
 import os
 import sys
 
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
+import _pythonpath
+
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.code.model.branch import Branch
 from lp.codehosting.rewrite import BranchRewriter
-from lp.services.log.loglevels import INFO, WARNING
+from lp.services.log.loglevels import (
+    INFO,
+    WARNING,
+    )
 from lp.services.scripts.base import LaunchpadScript
 
 
@@ -79,4 +81,4 @@ class BranchRewriteScript(LaunchpadScript):
 
 if __name__ == '__main__':
     BranchRewriteScript("branch-rewrite", dbuser='branch-rewrite').run(
-        isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+        isolation='autocommit')

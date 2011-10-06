@@ -189,7 +189,7 @@ class TestBugSummary(TestCaseWithFactory):
         for count in range(3):
             bug = self.factory.makeBug(product=product)
             bug_task = self.store.find(BugTask, bug=bug).one()
-            bug_task.status = org_status
+            bug_task._status = org_status
 
             self.assertEqual(
                 self.getPublicCount(
@@ -199,8 +199,8 @@ class TestBugSummary(TestCaseWithFactory):
 
         for count in reversed(range(3)):
             bug_task = self.store.find(
-                BugTask, product=product, status=org_status).any()
-            bug_task.status = new_status
+                BugTask, product=product, _status=org_status).any()
+            bug_task._status = new_status
             self.assertEqual(
                 self.getPublicCount(
                     BugSummary.product == product,
@@ -245,11 +245,11 @@ class TestBugSummary(TestCaseWithFactory):
                 3 - count)
 
     def test_makePrivate(self):
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, owner=person_b)
+
         bug.subscribe(person=person_a, subscribed_by=person_a)
 
         # Make the bug private. We have to use the Python API to ensure
@@ -266,7 +266,7 @@ class TestBugSummary(TestCaseWithFactory):
             1)
         self.assertEqual(
             self.getCount(person_b, BugSummary.product == product),
-            0)
+            1)
         # Confirm implicit subscriptions work too.
         self.assertEqual(
             self.getCount(bug.owner, BugSummary.product == product),

@@ -22,7 +22,8 @@ suite.add(new Y.Test.Case({
 
     _should: {
         error: {
-            test_config_undefined: true,
+            test_config_undefined: true
+            // Careful: no comma after last item or IE chokes.
             }
         },
 
@@ -52,7 +53,8 @@ suite.add(new Y.Test.Case({
     test_config_undefined: function() {
         // Verify an error is thrown if there is no config.
         mynamespace.setup();
-        },
+        }
+        // Careful: no comma after last item or IE chokes.
 }));
 
 

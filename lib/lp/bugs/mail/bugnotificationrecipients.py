@@ -107,6 +107,39 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug assignee"
         self._addReason(person, text, reason)
 
+    def addBugSupervisor(self, person):
+        """Registers a bug supervisor of a bugtask's pillar of this bug."""
+        reason = "Bug Supervisor"
+        if person.isTeam():
+            text = ("are a member of %s, which is a bug supervisor"
+                    % person.displayname)
+            reason += " @%s" % person.name
+        else:
+            text = "are a bug supervisor"
+        self._addReason(person, text, reason)
+
+    def addSecurityContact(self, person):
+        """Registers a security contact of a bugtask's pillar of this bug."""
+        reason = "Security Contact"
+        if person.isTeam():
+            text = ("are a member of %s, which is a security contact"
+                    % person.displayname)
+            reason += " @%s" % person.name
+        else:
+            text = "are a security contact"
+        self._addReason(person, text, reason)
+
+    def addMaintainer(self, person):
+        """Registers a maintainer of a bugtask's pillar of this bug."""
+        reason = "Maintainer"
+        if person.isTeam():
+            text = ("are a member of %s, which is a maintainer"
+                    % person.displayname)
+            reason += " @%s" % person.name
+        else:
+            text = "are a maintainer"
+        self._addReason(person, text, reason)
+
     def addStructuralSubscriber(self, person, target):
         """Registers a structural subscriber to this bug's target."""
         reason = "Subscriber (%s)" % target.displayname

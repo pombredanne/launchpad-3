@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Ensure that some operations happen outside of transactions."""
@@ -8,6 +8,7 @@ __all__ = [
     'check_no_transaction',
     'ensure_no_transaction',
     'is_transaction_in_progress',
+    'TransactionInProgress',
     ]
 
 from functools import wraps
@@ -21,6 +22,7 @@ TRANSACTION_IN_PROGRESS_STATUSES = {
     psycopg2.extensions.TRANSACTION_STATUS_ACTIVE: 'is active',
     psycopg2.extensions.TRANSACTION_STATUS_INTRANS: 'has started',
     psycopg2.extensions.TRANSACTION_STATUS_INERROR: 'has errored',
+    psycopg2.extensions.TRANSACTION_STATUS_UNKNOWN: 'is in an unknown state',
     }
 
 

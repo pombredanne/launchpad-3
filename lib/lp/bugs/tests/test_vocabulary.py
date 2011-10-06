@@ -60,7 +60,7 @@ class UsesBugsDistributionVocabularyTestCase(TestCaseWithFactory):
             "Vocabulary missing context distro.")
 
     def test_contains_missing_context(self):
-        # The vocabulary contains does not contain the context if the
+        # The vocabulary does not contain the context if the
         # context is not adaptable to a distribution.
         thing = self.factory.makeProduct()
         vocabulary = UsesBugsDistributionVocabulary(thing)

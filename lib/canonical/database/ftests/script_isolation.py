@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Script run from test_isolation.py to confirm transaction isolation
@@ -18,14 +18,13 @@ warnings.filterwarnings(
 
 import transaction
 
-from canonical.database.sqlbase import (
-    cursor,
-    ISOLATION_LEVEL_SERIALIZABLE,
-    ZopelessTransactionManager,
-    )
+from canonical.config import dbconfig
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.testing.layers import disconnect_stores
 
 execute_zcml_for_scripts()
+
 
 def check():
     cur = cursor()
@@ -41,13 +40,10 @@ def check():
     cur.execute("SHOW transaction_isolation")
     print cur.fetchone()[0]
 
-# First confirm the default isolation level
-ZopelessTransactionManager.initZopeless(dbuser='launchpad_main')
+dbconfig.override(dbuser='launchpad_main', isolation_level='read_committed')
+disconnect_stores()
 check()
-ZopelessTransactionManager.uninstall()
 
-ZopelessTransactionManager.initZopeless(
-    dbuser='launchpad_main',
-    isolation=ISOLATION_LEVEL_SERIALIZABLE)
+dbconfig.override(isolation_level='serializable')
+disconnect_stores()
 check()
-ZopelessTransactionManager.uninstall()

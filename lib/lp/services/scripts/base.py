@@ -33,12 +33,11 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config, dbconfig
-from canonical.database.postgresql import ConnectionString
-from canonical.database.sqlbase import (
-    ISOLATION_LEVEL_DEFAULT,
-    ZopelessTransactionManager,
+from canonical.config import (
+    config,
+    dbconfig,
     )
+from canonical.database.postgresql import ConnectionString
 from canonical.launchpad import scripts
 from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
@@ -51,6 +50,7 @@ from lp.services.features import (
     install_feature_controller,
     make_script_feature_controller,
     )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
@@ -318,9 +318,13 @@ class LaunchpadScript:
         """Actually run the script, executing zcml and initZopeless."""
 
         if isolation is None:
-            isolation = ISOLATION_LEVEL_DEFAULT
+            isolation = 'read_committed'
         self._init_zca(use_web_security=use_web_security)
         self._init_db(isolation=isolation)
+
+        # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+        # Should be called directly by scripts that actually need it.
+        set_immediate_mail_delivery(True)
 
         date_started = datetime.datetime.now(UTC)
         profiler = None
@@ -360,8 +364,7 @@ class LaunchpadScript:
         if dbuser is None:
             connstr = ConnectionString(dbconfig.main_master)
             dbuser = connstr.user or dbconfig.dbuser
-        ZopelessTransactionManager.initZopeless(
-            dbuser=dbuser, isolation=isolation)
+        dbconfig.override(dbuser=dbuser, isolation_level=isolation)
         self.txn = transaction
 
     def record_activity(self, date_started, date_completed):
@@ -373,7 +376,7 @@ class LaunchpadScript:
     @log_unhandled_exception_and_exit
     def lock_and_run(self, blocking=False, skip_delete=False,
                      use_web_security=False,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
+                     isolation='read_committed'):
         """Call lock_or_die(), and then run() the script.
 
         Will die with sys.exit(1) if the locking call fails.

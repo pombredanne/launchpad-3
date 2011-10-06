@@ -21,6 +21,7 @@
     </select>
     <select name="rcs_type" tal:replace="structure view/rcs_type_widget">
       <option label="">Any</option>
+      <option label="BZR">Bazaar</option>
       <option label="GIT">Git</option>
       <option label="BZR_SVN">Subversion</option>
       <option label="SVN">Subversion (legacy)</option>

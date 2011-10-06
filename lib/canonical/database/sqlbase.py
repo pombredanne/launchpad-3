@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -25,7 +25,6 @@ __all__ = [
     'SQLBase',
     'sqlvalues',
     'StupidCache',
-    'ZopelessTransactionManager',
     ]
 
 
@@ -260,75 +259,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # tested, but the entire test suite blows up awesomely if it's broken.
         # It's entirely unclear where tests for this should be.
         clear_property_cache(self)
-
-
-class ZopelessTransactionManager(object):
-    """Compatibility shim for initZopeless()"""
-
-    _installed = None
-
-    def __init__(self):
-        raise AssertionError("ZopelessTransactionManager should not be "
-                             "directly instantiated.")
-
-    @classmethod
-    def initZopeless(cls, dbuser=None, isolation=ISOLATION_LEVEL_DEFAULT):
-        if dbuser is None:
-            raise AssertionError(
-                "dbuser is now required. All scripts must connect as unique "
-                "database users.")
-
-        isolation_level = {
-            ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
-            ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
-            ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
-
-        dbconfig.override(dbuser=dbuser, isolation_level=isolation_level)
-
-        cls._dbuser = dbuser
-        cls._isolation = isolation
-        cls._reset_stores()
-        cls._installed = cls
-
-    @staticmethod
-    def _reset_stores():
-        """Reset the active stores.
-
-        This is required for connection setting changes to be made visible.
-        """
-        for name, store in getUtility(IZStorm).iterstores():
-            connection = store._connection
-            if connection._state == storm.database.STATE_CONNECTED:
-                if connection._raw_connection is not None:
-                    connection._raw_connection.close()
-
-                # This method assumes that calling transaction.abort() will
-                # call rollback() on the store, but this is no longer the
-                # case as of jamesh's fix for bug 230977; Stores are not
-                # registered with the transaction manager until they are
-                # used. While storm doesn't provide an API which does what
-                # we want, we'll go under the covers and emit the
-                # register-transaction event ourselves. This method is
-                # only called by the test suite to kill the existing
-                # connections so the Store's reconnect with updated
-                # connection settings.
-                store._event.emit('register-transaction')
-
-                connection._raw_connection = None
-                connection._state = storm.database.STATE_DISCONNECTED
-        transaction.abort()
-
-    @classmethod
-    def uninstall(cls):
-        """Uninstall the ZopelessTransactionManager.
-
-        This entails removing the config overlay and resetting the store.
-        """
-        assert cls._installed is not None, (
-            "ZopelessTransactionManager not installed")
-        dbconfig.override(dbuser=None, isolation_level=None)
-        cls._reset_stores()
-        cls._installed = None
 
 
 def clear_current_connection_cache():

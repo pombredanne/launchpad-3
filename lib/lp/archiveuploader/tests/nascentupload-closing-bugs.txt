@@ -1,4 +1,5 @@
-= Closing Bugs when Publishing Accepted Source =
+Closing Bugs when Publishing Accepted Source
+============================================
 
 We have implemented 'premature publication of accepted sources' in
 NascentUpload to increase the publishing throughput (see
@@ -11,10 +12,11 @@ Starting a new series of package, upload and publish the first version
 of 'bar' source package in ubuntu/hoary.
 
 
-== Publishing package and creating a bugtask ==
+Publishing package and creating a bugtask
+-----------------------------------------
 
     >>> bar_src = getUploadForSource(
-    ...	      'suite/bar_1.0-1/bar_1.0-1_source.changes')
+    ...	    'suite/bar_1.0-1/bar_1.0-1_source.changes')
     >>> bar_src.process()
     >>> result = bar_src.do_accept()
     >>> bar_src.queue_root.status.name
@@ -49,8 +51,8 @@ Check the current status of the bug we are supposed to fix:
 Inspect the current bugtasks for bug #6:
 
     >>> for bugtask in the_bug.bugtasks:
-    ...    print bugtask.title
-    ...    print bugtask.status.name
+    ...     print bugtask.title
+    ...     print bugtask.status.name
     Bug #6 in Mozilla Firefox: "Firefox crashes when ...
     NEW
     Bug #6 in bar (Ubuntu): "Firefox crashes when ...
@@ -64,7 +66,8 @@ Return to the original test environment:
     >>> login('foo.bar@canonical.com')
 
 
-== Testing bug closing ==
+Testing bug closing
+-------------------
 
 Once the base source is published every posterior version will be
 automatically published in upload time as described in
@@ -104,8 +107,8 @@ FIXRELEASED and bug notification are generated:
     >>> the_bug = getUtility(IBugSet).get(6)
 
     >>> for bugtask in the_bug.bugtasks:
-    ...    print bugtask.title
-    ...    print bugtask.status.name
+    ...     print bugtask.title
+    ...     print bugtask.status.name
     Bug #6 in Mozilla Firefox: "Firefox crashes when ...
     NEW
     Bug #6 in bar (Ubuntu): "Firefox crashes when ...

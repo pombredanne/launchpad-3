@@ -192,7 +192,7 @@ the configured request and publication factories.
 
     >>> requestfactory, publicationfactory = factory()
     >>> publicationfactory
-    <class 'canonical.launchpad.webapp.publication.LaunchpadBrowserPublication'>
+    <class '...LaunchpadBrowserPublication'>
 
 If the request comes in on one of the virtual hosts, the request
 factory is wrapped in an ApplicationServerSettingRequestFactory that
@@ -200,7 +200,7 @@ will on instantiation set the base URL of the request to the virtual
 host configured settings.
 
     >>> type(requestfactory)
-    <class 'canonical.launchpad.webapp.servers.ApplicationServerSettingRequestFactory'>
+    <class '...ApplicationServerSettingRequestFactory'>
     >>> request = requestfactory(StringIO(''), environment)
     >>> type(request)
     <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
@@ -322,7 +322,7 @@ publishes a document describing a particular HTTP-level error.
     True
     >>> requestfactory, publicationfactory = factory()
     >>> publicationfactory
-    <class 'canonical.launchpad.webapp.publication.LaunchpadBrowserPublication'>
+    <class '...LaunchpadBrowserPublication'>
 
 
 Zope Publisher integration
@@ -895,7 +895,7 @@ afterCall().  For example, this publication subclass will simply print
 some string in its finishReadOnlyRequest().
 
     >>> class MyPublication(LaunchpadBrowserPublication):
-    ...     def finishReadOnlyRequest(self, txn):
+    ...     def finishReadOnlyRequest(self, request, ob, txn):
     ...         print "booo!"
 
     >>> publication = MyPublication(None)
