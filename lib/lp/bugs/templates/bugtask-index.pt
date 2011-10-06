@@ -319,7 +319,8 @@
             <tal:what-next
                 define="view_all_href
                         string:${context/fmt:url}?comments=all">
-              <a href="#" tal:attributes="href view_all_href">
+              <a class="show-comments-link"
+                  href="#" tal:attributes="href view_all_href">
                 View all <span
                 tal:replace="view/total_comments" />
                 comments</a> or <a href="#" tal:attributes="href
