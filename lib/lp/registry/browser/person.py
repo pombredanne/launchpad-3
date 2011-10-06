@@ -7,7 +7,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'BasePersonEditView',
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'CommonMenuLinks',
@@ -3436,7 +3435,8 @@ class PersonRenameFormMixin(LaunchpadEditFormView):
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
-        Renames are prohibited if a user has an active PPA.
+        Renames are prohibited if a person/team has an active PPA or an
+        active mailing list.
         """
         reason = self.context.checkRename()
         if reason:
