@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ApportJobs."""
@@ -98,7 +98,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         blob_data = blob_file.read()
 
         self.blob = self.factory.makeBlob(blob_data)
-        transaction.commit() # We need the blob available from the Librarian.
+        transaction.commit()  # We need the blob available from the Librarian.
 
     def _assertFileBugDataMatchesDict(self, filebug_data, data_dict):
         """Asser that the data in a FileBugData object matches a dict."""
@@ -245,7 +245,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             "There should be only one ProcessApportBlobJob. Found %s" %
             len(current_jobs))
 
-        another_job = blobjobsource.create(self.blob)
+        blobjobsource.create(self.blob)  # Another job.
         current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             1, len(current_jobs),
@@ -374,7 +374,7 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
 
         self.assertEqual(
             len(blob_meta['attachments']), 2,
-            "BLOB metadata: %s" %(str(blob_meta)))
+            "BLOB metadata: %s" % str(blob_meta))
 
     def test_adding_blob_adds_job(self):
         # Using the TemporaryBlobStorageAddView to upload a new BLOB
