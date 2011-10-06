@@ -7,7 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BasePersonEditViewWidget',
+    'BasePersonEditView',
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'CommonMenuLinks',
@@ -44,6 +44,7 @@ __all__ = [
     'PersonRdfView',
     'PersonRelatedBugTaskSearchListingView',
     'PersonRelatedSoftwareView',
+    'PersonRenameFormMixin',
     'PersonReportedBugTaskSearchListingView',
     'PersonSearchQuestionsView',
     'PersonSetActionNavigationMenu',
@@ -3429,7 +3430,8 @@ class PersonEditHomePageView(BasePersonEditView):
 
     page_title = label
 
-class BasePersonEditViewWidget(LaunchpadEditFormView):
+
+class PersonRenameFormMixin(LaunchpadEditFormView):
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
@@ -3440,12 +3442,12 @@ class BasePersonEditViewWidget(LaunchpadEditFormView):
         if reason:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
-        super(BasePersonEditViewWidget, self).setUpWidgets()
+        super(PersonRenameFormMixin, self).setUpWidgets()
         if reason:
             self.widgets['name'].hint = reason
 
 
-class PersonEditView(BasePersonEditView, BasePersonEditViewWidget):
+class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
@@ -3461,9 +3463,6 @@ class PersonEditView(BasePersonEditView, BasePersonEditViewWidget):
     # Will contain an hidden input when the user is renaming his
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
-
-    def setUpWidgets(self):
-        BasePersonEditViewWidget.setUpWidgets(self)
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""

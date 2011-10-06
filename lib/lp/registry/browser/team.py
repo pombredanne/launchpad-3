@@ -98,7 +98,6 @@ from canonical.lazr.interfaces import IObjectPrivacy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
-    LaunchpadEditFormView,
     LaunchpadFormView,
     )
 from lp.app.browser.tales import PersonFormatterAPI
@@ -116,10 +115,10 @@ from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.person import (
-    BasePersonEditViewWidget,
     CommonMenuLinks,
     PersonIndexView,
     PersonNavigation,
+    PersonRenameFormMixin,
     PPANavigationMenuMixIn,
     )
 from lp.registry.browser.teamjoin import (
@@ -261,8 +260,8 @@ class TeamFormMixin:
             self.form_fields = self.form_fields.omit('visibility')
 
 
-class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
-                   BasePersonEditViewWidget):
+class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
+                   HasRenewalPolicyMixin):
     """View for editing team details."""
     schema = ITeam
 
@@ -311,9 +310,6 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         return canonical_url(self.context)
 
     cancel_url = next_url
-
-    def setUpWidgets(self):
-        BasePersonEditViewWidget.setUpWidgets(self)
 
 
 def generateTokenAndValidationEmail(email, team):
