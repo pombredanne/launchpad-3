@@ -1471,55 +1471,70 @@ class TestSPPHModel(TestCaseWithFactory):
         self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
 
 
-class TestBPPHModel(TestNativePublishingBase):
+class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
     """Test parts of the BinaryPackagePublishingHistory model.
 
     See also lib/lp/soyuz/doc/publishing.txt
     """
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
+
+    def _makeMixedSingleBuildPackage(self):
+        foo_src_pub = self.getPubSource(
+            sourcename="foo", version="1.0", architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_bin_pub] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version="1.0", pub_source=foo_src_pub)
+        # Now need to grab the build for the source so we can add
+        # more binaries to it.
+        [build] = foo_src_pub.getBuilds()
+        foo_one_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-one-common", version="1.0", build=build,
+            architecturespecific=False)
+        foo_one_common_pubs = self.publishBinaryInArchive(
+            foo_one_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_two_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-two-common", version="1.0", build=build,
+            architecturespecific=False)
+        foo_two_common_pubs = self.publishBinaryInArchive(
+            foo_two_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_three = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-three", version="1.0", build=build,
+            architecturespecific=True)
+        [foo_three_pub] = self.publishBinaryInArchive(
+            foo_three, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        return (
+            foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+            foo_three_pub)
 
     def test_getOtherPublicationsForSameSource(self):
         # Set up a source with a build that generated four binaries,
         # two of them an arch-all.
-        foo_10_src = self.getPubSource(
-            sourcename="foo", version="1.0", architecturehintlist="i386",
-            status=PackagePublishingStatus.PUBLISHED)
-        [foo_10_bin1] = self.getPubBinaries(
-            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
-            architecturespecific=True, version="1.0", pub_source=foo_10_src)
-        # Now need to grab the build for the source so we can add
-        # more binaries to it.
-        [build] = foo_10_src.getBuilds()
-        bpr = self.factory.makeBinaryPackageRelease(
-            binarypackagename="foo-common", version="1.0", build=build,
-            architecturespecific=False)
-        foo_10_all_bins1 = self.publishBinaryInArchive(
-            bpr, self.ubuntutest.main_archive, pocket=foo_10_src.pocket,
-            status=PackagePublishingStatus.PUBLISHED)
+        (foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+            foo_three_pub) = self._makeMixedSingleBuildPackage()
 
-        bpr2 = self.factory.makeBinaryPackageRelease(
-            binarypackagename="foo-two", version="1.0", build=build,
-            architecturespecific=False)
-        foo_10_all_bins2 = self.publishBinaryInArchive(
-            bpr2, self.ubuntutest.main_archive, pocket=foo_10_src.pocket,
-            status=PackagePublishingStatus.PUBLISHED)
+        # So now we have source foo, which has arch specific binaries
+        # foo-bin and foo-three, and arch:all binaries foo-one-common and
+        # foo-two-common. The latter two will have multiple publications,
+        # one for each DAS in the series.
 
-        bpr3 = self.factory.makeBinaryPackageRelease(
-            binarypackagename="foo-three", version="1.0", build=build,
-            architecturespecific=True)
-        foo_10_bin2 = self.publishBinaryInArchive(
-            bpr3, self.ubuntutest.main_archive, pocket=foo_10_src.pocket,
-            status=PackagePublishingStatus.PUBLISHED)
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
 
-        others = foo_10_all_bins1[0].getOtherPublicationsForSameSource()
+        self.assertEqual(2, len(others))
+        self.assertNotIn(foo_one_common_pub, others)
+        self.assertIn(foo_three_pub, others)
+        self.assertIn(foo_bin_pub, others)
 
-        # TODO: assert that only foo-bin, foo-three are returned
-        # join bpph -> bpr -> build -> bprs -> bpphs.
-
-        self.assertTrue(2, others.count())
-        self.assertIn(foo_10_bin1, others)
-        self.assertIn(foo_10_bin2, others)
+        # todo: add builds for other archs.
 
 
 
