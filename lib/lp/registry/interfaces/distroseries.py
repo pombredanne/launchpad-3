@@ -284,9 +284,14 @@ class IDistroSeriesPublic(
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    nominatedarchindep = Attribute(
-        "DistroArchSeries designed to build architecture-independent "
-        "packages whithin this distroseries context.")
+    nominatedarchindep = exported(
+        Reference(
+            Interface,  # IDistroArchSeries.
+            title=_("DistroArchSeries designed to build "
+                    "architecture-independent packages whithin this "
+                    "distroseries context."),
+            default=None,
+            required=False))
     messagecount = Attribute("The total number of translatable items in "
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
