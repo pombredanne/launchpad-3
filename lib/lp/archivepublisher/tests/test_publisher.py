@@ -788,14 +788,6 @@ class TestPublisher(TestPublisherBase):
         # are marked as dirty.
         self.checkDirtyPockets(publisher, expected=allowed_suites)
 
-    def _getReleaseFileOrigin(self, contents):
-        origin_header = 'Origin: '
-        [origin_line] = [
-            line for line in contents.splitlines()
-            if line.startswith(origin_header)]
-        origin = origin_line.replace(origin_header, '')
-        return origin
-
     def testReleaseFile(self):
         """Test release file writing.
 
@@ -817,56 +809,26 @@ class TestPublisher(TestPublisherBase):
 
         publisher.D_writeReleaseFiles(False)
 
-        release_file = os.path.join(
-            self.config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read()
+        release = Release(open(os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'Release')))
 
         # Primary archive distroseries Release 'Origin' contains
         # the distribution displayname.
-        self.assertEqual(
-            self._getReleaseFileOrigin(release_contents), 'ubuntutest')
+        self.assertEqual(release['origin'], 'ubuntutest')
 
-        # XXX cprov 20090427: we should write a Release file parsing for
-        # making tests less cryptic.
-        release_contents = release_contents.splitlines()
-        md5_header = 'MD5Sum:'
-        self.assertTrue(md5_header in release_contents)
-        md5_header_index = release_contents.index(md5_header)
-        first_md5_line = release_contents[md5_header_index + 17]
-        self.assertEqual(
-            first_md5_line,
-            (' a5e5742a193740f17705c998206e18b6              '
-             '114 main/source/Release'))
-
-        sha1_header = 'SHA1:'
-        self.assertTrue(sha1_header in release_contents)
-        sha1_header_index = release_contents.index(sha1_header)
-        first_sha1_line = release_contents[sha1_header_index + 17]
-        self.assertEqual(
-            first_sha1_line,
-            (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
-             '114 main/source/Release'))
-
-        sha256_header = 'SHA256:'
-        self.assertTrue(sha256_header in release_contents)
-        sha256_header_index = release_contents.index(sha256_header)
-        first_sha256_line = release_contents[sha256_header_index + 17]
-        self.assertEqual(
-            first_sha256_line,
-            (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
-             '8d106a6338              114 main/source/Release'))
+        arch_release_file = os.path.join(
+            self.config.distsroot, 'breezy-autotest',
+            'main', 'source', 'Release')
+        self.assertReleaseContentsMatch(
+            release, 'main/source/Release', open(arch_release_file).read())
 
         # The Label: field should be set to the archive displayname
-        self.assertEqual(release_contents[1], 'Label: ubuntutest')
+        self.assertEqual(release['label'], 'ubuntutest')
 
         # Primary archive architecture Release files 'Origin' contain
         # the distribution displayname.
-        arch_release_file = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest',
-            'main/source/Release')
-        arch_release_contents = open(arch_release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(arch_release_contents), 'ubuntutest')
+        arch_release = Release(open(arch_release_file))
+        self.assertEqual(arch_release['origin'], 'ubuntutest')
 
     def testReleaseFileForPPA(self):
         """Test release file writing for PPA
@@ -899,86 +861,29 @@ class TestPublisher(TestPublisherBase):
         archive_publisher.C_writeIndexes(False)
         archive_publisher.D_writeReleaseFiles(False)
 
-        release_file = os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(release_contents), 'LP-PPA-cprov')
+        release = Release(open(os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'Release')))
+        self.assertEqual(release['origin'], 'LP-PPA-cprov')
 
-        # XXX cprov 2009-04-27 bug=440014: Use a generic parser.
-        release_contents = release_contents.splitlines()
-        md5_header = 'MD5Sum:'
-        self.assertTrue(md5_header in release_contents)
-        md5_header_index = release_contents.index(md5_header)
+        arch_sources_file = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'main', 'source', 'Sources')
+        self.assertReleaseContentsMatch(
+            release, 'main/source/Sources', open(arch_sources_file).read())
 
-        plain_sources_md5_line = release_contents[md5_header_index + 16]
-        self.assertEqual(
-            plain_sources_md5_line,
-            (' 7d9b0817f5ff4a1d3f53f97bcc9c7658              '
-             '229 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 15]
-        self.assertEqual(
-            release_md5_line,
-            (' eadc1fbb1a878a2ee6dc66d7cd8d46dc              '
-            '130 main/source/Release'))
-        # We can't probe checksums of compressed files because they contain
-        # timestamps, their checksum varies with time.
-        bz2_sources_md5_line = release_contents[md5_header_index + 17]
-        self.assertTrue('main/source/Sources.bz2' in bz2_sources_md5_line)
-        gz_sources_md5_line = release_contents[md5_header_index + 18]
-        self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
-
-        sha1_header = 'SHA1:'
-        self.assertTrue(sha1_header in release_contents)
-        sha1_header_index = release_contents.index(sha1_header)
-
-        plain_sources_sha1_line = release_contents[sha1_header_index + 16]
-        self.assertEqual(
-            plain_sources_sha1_line,
-            (' a2da1a8407fc4e2373266e56ccc7afadf8e08a3a              '
-             '229 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 15]
-        self.assertEqual(
-            release_sha1_line,
-            (' 1a8d788a6d2d30e0cab002ab82e9f2921f7a2a61              '
-             '130 main/source/Release'))
-        # See above.
-        bz2_sources_sha1_line = release_contents[sha1_header_index + 17]
-        self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
-        gz_sources_sha1_line = release_contents[sha1_header_index + 18]
-        self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
-
-        sha256_header = 'SHA256:'
-        self.assertTrue(sha256_header in release_contents)
-        sha256_header_index = release_contents.index(sha256_header)
-
-        plain_sources_sha256_line = release_contents[sha256_header_index + 16]
-        self.assertEqual(
-            plain_sources_sha256_line,
-            (' 979d959ead8ddc29e4347a64058a372d30df58a51a4615b43fb7499'
-             '8a9e07c78              229 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 15]
-        self.assertEqual(
-            release_sha256_line,
-            (' 795a3f17d485cc1983f588c53fb8c163599ed191be9741e61ca411f'
-             '1e2c505aa              130 main/source/Release'))
-        # See above.
-        bz2_sources_sha256_line = release_contents[sha256_header_index + 17]
-        self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
-        gz_sources_sha256_line = release_contents[sha256_header_index + 18]
-        self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
-
-        # The Label: field should be set to the archive displayname
-        self.assertEqual(release_contents[1],
-            'Label: PPA for Celso Provid\xc3\xa8lo')
-
-        # Architecture Release files also have a distinct Origin: for PPAs.
         arch_release_file = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest',
-            'main/source/Release')
-        arch_release_contents = open(arch_release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(arch_release_contents), 'LP-PPA-cprov')
+            'main', 'source', 'Release')
+        self.assertReleaseContentsMatch(
+            release, 'main/source/Release', open(arch_release_file).read())
+
+        # The Label: field should be set to the archive displayname
+        self.assertEqual(release['label'], u'PPA for Celso Provid\xe8lo')
+
+        # Architecture Release files also have a distinct Origin: for PPAs.
+        arch_release = Release(open(arch_release_file))
+        self.assertEqual(arch_release['origin'], 'LP-PPA-cprov')
 
     def testReleaseFileForNamedPPA(self):
         # Named PPA have a distint Origin: field, so packages from it can
@@ -1002,21 +907,16 @@ class TestPublisher(TestPublisherBase):
         archive_publisher.D_writeReleaseFiles(False)
 
         # Check the distinct Origin: field content in the main Release file
-        # and the architecture specific one.
-        release_file = os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(release_contents),
-            'LP-PPA-cprov-testing')
-
-        arch_release_file = os.path.join(
+        # and the component specific one.
+        release = Release(open(os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest',
-            'main/source/Release')
-        arch_release_contents = open(arch_release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(arch_release_contents),
-            'LP-PPA-cprov-testing')
+            'Release')))
+        self.assertEqual(release['origin'], 'LP-PPA-cprov-testing')
+
+        arch_release = Release(open(os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'main/source/Release')))
+        self.assertEqual(arch_release['origin'], 'LP-PPA-cprov-testing')
 
     def testReleaseFileForPartner(self):
         """Test Release file writing for Partner archives.
@@ -1036,30 +936,30 @@ class TestPublisher(TestPublisherBase):
 
         # Open the release file that was just published inside the
         # 'breezy-autotest' distroseries.
-        release_file = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read().splitlines()
+        release = Release(open(os.path.join(
+            publisher._config.distsroot, 'breezy-autotest', 'Release')))
 
         # The Release file must contain lines ending in "Packages",
         # "Packages.gz", "Sources" and "Sources.gz".
-        stringified_contents = "\n".join(release_contents)
-        self.assertTrue('Packages.gz\n' in stringified_contents)
-        self.assertTrue('Packages\n' in stringified_contents)
-        self.assertTrue('Sources.gz\n' in stringified_contents)
-        self.assertTrue('Sources\n' in stringified_contents)
+        self.assertTrue('md5sum' in release)
+        self.assertTrue([entry for entry in release['md5sum']
+                         if entry['name'].endswith('Packages.gz')])
+        self.assertTrue([entry for entry in release['md5sum']
+                         if entry['name'].endswith('Packages')])
+        self.assertTrue([entry for entry in release['md5sum']
+                         if entry['name'].endswith('Sources.gz')])
+        self.assertTrue([entry for entry in release['md5sum']
+                         if entry['name'].endswith('Sources')])
 
         # Partner archive architecture Release files 'Origin' contain
         # a string
-        arch_release_file = os.path.join(
+        arch_release = Release(open(os.path.join(
             publisher._config.distsroot, 'breezy-autotest',
-            'partner/source/Release')
-        arch_release_contents = open(arch_release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(arch_release_contents),
-            'Canonical')
+            'partner/source/Release')))
+        self.assertEqual(arch_release['origin'], 'Canonical')
 
         # The Label: field should be set to the archive displayname
-        self.assertEqual(release_contents[1], 'Label: Partner archive')
+        self.assertEqual(release['label'], 'Partner archive')
 
     def testReleaseFileForNotAutomaticBackports(self):
         # Test Release file writing for series with NotAutomatic backports.
