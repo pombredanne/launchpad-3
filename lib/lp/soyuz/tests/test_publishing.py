@@ -1480,6 +1480,8 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
     layer = LaunchpadZopelessLayer
 
     def _makeMixedSingleBuildPackage(self):
+        # Set up a source with a build that generated four binaries,
+        # two of them an arch-all.
         foo_src_pub = self.getPubSource(
             sourcename="foo", version="1.0", architecturehintlist="i386",
             status=PackagePublishingStatus.PUBLISHED)
@@ -1510,20 +1512,17 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
             foo_three, self.ubuntutest.main_archive,
             pocket=foo_src_pub.pocket,
             status=PackagePublishingStatus.PUBLISHED)
+        # So now we have source foo, which has arch specific binaries
+        # foo-bin and foo-three, and arch:all binaries foo-one-common and
+        # foo-two-common. The latter two will have multiple publications,
+        # one for each DAS in the series.
         return (
             foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
             foo_three_pub)
 
     def test_getOtherPublicationsForSameSource(self):
-        # Set up a source with a build that generated four binaries,
-        # two of them an arch-all.
         (foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
             foo_three_pub) = self._makeMixedSingleBuildPackage()
-
-        # So now we have source foo, which has arch specific binaries
-        # foo-bin and foo-three, and arch:all binaries foo-one-common and
-        # foo-two-common. The latter two will have multiple publications,
-        # one for each DAS in the series.
 
         foo_one_common_pub = foo_one_common_pubs[0]
         others = foo_one_common_pub.getOtherPublicationsForSameSource()
@@ -1534,6 +1533,22 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         self.assertIn(foo_three_pub, others)
         self.assertIn(foo_bin_pub, others)
 
+    def test_getOtherPublicationsForSameSource_include_archindep(self):
+        (foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+         foo_three_pub) = self._makeMixedSingleBuildPackage()
+
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource(
+            include_archindep=True)
+        others = list(others)
+
+        # We expect all publications created above to be returned,
+        # except the one we use to call the method on.
+        self.assertEqual(5, len(others))
+        self.assertIn(foo_three_pub, others)
+        self.assertIn(foo_bin_pub, others)
+        for pub in foo_one_common_pubs[1:] + foo_two_common_pubs:
+            self.assertIn(pub, others)
         # todo: add builds for other archs.
 
 
