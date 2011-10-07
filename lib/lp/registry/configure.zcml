@@ -1260,7 +1260,6 @@
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
-                official_rosetta
                 translation_focus
                 translationgroup
                 translationpermission"/>
@@ -1550,7 +1549,6 @@
             permission="launchpad.TranslationsAdmin"
             set_attributes="
                 language_pack_admin
-                official_rosetta
                 translationgroup
                 translationpermission
                 translation_focus"/>
