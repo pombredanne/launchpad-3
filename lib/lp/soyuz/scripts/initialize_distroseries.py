@@ -157,10 +157,21 @@ class InitializeDistroSeries:
                  ".").format(
                     child=self.distroseries))
         self._checkParents()
+        self._checkArchindep()
         for parent in self.derivation_parents:
             self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
+
+    def _checkArchindep(self):
+        # Check that the child distroseries has an architecture to
+        # build architecture independent binaries.
+        potential_nominated_arches = self._potential_nominated_arches(
+             self.derivation_parents)
+        if (len(potential_nominated_arches) == 0):
+            raise InitializationError(
+                ("The distroseries has no architectures selected to "
+                 "build architecture independent binaries."))
 
     def _checkPublisherConfig(self):
         """A series cannot be initialized if it has no publisher config
@@ -365,9 +376,23 @@ class InitializeDistroSeries:
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)
             + (das_filter, )))
         self._store.flush()
-        # Take nominatedarchindep from the first parent.
-        self.distroseries.nominatedarchindep = self.distroseries[
-            self.derivation_parents[0].nominatedarchindep.architecturetag]
+        # Select the arch-indep builder from the intersection between
+        # the selected architectures and the list of the parent's
+        # arch-indep builders.
+        arch_tag = self._potential_nominated_arches(
+            self.derivation_parents).pop()
+        self.distroseries.nominatedarchindep = self.distroseries[arch_tag]
+
+    def _potential_nominated_arches(self, parent_list):
+        parent_indep_archtags = set(
+            parent.nominatedarchindep.architecturetag
+            for parent in parent_list
+            if parent.nominatedarchindep is not None)
+
+        if len(self.arches) == 0:
+            return parent_indep_archtags
+        else:
+            return parent_indep_archtags.intersection(self.arches)
 
     def _copy_packages(self):
         # Perform the copies
