@@ -109,14 +109,19 @@ class CanonicalConfig:
         :param instance_name: the configuration instance to use. Defaults to
             the value of the LPCONFIG environment variable.
         :param process_name: the process configuration name to use. Defaults
-            to the basename of sys.argv[0] without any extension.
+            to the basename of sys.argv[0] without any extension, or None if
+            sys.argv is not available.
        """
         self._config = None
         if instance_name is None:
             instance_name = find_instance_name()
 
         if process_name is None:
-            process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+            if getattr(sys, 'argv', None) is None:
+                process_name = None
+            else:
+                basename = os.path.basename(sys.argv[0])
+                process_name = os.path.splitext(basename)[0]
         self._instance_name = instance_name
         self._process_name = process_name
         self.root = TREE_ROOT

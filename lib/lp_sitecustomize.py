@@ -17,6 +17,10 @@ from twisted.internet.defer import (
 
 from bzrlib.branch import Branch
 from canonical.launchpad.webapp.interfaces import IUnloggedException
+# Load bzr plugins
+import lp.codehosting
+# Force LoomBranch classes to be listed as subclasses of Branch
+import bzrlib.plugins.loom.branch
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
