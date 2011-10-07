@@ -664,6 +664,8 @@ class Publisher(object):
 
         with open(os.path.join(i18n_dir, "Index"), "w") as f:
             i18n_index.dump(f, "utf-8")
+
+        # Schedule this for inclusion in the Release file.
         all_series_files.add(os.path.join(component, "i18n", "Index"))
 
     def _readIndexFileContents(self, distroseries_name, file_name):
