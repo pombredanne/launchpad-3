@@ -168,10 +168,10 @@ class InitializeDistroSeries:
         # build architecture independent binaries.
         potential_nominated_arches = self._potential_nominated_arches(
              self.derivation_parents)
-        if (len(potential_nominated_arches) == 0):
+        if len(potential_nominated_arches) == 0:
             raise InitializationError(
-                ("The distroseries has no architectures selected to "
-                 "build architecture independent binaries."))
+                "The distroseries has no architectures selected to "
+                 "build architecture independent binaries.")
 
     def _checkPublisherConfig(self):
         """A series cannot be initialized if it has no publisher config
