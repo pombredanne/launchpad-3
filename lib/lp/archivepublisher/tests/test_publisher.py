@@ -9,11 +9,14 @@ __metaclass__ = type
 import bz2
 import crypt
 import gzip
+import hashlib
 import os
 import shutil
 import stat
 import tempfile
 from textwrap import dedent
+
+from debian.deb822 import Release
 
 import transaction
 from zope.component import getUtility
@@ -31,8 +34,10 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
     )
 from lp.archivepublisher.publishing import (
     getPublisher,
+    I18nIndex,
     Publisher,
     )
+from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
@@ -81,6 +86,19 @@ class TestPublisher(TestPublisherBase):
         contents = [(str(dr_name), pocket.name) for dr_name, pocket in
                     dirty_pockets]
         self.assertEqual(expected, contents)
+
+    def assertReleaseContentsMatch(self, release, filename, contents):
+        for hash_name, hash_func in (
+            ('md5sum', hashlib.md5),
+            ('sha1', hashlib.sha1),
+            ('sha256', hashlib.sha256)):
+            self.assertTrue(hash_name in release)
+            entries = [entry for entry in release[hash_name]
+                       if entry['name'] == filename]
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0][hash_name],
+                             hash_func(contents).hexdigest())
+            self.assertEqual(entries[0]['size'], str(len(contents)))
 
     def testInstantiate(self):
         """Publisher should be instantiatable"""
@@ -1075,6 +1093,34 @@ class TestPublisher(TestPublisherBase):
         self.assertIn("NotAutomatic: yes", get_release(BACKPORTS))
         self.assertIn("ButAutomaticUpgrades: yes", get_release(BACKPORTS))
 
+    def testReleaseFileForI18n(self):
+        """Test Release file writing for translated package descriptions."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        self.getPubSource(filecontent='Hello world')
+
+        # Make sure that apt-ftparchive generates i18n/Translation-en* files.
+        ds = self.ubuntutest.getSeries('breezy-autotest')
+        ds.include_long_descriptions = False
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        i18n_index = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'main', 'i18n', 'Index')
+
+        # The i18n/Index file has been generated.
+        self.assertTrue(os.path.exists(i18n_index))
+
+        # It is listed correctly in Release.
+        i18n_index_contents = open(i18n_index).read()
+        release = Release(open(os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'Release')))
+        self.assertReleaseContentsMatch(
+            release, 'main/i18n/Index', i18n_index_contents)
+
     def testHtaccessForPrivatePPA(self):
         # A htaccess file is created for new private PPA's.
 
@@ -1111,6 +1157,71 @@ class TestPublisher(TestPublisherBase):
         # one in the .htpasswd file.
         encrypted_secret = crypt.crypt(ppa.buildd_secret, password)
         self.assertEqual(encrypted_secret, password)
+
+    def testWriteSuiteI18n(self):
+        """Test i18n/Index writing."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        i18n_root = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'main', 'i18n')
+
+        # Write a zero-length Translation-en file and compressed versions of
+        # it.
+        translation_en_index = RepositoryIndexFile(
+            i18n_root, self.config.temproot, 'Translation-en')
+        translation_en_index.close()
+
+        all_files = set()
+        publisher._writeSuiteI18n(
+            self.ubuntutest['breezy-autotest'],
+            PackagePublishingPocket.RELEASE, 'main', all_files)
+
+        # i18n/Index has the correct contents.
+        translation_en = os.path.join(i18n_root, 'Translation-en.bz2')
+        translation_en_contents = open(translation_en).read()
+        i18n_index = I18nIndex(open(os.path.join(i18n_root, 'Index')))
+        self.assertTrue('sha1' in i18n_index)
+        self.assertEqual(len(i18n_index['sha1']), 1)
+        self.assertEqual(i18n_index['sha1'][0]['sha1'],
+                         hashlib.sha1(translation_en_contents).hexdigest())
+        self.assertEqual(i18n_index['sha1'][0]['size'],
+                         str(len(translation_en_contents)))
+
+        # i18n/Index is scheduled for inclusion in Release.
+        self.assertEqual(len(all_files), 1)
+        self.assertEqual(
+            all_files.pop(), os.path.join('main', 'i18n', 'Index'))
+
+    def testWriteSuiteI18nMissingDirectory(self):
+        """i18n/Index is not generated when the i18n directory is missing."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        i18n_root = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'main', 'i18n')
+
+        publisher._writeSuiteI18n(
+            self.ubuntutest['breezy-autotest'],
+            PackagePublishingPocket.RELEASE, 'main', set())
+
+        self.assertFalse(os.path.exists(os.path.join(i18n_root, 'Index')))
+
+    def testWriteSuiteI18nEmptyDirectory(self):
+        """i18n/Index is not generated when the i18n directory is empty."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        i18n_root = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'main', 'i18n')
+
+        os.makedirs(i18n_root)
+
+        publisher._writeSuiteI18n(
+            self.ubuntutest['breezy-autotest'],
+            PackagePublishingPocket.RELEASE, 'main', set())
+
+        self.assertFalse(os.path.exists(os.path.join(i18n_root, 'Index')))
 
 
 class TestArchiveIndices(TestPublisherBase):
