@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     "capture_longpoll_emissions",
+    "LongPollEventRecord",
     ]
 
 from collections import namedtuple

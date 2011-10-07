@@ -42,6 +42,19 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         dsp = naked_distribution.getSourcePackage(name='pmount')
         self.assertEqual(None, dsp.summary)
 
+    def test_binary_names_built(self):
+        # The list contains the names of the built binaries.
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        distribution = bpph.distroarchseries.distroseries.distribution
+        spn = bpph.binarypackagerelease.build.source_package_release.name
+        dsp = distribution.getSourcePackage(spn)
+        self.assertEqual([bpph.binarypackagerelease.name], dsp.binary_names)
+
+    def test_binary_names_unbuilt(self):
+        # The list is empty where there are no built binaries.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertEqual([], dsp.binary_names)
+
     def test_ensure_spph_creates_a_dsp_in_db(self):
         # The DSP.ensure() class method creates a persistent instance
         # if one does not exist.
@@ -114,6 +127,16 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         transaction.commit()
         dsp = sp.distribution_sourcepackage
         self.assertTrue(dsp.delete())
+
+    def test_is_official_with_db_true(self):
+        # A DSP is official when it is represented in the database.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertTrue(dsp.is_official)
+
+    def test_is_official_without_db_false(self):
+        # A DSP is not official if it is virtual.
+        dsp = self.factory.makeDistributionSourcePackage(with_db=False)
+        self.assertFalse(dsp.is_official)
 
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):

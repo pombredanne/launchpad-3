@@ -246,12 +246,12 @@ just upload number 1.
     >>> process.returncode
     0
 
-Check the four uploads are all where we expect - number 1 in failed,
+Check the four uploads are all where we expect - number 1 in rejected,
 the other three still in incoming.
 
     >>> for i in range(4):
     ...     find_upload_dir_result(i + 1)
-    'failed'
+    'rejected'
     'incoming'
     'incoming'
     'incoming'
@@ -339,7 +339,7 @@ Check the four uploads all ended up where we expected.
 
     >>> for i in range(0, 4):
     ...     find_upload_dir_result(i + 1)
-    'failed'
+    'rejected'
     'failed'
 
 Also check the upload folders contain all the files we uploaded.
@@ -613,36 +613,6 @@ and SHA256) for each index published.
      297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d8d106a6338              114 main/source/Release
     ...
     END
-
-
-Testing archive-cruft-check-ng behaviour:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Defining path to the script:
-
-    >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-    ...                       "archive-cruft-check.py")
-    >>> process = subprocess.Popen([sys.executable, script, "-vn",
-    ...                             "-d", "ubuntutest",
-    ...                             "-s", "breezy-autotest",
-    ...                             "/var/tmp/archive"],
-    ...                            stdout=subprocess.PIPE,
-    ...                            stderr=subprocess.PIPE,)
-    >>> stdout, stderr = process.communicate()
-    >>> process.returncode
-    0
-    >>> print stderr
-    INFO    Creating lockfile: ...
-    DEBUG   Considering Sources:
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/restricted/source/Sources.gz
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/main/source/Sources.gz
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/multiverse/source/Sources.gz
-    DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source/Sources.gz
-    DEBUG   Building not build from source list (NBS):
-    DEBUG   Building all superseded by any list (ASBA):
-    DEBUG   No NBS found
-    DEBUG   Removing lock file: ...
-    <BLANKLINE>
 
 
 Nice! That's enough for now.. let's kill the process and clean

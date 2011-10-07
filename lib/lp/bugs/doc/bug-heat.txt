@@ -65,6 +65,14 @@ heat after update will be 6.
 Events which trigger bug heat updates
 -------------------------------------
 
+We current use a feature flag for some privacy related subscription stuff.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
 There are several events which will cause a bug's heat to be updated.
 First, as stated above, heat will be calculated when the bug is created.
 
@@ -186,6 +194,10 @@ We'll set the bug's heat to 0 first to demonstrate this.
     >>> bug.addChange(change)
     >>> bug.heat
     8
+
+Clean up the feature flag.
+
+    >>> flags.cleanUp()
 
 
 Getting bugs whose heat is outdated

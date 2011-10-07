@@ -38,7 +38,7 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.bugs.interfaces.bugtask import DB_UNRESOLVED_BUGTASK_STATUSES
 from lp.bugs.model.bug import (
     Bug,
     BugSet,
@@ -66,6 +66,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackage,
     SourcePackageQuestionTargetMixin,
     )
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -207,6 +208,14 @@ class DistributionSourcePackage(BugTargetBase,
         # in the database.
         return self._get(self.distribution, self.sourcepackagename)
 
+    @property
+    def is_official(self):
+        """See `DistributionSourcePackage`."""
+        # This will need to verify that the package has not been deleted
+        # in the future.
+        return self._get(
+            self.distribution, self.sourcepackagename) is not None
+
     def delete(self):
         """See `DistributionSourcePackage`."""
         dsp_in_db = self._self_in_database
@@ -225,7 +234,7 @@ class DistributionSourcePackage(BugTargetBase,
             BugTask.distributionID == self.distribution.id,
             BugTask.sourcepackagenameID == self.sourcepackagename.id,
             Bug.duplicateof == None,
-            BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES)).one()
+            BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES)).one()
 
         # Aggregate functions return NULL if zero rows match.
         row = list(row)
@@ -377,6 +386,16 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IDistributionSourcePackage`."""
         return self._getPublishingHistoryQuery()
 
+    @cachedproperty
+    def binary_names(self):
+        """See `IDistributionSourcePackage`."""
+        names = []
+        history = self.publishing_history
+        if history.count() > 0:
+            binaries = history[0].getBuiltBinaries()
+            names = [binary.binary_package_name for binary in binaries]
+        return names
+
     @property
     def upstream_product(self):
         store = Store.of(self.sourcepackagename)
@@ -471,6 +490,11 @@ class DistributionSourcePackage(BugTargetBase,
     def __ne__(self, other):
         """See `IDistributionSourcePackage`."""
         return not self.__eq__(other)
+
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.distribution
 
     def getBugSummaryContextWhereClause(self):
         """See `BugTargetBase`."""

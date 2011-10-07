@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -223,10 +223,10 @@ class IHasBugs(Interface):
     @operation_parameters(**search_tasks_params_for_api_devel)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
-
+    #
     # Pop the *default* version (decorators are run last to first).
     @operation_removed_in_version('devel')
-
+    #
     # searchTasks default API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(**search_tasks_params_for_api_default)
@@ -295,6 +295,8 @@ class IBugTarget(IHasBugs):
     # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")
+
+    pillar = Attribute("The pillar containing this target.")
 
     bug_reporting_guidelines = exported(
         Text(
@@ -399,12 +401,13 @@ class IHasOfficialBugTags(Interface):
         """Return name and bug count of tags having open bugs.
 
         :param user: The user who wants the report.
-        :param tag_limit: The number of tags to return (excludes those found by
-            matching include_tags). If 0 then all tags are returned. If
+        :param tag_limit: The number of tags to return (excludes those found
+            by matching include_tags). If 0 then all tags are returned. If
             non-zero then the most frequently used tags are returned.
         :param include_tags: A list of string tags to return irrespective of
-            usage. Tags in this list that have no open bugs are returned with a
-            count of 0. May be None if there are tags to require inclusion of.
+            usage. Tags in this list that have no open bugs are returned with
+            a count of 0. May be None if there are tags to require inclusion
+            of.
         :return: A dict from tag -> count.
         """
 
@@ -454,8 +457,8 @@ class IOfficialBugTag(Interface):
     target = Object(
         title=u'The target of this bug tag.',
         schema=IOfficialBugTagTarget,
-        description=
-            u'The distribution or product having this official bug tag.')
+        description=(
+            u'The distribution or product having this official bug tag.'))
 
 
 class ISeriesBugTarget(Interface):

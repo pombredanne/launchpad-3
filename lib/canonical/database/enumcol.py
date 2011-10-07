@@ -16,27 +16,46 @@ __all__ = [
     ]
 
 
+def check_enum_type(enum):
+    if not issubclass(enum, DBEnumeratedType):
+        raise TypeError(
+            '%r must be a DBEnumeratedType: %r' % (enum, type(enum)))
+
+
+def check_type(enum):
+    if type(enum) in (list, tuple):
+        map(check_enum_type, enum)
+    else:
+        check_enum_type(enum)
+
+
 class DBEnumVariable(Variable):
     """A Storm variable class representing a DBEnumeratedType."""
     __slots__ = ("_enum",)
 
     def __init__(self, *args, **kwargs):
-        self._enum = kwargs.pop("enum")
-        if not issubclass(self._enum, DBEnumeratedType):
-            raise TypeError(
-                '%r must be a DBEnumeratedType: %r'
-                % (self._enum, type(self._enum)))
+        enum = kwargs.pop("enum")
+        if type(enum) not in (list, tuple):
+            enum = (enum,)
+        self._enum = enum
+        check_type(self._enum)
         super(DBEnumVariable, self).__init__(*args, **kwargs)
 
     def parse_set(self, value, from_db):
         if from_db:
-            return self._enum.items[value]
+            for enum in self._enum:
+                try:
+                    return enum.items[value]
+                except KeyError:
+                    pass
+            raise KeyError('%r not in present in any of %r' % (
+                value, self._enum))
         else:
             if not zope_isinstance(value, DBItem):
                 raise TypeError("Not a DBItem: %r" % (value,))
-            if self._enum != value.enum:
-                raise TypeError("DBItem from wrong type, %r != %r" % (
-                        self._enum.name, value.enum.name))
+            if value.enum not in self._enum:
+                raise TypeError("DBItem from unknown enum, %r not in %r" % (
+                        value.enum.name, self._enum))
             return value
 
     def parse_get(self, value, to_db):
@@ -56,16 +75,11 @@ class DBSchemaEnumCol(sqlobject.PropertyAdapter, DBEnum):
             enum = kw.pop('enum')
         except KeyError:
             enum = kw.pop('schema')
-        if not issubclass(enum, DBEnumeratedType):
-            raise TypeError(
-                '%r must be a DBEnumeratedType: %r' % (enum, type(enum)))
+        check_type(enum)
         self._kwargs = {
-            'enum': enum
+            'enum': enum,
             }
         super(DBSchemaEnumCol, self).__init__(**kw)
 
 
 EnumCol = DBSchemaEnumCol
-
-
-

@@ -23,5 +23,3 @@ class ISpecificationBug(IBugLink):
 
     specification = Object(title=_('The specification linked to the bug.'),
         required=True, readonly=True, schema=ISpecification)
-
-

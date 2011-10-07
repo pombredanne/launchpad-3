@@ -22,10 +22,13 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.services.messaging.interfaces import (
-    EmptyQueueException,
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
+    MessagingException,
+    MessagingUnavailable,
+    QueueEmpty,
+    QueueNotFound,
     )
 
 
@@ -69,17 +72,11 @@ class RabbitSession(threading.local):
         transaction.manager.registerSynch(self._sync)
 
     @property
-    def connection(self):
-        """See `IMessageSession`.
-
-        Don't return closed connection.
-        """
-        if self._connection is None:
-            return None
-        elif self._connection.transport is None:
-            return None
-        else:
-            return self._connection
+    def is_connected(self):
+        """See `IMessageSession`."""
+        return (
+            self._connection is not None and
+            self._connection.transport is not None)
 
     def connect(self):
         """See `IMessageSession`.
@@ -88,6 +85,11 @@ class RabbitSession(threading.local):
         shared between threads.
         """
         if self._connection is None or self._connection.transport is None:
+            if (config.rabbitmq.host is None or
+                config.rabbitmq.userid is None or
+                config.rabbitmq.password is None or
+                config.rabbitmq.virtual_host is None):
+                raise MessagingUnavailable("Incomplete configuration")
             self._connection = amqp.Connection(
                 host=config.rabbitmq.host, userid=config.rabbitmq.userid,
                 password=config.rabbitmq.password,
@@ -135,6 +137,8 @@ class RabbitSession(threading.local):
 
 # Per-thread sessions.
 session = RabbitSession()
+session_finish_handler = (
+    lambda event: session.finish())
 
 
 class RabbitUnreliableSession(RabbitSession):
@@ -147,6 +151,8 @@ class RabbitUnreliableSession(RabbitSession):
     """
 
     ignored_errors = (
+        IOError,
+        MessagingException,
         amqp.AMQPException,
         )
 
@@ -163,6 +169,8 @@ class RabbitUnreliableSession(RabbitSession):
 
 # Per-thread "unreliable" sessions.
 unreliable_session = RabbitUnreliableSession()
+unreliable_session_finish_handler = (
+    lambda event: unreliable_session.finish())
 
 
 class RabbitMessageBase:
@@ -177,8 +185,6 @@ class RabbitMessageBase:
         if self._channel is None or not self._channel.is_open:
             connection = self.session.connect()
             self._channel = connection.channel()
-            #self._channel.access_request(
-            #    '/data', active=True, write=True, read=True)
             self._channel.exchange_declare(
                 self.session.exchange, "direct", durable=False,
                 auto_delete=False, nowait=False)
@@ -200,6 +206,11 @@ class RabbitRoutingKey(RabbitMessageBase):
 
     def associateConsumerNow(self, consumer):
         """Only receive messages for requested routing key."""
+        # The queue will be auto-deleted 5 minutes after its last use.
+        # http://www.rabbitmq.com/extensions.html#queue-leases
+        self.channel.queue_declare(
+            consumer.name, nowait=False, auto_delete=False,
+            arguments={"x-expires": 300000})  # 5 minutes.
         self.channel.queue_bind(
             queue=consumer.name, exchange=self.session.exchange,
             routing_key=self.key, nowait=False)
@@ -225,34 +236,27 @@ class RabbitQueue(RabbitMessageBase):
     def __init__(self, session, name):
         super(RabbitQueue, self).__init__(session)
         self.name = name
-        self.channel.queue_declare(self.name, nowait=False)
 
     def receive(self, timeout=0.0):
         """Pull a message from the queue.
 
         :param timeout: Wait a maximum of `timeout` seconds before giving up,
             trying at least once.
-        :raises: EmptyQueueException if the timeout passes.
+        :raises QueueEmpty: if the timeout passes.
         """
-        starttime = time.time()
+        endtime = time.time() + timeout
         while True:
-            message = self.channel.basic_get(self.name)
-            if message is None:
-                if time.time() > (starttime + timeout):
-                    raise EmptyQueueException
-                time.sleep(0.1)
-            else:
-                data = json.loads(message.body)
-                self.channel.basic_ack(message.delivery_tag)
-                return data
-
-        # XXX The code below will be useful when we can implement this
-        # properly.
-        result = []
-
-        def callback(msg):
-            result.append(json.loads(msg.body))
-
-        self.channel.basic_consume(self.name, callback=callback)
-        self.channel.wait()
-        return result[0]
+            try:
+                message = self.channel.basic_get(self.name)
+                if message is None:
+                    if time.time() > endtime:
+                        raise QueueEmpty()
+                    time.sleep(0.1)
+                else:
+                    self.channel.basic_ack(message.delivery_tag)
+                    return json.loads(message.body)
+            except amqp.AMQPChannelException, error:
+                if error.amqp_reply_code == 404:
+                    raise QueueNotFound()
+                else:
+                    raise

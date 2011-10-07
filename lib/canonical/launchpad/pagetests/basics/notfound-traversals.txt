@@ -316,7 +316,7 @@ Viewing a bug in a distribution that doesn't use Bugs officially, where the
 bugtask is also assigned to a milestone (a corner case, but one that was causing
 OOPS's all the same!):
 
->>> check("/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus")
+>>> check("/debian/sarge/+source/mozilla-firefox/+bug/3")
 
 The bug filing pages.
 

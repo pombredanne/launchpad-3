@@ -99,8 +99,8 @@ default values for the alternative language.
 We are at the beginning because this subview is being used for the first
 item.
 
-    >>> subview.context.potmsgset.sequence == 1
-    True
+    >>> subview.context.potmsgset.getSequence(pofile.potemplate)
+    1
 
 It does not have a plural message
 
@@ -530,8 +530,6 @@ message.
     >>> pofile = factory.makePOFile('sr')
     >>> potemplate = pofile.potemplate
     >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
-    >>> potmsgset.sequence
-    1
     >>> potmsgset.getSequence(potemplate)
     1
     >>> translationmessage = factory.makeCurrentTranslationMessage(

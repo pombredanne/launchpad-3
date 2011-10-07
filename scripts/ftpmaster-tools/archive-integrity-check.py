@@ -1,33 +1,34 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Check the integrity of an archive via it's indices files
 
-################################################################################
+##############################################################################
 
 import commands
 import os
 import stat
 import sys
+from tempfile import NamedTemporaryFile
 
 import apt_pkg
 
-import dak_utils
-
-################################################################################
+##############################################################################
 
 Filelist = None
 ArchiveRoot = "/srv/launchpad.net/ubuntu-archive/ubuntu/"
 Count = 0
 
-################################################################################
+##############################################################################
+
 
 def error(msg):
     sys.stderr.write("E: %s\n" % (msg))
 
-################################################################################
+##############################################################################
+
 
 def check_file(filename, md5sum_expected, size_expected):
     global Count
@@ -60,22 +61,24 @@ def check_file(filename, md5sum_expected, size_expected):
         sys.stdout.write(".")
         sys.stdout.flush()
 
-################################################################################
-                
+##############################################################################
+
+
 def validate_sources(sources_filename, suite, component):
     if suite == "dapper":
         return
     sys.stdout.write("Checking %s/%s/source: " % (suite, component))
     sys.stdout.flush()
-    # apt_pkg.ParseTagFile needs a real file handle and can't handle a GzipFile instance...
-    temp_filename = dak_utils.temp_filename()
+    # apt_pkg.ParseTagFile needs a real file handle and can't handle a
+    # GzipFile instance...
+    sources = NamedTemporaryFile()
     (result, output) = commands.getstatusoutput("gunzip -c %s > %s" \
                                                 % (sources_filename,
-                                                   temp_filename))
+                                                   sources.name))
     if (result != 0):
         sys.stderr.write("Gunzip invocation failed!\n%s\n" % (output))
         sys.exit(result)
-    sources = open(temp_filename)
+    sources.seek(0)
     Sources = apt_pkg.ParseTagFile(sources)
     while Sources.Step():
         directory = Sources.Section.Find('Directory')
@@ -87,9 +90,9 @@ def validate_sources(sources_filename, suite, component):
     sys.stdout.write("done.\n")
     sys.stdout.flush()
     sources.close()
-    os.unlink(temp_filename)
 
-################################################################################
+##############################################################################
+
 
 def validate_packages(packages_filename, suite, component, architecture):
     if suite == "dapper":
@@ -97,15 +100,16 @@ def validate_packages(packages_filename, suite, component, architecture):
 
     sys.stdout.write("Checking %s/%s/%s: " % (suite, component, architecture))
     sys.stdout.flush()
-    # apt_pkg.ParseTagFile needs a real file handle and can't handle a GzipFile instance...
-    temp_filename = dak_utils.temp_filename()
+    # apt_pkg.ParseTagFile needs a real file handle and can't handle a
+    # GzipFile instance...
+    packages = NamedTemporaryFile()
     (result, output) = commands.getstatusoutput("gunzip -c %s > %s"
                                                 % (packages_filename,
-                                                   temp_filename))
+                                                   packages.name))
     if (result != 0):
         sys.stderr.write("Gunzip invocation failed!\n%s\n" % (output))
         sys.exit(result)
-    packages = open(temp_filename)
+    packages.seek(0)
     Packages = apt_pkg.ParseTagFile(packages)
     while Packages.Step():
         md5sum_expected = Packages.Section.Find('MD5sum')
@@ -117,9 +121,9 @@ def validate_packages(packages_filename, suite, component, architecture):
     sys.stdout.write("done.\n")
     sys.stdout.flush()
     packages.close()
-    os.unlink(temp_filename)
 
-################################################################################
+##############################################################################
+
 
 def _process_dir(_, dirname, filenames):
     global Filelist
@@ -136,9 +140,11 @@ def _process_dir(_, dirname, filenames):
             if architecture == "source":
                 validate_sources(full_filename, suite, component)
             else:
-                validate_packages(full_filename, suite, component, architecture)
+                validate_packages(
+                    full_filename, suite, component, architecture)
 
-################################################################################
+##############################################################################
+
 
 def main():
     global Filelist
@@ -151,7 +157,7 @@ def main():
 
     return 0
 
-################################################################################
+##############################################################################
 
 if __name__ == '__main__':
     sys.exit(main())

@@ -1,4 +1,5 @@
-= Updating selected bug trackers =
+Updating selected bug trackers
+==============================
 
 The CheckwatchesMaster class can be instructed to update only a subset of
 bugtrackers. This is acheived by passing a list of bug tracker names to
@@ -105,7 +106,8 @@ demonstrate this.
     DEBUG Enabled by DEFAULT section
     INFO Resetting 5 bug watches for bug tracker 'savannah'
     INFO Updating 5 watches on bug tracker 'savannah'
-    INFO 'Unsupported Bugtracker' error updating http://savannah.gnu.org/: SAVANE
+    INFO 'Unsupported Bugtracker' error updating http://savannah.gnu.org/:
+    SAVANE
     INFO 0 watches left to check on bug tracker 'savannah'
     INFO Time for this run...
 

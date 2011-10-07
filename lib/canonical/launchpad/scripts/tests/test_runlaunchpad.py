@@ -156,6 +156,10 @@ class ServersToStart(testtools.TestCase):
         if config.rabbitmq.launch:
             expected.append(SERVICES['rabbitmq'])
 
+        # TxLongPoll may or may not be asked to run.
+        if config.txlongpoll.launch:
+            expected.append(SERVICES['txlongpoll'])
+
         expected = sorted(expected)
         self.assertEqual(expected, services)
 

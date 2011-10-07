@@ -104,10 +104,6 @@ flag_info = sorted([
      'boolean',
      'Shows the server-side page render time in the login widget.',
      ''),
-    ('bugs.private_notification.enabled',
-     'boolean',
-     'Changes the appearance of notifications on private bugs.',
-     ''),
     ('disclosure.dsp_picker.enabled',
      'boolean',
      'Enables the use of the new DistributionSourcePackage vocabulary for '
@@ -133,6 +129,16 @@ flag_info = sorted([
      'boolean',
      ('Enables the display and use of the enhanced target pickers.'),
      ''),
+    ('disclosure.private_bug_visibility_rules.enabled',
+     'boolean',
+     ('Enables the application of additional privacy filter terms in bug '
+      'queries to allow defined project roles to see private bugs.'),
+     ''),
+    ('disclosure.enhanced_private_bug_subscriptions.enabled',
+     'boolean',
+     ('Enables the auto subscribing and unsubscribing of users as a bug '
+      'transitions between public, private and security related states.'),
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
@@ -145,6 +151,11 @@ flag_info = sorted([
       'series).  Use the default domain.  Specify a single '
       'asterisk ("*") to enable for all products.'),
      'None are enabled'),
+    ('longpoll.merge_proposals.enabled',
+     'boolean',
+     ('Enables the longpoll mechanism for merge proposals so that diffs, '
+      'for example, are updated in-page when they are ready.'),
+     ''),
     ])
 
 # The set of all flag names that are documented.

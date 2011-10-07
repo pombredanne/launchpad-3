@@ -16,7 +16,6 @@ import time
 
 from pytz import UTC
 from storm.expr import (
-    And,
     In,
     Min,
     Not,
@@ -44,12 +43,14 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthNonce,
     )
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
@@ -65,17 +66,21 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.answers.model.answercontact import AnswerContact
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    BugTaskStatusSearch,
+    )
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
     )
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.model.branch import Branch
 from lp.code.model.branchjob import (
     BranchJob,
     BranchUpgradeJob,
@@ -93,6 +98,7 @@ from lp.scripts.garbo import (
     DuplicateSessionPruner,
     FrequentDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
+    LoginTokenPruner,
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
@@ -857,38 +863,39 @@ class TestGarbo(TestCaseWithFactory):
         self._test_AnswerContactPruner(
             AccountStatus.SUSPENDED, ONE_DAY_AGO, expected_count=1)
 
-    def test_populate_transitively_private(self):
-        # Test garbo job to populate the branch transitively_private column.
-
-        # First delete any existing column data and add stacked branches.
-        # Branches 29 and 30 are explicitly private to start with.
-        con = DatabaseLayer._db_fixture.superuser_connection()
-        try:
-            cur = con.cursor()
-            cur.execute("UPDATE branch set stacked_on=29 where id = 5")
-            cur.execute("UPDATE branch set stacked_on=5 where id = 1")
-            cur.execute("UPDATE branch set transitively_private=NULL")
-            con.commit()
-        finally:
-            con.close()
-        store = IMasterStore(Branch)
-        unmigrated = store.find(
-            Branch, Branch.transitively_private == None).count
-        self.assertNotEqual(0, unmigrated())
+    def test_BugTaskIncompleteMigrator(self):
+        # BugTasks with status INCOMPLETE should be either
+        # INCOMPLETE_WITHOUT_RESPONSE or INCOMPLETE_WITH_RESPONSE.
+        # Create a bug with two tasks set to INCOMPLETE and a comment between
+        # them.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(BugTask)
+        bug = self.factory.makeBug()
+        with_response = bug.bugtasks[0]
+        with_response.transitionToStatus(BugTaskStatus.INCOMPLETE, bug.owner)
+        removeSecurityProxy(with_response)._status = BugTaskStatus.INCOMPLETE
+        transaction.commit()
+        self.factory.makeBugComment(bug=bug)
+        transaction.commit()
+        without_response = self.factory.makeBugTask(bug=bug)
+        without_response.transitionToStatus(
+            BugTaskStatus.INCOMPLETE, bug.owner)
+        removeSecurityProxy(without_response)._status = (
+            BugTaskStatus.INCOMPLETE)
+        transaction.commit()
         self.runHourly()
-        self.assertEqual(0, unmigrated())
-        # Check the branches that now should be transitively private.
-        self.assertEqual(4, store.find(
-            Branch,
-            And(Branch.transitively_private == True,
-                Branch.id.is_in([1, 5, 29, 30]))
-        ).count())
-        # Check the branches that now should not be transitively private.
-        self.assertEqual(26, store.find(
-            Branch,
-            And(Branch.transitively_private == False,
-                Branch.id < 30)
-        ).count())
+        self.assertEqual(
+            1,
+            store.find(BugTask.id,
+                BugTask.id == with_response.id,
+                BugTask._status ==
+                       BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE).count())
+        self.assertEqual(
+            1,
+            store.find(BugTask.id,
+                BugTask.id == without_response.id,
+                BugTask._status ==
+                     BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE).count())
 
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
@@ -1074,3 +1081,43 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertEqual(spn, spph.sourcepackagename)
         self.assertEqual(bpn, bpph.binarypackagename)
+
+
+class TestGarboTasks(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def test_LoginTokenPruner(self):
+        store = IMasterStore(LoginToken)
+        now = datetime.now(UTC)
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # It is configured as a daily task.
+        self.assertTrue(
+            LoginTokenPruner in DailyDatabaseGarbageCollector.tunable_loops)
+
+        # Create a token that will be pruned.
+        old_token = LoginToken(
+            email='whatever', tokentype=LoginTokenType.NEWACCOUNT)
+        old_token.date_created = now - timedelta(days=666)
+        old_token_id = old_token.id
+        store.add(old_token)
+
+        # Create a token that will not be pruned.
+        current_token = LoginToken(
+            email='whatever', tokentype=LoginTokenType.NEWACCOUNT)
+        current_token_id = current_token.id
+        store.add(current_token)
+
+        # Run the pruner. Batching is tested by the BulkPruner tests so
+        # no need to repeat here.
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        pruner = LoginTokenPruner(logging.getLogger('garbo'))
+        while not pruner.isDone():
+            pruner(10)
+        pruner.cleanUp()
+
+        # Only the old LoginToken is gone.
+        self.assertEqual(
+            store.find(LoginToken, id=old_token_id).count(), 0)
+        self.assertEqual(
+            store.find(LoginToken, id=current_token_id).count(), 1)

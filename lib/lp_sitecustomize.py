@@ -6,29 +6,31 @@
 
 from collections import defaultdict
 import itertools
+import logging
 import os
 import warnings
-import logging
 
+from bzrlib.branch import Branch
 from twisted.internet.defer import (
     Deferred,
     DeferredList,
     )
+from zope.interface import alsoProvides
+import zope.publisher.browser
+from zope.security import checker
 
-from bzrlib.branch import Branch
 from canonical.launchpad.webapp.interfaces import IUnloggedException
 # Load bzr plugins
 import lp.codehosting
+lp.codehosting
 # Force LoomBranch classes to be listed as subclasses of Branch
 import bzrlib.plugins.loom.branch
+bzrlib.plugins.loom.branch
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
-from zope.interface import alsoProvides
-from zope.security import checker
-import zope.publisher.browser
 
 
 def add_custom_loglevels():
@@ -76,6 +78,13 @@ def add_custom_loglevels():
     for logger in manager.loggerDict.values():
         if getattr(logger, 'parent', None) is old_root:
             logger.parent = new_root
+
+
+def silence_amqplib_logger():
+    """Install the NullHandler on the amqplib logger to silence logs."""
+    amqplib_logger = logging.getLogger('amqplib')
+    amqplib_logger.addHandler(NullHandler())
+    amqplib_logger.propagate = False
 
 
 def silence_bzr_logger():
@@ -138,6 +147,7 @@ def customize_logger():
     This function is also invoked by the test infrastructure to reset
     logging between tests.
     """
+    silence_amqplib_logger()
     silence_bzr_logger()
     silence_zcml_logger()
     silence_transaction_logger()
