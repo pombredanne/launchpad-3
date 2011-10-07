@@ -218,13 +218,9 @@ class MailController(object):
     def addAttachment(self, content, content_type='application/octet-stream',
                       inline=False, filename=None, charset=None):
         attachment = Message()
-        if charset:
-            attachment.add_header(
-                'Content-Type', content_type, charset=charset)
-            if isinstance(content, unicode):
-                content = content.encode(charset)
-        else:
-            attachment.add_header('Content-Type', content_type)
+        if charset and isinstance(content, unicode):
+            content = content.encode(charset)
+        attachment.add_header('Content-Type', content_type)
         if inline:
             disposition = 'inline'
         else:
