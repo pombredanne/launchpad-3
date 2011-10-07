@@ -8,6 +8,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     login_person,
@@ -26,7 +27,7 @@ class TestProduct(TestCaseWithFactory):
         # Create a product that uses translations.
         product = self.factory.makeProduct()
         series = product.development_focus
-        product.official_rosetta = True
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         view = ProductView(product, LaunchpadTestRequest())
 
         # If development focus series is linked to
@@ -35,7 +36,8 @@ class TestProduct(TestCaseWithFactory):
         # for the package.
         sourcepackage = self.factory.makeSourcePackage()
         sourcepackage.setPackaging(series, None)
-        sourcepackage.distroseries.distribution.official_rosetta = True
+        sourcepackage.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         pot = self.factory.makePOTemplate(
             distroseries=sourcepackage.distroseries,
             sourcepackagename=sourcepackage.sourcepackagename)
@@ -45,7 +47,7 @@ class TestProduct(TestCaseWithFactory):
         # Create a product that uses translations.
         product = self.factory.makeProduct()
         series_trunk = product.development_focus
-        product.official_rosetta = True
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         view = ProductView(product, LaunchpadTestRequest())
 
         # New series are added, one for each type of status

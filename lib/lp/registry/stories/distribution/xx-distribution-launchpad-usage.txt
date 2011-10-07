@@ -29,8 +29,8 @@ The distribution's registrant can access the page and change the usage.
     >>> print registrant.url
     http://launchpad.dev/ubuntu/+edit
 
-    >>> print registrant.getControl(name='field.official_rosetta').value
-    True
+    >>> print registrant.getControl(name='field.translations_usage').value[0]
+    LAUNCHPAD
     >>> print registrant.getControl(name='field.official_malone').value
     True
     >>> print registrant.getControl(name='field.enable_bug_expiration').value
@@ -45,7 +45,8 @@ The distribution's registrant can access the page and change the usage.
     ...     name='field.enabled_restricted_families').value
     ['arm']
 
-    >>> registrant.getControl(name='field.official_rosetta').value = False
+    >>> registrant.getControl(name='field.translations_usage').value = [
+    ...     'UNKNOWN']
     >>> registrant.getControl('Change', index=3).click()
 
 Just like Launchpad administrators can.
@@ -54,8 +55,8 @@ Just like Launchpad administrators can.
     >>> admin_browser.getLink('Change details').click()
     >>> print admin_browser.title
     Change Ubuntu details...
-    >>> print admin_browser.getControl(name='field.official_rosetta').value
-    False
+    >>> print admin_browser.getControl(name='field.translations_usage').value[0]
+    UNKNOWN
     >>> print admin_browser.getControl(name='field.official_malone').value
     True
     >>> print admin_browser.getControl(

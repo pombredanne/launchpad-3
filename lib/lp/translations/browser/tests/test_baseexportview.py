@@ -148,7 +148,6 @@ class TestProductSeries(BaseExportViewMixin):
     def setUp(self):
         super(TestProductSeries, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.container.product.official_rosetta = True
         self.view = ProductSeriesTranslationsExportView(
             self.container, LaunchpadTestRequest())
 
@@ -166,7 +165,6 @@ class TestSourcePackage(BaseExportViewMixin):
     def setUp(self):
         super(TestSourcePackage, self).setUp()
         self.container = self.factory.makeSourcePackage()
-        self.container.distroseries.distribution.official_rosetta = True
         self.view = SourcePackageTranslationsExportView(
             self.container, LaunchpadTestRequest())
 
@@ -178,7 +176,6 @@ class TestPOExportQueueStatusDescriptions(TestCaseWithFactory):
     def setUp(self):
         super(TestPOExportQueueStatusDescriptions, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.container.product.official_rosetta = True
         self.view = ProductSeriesTranslationsExportView(
             self.container, LaunchpadTestRequest())
 

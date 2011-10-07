@@ -232,7 +232,6 @@ class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
 
     def _makeAndFind(self, names, name_pattern=None):
         product = self.factory.makeProduct()
-        product.official_rosetta = True
         trunk = product.getSeries('trunk')
         for name in names:
             self.factory.makePOTemplate(productseries=trunk, name=name)
