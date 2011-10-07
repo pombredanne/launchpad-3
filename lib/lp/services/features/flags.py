@@ -104,10 +104,6 @@ flag_info = sorted([
      'boolean',
      'Shows the server-side page render time in the login widget.',
      ''),
-    ('bugs.private_notification.enabled',
-     'boolean',
-     'Changes the appearance of notifications on private bugs.',
-     ''),
     ('disclosure.dsp_picker.enabled',
      'boolean',
      'Enables the use of the new DistributionSourcePackage vocabulary for '

@@ -18,7 +18,6 @@ import re
 
 from sqlobject import (
     ForeignKey,
-    IntCol,
     SQLObjectNotFound,
     StringCol,
     )
@@ -139,7 +138,6 @@ class POTMsgSet(SQLBase):
         notNull=True)
     msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
         notNull=False, default=DEFAULT)
-    sequence = IntCol(dbName='sequence')
     commenttext = StringCol(dbName='commenttext', notNull=False)
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
@@ -1217,7 +1215,6 @@ class POTMsgSet(SQLBase):
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""
-        self.sequence = sequence
         translation_template_item = TranslationTemplateItem.selectOneBy(
             potmsgset=self, potemplate=potemplate)
         if translation_template_item is not None:
