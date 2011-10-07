@@ -1538,10 +1538,10 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
 
     def test_bzr_stacked(self):
         devfocus = self.factory.makeAnyBranch(private=False)
-        devfocus.default_stacked_on_branch = devfocus
         code_import = self.factory.makeCodeImport(
                 bzr_branch_url='bzr://bzr.example.com/foo',
                 target=devfocus.target)
+        code_import.branch.stacked_on = devfocus
         details = CodeImportSourceDetails.fromCodeImport(
             code_import)
         self.assertEquals([
@@ -1553,10 +1553,10 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
     def test_bzr_stacked_private(self):
         # Code imports can't be stacked on private branches.
         devfocus = self.factory.makeAnyBranch(private=True)
-        devfocus.default_stacked_on_branch = devfocus
         code_import = self.factory.makeCodeImport(
                 target=devfocus.target,
                 bzr_branch_url='bzr://bzr.example.com/foo')
+        code_import.branch.stacked_on = devfocus
         details = CodeImportSourceDetails.fromCodeImport(
             code_import)
         self.assertEquals([
