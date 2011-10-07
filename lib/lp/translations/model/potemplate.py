@@ -932,7 +932,10 @@ class POTemplate(SQLBase, RosettaStats):
 
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         subject = 'Translation template import - %s' % self.displayname
-        template_mail = 'poimport-template-confirmation.txt'
+        # Can use template_mail = 'poimport-template-confirmation.txt' to send
+        # mail when everything is imported, but those mails aren't very useful
+        # to or much welcomed by the recipients.  See bug 855150.
+        template_mail = None
         errors, warnings = None, None
         try:
             errors, warnings = translation_importer.importFile(
@@ -1010,9 +1013,13 @@ class POTemplate(SQLBase, RosettaStats):
                         logger.warn(
                             "Statistics update failed: %s" % unicode(error))
 
-        template = helpers.get_email_template(template_mail, 'translations')
-        message = template % replacements
-        return (subject, message)
+        if template_mail is not None:
+            template = helpers.get_email_template(
+                template_mail, 'translations')
+            message = template % replacements
+            return (subject, message)
+        else:
+            return None, None
 
     def getTranslationRows(self):
         """See `IPOTemplate`."""

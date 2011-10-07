@@ -193,7 +193,11 @@ class BranchPillarAffiliation(BugTaskPillarAffiliation):
     """An affiliation adapter for branches."""
 
     def getPillars(self):
-        return [self.context.product or self.context.distribution]
+        pillar = self.context.product or self.context.distribution
+        if pillar is None:
+            # This is a +junk branch.
+            return []
+        return [pillar]
 
     def getBranch(self):
         return self.context

@@ -40,8 +40,8 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
-    TeamInvitationView,
     )
+from lp.registry.browser.team import TeamInvitationView
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -1023,9 +1023,11 @@ class BugTaskViewsTestBase:
             self.owned_bug = self.factory.makeBug(owner=self.person)
             self.commented_bug = self.factory.makeBug()
             self.commented_bug.newMessage(owner=self.person)
+            self.affecting_bug = self.factory.makeBug()
+            self.affecting_bug.markUserAffected(self.person)
 
         for bug in (self.subscribed_bug, self.assigned_bug, self.owned_bug,
-                    self.commented_bug):
+                    self.commented_bug, self.affecting_bug):
             with person_logged_in(bug.default_bugtask.product.owner):
                 milestone = self.factory.makeMilestone(
                     product=bug.default_bugtask.product)
@@ -1132,4 +1134,20 @@ class TestPersonSubscribedBugTaskSearchListingView(
         self.expected_for_search_unbatched = [
             self.subscribed_bug.default_bugtask,
             self.owned_bug.default_bugtask,
+            ]
+
+
+class TestPersonAffectingBugTaskSearchListingView(
+    BugTaskViewsTestBase, TestCaseWithFactory):
+    """Tests for PersonAffectingBugTaskSearchListingView."""
+
+    view_name = '+affectingbugs'
+
+    def setUp(self):
+        super(TestPersonAffectingBugTaskSearchListingView, self).setUp()
+        # Bugs filed by this user are marked as affecting them by default, so
+        # the bug we filed is returned.
+        self.expected_for_search_unbatched = [
+            self.owned_bug.default_bugtask,
+            self.affecting_bug.default_bugtask,
             ]

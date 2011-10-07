@@ -17,7 +17,6 @@ from lp.testing import (
     ANONYMOUS,
     anonymous_logged_in,
     celebrity_logged_in,
-    is_logged_in,
     login,
     login_as,
     login_celebrity,
@@ -74,20 +73,13 @@ class TestLoginHelpers(TestCaseWithFactory):
     def test_not_logged_in(self):
         # After logout has been called, we are not logged in.
         logout()
-        self.assertEqual(False, is_logged_in())
         self.assertLoggedOut()
 
     def test_logout_twice(self):
         # Logging out twice don't harm anybody none.
         logout()
         logout()
-        self.assertEqual(False, is_logged_in())
         self.assertLoggedOut()
-
-    def test_logged_in(self):
-        # After login has been called, we are logged in.
-        login_person(self.factory.makePerson())
-        self.assertEqual(True, is_logged_in())
 
     def test_login_person_actually_logs_in(self):
         # login_person changes the currently logged in person.

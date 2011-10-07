@@ -225,7 +225,6 @@ class CodeImportBaseView(LaunchpadFormView):
                     code_import.branch.unique_name))
 
 
-
 class NewCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
@@ -253,7 +252,7 @@ class NewCodeImportForm(Interface):
             "The URL of the git repository.  The HEAD branch will be "
             "imported."),
         allowed_schemes=["git", "http", "https"],
-        allow_userinfo=False, # Only anonymous access is supported.
+        allow_userinfo=True,
         allow_port=True,
         allow_query=False,
         allow_fragment=False,
@@ -265,11 +264,21 @@ class NewCodeImportForm(Interface):
             "The URL of the Mercurial repository.  The tip branch will be "
             "imported."),
         allowed_schemes=["http", "https"],
-        allow_userinfo=False, # Only anonymous access is supported.
+        allow_userinfo=True,
         allow_port=True,
-        allow_query=False,    # Query makes no sense in Mercurial
-        allow_fragment=False, # Fragment makes no sense in Mercurial
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
+        allow_query=False,     # Query makes no sense in Bazaar.
+        allow_fragment=False,  # Fragment makes no sense in Bazaar.
+        trailing_slash=False)  # See http://launchpad.net/bugs/56357.
+
+    bzr_branch_url = URIField(
+        title=_("Branch URL"), required=False,
+        description=_("The URL of the Bazaar branch."),
+        allowed_schemes=["http", "https", "bzr"],
+        allow_userinfo=True,
+        allow_port=True,
+        allow_query=False,     # Query makes no sense in Bazaar
+        allow_fragment=False,  # Fragment makes no sense in Bazaar
+        trailing_slash=False)
 
     branch_name = copy_field(
         IBranch['name'],
@@ -299,7 +308,7 @@ class CodeImportNewView(CodeImportBaseView):
     def initial_values(self):
         return {
             'owner': self.user,
-            'rcs_type': RevisionControlSystems.BZR_SVN,
+            'rcs_type': RevisionControlSystems.BZR,
             'branch_name': 'trunk',
             }
 
@@ -330,8 +339,9 @@ class CodeImportNewView(CodeImportBaseView):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description = _("As an administrator you are able to reassign"
-                                " this branch to any person or team."),
+                description=_(
+                    "As an administrator you are able to reassign this "
+                    "branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
                 any_owner_choice, render_context=self.render_context)
@@ -346,9 +356,11 @@ class CodeImportNewView(CodeImportBaseView):
         # display them separately in the form.
         soup = BeautifulSoup(self.widgets['rcs_type']())
         fields = soup.findAll('input')
-        [cvs_button, svn_button, git_button, hg_button, empty_marker] = [
-            field for field in fields
-            if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG', '1']]
+        [cvs_button, svn_button, git_button, hg_button, bzr_button,
+            empty_marker] = [
+                field for field in fields
+                if field.get('value') in [
+                     'CVS', 'BZR_SVN', 'GIT', 'HG', 'BZR', '1']]
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         git_button['onclick'] = 'updateWidgets()'
@@ -358,6 +370,7 @@ class CodeImportNewView(CodeImportBaseView):
         self.rcs_type_svn = str(svn_button)
         self.rcs_type_git = str(git_button)
         self.rcs_type_hg = str(hg_button)
+        self.rcs_type_bzr = str(bzr_button)
         self.rcs_type_emptymarker = str(empty_marker)
 
     def _getImportLocation(self, data):
@@ -371,6 +384,8 @@ class CodeImportNewView(CodeImportBaseView):
             return None, None, data.get('git_repo_url')
         elif rcs_type == RevisionControlSystems.HG:
             return None, None, data.get('hg_repo_url')
+        elif rcs_type == RevisionControlSystems.BZR:
+            return None, None, data.get('bzr_branch_url')
         else:
             raise AssertionError(
                 'Unexpected revision control type %r.' % rcs_type)
@@ -463,6 +478,9 @@ class CodeImportNewView(CodeImportBaseView):
         elif rcs_type == RevisionControlSystems.HG:
             self._validateURL(
                 data.get('hg_repo_url'), field_name='hg_repo_url')
+        elif rcs_type == RevisionControlSystems.BZR:
+            self._validateURL(
+                data.get('bzr_branch_url'), field_name='bzr_branch_url')
         else:
             raise AssertionError(
                 'Unexpected revision control type %r.' % rcs_type)
@@ -492,6 +510,7 @@ def _makeEditAction(label, status, text):
             return self._showButtonForStatus(status)
     else:
         condition = None
+
     def success(self, action, data):
         """Make the requested status change."""
         if status is not None:
@@ -554,7 +573,8 @@ class CodeImportEditView(CodeImportBaseView):
         elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
                                            RevisionControlSystems.BZR_SVN,
                                            RevisionControlSystems.GIT,
-                                           RevisionControlSystems.HG):
+                                           RevisionControlSystems.HG,
+                                           RevisionControlSystems.BZR):
             self.form_fields = self.form_fields.omit(
                 'cvs_root', 'cvs_module')
         else:
@@ -589,7 +609,8 @@ class CodeImportEditView(CodeImportBaseView):
         elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
                                            RevisionControlSystems.BZR_SVN,
                                            RevisionControlSystems.GIT,
-                                           RevisionControlSystems.HG):
+                                           RevisionControlSystems.HG,
+                                           RevisionControlSystems.BZR):
             self._validateURL(data.get('url'), self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')

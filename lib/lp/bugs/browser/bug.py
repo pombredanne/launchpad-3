@@ -110,10 +110,10 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
+from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -664,6 +664,7 @@ class BugSubscriptionPortletView(LaunchpadView,
         LaunchpadView.initialize(self)
         cache = IJSONRequestCache(self.request).objects
         self.extractBugSubscriptionDetails(self.user, self.context, cache)
+        cache['bug_is_private'] = self.context.private
         if self.user:
             cache['notifications_text'] = self.notifications_text
 
@@ -881,15 +882,14 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             bug = self.context
         subscribers_portlet = BugPortletSubscribersWithDetails(
             bug, self.request)
-        subscription_data = subscribers_portlet()
-        cache_data = dumps(
-            cache, cls=ResourceJSONEncoder,
+        subscription_data = subscribers_portlet.subscriber_data
+        result_data = dict(
+            cache_data=cache,
+            subscription_data=subscription_data)
+        self.request.response.setHeader('content-type', 'application/json')
+        return dumps(
+            result_data, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
-
-        return """{
-            "cache_data": %s,
-            "subscription_data": %s}
-            """ % (cache_data, subscription_data)
 
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.

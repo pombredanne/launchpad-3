@@ -49,10 +49,6 @@ from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 PARTNER_COMPONENT_NAME = 'partner'
 
 
-class FatalUploadError(Exception):
-    """A fatal error occurred processing the upload; processing aborted."""
-
-
 class EarlyReturnUploadError(Exception):
     """An error occurred that prevented further error collection."""
 
@@ -114,23 +110,14 @@ class NascentUpload:
     def from_changesfile_path(cls, changesfile_path, policy, logger):
         """Create a NascentUpload from the given changesfile path.
 
-        May raise FatalUploadError due to unrecoverable problems building
+        May raise UploadError due to unrecoverable problems building
         the ChangesFile object.
 
         :param changesfile_path: path to the changesfile to be uploaded.
         :param policy: the upload policy to be used.
         :param logger: the logger to be used.
         """
-        try:
-            changesfile = ChangesFile(changesfile_path, policy, logger)
-        except UploadError, e:
-            # We can't run reject() because unfortunately we don't have
-            # the address of the uploader to notify -- we broke in that
-            # exact step.
-            # XXX cprov 2007-03-26: we should really be emailing this
-            # rejection to the archive admins. For now, this will end
-            # up in the script log.
-            raise FatalUploadError(str(e))
+        changesfile = ChangesFile(changesfile_path, policy, logger)
         return cls(changesfile, policy, logger)
 
     def process(self, build=None):

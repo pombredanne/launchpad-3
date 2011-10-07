@@ -30,6 +30,7 @@ from lp.bugs.model.bug import (
     BugSubscriptionInfo,
     )
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     feature_flags,
     login_person,
@@ -479,6 +480,14 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestBugPrivateAndSecurityRelatedUpdatesMixin, self).setUp()
+        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
+        feature_flag = {f_flag_str: 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
+
     def test_setPrivate_subscribes_person_who_makes_bug_private(self):
         # When setPrivate(True) is called on a bug, the person who is
         # marking the bug private is subscribed to the bug.
@@ -845,7 +854,7 @@ class TestBugActivityMethods(TestCaseWithFactory):
         # that bug that falls within a given date range.
         bug = self.factory.makeBug(
             date_created=self.now - timedelta(days=365))
-        self._makeActivityForBug(bug, activity_ages=[200,100])
+        self._makeActivityForBug(bug, activity_ages=[200, 100])
         start_date = self.now - timedelta(days=250)
         end_date = self.now - timedelta(days=150)
         activity = bug.getActivityForDateRange(
@@ -858,7 +867,7 @@ class TestBugActivityMethods(TestCaseWithFactory):
         # falls on the start_ and end_ dates.
         bug = self.factory.makeBug(
             date_created=self.now - timedelta(days=365))
-        self._makeActivityForBug(bug, activity_ages=[300,200,100])
+        self._makeActivityForBug(bug, activity_ages=[300, 200, 100])
         start_date = self.now - timedelta(days=300)
         end_date = self.now - timedelta(days=100)
         activity = bug.getActivityForDateRange(

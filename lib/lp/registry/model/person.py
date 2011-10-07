@@ -4674,7 +4674,8 @@ def get_recipients(person):
     If <person> has a preferred email, the set will contain only that
     person.  If <person> doesn't have a preferred email but is a team,
     the set will contain the preferred email address of each member of
-    <person>, including indirect members.
+    <person>, including indirect members, that has an active account and an
+    preferred (active) address.
 
     Finally, if <person> doesn't have a preferred email and is not a team,
     the set will be empty.
@@ -4682,7 +4683,8 @@ def get_recipients(person):
     if person.preferredemail:
         return [person]
     elif person.is_team:
-        # Get transitive members of team without a preferred email.
+        # Get transitive members of a team that does not itself have a
+        # preferred email.
         return _get_recipients_for_team(person)
     else:
         return []
@@ -4701,13 +4703,15 @@ def _get_recipients_for_team(team):
                                   And(
                                       EmailAddress.person == Person.id,
                                       EmailAddress.status ==
-                                        EmailAddressStatus.PREFERRED)))
+                                        EmailAddressStatus.PREFERRED)),
+                         LeftJoin(Account,
+                             Person.accountID == Account.id))
     pending_team_ids = [team.id]
     recipient_ids = set()
     seen = set()
     while pending_team_ids:
-        # Find Persons that have a preferred email address, or are a
-        # team, or both.
+        # Find Persons that have a preferred email address and an active
+        # account, or are a team, or both.
         intermediate_transitive_results = source.find(
             (TeamMembership.personID, EmailAddress.personID),
             In(TeamMembership.status,
@@ -4715,7 +4719,8 @@ def _get_recipients_for_team(team):
                 TeamMembershipStatus.APPROVED.value]),
             In(TeamMembership.teamID, pending_team_ids),
             Or(
-                EmailAddress.personID != None,
+                And(EmailAddress.personID != None,
+                    Account.status == AccountStatus.ACTIVE),
                 Person.teamownerID != None)).config(distinct=True)
         next_ids = []
         for (person_id,

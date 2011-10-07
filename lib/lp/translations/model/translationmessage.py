@@ -114,6 +114,14 @@ class TranslationMessageMixIn:
         """See `ITranslationMessage`."""
         self.browser_pofile = pofile
 
+    @property
+    def sequence(self):
+        if self.browser_pofile:
+            pofile = self.browser_pofile
+            return self.potmsgset.getSequence(pofile.potemplate)
+        else:
+            return 0
+
     def markReviewed(self, reviewer, timestamp=None):
         """See `ITranslationMessage`."""
         if timestamp is None:
