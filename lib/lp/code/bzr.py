@@ -298,12 +298,19 @@ def get_branch_formats(bzr_branch):
             RepositoryFormat.get_enum(repository_string))
 
 
-def branch_changed(launchpad_branch, bzr_branch):
-    """Mark a launchpad branch as changed, using data from a bzr branch."""
+def branch_changed(db_branch, bzr_branch=None):
+    """Mark a database branch as changed.
+
+    :param db_branch: The branch to mark changed.
+    :param bzr_branch: (optional) The bzr branch to use to mark the branch
+        changed.
+    """
+    if bzr_branch is None:
+        bzr_branch = db_branch.getBzrBranch()
     try:
         stacked_on = bzr_branch.get_stacked_on_url()
     except (NotStacked, UnstackableBranchFormat):
         stacked_on = None
     last_revision = bzr_branch.last_revision()
     formats = get_branch_formats(bzr_branch)
-    launchpad_branch.branchChanged(stacked_on, last_revision, *formats)
+    db_branch.branchChanged(stacked_on, last_revision, *formats)

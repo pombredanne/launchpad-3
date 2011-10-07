@@ -9,7 +9,6 @@ from bzrlib.repofmt.groupcompress_repo import (
     RepositoryFormat2a, RepositoryFormat2aSubtree)
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.bzr import (
@@ -81,7 +80,7 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader = self.prepare(loomify_branch=True)
         upgrader.start_upgrade()
         upgrader.finish_upgrade()
-        upgraded = removeSecurityProxy(upgrader.branch.getBzrBranch())
+        upgraded = upgrader.branch.getBzrBranch()
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_upgrade_subtree_loom(self):
@@ -89,7 +88,7 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader = self.prepare('pack-0.92-subtree', loomify_branch=True)
         upgrader.start_upgrade()
         upgrader.finish_upgrade()
-        upgraded = removeSecurityProxy(upgrader.branch.getBzrBranch())
+        upgraded = upgrader.branch.getBzrBranch()
         self.check_branch(upgraded, BranchFormat.BZR_LOOM_2)
 
     def test_default_repo_format(self):
@@ -211,6 +210,25 @@ class TestUpgrader(TestCaseWithFactory):
         self.assertEqual(
             'foo', upgraded.get_revision('prepare-commit').message)
 
+    def test_finish_upgrade_fetches(self):
+        upgrader = self.prepare()
+        upgrader.start_upgrade()
+        tree = upgrader.bzr_branch.create_checkout('tree', lightweight=True)
+        bar_id = tree.commit('bar')
+        upgrader.finish_upgrade()
+        upgraded = upgrader.branch.getBzrBranch()
+        self.assertEqual(
+            'bar', upgraded.repository.get_revision(bar_id).message)
+
+    def test_finish_upgrade_updates_formats(self):
+        upgrader = self.prepare()
+        upgrader.start_upgrade()
+        upgrader.finish_upgrade()
+        self.assertEqual(
+            upgrader.branch.branch_format, BranchFormat.BZR_BRANCH_7)
+        self.assertEqual(
+            upgrader.branch.repository_format, RepositoryFormat.BZR_CHK_2A)
+
     def test_finish_all_upgrades(self):
         upgrader = self.prepare()
         branch_changed(upgrader.branch, upgrader.bzr_branch)
@@ -218,6 +236,7 @@ class TestUpgrader(TestCaseWithFactory):
         Upgrader.finish_all_upgrades(
             upgrader.target_dir, upgrader.logger)
         upgraded = upgrader.branch.getBzrBranch()
-        self.assertIs(RepositoryFormat2a, upgraded.repository._format.__class__)
+        self.assertIs(RepositoryFormat2a,
+            upgraded.repository._format.__class__)
         self.assertEqual(
             'foo', upgraded.repository.get_revision('prepare-commit').message)

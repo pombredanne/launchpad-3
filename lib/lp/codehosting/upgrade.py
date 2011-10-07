@@ -14,10 +14,12 @@ from bzrlib.plugins.loom.formats import (
     )
 from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2aSubtree
 from bzrlib.upgrade import upgrade
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.code.bzr import RepositoryFormat
+from lp.code.bzr import (
+    branch_changed,
+    RepositoryFormat,
+    )
 from lp.code.model.branch import Branch
 from lp.codehosting.bzrutils import read_locked
 from lp.codehosting.vfs.branchfs import get_real_branch_path
@@ -34,7 +36,7 @@ class Upgrader:
         self.branch = branch
         self.bzr_branch = bzr_branch
         if self.bzr_branch is None:
-            self.bzr_branch = removeSecurityProxy(self.branch.getBzrBranch())
+            self.bzr_branch = self.branch.getBzrBranch()
         self.target_dir = target_dir
         self.target_subdir = os.path.join(
             self.target_dir, str(self.branch.id))
@@ -106,8 +108,11 @@ class Upgrader:
     def finish_upgrade(self):
         """Create an upgraded version of self.branch in self.target_dir."""
         with read_locked(self.bzr_branch):
+            repository = self.get_bzrdir().open_repository()
             self.add_upgraded_branch()
+            repository.fetch(self.bzr_branch.repository)
         self.swap_in()
+        branch_changed(self.branch)
 
     def add_upgraded_branch(self):
         """Add an upgraded branch to the target_subdir.
