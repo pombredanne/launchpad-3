@@ -221,7 +221,8 @@ class MailController(object):
         if charset:
             attachment.add_header(
                 'Content-Type', content_type, charset=charset)
-            content = content.encode(charset)
+            if isinstance(content, unicode):
+                content = content.encode(charset)
         else:
             attachment.add_header('Content-Type', content_type)
         if inline:
