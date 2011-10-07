@@ -1,12 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime
-from pytz import utc
-import sys
 
+from pytz import utc
 from twisted.internet import protocol
 from twisted.internet.threads import deferToThread
 from twisted.protocols import basic
@@ -40,10 +39,10 @@ class FileUploadProtocol(basic.LineReceiver):
 
     Recognised headers are:
       :Content-Type: a mime-type to associate with the file
-      :File-Content-ID: if specified, the integer file id for this file.  If not
-        specified, the server will generate one.
-      :File-Alias-ID: if specified, the integer file alias id for this file.  If
-        not specified, the server will generate one.
+      :File-Content-ID: if specified, the integer file id for this file.
+        If not specified, the server will generate one.
+      :File-Alias-ID: if specified, the integer file alias id for this file.
+        If not specified, the server will generate one.
       :File-Expires: if specified, the expiry time of this alias in ISO 8601
         format. As per LibrarianGarbageCollection.
       :Database-Name: if specified, the name of the database the client is
@@ -55,9 +54,9 @@ class FileUploadProtocol(basic.LineReceiver):
 
     Unrecognised headers will be ignored.
 
-    If something goes wrong, the server will reply with a 400 (bad request, i.e.
-    client error) or 500 (internal server error) response codes instead, and an
-    appropriate message.
+    If something goes wrong, the server will reply with a 400 (bad request,
+    i.e.  client error) or 500 (internal server error) response codes instead,
+    and an appropriate message.
 
     Once the server has replied, the client may re-use the connection as if it
     were just established to start a new upload.
@@ -209,12 +208,13 @@ class FileUploadProtocol(basic.LineReceiver):
         self.newFile.append(realdata)
 
         if self.bytesLeft == 0:
-            # Store file
+            # Store file.
             deferred = self._storeFile()
+
             def _sendID((fileID, aliasID)):
-                # Send ID to client
+                # Send ID to client.
                 if self.newFile.contentID is None:
-                    # Respond with deprecated server-generated IDs
+                    # Respond with deprecated server-generated IDs.
                     self.sendLine('200 %s/%s' % (fileID, aliasID))
                 else:
                     self.sendLine('200')
@@ -224,7 +224,7 @@ class FileUploadProtocol(basic.LineReceiver):
             deferred.addErrback(self.protocolErrors)
             deferred.addErrback(self.unknownError)
 
-            # Treat remaining bytes (if any) as a new command
+            # Treat remaining bytes (if any) as a new command.
             self.state = 'command'
             self.setLineMode(rest)
 
@@ -240,5 +240,6 @@ class FileUploadProtocol(basic.LineReceiver):
 
 class FileUploadFactory(protocol.Factory):
     protocol = FileUploadProtocol
+
     def __init__(self, fileLibrary):
         self.fileLibrary = fileLibrary

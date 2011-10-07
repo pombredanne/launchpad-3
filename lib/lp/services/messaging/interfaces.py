@@ -5,26 +5,40 @@
 
 __metaclass__ = type
 __all__ = [
-    'EmptyQueueException',
-    'IMessageProducer',
     'IMessageConsumer',
+    'IMessageProducer',
     'IMessageSession',
+    'MessagingException',
+    'MessagingUnavailable',
+    'QueueEmpty',
+    'QueueNotFound',
     ]
 
 
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Interface
+from zope.schema import Bool
 
 
-class EmptyQueueException(Exception):
+class MessagingException(Exception):
+    """Failure in messaging."""
+
+
+class MessagingUnavailable(MessagingException):
+    """Messaging systems are not available."""
+
+
+class QueueNotFound(MessagingException):
+    """Raised if the queue was not found."""
+
+
+class QueueEmpty(MessagingException):
     """Raised if there are no queued messages on a non-blocking read."""
 
 
 class IMessageSession(Interface):
 
-    connection = Attribute("A connection to the messaging system.")
+    is_connected = Bool(
+        u"Whether the session is connected to the messaging system.")
 
     def connect():
         """Connect to the messaging system.
@@ -62,7 +76,7 @@ class IMessageConsumer(Interface):
     def receive(blocking=True):
         """Receive data from the queue.
 
-        :raises EmptyQueueException: If non-blocking and the queue is empty.
+        :raises EmptyQueue: If non-blocking and the queue is empty.
         """
 
 

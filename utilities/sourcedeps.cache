@@ -16,8 +16,8 @@
         "launchpad@pqm.canonical.com-20110921142504-p5xovac1r571h5iq"
     ], 
     "bzr-svn": [
-        2717, 
-        "launchpad@pqm.canonical.com-20110819140025-1a6tgsdwtjx3plii"
+        2718, 
+        "launchpad@pqm.canonical.com-20110926213320-7gt1ojtyqykvxpnb"
     ], 
     "cscvs": [
         432, 
@@ -60,8 +60,8 @@
         "launchpad@pqm.canonical.com-20110329053617-irncjfr14k0m00zp"
     ], 
     "subvertpy": [
-        2046, 
-        "launchpad@pqm.canonical.com-20110810142738-q1w4ukw9r0z8q2nz"
+        2047, 
+        "launchpad@pqm.canonical.com-20110926191617-4bpor0qt8apcxw22"
     ], 
     "testresources": [
         16, 

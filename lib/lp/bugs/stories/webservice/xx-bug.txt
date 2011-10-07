@@ -2055,8 +2055,8 @@ For every branch we can also look at the bugs linked to it.
 Bug expiration
 --------------
 
-In addition to can_expire bugs have an isExpirable method to which a custom time
-period, days_old, can be passed.  This is then used with
+In addition to can_expire bugs have an isExpirable method to which a custom
+time period, days_old, can be passed.  This is then used with
 findExpirableBugTasks.  This allows projects to create their own janitor using
 a different period for bug expiration.
 
@@ -2108,7 +2108,7 @@ Each bug has a collection of activities that have taken place with it.
     next_collection_link: u'http://.../bugs/1/activity?ws.size=5&memo=5&ws.start=5'
     resource_type_link: u'http://.../#bug_activity-page-resource'
     start: 0
-    total_size: 25
+    total_size: 24
     ...
 
     >>> bug_nine_activity = webservice.get(

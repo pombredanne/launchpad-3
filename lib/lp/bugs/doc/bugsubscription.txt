@@ -383,6 +383,15 @@ When a bug is marked private, specific people like the bugtask bug supervisors
 will be automatically subscribed, and only specifically allowed existing
 direct subscribers (eg bugtask pillar maintainers) will remain subscribed.
 
+We currently use a feature flag to control who is subscribed when a bug is
+made private.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
     >>> from zope.event import notify
 
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
@@ -446,6 +455,10 @@ any subscribers not converted to direct subscribers.
     Sample Person
     Scott James Remnant
     Ubuntu Team
+
+Clean up the feature flag.
+
+    >>> flags.cleanUp()
 
 To find out which email addresses should receive a notification email on
 a bug, and why, IBug.getBugNotificationRecipients() assembles an

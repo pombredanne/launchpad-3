@@ -414,7 +414,8 @@ If no timeout has been set, then requests will not time out:
     >>> clear_request_started()
 
 
-== Switching Database Users ==
+Switching Database Users
+========================
 
 The Launchpad store uses canonical.config to configure its
 connection.  This can be adjusted by choosing a different database

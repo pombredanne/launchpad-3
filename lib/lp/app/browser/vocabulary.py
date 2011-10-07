@@ -129,9 +129,12 @@ class DefaultPickerEntrySourceAdapter(object):
             if hasattr(term_value, 'summary'):
                 extra.description = term_value.summary
             display_api = ObjectImageDisplayAPI(term_value)
-            extra.css = display_api.sprite_css()
-            if extra.css is None:
-                extra.css = 'sprite bullet'
+            image_url = display_api.custom_icon_url() or None
+            css = display_api.sprite_css() or 'sprite bullet'
+            if image_url is not None:
+                extra.image = image_url
+            else:
+                extra.css = css
             entries.append(extra)
         return entries
 
@@ -260,7 +263,7 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                 picker_entry.details = []
                 summary = picker_entry.description
                 if len(summary) > 45:
-                    index =  summary.rfind(' ', 0, 45)
+                    index = summary.rfind(' ', 0, 45)
                     first_line = summary[0:index + 1]
                     second_line = summary[index:]
                 else:
@@ -268,15 +271,18 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                     second_line = ''
 
                 if len(second_line) > 90:
-                    index =  second_line.rfind(' ', 0, 90)
-                    second_line = second_line[0:index+1] 
+                    index = second_line.rfind(' ', 0, 90)
+                    second_line = second_line[0:index + 1]
                 picker_entry.description = first_line
-                picker_entry.details.append(second_line)
+                if second_line:
+                    picker_entry.details.append(second_line)
                 picker_entry.alt_title = target.name
+                picker_entry.alt_title_link = canonical_url(
+                    target, rootsite='mainsite')
                 picker_entry.target_type = self.target_type
                 maintainer = self.getMaintainer(target)
                 if maintainer is not None:
-                    picker_entry.details.append( 
+                    picker_entry.details.append(
                         'Maintainer: %s' % self.getMaintainer(target))
         return entries
 
@@ -307,17 +313,22 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
 
     def getMaintainer(self, target):
         """See `TargetPickerEntrySource`"""
-        return target.currentrelease.maintainer.displayname
+        return None
 
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
-        binaries = target.publishing_history[0].getBuiltBinaries()
-        binary_names = [binary.binary_package_name for binary in binaries]
-        if binary_names != []:
-            description = ', '.join(binary_names)
+        if target.binary_names:
+            description = ', '.join(target.binary_names)
         else:
             description = 'Not yet built.'
         return description
+
+    def getPickerEntries(self, term_values, context_object, **kwarg):
+        this = super(DistributionSourcePackagePickerEntrySourceAdapter, self)
+        entries = this.getPickerEntries(term_values, context_object, **kwarg)
+        for picker_entry in entries:
+            picker_entry.alt_title = None
+        return entries
 
 
 @adapter(IProjectGroup)
