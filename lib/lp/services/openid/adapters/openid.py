@@ -18,11 +18,10 @@ from zope.interface import (
     implementer,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.registry.interfaces.person import IPerson
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
@@ -34,13 +33,7 @@ class CurrentOpenIDEndPoint:
     @classmethod
     def getServiceURL(cls):
         """The OpenID server URL (/+openid) for the current request."""
-        return allvhosts.configs['openid'].rooturl + '+openid'
-
-    @classmethod
-    def supportsURL(cls, identity_url):
-        """Does the OpenID current vhost support the identity_url?"""
-        root_url = allvhosts.configs['openid'].rooturl
-        return identity_url.startswith(root_url + '+id')
+        return config.openid_provider_root + '+openid'
 
 
 class OpenIDPersistentIdentity:
@@ -58,8 +51,9 @@ class OpenIDPersistentIdentity:
         openid_identifier = self.openid_identifier
         if openid_identifier is None:
             return None
-        identity_root_url = allvhosts.configs['openid'].rooturl
-        return identity_root_url + openid_identifier.encode('ascii')
+        return (
+            config.launchpad.openid_provider_root +
+            openid_identifier.encode('ascii'))
 
     @property
     def openid_identifier(self):
