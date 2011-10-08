@@ -1395,6 +1395,16 @@ class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
                           ErrorReportRequest):
     """Request type for doing public XML-RPC in Launchpad."""
 
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        # XML-RPC requests occasionally need to use canonical_url, for
+        # the likes of sending emails. Until these are tracked down and
+        # fixed to use mainsite explicitly, replace the XML-RPC root
+        # URLs with mainsite's, so that URLs are meaningful.
+        if rootsite in (None, 'xmlrpc', 'xmlrpc_private'):
+            rootsite = 'mainsite'
+        return super(PublicXMLRPCRequest, self).getRootURL(rootsite)
+
     def _createResponse(self):
         return PublicXMLRPCResponse()
 
