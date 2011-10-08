@@ -201,15 +201,14 @@ class OpenIDLogin(LaunchpadView):
         # handshake to work.
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
-        openid_vhost = config.launchpad.openid_provider_vhost
 
         timeline_action = get_request_timeline(self.request).start(
             "openid-association-begin",
-            allvhosts.configs[openid_vhost].rooturl,
+            config.launchpad.openid_provider_root,
             allow_nested=True)
         try:
             self.openid_request = consumer.begin(
-                allvhosts.configs[openid_vhost].rooturl)
+                config.launchpad.openid_provider_root)
         finally:
             timeline_action.finish()
         self.openid_request.addExtension(
@@ -529,8 +528,7 @@ class CookieLogoutPage:
 
     def logout(self):
         logoutPerson(self.request)
-        openid_vhost = config.launchpad.openid_provider_vhost
-        openid_root = allvhosts.configs[openid_vhost].rooturl
+        openid_root = config.launchpad.openid_provider_root
         target = '%s+logout?%s' % (
             config.codehosting.secure_codebrowse_root,
             urllib.urlencode(dict(next_to='%s+logout' % (openid_root, ))))

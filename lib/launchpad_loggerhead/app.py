@@ -109,9 +109,8 @@ class RootApp:
         the page they were looking at, with a cookie that gives us the
         username.
         """
-        openid_vhost = config.launchpad.openid_provider_vhost
         openid_request = self._make_consumer(environ).begin(
-            allvhosts.configs[openid_vhost].rooturl)
+            config.launchpad.openid_provider_root)
         openid_request.addExtension(
             SRegRequest(required=['nickname']))
         back_to = construct_url(environ)
