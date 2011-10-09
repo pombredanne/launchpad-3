@@ -161,7 +161,7 @@ class RabbitUnreliableSession(RabbitSession):
     """
 
     suppressed_errors = (
-        MessagingUnavailable
+        MessagingUnavailable,
         )
 
     def finish(self):
@@ -174,7 +174,7 @@ class RabbitUnreliableSession(RabbitSession):
             super(RabbitUnreliableSession, self).finish()
         except self.suppressed_errors:
             pass
-        except Exception:
+        except:
             error_utility = getUtility(IErrorReportingUtility)
             error_utility.raising(sys.exc_info())
 
