@@ -7,9 +7,11 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTaskSet,
     )
 from lp.testing import (
@@ -88,6 +90,21 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
              (BugTaskStatus.OPINION, 2),
              (BugTaskStatus.NEW, 3),
             ],
+            self.get_counts(None))
+
+    def test_incomplete_with_without_x_statuses(self):
+        # INCOMPLETE_WITH_RESPONSE and INCOMPLETE_WITHOUT_RESPONSE are both
+        # counted as INCOMPLETE in the reported stats.
+        statuses = [
+            BugTaskStatusSearch.INCOMPLETE,
+            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+            ]
+        for status in statuses:
+            self.factory.makeBug(series=self.series, status=status)
+        flush_database_updates()
+        self.assertEqual(
+            [(BugTaskStatus.INCOMPLETE, 3)],
             self.get_counts(None))
 
 

@@ -2804,13 +2804,17 @@ class BugTaskSet:
             # since the get_bug_privacy_filter() check for non-admins is
             # costly, don't filter those bugs at all.
             bug_privacy_filter = ''
-        cur = cursor()
-
         # The union is actually much faster than a LEFT JOIN with the
         # Milestone table, since postgres optimizes it to perform index
         # scans instead of sequential scans on the BugTask table.
         query = """
-            SELECT status, count(*)
+            SELECT
+                CASE status
+                    WHEN %(incomplete_with_response)s THEN %(incomplete)s
+                    WHEN %(incomplete_without_response)s THEN %(incomplete)s
+                    ELSE status
+                END AS norm_status,
+                COUNT(*)
             FROM (
                 SELECT BugTask.status
                 FROM BugTask
@@ -2818,9 +2822,7 @@ class BugTaskSet:
                 WHERE
                     BugTask.productseries = %(series)s
                     %(privacy)s
-
                 UNION ALL
-
                 SELECT BugTask.status
                 FROM BugTask
                     JOIN Bug ON BugTask.bug = Bug.id
@@ -2830,10 +2832,18 @@ class BugTaskSet:
                     AND Milestone.productseries = %(series)s
                     %(privacy)s
                 ) AS subquery
-            GROUP BY status
-            """ % dict(series=quote(product_series),
-                       privacy=bug_privacy_filter)
-
+            GROUP BY norm_status
+            """
+        query %= dict(
+            series=quote(product_series),
+            privacy=bug_privacy_filter,
+            incomplete=quote(BugTaskStatusSearch.INCOMPLETE),
+            incomplete_with_response=quote(
+                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE),
+            incomplete_without_response=quote(
+                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE),
+            )
+        cur = cursor()
         cur.execute(query)
         return cur.fetchall()
 
