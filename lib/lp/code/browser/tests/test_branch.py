@@ -191,8 +191,8 @@ class TestBranchView(BrowserTestCase):
             "This is a short error message.",
             branch_view.mirror_status_message)
 
-    def testBranchAddRequestsMirror(self):
-        """Registering a mirrored branch requests a mirror."""
+    def testBranchAddRequests(self):
+        """Registering a branch that requests a mirror."""
         arbitrary_person = self.factory.makePerson()
         arbitrary_product = self.factory.makeProduct()
         login_person(arbitrary_person)
@@ -200,9 +200,8 @@ class TestBranchView(BrowserTestCase):
             add_view = BranchAddView(arbitrary_person, self.request)
             add_view.initialize()
             data = {
-                'branch_type': BranchType.MIRRORED,
+                'branch_type': BranchType.HOSTED,
                 'name': 'some-branch',
-                'url': 'http://example.com',
                 'title': 'Branch Title',
                 'summary': '',
                 'lifecycle_status': BranchLifecycleStatus.DEVELOPMENT,
@@ -212,15 +211,6 @@ class TestBranchView(BrowserTestCase):
                 'product': arbitrary_product,
                 }
             add_view.add_action.success(data)
-            # Make sure that next_mirror_time is a datetime, not an sqlbuilder
-            # expression.
-            removeSecurityProxy(add_view.branch).sync()
-            now = datetime.now(pytz.timezone('UTC'))
-            self.assertNotEqual(None, add_view.branch.next_mirror_time)
-            self.assertTrue(
-                add_view.branch.next_mirror_time < now,
-                "next_mirror_time not set to UTC_NOW: %s < %s"
-                % (add_view.branch.next_mirror_time, now))
         finally:
             logout()
 
