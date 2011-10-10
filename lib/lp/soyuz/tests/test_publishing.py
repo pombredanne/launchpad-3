@@ -1517,11 +1517,11 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         # foo-two-common. The latter two will have multiple publications,
         # one for each DAS in the series.
         return (
-            foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
-            foo_three_pub)
+            foo_src_pub, foo_bin_pub, foo_one_common_pubs,
+            foo_two_common_pubs, foo_three_pub)
 
     def test_getOtherPublicationsForSameSource(self):
-        (foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
             foo_three_pub) = self._makeMixedSingleBuildPackage()
 
         foo_one_common_pub = foo_one_common_pubs[0]
@@ -1534,7 +1534,7 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         self.assertIn(foo_bin_pub, others)
 
     def test_getOtherPublicationsForSameSource_include_archindep(self):
-        (foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
          foo_three_pub) = self._makeMixedSingleBuildPackage()
 
         foo_one_common_pub = foo_one_common_pubs[0]
@@ -1549,8 +1549,30 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         self.assertIn(foo_bin_pub, others)
         for pub in foo_one_common_pubs[1:] + foo_two_common_pubs:
             self.assertIn(pub, others)
-        # todo: add builds for other archs.
 
+    def test_getOtherPublicationsForSameSource_extra_builds(self):
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+         foo_three_pub) = self._makeMixedSingleBuildPackage()
+
+        # Add an additional build in a different architecture.
+        z80 = self.factory.makeDistroArchSeries(
+            distroseries=foo_src_pub.distroseries, architecturetag="z80")
+        build2 = self.factory.makeBinaryPackageBuild(
+            source_package_release=foo_src_pub.sourcepackagerelease,
+            distroarchseries=z80, archive=foo_src_pub.archive)
+        foo_one_z80 = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-one-z80", version="1.0", build=build2,
+            architecturespecific=True)
+        [foo_one_z80_pub] = self.publishBinaryInArchive(
+            foo_one_z80, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # The publication for the new build should be returned.
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
+        self.assertIn(foo_one_z80_pub, others)
 
 
 class TestGetBuiltBinaries(TestNativePublishingBase):
