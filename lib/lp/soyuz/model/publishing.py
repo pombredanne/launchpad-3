@@ -1140,13 +1140,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import DistroArchSeries
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-        using_clause = (
-            BinaryPackageRelease.id ==
-                self.binarypackagerelease.id,
-            BinaryPackageBuild.id == BinaryPackageRelease.buildID,
-            SourcePackageRelease.id ==
-                BinaryPackageBuild.source_package_release_id
-            )
         pubs = [
             BinaryPackageBuild.source_package_release_id ==
                 SourcePackageRelease.id,
