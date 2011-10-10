@@ -159,25 +159,27 @@ class SlaveScanner:
 
         # Decide if we need to terminate the job or fail the
         # builder.
+        transaction.abort()
         try:
-            builder = get_builder(self.builder_name)
-            builder.gotFailure()
-            if builder.currentjob is not None:
-                build_farm_job = builder.getCurrentBuildFarmJob()
-                build_farm_job.gotFailure()
-                self.logger.info(
-                    "builder %s failure count: %s, "
-                    "job '%s' failure count: %s" % (
-                        self.builder_name,
-                        builder.failure_count,
-                        build_farm_job.title,
-                        build_farm_job.failure_count))
-            else:
-                self.logger.info(
-                    "Builder %s failed a probe, count: %s" % (
-                        self.builder_name, builder.failure_count))
-            assessFailureCounts(builder, failure.getErrorMessage())
-            transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                builder = get_builder(self.builder_name)
+                builder.gotFailure()
+                if builder.currentjob is not None:
+                    build_farm_job = builder.getCurrentBuildFarmJob()
+                    build_farm_job.gotFailure()
+                    self.logger.info(
+                        "builder %s failure count: %s, "
+                        "job '%s' failure count: %s" % (
+                            self.builder_name,
+                            builder.failure_count,
+                            build_farm_job.title,
+                            build_farm_job.failure_count))
+                else:
+                    self.logger.info(
+                        "Builder %s failed a probe, count: %s" % (
+                            self.builder_name, builder.failure_count))
+                assessFailureCounts(builder, failure.getErrorMessage())
+                transaction.commit()
         except:
             # Catastrophic code failure! Not much we can do.
             self.logger.error(

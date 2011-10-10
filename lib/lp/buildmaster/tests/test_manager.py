@@ -34,6 +34,7 @@ from canonical.launchpad.ftests import (
     login,
     )
 from lp.services.log.logger import BufferLogger
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from canonical.testing.layers import (
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
@@ -82,6 +83,7 @@ class TestSlaveScannerScan(TestCase):
         'bob' builder.
         """
         super(TestSlaveScannerScan, self).setUp()
+        self.read_only = DatabaseTransactionPolicy(read_only=True)
         self.slave = self.useFixture(BuilddSlaveTestSetup())
 
         # Creating the required chroots needed for dispatching.
@@ -90,6 +92,15 @@ class TestSlaveScannerScan(TestCase):
         hoary = ubuntu.getSeries('hoary')
         test_publisher.setUpDefaultDistroSeries(hoary)
         test_publisher.addFakeChroots()
+
+    def _enterReadOnly(self):
+        """Go into read-only transaction policy."""
+        self.read_only.__enter__()
+        self.addCleanup(self._exitReadOnly)
+
+    def _exitReadOnly(self):
+        """Leave read-only transaction policy."""
+        self.read_only.__exit__(None, None, None)
 
     def _resetBuilder(self, builder):
         """Reset the given builder and its job."""
@@ -149,8 +160,10 @@ class TestSlaveScannerScan(TestCase):
         # Run 'scan' and check its result.
         self.layer.txn.commit()
         self.layer.switchDbUser(config.builddmaster.dbuser)
+        self._enterReadOnly()
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
+        d.addBoth(self._exitReadOnly)
         d.addCallback(self._checkDispatch, builder)
         return d
 
@@ -187,6 +200,7 @@ class TestSlaveScannerScan(TestCase):
 
         # Run 'scan' and check its result.
         self.layer.switchDbUser(config.builddmaster.dbuser)
+        self._enterReadOnly()
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.singleCycle)
         d.addCallback(self._checkNoDispatch, builder)
@@ -227,6 +241,7 @@ class TestSlaveScannerScan(TestCase):
 
         # Run 'scan' and check its result.
         self.layer.switchDbUser(config.builddmaster.dbuser)
+        self._enterReadOnly()
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobRescued, builder, job)
@@ -262,6 +277,7 @@ class TestSlaveScannerScan(TestCase):
 
         # Run 'scan' and check its result.
         self.layer.switchDbUser(config.builddmaster.dbuser)
+        self._enterReadOnly()
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobUpdated, builder, job)
@@ -271,6 +287,8 @@ class TestSlaveScannerScan(TestCase):
         factory = LaunchpadObjectFactory()
         builder = factory.makeBuilder()
         builder.setSlaveForTesting(OkSlave())
+        transaction.commit()
+        self._enterReadOnly()
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return d.addCallback(self._checkNoDispatch, builder)
@@ -281,6 +299,8 @@ class TestSlaveScannerScan(TestCase):
         self._resetBuilder(builder)
         builder.setSlaveForTesting(OkSlave())
         builder.manual = True
+        transaction.commit()
+        self._enterReadOnly()
         scanner = self._getScanner()
         d = scanner.scan()
         d.addCallback(self._checkNoDispatch, builder)
@@ -292,6 +312,8 @@ class TestSlaveScannerScan(TestCase):
         self._resetBuilder(builder)
         builder.setSlaveForTesting(OkSlave())
         builder.builderok = False
+        transaction.commit()
+        self._enterReadOnly()
         scanner = self._getScanner()
         d = scanner.scan()
         # Because the builder is not ok, we can't use _checkNoDispatch.
@@ -304,6 +326,8 @@ class TestSlaveScannerScan(TestCase):
         self._resetBuilder(builder)
         builder.setSlaveForTesting(BrokenSlave())
         builder.failure_count = 0
+        transaction.commit()
+        self._enterReadOnly()
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return assert_fails_with(d, xmlrpclib.Fault)

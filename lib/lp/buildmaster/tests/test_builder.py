@@ -154,7 +154,7 @@ class TestBuilder(TestCaseWithFactory):
         d = lostbuilding_builder.updateStatus(BufferLogger())
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
-            # 'Fault' comes from the LostBuildingBrokenSlave, this is
+            # 'Fault' comes from the LostBuildingBrokenSlave.  This is
             # just testing that the value is passed through.
             self.assertIsInstance(failure.value, xmlrpclib.Fault)
         return d.addBoth(check_slave_status)
