@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -16,14 +16,13 @@ import logging
 import socket
 import xmlrpclib
 
+import transaction
 from twisted.internet import defer
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.librarian.interfaces import ILibrarianClient
-from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.buildmaster.interfaces.builder import (
     BuildSlaveFailure,
     CorruptBuildCookie,
@@ -33,6 +32,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.services import encoding
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.services.job.interfaces.job import JobStatus
 
 
@@ -166,6 +166,7 @@ class BuildFarmJobBehaviorBase:
         Clean the builder for another jobs.
         """
         d = queueItem.builder.cleanSlave()
+
         def got_cleaned(ignored):
             transaction.commit()
             with DatabaseTransactionPolicy(read_only=False):
