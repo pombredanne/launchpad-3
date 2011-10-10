@@ -133,8 +133,11 @@ class DatabaseTransactionPolicy:
     def _isInTransaction(self):
         """Is our store currently in a transaction?"""
         pg_connection = self.store._connection._raw_connection
-        status = pg_connection.get_transaction_status()
-        return status != TRANSACTION_STATUS_IDLE
+        if pg_connection is None:
+            return False
+        else:
+            status = pg_connection.get_transaction_status()
+            return status != TRANSACTION_STATUS_IDLE
 
     def _checkNoTransaction(self, error_msg):
         """Verify that no transaction is ongoing.
