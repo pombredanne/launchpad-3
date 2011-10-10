@@ -114,13 +114,14 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
+    DB_INCOMPLETE_BUGTASK_STATUSES,
+    DB_UNRESOLVED_BUGTASK_STATUSES,
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
     IllegalRelatedBugTasksParams,
     IllegalTarget,
     RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskAssignee,
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
@@ -343,9 +344,10 @@ def validate_conjoined_attribute(self, attr, value):
     if isinstance(value, PassthroughValue):
         return value.value
 
-    # If this bugtask has no bug yet, then we are probably being
-    # instantiated.
-    if self.bug is None:
+    # Check to see if the object is being instantiated.  This test is specific
+    # to SQLBase.  Checking for specific attributes (like self.bug) is
+    # insufficient and fragile.
+    if self._SO_creating:
         return value
 
     # If this is a conjoined slave then call setattr on the master.
@@ -446,7 +448,7 @@ class BugTask(SQLBase):
     _defaultOrder = ['distribution', 'product', 'productseries',
                      'distroseries', 'milestone', 'sourcepackagename']
     _CONJOINED_ATTRIBUTES = (
-        "status", "importance", "assigneeID", "milestoneID",
+        "_status", "importance", "assigneeID", "milestoneID",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed", "date_incomplete", "date_left_new",
         "date_triaged", "date_fix_committed", "date_fix_released",
@@ -475,9 +477,9 @@ class BugTask(SQLBase):
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
-    status = EnumCol(
+    _status = EnumCol(
         dbName='status', notNull=True,
-        schema=BugTaskStatus,
+        schema=(BugTaskStatus, BugTaskStatusSearch),
         default=BugTaskStatus.NEW,
         storm_validator=validate_status)
     importance = EnumCol(
@@ -526,6 +528,12 @@ class BugTask(SQLBase):
     # stores the bugtargetdisplayname.
     targetnamecache = StringCol(
         dbName='targetnamecache', notNull=False, default=None)
+
+    @property
+    def status(self):
+        if self._status in DB_INCOMPLETE_BUGTASK_STATUSES:
+            return BugTaskStatus.INCOMPLETE
+        return self._status
 
     @property
     def title(self):
@@ -584,8 +592,7 @@ class BugTask(SQLBase):
     @property
     def age(self):
         """See `IBugTask`."""
-        UTC = pytz.timezone('UTC')
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(pytz.UTC)
 
         return now - self.datecreated
 
@@ -609,7 +616,7 @@ class BugTask(SQLBase):
         Note that this should be kept in sync with the completeness_clause
         above.
         """
-        return self.status in RESOLVED_BUGTASK_STATUSES
+        return self._status in RESOLVED_BUGTASK_STATUSES
 
     def findSimilarBugs(self, user, limit=10):
         """See `IBugTask`."""
@@ -878,12 +885,21 @@ class BugTask(SQLBase):
                 "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
-        if self.status == new_status:
+        if new_status == BugTaskStatus.INCOMPLETE:
+            # We store INCOMPLETE as INCOMPLETE_WITHOUT_RESPONSE so that it
+            # can be queried on efficiently.
+            if (when is None or self.bug.date_last_message is None or
+                when > self.bug.date_last_message):
+                new_status = BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
+            else:
+                new_status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
+
+        if self._status == new_status:
             # No change in the status, so nothing to do.
             return
 
         old_status = self.status
-        self.status = new_status
+        self._status = new_status
 
         if new_status == BugTaskStatus.UNKNOWN:
             # Ensure that all status-related dates are cleared,
@@ -901,8 +917,7 @@ class BugTask(SQLBase):
             return
 
         if when is None:
-            UTC = pytz.timezone('UTC')
-            when = datetime.datetime.now(UTC)
+            when = datetime.datetime.now(pytz.UTC)
 
         # Record the date of the particular kinds of transitions into
         # certain states.
@@ -957,17 +972,17 @@ class BugTask(SQLBase):
         # Bugs can jump in and out of 'incomplete' status
         # and for just as long as they're marked incomplete
         # we keep a date_incomplete recorded for them.
-        if new_status == BugTaskStatus.INCOMPLETE:
+        if new_status in DB_INCOMPLETE_BUGTASK_STATUSES:
             self.date_incomplete = when
         else:
             self.date_incomplete = None
 
-        if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
+        if ((old_status in DB_UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
             self.date_closed = when
 
         if ((old_status in RESOLVED_BUGTASK_STATUSES) and
-            (new_status in UNRESOLVED_BUGTASK_STATUSES)):
+            (new_status in DB_UNRESOLVED_BUGTASK_STATUSES)):
             self.date_left_closed = when
 
         # Ensure that we don't have dates recorded for state
@@ -975,7 +990,7 @@ class BugTask(SQLBase):
         # workflow state. We want to ensure that, for example, a
         # bugtask that went New => Confirmed => New
         # has a dateconfirmed value of None.
-        if new_status in UNRESOLVED_BUGTASK_STATUSES:
+        if new_status in DB_UNRESOLVED_BUGTASK_STATUSES:
             self.date_closed = None
 
         if new_status < BugTaskStatus.CONFIRMED:
@@ -1591,7 +1606,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return BugTaskSearchParams(
             user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            status=any(*DB_UNRESOLVED_BUGTASK_STATUSES),
             omit_dupes=True)
 
     def get(self, task_id):
@@ -1718,29 +1733,45 @@ class BugTaskSet:
         elif zope_isinstance(status, not_equals):
             return '(NOT %s)' % self._buildStatusClause(status.value)
         elif zope_isinstance(status, BaseItem):
+            incomplete_response = (
+                status == BugTaskStatus.INCOMPLETE)
             with_response = (
                 status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             without_response = (
                 status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
+            # TODO: bug 759467 tracks the migration of INCOMPLETE in the db to
+            # INCOMPLETE_WITH_RESPONSE and INCOMPLETE_WITHOUT_RESPONSE. When
+            # the migration is complete, we can convert status lookups to a
+            # simple IN clause.
             if with_response or without_response:
-                status_clause = (
-                    '(BugTask.status = %s) ' %
-                    sqlvalues(BugTaskStatus.INCOMPLETE))
                 if with_response:
-                    status_clause += ("""
+                    return """(
+                        BugTask.status = %s OR
+                        (BugTask.status = %s
                         AND (Bug.date_last_message IS NOT NULL
                              AND BugTask.date_incomplete <=
-                                 Bug.date_last_message)
-                        """)
+                                 Bug.date_last_message)))
+                        """ % sqlvalues(
+                            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+                            BugTaskStatus.INCOMPLETE)
                 elif without_response:
-                    status_clause += ("""
+                    return """(
+                        BugTask.status = %s OR
+                        (BugTask.status = %s
                         AND (Bug.date_last_message IS NULL
                              OR BugTask.date_incomplete >
-                                Bug.date_last_message)
-                        """)
-                else:
-                    assert with_response != without_response
-                return status_clause
+                                Bug.date_last_message)))
+                        """ % sqlvalues(
+                            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+                            BugTaskStatus.INCOMPLETE)
+                assert with_response != without_response
+            elif incomplete_response:
+                # search for any of INCOMPLETE (being migrated from),
+                # INCOMPLETE_WITH_RESPONSE or INCOMPLETE_WITHOUT_RESPONSE
+                return 'BugTask.status %s' % search_value_to_where_condition(
+                    any(BugTaskStatus.INCOMPLETE,
+                        BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+                        BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE))
             else:
                 return '(BugTask.status = %s)' % sqlvalues(status)
         else:
@@ -1777,7 +1808,7 @@ class BugTaskSet:
                 And(ConjoinedMaster.bugID == BugTask.bugID,
                     BugTask.distributionID == milestone.distribution.id,
                     ConjoinedMaster.distroseriesID == current_series.id,
-                    Not(ConjoinedMaster.status.is_in(
+                    Not(ConjoinedMaster._status.is_in(
                             BugTask._NON_CONJOINED_STATUSES))))
             join_tables = [(ConjoinedMaster, join)]
         else:
@@ -1797,7 +1828,7 @@ class BugTaskSet:
                         And(ConjoinedMaster.bugID == BugTask.bugID,
                             ConjoinedMaster.productseriesID
                                 == Product.development_focusID,
-                            Not(ConjoinedMaster.status.is_in(
+                            Not(ConjoinedMaster._status.is_in(
                                     BugTask._NON_CONJOINED_STATUSES)))),
                     ]
                 # join.right is the table name.
@@ -1810,7 +1841,7 @@ class BugTaskSet:
                     And(ConjoinedMaster.bugID == BugTask.bugID,
                         BugTask.productID == milestone.product.id,
                         ConjoinedMaster.productseriesID == dev_focus_id,
-                        Not(ConjoinedMaster.status.is_in(
+                        Not(ConjoinedMaster._status.is_in(
                                 BugTask._NON_CONJOINED_STATUSES))))
                 join_tables = [(ConjoinedMaster, join)]
             else:
@@ -2302,6 +2333,8 @@ class BugTaskSet:
             statuses_for_open_tasks = [
                 BugTaskStatus.NEW,
                 BugTaskStatus.INCOMPLETE,
+                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
                 BugTaskStatus.CONFIRMED,
                 BugTaskStatus.INPROGRESS,
                 BugTaskStatus.UNKNOWN]
@@ -2636,7 +2669,7 @@ class BugTaskSet:
         conditions = []
         # Open bug statuses
         conditions.append(
-            BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES))
+            BugSummary.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES))
         # BugSummary does not include duplicates so no need to exclude.
         context_conditions = []
         for context in contexts:
@@ -2719,7 +2752,6 @@ class BugTaskSet:
         validate_new_target(bug, target)
 
         target_key = bug_target_to_key(target)
-
         if not bug.private and bug.security_related:
             product = target_key['product']
             distribution = target_key['distribution']
@@ -2730,7 +2762,7 @@ class BugTaskSet:
 
         non_target_create_params = dict(
             bug=bug,
-            status=status,
+            _status=status,
             importance=importance,
             assignee=assignee,
             owner=owner,
@@ -2738,7 +2770,6 @@ class BugTaskSet:
         create_params = non_target_create_params.copy()
         create_params.update(target_key)
         bugtask = BugTask(**create_params)
-
         if target_key['distribution']:
             # Create tasks for accepted nominations if this is a source
             # package addition.
@@ -2862,14 +2893,16 @@ class BugTaskSet:
                 """ + target_clause + """
                 """ + bug_clause + """
                 """ + bug_privacy_filter + """
-                    AND BugTask.status = %s
+                    AND BugTask.status in (%s, %s, %s)
                     AND BugTask.assignee IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
                     AND BugWatch.id IS NULL
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old)
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE,
+                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE, min_days_old)
         expirable_bugtasks = BugTask.select(
             query + unconfirmed_bug_condition,
             clauseTables=['Bug'],
@@ -2887,6 +2920,7 @@ class BugTaskSet:
         """
         statuses_not_preventing_expiration = [
             BugTaskStatus.INVALID, BugTaskStatus.INCOMPLETE,
+            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
             BugTaskStatus.WONTFIX]
 
         unexpirable_status_list = [
@@ -3032,9 +3066,10 @@ class BugTaskSet:
             ]
 
         product_ids = [product.id for product in products]
-        conditions = And(BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
-                         Bug.duplicateof == None,
-                         BugTask.productID.is_in(product_ids))
+        conditions = And(
+            BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
+            Bug.duplicateof == None,
+            BugTask.productID.is_in(product_ids))
 
         privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter != '':
@@ -3060,7 +3095,7 @@ class BugTaskSet:
                 # TODO: sort by their name?
                 "assignee": BugTask.assigneeID,
                 "targetname": BugTask.targetnamecache,
-                "status": BugTask.status,
+                "status": BugTask._status,
                 "title": Bug.title,
                 "milestone": BugTask.milestoneID,
                 "dateassigned": BugTask.date_assigned,
@@ -3167,7 +3202,7 @@ class BugTaskSet:
 
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
-                any(*UNRESOLVED_BUGTASK_STATUSES)))
+                any(*DB_UNRESOLVED_BUGTASK_STATUSES)))
 
         sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
         sums = [

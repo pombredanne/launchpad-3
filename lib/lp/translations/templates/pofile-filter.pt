@@ -29,7 +29,7 @@
     <tal:translations condition="messages">
       <p tal:condition="view/person">
         <a tal:replace="structure view/person/fmt:link"/> has
-        submitted the following strings to 
+        submitted the following strings to
         <a tal:attributes="href view/context/fmt:url">this translation</a>.
         Contributions are visually coded:
         <span class="usedtranslation">currently used translations</span>,
@@ -46,10 +46,10 @@
         <tal:message repeat="message messages">
           <tr>
             <td class="englishstring" style="text-align:right;">
-              <tal:obsolete condition="not:message/potmsgset/sequence">
+              <tal:obsolete condition="not:message/context/sequence">
                 ~</tal:obsolete>
-              <tal:nonobsolete condition="message/potmsgset/sequence">
-                <a tal:content="string:${message/potmsgset/sequence}."
+              <tal:nonobsolete condition="message/context/sequence">
+                <a tal:content="string:${message/context/sequence}."
                    tal:attributes="href message/context/fmt:url" />
               </tal:nonobsolete>
             </td>

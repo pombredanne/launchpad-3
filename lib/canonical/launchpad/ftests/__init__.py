@@ -9,7 +9,6 @@ __all__ = [
     'import_public_key',
     'import_public_test_keys',
     'import_secret_test_key',
-    'is_logged_in',
     'LaunchpadFormHarness',
     'login',
     'login_person',
@@ -27,7 +26,6 @@ from canonical.launchpad.ftests.keys_for_tests import (
     )
 from lp.testing import (
     ANONYMOUS,
-    is_logged_in,
     login,
     login_person,
     logout,

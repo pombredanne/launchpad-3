@@ -95,7 +95,8 @@ When creating a new branch the branch name and owner must be specified.
     ...     'field.branch_type': 'create-new',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     >>> for error in view.errors:
@@ -112,7 +113,8 @@ When creating a new branch the branch name and owner must be specified.
     ...     'field.actions.update': 'Update',
     ...     }
 
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> print view.errors_in_action
     False
     >>> print view.next_url
@@ -134,7 +136,8 @@ Using a branch name that already exists results in an error.
     ...     'field.actions.update': 'Update',
     ...     }
 
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> print view.errors_in_action
     True
     >>> print view.next_url
@@ -161,7 +164,8 @@ Lots of data are required to create an import.
     ...     'field.branch_type': 'import-external',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     >>> for error in view.errors:
@@ -181,13 +185,14 @@ For Bazaar branches the scheme may only be http or https.
     ...     'field.repo_url': 'bzr+ssh://bzr.com/foo',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     >>> for error in view.errors:
     ...     print error
-    ('repo_url'...The URI scheme "bzr+ssh" is not allowed.  Only URIs with the following schemes may be
-    used: bzr, http, https'))
+    ('repo_url'...The URI scheme "bzr+ssh" is not allowed.  Only URIs with
+    the following schemes may be used: bzr, http, https'))
 
 
 A correct URL is accepted.
@@ -200,13 +205,14 @@ A correct URL is accepted.
     ...     'field.repo_url': 'http://bzr.com/foo',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> transaction.commit()
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    Mirrored branch created and linked to the series.
+    Code import created and branch linked to the series.
     >>> print series.branch.name
     blazer-branch
 
@@ -220,7 +226,8 @@ Git branches cannnot use svn.
     ...     'field.repo_url': 'svn://svn.com/chevette',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     >>> for error in view.errors:
@@ -240,7 +247,8 @@ But Git branches may use git.
     ...     'field.repo_url': 'git://github.com/chevette',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> transaction.commit()
     >>> for error in view.errors:
     ...     print error
@@ -260,7 +268,8 @@ But Subversion branches cannnot use git.
     ...     'field.repo_url': 'git://github.com/suburban',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     >>> for error in view.errors:
@@ -280,7 +289,8 @@ But Subversion branches may use svn as the scheme.
     ...     'field.repo_url': 'svn://svn.com/suburban',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:
@@ -301,7 +311,8 @@ Mercurial branches must use http or https as the scheme.
     ...     'field.repo_url': 'https://mercurial.com/branch',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:
@@ -367,8 +378,8 @@ in an error.
     ...     print error
     <BLANKLINE>
     This foreign branch URL is already specified for
-    the imported branch <a href="http://code.launchpad.dev/~.../chevy/chevette-branch">~.../chevy/chevette-branch</a>.
-
+    the imported branch
+    <a href="http://.../chevy/chevette-branch">~.../chevy/chevette-branch</a>.
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
 
@@ -386,7 +397,8 @@ Using a branch name that already exists results in an error.
     ...                                principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
-    You already have a branch for <em>Chevy</em> called <em>chevette-branch</em>.
+    You already have a branch for
+    <em>Chevy</em> called <em>chevette-branch</em>.
     >>> print view.errors_in_action
     True
     >>> print view.next_url
@@ -406,13 +418,16 @@ error if a duplicate name is used.
     ...     'field.repo_url': 'http://bzr.com/foo',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
-    You already have a branch for <em>Chevy</em> called <em>blazer-branch</em>.
+    <BLANKLINE>
+    This foreign branch URL is already specified for the imported branch
+    <a href="http://.../blazer-branch">...</a>.
     >>> print view.errors_in_action
-    True
+    False
     >>> print view.next_url
-    None
+    http://launchpad.dev/chevy/corvair
     >>> for notification in view.request.response.notifications:
     ...     print notification.message

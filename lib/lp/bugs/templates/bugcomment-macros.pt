@@ -68,7 +68,7 @@
             <td class="bug-comment-index">
               <a href="?comments=all"
                  id="show-comments-link"
-                 class="sprite retry"
+                 class="show-comments-link sprite retry"
                  style="white-space: nowrap">
                  view all <span
                  tal:replace="view/total_comments"
