@@ -6,7 +6,10 @@
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    BugTaskStatusSearch,
+    )
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -43,7 +46,8 @@ class TestWithBrowser(BrowserTestCase):
         self.getViewBrowser(productseries, view_name='+timeline-graph')
 
 
-class TestProductSeriesStats(TestCaseWithFactory):
+class TestProductSeriesStatus(TestCaseWithFactory):
+    """Tests for ProductSeries:+status."""
 
     layer = DatabaseFunctionalLayer
 
@@ -51,9 +55,31 @@ class TestProductSeriesStats(TestCaseWithFactory):
         """Test that `bugtask_status_counts` is sane."""
         product = self.factory.makeProduct()
         series = self.factory.makeProductSeries(product=product)
-        for status in BugTaskStatus.items:
+        for status in BugTaskStatusSearch.items:
             self.factory.makeBug(
-                series=series, status=status, owner=product.owner)
+                series=series, status=status,
+                owner=product.owner)
+        self.factory.makeBug(
+            series=series, status=BugTaskStatus.UNKNOWN,
+            owner=product.owner)
         with person_logged_in(product.owner):
             view = create_initialized_view(series, '+status')
-            self.assertEqual([], view.bugtask_status_counts)  # TODO
+            self.assertEqual(
+                [(BugTaskStatus.NEW, 1),
+                 # 3 because INCOMPLETE_WITH_RESPONSE and
+                 # INCOMPLETE_WITHOUT_RESPONSE both count towards the
+                 # INCOMPLETE total.
+                 (BugTaskStatus.INCOMPLETE, 3),
+                 (BugTaskStatus.OPINION, 1),
+                 (BugTaskStatus.INVALID, 1),
+                 (BugTaskStatus.WONTFIX, 1),
+                 (BugTaskStatus.EXPIRED, 1),
+                 (BugTaskStatus.CONFIRMED, 1),
+                 (BugTaskStatus.TRIAGED, 1),
+                 (BugTaskStatus.INPROGRESS, 1),
+                 (BugTaskStatus.FIXCOMMITTED, 1),
+                 (BugTaskStatus.FIXRELEASED, 1)
+                 (BugTaskStatus.UNKNOWN, 1)],
+                [(status_count.status, status_count.count)
+                 for status_count in view.bugtask_status_counts],
+                )
