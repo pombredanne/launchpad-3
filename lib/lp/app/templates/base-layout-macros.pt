@@ -106,7 +106,6 @@
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
-    <tal:if condition="request/features/bugs.private_notification.enabled">
     <script type="text/javascript">
       LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                 'lp.bugs.subscribers',
@@ -120,7 +119,6 @@
           });
       });
     </script>
-    </tal:if>
 
   <script id="base-layout-load-scripts" type="text/javascript">
     LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {
@@ -132,8 +130,12 @@
             activateConstrainBugExpiration();
 	    Y.lp.app.links.check_valid_lp_links();
             // Longpolling will only start if
-	    // LP.cache.longpoll is populated.
-            Y.lp.app.longpoll.setupLongPollManager();
+            // LP.cache.longpoll is populated.
+            // We use Y.later to work around a Safari/Chrome 'feature':
+            // The mouse cursor stays 'busy' until all the requests started during
+            // page load are finished.  Hence we want the long poll request to start
+            // right *after* the page has loaded.
+            Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
         }, window);
 
         // Hook up the function that dismisses the help window if we click

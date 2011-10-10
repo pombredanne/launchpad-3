@@ -270,7 +270,8 @@ class TranslationImportQueueEntry(SQLBase):
         subset = potemplateset.getSubset(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
-            productseries=self.productseries)
+            productseries=self.productseries,
+            iscurrent=True)
         entry_dirname = os.path.dirname(self.path)
         guessed_potemplate = None
         for potemplate in subset:
@@ -295,7 +296,7 @@ class TranslationImportQueueEntry(SQLBase):
             return None
 
         # We have a winner, but to be 100% sure, we should not have
-        # a template file pending of being imported in our queue.
+        # a template file pending or being imported in our queue.
         if self.productseries is None:
             target = self.sourcepackage
         else:

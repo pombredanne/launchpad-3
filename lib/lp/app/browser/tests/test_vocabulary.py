@@ -222,31 +222,24 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             sourcepackagerelease=release)
         self.assertEqual('package', self.getPickerEntry(dsp).target_type)
 
-    def test_dsp_provides_details(self):
-        dsp = self.factory.makeDistributionSourcePackage()
-        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
-        release = self.factory.makeSourcePackageRelease(
-            distroseries=series,
-            sourcepackagename=dsp.sourcepackagename)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=series,
-            sourcepackagerelease=release)
-        self.assertEqual(
-            "Maintainer: %s" % dsp.currentrelease.maintainer.displayname,
-            self.getPickerEntry(dsp).details[1])
+    def test_dsp_provides_details_no_maintainer(self):
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertEqual(0, len(self.getPickerEntry(dsp).details))
 
-    def test_dsp_provides_summary(self):
-        dsp = self.factory.makeDistributionSourcePackage()
-        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
-        release = self.factory.makeSourcePackageRelease(
-            distroseries=series,
-            sourcepackagename=dsp.sourcepackagename)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=series,
-            sourcepackagerelease=release)
+    def test_dsp_provides_summary_unbuilt(self):
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
         self.assertEqual(
             "Not yet built.", self.getPickerEntry(dsp).description)
 
+    def test_dsp_provides_summary_built(self):
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        release = self.factory.makeSourcePackageRelease(
+            distroseries=series,
+            sourcepackagename=dsp.sourcepackagename)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series,
+            sourcepackagerelease=release)
         archseries = self.factory.makeDistroArchSeries(distroseries=series)
         bpn = self.factory.makeBinaryPackageName(name='fnord')
         self.factory.makeBinaryPackagePublishingHistory(
@@ -255,6 +248,17 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
             sourcepackagename=dsp.sourcepackagename,
             distroarchseries=archseries)
         self.assertEqual("fnord", self.getPickerEntry(dsp).description)
+
+    def test_dsp_alt_title_is_none(self):
+        # DSP titles are contructed from the distro and package Launchapd Ids,
+        # alt_titles are redundant because they are also Launchpad Ids.
+        distro = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distro)
+        self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        dsp = distro.getSourcePackage('snarf')
+        self.assertEqual(None, self.getPickerEntry(dsp).alt_title)
 
     def test_dsp_provides_alt_title_link(self):
         distro = self.factory.makeDistribution(name='fnord')
@@ -299,7 +303,7 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.assertEqual(
             "Maintainer: %s" % product.owner.displayname,
-            self.getPickerEntry(product).details[1])
+            self.getPickerEntry(product).details[0])
 
     def test_product_provides_summary(self):
         product = self.factory.makeProduct()
@@ -357,7 +361,7 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
         projectgroup = self.factory.makeProject()
         self.assertEqual(
             "Maintainer: %s" % projectgroup.owner.displayname,
-            self.getPickerEntry(projectgroup).details[1])
+            self.getPickerEntry(projectgroup).details[0])
 
     def test_projectgroup_provides_summary(self):
         projectgroup = self.factory.makeProject()
@@ -413,7 +417,7 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
             distribution=distribution, status=SeriesStatus.CURRENT)
         self.assertEqual(
             "Maintainer: %s" % distribution.currentseries.owner.displayname,
-            self.getPickerEntry(distribution).details[1])
+            self.getPickerEntry(distribution).details[0])
 
     def test_distribution_provides_summary(self):
         distribution = self.factory.makeDistribution()

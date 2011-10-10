@@ -40,8 +40,8 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
-    TeamInvitationView,
     )
+from lp.registry.browser.team import TeamInvitationView
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -280,7 +280,7 @@ class TestPersonEditView(TestCaseWithFactory):
         self.assertTrue(self.view.form_fields['name'].for_display)
         self.assertEqual(
             self.view.widgets['name'].hint,
-            "This user has an active PPA with packages published and "
+            "This person has an active PPA with packages published and "
             "may not be renamed.")
 
     def test_cannot_rename_with_deleting_PPA(self):

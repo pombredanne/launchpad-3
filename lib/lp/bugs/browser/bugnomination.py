@@ -90,15 +90,13 @@ class BugNominationView(LaunchpadFormView):
 
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
-        current_bugtask = getUtility(ILaunchBag).bugtask
         return check_permission(
-            "launchpad.Driver", current_bugtask.target)
+            "launchpad.Driver", self.current_bugtask.target)
 
     def userIsBugSupervisor(self):
         """Is the current user the bug supervisor?"""
-        current_bugtask = getUtility(ILaunchBag).bugtask
         return check_permission(
-            "launchpad.BugSupervisor", current_bugtask.target)
+            "launchpad.BugSupervisor", self.current_bugtask.target)
 
     def userCanChangeDriver(self):
         """Can the current user set the release management team?"""

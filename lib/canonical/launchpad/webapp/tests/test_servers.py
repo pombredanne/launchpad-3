@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E1002
@@ -32,19 +32,24 @@ from zope.interface import (
     Interface,
     )
 
+from canonical.launchpad.webapp.interfaces import IFinishReadOnlyRequestEvent
+from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
     ApplicationServerSettingRequestFactory,
     LaunchpadBrowserRequest,
     LaunchpadTestRequest,
     VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory,
+    web_service_request_to_browser_request,
     WebServiceClientRequest,
     WebServicePublication,
     WebServiceRequestPublicationFactory,
     WebServiceTestRequest,
-    web_service_request_to_browser_request,
     )
-from lp.testing import TestCase
+from lp.testing import (
+    EventRecorder,
+    TestCase,
+    )
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):
@@ -569,6 +574,62 @@ class TestWebServiceRequestToBrowserRequest(WebServiceTestCase):
         self.assertEqual(
             web_service_request.get('PATH_INFO'),
             browser_request.get('PATH_INFO'))
+
+
+class LoggingTransaction:
+
+    def __init__(self):
+        self.log = []
+
+    def commit(self):
+        self.log.append("COMMIT")
+
+    def abort(self):
+        self.log.append("ABORT")
+
+
+class TestFinishReadOnlyRequest(TestCase):
+    # Publications that have a finishReadOnlyRequest() method are obliged to
+    # fire an IFinishReadOnlyRequestEvent.
+
+    def _test_publication(self, publication, expected_transaction_log):
+        # publication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and alters the transaction.
+        fake_request = object()
+        fake_object = object()
+        fake_transaction = LoggingTransaction()
+
+        with EventRecorder() as event_recorder:
+            publication.finishReadOnlyRequest(
+                fake_request, fake_object, fake_transaction)
+
+        self.assertEqual(
+            expected_transaction_log,
+            fake_transaction.log)
+
+        finish_events = [
+            event for event in event_recorder.events
+            if IFinishReadOnlyRequestEvent.providedBy(event)]
+        self.assertEqual(
+            1, len(finish_events), (
+                "Expected only one IFinishReadOnlyRequestEvent, but "
+                "got: %r" % finish_events))
+
+        [finish_event] = finish_events
+        self.assertIs(fake_request, finish_event.request)
+        self.assertIs(fake_object, finish_event.object)
+
+    def test_WebServicePub_fires_FinishReadOnlyRequestEvent(self):
+        # WebServicePublication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and commits the transaction.
+        publication = WebServicePublication(None)
+        self._test_publication(publication, ["COMMIT"])
+
+    def test_LaunchpadBrowserPub_fires_FinishReadOnlyRequestEvent(self):
+        # LaunchpadBrowserPublication.finishReadOnlyRequest() issues an
+        # IFinishReadOnlyRequestEvent and aborts the transaction.
+        publication = LaunchpadBrowserPublication(None)
+        self._test_publication(publication, ["ABORT"])
 
 
 def test_suite():

@@ -98,7 +98,7 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
-    UNRESOLVED_BUGTASK_STATUSES,
+    DB_UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
@@ -1557,7 +1557,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                'triaged': quote(BugTaskStatus.TRIAGED),
                'limit': limit,
                'distro': self.id,
-               'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES),
+               'unresolved': quote(DB_UNRESOLVED_BUGTASK_STATUSES),
                'excluded_packages': quote(exclude_packages),
                 })
         counts = cur.fetchall()
