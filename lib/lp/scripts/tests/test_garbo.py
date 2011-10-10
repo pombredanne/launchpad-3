@@ -115,6 +115,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -900,8 +901,8 @@ class TestGarbo(TestCaseWithFactory):
     def test_BugTaskIncompleteMigrator_filed_as_incomplete(self):
         # BugTaskIncompleteMigrator also deals with bugs that have never
         # transitioned to Incomplete.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        bug = self.factory.makeBug(status=BugTaskStatus.INCOMPLETE)
+        with dbuser('launchpad'):
+            bug = self.factory.makeBug(status=BugTaskStatus.INCOMPLETE)
         without_response = bug.bugtasks[0]
         transaction.commit()
         self.runHourly()

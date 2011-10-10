@@ -840,11 +840,8 @@ class BugTaskIncompleteMigrator(TunableLoop):
         transaction.begin()
         tasks = list(self.query[:chunk_size])
         for (task, bug) in tasks:
-            if not task.date_incomplete:
-                # Filed as Incomplete.
-                task._status = (
-                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
-            elif (bug.date_last_message is None or
+            if (bug.date_last_message is None or
+                task.date_incomplete is None or
                 task.date_incomplete > bug.date_last_message):
                 task._status = (
                     BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
