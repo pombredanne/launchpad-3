@@ -66,7 +66,17 @@ def generate_uninstall():
     print >> outf, "# Uninstall Slony-I 1.2 from all nodes"
     print >> outf, "include <mig_preamble.sk>;"
 
-    for node in get_all_cluster_nodes(con):
+    nodes = get_all_cluster_nodes(con)
+
+    # Ensure everything is really, really synced since we will be
+    # resubscribing with 'omit copy'
+    for node in nodes:
+        print >> outf, dedent("""\
+                sync (id=%d);
+                wait for event (origin=%d, confirmed=all, wait on=%d);
+                """).strip() % (node.node_id, node.node_id, node.node_id)
+
+    for node in nodes:
         print >> outf, "uninstall node (id=%d);" % node.node_id
     outf.close()
 
