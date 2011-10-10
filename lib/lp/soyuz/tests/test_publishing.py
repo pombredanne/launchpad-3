@@ -1574,6 +1574,17 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         others = list(others)
         self.assertIn(foo_one_z80_pub, others)
 
+    def test_getOtherPublicationsForSameSource_inactive(self):
+        # Check that inactive publications are not returned.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+             foo_three_pub) = self._makeMixedSingleBuildPackage()
+        foo_bin_pub.status = PackagePublishingStatus.SUPERSEDED
+        foo_three_pub.status = PackagePublishingStatus.SUPERSEDED
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
+
+        self.assertEqual(0, len(others))
 
 class TestGetBuiltBinaries(TestNativePublishingBase):
     """Test SourcePackagePublishingHistory.getBuiltBinaries() works."""
