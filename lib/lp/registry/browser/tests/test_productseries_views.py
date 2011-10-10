@@ -6,13 +6,14 @@
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.testing import (
     BrowserTestCase,
+    person_logged_in,
     TestCaseWithFactory,
-    person_logged_in
     )
-from lp.testing.views import create_initialized_view
 from lp.testing.matchers import Contains
+from lp.testing.views import create_initialized_view
 
 
 class TestProductSeriesHelp(TestCaseWithFactory):
@@ -40,3 +41,19 @@ class TestWithBrowser(BrowserTestCase):
         """Test that rendering the graph does not raise an exception."""
         productseries = self.factory.makeProductSeries()
         self.getViewBrowser(productseries, view_name='+timeline-graph')
+
+
+class TestProductSeriesStats(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_bugtask_status_counts(self):
+        """Test that `bugtask_status_counts` is sane."""
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=product)
+        for status in BugTaskStatus.items:
+            self.factory.makeBug(
+                series=series, status=status, owner=product.owner)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(series, '+status')
+            self.assertEqual([], view.bugtask_status_counts)  # TODO
