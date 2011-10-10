@@ -234,6 +234,17 @@ class Dominator:
         publications = list(publications)
         generalization.load_releases(publications)
 
+        newest_pub = publications[0]
+        if not generalization.is_source:
+            binary = newest_pub.binarypackagerelease
+            if not binary.architecturespecific:
+                others = newest_pub.getOtherPublicationsForSameSource()
+                if others.any():
+                    # Don't dominate this arch:all binary as there are
+                    # other arch-specific binaries from the same build
+                    # that are still active.
+                    return
+
         # Go through publications from latest version to oldest.  This
         # makes it easy to figure out which release superseded which:
         # the dominant is always the oldest live release that is newer
@@ -298,12 +309,6 @@ class Dominator:
             # Since this always picks the latest version as the live
             # one, this dominatePackage call will never result in a
             # deletion.
-            # TODO: work out if the publication is for an arch-all binary,
-            # and ignore it if the same source has other unsuperseded
-            # arch-any binaries.
-            if not generalization.is_source:
-                # Call function to get other binaries built by same source
-                pass
             latest_version = generalization.getPackageVersion(publications[0])
             self.dominatePackage(
                 publications, [latest_version], generalization)
@@ -366,32 +371,6 @@ class Dominator:
 
         self.logger.debug("Beginning superseded processing...")
 
-        # XXX: dsilvers 2005-09-22 bug=55030:
-        # Need to make binaries go in groups but for now this'll do.
-        # An example of the concrete problem here is:
-        # - Upload foo-1.0, which builds foo and foo-common (arch all).
-        # - Upload foo-1.1, ditto.
-        # - foo-common-1.1 is built (along with the i386 binary for foo)
-        # - foo-common-1.0 is superseded
-        # Foo is now uninstallable on any architectures which don't yet
-        # have a build of foo-1.1, as the foo-common for foo-1.0 is gone.
-
-        # Essentially we ideally don't want to lose superseded binaries
-        # unless the entire group is ready to be made pending removal.
-
-        # TODO: This is *completely* the wrong method to make this
-        # decision, we need to prevent the binaries getting superseded
-        # in the first place so that they remain in the index.
-
-        # In this instance a group is defined as all the binaries from a
-        # given build. This assumes we've copied the arch_all binaries
-        # from whichever build provided them into each arch-specific build
-        # which we publish. If instead we simply publish the arch-all
-        # binaries from another build then instead we should scan up from
-        # the binary to its source, and then back from the source to each
-        # binary published in *this* distroarchseries for that source.
-        # if the binaries as a group (in that definition) are all superseded
-        # then we can consider them eligible for removal.
         for pub_record in binary_records:
             binpkg_release = pub_record.binarypackagerelease
             self.logger.debug(
