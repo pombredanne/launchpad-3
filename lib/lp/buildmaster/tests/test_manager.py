@@ -163,7 +163,6 @@ class TestSlaveScannerScan(TestCase):
         self._enterReadOnly()
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
-        d.addBoth(self._exitReadOnly)
         d.addCallback(self._checkDispatch, builder)
         return d
 

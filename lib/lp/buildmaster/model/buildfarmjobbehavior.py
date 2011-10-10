@@ -23,6 +23,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.librarian.interfaces import ILibrarianClient
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.buildmaster.interfaces.builder import (
     BuildSlaveFailure,
     CorruptBuildCookie,
@@ -94,17 +95,22 @@ class BuildFarmJobBehaviorBase:
 
             builder_status = slave_status['builder_status']
             if builder_status not in builder_status_handlers:
-                logger.critical(
-                    "Builder on %s returned unknown status %s, failing it"
-                    % (self._builder.url, builder_status))
-                self._builder.failBuilder(
-                    "Unknown status code (%s) returned from status() probe."
-                    % builder_status)
-                # XXX: This will leave the build and job in a bad state, but
-                # should never be possible, since our builder statuses are
-                # known.
-                queueItem._builder = None
-                queueItem.setDateStarted(None)
+                transaction.commit()
+                with DatabaseTransactionPolicy(read_only=False):
+                    logger.critical(
+                        "Builder on %s returned unknown status %s; "
+                        "failing it."
+                        % (self._builder.url, builder_status))
+                    self._builder.failBuilder(
+                        "Unknown status code (%s) returned from status() "
+                        "probe."
+                        % builder_status)
+                    # XXX: This will leave the build and job in a bad
+                    # state, but should never be possible since our
+                    # builder statuses are known.
+                    queueItem._builder = None
+                    queueItem.setDateStarted(None)
+                    transaction.commit()
                 return
 
             # Since logtail is a xmlrpclib.Binary container and it is
@@ -130,20 +136,29 @@ class BuildFarmJobBehaviorBase:
         logger.warn(
             "Builder %s forgot about buildqueue %d -- resetting buildqueue "
             "record" % (queueItem.builder.url, queueItem.id))
-        queueItem.reset()
+        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            queueItem.reset()
+            transaction.commit()
 
     def updateBuild_BUILDING(self, queueItem, slave_status, logtail, logger):
         """Build still building, collect the logtail"""
-        if queueItem.job.status != JobStatus.RUNNING:
-            queueItem.job.start()
-        queueItem.logtail = encoding.guess(str(logtail))
+        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            if queueItem.job.status != JobStatus.RUNNING:
+                queueItem.job.start()
+            queueItem.logtail = encoding.guess(str(logtail))
+            transaction.commit()
 
     def updateBuild_ABORTING(self, queueItem, slave_status, logtail, logger):
         """Build was ABORTED.
 
         Master-side should wait until the slave finish the process correctly.
         """
-        queueItem.logtail = "Waiting for slave process to be terminated"
+        transaction.commit()
+        with DatabaseTransactionPolicy(read_only=False):
+            queueItem.logtail = "Waiting for slave process to be terminated"
+            transaction.commit()
 
     def updateBuild_ABORTED(self, queueItem, slave_status, logtail, logger):
         """ABORTING process has successfully terminated.
@@ -152,10 +167,13 @@ class BuildFarmJobBehaviorBase:
         """
         d = queueItem.builder.cleanSlave()
         def got_cleaned(ignored):
-            queueItem.builder = None
-            if queueItem.job.status != JobStatus.FAILED:
-                queueItem.job.fail()
-            queueItem.specific_job.jobAborted()
+            transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                queueItem.builder = None
+                if queueItem.job.status != JobStatus.FAILED:
+                    queueItem.job.fail()
+                queueItem.specific_job.jobAborted()
+                transaction.commit()
         return d.addCallback(got_cleaned)
 
     def extractBuildStatus(self, slave_status):
