@@ -55,7 +55,8 @@ Just like Launchpad administrators can.
     >>> admin_browser.getLink('Change details').click()
     >>> print admin_browser.title
     Change Ubuntu details...
-    >>> print admin_browser.getControl(name='field.translations_usage').value[0]
+    >>> print admin_browser.getControl(
+    ...     name='field.translations_usage').value[0]
     UNKNOWN
     >>> print admin_browser.getControl(name='field.official_malone').value
     True

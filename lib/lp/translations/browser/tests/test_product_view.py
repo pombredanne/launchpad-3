@@ -18,6 +18,7 @@ from lp.testing.views import create_view
 from lp.translations.browser.product import ProductView
 from lp.translations.publisher import TranslationsLayer
 
+
 class TestProduct(TestCaseWithFactory):
     """Test Product view in translations facet."""
 
@@ -38,7 +39,7 @@ class TestProduct(TestCaseWithFactory):
         sourcepackage.setPackaging(series, None)
         sourcepackage.distroseries.distribution.translations_usage = (
             ServiceUsage.LAUNCHPAD)
-        pot = self.factory.makePOTemplate(
+        self.factory.makePOTemplate(
             distroseries=sourcepackage.distroseries,
             sourcepackagename=sourcepackage.sourcepackagename)
         self.assertEquals(None, view.primary_translatable)
@@ -46,7 +47,6 @@ class TestProduct(TestCaseWithFactory):
     def test_untranslatable_series(self):
         # Create a product that uses translations.
         product = self.factory.makeProduct()
-        series_trunk = product.development_focus
         product.translations_usage = ServiceUsage.LAUNCHPAD
         view = ProductView(product, LaunchpadTestRequest())
 

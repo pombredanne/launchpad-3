@@ -56,7 +56,7 @@ class BaseExportViewMixin(TestCaseWithFactory):
 
     def test_uses_translations_current_templates(self):
         # If there is a current template, it is marked as using translations.
-        template = self.createTranslationTemplate("current")
+        self.createTranslationTemplate("current")
         self.assertTrue(self.view.uses_translations)
 
     def test_getDefaultFormat(self):

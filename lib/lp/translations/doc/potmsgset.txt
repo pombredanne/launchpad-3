@@ -551,7 +551,8 @@ If we go back to the external translations available before, we can see we get
 the same result for suggestions and used messages.
 
     >>> suggestions, used = (
-    ...     potmsgset_untranslated.getExternallySuggestedOrUsedTranslationMessages(
+    ...     potmsgset_untranslated
+    ...       .getExternallySuggestedOrUsedTranslationMessages(
     ...         suggested_languages=[pofile.language],
     ...         used_languages=[pofile.language]))[pofile.language]
     >>> wiki_suggestions = (

@@ -1405,8 +1405,8 @@ class POTemplateSet:
                 ORDER BY POTemplate.id
             )
             """ % {
-                'usage' : sqlvalues(
-                    ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL) }
+                'usage': sqlvalues(
+                    ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)}
         ).rowcount
 
 

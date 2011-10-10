@@ -35,8 +35,6 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from lp.app.enums import ServiceUsage
-# Load the normal plugin set.
-import lp.codehosting
 from lp.code.errors import StaleLastMirrored
 from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
