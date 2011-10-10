@@ -1,4 +1,4 @@
-<div
+<div id="branches-table-listing"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
@@ -39,7 +39,6 @@ function hide_commit(id) {
         div.style.display = "none";
     }
 }
-registerLaunchpadFunction(hookUpFilterSubmission);
 
 </script>
 
@@ -189,4 +188,16 @@ registerLaunchpadFunction(hookUpFilterSubmission);
 
   <tal:navigation replace="structure context/@@+navigation-links-lower" />
 
+<script type="text/javascript">
+    LPS.use('lp.app.batchnavigator',
+            function(Y) {
+                Y.on("domready", function () {
+                    var config = {
+                        contentBox: '#branches-table-listing',
+                        post_refresh_hook: hookUpFilterSubmission
+                    };
+                    new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
+                });
+            });
+</script>
 </div>

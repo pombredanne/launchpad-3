@@ -1,0 +1,3 @@
+<div tal:define="bugtasks view/bugtasks">
+    <tal:bugtasklisting content="structure bugtasks/@@+listing" />
+</div>

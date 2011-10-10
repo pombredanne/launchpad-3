@@ -219,69 +219,18 @@
           targeted
         </h2>
 
-        <tal:has_specs condition="specs"
+        <tal:has_specs condition="view/has_specifications"
           tal:content="cache:anonymous, view/expire_cache_minutes minute">
-          <table class="listing sortable" id="milestone_specs"
-            style="margin-bottom: 2em;">
-            <thead>
-              <tr>
-                <th colspan="2">Blueprint</th>
-                <th style="width: 14em"
-                  tal:condition="view/is_project_milestone">
-                  Project
-                </th>
-                <th style="width: 9em;">Priority</th>
-                <th style="width: 14em;">Assignee</th>
-                <th style="width: 10em;">Delivery</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr tal:repeat="spec specs">
-                <td class="icon left">
-                  <span tal:content="structure spec/image:icon" />
-                </td>
-                <td>
-                  <a tal:content="spec/title/fmt:shorten/100"
-                     tal:attributes="
-                         href spec/fmt:url;
-                         title spec/summary/fmt:shorten/400">Foo Bar Baz</a>
-                  <img src="/@@/info" alt="Informational"
-                       tal:condition="spec/informational" />
-                </td>
-                <td tal:condition="view/is_project_milestone">
-                    <span class="sortkey" tal:content="spec/product/displayname" />
-                    <a tal:attributes="href spec/milestone/fmt:url"
-                       tal:content="spec/product/displayname" />
-                </td>
-                <td>
-                  <span class="sortkey" tal:content="spec/priority/sortkey" />
-                  <span tal:content="spec/priority/title"
-                        tal:attributes="
-                        class string:specpriority${spec/priority/name}">High</span>
-                </td>
-                <td>
-                  <a tal:condition="spec/assignee"
-                     tal:replace="structure spec/assignee/fmt:link" />&nbsp;
-                </td>
-                <td>
-                  <span class="sortkey"
-                        tal:content="spec/implementation_status/sortkey" />
-                  <span tal:content="spec/implementation_status/title"
-                        tal:attributes="
-                        class string:specdelivery${spec/implementation_status/name}">
-                    Deployment
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+            <div tal:define="specifications view/specifications">
+                <tal:bugtasklisting content="structure specifications/@@+listing" />
+            </div>
         </tal:has_specs>
-
-        <tal:has_bugtasks condition="bugtasks">
-          <tal:cache content="cache:anonymous, view/expire_cache_minutes minute">
-            <tal:milestone-bugtasks
-              metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
-          </tal:cache>
+        <p style="margin-bottom: 2em;"></p>
+        <tal:has_bugtasks condition="view/has_bugs"
+          tal:content="cache:anonymous, view/expire_cache_minutes minute">
+            <div tal:define="bugtasks view/bugtasks">
+                <tal:bugtasklisting content="structure bugtasks/@@+listing" />
+            </div>
         </tal:has_bugtasks>
 
         <tal:neither_bugs_nor_specs condition="not: view/has_bugs_or_specs">

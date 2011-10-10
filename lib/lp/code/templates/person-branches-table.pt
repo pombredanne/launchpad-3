@@ -1,0 +1,4 @@
+<div tal:define="branches view/branches">
+    <tal:branchlisting
+        content="structure branches/@@+branch-listing" />
+</div>

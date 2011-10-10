@@ -41,6 +41,8 @@ from storm.expr import (
     Asc,
     Desc,
     )
+import urlparse
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import (
@@ -559,6 +561,19 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
         """Provide a default for distros and other things without breadcrumbs.
         """
         return self.label
+
+    table_only_template = ViewPageTemplateFile(
+        '../templates/person-branches-table.pt')
+
+    @property
+    def template(self):
+        query_string = self.request.get('QUERY_STRING', '')
+        query_params = urlparse.parse_qs(query_string)
+        render_table_only = 'batch_request' in query_params
+        if render_table_only:
+            return self.table_only_template
+        else:
+            return super(BranchListingView, self).template
 
     @property
     def initial_values(self):

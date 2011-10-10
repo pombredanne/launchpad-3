@@ -1,0 +1,80 @@
+<div id="specification-table-listing"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+>
+  <tal:needs-batch condition="context/has_multiple_pages">
+    <div id="specification-batch-links">
+      <tal:navigation replace="structure context/@@+navigation-links-upper" />
+    </div>
+  </tal:needs-batch>
+
+    <table tal:attributes="class context/table_class" id="milestone_specifications">
+        <thead>
+          <tr>
+            <th colspan="2">Blueprint</th>
+            <th style="width: 14em"
+              tal:condition="context/view/is_project_milestone">
+              Project
+            </th>
+            <th style="width: 9em;">Priority</th>
+            <th style="width: 14em;">Assignee</th>
+            <th style="width: 10em;">Delivery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="spec context/specifications">
+            <td class="icon left">
+              <span tal:content="structure spec/image:icon" />
+            </td>
+            <td>
+              <a tal:content="spec/title/fmt:shorten/100"
+                 tal:attributes="
+                     href spec/fmt:url;
+                     title spec/summary/fmt:shorten/400">Foo Bar Baz</a>
+              <img src="/@@/info" alt="Informational"
+                   tal:condition="spec/informational" />
+            </td>
+            <td tal:condition="context/view/is_project_milestone">
+                <span class="sortkey" tal:content="spec/product/displayname" />
+                <a tal:attributes="href spec/milestone/fmt:url"
+                   tal:content="spec/product/displayname" />
+            </td>
+            <td>
+              <span class="sortkey" tal:content="spec/priority/sortkey" />
+              <span tal:content="spec/priority/title"
+                    tal:attributes="
+                    class string:specpriority${spec/priority/name}">High</span>
+            </td>
+            <td>
+              <a tal:condition="spec/assignee"
+                 tal:replace="structure spec/assignee/fmt:link" />&nbsp;
+            </td>
+            <td>
+              <span class="sortkey"
+                    tal:content="spec/implementation_status/sortkey" />
+              <span tal:content="spec/implementation_status/title"
+                    tal:attributes="
+                    class string:specdelivery${spec/implementation_status/name}">
+                Deployment
+              </span>
+            </td>
+          </tr>
+        </tbody>
+    </table>
+
+<tal:navigation replace="structure context/@@+navigation-links-lower" />
+
+<script type="text/javascript">
+    LPS.use('lp.app.batchnavigator',
+            function(Y) {
+                Y.on("domready", function () {
+                    var config = {
+                        contentBox: '#specification-table-listing',
+                        query_parameter: 'specification_batch'
+                    };
+                    new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
+                });
+            });
+</script>
+
+</div>

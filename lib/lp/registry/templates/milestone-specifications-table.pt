@@ -1,0 +1,3 @@
+<div tal:define="specifications view/specifications">
+    <tal:specificationlisting content="structure specifications/@@+listing" />
+</div>

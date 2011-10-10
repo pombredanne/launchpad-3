@@ -1,17 +1,19 @@
-<tal:root
+<div id="bugtask-table-listing"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  omit-tag="">
+>
+  <tal:needs-batch condition="context/has_multiple_pages">
+    <div id="bugtask-batch-links">
+      <tal:navigation replace="structure context/@@+navigation-links-upper" />
+    </div>
+  </tal:needs-batch>
 
-
-
-  <tal:milestone-bugtasks metal:define-macro="milestone_bugtasks">
-    <table class="listing sortable" id="milestone_bugtasks">
+    <table tal:attributes="class context/table_class" id="milestone_bugtasks">
       <thead>
         <tr>
           <th colspan="4">Bug report</th>
           <th style="width: 14em"
-            tal:condition="view/is_project_milestone">
+            tal:condition="context/view/is_project_milestone">
             Project
           </th>
           <th style="width: 9em;">Importance</th>
@@ -20,7 +22,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="bugtask bugtasks">
+        <tr tal:repeat="bugtask context/bugtasks">
           <td class="icon left">
             <span class="sortkey" tal:content="bugtask/bug/id" />
             <span tal:content="structure bugtask/image:icon" />
@@ -35,7 +37,7 @@
           <td style="padding-right: 5px; text-align:right">
             <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
           </td>
-          <td tal:condition="view/is_project_milestone">
+          <td tal:condition="context/view/is_project_milestone">
             <span class="sortkey" tal:content="bugtask/target/displayname" />
             <a tal:attributes="href bugtask/milestone/fmt:url"
                tal:content="bugtask/target/displayname" />
@@ -61,5 +63,20 @@
         </tr>
       </tbody>
     </table>
-  </tal:milestone-bugtasks>
-</tal:root>
+
+<tal:navigation replace="structure context/@@+navigation-links-lower" />
+
+<script type="text/javascript">
+    LPS.use('lp.app.batchnavigator',
+            function(Y) {
+                Y.on("domready", function () {
+                    var config = {
+                        contentBox: '#bugtask-table-listing',
+                        query_parameter: 'bugtask_batch'
+                    };
+                    new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
+                });
+            });
+</script>
+
+</div>
