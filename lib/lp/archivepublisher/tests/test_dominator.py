@@ -219,6 +219,24 @@ class TestDominator(TestNativePublishingBase):
         self.checkPublications(
             foo_10_all_bins, PackagePublishingStatus.PUBLISHED)
 
+        # Now creating a newer foo-bin should see those last two
+        # publications superseded.
+        [build2] = foo_11_src.getBuilds()
+        foo_11_bin = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-bin", version="1.1", build=build2,
+            architecturespecific=True)
+        self.publishBinaryInArchive(
+            foo_11_bin, self.ubuntutest.main_archive,
+            pocket=foo_10_src.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        dominator.judgeAndDominate(
+            foo_10_src.distroseries, foo_10_src.pocket)
+        self.checkPublication(
+            foo_10_i386_bin, PackagePublishingStatus.SUPERSEDED)
+        dominator.judgeAndDominate(
+            foo_10_src.distroseries, foo_10_src.pocket)
+        self.checkPublications(
+            foo_10_all_bins, PackagePublishingStatus.SUPERSEDED)
 
 
 class TestDomination(TestNativePublishingBase):

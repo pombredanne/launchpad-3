@@ -205,6 +205,24 @@ class Dominator:
         self.logger = logger
         self.archive = archive
 
+    def _checkArchIndep(self, publication):
+        """Return True if the binary publication can be superseded.
+
+        If the publication is an arch-indep binary, we can only supersede
+        it if all the binaries from the same source are also superseded,
+        else those binaries may become uninstallable.
+        See bug 34086.
+        """
+        binary = publication.binarypackagerelease
+        if not binary.architecturespecific:
+            others = publication.getOtherPublicationsForSameSource()
+            if others.any():
+                # Don't dominate this arch:all binary as there are
+                # other arch-specific binaries from the same build
+                # that are still active.
+                return False
+        return True
+
     def dominatePackage(self, publications, live_versions, generalization):
         """Dominate publications for a single package.
 
@@ -234,17 +252,6 @@ class Dominator:
         publications = list(publications)
         generalization.load_releases(publications)
 
-        newest_pub = publications[0]
-        if not generalization.is_source:
-            binary = newest_pub.binarypackagerelease
-            if not binary.architecturespecific:
-                others = newest_pub.getOtherPublicationsForSameSource()
-                if others.any():
-                    # Don't dominate this arch:all binary as there are
-                    # other arch-specific binaries from the same build
-                    # that are still active.
-                    return
-
         # Go through publications from latest version to oldest.  This
         # makes it easy to figure out which release superseded which:
         # the dominant is always the oldest live release that is newer
@@ -272,7 +279,9 @@ class Dominator:
                 pub.supersede(current_dominant, logger=self.logger)
                 self.logger.debug2(
                     "Superseding older publication for version %s.", version)
-            elif version in live_versions:
+            elif (version in live_versions or
+                  (not generalization.is_source and
+                   self._checkArchIndep(pub))):
                 # This publication stays active; if any publications
                 # that follow right after this are to be superseded,
                 # this is the release that they are superseded by.
@@ -475,6 +484,8 @@ class Dominator:
                     BinaryPackageFormat.DDEB,
                 bpph_location_clauses)
             self.logger.debug("Dominating binaries...")
+            # TODO: split into archindep and arch-specific and run the
+            # latter first.
             self._dominatePublications(
                 self._sortPackages(binaries, generalization), generalization)
 
