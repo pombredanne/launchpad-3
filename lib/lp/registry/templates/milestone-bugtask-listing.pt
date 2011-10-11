@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
   <tal:needs-batch condition="context/has_multiple_pages">
-    <div id="bugtask-batch-links">
+    <div id="bugtask-batch-links-upper">
       <tal:navigation replace="structure context/@@+navigation-links-upper" />
     </div>
   </tal:needs-batch>
@@ -64,7 +64,9 @@
       </tbody>
     </table>
 
-<tal:navigation replace="structure context/@@+navigation-links-lower" />
+    <div id="bugtask-batch-links-lower">
+        <tal:navigation replace="structure context/@@+navigation-links-lower" />
+    </div>
 
 <script type="text/javascript">
     LPS.use('lp.app.batchnavigator',
@@ -72,6 +74,7 @@
                 Y.on("domready", function () {
                     var config = {
                         contentBox: '#bugtask-table-listing',
+                        submit_id: 'bugtask-batch-links',
                         query_parameter: 'bugtask_batch'
                     };
                     new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);

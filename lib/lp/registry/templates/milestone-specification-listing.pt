@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
   <tal:needs-batch condition="context/has_multiple_pages">
-    <div id="specification-batch-links">
+    <div id="specification-batch-links-upper">
       <tal:navigation replace="structure context/@@+navigation-links-upper" />
     </div>
   </tal:needs-batch>
@@ -62,7 +62,9 @@
         </tbody>
     </table>
 
-<tal:navigation replace="structure context/@@+navigation-links-lower" />
+    <div id="specification-batch-links-lower">
+        <tal:navigation replace="structure context/@@+navigation-links-lower" />
+    </div>
 
 <script type="text/javascript">
     LPS.use('lp.app.batchnavigator',
@@ -70,6 +72,7 @@
                 Y.on("domready", function () {
                     var config = {
                         contentBox: '#specification-table-listing',
+                        submit_id: 'specification-batch-links',
                         query_parameter: 'specification_batch'
                     };
                     new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);

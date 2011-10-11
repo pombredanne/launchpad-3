@@ -43,7 +43,7 @@ function hide_commit(id) {
 </script>
 
   <tal:needs-batch condition="context/has_multiple_pages">
-    <div id="branch-batch-links">
+    <div id="branch-batch-links-upper">
       <tal:navigation replace="structure context/@@+navigation-links-upper" />
     </div>
   </tal:needs-batch>
@@ -186,7 +186,9 @@ function hide_commit(id) {
     </tbody>
   </table>
 
-  <tal:navigation replace="structure context/@@+navigation-links-lower" />
+  <div id="branch-batch-links-lower">
+    <tal:navigation replace="structure context/@@+navigation-links-lower" />
+  </div>
 
 <script type="text/javascript">
     LPS.use('lp.app.batchnavigator',
@@ -194,6 +196,7 @@ function hide_commit(id) {
                 Y.on("domready", function () {
                     var config = {
                         contentBox: '#branches-table-listing',
+                        submit_id: 'branch-batch-links',
                         post_refresh_hook: hookUpFilterSubmission
                     };
                     new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
