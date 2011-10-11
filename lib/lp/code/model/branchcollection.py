@@ -811,7 +811,7 @@ class VisibleBranchCollection(GenericBranchCollection):
             Select(Branch.id,
                    And(Branch.owner == TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.explicitly_private == True)),
+                       Branch.transitively_private == True)),
             # Private branches the person is subscribed to, either directly or
             # indirectly.
             Select(Branch.id,

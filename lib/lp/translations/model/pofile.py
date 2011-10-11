@@ -1118,7 +1118,7 @@ class POFile(SQLBase, POFileMixIn):
                 error_message = error['error-message']
                 errorsdetails = '%s%d. "%s":\n\n%s\n\n' % (
                     errorsdetails,
-                    potmsgset.sequence,
+                    potmsgset.getSequence(self.potemplate),
                     error_message,
                     pomessage)
 

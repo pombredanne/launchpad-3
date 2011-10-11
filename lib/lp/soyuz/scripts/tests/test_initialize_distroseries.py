@@ -259,7 +259,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         parent, parent_das, parent_das2, source = res
         # Create builds for the architecture of parent_das2.
         source.createMissingBuilds(architectures_available=[parent_das2])
-        # Initialize only with parent_das2's architecture.
+        # Initialize only with parent_das's architecture.
         child = self.factory.makeDistroSeries()
         ids = InitializeDistroSeries(
             child, [parent.id], arches=[parent_das2.architecturetag])
@@ -293,13 +293,13 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # architecture we're initializing with, IDS will succeed.
         res = self.create2archParentAndSource(packages={'p1': '1.1'})
         parent, parent_das, parent_das2, source = res
-        # Create builds for the architecture of parent_das2.
-        source.createMissingBuilds(architectures_available=[parent_das2])
-        # Initialize only with parent_das's architecture.
+        # Create builds for the architecture of parent_das.
+        source.createMissingBuilds(architectures_available=[parent_das])
+        # Initialize only with parent_das2's architecture.
         child = self.factory.makeDistroSeries(
             distribution=parent.distribution, previous_series=parent)
         ids = InitializeDistroSeries(
-            child, arches=[parent_das.architecturetag])
+            child, arches=[parent_das2.architecturetag])
 
         # No error is raised because we're initializing only the architecture
         # which has no pending builds in it.
@@ -1383,3 +1383,39 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual([], self.getWaitingJobs(child, 'p2', prev_parent2))
         self.assertNotEqual([], self.getWaitingJobs(child, 'p1', parent3))
         self.assertEqual([], self.getWaitingJobs(child, 'p3', parent3))
+
+    def test_multiple_parents_child_nominatedarchindep(self):
+        # If the list of the selected architectures and the list of the
+        # nominatedarchindep for all the parent intersect, the child's
+        # nominatedarchindep is taken from the intersection of the two
+        # lists.
+        parent1, unused = self.setupParent(
+            packages={}, arch_tag='i386')
+        parent2, unused = self.setupParent(
+            packages={}, arch_tag='amd64')
+        child = self._fullInitialize(
+            [parent1, parent2],
+            arches=[parent2.nominatedarchindep.architecturetag])
+        self.assertEqual(
+            child.nominatedarchindep.architecturetag,
+            parent2.nominatedarchindep.architecturetag)
+
+    def test_multiple_parents_no_child_nominatedarchindep(self):
+        # If the list of the selected architectures and the list of the
+        # nominatedarchindep for all the parents don't intersect, an
+        # error is raised because it means that the child won't have an
+        # architecture to build architecture independent binaries.
+        parent1, unused = self.setupParent(
+            packages={}, arch_tag='i386')
+        self.setupDas(parent1, 'hppa', 'powerpc')
+        parent2, unused = self.setupParent(
+            packages={}, arch_tag='amd64')
+        child = self.factory.makeDistroSeries()
+        ids = InitializeDistroSeries(
+            child, [parent1.id, parent2.id],
+            arches=['powerpc'])
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("The distroseries has no architectures selected to "
+             "build architecture independent binaries."),
+            ids.check)

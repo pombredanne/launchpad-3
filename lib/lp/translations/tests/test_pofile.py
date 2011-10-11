@@ -1356,32 +1356,6 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], potmsgsets)
 
-    def test_findPOTMsgSetsContaining_ordering(self):
-        # As per bug 388473 findPOTMsgSetsContaining still used the old
-        # potmsgset.sequence for ordering. Check that this is fixed.
-        # This test will go away when potmsgset.sequence goes away.
-
-        # Give the method something to search for.
-        self.factory.makeCurrentTranslationMessage(
-            pofile=self.devel_pofile,
-            potmsgset=self.potmsgset1,
-            translations=["Shared translation"])
-        self.factory.makeCurrentTranslationMessage(
-            pofile=self.devel_pofile,
-            potmsgset=self.potmsgset2,
-            translations=["Another shared translation"])
-
-        # Mess with potmsgset.sequence.
-        removeSecurityProxy(self.potmsgset1).sequence = 2
-        removeSecurityProxy(self.potmsgset2).sequence = 1
-
-        potmsgsets = list(
-            self.devel_pofile.findPOTMsgSetsContaining("translation"))
-
-        # Order ignores potmsgset.sequence.
-        self.assertEquals(
-            [self.potmsgset1, self.potmsgset2], potmsgsets)
-
 
 class TestPOFileSet(TestCaseWithFactory):
     """Test PO file set methods."""

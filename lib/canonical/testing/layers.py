@@ -95,7 +95,10 @@ from zope.component import (
     )
 from zope.component.interfaces import ComponentLookupError
 import zope.publisher.publish
-from zope.security.management import getSecurityPolicy
+from zope.security.management import (
+    endInteraction,
+    getSecurityPolicy,
+    )
 from zope.server.logger.pythonlogger import PythonLogger
 
 from canonical.config import (
@@ -147,7 +150,6 @@ from lp.services.osutils import kill_by_pidfile
 from lp.services.rabbit.server import RabbitServer
 from lp.testing import (
     ANONYMOUS,
-    is_logged_in,
     login,
     logout,
     )
@@ -1358,9 +1360,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
     def testTearDown(cls):
         getUtility(IOpenLaunchBag).clear()
 
-        # If tests forget to logout, we can do it for them.
-        if is_logged_in():
-            logout()
+        endInteraction()
 
         # Disconnect Storm so it doesn't get in the way of database resets
         disconnect_stores()
@@ -1389,9 +1389,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     def testTearDown(cls):
         getUtility(IOpenLaunchBag).clear()
 
-        # If tests forget to logout, we can do it for them.
-        if is_logged_in():
-            logout()
+        endInteraction()
 
         # Reset any statistics
         from canonical.launchpad.webapp.opstats import OpStats

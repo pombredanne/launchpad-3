@@ -982,8 +982,8 @@
                 interface="lp.registry.interfaces.person.IPersonSet"/>
         </securedutility>
         <securedutility
-            class="canonical.launchpad.rest.MeLink"
-            provides="canonical.launchpad.rest.IMeLink">
+            class="canonical.launchpad.rest.me.MeLink"
+            provides="canonical.launchpad.rest.me.IMeLink">
             <allow
                 interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
             <allow
