@@ -13,7 +13,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     IBugTaskSet,
-    get_bugtask_status,
     )
 from lp.testing import (
     login_person,
@@ -36,11 +35,8 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.milestone = self.factory.makeMilestone(productseries=self.series)
 
     def get_counts(self, user):
-        counts = self.bugtask_set.getStatusCountsForProductSeries(
+        return self.bugtask_set.getStatusCountsForProductSeries(
             user, self.series)
-        return [
-            (get_bugtask_status(status_id), count)
-            for status_id, count in counts]
 
     def test_privacy_and_counts_for_unauthenticated_user(self):
         # An unauthenticated user should see bug counts for each status
