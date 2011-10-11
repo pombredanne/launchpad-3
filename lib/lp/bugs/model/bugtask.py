@@ -2809,12 +2809,7 @@ class BugTaskSet:
         # scans instead of sequential scans on the BugTask table.
         query = """
             SELECT
-                CASE status
-                    WHEN %(incomplete_with_response)s THEN %(incomplete)s
-                    WHEN %(incomplete_without_response)s THEN %(incomplete)s
-                    ELSE status
-                END AS norm_status,
-                COUNT(*)
+                status, COUNT(*)
             FROM (
                 SELECT BugTask.status
                 FROM BugTask
@@ -2832,17 +2827,11 @@ class BugTaskSet:
                     AND Milestone.productseries = %(series)s
                     %(privacy)s
                 ) AS subquery
-            GROUP BY norm_status
+            GROUP BY status
             """
         query %= dict(
             series=quote(product_series),
-            privacy=bug_privacy_filter,
-            incomplete=quote(BugTaskStatusSearch.INCOMPLETE),
-            incomplete_with_response=quote(
-                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE),
-            incomplete_without_response=quote(
-                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE),
-            )
+            privacy=bug_privacy_filter)
         cur = cursor()
         cur.execute(query)
         return cur.fetchall()

@@ -38,7 +38,7 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         counts = self.bugtask_set.getStatusCountsForProductSeries(
                 user, self.series)
         return [
-            (BugTaskStatus.items[status_id], count)
+            (BugTaskStatusSearch.items[status_id], count)
             for status_id, count in counts]
 
     def test_privacy_and_counts_for_unauthenticated_user(self):
@@ -93,18 +93,18 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
             self.get_counts(None))
 
     def test_incomplete_with_without_x_statuses(self):
-        # INCOMPLETE_WITH_RESPONSE and INCOMPLETE_WITHOUT_RESPONSE are both
-        # counted as INCOMPLETE in the reported stats.
+        # INCOMPLETE, INCOMPLETE_WITH_RESPONSE and INCOMPLETE_WITHOUT_RESPONSE
+        # are counted separately in the reported stats.
         statuses = [
-            BugTaskStatusSearch.INCOMPLETE,
             BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
             BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+            BugTaskStatusSearch.INCOMPLETE,
             ]
         for status in statuses:
             self.factory.makeBug(series=self.series, status=status)
         flush_database_updates()
         self.assertEqual(
-            [(BugTaskStatus.INCOMPLETE, 3)],
+            [(status, 1) for status in statuses],
             self.get_counts(None))
 
 
