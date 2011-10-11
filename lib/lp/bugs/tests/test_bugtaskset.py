@@ -10,7 +10,6 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
     BugTaskStatusSearch,
     IBugTaskSet,
     )
@@ -49,7 +48,7 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.factory.makeBug(series=self.series)
         self.factory.makeBug(series=self.series, private=True)
         self.assertEqual(
-            [(BugTaskStatus.NEW, 2)],
+            [(BugTaskStatusSearch.NEW, 2)],
             self.get_counts(None))
 
     def test_privacy_and_counts_for_owner(self):
@@ -60,7 +59,7 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.factory.makeBug(series=self.series)
         self.factory.makeBug(series=self.series, private=True)
         self.assertEqual(
-            [(BugTaskStatus.NEW, 4)],
+            [(BugTaskStatusSearch.NEW, 4)],
             self.get_counts(self.owner))
 
     def test_privacy_and_counts_for_other_user(self):
@@ -74,21 +73,25 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.factory.makeBug(series=self.series, private=True)
         other = self.factory.makePerson()
         self.assertEqual(
-            [(BugTaskStatus.NEW, 4)],
+            [(BugTaskStatusSearch.NEW, 4)],
             self.get_counts(other))
 
     def test_multiple_statuses(self):
         # Test that separate counts are provided for each status that
         # bugs are found in.
-        for status in (BugTaskStatus.INVALID, BugTaskStatus.OPINION):
+        statuses = [
+            BugTaskStatusSearch.INVALID,
+            BugTaskStatusSearch.OPINION,
+            ]
+        for status in statuses:
             self.factory.makeBug(milestone=self.milestone, status=status)
             self.factory.makeBug(series=self.series, status=status)
         for i in range(3):
             self.factory.makeBug(series=self.series)
         self.assertEqual(
-            [(BugTaskStatus.INVALID, 2),
-             (BugTaskStatus.OPINION, 2),
-             (BugTaskStatus.NEW, 3),
+            [(BugTaskStatusSearch.INVALID, 2),
+             (BugTaskStatusSearch.OPINION, 2),
+             (BugTaskStatusSearch.NEW, 3),
             ],
             self.get_counts(None))
 
