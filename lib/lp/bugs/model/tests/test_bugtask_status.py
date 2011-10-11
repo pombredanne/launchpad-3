@@ -10,8 +10,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugtask import UserCannotEditBugTaskStatus
-from lp.bugs.model.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    BugTaskStatusSearch,
+    BugTaskStatusSearchDisplay,
+    UserCannotEditBugTaskStatus,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -146,6 +150,35 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
             self.task.canTransitionToStatus(
                 BugTaskStatus.NEW, self.user),
             False)
+
+    def test_transitionToStatus_normalization(self):
+        # The new status is normalized using normalize_bugtask_status, so
+        # members of BugTaskStatusSearch or BugTaskStatusSearchDisplay can
+        # also be used.
+        with person_logged_in(self.user):
+            self.task.transitionToStatus(
+                BugTaskStatusSearch.CONFIRMED, self.user)
+            self.assertEqual(BugTaskStatus.CONFIRMED, self.task.status)
+            self.task.transitionToStatus(
+                BugTaskStatusSearchDisplay.CONFIRMED, self.user)
+            self.assertEqual(BugTaskStatus.CONFIRMED, self.task.status)
+
+    def test_canTransitionToStatus_normalization(self):
+        # The new status is normalized using normalize_bugtask_status, so
+        # members of BugTaskStatusSearch or BugTaskStatusSearchDisplay can
+        # also be used.
+        self.assertTrue(
+            self.task.canTransitionToStatus(
+                BugTaskStatusSearch.CONFIRMED, self.user))
+        self.assertFalse(
+            self.task.canTransitionToStatus(
+                BugTaskStatusSearch.WONTFIX, self.user))
+        self.assertTrue(
+            self.task.canTransitionToStatus(
+                BugTaskStatusSearchDisplay.CONFIRMED, self.user))
+        self.assertFalse(
+            self.task.canTransitionToStatus(
+                BugTaskStatusSearchDisplay.WONTFIX, self.user))
 
 
 class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):

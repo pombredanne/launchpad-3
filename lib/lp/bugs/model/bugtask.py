@@ -122,6 +122,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     IllegalRelatedBugTasksParams,
     IllegalTarget,
+    normalize_bugtask_status,
     RESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskAssignee,
     UserCannotEditBugTaskImportance,
@@ -858,6 +859,7 @@ class BugTask(SQLBase):
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
+        new_status = normalize_bugtask_status(new_status)
         celebrities = getUtility(ILaunchpadCelebrities)
         if (self.status == BugTaskStatus.FIXRELEASED and
            (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
@@ -880,6 +882,8 @@ class BugTask(SQLBase):
             # normal status form, don't always submit a status when
             # testing the edit form.
             return
+
+        new_status = normalize_bugtask_status(new_status)
 
         if not self.canTransitionToStatus(new_status, user):
             raise UserCannotEditBugTaskStatus(
