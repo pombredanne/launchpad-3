@@ -146,45 +146,51 @@ class SlaveScanner:
         # If we don't recognise the exception include a stack trace with
         # the error.
         error_message = failure.getErrorMessage()
-        if failure.check(
+        familiar_error = failure.check(
             BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
-            CannotResumeHost, BuildDaemonError, CannotFetchFile):
-            self.logger.info("Scanning %s failed with: %s" % (
-                self.builder_name, error_message))
+            CannotResumeHost, BuildDaemonError, CannotFetchFile)
+        if familiar_error:
+            self.logger.info(
+                "Scanning %s failed with: %s",
+                self.builder_name, error_message)
         else:
-            self.logger.info("Scanning %s failed with: %s\n%s" % (
+            self.logger.info(
+                "Scanning %s failed with: %s\n%s",
                 self.builder_name, failure.getErrorMessage(),
-                failure.getTraceback()))
+                failure.getTraceback())
 
         # Decide if we need to terminate the job or fail the
         # builder.
-        transaction.abort()
         try:
+            builder = get_builder(self.builder_name)
+            if builder.currentjob is None:
+                self.logger.info(
+                    "Builder %s failed a probe, count: %s",
+                    self.builder_name, builder.failure_count)
+            else:
+                build_farm_job = builder.getCurrentBuildFarmJob()
+                self.logger.info(
+                    "builder %s failure count: %s, "
+                    "job '%s' failure count: %s",
+                    self.builder_name,
+                    builder.failure_count,
+                    build_farm_job.title,
+                    build_farm_job.failure_count)
+
+            transaction.commit()
+
             with DatabaseTransactionPolicy(read_only=False):
-                builder = get_builder(self.builder_name)
                 builder.gotFailure()
                 if builder.currentjob is not None:
-                    build_farm_job = builder.getCurrentBuildFarmJob()
                     build_farm_job.gotFailure()
-                    self.logger.info(
-                        "builder %s failure count: %s, "
-                        "job '%s' failure count: %s" % (
-                            self.builder_name,
-                            builder.failure_count,
-                            build_farm_job.title,
-                            build_farm_job.failure_count))
-                else:
-                    self.logger.info(
-                        "Builder %s failed a probe, count: %s" % (
-                            self.builder_name, builder.failure_count))
                 assessFailureCounts(builder, failure.getErrorMessage())
                 transaction.commit()
         except:
             # Catastrophic code failure! Not much we can do.
+            transaction.abort()
             self.logger.error(
                 "Miserable failure when trying to examine failure counts:\n",
                 exc_info=True)
-            transaction.abort()
 
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
