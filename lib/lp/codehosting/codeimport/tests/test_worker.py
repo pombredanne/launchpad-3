@@ -1112,7 +1112,13 @@ class PullingImportWorkerTests:
             'trunk', [('README', 'Original contents')],
             stacked_on_url=stacked_on.base)
         stacked_on.fetch(Branch.open(source_details.url))
-        self.assertTrue(len(stacked_on.repository.all_revision_ids()) > 0)
+        base_rev_count = self.foreign_commit_count
+        # There should only be one revision there, the other
+        # one is in the stacked-on repository.
+        self.addCleanup(stacked_on.lock_read().unlock)
+        self.assertEquals(
+            base_rev_count,
+            len(stacked_on.repository.revisions.keys()))
         worker = self.makeImportWorker(
             source_details,
             opener_policy=AcceptAnythingPolicy())
@@ -1120,10 +1126,14 @@ class PullingImportWorkerTests:
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
         branch = self.getStoredBazaarBranch(worker)
+        self.assertEquals(
+            base_rev_count,
+            len(stacked_on.repository.revisions.keys()))
         # There should only be one revision there, the other
         # one is in the stacked-on repository.
-        self.addCleanup(stacked_on.lock_read().unlock)
-        self.assertEquals(1, len(stacked_on.repository.revisions.keys()))
+        self.addCleanup(branch.lock_read().unlock)
+        self.assertEquals(1,
+             len(branch.repository.revisions.without_fallbacks().keys()))
         self.assertEquals(stacked_on.base, branch.get_stacked_on_url())
 
 
