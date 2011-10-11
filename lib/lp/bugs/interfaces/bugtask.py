@@ -35,6 +35,7 @@ __all__ = [
     'IPersonBugTaskSearch',
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamProductBugTaskSearch',
+    'normalize_bugtask_status',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskAssignee',
@@ -307,7 +308,7 @@ class BugTaskStatusSearch(DBEnumeratedType):
 
 
 def get_bugtask_status(status_id):
-    """Return a member of `BugTaskStatus` or `BugTaskStatusSearch`.
+    """Get a member of `BugTaskStatus` or `BugTaskStatusSearch` by value.
 
     `BugTaskStatus` and `BugTaskStatusSearch` intersect, but neither is a
     subset of the other, so this searches first in `BugTaskStatus` then in
@@ -317,6 +318,20 @@ def get_bugtask_status(status_id):
         return BugTaskStatus.items[status_id]
     except KeyError:
         return BugTaskStatusSearch.items[status_id]
+
+
+def normalize_bugtask_status(status):
+    """Normalize `status`.
+
+    It might be a member of any of three related enums: `BugTaskStatus`,
+    `BugTaskStatusSearch`, or `BugTaskStatusSearchDisplay`. This tries to
+    normalize by value back to the first of those three enums in which the
+    status appears.
+    """
+    try:
+        return BugTaskStatus.items[status.value]
+    except KeyError:
+        return BugTaskStatusSearch.items[status.value]
 
 
 class BugTagsSearchCombinator(EnumeratedType):
