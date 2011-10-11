@@ -50,7 +50,7 @@ def set_up_tacfile_logging(name, level):
 
     This is preferable to use over `set_up_logging_for_script` for .tac
     files since there's no options to pass through.  The logger object
-    is connected to Twisted's log and returned. 
+    is connected to Twisted's log and returned.
 
     :param name: The logger instance name.
     :param level: The log level to use, eg. logging.INFO or logging.DEBUG
