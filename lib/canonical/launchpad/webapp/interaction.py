@@ -47,7 +47,7 @@ from zope.security.management import (
 
 from canonical.launchpad.webapp.interfaces import (
     IOpenLaunchBag,
-    IParticipationExtras,
+    IInteractionExtras,
     IPlacelessAuthUtility,
     )
 
@@ -55,11 +55,11 @@ from canonical.launchpad.webapp.interfaces import (
 __all__ = [
     'ANONYMOUS',
     'get_current_principal',
-    'get_participation_extras',
+    'get_interaction_extras',
     'setupInteraction',
     'setupInteractionByEmail',
     'setupInteractionForPerson',
-    'Participation',
+    'InteractionExtras',
     ]
 
 
@@ -178,6 +178,7 @@ class Participation:
 
 
 class InteractionExtras:
+    implements(IInteractionExtras)
     permit_timeout_from_features = False
 
 

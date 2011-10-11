@@ -71,7 +71,7 @@ from canonical.launchpad.webapp.interfaces import (
     ReadOnlyModeViolation,
     SLAVE_FLAVOR,
     )
-from canonical.launchpad.webapp.interaction import get_participation_extras
+from canonical.launchpad.webapp.interaction import get_interaction_extras
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
@@ -289,7 +289,7 @@ def set_permit_timeout_from_features(enabled):
     :param enabled: If True permit looking up request timeouts in
         feature flags.
     """
-    get_participation_extras().permit_timeout_from_features = enabled
+    get_interaction_extras().permit_timeout_from_features = enabled
 
 
 def _get_request_timeout(timeout=None):
@@ -302,9 +302,9 @@ def _get_request_timeout(timeout=None):
         return None
     if timeout is None:
         timeout = config.database.db_statement_timeout
-        participation_extras = get_participation_extras()
-        if (participation_extras is not None
-            and participation_extras.permit_timeout_from_features):
+        interaction_extras = get_interaction_extras()
+        if (interaction_extras is not None
+            and interaction_extras.permit_timeout_from_features):
             set_permit_timeout_from_features(False)
             try:
                 timeout_str = features.getFeatureFlag('hard_timeout')

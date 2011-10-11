@@ -34,7 +34,6 @@ from zope.interface import (
 
 from canonical.launchpad.webapp.interfaces import (
     IFinishReadOnlyRequestEvent,
-    IParticipationExtras,
     )
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
@@ -434,10 +433,6 @@ class TestLaunchpadBrowserRequestMixin:
         self.assertEqual(
             "/sabbra/cadabra?tuesday=gone",
             request.getURL(include_query=True, path_only=True))
-
-    def test_provides_IParticipationExtras(self):
-        request = self.request_factory(StringIO.StringIO(''), {})
-        self.assertProvides(request, IParticipationExtras)
 
 
 class TestLaunchpadBrowserRequestMixinWithLaunchpadBrowserRequest(
