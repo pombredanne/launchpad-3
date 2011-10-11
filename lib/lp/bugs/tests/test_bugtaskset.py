@@ -46,7 +46,7 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.factory.makeBug(series=self.series)
         self.factory.makeBug(series=self.series, private=True)
         self.assertEqual(
-            [(BugTaskStatus.NEW, 2)],
+            {BugTaskStatus.NEW: 2},
             self.get_counts(None))
 
     def test_privacy_and_counts_for_owner(self):
@@ -57,7 +57,7 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.factory.makeBug(series=self.series)
         self.factory.makeBug(series=self.series, private=True)
         self.assertEqual(
-            [(BugTaskStatus.NEW, 4)],
+            {BugTaskStatus.NEW: 4},
             self.get_counts(self.owner))
 
     def test_privacy_and_counts_for_other_user(self):
@@ -71,7 +71,7 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.factory.makeBug(series=self.series, private=True)
         other = self.factory.makePerson()
         self.assertEqual(
-            [(BugTaskStatus.NEW, 4)],
+            {BugTaskStatus.NEW: 4},
             self.get_counts(other))
 
     def test_multiple_statuses(self):
@@ -87,10 +87,9 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         for i in range(3):
             self.factory.makeBug(series=self.series)
         self.assertEqual(
-            [(BugTaskStatus.INVALID, 2),
-             (BugTaskStatus.OPINION, 2),
-             (BugTaskStatus.NEW, 3),
-            ],
+            {BugTaskStatus.INVALID: 2,
+             BugTaskStatus.OPINION: 2,
+             BugTaskStatus.NEW: 3},
             self.get_counts(None))
 
     def test_incomplete_status(self):
@@ -106,8 +105,8 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
             self.factory.makeBug(series=self.series, status=status)
         flush_database_updates()
         self.assertEqual(
-            [(BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE, 1),
-             (BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE, 2)],
+            {BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE: 1,
+             BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE: 2},
             self.get_counts(None))
 
 

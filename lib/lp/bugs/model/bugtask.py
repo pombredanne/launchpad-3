@@ -2835,9 +2835,9 @@ class BugTaskSet:
             privacy=bug_privacy_filter)
         cur = cursor()
         cur.execute(query)
-        return [
+        return dict(
             (get_bugtask_status(status_id), count)
-            for (status_id, count) in cur.fetchall()]
+            for (status_id, count) in cur.fetchall())
 
     def findExpirableBugTasks(self, min_days_old, user,
                               bug=None, target=None, limit=None):
