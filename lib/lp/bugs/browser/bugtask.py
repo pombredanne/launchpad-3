@@ -54,6 +54,7 @@ from math import (
     )
 from operator import attrgetter
 import re
+from textwrap import dedent
 import transaction
 import urllib
 
@@ -73,6 +74,7 @@ from lazr.restful.interfaces import (
     )
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
+import pystache
 from pytz import utc
 from simplejson import dumps
 from z3c.pt.pagetemplate import ViewPageTemplateFile
@@ -2112,6 +2114,19 @@ class BugTaskListingItem:
     """
     delegates(IBugTask, 'bugtask')
 
+    mustache_template = """\
+        <tr><td colspan="2"><table>
+            <tr><td class={{importance_class}}>{{importance}}</td></tr>
+            <tr><td class={{status_class}}>{{status}}
+        </td></tr></table>
+        <td colspan="3"><table>
+            <tr><td >#{{id}} <a href="{{bug_url}}">{{title}}</a></td></tr>
+            <tr><td><span class="{{bugtarget_css}}">{{bugtarget}}
+                    </span></td></tr>
+        </table></td>
+        <td colspan="2" align="right">{{{badges}}}{{{bug_heat_html}}}</td>
+        </tr>"""
+
     def __init__(self, bugtask, has_bug_branch,
                  has_specification, has_patch, request=None,
                  target_context=None):
@@ -2134,6 +2149,29 @@ class BugTaskListingItem:
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
         return bugtask_heat_html(self.bugtask, target=self.target_context)
+
+    @property
+    def mustache(self):
+        return pystache.render(self.mustache_template, self.model)
+
+    @property
+    def model(self):
+        badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
+        target_image = getAdapter(self.target_context, IPathAdapter, 'image')
+        return {
+            'importance': self.bugtask.importance.title,
+            'importance_class': 'importance' + self.importance.name,
+            'status': self.status.title,
+            'status_class': 'status' + self.status.name,
+            'title': self.bugtask.bug.title,
+            'id': self.bugtask.bug.id,
+            'bug_url': canonical_url(self.bugtask),
+            'bugtarget': self.bugtargetdisplayname,
+            'bugtarget_css': target_image.sprite_css(),
+            'bug_heat_html': self.bug_heat_html,
+            'badges': badges,
+            }
+
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
