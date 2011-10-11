@@ -96,7 +96,6 @@ from zope.component import (
 from zope.component.interfaces import ComponentLookupError
 import zope.publisher.publish
 from zope.security.management import getSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 
 from canonical.config import (
@@ -110,6 +109,9 @@ from canonical.config.fixture import (
     )
 from canonical.database.sqlbase import session_store
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.webapp.authorization import (
+    LaunchpadPermissiveSecurityPolicy,
+    )
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IOpenLaunchBag,
@@ -1207,9 +1209,10 @@ class ZopelessLayer(BaseLayer):
         # This should not happen here, it should be caught by the
         # testTearDown() method. If it does, something very nasty
         # happened.
-        if getSecurityPolicy() != PermissiveSecurityPolicy:
+        if getSecurityPolicy() != LaunchpadPermissiveSecurityPolicy:
             raise LayerInvariantError(
-                "Previous test removed the PermissiveSecurityPolicy.")
+                "Previous test removed the LaunchpadPermissiveSecurityPolicy."
+                )
 
         # execute_zcml_for_scripts() sets up an interaction for the
         # anonymous user. A previous script may have changed or removed
@@ -1226,10 +1229,10 @@ class ZopelessLayer(BaseLayer):
                 "Component architecture not loaded or totally screwed")
         # Make sure that a test that changed the security policy, reset it
         # back to its default value.
-        if getSecurityPolicy() != PermissiveSecurityPolicy:
+        if getSecurityPolicy() != LaunchpadPermissiveSecurityPolicy:
             raise LayerInvariantError(
-                "This test removed the PermissiveSecurityPolicy and didn't "
-                "restore it.")
+                "This test removed the LaunchpadPermissiveSecurityPolicy and "
+                "didn't restore it.")
         logout()
 
 
