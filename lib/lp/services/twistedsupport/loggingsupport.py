@@ -74,8 +74,8 @@ def set_up_oops_reporting(name, configuration, mangle_stdout=True):
         Defaults to False.
     """
     errorlog.globalErrorUtility.configure(configuration)
-    oops_observer = OOPSObserver(errorlog.globalErrorUtility._oops_config)
-        config, log.PythonLoggingObserver(loggerName=name).emit)
+    oops_observer = OOPSObserver(errorlog.globalErrorUtility._oops_config,
+        log.PythonLoggingObserver(loggerName=name).emit)
     log.startLoggingWithObserver(oops_observer.emit, mangle_stdout)
 
 
