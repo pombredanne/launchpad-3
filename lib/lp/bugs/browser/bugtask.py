@@ -56,6 +56,7 @@ from operator import attrgetter
 import re
 import transaction
 import urllib
+import urlparse
 
 from lazr.delegates import delegates
 from lazr.enum import (
@@ -2461,6 +2462,19 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             raise AssertionError(
                 "Unrecognized context; don't know which report "
                 "columns to show.")
+
+    bugtask_table_template = ViewPageTemplateFile(
+        '../templates/bugs-table-include.pt')
+
+    @property
+    def template(self):
+        query_string = self.request.get('QUERY_STRING', '')
+        query_params = urlparse.parse_qs(query_string)
+        batch_request_param = query_params.get('batch_request', None)
+        if batch_request_param is None:
+            return super(BugTaskSearchListingView, self).template
+        else:
+            return self.bugtask_table_template
 
     def validate_search_params(self):
         """Validate the params passed for the search.

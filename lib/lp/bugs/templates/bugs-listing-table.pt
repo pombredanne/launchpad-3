@@ -1,4 +1,4 @@
-<div
+<div id='bugs-table-listing'
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -15,8 +15,23 @@
   </tal:no-results>
 
   <tal:results condition="context/batch">
-    <div class="lesser" tal:content="structure context/@@+navigation-links-upper" />
+    <div id='bugs-batch-links-upper' class="lesser" tal:content="structure context/@@+navigation-links-upper" />
     <div tal:replace="structure context/@@+table-view-without-navlinks" />
-    <div class="lesser" tal:content="structure context/@@+navigation-links-lower" />
+    <div id='bugs-batch-links-lower' class="lesser" tal:content="structure context/@@+navigation-links-lower" />
   </tal:results>
+
+<script type="text/javascript">
+    LPS.use('lp.app.batchnavigator',
+            function(Y) {
+                Y.on("domready", function () {
+                    var config = {
+                        contentBox: '#bugs-table-listing',
+                        submit_id: 'bugs-batch-links',
+                        query_parameter: 'bug_batch'
+                    };
+                    new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
+                });
+            });
+</script>
+
 </div>
