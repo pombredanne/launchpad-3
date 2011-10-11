@@ -1121,7 +1121,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 priority=self.priority)
 
     def getOtherPublicationsForSameSource(self, include_archindep=False):
-        """Return all the other published binaries for this source.
+        """Return all the other published or pending binaries for this
+        source.
 
         For example if source package foo builds:
         foo - i386

@@ -233,8 +233,6 @@ class TestDominator(TestNativePublishingBase):
             foo_10_src.distroseries, foo_10_src.pocket)
         self.checkPublication(
             foo_10_i386_bin, PackagePublishingStatus.SUPERSEDED)
-        dominator.judgeAndDominate(
-            foo_10_src.distroseries, foo_10_src.pocket)
         self.checkPublications(
             foo_10_all_bins, PackagePublishingStatus.SUPERSEDED)
 

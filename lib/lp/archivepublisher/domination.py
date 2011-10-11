@@ -215,6 +215,9 @@ class Dominator:
         """
         binary = publication.binarypackagerelease
         if not binary.architecturespecific:
+            # getOtherPublicationsForSameSource returns PENDING in
+            # addition to PUBLISHED binaries, and we rely on this since
+            # they must also block domination.
             others = publication.getOtherPublicationsForSameSource()
             if others.any():
                 # Don't dominate this arch:all binary as there are
@@ -450,19 +453,19 @@ class Dominator:
         generalization = GeneralizedPublication(is_source=False)
 
         for distroarchseries in distroseries.architectures:
-            self.logger.debug(
+            self.logger.info(
                 "Performing domination across %s/%s (%s)",
                 distroseries.name, pocket.title,
                 distroarchseries.architecturetag)
 
-            bpph_location_clauses = And(
+            bpph_location_clauses = [
                 BinaryPackagePublishingHistory.status ==
                     PackagePublishingStatus.PUBLISHED,
                 BinaryPackagePublishingHistory.distroarchseries ==
                     distroarchseries,
                 BinaryPackagePublishingHistory.archive == self.archive,
-                BinaryPackagePublishingHistory.pocket == pocket,
-                )
+                BinaryPackagePublishingHistory.pocket == pocket
+                ]
             candidate_binary_names = Select(
                 BinaryPackageName.id,
                 And(
@@ -474,20 +477,43 @@ class Dominator:
                 ),
                 group_by=BinaryPackageName.id,
                 having=Count(BinaryPackagePublishingHistory.id) > 1)
-            binaries = IStore(BinaryPackagePublishingHistory).find(
+            main_clauses = [
                 BinaryPackagePublishingHistory,
                 BinaryPackageRelease.id ==
-                    BinaryPackagePublishingHistory.binarypackagereleaseID,
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
                 BinaryPackageRelease.binarypackagenameID.is_in(
                     candidate_binary_names),
                 BinaryPackageRelease.binpackageformat !=
-                    BinaryPackageFormat.DDEB,
-                bpph_location_clauses)
-            self.logger.debug("Dominating binaries...")
-            # TODO: split into archindep and arch-specific and run the
-            # latter first.
+                BinaryPackageFormat.DDEB,
+                bpph_location_clauses]
+
+            # Arch-indep binaries need to be done last as they depend on
+            # arch-specific binaries being superseded.
+            arch_specific_clauses = main_clauses
+            arch_specific_clauses.append(
+                BinaryPackageRelease.architecturespecific == True)
+            arch_specific_clauses.append(main_clauses)
+            arch_specific_clauses.append(bpph_location_clauses)
+            self.logger.info("Finding arch-specific binaries...")
+            arch_specific_bins = IStore(BinaryPackagePublishingHistory).find(
+                *arch_specific_clauses)
+            self.logger.info("Dominating arch-specific binaries...")
             self._dominatePublications(
-                self._sortPackages(binaries, generalization), generalization)
+                self._sortPackages(arch_specific_bins, generalization),
+                generalization)
+
+            arch_indep_clauses = main_clauses
+            arch_indep_clauses.append(
+                BinaryPackageRelease.architecturespecific == False)
+            arch_indep_clauses.append(main_clauses)
+            arch_indep_clauses.append(bpph_location_clauses)
+            self.logger.info("Finding arch-indep binaries...")
+            arch_indep_bins = IStore(BinaryPackagePublishingHistory).find(
+                *arch_indep_clauses)
+            self.logger.info("Dominating arch-indep binaries...")
+            self._dominatePublications(
+                self._sortPackages(arch_indep_bins, generalization),
+                generalization)
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
         """Compose ORM condition for restricting relevant source pubs."""
