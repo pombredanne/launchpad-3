@@ -66,10 +66,11 @@ class TestProductSeriesStatus(TestCaseWithFactory):
             view = create_initialized_view(series, '+status')
             self.assertEqual(
                 [(BugTaskStatus.NEW, 1),
-                 # 3 because INCOMPLETE_WITH_RESPONSE and
-                 # INCOMPLETE_WITHOUT_RESPONSE both count towards the
-                 # INCOMPLETE total.
-                 (BugTaskStatus.INCOMPLETE, 3),
+                 (BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE, 1),
+                 # 2 because INCOMPLETE is stored as INCOMPLETE_WITH_RESPONSE
+                 # or INCOMPLETE_WITHOUT_RESPONSE, and there was no response
+                 # for the bug created as INCOMPLETE.
+                 (BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE, 2),
                  (BugTaskStatus.OPINION, 1),
                  (BugTaskStatus.INVALID, 1),
                  (BugTaskStatus.WONTFIX, 1),
@@ -78,7 +79,7 @@ class TestProductSeriesStatus(TestCaseWithFactory):
                  (BugTaskStatus.TRIAGED, 1),
                  (BugTaskStatus.INPROGRESS, 1),
                  (BugTaskStatus.FIXCOMMITTED, 1),
-                 (BugTaskStatus.FIXRELEASED, 1)
+                 (BugTaskStatus.FIXRELEASED, 1),
                  (BugTaskStatus.UNKNOWN, 1)],
                 [(status_count.status, status_count.count)
                  for status_count in view.bugtask_status_counts],
