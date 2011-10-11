@@ -168,38 +168,26 @@ def setupInteractionForPerson(person, participation=None):
 
 
 class Participation:
-    """Our most simple participation."""
+    """A very simple participation."""
 
-    implements(IParticipation, IParticipationExtras)
+    implements(IParticipation)
 
     # From IParticipation
     interaction = None
     principal = None
 
-    # From IParticipationExtras
+
+class InteractionExtras:
     permit_timeout_from_features = False
 
 
-def get_participation_extras():
-    """Return the active provider of `IParticipationExtras`.
+def get_interaction_extras():
+    """Return the active provider of `IInteractionExtras`.
 
-    This is looked up from the interaction.  If there is no interaction or
-    suitable participation, then return None.
+    This is looked up from the interaction.  If there is no interaction then
+    return None.
     """
     interaction = queryInteraction()
     if interaction is None:
         return None
-    # XXX We could perhaps be less LBYL-ish here and assert that there is one
-    # participation and that it provides IParticipationExtras (because in any
-    # expected situation today, that's certainly the case).
-    participations = [
-        participation
-        for participation in interaction.participations
-        if IParticipationExtras.providedBy(participation)
-        ]
-    if not participations:
-        return None
-    assert len(participations) == 1, (
-        "We expect only one provide of IParticipationExtras in the "
-        "interaction. Got %s." % len(participations))
-    return participations[0]
+    return interaction.extras

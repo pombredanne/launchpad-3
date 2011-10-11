@@ -310,13 +310,15 @@ class IOpenLaunchBag(ILaunchBag):
         '''
 
 
-class IParticipationExtras(Interface):
-    """Extra attributes we make all our participations have.
+class IInteractionExtras(Interface):
+    """We attach a provider of this interface to all interactions.
+
+    Because a fresh provider is constructed for every request and between
+    every test, it is less error-prone to add things to this interface than to
+    stash state on a thread local.
 
     If you add something here, you should go and edit
-    `canonical.launchpad.webapp.interaction.Participation`,
-    `canonical.launchpad.webapp.servers.BasicLaunchpadRequest`, and
-    `canonical.launchpad.webapp.servers.LaunchpadTestRequest`.
+    `canonical.launchpad.webapp.interaction.InteractionExtras`,
     """
 
     permit_timeout_from_features = Attribute(
