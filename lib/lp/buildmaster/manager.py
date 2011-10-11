@@ -139,9 +139,8 @@ class SlaveScanner:
         1. Print the error in the log
         2. Increment and assess failure counts on the builder and job.
         """
-        # Make sure that pending database updates are removed as it
-        # could leave the database in an inconsistent state (e.g. The
-        # job says it's running but the buildqueue has no builder set).
+        # Since this is a failure path, we could be in a broken
+        # transaction.  Get us a fresh one.
         transaction.abort()
 
         # If we don't recognise the exception include a stack trace with
@@ -212,7 +211,6 @@ class SlaveScanner:
         """
         # We need to re-fetch the builder object on each cycle as the
         # Storm store is invalidated over transaction boundaries.
-
         self.builder = get_builder(self.builder_name)
 
         if self.builder.builderok:
@@ -221,10 +219,6 @@ class SlaveScanner:
             d = defer.succeed(None)
 
         def status_updated(ignored):
-            # Commit the changes done while possibly rescuing jobs, to
-            # avoid holding table locks.
-            transaction.commit()
-
             # See if we think there's an active build on the builder.
             buildqueue = self.builder.getBuildQueue()
 
@@ -234,14 +228,10 @@ class SlaveScanner:
                 return self.builder.updateBuild(buildqueue)
 
         def build_updated(ignored):
-            # Commit changes done while updating the build, to avoid
-            # holding table locks.
-            transaction.commit()
-
             # If the builder is in manual mode, don't dispatch anything.
             if self.builder.manual:
                 self.logger.debug(
-                    '%s is in manual mode, not dispatching.' %
+                    '%s is in manual mode, not dispatching.',
                     self.builder.name)
                 return
 
@@ -259,8 +249,8 @@ class SlaveScanner:
                 job = self.builder.currentjob
                 if job is not None and not self.builder.builderok:
                     self.logger.info(
-                        "%s was made unavailable, resetting attached "
-                        "job" % self.builder.name)
+                        "%s was made unavailable; resetting attached job.",
+                        self.builder.name)
                     transaction.abort()
                     with DatabaseTransactionPolicy(read_only=False):
                         job.reset()
@@ -269,6 +259,13 @@ class SlaveScanner:
 
             # See if there is a job we can dispatch to the builder slave.
 
+            # XXX JeroenVermeulen 2011-10-11, bug=872112: The job's
+            # failure count will be reset once the job has started
+            # successfully.  Because of intervening commits, you may see
+            # a build with a nonzero failure count that's actually going
+            # to succeed later (and have a failure count of zero).  Or
+            # it may fail yet end up with a lower failure count than you
+            # saw earlier.
             d = self.builder.findAndStartJob()
 
             def job_started(candidate):

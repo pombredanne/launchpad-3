@@ -181,20 +181,19 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         def got_log(lfa_id):
             # log, builder and date_finished are read-only, so we must
             # currently remove the security proxy to set them.
+            naked_build = removeSecurityProxy(build)
+            naked_build.log = lfa_id
+            naked_build.builder = build.buildqueue_record.builder
+            dependencies = slave_status.get('dependencies')
+            if dependencies is not None:
+                dependencies = unicode(dependencies)
             transaction.commit()
             with DatabaseTransactionPolicy(read_only=False):
-                naked_build = removeSecurityProxy(build)
-                naked_build.log = lfa_id
-                naked_build.builder = build.buildqueue_record.builder
                 # XXX cprov 20060615 bug=120584: Currently buildduration
                 # includes the scanner latency.  It should really be asking
                 # the slave for the duration spent building locally.
                 naked_build.date_finished = datetime.datetime.now(pytz.UTC)
-                if slave_status.get('dependencies') is not None:
-                    build.dependencies = unicode(
-                        slave_status.get('dependencies'))
-                else:
-                    build.dependencies = None
+                build.dependencies = dependencies
                 transaction.commit()
 
         d = build.getLogFromSlave(build)
@@ -322,12 +321,11 @@ class PackageBuildDerived:
 
     def _notify_if_appropriate(self, appropriate=True, extra_info=None):
         """If `appropriate`, call `self.notify` in a write transaction."""
-        if not appropriate:
-            return
-        transaction.commit()
-        with DatabaseTransactionPolicy(read_only=False):
-            self.notify(extra_info=extra_info)
+        if appropriate:
             transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                self.notify(extra_info=extra_info)
+                transaction.commit()
 
     def _handleStatus_OK(self, librarian, slave_status, logger,
                          send_notification):
@@ -343,8 +341,8 @@ class PackageBuildDerived:
             self.buildqueue_record.specific_job.build.title,
             self.buildqueue_record.builder.name))
 
-        # If this is a binary package build, discard it if its source is
-        # no longer published.
+        # If this is a binary package build for a source that is no
+        # longer published, discard it.
         if self.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
             build = self.buildqueue_record.specific_job.build
             if not build.current_source_publication:

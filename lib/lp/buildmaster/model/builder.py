@@ -708,7 +708,7 @@ class Builder(SQLBase):
     def acquireBuildCandidate(self):
         """Acquire a build candidate in an atomic fashion.
 
-        When retrieiving a candidate we need to mark it as building
+        When retrieving a candidate we need to mark it as building
         immediately so that it is not dispatched by another builder in the
         build manager.
 
@@ -718,7 +718,8 @@ class Builder(SQLBase):
         can be in this code at the same time.
 
         If there's ever more than one build manager running at once, then
-        this code will need some sort of mutex.
+        this code will need some sort of mutex, or run in a single
+        transaction.
         """
         candidate = self._findBuildCandidate()
         if candidate is not None:

@@ -71,6 +71,24 @@ class BuildFarmJobBehaviorBase:
         if slave_build_cookie != expected_cookie:
             raise CorruptBuildCookie("Invalid slave build cookie.")
 
+    def _getBuilderStatusHandler(self, status_text, logger):
+        """Look up the handler method for a given builder status.
+
+        If status is not a known one, logs an error and returns None.
+        """
+        builder_status_handlers = {
+            'BuilderStatus.IDLE': self.updateBuild_IDLE,
+            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
+            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
+            'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
+            'BuilderStatus.WAITING': self.updateBuild_WAITING,
+            }
+        handler = builder_status_handlers.get(status_text)
+        if handler is None:
+            logger.critical(
+                "Builder on %s returned unknown status %s; failing it.",
+                self._builder.url, status_text)
+
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
         logger = logging.getLogger('slave-scanner')
@@ -78,6 +96,7 @@ class BuildFarmJobBehaviorBase:
         d = self._builder.slaveStatus()
 
         def got_failure(failure):
+            transaction.abort()
             failure.trap(xmlrpclib.Fault, socket.error)
             info = failure.value
             info = ("Could not contact the builder %s, caught a (%s)"
@@ -85,26 +104,15 @@ class BuildFarmJobBehaviorBase:
             raise BuildSlaveFailure(info)
 
         def got_status(slave_status):
-            builder_status_handlers = {
-                'BuilderStatus.IDLE': self.updateBuild_IDLE,
-                'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
-                'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
-                'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
-                'BuilderStatus.WAITING': self.updateBuild_WAITING,
-                }
-
             builder_status = slave_status['builder_status']
-            if builder_status not in builder_status_handlers:
+            status_handler = self._getBuilderStatusHandler(builder_status)
+            if status_handler is None:
+                error = (
+                    "Unknown status code (%s) returned from status() probe."
+                    % builder_status)
                 transaction.commit()
                 with DatabaseTransactionPolicy(read_only=False):
-                    logger.critical(
-                        "Builder on %s returned unknown status %s; "
-                        "failing it."
-                        % (self._builder.url, builder_status))
-                    self._builder.failBuilder(
-                        "Unknown status code (%s) returned from status() "
-                        "probe."
-                        % builder_status)
+                    self._builder.failBuilder(error)
                     # XXX: This will leave the build and job in a bad
                     # state, but should never be possible since our
                     # builder statuses are known.
@@ -120,9 +128,8 @@ class BuildFarmJobBehaviorBase:
             # will simply remove the proxy.
             logtail = removeSecurityProxy(slave_status.get('logtail'))
 
-            method = builder_status_handlers[builder_status]
             return defer.maybeDeferred(
-                method, queueItem, slave_status, logtail, logger)
+                status_handler, queueItem, slave_status, logtail, logger)
 
         d.addErrback(got_failure)
         d.addCallback(got_status)
@@ -134,8 +141,9 @@ class BuildFarmJobBehaviorBase:
         Log this and reset the record.
         """
         logger.warn(
-            "Builder %s forgot about buildqueue %d -- resetting buildqueue "
-            "record" % (queueItem.builder.url, queueItem.id))
+            "Builder %s forgot about buildqueue %d -- "
+            "resetting buildqueue record.",
+            queueItem.builder.url, queueItem.id)
         transaction.commit()
         with DatabaseTransactionPolicy(read_only=False):
             queueItem.reset()
@@ -175,6 +183,7 @@ class BuildFarmJobBehaviorBase:
                     queueItem.job.fail()
                 queueItem.specific_job.jobAborted()
                 transaction.commit()
+
         return d.addCallback(got_cleaned)
 
     def extractBuildStatus(self, slave_status):
