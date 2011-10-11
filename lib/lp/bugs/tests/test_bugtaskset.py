@@ -10,6 +10,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
     BugTaskStatusSearch,
     IBugTaskSet,
     )
@@ -17,6 +18,19 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+
+
+def get_status(status_id):
+    """Return a member of `BugTaskStatus` or `BugTaskStatusSearch`.
+
+    `BugTaskStatus` and `BugTaskStatusSearch` intersect, but neither is a
+    subset of the other, so this searches first in `BugTaskStatus` then in
+    `BugTaskStatusSearch` for a member with the given ID.
+    """
+    try:
+        return BugTaskStatus.items[status_id]
+    except KeyError:
+        return BugTaskStatusSearch.items[status_id]
 
 
 class TestStatusCountsForProductSeries(TestCaseWithFactory):
@@ -35,9 +49,9 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
 
     def get_counts(self, user):
         counts = self.bugtask_set.getStatusCountsForProductSeries(
-                user, self.series)
+            user, self.series)
         return [
-            (BugTaskStatusSearch.items[status_id], count)
+            (get_status(status_id), count)
             for status_id, count in counts]
 
     def test_privacy_and_counts_for_unauthenticated_user(self):
@@ -48,7 +62,7 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.factory.makeBug(series=self.series)
         self.factory.makeBug(series=self.series, private=True)
         self.assertEqual(
-            [(BugTaskStatusSearch.NEW, 2)],
+            [(BugTaskStatus.NEW, 2)],
             self.get_counts(None))
 
     def test_privacy_and_counts_for_owner(self):
@@ -59,7 +73,7 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.factory.makeBug(series=self.series)
         self.factory.makeBug(series=self.series, private=True)
         self.assertEqual(
-            [(BugTaskStatusSearch.NEW, 4)],
+            [(BugTaskStatus.NEW, 4)],
             self.get_counts(self.owner))
 
     def test_privacy_and_counts_for_other_user(self):
@@ -73,15 +87,15 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         self.factory.makeBug(series=self.series, private=True)
         other = self.factory.makePerson()
         self.assertEqual(
-            [(BugTaskStatusSearch.NEW, 4)],
+            [(BugTaskStatus.NEW, 4)],
             self.get_counts(other))
 
     def test_multiple_statuses(self):
         # Test that separate counts are provided for each status that
         # bugs are found in.
         statuses = [
-            BugTaskStatusSearch.INVALID,
-            BugTaskStatusSearch.OPINION,
+            BugTaskStatus.INVALID,
+            BugTaskStatus.OPINION,
             ]
         for status in statuses:
             self.factory.makeBug(milestone=self.milestone, status=status)
@@ -89,25 +103,27 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         for i in range(3):
             self.factory.makeBug(series=self.series)
         self.assertEqual(
-            [(BugTaskStatusSearch.INVALID, 2),
-             (BugTaskStatusSearch.OPINION, 2),
-             (BugTaskStatusSearch.NEW, 3),
+            [(BugTaskStatus.INVALID, 2),
+             (BugTaskStatus.OPINION, 2),
+             (BugTaskStatus.NEW, 3),
             ],
             self.get_counts(None))
 
-    def test_incomplete_with_without_x_statuses(self):
-        # INCOMPLETE, INCOMPLETE_WITH_RESPONSE and INCOMPLETE_WITHOUT_RESPONSE
-        # are counted separately in the reported stats.
+    def test_incomplete_status(self):
+        # INCOMPLETE is stored as either INCOMPLETE_WITH_RESPONSE or
+        # INCOMPLETE_WITHOUT_RESPONSE so the stats do not include a count of
+        # INCOMPLETE tasks.
         statuses = [
             BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
             BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
-            BugTaskStatusSearch.INCOMPLETE,
+            BugTaskStatus.INCOMPLETE,
             ]
         for status in statuses:
             self.factory.makeBug(series=self.series, status=status)
         flush_database_updates()
         self.assertEqual(
-            [(status, 1) for status in statuses],
+            [(BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE, 1),
+             (BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE, 2)],
             self.get_counts(None))
 
 
