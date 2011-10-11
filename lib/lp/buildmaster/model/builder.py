@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -18,7 +18,6 @@ import logging
 import os
 import socket
 import tempfile
-import transaction
 import xmlrpclib
 
 from lazr.restful.utils import safe_hasattr
@@ -34,6 +33,7 @@ from storm.expr import (
     Count,
     Sum,
     )
+import transaction
 from twisted.internet import (
     defer,
     reactor as default_reactor,
@@ -77,11 +77,12 @@ from lp.buildmaster.model.buildqueue import (
     specific_job_classes,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
-from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.twistedsupport import cancel_on_timeout
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -721,8 +722,10 @@ class Builder(SQLBase):
         """
         candidate = self._findBuildCandidate()
         if candidate is not None:
-            candidate.markAsBuilding(self)
             transaction.commit()
+            with DatabaseTransactionPolicy(read_only=False):
+                candidate.markAsBuilding(self)
+                transaction.commit()
         return candidate
 
     def _findBuildCandidate(self):
