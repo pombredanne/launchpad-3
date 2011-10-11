@@ -86,11 +86,12 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
             self.factory.makeBug(series=self.series, status=status)
         for i in range(3):
             self.factory.makeBug(series=self.series)
-        self.assertEqual(
-            {BugTaskStatus.INVALID: 2,
-             BugTaskStatus.OPINION: 2,
-             BugTaskStatus.NEW: 3},
-            self.get_counts(None))
+        expected = {
+            BugTaskStatus.INVALID: 2,
+            BugTaskStatus.OPINION: 2,
+            BugTaskStatus.NEW: 3,
+            }
+        self.assertEqual(expected, self.get_counts(None))
 
     def test_incomplete_status(self):
         # INCOMPLETE is stored as either INCOMPLETE_WITH_RESPONSE or
@@ -104,10 +105,11 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         for status in statuses:
             self.factory.makeBug(series=self.series, status=status)
         flush_database_updates()
-        self.assertEqual(
-            {BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE: 1,
-             BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE: 2},
-            self.get_counts(None))
+        expected = {
+            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE: 1,
+            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE: 2,
+            }
+        self.assertEqual(expected, self.get_counts(None))
 
 
 class TestBugTaskMilestones(TestCaseWithFactory):
