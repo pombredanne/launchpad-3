@@ -1867,7 +1867,10 @@ class BugTaskSet:
             decorator to call on each returned row.
         """
         params = self._require_params(params)
-        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bug import (
+            Bug,
+            BugAffectsPerson,
+            )
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = [BugTask, Bug]
         join_tables = []
@@ -2152,15 +2155,12 @@ class BugTaskSet:
         if params.affects_me:
             params.affected_user = params.user
         if params.affected_user:
-            affected_user_clause = """
-            BugTask.id IN (
-                SELECT BugTask.id FROM BugTask, BugAffectsPerson
-                WHERE BugTask.bug = BugAffectsPerson.bug
-                AND BugAffectsPerson.person = %(affected_user)s
-                AND BugAffectsPerson.affected = TRUE
-            )
-            """ % sqlvalues(affected_user=params.affected_user)
-            extra_clauses.append(affected_user_clause)
+            join_tables.append(
+                (BugAffectsPerson, Join(
+                    BugAffectsPerson, And(
+                        BugTask.bugID == BugAffectsPerson.bugID,
+                        BugAffectsPerson.affected,
+                        BugAffectsPerson.person == params.affected_user))))
 
         if params.nominated_for:
             mappings = sqlvalues(
