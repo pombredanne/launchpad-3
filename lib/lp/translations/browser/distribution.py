@@ -132,7 +132,7 @@ class DistributionSettingsView(TranslationsMixin, DistributionEditView):
     label = "Translations settings"
     page_title = "Settings"
     field_names = [
-        "official_rosetta",
+        "translations_usage",
         "translation_focus",
         "translationgroup",
         "translationpermission",

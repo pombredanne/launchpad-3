@@ -278,7 +278,7 @@ class TranslationsPerson:
         # translation focus.
         distrojoin_conditions = And(
             Distribution.id == DistroSeries.distributionID,
-            Distribution._translations_usage == ServiceUsage.LAUNCHPAD,
+            Distribution.translations_usage == ServiceUsage.LAUNCHPAD,
             Distribution.translation_focusID == DistroSeries.id)
 
         DistroJoin = LeftJoin(Distribution, distrojoin_conditions)
@@ -291,7 +291,7 @@ class TranslationsPerson:
         # should be fixed to use translations_usage.
         ProductJoin = LeftJoin(Product, And(
             Product.id == ProductSeries.productID,
-            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Product.translations_usage == ServiceUsage.LAUNCHPAD,
             Product.active == True))
 
         ProjectJoin = LeftJoin(
