@@ -88,6 +88,7 @@ class BuildFarmJobBehaviorBase:
             logger.critical(
                 "Builder on %s returned unknown status %s; failing it.",
                 self._builder.url, status_text)
+        return handler
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
