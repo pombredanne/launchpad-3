@@ -13,24 +13,12 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     IBugTaskSet,
+    get_bugtask_status,
     )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-
-
-def get_status(status_id):
-    """Return a member of `BugTaskStatus` or `BugTaskStatusSearch`.
-
-    `BugTaskStatus` and `BugTaskStatusSearch` intersect, but neither is a
-    subset of the other, so this searches first in `BugTaskStatus` then in
-    `BugTaskStatusSearch` for a member with the given ID.
-    """
-    try:
-        return BugTaskStatus.items[status_id]
-    except KeyError:
-        return BugTaskStatusSearch.items[status_id]
 
 
 class TestStatusCountsForProductSeries(TestCaseWithFactory):
@@ -51,7 +39,7 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
         counts = self.bugtask_set.getStatusCountsForProductSeries(
             user, self.series)
         return [
-            (get_status(status_id), count)
+            (get_bugtask_status(status_id), count)
             for status_id, count in counts]
 
     def test_privacy_and_counts_for_unauthenticated_user(self):
