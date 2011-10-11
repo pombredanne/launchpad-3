@@ -105,7 +105,8 @@ class BuildFarmJobBehaviorBase:
 
         def got_status(slave_status):
             builder_status = slave_status['builder_status']
-            status_handler = self._getBuilderStatusHandler(builder_status)
+            status_handler = self._getBuilderStatusHandler(
+                builder_status, logger)
             if status_handler is None:
                 error = (
                     "Unknown status code (%s) returned from status() probe."
