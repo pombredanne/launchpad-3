@@ -492,7 +492,6 @@ class Dominator:
             arch_specific_clauses = main_clauses
             arch_specific_clauses.append(
                 BinaryPackageRelease.architecturespecific == True)
-            arch_specific_clauses.append(main_clauses)
             arch_specific_clauses.append(bpph_location_clauses)
             self.logger.info("Finding arch-specific binaries...")
             arch_specific_bins = IStore(BinaryPackagePublishingHistory).find(
@@ -505,7 +504,6 @@ class Dominator:
             arch_indep_clauses = main_clauses
             arch_indep_clauses.append(
                 BinaryPackageRelease.architecturespecific == False)
-            arch_indep_clauses.append(main_clauses)
             arch_indep_clauses.append(bpph_location_clauses)
             self.logger.info("Finding arch-indep binaries...")
             arch_indep_bins = IStore(BinaryPackagePublishingHistory).find(
