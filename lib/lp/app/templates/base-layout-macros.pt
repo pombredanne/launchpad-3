@@ -106,7 +106,6 @@
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
-    <tal:if condition="request/features/bugs.private_notification.enabled">
     <script type="text/javascript">
       LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                 'lp.bugs.subscribers',
@@ -120,7 +119,6 @@
           });
       });
     </script>
-    </tal:if>
 
   <script id="base-layout-load-scripts" type="text/javascript">
     LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {

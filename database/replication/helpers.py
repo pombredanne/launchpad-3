@@ -28,6 +28,7 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 # Replication set id constants. Don't change these without DBA help.
 LPMAIN_SET_ID = 1
 HOLDING_SET_ID = 666
+SSO_SET_ID = 3
 LPMIRROR_SET_ID = 4
 
 # Seed tables for the lpmain replication set to be passed to
@@ -337,8 +338,9 @@ def preamble(con=None):
         # Symbolic ids for replication sets.
         define lpmain_set   %d;
         define holding_set  %d;
+        define sso_set      %d;
         define lpmirror_set %d;
-        """ % (LPMAIN_SET_ID, HOLDING_SET_ID, LPMIRROR_SET_ID))]
+        """ % (LPMAIN_SET_ID, HOLDING_SET_ID, SSO_SET_ID, LPMIRROR_SET_ID))]
 
     if master_node is not None:
         preamble.append(dedent("""\

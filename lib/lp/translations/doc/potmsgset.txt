@@ -402,7 +402,7 @@ translations.
     >>> ubuntu.translations_usage = ServiceUsage.NOT_APPLICABLE
 
     # We set the template as current again so we are sure that we don't show
-    # suggestions just due to the change to the official_rosetta flag.
+    # suggestions just due to the change to the translations_usage flag.
     >>> evo_distro_template.iscurrent = True
     >>> transaction.commit()
     >>> suggestions = (
@@ -526,7 +526,7 @@ Nor do we get any suggestions if the Ubuntu distribution is not using
 Launchpad for translations.
 
     # We set the template as current again so we are sure that we don't show
-    # suggestions just due to the change to the official_rosetta flag.
+    # suggestions just due to the change to the translations_usage flag.
     >>> evo_man_template.iscurrent = True
     >>> ubuntu.translations_usage = ServiceUsage.NOT_APPLICABLE
     >>> refresh_suggestive_templates_cache()
@@ -551,7 +551,8 @@ If we go back to the external translations available before, we can see we get
 the same result for suggestions and used messages.
 
     >>> suggestions, used = (
-    ...     potmsgset_untranslated.getExternallySuggestedOrUsedTranslationMessages(
+    ...     potmsgset_untranslated
+    ...       .getExternallySuggestedOrUsedTranslationMessages(
     ...         suggested_languages=[pofile.language],
     ...         used_languages=[pofile.language]))[pofile.language]
     >>> wiki_suggestions = (

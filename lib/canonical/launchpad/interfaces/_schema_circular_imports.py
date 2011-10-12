@@ -680,6 +680,10 @@ patch_collection_return_type(
 patch_reference_property(IProductSeries, 'product', IProduct)
 
 # ISpecification
+ISpecification['linkBug'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
+ISpecification['unlinkBug'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 patch_collection_property(ISpecification, 'dependencies', ISpecification)
 patch_collection_property(
     ISpecification, 'linked_branches', ISpecificationBranch)

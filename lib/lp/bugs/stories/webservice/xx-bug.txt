@@ -2055,8 +2055,8 @@ For every branch we can also look at the bugs linked to it.
 Bug expiration
 --------------
 
-In addition to can_expire bugs have an isExpirable method to which a custom time
-period, days_old, can be passed.  This is then used with
+In addition to can_expire bugs have an isExpirable method to which a custom
+time period, days_old, can be passed.  This is then used with
 findExpirableBugTasks.  This allows projects to create their own janitor using
 a different period for bug expiration.
 
