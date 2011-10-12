@@ -567,7 +567,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
 
     @property
     def template(self):
-        query_string = self.request.get('QUERY_STRING', '')
+        query_string = self.request.get('QUERY_STRING') or ''
         query_params = urlparse.parse_qs(query_string)
         render_table_only = 'batch_request' in query_params
         if render_table_only:

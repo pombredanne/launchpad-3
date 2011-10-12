@@ -10,6 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import (
     extract_text,
+    find_main_content,
     find_tag_by_id,
     find_tags_by_class,
     )
@@ -18,6 +19,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.person import Person
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     login_person,
@@ -178,6 +180,37 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertEqual(
             canonical_url(product, rootsite='bugs', view_name='+bugs'),
             response.getHeader('Location'))
+
+    def test_search_batch_request(self):
+        # A search request with a 'batch_request' query parameter causes the
+        # view to just render the next batch of results.
+        product = self.factory.makeProduct()
+        form = {
+            'search': 'Search'}
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+bugs', form=form,
+                query_string='batch_request=True')
+        content = view()
+        self.assertIsNone(find_main_content(content))
+        self.assertIsNotNone(
+            find_tag_by_id(content, 'bugs-batch-links-upper'))
+
+    def test_ajax_batch_navigation_feature_flag(self):
+        # The Javascript to wire up the ajax batch navigation behavior is
+        # correctly hidden behind a feature flag.
+        product = self.factory.makeProduct()
+        form = {'search': 'Search'}
+        with person_logged_in(product.owner):
+            product.official_malone = True
+        flags = {u"ajax.batch_navigator.enabled": u"true"}
+        with FeatureFixture(flags):
+            view = create_initialized_view(product, '+bugs', form=form)
+            self.assertTrue(
+                'Y.lp.app.batchnavigator.BatchNavigatorHooks' in view())
+        view = create_initialized_view(product, '+bugs', form=form)
+        self.assertFalse(
+            'Y.lp.app.batchnavigator.BatchNavigatorHooks' in view())
 
 
 class BugTargetTestCase(TestCaseWithFactory):

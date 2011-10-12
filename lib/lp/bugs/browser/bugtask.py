@@ -2468,13 +2468,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @property
     def template(self):
-        query_string = self.request.get('QUERY_STRING', '')
+        query_string = self.request.get('QUERY_STRING') or ''
         query_params = urlparse.parse_qs(query_string)
-        batch_request_param = 'batch_request' in query_params
-        if batch_request_param is None:
-            return super(BugTaskSearchListingView, self).template
-        else:
+        if 'batch_request' in query_params:
             return self.bugtask_table_template
+        else:
+            return super(BugTaskSearchListingView, self).template
 
     def validate_search_params(self):
         """Validate the params passed for the search.
