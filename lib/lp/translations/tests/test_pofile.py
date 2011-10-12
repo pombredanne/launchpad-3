@@ -65,7 +65,6 @@ class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
             name='devel', distribution=self.foo)
         self.foo_stable = self.factory.makeDistroSeries(
             name='stable', distribution=self.foo)
-        self.foo.official_rosetta = True
         self.sourcepackagename = self.factory.makeSourcePackageName()
 
         # Two POTemplates share translations if they have the same name,

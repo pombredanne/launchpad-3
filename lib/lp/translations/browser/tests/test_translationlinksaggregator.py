@@ -7,6 +7,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.translationlinksaggregator import (
     TranslationLinksAggregator,
@@ -129,7 +130,8 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         # For package POFiles in the same template but different
         # languages, we link to the template.
         package = self.factory.makeSourcePackage()
-        package.distroseries.distribution.official_rosetta = True
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         template = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
@@ -147,7 +149,8 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         # package's template list.  There is no "source package series
         # language" page.
         package = self.factory.makeSourcePackage()
-        package.distroseries.distribution.official_rosetta = True
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         template1 = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
@@ -208,7 +211,8 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         removeSecurityProxy(product_pofile).unreviewed_count = 1
 
         package = self.factory.makeSourcePackage()
-        package.distroseries.distribution.official_rosetta = True
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         package_template = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
@@ -245,7 +249,8 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         # _aggregateTranslationTargets describes POFiles for the same
         # ProductSeries together.
         package = self.factory.makeSourcePackage()
-        package.distroseries.distribution.official_rosetta = True
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         template1 = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
