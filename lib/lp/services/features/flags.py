@@ -156,6 +156,11 @@ flag_info = sorted([
      ('Enables the longpoll mechanism for merge proposals so that diffs, '
       'for example, are updated in-page when they are ready.'),
      ''),
+    ('disclosure.mixed_visibility_log.enabled',
+     'boolean',
+     ('Enables soft OOPSes for code that is mixing visibility rules, such '
+      'as disclosing private teams, so the data can be analyzed.'),
+     ''),
     ])
 
 # The set of all flag names that are documented.
