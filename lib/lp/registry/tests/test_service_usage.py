@@ -61,15 +61,6 @@ class UsageEnumsMixin(object):
             ServiceUsage.UNKNOWN,
             self.target.translations_usage)
 
-    def test_translations_usage_using_bool(self):
-        # If the old bool says they use Launchpad, return LAUNCHPAD
-        # if the ServiceUsage is unknown.
-        login_person(self.target.owner)
-        self.target.official_rosetta = True
-        self.assertEqual(
-            ServiceUsage.LAUNCHPAD,
-            self.target.translations_usage)
-
     def test_translations_usage_with_enum_data(self):
         # If the enum has something other than UNKNOWN as its status,
         # use that.
@@ -78,18 +69,6 @@ class UsageEnumsMixin(object):
         self.assertEqual(
             ServiceUsage.EXTERNAL,
             self.target.translations_usage)
-
-    def test_translations_setter(self):
-        login_person(self.target.owner)
-        self.target.official_rosetta = True
-        self.target.translations_usage = ServiceUsage.EXTERNAL
-        self.assertEqual(
-            False,
-            self.target.official_rosetta)
-        self.target.translations_usage = ServiceUsage.LAUNCHPAD
-        self.assertEqual(
-            True,
-            self.target.official_rosetta)
 
     def test_bug_tracking_usage(self):
         # Only test get for bug_tracking; this has no setter because the

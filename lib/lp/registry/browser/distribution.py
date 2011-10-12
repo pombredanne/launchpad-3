@@ -815,7 +815,7 @@ class DistributionAddView(LaunchpadFormView,
         "members",
         "official_malone",
         "blueprints_usage",
-        "official_rosetta",
+        "translations_usage",
         "answers_usage",
         ]
     custom_widget('require_virtualized', CheckBoxWidget)
@@ -900,7 +900,7 @@ class DistributionEditView(RegistryEditFormView,
         'official_malone',
         'enable_bug_expiration',
         'blueprints_usage',
-        'official_rosetta',
+        'translations_usage',
         'answers_usage',
         'translation_focus',
         ]
