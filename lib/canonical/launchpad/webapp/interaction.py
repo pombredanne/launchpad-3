@@ -169,15 +169,15 @@ def setupInteractionForPerson(person, participation=None):
 
 class Participation:
     """A very simple participation."""
-
     implements(IParticipation)
 
-    # From IParticipation
     interaction = None
     principal = None
 
 
 class InteractionExtras:
+    """Extra data attached to all interactions.  See `IInteractionExtras`."""
+
     implements(IInteractionExtras)
     permit_timeout_from_features = False
 
