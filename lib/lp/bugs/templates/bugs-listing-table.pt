@@ -15,9 +15,9 @@
   </tal:no-results>
 
   <tal:results condition="context/batch">
-    <div id='bugs-batch-links-upper' class="lesser" tal:content="structure context/@@+navigation-links-upper" />
+    <div class="lesser" tal:content="structure context/@@+navigation-links-upper" />
     <div tal:replace="structure context/@@+table-view-without-navlinks" />
-    <div id='bugs-batch-links-lower' class="lesser" tal:content="structure context/@@+navigation-links-lower" />
+    <div class="lesser" tal:content="structure context/@@+navigation-links-lower" />
   </tal:results>
 
 <script type="text/javascript">
@@ -26,7 +26,6 @@
                 Y.on("domready", function () {
                     var config = {
                         contentBox: '#bugs-table-listing',
-                        submit_id: 'bugs-batch-links',
                         query_parameter: 'bug_batch'
                     };
                     new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
