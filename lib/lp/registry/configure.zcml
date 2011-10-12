@@ -1194,7 +1194,8 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_attributes="answers_usage blueprints_usage codehosting_usage
+                            bug_tracking_usage uses_launchpad"/>
         <require
             permission="launchpad.Edit"
             set_attributes="
@@ -1259,7 +1260,8 @@
             set_attributes="
                 translation_focus
                 translationgroup
-                translationpermission"/>
+                translationpermission
+                translations_usage"/>
         <require
             permission="zope.Public"
             attributes="

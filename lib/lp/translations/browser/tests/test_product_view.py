@@ -12,6 +12,7 @@ from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     login_person,
+    celebrity_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
@@ -106,3 +107,10 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
         login_person(product.owner)
         view = create_view(product, '+translations', layer=TranslationsLayer)
         self.assertEqual(True, view.can_configure_translations())
+
+    def test_can_configure_translations_rosetta_expert(self):
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('rosetta_experts'):
+            view = create_view(product, '+translations',
+                               layer=TranslationsLayer)
+            self.assertEqual(True, view.can_configure_translations())

@@ -32,6 +32,7 @@ from lp.registry.model.product import (
     )
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import (
+    celebrity_logged_in,
     login,
     login_person,
     TestCase,
@@ -353,6 +354,22 @@ class BugSupervisorTestCase(TestCaseWithFactory):
             "Instead, bug supervisor for firefox is %s" % (
             self.person.name, self.product.name,
             self.product.bug_supervisor.name))
+
+
+class TestProductTranslations(TestCaseWithFactory):
+    """A TestCase for accessing product translations-related attributes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rosetta_expert(self):
+        product = self.factory.makeProduct()
+        new_series = self.factory.makeProductSeries(product=product)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('rosetta_experts'):
+            product.translations_usage = ServiceUsage.LAUNCHPAD
+            product.translation_focus = new_series
+            product.translationgroup = group
+            product.translationpermission = TranslationPermission.CLOSED
 
 
 class TestWebService(WebServiceTestCase):
