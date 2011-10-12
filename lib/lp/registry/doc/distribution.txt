@@ -387,10 +387,6 @@ The bug_tracking_usage property currently only tracks official_malone.
 
 While the other attributes track the other official_ attributes.
 
-    >>> print ubuntu.official_rosetta
-    True
-    >>> print ubuntu.translations_usage.name
-    LAUNCHPAD
     >>> print ubuntu.official_answers
     True
     >>> print ubuntu.answers_usage.name
@@ -404,8 +400,8 @@ If the official_ attributes are False and the enum hasn't been set,
 the usage enums don't know anything.
 
     >>> login_person(ubuntu.owner.teamowner)
-    >>> ubuntu.official_rosetta = False
-    >>> print ubuntu.translations_usage.name
+    >>> ubuntu.official_answers = False
+    >>> print ubuntu.answers_usage.name
     UNKNOWN
 
 A distribution *cannot* specify that it uses codehosting. Currently there's
@@ -474,7 +470,7 @@ But others can't.
     Unauthorized: (..., 'official_malone', 'launchpad.Edit')
     >>> debian.translations_usage = ServiceUsage.LAUNCHPAD
     Traceback (most recent call last):
-    Unauthorized: (..., 'translations_usage', 'launchpad.Edit')
+    Unauthorized: (..., 'translations_usage', 'launchpad.TranslationsAdmin')
 
 
 Specification Listings
