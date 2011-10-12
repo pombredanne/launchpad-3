@@ -24,7 +24,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.app.enums import service_uses_launchpad
-from lp.registry.browser.distribution import DistributionEditView
+from lp.registry.browser import RegistryEditFormView
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
@@ -128,9 +128,11 @@ class DistributionView(LaunchpadView):
                       reverse=True)
 
 
-class DistributionSettingsView(TranslationsMixin, DistributionEditView):
+class DistributionSettingsView(TranslationsMixin, RegistryEditFormView):
     label = "Translations settings"
     page_title = "Settings"
+    schema = IDistribution
+
     field_names = [
         "translations_usage",
         "translation_focus",
@@ -146,5 +148,4 @@ class DistributionSettingsView(TranslationsMixin, DistributionEditView):
 
     @action('Change', name='change')
     def edit(self, action, data):
-        self.change_archive_fields(data)
         self.updateContextFromData(data)

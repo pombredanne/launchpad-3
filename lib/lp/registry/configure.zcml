@@ -214,9 +214,6 @@
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
-            permission="launchpad.Edit"
-            interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
-        <require
             permission="launchpad.Admin"
             set_attributes="previous_series"/>
         <require
@@ -1514,7 +1511,8 @@
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_attributes="answers_usage blueprints_usage codehosting_usage
+                            bug_tracking_usage uses_launchpad"/>
         <require
             permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
@@ -1551,7 +1549,9 @@
                 language_pack_admin
                 translationgroup
                 translationpermission
-                translation_focus"/>
+                translation_focus
+                translations_usage
+                "/>
 
         <!-- IHasAliases -->
 
