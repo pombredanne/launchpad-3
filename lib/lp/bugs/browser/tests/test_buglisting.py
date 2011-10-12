@@ -185,12 +185,9 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         # A search request with a 'batch_request' query parameter causes the
         # view to just render the next batch of results.
         product = self.factory.makeProduct()
-        form = {
-            'search': 'Search'}
-        with person_logged_in(product.owner):
-            view = create_initialized_view(
-                product, '+bugs', form=form,
-                query_string='batch_request=True')
+        form = {'search': 'Search'}
+        view = create_initialized_view(
+            product, '+bugs', form=form, query_string='batch_request=True')
         content = view()
         self.assertIsNone(find_main_content(content))
         self.assertIsNotNone(
