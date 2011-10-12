@@ -214,6 +214,9 @@
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
+            permission="launchpad.Edit"
+            interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
+        <require
             permission="launchpad.Admin"
             set_attributes="previous_series"/>
         <require
