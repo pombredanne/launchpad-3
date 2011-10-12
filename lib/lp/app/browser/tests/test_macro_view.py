@@ -41,6 +41,7 @@ class TestMacroNontraversability(TestCaseWithFactory):
         '+bmq-macros',
         '+announcement-macros',
         '+person-macros',
+        '+milestone-macros',
         '+distributionmirror-macros',
         '+timeline-macros',
         '+macros',

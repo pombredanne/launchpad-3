@@ -21,8 +21,6 @@ __all__ = [
     ]
 
 
-import urlparse
-from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import (
@@ -42,7 +40,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import (
     precache_permission_for_objects,
     )
-from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
@@ -75,8 +72,6 @@ from lp.registry.interfaces.milestone import (
     IMilestone,
     IMilestoneSet,
     IProjectGroupMilestone,
-    IMilestoneBugtaskListingBatchNavigator,
-    IMilestoneSpecificationListingBatchNavigator,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
@@ -188,49 +183,6 @@ class MilestoneInlineNavigationMenu(NavigationMenu, MilestoneLinkMixin):
     links = ('edit', )
 
 
-class MilestoneBugTaskListingBatchNavigator(TableBatchNavigator):
-    """Batch up the milestone bugtask listings."""
-    implements(IMilestoneBugtaskListingBatchNavigator)
-
-    def __init__(self, view):
-        TableBatchNavigator.__init__(
-            self, view._bugtasks, view.request)
-        self.view = view
-
-    @cachedproperty
-    def bugtasks(self):
-        return [self.view._getListingItem(bugtask)
-                    for bugtask in self.currentBatch()]
-
-    @property
-    def table_class(self):
-        if self.has_multiple_pages:
-            return "listing"
-        else:
-            return "listing sortable"
-
-
-class MilestoneSpecificationListingBatchNavigator(TableBatchNavigator):
-    """Batch up the milestone specification listings."""
-    implements(IMilestoneSpecificationListingBatchNavigator)
-
-    def __init__(self, view):
-        TableBatchNavigator.__init__(
-            self, view._specifications, view.request)
-        self.view = view
-
-    @cachedproperty
-    def specifications(self):
-        return self.currentBatch()
-
-    @property
-    def table_class(self):
-        if self.has_multiple_pages:
-            return "listing"
-        else:
-            return "listing sortable"
-
-
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     """A View for listing milestones and releases."""
     # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
@@ -263,23 +215,6 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         self.processDeleteFiles()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
-
-    bugtask_table_template = ViewPageTemplateFile(
-        '../templates/milestone-bugtasks-table.pt')
-    specification_table_template = ViewPageTemplateFile(
-        '../templates/milestone-specifications-table.pt')
-
-    @property
-    def template(self):
-        query_string = self.request.get('QUERY_STRING', '')
-        query_params = urlparse.parse_qs(query_string)
-        batch_request_param = query_params.get('batch_request', None)
-        if batch_request_param is None:
-            return super(MilestoneView, self).template
-        elif 'bugtask_batch' in batch_request_param:
-            return self.bugtask_table_template
-        else:
-            return self.specification_table_template
 
     @property
     def expire_cache_minutes(self):
@@ -314,14 +249,9 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     # to avoid making the same query over and over again when evaluating in
     # the template.
     @cachedproperty
-    def _specifications(self):
-        """The list of specifications targeted to this milestone."""
-        return list(self.context.specifications)
-
-    @cachedproperty
     def specifications(self):
         """The list of specifications targeted to this milestone."""
-        return MilestoneSpecificationListingBatchNavigator(self)
+        return list(self.context.specifications)
 
     @cachedproperty
     def product_release_files(self):
@@ -370,12 +300,12 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @cachedproperty
     def bugtasks(self):
         """The list of bugtasks targeted to this milestone for listing."""
-        return MilestoneBugTaskListingBatchNavigator(self)
+        return [self._getListingItem(bugtask) for bugtask in self._bugtasks]
 
     @property
     def bugtask_count_text(self):
         """The formatted count of bugs for this milestone."""
-        count = len(self._bugtasks)
+        count = len(self.bugtasks)
         if count == 1:
             return '1 bug'
         else:
@@ -384,12 +314,12 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @property
     def bugtask_status_counts(self):
         """A list StatusCounts summarising the targeted bugtasks."""
-        return get_status_counts(self._bugtasks, 'status')
+        return get_status_counts(self.bugtasks, 'status')
 
     @property
     def specification_count_text(self):
         """The formatted count of specifications for this milestone."""
-        count = len(self._specifications)
+        count = len(self.specifications)
         if count == 1:
             return '1 blueprint'
         else:
@@ -398,12 +328,12 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @property
     def specification_status_counts(self):
         """A list StatusCounts summarising the targeted specification."""
-        return get_status_counts(self._specifications, 'implementation_status')
+        return get_status_counts(self.specifications, 'implementation_status')
 
     @cachedproperty
     def assignment_counts(self):
         """The counts of the items assigned to users."""
-        all_assignments = self._bugtasks + self._specifications
+        all_assignments = self.bugtasks + self.specifications
         return get_status_counts(
             all_assignments, 'assignee', key='displayname')
 
@@ -413,7 +343,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         all_assignments = []
         if self.user:
             for status_count in get_status_counts(
-                self._specifications, 'assignee', key='displayname'):
+                self.specifications, 'assignee', key='displayname'):
                 if status_count.status == self.user:
                     if status_count.count == 1:
                         status_count.status = 'blueprint'
@@ -421,7 +351,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
                         status_count.status = 'blueprints'
                     all_assignments.append(status_count)
             for status_count in get_status_counts(
-                self._bugtasks, 'assignee', key='displayname'):
+                self.bugtasks, 'assignee', key='displayname'):
                 if status_count.status == self.user:
                     if status_count.count == 1:
                         status_count.status = 'bug'
@@ -456,17 +386,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @property
     def has_bugs_or_specs(self):
         """Does the milestone have any bugtasks and specifications?"""
-        return self.has_bugs or self.has_specifications
-
-    @property
-    def has_bugs(self):
-        """Does the milestone have any bugtasks?"""
-        return len(self._bugtasks) > 0
-
-    @property
-    def has_specifications(self):
-        """Does the milestone have any specifications?"""
-        return len(self._specifications) > 0
+        return len(self.bugtasks) > 0 or len(self.specifications) > 0
 
 
 class MilestoneWithoutCountsView(MilestoneView):

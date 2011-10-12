@@ -12,8 +12,6 @@ __all__ = [
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
-    'IMilestoneBugtaskListingBatchNavigator',
-    'IMilestoneSpecificationListingBatchNavigator',
     'IProjectGroupMilestone',
     ]
 
@@ -51,7 +49,6 @@ from canonical.launchpad import _
 from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     )
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
@@ -294,9 +291,3 @@ class ICanGetMilestonesDirectly(Interface):
 IMilestone['target'].schema = IHasMilestones
 IMilestone['series_target'].schema = IHasMilestones
 IProductRelease['milestone'].schema = IMilestone
-
-class IMilestoneBugtaskListingBatchNavigator(ITableBatchNavigator):
-    """A marker interface for registering the appropriate listings."""
-
-class IMilestoneSpecificationListingBatchNavigator(ITableBatchNavigator):
-    """A marker interface for registering the appropriate listings."""
