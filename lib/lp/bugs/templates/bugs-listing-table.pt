@@ -5,7 +5,7 @@
 >
   <tal:no-results condition="not: context/batch">
     <tal:search-performed condition="request/search|nothing">
-      <p>No results for search 
+      <p>No results for search
         <strong tal:content="request/field.searchtext|nothing" /></p>
     </tal:search-performed>
 
