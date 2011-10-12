@@ -116,11 +116,13 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatusSearch,
     DB_INCOMPLETE_BUGTASK_STATUSES,
     DB_UNRESOLVED_BUGTASK_STATUSES,
+    get_bugtask_status,
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
     IllegalRelatedBugTasksParams,
     IllegalTarget,
+    normalize_bugtask_status,
     RESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskAssignee,
     UserCannotEditBugTaskImportance,
@@ -857,6 +859,7 @@ class BugTask(SQLBase):
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
+        new_status = normalize_bugtask_status(new_status)
         celebrities = getUtility(ILaunchpadCelebrities)
         if (self.status == BugTaskStatus.FIXRELEASED and
            (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
@@ -879,6 +882,8 @@ class BugTask(SQLBase):
             # normal status form, don't always submit a status when
             # testing the edit form.
             return
+
+        new_status = normalize_bugtask_status(new_status)
 
         if not self.canTransitionToStatus(new_status, user):
             raise UserCannotEditBugTaskStatus(
@@ -2804,13 +2809,12 @@ class BugTaskSet:
             # since the get_bug_privacy_filter() check for non-admins is
             # costly, don't filter those bugs at all.
             bug_privacy_filter = ''
-        cur = cursor()
-
         # The union is actually much faster than a LEFT JOIN with the
         # Milestone table, since postgres optimizes it to perform index
         # scans instead of sequential scans on the BugTask table.
         query = """
-            SELECT status, count(*)
+            SELECT
+                status, COUNT(*)
             FROM (
                 SELECT BugTask.status
                 FROM BugTask
@@ -2818,9 +2822,7 @@ class BugTaskSet:
                 WHERE
                     BugTask.productseries = %(series)s
                     %(privacy)s
-
                 UNION ALL
-
                 SELECT BugTask.status
                 FROM BugTask
                     JOIN Bug ON BugTask.bug = Bug.id
@@ -2831,11 +2833,15 @@ class BugTaskSet:
                     %(privacy)s
                 ) AS subquery
             GROUP BY status
-            """ % dict(series=quote(product_series),
-                       privacy=bug_privacy_filter)
-
+            """
+        query %= dict(
+            series=quote(product_series),
+            privacy=bug_privacy_filter)
+        cur = cursor()
         cur.execute(query)
-        return cur.fetchall()
+        return dict(
+            (get_bugtask_status(status_id), count)
+            for (status_id, count) in cur.fetchall())
 
     def findExpirableBugTasks(self, min_days_old, user,
                               bug=None, target=None, limit=None):
