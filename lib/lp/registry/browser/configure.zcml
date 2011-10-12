@@ -1338,15 +1338,11 @@
         rootsite="mainsite"
         attribute_to_parent="target"/>
     <browser:page
-        for="lp.registry.interfaces.milestone.IMilestoneBugtaskListingBatchNavigator"
-        name="+listing"
-        template="../templates/milestone-bugtask-listing.pt"
-        permission="zope.Public"/>
-    <browser:page
-        for="lp.registry.interfaces.milestone.IMilestoneSpecificationListingBatchNavigator"
-        name="+listing"
-        template="../templates/milestone-specification-listing.pt"
-        permission="zope.Public"/>
+        for="*"
+        name="+milestone-macros"
+        permission="zope.Public"
+        template="../templates/milestone-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:pages
         for="lp.registry.interfaces.milestone.IMilestone"
         class="lp.registry.browser.milestone.MilestoneView"
