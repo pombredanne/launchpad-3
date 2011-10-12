@@ -174,7 +174,7 @@ class RabbitUnreliableSession(RabbitSession):
             super(RabbitUnreliableSession, self).finish()
         except self.suppressed_errors:
             pass
-        except:
+        except Exception:
             error_utility = getUtility(IErrorReportingUtility)
             error_utility.raising(sys.exc_info())
 
