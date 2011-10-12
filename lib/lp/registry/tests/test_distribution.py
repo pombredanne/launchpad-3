@@ -502,6 +502,8 @@ class TestDistributionTranslations(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_rosetta_expert(self):
+        # Ensure rosetta-experts can set Distribution attributes
+        # related to translations.
         distro = self.factory.makeDistribution()
         new_series = self.factory.makeDistroSeries(distribution=distro)
         group = self.factory.makeTranslationGroup()
@@ -512,10 +514,12 @@ class TestDistributionTranslations(TestCaseWithFactory):
             distro.translationpermission = TranslationPermission.CLOSED
 
     def test_translation_group_owner(self):
+        # Ensure TranslationGroup owner for a Distribution can modify
+        # all attributes related to distribution translations.
         distro = self.factory.makeDistribution()
         new_series = self.factory.makeDistroSeries(distribution=distro)
         group = self.factory.makeTranslationGroup()
-        with celebrity_logged_in('rosetta_experts'):
+        with celebrity_logged_in('admin'):
             distro.translationgroup = group
 
         new_group = self.factory.makeTranslationGroup()

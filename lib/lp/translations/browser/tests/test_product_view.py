@@ -108,7 +108,7 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
         view = create_view(product, '+translations', layer=TranslationsLayer)
         self.assertEqual(True, view.can_configure_translations())
 
-    def test_can_configure_translations_rosetta_expert(self):
+    def test_rosetta_expert_can_configure_translations(self):
         product = self.factory.makeProduct()
         with celebrity_logged_in('rosetta_experts'):
             view = create_view(product, '+translations',

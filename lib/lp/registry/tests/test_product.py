@@ -362,6 +362,8 @@ class TestProductTranslations(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_rosetta_expert(self):
+        # Ensure rosetta-experts can set Product attributes
+        # related to translations.
         product = self.factory.makeProduct()
         new_series = self.factory.makeProductSeries(product=product)
         group = self.factory.makeTranslationGroup()

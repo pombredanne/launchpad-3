@@ -22,6 +22,8 @@ class TestDistributionSettingsView(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_only_translation_fields(self):
+        # No fields other than translation fields are shown
+        # in the distribution translation settings form view.
         distribution = self.factory.makeDistribution()
         view = create_initialized_view(
             distribution, '+configure-translations', rootsite='translations')
@@ -34,6 +36,8 @@ class TestDistributionSettingsView(TestCaseWithFactory):
             view.field_names)
 
     def test_unprivileged_users(self):
+        # Unprivileged users cannot access distribution translation settings
+        # page Distribution:+configure-translations.
         unprivileged = self.factory.makePerson()
         distribution = self.factory.makeDistribution()
         browser = self.getUserBrowser(user=unprivileged)
@@ -43,7 +47,8 @@ class TestDistributionSettingsView(TestCaseWithFactory):
 
     def test_translation_group_owner(self):
         # Translation group owner for a particular distribution has
-        # launchpad.TranslationsAdmin privileges on it.
+        # launchpad.TranslationsAdmin privileges on it, meaning they
+        # can access Distribution:+configure-translations page.
         group = self.factory.makeTranslationGroup()
         distribution = self.factory.makeDistribution()
         with person_logged_in(distribution.owner):
@@ -55,6 +60,9 @@ class TestDistributionSettingsView(TestCaseWithFactory):
         browser.open(url)
 
     def test_distribution_owner(self):
+        # Distribution owner of a particular distribution has
+        # launchpad.TranslationsAdmin privileges on it, meaning they
+        # can access Distribution:+configure-translations page.
         distribution = self.factory.makeDistribution()
         browser = self.getUserBrowser(user=distribution.owner)
         url = canonical_url(distribution, view_name='+configure-translations',
