@@ -20,6 +20,7 @@ __all__ = [
     'DB_INCOMPLETE_BUGTASK_STATUSES',
     'DB_UNRESOLVED_BUGTASK_STATUSES',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
+    'get_bugtask_status',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
@@ -28,12 +29,13 @@ __all__ = [
     'IBugTaskSet',
     'ICreateQuestionFromBugTaskForm',
     'IFrontPageBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
+    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'IPersonBugTaskSearch',
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamProductBugTaskSearch',
-    'IllegalRelatedBugTasksParams',
-    'IllegalTarget',
+    'normalize_bugtask_status',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskAssignee',
@@ -303,6 +305,33 @@ class BugTaskStatusSearch(DBEnumeratedType):
         This bug requires more information, but no additional
         details were supplied yet..
         """)
+
+
+def get_bugtask_status(status_id):
+    """Get a member of `BugTaskStatus` or `BugTaskStatusSearch` by value.
+
+    `BugTaskStatus` and `BugTaskStatusSearch` intersect, but neither is a
+    subset of the other, so this searches first in `BugTaskStatus` then in
+    `BugTaskStatusSearch` for a member with the given ID.
+    """
+    try:
+        return BugTaskStatus.items[status_id]
+    except KeyError:
+        return BugTaskStatusSearch.items[status_id]
+
+
+def normalize_bugtask_status(status):
+    """Normalize `status`.
+
+    It might be a member of any of three related enums: `BugTaskStatus`,
+    `BugTaskStatusSearch`, or `BugTaskStatusSearchDisplay`. This tries to
+    normalize by value back to the first of those three enums in which the
+    status appears.
+    """
+    try:
+        return BugTaskStatus.items[status.value]
+    except KeyError:
+        return BugTaskStatusSearch.items[status.value]
 
 
 class BugTagsSearchCombinator(EnumeratedType):

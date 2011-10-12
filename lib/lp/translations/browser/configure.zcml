@@ -528,7 +528,7 @@
             layer="lp.translations.publisher.TranslationsLayer"/>
         <browser:url
             for="lp.translations.interfaces.translationmessage.ITranslationMessage"
-            path_expression="string:${potmsgset/sequence}"
+            path_expression="string:${sequence}"
             attribute_to_parent="browser_pofile"
             rootsite="translations"/>
         <browser:menus

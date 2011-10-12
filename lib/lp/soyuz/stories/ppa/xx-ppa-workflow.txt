@@ -253,7 +253,17 @@ page and discard the changes.
     PPA description
     Yay, I can change it.
 
-Similarly to users, teams with assigned PPAs cannot be renamed either.
+Create a publication in the team's PPA.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('admin@canonical.com')
+    >>> devs = getUtility(IPersonSet).getByName('landscape-developers')
+    >>> archive = devs.getPPAByName('develppa')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(archive=archive)
+    >>> logout()
+
+Similarly to users, teams with active PPAs cannot be renamed either.
 
     >>> sample_browser.open(
     ...     "http://launchpad.dev/~landscape-developers/+edit")
@@ -265,7 +275,7 @@ Similarly to users, teams with assigned PPAs cannot be renamed either.
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'form'))
     Name: landscape-developers
-    This team cannot be renamed because it has a PPA.
+    This team has an active PPA with packages published and may not be renamed.
     ...
 
 

@@ -39,6 +39,7 @@ VALID_AMI_OWNERS = {
     '424228475252': 'wallyworld',
     '292290876294': 'stevenk',
     '259696152397': 'bac',
+    '873925794399': 'wgrant',
     # ...anyone else want in on the fun?
     }
 

@@ -43,6 +43,7 @@ __all__ = [
     'PersonRdfView',
     'PersonRelatedBugTaskSearchListingView',
     'PersonRelatedSoftwareView',
+    'PersonRenameFormMixin',
     'PersonReportedBugTaskSearchListingView',
     'PersonSearchQuestionsView',
     'PersonSetActionNavigationMenu',
@@ -289,8 +290,6 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
-from lp.soyuz.enums import ArchiveStatus
-from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
@@ -3431,7 +3430,24 @@ class PersonEditHomePageView(BasePersonEditView):
     page_title = label
 
 
-class PersonEditView(BasePersonEditView):
+class PersonRenameFormMixin(LaunchpadEditFormView):
+
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        Renames are prohibited if a person/team has an active PPA or an
+        active mailing list.
+        """
+        reason = self.context.checkRename()
+        if reason:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
+        super(PersonRenameFormMixin, self).setUpWidgets()
+        if reason:
+            self.widgets['name'].hint = reason
+
+
+class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
@@ -3447,25 +3463,6 @@ class PersonEditView(BasePersonEditView):
     # Will contain an hidden input when the user is renaming his
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
-
-    def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        When a user has a PPA renames are prohibited.
-        """
-        has_ppa_with_published_packages = (
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
-                self.context, has_packages=True,
-                statuses=[ArchiveStatus.ACTIVE,
-                          ArchiveStatus.DELETING]) is not None)
-        if has_ppa_with_published_packages:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-        super(PersonEditView, self).setUpWidgets()
-        if has_ppa_with_published_packages:
-            self.widgets['name'].hint = _(
-                'This user has an active PPA with packages published and '
-                'may not be renamed.')
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""
