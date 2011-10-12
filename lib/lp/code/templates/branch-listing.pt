@@ -188,16 +188,18 @@ function hide_commit(id) {
 
   <tal:navigation replace="structure context/@@+navigation-links-lower" />
 
-  <script type="text/javascript">
-      LPS.use('lp.app.batchnavigator',
-              function(Y) {
-                  Y.on("domready", function () {
-                      var config = {
-                          contentBox: '#branches-table-listing',
-                          post_refresh_hook: hookUpFilterSubmission
-                      };
-                      new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
-                  });
-              });
-  </script>
+  <tal:comment
+    tal:condition="request/features/ajax.batch_navigator.enabled"
+    replace='structure string:&lt;script type="text/javascript"&gt;
+    LPS.use("lp.app.batchnavigator",
+        function(Y) {
+            Y.on("domready", function () {
+                var config = {
+                    contentBox: "#branches-table-listing",
+                    post_refresh_hook: hookUpFilterSubmission
+                };
+                new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
+            });
+        });
+  &lt;/script&gt;'/>
 </div>

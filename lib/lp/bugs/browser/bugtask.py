@@ -2470,7 +2470,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def template(self):
         query_string = self.request.get('QUERY_STRING', '')
         query_params = urlparse.parse_qs(query_string)
-        batch_request_param = query_params.get('batch_request', None)
+        batch_request_param = 'batch_request' in query_params
         if batch_request_param is None:
             return super(BugTaskSearchListingView, self).template
         else:

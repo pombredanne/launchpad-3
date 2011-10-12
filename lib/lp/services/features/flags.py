@@ -156,6 +156,11 @@ flag_info = sorted([
      ('Enables the longpoll mechanism for merge proposals so that diffs, '
       'for example, are updated in-page when they are ready.'),
      ''),
+    ('ajax.batch_navigator.enabled',
+     'boolean',
+     'If true, batch navigators which have been wired to do so use ajax '
+     'calls to load the next batch of data',
+     ''),
     ])
 
 # The set of all flag names that are documented.
