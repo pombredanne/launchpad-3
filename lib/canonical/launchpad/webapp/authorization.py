@@ -41,9 +41,6 @@ from canonical.lazr.interfaces import IObjectPrivacy
 from lp.app.interfaces.security import IAuthorization
 
 
-steveIsFixingThis = False
-
-
 LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'
 
 
@@ -190,12 +187,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
 
-        # XXX Steve Alexander 2005-01-12:
-        # This warning should apply to the policy in zope3 also.
         if permission == 'zope.Public':
-            if steveIsFixingThis:
-                warnings.warn(
-                    'zope.Public being used raw on object %r' % object)
             return True
         if permission is CheckerPublic:
             return True
