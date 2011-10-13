@@ -74,9 +74,11 @@
             style="text-align: center">
             HEAT</td>
       </tr>
-      <tr tal:repeat="bugtask context/getBugListingItems"
-          tal:replace="structure bugtask/mustache">
-      </tr>
+    </tbody>
+  </table>
+  <table>
+    <tbody>
+      <tr tal:replace="structure context/mustache" />
     </tbody>
   </table>
 </tal:results>

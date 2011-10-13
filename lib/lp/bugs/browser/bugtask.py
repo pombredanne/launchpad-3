@@ -2114,18 +2114,6 @@ class BugTaskListingItem:
     """
     delegates(IBugTask, 'bugtask')
 
-    mustache_template = """\
-        <tr><td colspan="2"><table>
-            <tr><td class={{importance_class}}>{{importance}}</td></tr>
-            <tr><td class={{status_class}}>{{status}}
-        </td></tr></table>
-        <td colspan="3"><table>
-            <tr><td >#{{id}} <a href="{{bug_url}}">{{title}}</a></td></tr>
-            <tr><td><span class="{{bugtarget_css}}">{{bugtarget}}
-                    </span></td></tr>
-        </table></td>
-        <td colspan="2" align="right">{{{badges}}}{{{bug_heat_html}}}</td>
-        </tr>"""
 
     def __init__(self, bugtask, has_bug_branch,
                  has_specification, has_patch, request=None,
@@ -2149,10 +2137,6 @@ class BugTaskListingItem:
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
         return bugtask_heat_html(self.bugtask, target=self.target_context)
-
-    @property
-    def mustache(self):
-        return pystache.render(self.mustache_template, self.model)
 
     @property
     def model(self):
@@ -2213,6 +2197,31 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""
         return [self._getListingItem(bugtask) for bugtask in self.batch]
+
+    mustache_template = """\
+        {{#bugtasks}}
+        <tr><td colspan="2"><table>
+            <tr><td class={{importance_class}}>{{importance}}</td></tr>
+            <tr><td class={{status_class}}>{{status}}
+        </td></tr></table>
+        <td colspan="3"><table>
+            <tr><td >#{{id}} <a href="{{bug_url}}">{{title}}</a></td></tr>
+            <tr><td><span class="{{bugtarget_css}}">{{bugtarget}}
+                    </span></td></tr>
+        </table></td>
+        <td colspan="2" align="right">{{{badges}}}{{{bug_heat_html}}}</td>
+        </tr>
+        {{/bugtasks}}
+        """
+
+    @property
+    def mustache(self):
+        return pystache.render(self.mustache_template, self.model)
+
+    @property
+    def model(self):
+        bugtasks = [bugtask.model for bugtask in self.getBugListingItems()]
+        return {'bugtasks': bugtasks}
 
 
 class NominatedBugReviewAction(EnumeratedType):
