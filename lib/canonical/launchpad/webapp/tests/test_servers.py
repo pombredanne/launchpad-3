@@ -32,7 +32,9 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.webapp.interfaces import IFinishReadOnlyRequestEvent
+from canonical.launchpad.webapp.interfaces import (
+    IFinishReadOnlyRequestEvent,
+    )
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
     ApplicationServerSettingRequestFactory,

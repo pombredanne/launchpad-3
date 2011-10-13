@@ -10,8 +10,14 @@ import subprocess
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
+import psycopg2
+
 from canonical.config import config
-from canonical.database.sqlbase import connect, sqlvalues
+from canonical.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_DEFAULT,
+    sqlvalues
+    )
 from canonical.database.postgresql import (
     fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
     )
@@ -28,6 +34,7 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 # Replication set id constants. Don't change these without DBA help.
 LPMAIN_SET_ID = 1
 HOLDING_SET_ID = 666
+SSO_SET_ID = 3
 LPMIRROR_SET_ID = 4
 
 # Seed tables for the lpmain replication set to be passed to
@@ -223,6 +230,11 @@ class Node:
         self.connection_string = connection_string
         self.is_master = is_master
 
+    def connect(self, isolation=ISOLATION_LEVEL_DEFAULT):
+        con = psycopg2.connect(self.connection_string)
+        con.set_isolation_level(isolation)
+        return con
+
 
 def _get_nodes(con, query):
     """Return a list of Nodes."""
@@ -337,8 +349,9 @@ def preamble(con=None):
         # Symbolic ids for replication sets.
         define lpmain_set   %d;
         define holding_set  %d;
+        define sso_set      %d;
         define lpmirror_set %d;
-        """ % (LPMAIN_SET_ID, HOLDING_SET_ID, LPMIRROR_SET_ID))]
+        """ % (LPMAIN_SET_ID, HOLDING_SET_ID, SSO_SET_ID, LPMIRROR_SET_ID))]
 
     if master_node is not None:
         preamble.append(dedent("""\
