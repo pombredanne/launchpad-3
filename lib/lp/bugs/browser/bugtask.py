@@ -53,6 +53,7 @@ from math import (
     log,
     )
 from operator import attrgetter
+import os.path
 import re
 import transaction
 import urllib
@@ -2196,22 +2197,12 @@ class BugListingBatchNavigator(TableBatchNavigator):
         """Return a decorated list of visible bug tasks."""
         return [self._getListingItem(bugtask) for bugtask in self.batch]
 
-    mustache_template = """\
-        {{#bugtasks}}
-        <tr><td><table>
-            <tr><td class={{importance_class}}>{{importance}}</td></tr>
-            <tr><td class={{status_class}}>{{status}}
-        </td></tr></table>
-        <td><table>
-            <tr><td >#{{id}} <a href="{{bug_url}}">{{title}}</a></td></tr>
-            <tr>
-                <td><span class="{{bugtarget_css}}">{{bugtarget}}</span></td>
-            </tr>
-        </table></td>
-        <td align="right">{{{badges}}}{{{bug_heat_html}}}</td>
-        </tr>
-        {{/bugtasks}}
-        """
+    @cachedproperty
+    def mustache_template(self):
+        template_path = os.path.join(
+            config.root, 'lib/lp/bugs/templates/buglisting.txt')
+        with open(template_path) as template_file:
+            return template_file.read()
 
     @property
     def mustache_listings(self):

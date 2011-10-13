@@ -1,0 +1,14 @@
+{{#bugtasks}}
+<tr><td><table>
+    <tr><td class={{importance_class}}>{{importance}}</td></tr>
+    <tr><td class={{status_class}}>{{status}}
+</td></tr></table>
+<td><table>
+    <tr><td >#{{id}} <a href="{{bug_url}}">{{title}}</a></td></tr>
+    <tr>
+        <td><span class="{{bugtarget_css}}">{{bugtarget}}</span></td>
+    </tr>
+</table></td>
+<td align="right">{{{badges}}}{{{bug_heat_html}}}</td>
+</tr>
+{{/bugtasks}}
