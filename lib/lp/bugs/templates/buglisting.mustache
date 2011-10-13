@@ -1,18 +1,23 @@
-<table>
+<table class="listing narrow-listing">
 <tbody>
 {{#bugtasks}}
-<tr><td><table>
-    <tr><td class={{importance_class}}>{{importance}}</td></tr>
-    <tr><td class={{status_class}}>{{status}}
-</td></tr></table>
-<td><table>
-    <tr><td >#{{id}} <a href="{{bug_url}}">{{title}}</a></td></tr>
     <tr>
-        <td><span class="{{bugtarget_css}}">{{bugtarget}}</span></td>
+        <td class={{importance_class}} style="border-style: none">
+            {{importance}}
+        </td>
+        <td style="border-style: none">
+            #{{id}} <a href="{{bug_url}}">{{title}}</a>
+        </td>
+        <td align="right" style="border-style: none">
+            {{{badges}}}{{{bug_heat_html}}}
+        </td>
     </tr>
-</table></td>
-<td align="right">{{{badges}}}{{{bug_heat_html}}}</td>
-</tr>
+    <tr>
+        <td class={{status_class}}>{{status}}</td>
+        <td colspan="2">
+            <span class="{{bugtarget_css}}">{{bugtarget}}</span>
+        </td>
+    </tr>
 {{/bugtasks}}
 </tbody>
 </table>
