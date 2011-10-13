@@ -54,7 +54,6 @@ from math import (
     )
 from operator import attrgetter
 import re
-from textwrap import dedent
 import transaction
 import urllib
 
