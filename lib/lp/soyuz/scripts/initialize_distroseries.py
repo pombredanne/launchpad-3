@@ -402,7 +402,7 @@ class InitializeDistroSeries:
                 self.distroseries.getDistroArchSeries(arch_tag))
         else:
             self.distroseries.nominatedarchindep = (
-                self.distroseriesgetDistroArchSeries(
+                self.distroseries.getDistroArchSeries(
                     [self.archindep_archtag]))
 
     def _potential_nominated_arches(self, parent_list):
