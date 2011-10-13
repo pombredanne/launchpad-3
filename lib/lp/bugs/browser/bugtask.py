@@ -2481,6 +2481,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
+        cache = IJSONRequestCache(self.request)
+        cache.objects['mustache_model'] = self.search().model
 
     @property
     def columns_to_show(self):
