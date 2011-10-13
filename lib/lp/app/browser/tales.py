@@ -1276,7 +1276,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         """
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
-            self._report()
+            self._report_visibility_leak()
             return None
         return super(TeamFormatterAPI, self).url(view_name, rootsite)
 
@@ -1284,7 +1284,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         """See `ObjectFormatterAPI`."""
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
-            self._report()
+            self._report_visibility_leak()
             return None
         return super(TeamFormatterAPI, self).api_url(context)
 
@@ -1297,7 +1297,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            self._report()
+            self._report_visibility_leak()
             return '<span class="sprite team">%s</span>' % cgi.escape(
                 self.hidden)
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
@@ -1307,7 +1307,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            self._report()
+            self._report_visibility_leak()
             return self.hidden
         return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
 
@@ -1316,11 +1316,11 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            self._report()
+            self._report_visibility_leak()
             return self.hidden
         return super(TeamFormatterAPI, self).unique_displayname(view_name)
 
-    def _report(self):
+    def _report_visibility_leak(self):
         if bool(getFeatureFlag('disclosure.log_private_team_leaks.enabled')):
             request = get_current_browser_request()
             try:

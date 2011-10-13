@@ -31,4 +31,4 @@ class TestMixedVisibility(TestCaseWithFactory):
                     u'<hidden>', TeamFormatterAPI(team).displayname(None))
             self.assertEqual(1, len(self.oopses))
             self.assertTrue(
-                self.oopses[0]['tb_text'].startswith('Traceback'))
+                'MixedVisibilityError' in self.oopses[0]['tb_text'])
