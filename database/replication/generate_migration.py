@@ -147,7 +147,9 @@ def generate_initialize_set(set_id, set_name, outf):
     message(outf, "Creating %s origin %d" % (set_name, origin_node.node_id))
     print >> outf, "create set (id=%d, origin=@%s_origin, comment='%s');" % (
         set_id, set_name, set_name)
-    cur = con.cursor()
+    # Need to connect to a node currently replicating the desired set.
+    origin_con = origin_node.connect()
+    cur = origin_con.cursor()
     cur.execute("""
         SELECT tab_id, tab_nspname, tab_relname, tab_comment
         FROM _sl.sl_table WHERE tab_set=%s
