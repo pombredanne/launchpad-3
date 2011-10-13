@@ -491,13 +491,14 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     def bugtask_status_counts(self):
         """A list StatusCounts summarising the targeted bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
-        status_id_counts = bugtaskset.getStatusCountsForProductSeries(
+        status_counts = bugtaskset.getStatusCountsForProductSeries(
             self.user, self.context)
-        status_counts = dict([(BugTaskStatus.items[status_id], count)
-                              for status_id, count in status_id_counts])
-        return [StatusCount(status, status_counts[status])
-                for status in sorted(status_counts,
-                                     key=attrgetter('sortkey'))]
+        # We sort by value before sortkey because the statuses returned can be
+        # from different (though related) enums.
+        statuses = sorted(status_counts, key=attrgetter('value', 'sortkey'))
+        return [
+            StatusCount(status, status_counts[status])
+            for status in statuses]
 
     @cachedproperty
     def specification_status_counts(self):

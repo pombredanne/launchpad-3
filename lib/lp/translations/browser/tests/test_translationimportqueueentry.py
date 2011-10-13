@@ -16,6 +16,7 @@ from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -41,7 +42,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
     def _makeProductSeries(self):
         """Set up a product series for a translatable product."""
         product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         return product.getSeries('trunk')
 
     def _makeView(self, entry):

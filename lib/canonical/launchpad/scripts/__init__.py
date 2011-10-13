@@ -23,7 +23,6 @@ import threading
 
 from zope.configuration.config import ConfigurationMachine
 from zope.security.management import setSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
 import zope.sendmail.delivery
 import zope.site.hooks
 
@@ -38,7 +37,10 @@ from canonical.launchpad.scripts.logger import (
 from canonical.database.postgresql import ConnectionString
 # Intentional re-export, following along the lines of the logger module.
 from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.authorization import (
+    LaunchpadPermissiveSecurityPolicy,
+    LaunchpadSecurityPolicy,
+    )
 from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,
     setupInteractionByEmail,
@@ -88,7 +90,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     if use_web_security:
         setSecurityPolicy(LaunchpadSecurityPolicy)
     else:
-        setSecurityPolicy(PermissiveSecurityPolicy)
+        setSecurityPolicy(LaunchpadPermissiveSecurityPolicy)
 
     # Register atexit handler to kill off mail delivery daemon threads, and
     # thus avoid spew at exit.  See:
@@ -109,8 +111,6 @@ def execute_zcml_for_scripts(use_web_security=False):
 
     # This is a convenient hack to set up a zope interaction, before we get
     # the proper API for having a principal / user running in scripts.
-    # The script will have full permissions because of the
-    # PermissiveSecurityPolicy set up in script.zcml.
     setupInteractionByEmail(ANONYMOUS)
 
 

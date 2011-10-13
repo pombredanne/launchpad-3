@@ -29,7 +29,6 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         # Create a distroseries that uses translations.
         TestCaseWithFactory.setUp(self)
         self.distroseries = self.factory.makeDistroSeries()
-        self.distroseries.distribution.official_rosetta = True
         self.language = getUtility(ILanguageSet).getLanguageByCode('sr')
         sourcepackagename = self.factory.makeSourcePackageName()
         potemplate = self.factory.makePOTemplate(
