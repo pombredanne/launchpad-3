@@ -1276,6 +1276,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         """
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
+            self._report()
             return None
         return super(TeamFormatterAPI, self).url(view_name, rootsite)
 
@@ -1283,6 +1284,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         """See `ObjectFormatterAPI`."""
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
+            self._report()
             return None
         return super(TeamFormatterAPI, self).api_url(context)
 
@@ -1319,11 +1321,13 @@ class TeamFormatterAPI(PersonFormatterAPI):
         return super(TeamFormatterAPI, self).unique_displayname(view_name)
 
     def _report(self):
-        if bool(getFeatureFlag('disclosure.mixed_visibility_log.enabled')):
+        if bool(getFeatureFlag('disclosure.log_private_team_leaks.enabled')):
             request = get_current_browser_request()
-            getUtility(IErrorReportingUtility).raising(
-                (MixedVisibilityError, MixedVisibilityError(), None),
-                request)
+            try:
+                raise MixedVisibilityError()
+            except MixedVisibilityError:
+                getUtility(IErrorReportingUtility).raising(
+                    sys.exc_info(), request)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
