@@ -181,7 +181,7 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
 
         # Packageset p2 has no build so no exception should be raised.
         child.initDerivedDistroSeries(
-            child.driver, [parent.id], (), (str(packageset2.id),))
+            child.driver, [parent.id], (), None, (str(packageset2.id),))
 
     def test_arch_check_performed(self):
         # Architectures passed to initDerivedDistroSeries are passed down
@@ -196,4 +196,4 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
         # Initialize only with parent_das2's architecture. The build is
         # in the other architecture so no exception should be raised.
         child.initDerivedDistroSeries(
-            child.driver, [parent.id], (parent_das2.architecturetag, ), ())
+            child.driver, [parent.id], (parent_das2.architecturetag, ))

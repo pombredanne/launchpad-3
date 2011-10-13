@@ -1686,7 +1686,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 self, format) is not None
 
     def initDerivedDistroSeries(self, user, parents, architectures=(),
-                                packagesets=(), rebuild=False, overlays=(),
+                                archindep_archtag=None, packagesets=(),
+                                rebuild=False, overlays=(),
                                 overlay_pockets=(),
                                 overlay_components=()):
         """See `IDistroSeries`."""
@@ -1694,15 +1695,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise DerivationError(
                 "DistroSeries %s already has parent series." % self.name)
         initialize_series = InitializeDistroSeries(
-            self, parents, architectures, packagesets, rebuild, overlays,
-            overlay_pockets, overlay_components)
+            self, parents, architectures, archindep_archtag, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
         try:
             initialize_series.check()
         except InitializationError, e:
             raise DerivationError(e)
         getUtility(IInitializeDistroSeriesJobSource).create(
-            self, parents, architectures, packagesets, rebuild, overlays,
-            overlay_pockets, overlay_components)
+            self, parents, architectures, archindep_archtag, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
 
     def getParentSeries(self):
         """See `IDistroSeriesPublic`."""
