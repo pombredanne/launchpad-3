@@ -24,8 +24,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import (
-    BinaryPackageFormat,
-    PackagePublishingPriority,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory

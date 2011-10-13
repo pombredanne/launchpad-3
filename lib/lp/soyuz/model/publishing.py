@@ -34,7 +34,6 @@ from storm.expr import (
     LeftJoin,
     Or,
     Select,
-    SQL,
     Sum,
     )
 from storm.store import Store
