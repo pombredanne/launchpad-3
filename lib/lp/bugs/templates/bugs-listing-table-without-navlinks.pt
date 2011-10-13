@@ -78,15 +78,9 @@
   </table>
   <tal:mustache condition="request/features/bugs.dynamic_bug_listings.enabled">
   <em>Server-side mustache</em>
-  <table>
-    <tbody>
-      <tr tal:replace="structure context/mustache" />
-    </tbody>
-  </table>
+  <span tal:replace="structure context/mustache" />
   <em>Client-side mustache</em>
-  <table>
-    <tbody id="client-listing" />
-  </table>
+  <span id="client-listing" />
   <script tal:content="structure context/mustache_listings" />
   </tal:mustache>
 </tal:results>
