@@ -24,7 +24,7 @@
         </div>
       </tal:allowed>
       <tal:disallowed tal:condition="not:view/contact_is_allowed">
-        <p>You have reach your quota for direct contact of other Launchpad
+        <p>You have reached your quota for directly contacting other Launchpad
            users.  You can try again
           <tal:next_try
             tal:content="view/next_try/fmt:displaydate">X</tal:next_try>
