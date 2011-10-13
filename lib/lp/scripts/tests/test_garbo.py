@@ -115,6 +115,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -889,13 +890,28 @@ class TestGarbo(TestCaseWithFactory):
             store.find(BugTask.id,
                 BugTask.id == with_response.id,
                 BugTask._status ==
-                       BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE).count())
+                    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE).count())
         self.assertEqual(
             1,
             store.find(BugTask.id,
                 BugTask.id == without_response.id,
                 BugTask._status ==
-                     BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE).count())
+                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE).count())
+
+    def test_BugTaskIncompleteMigrator_filed_as_incomplete(self):
+        # BugTaskIncompleteMigrator also deals with bugs that have never
+        # transitioned to Incomplete.
+        with dbuser('launchpad'):
+            bug = self.factory.makeBug(status=BugTaskStatus.INCOMPLETE)
+        without_response = bug.bugtasks[0]
+        transaction.commit()
+        self.runHourly()
+        self.assertEqual(
+            1,
+            IMasterStore(BugTask).find(BugTask.id,
+                BugTask.id == without_response.id,
+                BugTask._status ==
+                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE).count())
 
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
