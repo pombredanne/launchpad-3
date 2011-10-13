@@ -2200,16 +2200,17 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     mustache_template = """\
         {{#bugtasks}}
-        <tr><td colspan="2"><table>
+        <tr><td><table>
             <tr><td class={{importance_class}}>{{importance}}</td></tr>
             <tr><td class={{status_class}}>{{status}}
         </td></tr></table>
-        <td colspan="3"><table>
+        <td><table>
             <tr><td >#{{id}} <a href="{{bug_url}}">{{title}}</a></td></tr>
-            <tr><td><span class="{{bugtarget_css}}">{{bugtarget}}
-                    </span></td></tr>
+            <tr>
+                <td><span class="{{bugtarget_css}}">{{bugtarget}}</span></td>
+            </tr>
         </table></td>
-        <td colspan="2" align="right">{{{badges}}}{{{bug_heat_html}}}</td>
+        <td align="right">{{{badges}}}{{{bug_heat_html}}}</td>
         </tr>
         {{/bugtasks}}
         """
