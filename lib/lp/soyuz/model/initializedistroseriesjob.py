@@ -138,7 +138,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
             IStore(Packageset).get(Packageset, int(pkgsetid)).name
             for pkgsetid in  self.packagesets]
         parts += ", architectures: %s" % (self.arches,)
-        parts += ", archindep_archtag: %s" % (self.archindep_archtag,)
+        parts += ", archindep_archtag: %s" % self.archindep_archtag
         parts += ", packagesets: %s" % pkgsets
         parts += ", rebuild: %s" % self.rebuild
         return "<%s>" % parts
