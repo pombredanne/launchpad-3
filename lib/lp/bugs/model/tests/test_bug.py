@@ -805,7 +805,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 private=True, security_related=False, who=who)
         self.assertTrue(bug_supervisor in bug.getDirectSubscribers())
 
-
     def test_securityContactUnsubscribedIfBugNotSecurityRelated(self):
         # The security contacts are unsubscribed if a bug has security_related
         # set to false and an email is sent telling them they have been
