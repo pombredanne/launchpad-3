@@ -2214,6 +2214,10 @@ class BugListingBatchNavigator(TableBatchNavigator):
         """
 
     @property
+    def mustache_listings(self):
+        return 'LP.mustache_listings = %s;' % dumps(self.mustache_template)
+
+    @property
     def mustache(self):
         return pystache.render(self.mustache_template, self.model)
 

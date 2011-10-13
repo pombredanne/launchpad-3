@@ -87,6 +87,7 @@
   <table>
     <tbody id="client-listing" />
   </table>
+  <script tal:content="structure context/mustache_listings" />
   </tal:mustache>
 </tal:results>
 </tal:root>
