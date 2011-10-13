@@ -116,14 +116,17 @@ class CanonicalConfig:
             instance_name = find_instance_name()
 
         if process_name is None:
-            if getattr(sys, 'argv', None) is None:
-                process_name = None
-            else:
-                basename = os.path.basename(sys.argv[0])
-                process_name = os.path.splitext(basename)[0]
+            self._process_name = self._make_process_name()
+        else:
+            self._process_name = process_name
         self._instance_name = instance_name
-        self._process_name = process_name
         self.root = TREE_ROOT
+
+    def _make_process_name(self):
+        if getattr(sys, 'argv', None) is None:
+            return None
+        basename = os.path.basename(sys.argv[0])
+        return os.path.splitext(basename)[0]
 
     @property
     def instance_name(self):
@@ -180,6 +183,8 @@ class CanonicalConfig:
         CanonicalConfig loads the conf file named for the process. When
         the conf file does not exist, it loads launchpad-lazr.conf instead.
         """
+        if self._process_name is None:
+            self._process_name = self._make_process_name()
         return self._process_name
 
     def setProcess(self, process_name):
