@@ -2115,7 +2115,6 @@ class BugTaskListingItem:
     """
     delegates(IBugTask, 'bugtask')
 
-
     def __init__(self, bugtask, has_bug_branch,
                  has_specification, has_patch, request=None,
                  target_context=None):
@@ -2156,7 +2155,6 @@ class BugTaskListingItem:
             'bug_heat_html': self.bug_heat_html,
             'badges': badges,
             }
-
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
