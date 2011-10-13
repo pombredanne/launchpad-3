@@ -27,7 +27,7 @@
         <p>You have reached your quota for directly contacting other Launchpad
            users.  You can try again
           <tal:next_try
-            tal:content="view/next_try/fmt:displaydate">X</tal:next_try>
+            tal:content="view/next_try/fmt:displaydate">X</tal:next_try>.
         </p>
       </tal:disallowed>
       <tal:disallowed tal:condition="not:view/has_valid_email_address">
