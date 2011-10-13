@@ -76,10 +76,15 @@
       </tr>
     </tbody>
   </table>
+  <em>Server-side mustache</em>
   <table>
     <tbody>
       <tr tal:replace="structure context/mustache" />
     </tbody>
+  </table>
+  <em>Client-side mustache</em>
+  <table>
+    <tbody id="client-listing" />
   </table>
 </tal:results>
 </tal:root>
