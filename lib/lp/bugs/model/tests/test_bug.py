@@ -787,6 +787,25 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 bug, expected_recipients, expected_body_text,
                 expected_reason_body, False, True, 'Bug Supervisor')
 
+    def test_structural_bug_supervisor_becomes_direct_on_private(self):
+        # If a bug supervisor has a structural subscription to the bug, and
+        # the bug is marked as private, the supervisor should get a direct
+        # subscription. Otherwise they should be removed, per other tests.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        bug_owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=bug_owner, product=product)
+        with person_logged_in(product.owner):
+            product.addSubscription(bug_supervisor, bug_supervisor)
+
+        self.assertFalse(bug_supervisor in bug.getDirectSubscribers())
+        with person_logged_in(bug_owner):
+            who = self.factory.makePerson(name="who")
+            bug.setPrivacyAndSecurityRelated(
+                private=True, security_related=False, who=who)
+        self.assertTrue(bug_supervisor in bug.getDirectSubscribers())
+
+
     def test_securityContactUnsubscribedIfBugNotSecurityRelated(self):
         # The security contacts are unsubscribed if a bug has security_related
         # set to false and an email is sent telling them they have been
