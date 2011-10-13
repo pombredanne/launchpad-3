@@ -302,7 +302,6 @@ class YUITestFixtureControllerView(LaunchpadView):
 
     def renderINDEX(self):
         root = os.path.join(config.root, 'lib')
-        tests = ['/'.join(path) for path in find_tests(root)]
         test_lines = []
         for path in find_tests(root):
             test_path = '/+yuitest/' + '/'.join(path)
@@ -328,7 +327,8 @@ class YUITestFixtureControllerView(LaunchpadView):
                         case = None
                         for case in suite:
                             if isinstance(case, YUIAppServerTestCase):
-                                root_url = config.appserver_root_url(case.facet)
+                                root_url = config.appserver_root_url(
+                                    case.facet)
                                 if root_url != 'None':
                                     test_path = root_url + test_path
                                 warning = ''
@@ -354,7 +354,9 @@ class YUITestFixtureControllerView(LaunchpadView):
     def renderHTML(self):
         self.request.response.setHeader('Content-Type', 'text/html')
         self.request.response.setHeader('Cache-Control', 'no-cache')
-        if 'INTERACTIVE_TESTS' in os.environ and 'reload' in self.request.form:
+        if ('INTERACTIVE_TESTS' in os.environ and
+            'reload' in self.request.form):
+            # We should try to reload the module.
             module = sys.modules.get(self.module_name)
             if module is not None:
                 del module._fixtures_

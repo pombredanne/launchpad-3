@@ -457,7 +457,8 @@ class TestYUITestFixtureController(TestCase):
     def test_python_fixture_resets_fixtures(self):
         # When we reload, we also clear out _fixtures_.  This means
         # that if you rename or delete something, it won't be hanging
-        # around confusing you into thinking everything is fine after the reload.
+        # around confusing you into thinking everything is fine after
+        # the reload.
         test_yuixhr_fixture._fixtures_['extra_scribble'] = 42
         with override_environ(INTERACTIVE_TESTS='1'):
             view = create_traversed_view(

@@ -397,9 +397,9 @@ def start_testapp(argv=list(sys.argv)):
         teardowns.append(LayerProcessController.stopSMTPServer)
         if interactive_tests:
             root_url = config.appserver_root_url()
-            print '*'*70
+            print '*' * 70
             print 'In a few seconds, go to ' + root_url + '/+yuitest'
-            print '*'*70
+            print '*' * 70
     try:
         start_launchpad(argv, setup)
     finally:
