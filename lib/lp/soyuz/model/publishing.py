@@ -1141,9 +1141,20 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import DistroArchSeries
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+        source_select = Select(
+            SourcePackageRelease.id,
+            And(
+                BinaryPackageBuild.source_package_release_id ==
+                    SourcePackageRelease.id,
+                BinaryPackageRelease.build == BinaryPackageBuild.id,
+                BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                    BinaryPackageRelease.id,
+                BinaryPackagePublishingHistory.id == self.id,
+            ))
         pubs = [
             BinaryPackageBuild.source_package_release_id ==
                 SourcePackageRelease.id,
+            SourcePackageRelease.id.is_in(source_select),
             BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageRelease.id,

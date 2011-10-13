@@ -1479,34 +1479,35 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
 
     layer = LaunchpadZopelessLayer
 
-    def _makeMixedSingleBuildPackage(self):
+    def _makeMixedSingleBuildPackage(self, version="1.0"):
         # Set up a source with a build that generated four binaries,
         # two of them an arch-all.
         foo_src_pub = self.getPubSource(
-            sourcename="foo", version="1.0", architecturehintlist="i386",
+            sourcename="foo", version=version, architecturehintlist="i386",
             status=PackagePublishingStatus.PUBLISHED)
         [foo_bin_pub] = self.getPubBinaries(
             binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
-            architecturespecific=True, version="1.0", pub_source=foo_src_pub)
+            architecturespecific=True, version=version,
+            pub_source=foo_src_pub)
         # Now need to grab the build for the source so we can add
         # more binaries to it.
         [build] = foo_src_pub.getBuilds()
         foo_one_common = self.factory.makeBinaryPackageRelease(
-            binarypackagename="foo-one-common", version="1.0", build=build,
+            binarypackagename="foo-one-common", version=version, build=build,
             architecturespecific=False)
         foo_one_common_pubs = self.publishBinaryInArchive(
             foo_one_common, self.ubuntutest.main_archive,
             pocket=foo_src_pub.pocket,
             status=PackagePublishingStatus.PUBLISHED)
         foo_two_common = self.factory.makeBinaryPackageRelease(
-            binarypackagename="foo-two-common", version="1.0", build=build,
+            binarypackagename="foo-two-common", version=version, build=build,
             architecturespecific=False)
         foo_two_common_pubs = self.publishBinaryInArchive(
             foo_two_common, self.ubuntutest.main_archive,
             pocket=foo_src_pub.pocket,
             status=PackagePublishingStatus.PUBLISHED)
         foo_three = self.factory.makeBinaryPackageRelease(
-            binarypackagename="foo-three", version="1.0", build=build,
+            binarypackagename="foo-three", version=version, build=build,
             architecturespecific=True)
         [foo_three_pub] = self.publishBinaryInArchive(
             foo_three, self.ubuntutest.main_archive,
@@ -1585,6 +1586,22 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         others = list(others)
 
         self.assertEqual(0, len(others))
+
+    def test_getOtherPublicationsForSameSource_multiple_versions(self):
+        # Check that only the right versions are returned.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+         foo_three_pub) = self._makeMixedSingleBuildPackage(version="1.0")
+        self._makeMixedSingleBuildPackage(version="1.1")
+
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
+
+        self.assertEqual(2, len(others))
+        self.assertNotIn(foo_one_common_pub, others)
+        self.assertIn(foo_three_pub, others)
+        self.assertIn(foo_bin_pub, others)
+
 
 class TestGetBuiltBinaries(TestNativePublishingBase):
     """Test SourcePackagePublishingHistory.getBuiltBinaries() works."""
