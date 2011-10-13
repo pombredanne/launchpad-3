@@ -284,7 +284,7 @@ class Dominator:
                     "Superseding older publication for version %s.", version)
             elif (version in live_versions or
                   (not generalization.is_source and
-                   self._checkArchIndep(pub))):
+                   not self._checkArchIndep(pub))):
                 # This publication stays active; if any publications
                 # that follow right after this are to be superseded,
                 # this is the release that they are superseded by.
@@ -489,10 +489,11 @@ class Dominator:
 
             # Arch-indep binaries need to be done last as they depend on
             # arch-specific binaries being superseded.
-            arch_specific_clauses = main_clauses
+            arch_specific_clauses = []
+            arch_specific_clauses.extend(main_clauses)
             arch_specific_clauses.append(
                 BinaryPackageRelease.architecturespecific == True)
-            arch_specific_clauses.append(bpph_location_clauses)
+            arch_specific_clauses.extend(bpph_location_clauses)
             self.logger.info("Finding arch-specific binaries...")
             arch_specific_bins = IStore(BinaryPackagePublishingHistory).find(
                 *arch_specific_clauses)
@@ -501,10 +502,11 @@ class Dominator:
                 self._sortPackages(arch_specific_bins, generalization),
                 generalization)
 
-            arch_indep_clauses = main_clauses
+            arch_indep_clauses = []
+            arch_indep_clauses.extend(main_clauses)
             arch_indep_clauses.append(
                 BinaryPackageRelease.architecturespecific == False)
-            arch_indep_clauses.append(bpph_location_clauses)
+            arch_indep_clauses.extend(bpph_location_clauses)
             self.logger.info("Finding arch-indep binaries...")
             arch_indep_bins = IStore(BinaryPackagePublishingHistory).find(
                 *arch_indep_clauses)
