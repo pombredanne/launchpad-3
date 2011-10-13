@@ -47,6 +47,7 @@ from zope.security.management import (
 
 from canonical.launchpad.webapp.interfaces import (
     IOpenLaunchBag,
+    IInteractionExtras,
     IPlacelessAuthUtility,
     )
 
@@ -54,10 +55,11 @@ from canonical.launchpad.webapp.interfaces import (
 __all__ = [
     'ANONYMOUS',
     'get_current_principal',
+    'get_interaction_extras',
     'setupInteraction',
     'setupInteractionByEmail',
     'setupInteractionForPerson',
-    'Participation',
+    'InteractionExtras',
     ]
 
 
@@ -171,3 +173,22 @@ class Participation:
 
     interaction = None
     principal = None
+
+
+class InteractionExtras:
+    """Extra data attached to all interactions.  See `IInteractionExtras`."""
+
+    implements(IInteractionExtras)
+    permit_timeout_from_features = False
+
+
+def get_interaction_extras():
+    """Return the active provider of `IInteractionExtras`.
+
+    This is looked up from the interaction.  If there is no interaction then
+    return None.
+    """
+    interaction = queryInteraction()
+    if interaction is None:
+        return None
+    return interaction.extras

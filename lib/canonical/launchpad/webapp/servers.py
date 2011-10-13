@@ -866,8 +866,10 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     False
 
     """
-    implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
-               canonical.launchpad.layers.LaunchpadLayer)
+    implements(
+        INotificationRequest, IBasicLaunchpadRequest, IParticipation,
+        canonical.launchpad.layers.LaunchpadLayer)
+
     # These two attributes satisfy IParticipation.
     principal = None
     interaction = None

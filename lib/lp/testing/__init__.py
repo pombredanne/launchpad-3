@@ -115,7 +115,6 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.adapter import (
     print_queries,
-    set_permit_timeout_from_features,
     start_sql_logging,
     stop_sql_logging,
     )
@@ -579,7 +578,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
-        set_permit_timeout_from_features(False)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
