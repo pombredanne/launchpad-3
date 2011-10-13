@@ -35,7 +35,7 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from lp.app.enums import ServiceUsage
-# Load the normal plugin set.
+# Load the normal plugin set. Lint complains but keep this in.
 import lp.codehosting
 from lp.code.errors import StaleLastMirrored
 from lp.code.interfaces.branch import get_db_branch_info
@@ -337,7 +337,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         productseries = self.store.using(product_join).find(
             ProductSeries,
             And(
-                Product._translations_usage == ServiceUsage.LAUNCHPAD,
+                Product.translations_usage == ServiceUsage.LAUNCHPAD,
                 ProductSeries.translations_branch != None))
 
         # Anything deterministic will do, and even that is only for

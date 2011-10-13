@@ -67,7 +67,7 @@ The view accepts the basic fields to register a distribution.
 
     >>> view.field_names
     ['name', 'displayname', 'title', 'summary', 'description', 'domainname',
-     'members', 'official_malone', 'blueprints_usage', 'official_rosetta',
+     'members', 'official_malone', 'blueprints_usage', 'translations_usage',
      'answers_usage']
 
     >>> login("admin@canonical.com")
@@ -132,7 +132,7 @@ The view accepts most of the distribution fields.
      'bug_reporting_guidelines', 'bug_reported_acknowledgement',
      'package_derivatives_email', 'icon',
      'logo', 'mugshot', 'official_malone', 'enable_bug_expiration',
-     'blueprints_usage', 'official_rosetta', 'answers_usage',
+     'blueprints_usage', 'translations_usage', 'answers_usage',
      'translation_focus']
 
     >>> del form['field.name']
