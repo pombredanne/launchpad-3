@@ -177,8 +177,8 @@ class InitializeDistroSeries:
                     "The distroseries has no architectures selected to "
                     "build architecture independent binaries.")
         else:
-            # Simply make sure that the given archindep_archtag is among
-            # the selected architectures.
+            # Make sure that the given archindep_archtag is among the
+            # selected architectures.
             if (self.arches is not None and
                 len(self.arches) != 0 and
                 self.archindep_archtag not in self.arches):
