@@ -2200,7 +2200,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
     @cachedproperty
     def mustache_template(self):
         template_path = os.path.join(
-            config.root, 'lib/lp/bugs/templates/buglisting.txt')
+            config.root, 'lib/lp/bugs/templates/buglisting.mustache')
         with open(template_path) as template_file:
             return template_file.read()
 
