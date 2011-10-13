@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0603
@@ -247,17 +247,18 @@ class TxLongPollService(Service):
         return config.txlongpoll.launch
 
     def launch(self):
-        txlongpoll_bin = os.path.join(config.root, 'bin', 'txlongpoll')
+        twistd_bin = os.path.join(
+            config.root, 'bin', 'twistd-for-txlongpoll')
         broker_hostname, broker_port = as_host_port(
             config.rabbitmq.host, None, None)
         self.server = TxLongPollServer(
-            txlongpoll_bin = txlongpoll_bin,
-            frontend_port = config.txlongpoll.frontend_port,
-            broker_user = config.rabbitmq.userid,
-            broker_password = config.rabbitmq.password,
-            broker_vhost = config.rabbitmq.virtual_host,
-            broker_host = broker_hostname,
-            broker_port = broker_port)
+            twistd_bin=twistd_bin,
+            frontend_port=config.txlongpoll.frontend_port,
+            broker_user=config.rabbitmq.userid,
+            broker_password=config.rabbitmq.password,
+            broker_vhost=config.rabbitmq.virtual_host,
+            broker_host=broker_hostname,
+            broker_port=broker_port)
         self.useFixture(self.server)
 
 
@@ -343,6 +344,7 @@ def process_config_arguments(args):
 
 
 def start_testapp(argv=list(sys.argv)):
+    from canonical.config.fixture import ConfigUseFixture
     from canonical.testing.layers import (
         BaseLayer,
         DatabaseLayer,
@@ -358,11 +360,13 @@ def start_testapp(argv=list(sys.argv)):
         '%r does not start with "testrunner-appserver"' %
         config.instance_name)
     interactive_tests = 'INTERACTIVE_TESTS' in os.environ
+    teardowns = []
 
     def setup():
         # This code needs to be run after other zcml setup happens in
         # runlaunchpad, so it is passed in as a callable.
         BaseLayer.setUp()
+        teardowns.append(BaseLayer.tearDown)
         if interactive_tests:
             # The test suite runs its own RabbitMQ.  We only need this
             # for interactive tests.  We set it up here rather than by
@@ -370,31 +374,42 @@ def start_testapp(argv=list(sys.argv)):
             # the appserver config does not normally need/have
             # RabbitMQ config set.
             RabbitMQLayer.setUp()
+            teardowns.append(RabbitMQLayer.tearDown)
         # We set up the database here even for the test suite because we want
         # to be able to control the database here in the subprocess.  It is
         # possible to do that when setting the database up in the parent
         # process, but it is messier.  This is simple.
         installFakeConnect()
+        teardowns.append(uninstallFakeConnect)
         DatabaseLayer.setUp()
+        teardowns.append(DatabaseLayer.tearDown)
         # The Librarian needs access to the database, so setting it up here
         # where we are setting up the database makes the most sense.
         LibrarianLayer.setUp()
+        teardowns.append(LibrarianLayer.tearDown)
+        # Switch to the appserver config.
+        fixture = ConfigUseFixture(BaseLayer.appserver_config_name)
+        fixture.setUp()
+        teardowns.append(fixture.cleanUp)
         # Interactive tests always need this.  We let functional tests use
         # a local one too because of simplicity.
         LayerProcessController.startSMTPServer()
+        teardowns.append(LayerProcessController.stopSMTPServer)
+        if interactive_tests:
+            root_url = config.appserver_root_url()
+            print '*' * 70
+            print 'In a few seconds, go to ' + root_url + '/+yuitest'
+            print '*' * 70
     try:
         start_launchpad(argv, setup)
     finally:
-        LayerProcessController.stopSMTPServer()
-        LibrarianLayer.tearDown()
-        DatabaseLayer.tearDown()
-        uninstallFakeConnect()
-        if interactive_tests:
+        teardowns.reverse()
+        for teardown in teardowns:
             try:
-                RabbitMQLayer.tearDown()
+                teardown()
             except NotImplementedError:
+                # We are in a separate process anyway.  Bah.
                 pass
-        BaseLayer.tearDown()
 
 
 def start_launchpad(argv=list(sys.argv), setup=None):

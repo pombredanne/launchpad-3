@@ -17,15 +17,12 @@ __all__ = [
     'SyncSourceError',
     ]
 
-import commands
 import hashlib
 import os
 import stat
 import sys
-import tempfile
 import time
 
-import apt_pkg
 from debian.deb822 import Changes
 from zope.component import getUtility
 
@@ -37,17 +34,9 @@ from canonical.librarian.interfaces import (
     )
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.archiveuploader.utils import (
-    determine_source_file_type,
-    re_extract_src_version,
-    )
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.browser_helpers import get_plural_text
@@ -60,7 +49,6 @@ from lp.soyuz.adapters.packagelocation import (
     PackageLocationError,
     )
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,

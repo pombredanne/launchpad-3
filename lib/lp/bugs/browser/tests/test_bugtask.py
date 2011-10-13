@@ -47,6 +47,10 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskSet,
     )
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
@@ -542,7 +546,6 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         foo_bug = self.factory.makeBug(product=product_foo)
         bugtask_set = getUtility(IBugTaskSet)
         bugtask_set.createTask(foo_bug, foo_bug.owner, product_bar)
-
         removeSecurityProxy(product_bar).active = False
 
         request = LaunchpadTestRequest()
@@ -681,7 +684,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     def test_status_field_bug_task_in_status_expired(self):
         # If a bugtask has the status Expired, this status is included
         # in the options.
-        removeSecurityProxy(self.bug.default_bugtask).status = (
+        removeSecurityProxy(self.bug.default_bugtask)._status = (
             BugTaskStatus.EXPIRED)
         login(NO_PRIVILEGE_EMAIL)
         view = BugTaskEditView(
@@ -907,6 +910,42 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(ds, bug_task.target)
         notifications = view.request.response.notifications
         self.assertEqual(0, len(notifications))
+
+    def test_retarget_private_bug(self):
+        # If a private bug is re-targetted such that the bug is no longer
+        # visible to the user, they are redirected to the pillar's bug index
+        # page with a suitable message. This corner case can occur when the
+        # disclosure.private_bug_visibility_rules.enabled feature flag is on
+        # and a bugtask is re-targetted to a pillar for which the user is not
+        # authorised to see any private bugs.
+        first_product = self.factory.makeProduct(name='bunny')
+        with person_logged_in(first_product.owner):
+            bug = self.factory.makeBug(product=first_product, private=True)
+            bug_task = bug.bugtasks[0]
+        second_product = self.factory.makeProduct(name='duck')
+        getFeatureStore().add(FeatureFlag(
+            scope=u'default', value=u'on', priority=1,
+            flag=u'disclosure.private_bug_visibility_rules.enabled'))
+
+        # The first product owner can see the private bug. We will re-target
+        # it to second_product where it will not be visible to that user.
+        with person_logged_in(first_product.owner):
+            form = {
+                'bunny.target': 'product',
+                'bunny.target.product': 'duck',
+                'bunny.actions.save': 'Save Changes',
+                }
+            view = create_initialized_view(
+                bug_task, name='+editstatus', form=form)
+            self.assertEqual(
+                canonical_url(bug_task.pillar, rootsite='bugs'),
+                view.next_url)
+        self.assertEqual([], view.errors)
+        self.assertEqual(second_product, bug_task.target)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = ('The bug you have just updated is now a private bug for')
+        self.assertTrue(notifications.pop().message.startswith(expected))
 
 
 class TestProjectGroupBugs(TestCaseWithFactory):

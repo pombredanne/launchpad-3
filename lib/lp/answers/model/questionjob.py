@@ -97,6 +97,7 @@ class QuestionJob(StormBase):
 
 class QuestionEmailJob(BaseRunnableJob):
     """Intermediate class for deriving from QuestionJob."""
+
     delegates(IQuestionJob)
     implements(IQuestionEmailJob)
     classProvides(IQuestionEmailJobSource)

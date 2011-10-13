@@ -75,9 +75,9 @@ to associate the label with the radio button input.
       <td><label for="field.branch_type.2">Imported</label></td>
     </tr>
     <tr>
-      <td class="formHelp">Branches that have been converted from some
-      other revision control system into bzr and are made available through
-      Launchpad. </td>
+      <td class="formHelp">Branches that have been imported from an
+      externally hosted branch in bzr or another VCS and are made available
+      through Launchpad. </td>
     </tr>
     <tr>
       <td rowspan="2"><input class="radioType" id="field.branch_type.3"

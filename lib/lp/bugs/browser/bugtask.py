@@ -104,7 +104,6 @@ from zope.interface import (
 from zope.schema import Choice
 from zope.schema.interfaces import (
     IContextSourceBinder,
-    IList,
     )
 from zope.schema.vocabulary import (
     getVocabularyRegistry,
@@ -223,6 +222,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
@@ -265,7 +265,10 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -281,6 +284,8 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
     BugTaskStatus.EXPIRED: False,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE: True,
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE: True,
     }
 
 
@@ -1258,6 +1263,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     user_is_subscribed = None
     edit_form = ViewPageTemplateFile('../templates/bugtask-edit-form.pt')
 
+    _next_url_override = None
+
     # The field names that we use by default. This list will be mutated
     # depending on the current context and the permissions of the user viewing
     # the form.
@@ -1354,7 +1361,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     @property
     def next_url(self):
         """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
+        if self._next_url_override is None:
+            return canonical_url(self.context)
+        else:
+            return self._next_url_override
 
     @property
     def initial_values(self):
@@ -1700,6 +1710,19 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
+
+            # We clear the known views cache because the bug may not be
+            # viewable anymore by the current user. If the bug is not
+            # viewable, then we redirect to the current bugtask's pillar's
+            # bug index page with a message.
+            get_property_cache(bugtask.bug)._known_viewers = set()
+            if not bugtask.bug.userCanView(self.user):
+                self.request.response.addWarningNotification(
+                    "The bug you have just updated is now a private bug for "
+                    "%s. You do not have permission to view such bugs."
+                    % bugtask.pillar.displayname)
+                self._next_url_override = canonical_url(
+                    new_target.pillar, rootsite='bugs')
 
         if (bugtask.sourcepackagename and (
             self.widgets.get('target') or
@@ -2078,57 +2101,6 @@ def get_buglisting_search_filter_url(
         search_filter_url += "&" + query_string
 
     return search_filter_url
-
-
-def getInitialValuesFromSearchParams(search_params, form_schema):
-    """Build a dictionary that can be given as initial values to
-    setUpWidgets, based on the given search params.
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
-    >>> for status in initial['status']:
-    ...     print status.name
-    NEW
-    INCOMPLETE
-    CONFIRMED
-    TRIAGED
-    INPROGRESS
-    FIXCOMMITTED
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': BugTaskStatus.INVALID}, IBugTaskSearch)
-    >>> [status.name for status in initial['status']]
-    ['INVALID']
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'importance': [BugTaskImportance.CRITICAL,
-    ...                   BugTaskImportance.HIGH]}, IBugTaskSearch)
-    >>> [importance.name for importance in initial['importance']]
-    ['CRITICAL', 'HIGH']
-
-    >>> getInitialValuesFromSearchParams(
-    ...     {'assignee': NULL}, IBugTaskSearch)
-    {'assignee': None}
-    """
-    initial = {}
-    for key, value in search_params.items():
-        if IList.providedBy(form_schema[key]):
-            if isinstance(value, any):
-                value = value.query_values
-            elif isinstance(value, (list, tuple)):
-                value = value
-            else:
-                value = [value]
-        elif value == NULL:
-            value = None
-        else:
-            # Should be safe to pass value as it is to setUpWidgets, no need
-            # to worry
-            pass
-
-        initial[key] = value
-
-    return initial
 
 
 class BugTaskListingItem:
