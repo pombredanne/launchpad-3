@@ -43,6 +43,10 @@
         976, 
         "launchpad@pqm.canonical.com-20091021010617-prbs2ay6nhxx515v"
     ], 
+    "mustache.js": [
+        166, 
+        "git-v1:d87d274d4c37e3eb9ec28c2a5775d79bef4328c7"
+    ], 
     "old_xmlplus": [
         4, 
         "sinzui-20090526164636-1swugzupwvjgomo4"
