@@ -160,6 +160,8 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertFalse(db_branch.pending_writes)
         self.assertNotEqual(
             db_branch.last_mirrored_id, tree.branch.last_revision())
+        # The export code works on a Branch from the slave store.  It
+        # shouldn't stop the scan request.
         slave_series = ISlaveStore(productseries).get(
             ProductSeries, productseries.id)
         exporter._exportToBranch(slave_series)
