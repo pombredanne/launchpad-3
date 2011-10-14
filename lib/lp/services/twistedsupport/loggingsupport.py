@@ -76,7 +76,8 @@ def set_up_oops_reporting(name, configuration, mangle_stdout=True):
     """
     errorlog.globalErrorUtility.configure(
         configuration,
-        config_factory=oops_twisted.Config)
+        config_factory=oops_twisted.Config,
+        publisher_adapter=oops_twisted.defer_publisher)
     oops_observer = OOPSObserver(errorlog.globalErrorUtility._oops_config,
         log.PythonLoggingObserver(loggerName=name).emit)
     log.startLoggingWithObserver(oops_observer.emit, mangle_stdout)

@@ -273,7 +273,8 @@ class ErrorReportingUtility:
         self._oops_message_key_iter = (
             index for index, _ignored in enumerate(repeat(None)))
 
-    def configure(self, section_name=None, config_factory=oops.Config):
+    def configure(self, section_name=None, config_factory=oops.Config,
+            publisher_adapter=None):
         """Configure the utility using the named section from the config.
 
         The 'error_reports' section is used if section_name is None.
@@ -306,14 +307,18 @@ class ErrorReportingUtility:
         # In the zope environment we track how long a script / http
         # request has been running for - this is useful data!
         self._oops_config.on_create.append(attach_adapter_duration)
+        def add_publisher(publisher):
+            if publisher_adapter is not None:
+                publisher = publisher_adapter(publisher)
+            self._oops_config.publishers.append(publisher)
         # We want to publish reports to disk for gathering to the central
         # analysis server.
         self._oops_datedir_repo = DateDirRepo(
                 config[section_name].error_dir,
                 config[section_name].oops_prefix)
-        self._oops_config.publishers.append(self._oops_datedir_repo.publish)
-        # And within the zope application server (mainly for testing).
-        self._oops_config.publishers.append(notify_publisher)
+        add_publisher(self._oops_datedir_repo.publish)
+        # And within the zope application server (only for testing).
+        add_publisher(notify_publisher)
         #
         # Reports are filtered if:
         #  - There is a key 'ignore':True in the report. This is set during
