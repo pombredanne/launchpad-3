@@ -22,6 +22,9 @@ from storm.expr import (
     )
 from zope.component import getUtility
 
+# Load the normal plugin set. Lint complains but keep this in.
+import lp.codehosting
+
 from canonical.config import config
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
@@ -44,8 +47,6 @@ from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
     DirectBranchCommit,
     )
-# Load the normal plugin set. Lint complains but keep this in.
-import lp.codehosting
 from lp.codehosting.vfs import get_rw_server
 from lp.services.mail.sendmail import (
     format_address,
