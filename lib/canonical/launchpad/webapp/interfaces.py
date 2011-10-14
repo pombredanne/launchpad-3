@@ -310,6 +310,25 @@ class IOpenLaunchBag(ILaunchBag):
         '''
 
 
+class IInteractionExtras(Interface):
+    """We attach a provider of this interface to all interactions.
+
+    Because a fresh provider is constructed for every request and between
+    every test, it is less error-prone to add things to this interface than to
+    stash state on a thread local.
+
+    If you add something here, you should go and edit
+    `canonical.launchpad.webapp.interaction.InteractionExtras`,
+    """
+
+    permit_timeout_from_features = Attribute(
+        """A boolean indicating whether to read the 'hard_timeout' feature
+        flag.  We can't check the feature flags early on in request processing
+        because this can trigger nested db lookups.  See the docstring of
+        `canonical.launchpad.webapp.servers.set_permit_timeout_from_features`
+        for more.""")
+
+
 #
 # Request
 #

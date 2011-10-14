@@ -44,6 +44,10 @@ flag_info = sorted([
      'boolean',
      ('Enables the display of bugtracker components.'),
      ''),
+    ('bugs.dynamic_bug_listings.enabled',
+     'boolean',
+     ('Enables the dynamic configuration of bug listings.'),
+     ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
@@ -155,6 +159,16 @@ flag_info = sorted([
      'boolean',
      ('Enables the longpoll mechanism for merge proposals so that diffs, '
       'for example, are updated in-page when they are ready.'),
+     ''),
+    ('ajax.batch_navigator.enabled',
+     'boolean',
+     ('If true, batch navigators which have been wired to do so use ajax '
+     'calls to load the next batch of data.'),
+     ''),
+    ('disclosure.log_private_team_leaks.enabled',
+     'boolean',
+     ('Enables soft OOPSes for code that is mixing visibility rules, such '
+      'as disclosing private teams, so the data can be analyzed.'),
      ''),
     ])
 

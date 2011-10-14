@@ -26,10 +26,14 @@ from zope.security.permission import (
     checkPermission as check_permission_is_registered,
     )
 from zope.security.proxy import removeSecurityProxy
-from zope.security.simplepolicies import ParanoidSecurityPolicy
+from zope.security.simplepolicies import (
+    ParanoidSecurityPolicy,
+    PermissiveSecurityPolicy,
+    )
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.webapp.interaction import InteractionExtras
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
     ILaunchpadContainer,
@@ -46,6 +50,10 @@ LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
     classProvides(ISecurityPolicy)
+
+    def __init__(self, *participations):
+        ParanoidSecurityPolicy.__init__(self, *participations)
+        self.extras = InteractionExtras()
 
     def _checkRequiredAccessLevel(self, access_level, permission, object):
         """Check that the principal has the level of access required.
@@ -252,3 +260,10 @@ def clear_cache():
             # method, but it is not in an interface, and not implemented by
             # all classes that implement IApplicationRequest.
             del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+
+
+class LaunchpadPermissiveSecurityPolicy(PermissiveSecurityPolicy):
+
+    def __init__(self, *participations):
+        PermissiveSecurityPolicy.__init__(self, *participations)
+        self.extras = InteractionExtras()

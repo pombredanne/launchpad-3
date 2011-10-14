@@ -387,8 +387,6 @@ The bug_tracking_usage property currently only tracks official_malone.
 
 While the other attributes track the other official_ attributes.
 
-    >>> print ubuntu.translations_usage.name
-    LAUNCHPAD
     >>> print ubuntu.official_answers
     True
     >>> print ubuntu.answers_usage.name
@@ -472,7 +470,7 @@ But others can't.
     Unauthorized: (..., 'official_malone', 'launchpad.Edit')
     >>> debian.translations_usage = ServiceUsage.LAUNCHPAD
     Traceback (most recent call last):
-    Unauthorized: (..., 'translations_usage', 'launchpad.Edit')
+    Unauthorized: (..., 'translations_usage', 'launchpad.TranslationsAdmin')
 
 
 Specification Listings

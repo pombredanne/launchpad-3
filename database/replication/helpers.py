@@ -10,8 +10,14 @@ import subprocess
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
+import psycopg2
+
 from canonical.config import config
-from canonical.database.sqlbase import connect, sqlvalues
+from canonical.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_DEFAULT,
+    sqlvalues
+    )
 from canonical.database.postgresql import (
     fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
     )
@@ -223,6 +229,11 @@ class Node:
         self.nickname = nickname
         self.connection_string = connection_string
         self.is_master = is_master
+
+    def connect(self, isolation=ISOLATION_LEVEL_DEFAULT):
+        con = psycopg2.connect(self.connection_string)
+        con.set_isolation_level(isolation)
+        return con
 
 
 def _get_nodes(con, query):
