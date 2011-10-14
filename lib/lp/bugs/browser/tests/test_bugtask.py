@@ -1274,7 +1274,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         bugtask = self.factory.makeBugTask()
         with person_logged_in(bugtask.target.owner):
             bugtask.target.official_malone = True
-        browser = self.getViewBrowser(bugtask.target, '+bugs', rootsite='bugs')
+        browser = self.getViewBrowser(
+            bugtask.target, '+bugs', rootsite='bugs')
         return bugtask, browser
 
     def assertHTML(self, browser, *tags, **kwargs):
@@ -1286,7 +1287,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     @staticmethod
     def getBugNumberTag(bug_task):
         """Bug numbers with a leading hash are unique to new rendering."""
-        bug_number_re =  re.compile(r'\#%d' % bug_task.bug.id)
+        bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
         return soupmatchers.Tag('bug_number', 'td', text=bug_number_re)
 
     def test_mustache_rendering_missing_if_no_flag(self):
