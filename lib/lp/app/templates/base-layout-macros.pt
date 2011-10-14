@@ -193,8 +193,12 @@
                    '${links/?key/fmt:api_url}';">
     </script>
   </tal:cache>
-
-  <script tal:content="string:LP.cache = ${view/getCacheJSON};">
+  <tal:comment condition="nothing">
+    The id of the script block below is used to determine whether this
+    page is loaded by test_lp_client_integration.js.
+  </tal:comment>
+  <script id="json-cache-script"
+          tal:content="string:LP.cache = ${view/getCacheJSON};">
   </script>
 </metal:lp-client-cache>
 
