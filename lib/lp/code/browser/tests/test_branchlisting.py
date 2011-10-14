@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from datetime import timedelta
+import os
 from pprint import pformat
 import re
 
@@ -57,7 +58,10 @@ from lp.testing.sampledata import (
     ADMIN_EMAIL,
     COMMERCIAL_ADMIN_EMAIL,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class TestListingToSortOrder(TestCase):
@@ -146,6 +150,20 @@ class AjaxBatchNavigationMixin:
         self.assertFalse(
             'Y.lp.app.batchnavigator.BatchNavigatorHooks' in view())
 
+    def _test_non_batch_template(self, context, expected_template):
+        # The correct template is used for non batch requests.
+        view = create_view(context, '+bugs')
+        self.assertEqual(
+            expected_template,
+            os.path.basename(view.template.filename))
+
+    def _test_batch_template(self, context):
+        # The correct template is used for batch requests.
+        view = create_view(
+            context, '+bugs', query_string='batch_request=True')
+        self.assertEqual(
+            view.bugtask_table_template.filename, view.template.filename)
+
 
 class TestPersonOwnedBranchesView(TestCaseWithFactory,
                                   AjaxBatchNavigationMixin):
@@ -228,6 +246,15 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory,
         # correctly hidden behind a feature flag.
         self._test_ajax_batch_navigation_feature_flag(
             self.barney, self.barney)
+
+    def test_non_batch_template(self):
+        # The correct template is used for non batch requests.
+        self._test_non_batch_template(
+            self.barney, 'buglisting-embedded-advanced-search.pt')
+
+    def test_batch_template(self):
+        # The correct template is used for batch requests.
+        self._test_batch_template(self.barney)
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):
@@ -582,6 +609,16 @@ class TestProjectGroupBranches(TestCaseWithFactory,
         for i in range(10):
             self.factory.makeProductBranch(product=product)
         self._test_ajax_batch_navigation_feature_flag(product)
+
+    def test_non_batch_template(self):
+        # The correct template is used for non batch requests.
+        product = self.factory.makeProduct(project=self.project)
+        self._test_non_batch_template(product, 'buglisting-default.pt')
+
+    def test_batch_template(self):
+        # The correct template is used for batch requests.
+        product = self.factory.makeProduct(project=self.project)
+        self._test_batch_template(product)
 
 
 class FauxPageTitleContext:

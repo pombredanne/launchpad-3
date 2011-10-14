@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import os
 from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import Equals
@@ -28,7 +29,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class TestBugTaskSearchListingPage(BrowserTestCase):
@@ -180,6 +184,23 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertEqual(
             canonical_url(product, rootsite='bugs', view_name='+bugs'),
             response.getHeader('Location'))
+
+    def test_non_batch_template(self):
+        # The correct template is used for non batch requests.
+        product = self.factory.makeProduct()
+        form = {'search': 'Search'}
+        view = create_view(product, '+bugs', form=form)
+        self.assertEqual(
+            'buglisting-default.pt', os.path.basename(view.template.filename))
+
+    def test_batch_template(self):
+        # The correct template is used for batch requests.
+        product = self.factory.makeProduct()
+        form = {'search': 'Search'}
+        view = create_view(
+            product, '+bugs', form=form, query_string='batch_request=True')
+        self.assertEqual(
+            view.bugtask_table_template.filename, view.template.filename)
 
     def test_search_batch_request(self):
         # A search request with a 'batch_request' query parameter causes the

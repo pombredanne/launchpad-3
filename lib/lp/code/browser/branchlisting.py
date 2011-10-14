@@ -563,7 +563,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
         return self.label
 
     table_only_template = ViewPageTemplateFile(
-        '../templates/person-branches-table.pt')
+        '../templates/branches-table-include.pt')
 
     @property
     def template(self):
