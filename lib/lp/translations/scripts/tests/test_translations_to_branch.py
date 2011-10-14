@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.app.enums import ServiceUsage
@@ -22,6 +23,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.registry.model.productseries import ProductSeries
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     map_branch_contents,
@@ -158,7 +160,11 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertFalse(db_branch.pending_writes)
         self.assertNotEqual(
             db_branch.last_mirrored_id, tree.branch.last_revision())
-        exporter._exportToBranch(productseries)
+        # The export code works on a Branch from the slave store.  It
+        # shouldn't stop the scan request.
+        slave_series = ISlaveStore(productseries).get(
+            ProductSeries, productseries.id)
+        exporter._exportToBranch(slave_series)
         self.assertEqual(
             db_branch.last_mirrored_id, tree.branch.last_revision())
         self.assertTrue(db_branch.pending_writes)

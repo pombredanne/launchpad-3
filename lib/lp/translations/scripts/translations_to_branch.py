@@ -31,6 +31,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -41,6 +42,7 @@ from lp.app.enums import ServiceUsage
 from lp.code.errors import StaleLastMirrored
 from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.model.branch import Branch
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
     DirectBranchCommit,
@@ -170,14 +172,20 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         self._checkForObjections(source)
         branch = source.translations_branch
 
+        branch = source.translations_branch
+
         try:
             committer = self._makeDirectBranchCommit(branch)
         except StaleLastMirrored as e:
-            source.translations_branch.branchChanged(
-                **get_db_branch_info(**e.info))
+            # Request a rescan of the branch.  Do this on the master
+            # store, or we won't be able to modify the branch object.
+            # (The master copy may also be more recent, in which case
+            # the rescan won't be necessary).
+            master_branch = IMasterStore(branch).get(Branch, branch.id)
+            master_branch.branchChanged(**get_db_branch_info(**e.info))
             self.logger.warning(
                 'Skipped %s due to stale DB info and scheduled scan.',
-                source.translations_branch.bzr_identity)
+                branch.bzr_identity)
             if self.txn:
                 self.txn.commit()
             return
@@ -256,7 +264,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 self._handleUnpushedBranch(source)
                 if self.txn:
                     self.txn.commit()
-            except Exception, e:
+            except Exception as e:
                 items_failed += 1
                 self.logger.error("Failure: %s" % repr(e))
                 if self.txn:
