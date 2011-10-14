@@ -38,6 +38,7 @@ from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
     BugTaskEditView,
+    BugTaskListingItem,
     BugTasksAndNominationsView,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
@@ -1194,3 +1195,43 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         self._assertThatUnbatchedAndBatchedActivityMatch(
             unbatched_view.activity_and_comments[4:],
             batched_view.activity_and_comments)
+
+
+class TestBugTaskListingItem(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeBugTaskListingItem(self):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner, private=True, security_related=True)
+        bugtask = self.factory.makeBugTask(bug)
+        bug_task_set = getUtility(IBugTaskSet)
+        bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
+            [bugtask])
+        badge_property = bug_badge_properties[bugtask]
+        return owner, BugTaskListingItem(
+            bugtask,
+            badge_property['has_branch'],
+            badge_property['has_specification'],
+            badge_property['has_patch'],
+            target_context=bugtask.target)
+
+    def test_model(self):
+        """Model contains expected fields with expected values."""
+        owner, item = self.makeBugTaskListingItem()
+        with person_logged_in(owner):
+            model = item.model
+            self.assertEqual('Undecided', model['importance'])
+            self.assertEqual('importanceUNDECIDED', model['importance_class'])
+            self.assertEqual('New', model['status'])
+            self.assertEqual('statusNEW', model['status_class'])
+            self.assertEqual(item.bug.title, model['title'])
+            self.assertEqual(item.bug.id, model['id'])
+            self.assertEqual(canonical_url(item.bugtask), model['bug_url'])
+            self.assertEqual(item.bugtargetdisplayname, model['bugtarget'])
+            self.assertEqual('sprite product', model['bugtarget_css'])
+            self.assertEqual(item.bug_heat_html, model['bug_heat_html'])
+            self.assertEqual(
+                '<span alt="private" title="Private" class="sprite private">'
+                '&nbsp;</span>', model['badges'])

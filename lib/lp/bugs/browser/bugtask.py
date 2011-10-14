@@ -2141,14 +2141,14 @@ class BugTaskListingItem:
     @property
     def model(self):
         badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
-        target_image = getAdapter(self.target_context, IPathAdapter, 'image')
+        target_image = getAdapter(self.target, IPathAdapter, 'image')
         return {
-            'importance': self.bugtask.importance.title,
+            'importance': self.importance.title,
             'importance_class': 'importance' + self.importance.name,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
-            'title': self.bugtask.bug.title,
-            'id': self.bugtask.bug.id,
+            'title': self.bug.title,
+            'id': self.bug.id,
             'bug_url': canonical_url(self.bugtask),
             'bugtarget': self.bugtargetdisplayname,
             'bugtarget_css': target_image.sprite_css(),
