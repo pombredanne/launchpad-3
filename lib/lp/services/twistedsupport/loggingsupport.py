@@ -21,6 +21,7 @@ import os
 import signal
 import sys
 
+import oops_twisted
 from oops_twisted import OOPSObserver
 from twisted.python import (
     log,
@@ -73,7 +74,9 @@ def set_up_oops_reporting(name, configuration, mangle_stdout=True):
     :param mangle_stdout: If True, send stdout and stderr to the logger.
         Defaults to False.
     """
-    errorlog.globalErrorUtility.configure(configuration)
+    errorlog.globalErrorUtility.configure(
+        configuration,
+        config_factory=oops_twisted.Config)
     oops_observer = OOPSObserver(errorlog.globalErrorUtility._oops_config,
         log.PythonLoggingObserver(loggerName=name).emit)
     log.startLoggingWithObserver(oops_observer.emit, mangle_stdout)

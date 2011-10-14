@@ -273,14 +273,14 @@ class ErrorReportingUtility:
         self._oops_message_key_iter = (
             index for index, _ignored in enumerate(repeat(None)))
 
-    def configure(self, section_name=None):
+    def configure(self, section_name=None, config_factory=oops.Config):
         """Configure the utility using the named section from the config.
 
         The 'error_reports' section is used if section_name is None.
         """
         if section_name is None:
             section_name = self._default_config_section
-        self._oops_config = oops.Config()
+        self._oops_config = config_factory()
         # We use the timeline module
         oops_timeline.install_hooks(self._oops_config)
         #
