@@ -1,14 +1,14 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Acceptance test for the translations-export-to-branch script."""
 
 import datetime
-import pytz
 import re
 from textwrap import dedent
 
 from bzrlib.errors import NotBranchError
+import pytz
 from testtools.matchers import MatchesRegex
 import transaction
 from zope.component import getUtility
@@ -360,44 +360,3 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             list(exporter._findChangedPOFiles(
                 pofile.potemplate.productseries,
                 date_in_the_future)))
-
-
-class TestExportToStackedBranch(TestCaseWithFactory):
-    """Test workaround for bzr bug 375013."""
-    # XXX JeroenVermeulen 2009-10-02 bug=375013: Once bug 375013 is
-    # fixed, this entire test can go.
-    layer = ZopelessAppServerLayer
-
-    def _setUpBranch(self, db_branch, tree, message):
-        """Set the given branch and tree up for use."""
-        bzr_branch = tree.branch
-        last_revno, last_revision_id = bzr_branch.last_revision_info()
-        removeSecurityProxy(db_branch).last_scanned_id = last_revision_id
-
-    def setUp(self):
-        super(TestExportToStackedBranch, self).setUp()
-        self.useBzrBranches()
-
-        base_branch, base_tree = self.create_branch_and_tree(
-            'base', name='base')
-        self._setUpBranch(base_branch, base_tree, "Base branch.")
-
-        stacked_branch, stacked_tree = self.create_branch_and_tree(
-            'stacked', name='stacked')
-        stacked_tree.branch.set_stacked_on_url('/' + base_branch.unique_name)
-        stacked_branch.stacked_on = base_branch
-        self._setUpBranch(stacked_branch, stacked_tree, "Stacked branch.")
-
-        self.stacked_branch = stacked_branch
-
-    def test_export_to_shared_branch(self):
-        # The script knows how to deal with stacked branches.
-        # Otherwise, this would fail.
-        script = ExportTranslationsToBranch('reupload', test_args=['-q'])
-        committer = script._prepareBranchCommit(self.stacked_branch)
-        try:
-            self.assertNotEqual(None, committer)
-            committer.writeFile('x.txt', 'x')
-            committer.commit("x!")
-        finally:
-            committer.unlock()
