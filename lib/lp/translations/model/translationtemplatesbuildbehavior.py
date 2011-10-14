@@ -11,8 +11,10 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
+import datetime
 import os
 import tempfile
+import pytz
 
 from twisted.internet import defer
 from zope.component import getUtility
@@ -111,6 +113,36 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             if len(raw_slave_status) >= 4:
                 status['filemap'] = raw_slave_status[3]
 
+    @staticmethod
+    def getLogFromSlave(templates_build, queue_item):
+        """See `IPackageBuild`."""
+        SLAVE_LOG_FILENAME = 'buildlog'
+        builder = queue_item.builder
+        d = builder.transferSlaveFileToLibrarian(
+            SLAVE_LOG_FILENAME,
+            templates_build.buildfarmjob.getLogFileName(),
+            False)
+        return d
+
+    @staticmethod
+    def storeBuildInfo(build, queue_item):
+        """See `IPackageBuild`."""
+        def got_log(lfa_id):
+            #import pdb; pdb.set_trace()
+            # log, builder and date_finished are read-only, so we must
+            # currently remove the security proxy to set them.
+            naked_build = removeSecurityProxy(build.build)
+            naked_build.log = lfa_id
+            naked_build.builder = queue_item.builder
+            naked_build.date_started = queue_item.date_started
+            # XXX cprov 20060615 bug=120584: Currently buildduration includes
+            # the scanner latency, it should really be asking the slave for
+            # the duration spent building locally.
+            naked_build.date_finished = datetime.datetime.now(pytz.UTC)
+
+        d = build.getLogFromSlave(build, queue_item)
+        return d.addCallback(got_log)
+
     def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
         """Deal with a finished ("WAITING" state, perversely) build job.
 
@@ -121,7 +153,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         retry it.
         """
         build_status = self.extractBuildStatus(slave_status)
-
+        #import pdb; pdb.set_trace()
         logger.info(
             "Templates generation job %s for %s finished with status %s." % (
             queue_item.specific_job.getName(),
@@ -141,6 +173,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 logger.error("Build produced no tarball.")
                 return
 
+            #import pdb; pdb.set_trace()
+
             tarball_file = open(filename)
             try:
                 tarball = tarball_file.read()
@@ -155,12 +189,19 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 tarball_file.close()
                 os.remove(filename)
 
-        if build_status == 'OK':
-            logger.debug("Processing successful templates build.")
-            filemap = slave_status.get('filemap')
-            d = self._readTarball(queue_item, filemap, logger)
-            d.addCallback(got_tarball)
-            d.addCallback(clean_slave)
-            return d
+        def build_info_stored(ignored):
+            #import pdb; pdb.set_trace()
+            if build_status == 'OK':
+                logger.debug("Processing successful templates build.")
+                filemap = slave_status.get('filemap')
+                d = self._readTarball(queue_item, filemap, logger)
+                d.addCallback(got_tarball)
+                d.addCallback(clean_slave)
+                return d
 
-        return clean_slave(None)
+            return clean_slave(None)#.chainDeferred(d_log)
+
+        d = self.storeBuildInfo(self, queue_item)
+        d.addCallback(build_info_stored)
+        return d
+

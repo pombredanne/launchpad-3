@@ -41,7 +41,7 @@ echo "Results expected in $RESULT_NAME."
 BUILDD_PACKAGE=canonical/buildd
 POTTERY=$BUILDD_PACKAGE/pottery
 # The script should be smarter about detecting the python version.
-PYMODULES=/usr/lib/pymodules/python2.6
+PYMODULES=/usr/lib/pymodules/python2.7
 echo -n "Default Python in the chroot is: "
 $BUILD_CHROOT/usr/bin/python --version
 
