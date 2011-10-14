@@ -3,14 +3,20 @@
 
 __metaclass__ = type
 
+from contextlib import contextmanager
 from datetime import datetime
+import re
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
+import soupmatchers
 from storm.store import Store
-from testtools.matchers import LessThan
+from testtools.matchers import (
+    LessThan,
+    Not,
+    )
 import transaction
 from zope.component import (
     getMultiAdapter,
@@ -57,6 +63,7 @@ from lp.services.features.model import (
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    BrowserTestCase,
     celebrity_logged_in,
     feature_flags,
     person_logged_in,
@@ -1218,9 +1225,15 @@ def make_bug_task_listing_item(factory):
         target_context=bugtask.target)
 
 
-class TestBugTaskSearchListingView(TestCaseWithFactory):
+class TestBugTaskSearchListingView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
+
+    server_listing = soupmatchers.Tag(
+        'Server', 'em', text='Server-side mustache')
+
+    client_listing = soupmatchers.Tag(
+        'client-listing', True, attrs={'id': 'client-listing'})
 
     def makeView(self, bugtask=None):
         request = LaunchpadTestRequest()
@@ -1229,6 +1242,12 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         view = BugTaskSearchListingView(bugtask.target, request)
         view.initialize()
         return view
+
+    @contextmanager
+    def dynamic_listings(self):
+        with feature_flags():
+            set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
+            yield
 
     def test_mustache_model_missing_if_no_flag(self):
         """The IJSONRequestCache should contain mustache_model."""
@@ -1244,19 +1263,52 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         """
         owner, item = make_bug_task_listing_item(self.factory)
         self.useContext(person_logged_in(owner))
-        with feature_flags():
-            set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
+        with self.dynamic_listings():
             view = self.makeView(item.bugtask)
         cache = IJSONRequestCache(view.request)
         bugtasks = cache.objects['mustache_model']['bugtasks']
         self.assertEqual(1, len(bugtasks))
         self.assertEqual(item.model, bugtasks[0])
 
+    def getBugtaskBrowser(self):
+        bugtask = self.factory.makeBugTask()
+        with person_logged_in(bugtask.target.owner):
+            bugtask.target.official_malone = True
+        browser = self.getViewBrowser(bugtask.target, '+bugs', rootsite='bugs')
+        return bugtask, browser
+
+    def assertHTML(self, browser, *tags, **kwargs):
+        matcher = soupmatchers.HTMLContains(*tags)
+        if kwargs.get('invert', False):
+            matcher = Not(matcher)
+        self.assertThat(browser.contents, matcher)
+
+    @staticmethod
+    def getBugNumberTag(bug_task):
+        """Bug numbers with a leading hash are unique to new rendering."""
+        bug_number_re =  re.compile(r'\#%d' % bug_task.bug.id)
+        return soupmatchers.Tag('bug_number', 'td', text=bug_number_re)
+
+    def test_mustache_rendering_missing_if_no_flag(self):
+        """If the flag is missing, then no mustache features appear."""
+        bug_task, browser = self.getBugtaskBrowser()
+        number_tag = self.getBugNumberTag(bug_task)
+        self.assertHTML(browser, number_tag, invert=True)
+        self.assertHTML(browser, self.client_listing, invert=True)
+        self.assertHTML(browser, self.server_listing, invert=True)
+
+    def test_mustache_rendering(self):
+        """If the flag is present, then all mustache features appear."""
+        with self.dynamic_listings():
+            bug_task, browser = self.getBugtaskBrowser()
+        bug_number = self.getBugNumberTag(bug_task)
+        self.assertHTML(
+            browser, self.client_listing, self.server_listing, bug_number)
+
 
 class TestBugTaskListingItem(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
 
     def test_model(self):
         """Model contains expected fields with expected values."""
