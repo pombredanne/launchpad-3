@@ -323,9 +323,10 @@ class IProjectGroupPublic(
         """Get all products that can be edited by user."""
 
     def translatables():
-        """Return an iterator over products that have resources translatables.
+        """Return an iterator over products that are translatable in LP.
 
-        It also should have IProduct.official_rosetta flag set.
+        Only products with IProduct.translations_usage set to
+        ServiceUsage.LAUNCHPAD are considered translatable.
         """
 
     def has_translatable():
