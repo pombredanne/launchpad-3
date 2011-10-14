@@ -6,6 +6,7 @@ __metaclass__ = type
 from datetime import datetime
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.interfaces import IJSONRequestCache
 from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
 from storm.store import Store
@@ -40,6 +41,7 @@ from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTaskListingItem,
     BugTasksAndNominationsView,
+    BugTaskSearchListingView,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
@@ -56,7 +58,9 @@ from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     celebrity_logged_in,
+    feature_flags,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
@@ -1197,29 +1201,66 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
+def make_bug_task_listing_item(factory):
+    owner = factory.makePerson()
+    bug = factory.makeBug(
+        owner=owner, private=True, security_related=True)
+    bugtask = factory.makeBugTask(bug)
+    bug_task_set = getUtility(IBugTaskSet)
+    bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
+        [bugtask])
+    badge_property = bug_badge_properties[bugtask]
+    return owner, BugTaskListingItem(
+        bugtask,
+        badge_property['has_branch'],
+        badge_property['has_specification'],
+        badge_property['has_patch'],
+        target_context=bugtask.target)
+
+
+class TestBugTaskSearchListingView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeView(self, bugtask=None):
+        request = LaunchpadTestRequest()
+        if bugtask is None:
+            bugtask = self.factory.makeBugTask()
+        view = BugTaskSearchListingView(bugtask.target, request)
+        view.initialize()
+        return view
+
+    def test_mustache_model_missing_if_no_flag(self):
+        """The IJSONRequestCache should contain mustache_model."""
+        view = self.makeView()
+        cache = IJSONRequestCache(view.request)
+        self.assertIs(None, cache.objects.get('mustache_model'))
+
+    def test_mustache_model_in_json(self):
+        """The IJSONRequestCache should contain mustache_model.
+
+        mustache_model should contain bugtasks, the BugTaskListingItem.model
+        for each BugTask.
+        """
+        owner, item = make_bug_task_listing_item(self.factory)
+        self.useContext(person_logged_in(owner))
+        with feature_flags():
+            set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
+            view = self.makeView(item.bugtask)
+        cache = IJSONRequestCache(view.request)
+        bugtasks = cache.objects['mustache_model']['bugtasks']
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(item.model, bugtasks[0])
+
+
 class TestBugTaskListingItem(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeBugTaskListingItem(self):
-        owner = self.factory.makePerson()
-        bug = self.factory.makeBug(
-            owner=owner, private=True, security_related=True)
-        bugtask = self.factory.makeBugTask(bug)
-        bug_task_set = getUtility(IBugTaskSet)
-        bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
-            [bugtask])
-        badge_property = bug_badge_properties[bugtask]
-        return owner, BugTaskListingItem(
-            bugtask,
-            badge_property['has_branch'],
-            badge_property['has_specification'],
-            badge_property['has_patch'],
-            target_context=bugtask.target)
 
     def test_model(self):
         """Model contains expected fields with expected values."""
-        owner, item = self.makeBugTaskListingItem()
+        owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
             model = item.model
             self.assertEqual('Undecided', model['importance'])

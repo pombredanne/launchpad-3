@@ -2140,6 +2140,7 @@ class BugTaskListingItem:
 
     @property
     def model(self):
+        """Provide flattened data about bugtask for simple templaters."""
         badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
         target_image = getAdapter(self.target, IPathAdapter, 'image')
         return {
