@@ -596,12 +596,12 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         else:
             if dest_version.find("ubuntu") != -1:
                 stat_uptodate_modified += 1
-                if Options.moreverbose or not Options.all:
+                if Options.verbose or not Options.all:
                     print ("[Nothing to update (Modified)] %s_%s (vs %s)"
                            % (pkg, dest_version, source_version))
             else:
                 stat_uptodate += 1
-                if Options.moreverbose or not Options.all:
+                if Options.verbose or not Options.all:
                     print (
                         "[Nothing to update] %s (%s [ubuntu] >= %s [debian])"
                         % (pkg, dest_version, source_version))
