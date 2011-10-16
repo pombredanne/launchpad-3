@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -17,7 +17,6 @@ import tempfile
 from textwrap import dedent
 
 from debian.deb822 import Release
-
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -26,7 +25,6 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.testing.keyserver import KeyServerTac
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.interfaces.archivesigningkey import (
@@ -52,10 +50,9 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
+from lp.testing.keyserver import KeyServerTac
 
 
 RELEASE = PackagePublishingPocket.RELEASE
@@ -877,7 +874,8 @@ class TestPublisher(TestPublisherBase):
         archive_publisher.D_writeReleaseFiles(False)
 
         release = self.parseRelease(os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'Release'))
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'Release'))
         self.assertEqual('LP-PPA-cprov', release['origin'])
 
         # The Label: field should be set to the archive displayname
@@ -925,7 +923,8 @@ class TestPublisher(TestPublisherBase):
         # Check the distinct Origin: field content in the main Release file
         # and the component specific one.
         release = self.parseRelease(os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'Release'))
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'Release'))
         self.assertEqual('LP-PPA-cprov-testing', release['origin'])
 
         arch_release = self.parseRelease(os.path.join(

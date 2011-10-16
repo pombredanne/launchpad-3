@@ -100,10 +100,7 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.code.browser.branch import BranchNameValidationMixin
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import (
