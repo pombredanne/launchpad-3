@@ -145,10 +145,10 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             after=True)
         # Add the OopsHandler to the log, because we want to make sure this
         # doesn't create an Oops report.
+        last_oops_time = self._getLastOopsTime()
         logging.getLogger('test_hwdb_submission_parser').addHandler(
             OopsHandler(self.log.name))
         result, submission_id = self.runValidator(sample_data)
-        last_oops_time = self._getLastOopsTime()
         # We use the class method here, because it's been overrided for the
         # other tests in this test case.
         TestCase.assertEqual(self,

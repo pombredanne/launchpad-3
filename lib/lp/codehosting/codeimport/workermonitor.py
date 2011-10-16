@@ -23,11 +23,14 @@ from twisted.web import xmlrpc
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.webapp import (
+    errorlog,
+    ScriptRequest,
+    )
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.librarian.interfaces import IFileUploadClient
 from lp.code.enums import CodeImportResultStatus
 from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
-from lp.services.twistedsupport.loggingsupport import log_oops_from_failure
 from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout,
     )
@@ -141,11 +144,17 @@ class CodeImportWorkerMonitor:
         self._access_policy = access_policy
 
     def _logOopsFromFailure(self, failure):
-        request = log_oops_from_failure(
-            failure, code_import_job_id=self._job_id, URL=self._branch_url)
-        self._logger.info(
-            "Logged OOPS id %s: %s: %s",
-            request.oopsid, failure.type.__name__, failure.value)
+        config = errorlog.globalErrorUtility._oops_config
+        context = {'twisted_failure': failure,
+            'request': ScriptRequest(
+                [('code_import_job_id', self._job_id)], self._branch_url)
+            }
+        report = config.create(report)
+        ids = config.publish(report)
+        if ids:
+            self._logger.info(
+                "Logged OOPS id %s: %s: %s",
+                report['id'], report['type'], report['value'])
 
     def _trap_nosuchcodeimportjob(self, failure):
         failure.trap(xmlrpc.Fault)
