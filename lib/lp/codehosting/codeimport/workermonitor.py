@@ -23,10 +23,7 @@ from twisted.web import xmlrpc
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
-    errorlog,
-    ScriptRequest,
-    )
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.librarian.interfaces import IFileUploadClient
 from lp.code.enums import CodeImportResultStatus
@@ -146,7 +143,7 @@ class CodeImportWorkerMonitor:
     def _logOopsFromFailure(self, failure):
         config = errorlog.globalErrorUtility._oops_config
         context = {'twisted_failure': failure,
-            'request': ScriptRequest(
+            'request': errorlog.ScriptRequest(
                 [('code_import_job_id', self._job_id)], self._branch_url)
             }
         report = config.create(report)
