@@ -26,7 +26,6 @@ from canonical.launchpad.webapp.authorization import (
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
-    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -2368,13 +2367,12 @@ class TestValidateNewTarget(TestCaseWithFactory):
 class TestWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
 
-    layer = AppServerLayer
+    layer = DatabaseFunctionalLayer
 
     def test_delete_bugtask(self):
         """Test that a bugtask can be deleted."""
         db_bugtask = self.factory.makeBugTask()
         db_bug = db_bugtask.bug
-        endInteraction()
         launchpad = launchpadlib_for('test', db_bugtask.owner,
             service_root=self.layer.appserver_root_url('api'))
         with person_logged_in(db_bugtask.owner):
