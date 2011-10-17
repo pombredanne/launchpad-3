@@ -129,25 +129,6 @@ class TestObsoleteDistroseries(unittest.TestCase):
         obsoleter = self.getObsoleter(suite='warty')
         self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
 
-    def testNothingToDoCase(self):
-        """When there is nothing to do, we expect an exception."""
-        obsoleter = self.getObsoleter()
-        self.warty.status = SeriesStatus.OBSOLETE
-
-        # Get all the published sources in warty.
-        published_sources, published_binaries = (
-            self.getPublicationsForDistroseries())
-
-        # Reset their status to OBSOLETE.
-        for package in published_sources:
-            package.status = PackagePublishingStatus.OBSOLETE
-        for package in published_binaries:
-            package.status = PackagePublishingStatus.OBSOLETE
-
-        # Call the script and ensure it does nothing.
-        self.layer.txn.commit()
-        self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
-
     def testObsoleteDistroseriesWorks(self):
         """Make sure the required publications are obsoleted."""
         obsoleter = self.getObsoleter()
