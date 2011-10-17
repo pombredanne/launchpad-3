@@ -7,7 +7,6 @@ import os
 import subprocess
 import sys
 
-import transaction
 from zope.component import getUtility
 
 from canonical.config import config
