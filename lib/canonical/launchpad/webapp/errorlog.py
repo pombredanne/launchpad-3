@@ -337,25 +337,6 @@ class ErrorReportingUtility:
         """Get the current effective oops prefix."""
         return self._oops_config.template['reporter']
 
-    def getOopsReport(self, time):
-        """Return the contents of the OOPS report logged at 'time'."""
-        # How this works - get a serial that was logging in the dir
-        # that logs for time are logged in.
-        log_namer = self._oops_datedir_repo.log_namer
-        serial_from_time = log_namer._findHighestSerial(
-            log_namer.output_dir(time))
-        # Calculate a filename which combines this most recent serial,
-        # the current log_namer naming rules and the exact timestamp.
-        oops_filename = log_namer.getFilename(serial_from_time, time)
-        # Note that if there were no logs written, or if there were two
-        # oops that matched the time window of directory on disk, this
-        # call can raise an IOError.
-        oops_report = open(oops_filename, 'r')
-        try:
-            return ErrorReport.read(oops_report)
-        finally:
-            oops_report.close()
-
     def getOopsReportById(self, oops_id):
         """Return the oops report for a given OOPS-ID.
 
