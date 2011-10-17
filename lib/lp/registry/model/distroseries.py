@@ -1175,6 +1175,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self._getAllBinaries().find(
             status=PackagePublishingStatus.PUBLISHED)
 
+    def getAllUncondemnedSources(self):
+        """See `IDistroSeries`."""
+        return self._getAllSources().find(scheduleddeletiondate=None)
+
+    def getAllUncondemnedBinaries(self):
+        """See `IDistroSeries`."""
+        return self._getAllBinaries().find(scheduleddeletiondate=None)
+
     def getSourcesPublishedForAllArchives(self):
         """See `IDistroSeries`."""
         query = """
