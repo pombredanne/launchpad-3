@@ -146,7 +146,7 @@ class CodeImportWorkerMonitor:
             'request': errorlog.ScriptRequest(
                 [('code_import_job_id', self._job_id)], self._branch_url)
             }
-        report = config.create(report)
+        report = config.create(context)
         ids = config.publish(report)
         if ids:
             self._logger.info(
