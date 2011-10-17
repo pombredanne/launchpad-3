@@ -429,23 +429,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 'Events were generated: %s.' % event_list)
         return result
 
-    @contextmanager
-    def noOops(self):
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
-        try:
-            yield
-        finally:
-            self.assertNoNewOops(oops)
-
-    def assertNoNewOops(self, old_oops):
-        """Assert that no oops has been recorded since old_oops."""
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
-        if old_oops is None:
-            self.assertIs(None, oops)
-        else:
-            self.assertTrue(
-                oops.id == old_oops.id, 'Oops recorded: %s' % oops.id)
-
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
 
