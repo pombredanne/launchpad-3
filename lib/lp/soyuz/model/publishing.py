@@ -1146,9 +1146,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackageBuild.source_package_release_id ==
                     SourcePackageRelease.id,
                 BinaryPackageRelease.build == BinaryPackageBuild.id,
-                BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                    BinaryPackageRelease.id,
-                BinaryPackagePublishingHistory.id == self.id,
+                self.binarypackagereleaseID == BinaryPackageRelease.id,
             ))
         pubs = [
             BinaryPackageBuild.source_package_release_id ==

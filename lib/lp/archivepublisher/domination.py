@@ -322,6 +322,7 @@ class Dominator:
             # one, this dominatePackage call will never result in a
             # deletion.
             latest_version = generalization.getPackageVersion(publications[0])
+            self.logger.debug2("Dominating %s" % name)
             self.dominatePackage(
                 publications, [latest_version], generalization)
 
@@ -464,7 +465,7 @@ class Dominator:
                 BinaryPackagePublishingHistory.distroarchseries ==
                     distroarchseries,
                 BinaryPackagePublishingHistory.archive == self.archive,
-                BinaryPackagePublishingHistory.pocket == pocket
+                BinaryPackagePublishingHistory.pocket == pocket,
                 ]
             candidate_binary_names = Select(
                 BinaryPackageName.id,
@@ -480,12 +481,13 @@ class Dominator:
             main_clauses = [
                 BinaryPackagePublishingHistory,
                 BinaryPackageRelease.id ==
-                BinaryPackagePublishingHistory.binarypackagereleaseID,
+                    BinaryPackagePublishingHistory.binarypackagereleaseID,
                 BinaryPackageRelease.binarypackagenameID.is_in(
                     candidate_binary_names),
                 BinaryPackageRelease.binpackageformat !=
-                BinaryPackageFormat.DDEB,
-                bpph_location_clauses]
+                    BinaryPackageFormat.DDEB,
+                ]
+            main_clauses.extend(bpph_location_clauses)
 
             # Arch-indep binaries need to be done last as they depend on
             # arch-specific binaries being superseded.
@@ -493,7 +495,6 @@ class Dominator:
             arch_specific_clauses.extend(main_clauses)
             arch_specific_clauses.append(
                 BinaryPackageRelease.architecturespecific == True)
-            arch_specific_clauses.extend(bpph_location_clauses)
             self.logger.info("Finding arch-specific binaries...")
             arch_specific_bins = IStore(BinaryPackagePublishingHistory).find(
                 *arch_specific_clauses)
@@ -506,7 +507,6 @@ class Dominator:
             arch_indep_clauses.extend(main_clauses)
             arch_indep_clauses.append(
                 BinaryPackageRelease.architecturespecific == False)
-            arch_indep_clauses.extend(bpph_location_clauses)
             self.logger.info("Finding arch-indep binaries...")
             arch_indep_bins = IStore(BinaryPackagePublishingHistory).find(
                 *arch_indep_clauses)

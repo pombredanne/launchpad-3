@@ -1522,6 +1522,9 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
             foo_two_common_pubs, foo_three_pub)
 
     def test_getOtherPublicationsForSameSource(self):
+        # By default getOtherPublicationsForSameSource should return all
+        # of the other binaries built by the same source as the passed
+        # binary publication, except the arch-indep ones.
         (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
             foo_three_pub) = self._makeMixedSingleBuildPackage()
 
@@ -1529,12 +1532,10 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         others = foo_one_common_pub.getOtherPublicationsForSameSource()
         others = list(others)
 
-        self.assertEqual(2, len(others))
-        self.assertNotIn(foo_one_common_pub, others)
-        self.assertIn(foo_three_pub, others)
-        self.assertIn(foo_bin_pub, others)
+        self.assertContentEqual([foo_three_pub, foo_bin_pub], others)
 
     def test_getOtherPublicationsForSameSource_include_archindep(self):
+        # Check that the arch-indep binaries are returned if requested.
         (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
          foo_three_pub) = self._makeMixedSingleBuildPackage()
 
@@ -1545,35 +1546,10 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
 
         # We expect all publications created above to be returned,
         # except the one we use to call the method on.
-        self.assertEqual(5, len(others))
-        self.assertIn(foo_three_pub, others)
-        self.assertIn(foo_bin_pub, others)
-        for pub in foo_one_common_pubs[1:] + foo_two_common_pubs:
-            self.assertIn(pub, others)
-
-    def test_getOtherPublicationsForSameSource_extra_builds(self):
-        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
-         foo_three_pub) = self._makeMixedSingleBuildPackage()
-
-        # Add an additional build in a different architecture.
-        z80 = self.factory.makeDistroArchSeries(
-            distroseries=foo_src_pub.distroseries, architecturetag="z80")
-        build2 = self.factory.makeBinaryPackageBuild(
-            source_package_release=foo_src_pub.sourcepackagerelease,
-            distroarchseries=z80, archive=foo_src_pub.archive)
-        foo_one_z80 = self.factory.makeBinaryPackageRelease(
-            binarypackagename="foo-one-z80", version="1.0", build=build2,
-            architecturespecific=True)
-        [foo_one_z80_pub] = self.publishBinaryInArchive(
-            foo_one_z80, self.ubuntutest.main_archive,
-            pocket=foo_src_pub.pocket,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # The publication for the new build should be returned.
-        foo_one_common_pub = foo_one_common_pubs[0]
-        others = foo_one_common_pub.getOtherPublicationsForSameSource()
-        others = list(others)
-        self.assertIn(foo_one_z80_pub, others)
+        expected = [foo_three_pub, foo_bin_pub]
+        expected.extend(foo_one_common_pubs[1:])
+        expected.extend(foo_two_common_pubs)
+        self.assertContentEqual(expected, others)
 
     def test_getOtherPublicationsForSameSource_inactive(self):
         # Check that inactive publications are not returned.
@@ -1588,7 +1564,8 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         self.assertEqual(0, len(others))
 
     def test_getOtherPublicationsForSameSource_multiple_versions(self):
-        # Check that only the right versions are returned.
+        # Check that publications for only the same version as the
+        # context binary publication are returned.
         (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
          foo_three_pub) = self._makeMixedSingleBuildPackage(version="1.0")
         self._makeMixedSingleBuildPackage(version="1.1")
@@ -1597,10 +1574,7 @@ class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
         others = foo_one_common_pub.getOtherPublicationsForSameSource()
         others = list(others)
 
-        self.assertEqual(2, len(others))
-        self.assertNotIn(foo_one_common_pub, others)
-        self.assertIn(foo_three_pub, others)
-        self.assertIn(foo_bin_pub, others)
+        self.assertContentEqual([foo_three_pub, foo_bin_pub], others)
 
 
 class TestGetBuiltBinaries(TestNativePublishingBase):
