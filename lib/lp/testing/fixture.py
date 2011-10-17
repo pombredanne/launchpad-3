@@ -221,3 +221,5 @@ class CaptureOops(Fixture):
     def _recordOops(self, event):
         self.oopses.append(event.object)
 
+    def sync(self):
+        """Sync the in-memory list of OOPS with the external OOPS source."""

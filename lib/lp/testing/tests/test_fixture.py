@@ -189,10 +189,10 @@ class TestPGBouncerFixtureWithoutCA(TestCase):
         self.assertTrue(self.is_db_available())
 
 
-class TestCaptureOops(TestCase):
+class TestCaptureOopsNoRabbit(TestCase):
 
-    # Need rabbit + CA for notification tests.
-    layer = LaunchpadLayer
+    # Need CA for subscription.
+    layer = BaseLayer
 
     def test_subscribes_to_events(self):
         capture = self.useFixture(CaptureOops())
@@ -204,3 +204,13 @@ class TestCaptureOops(TestCase):
             self.assertEqual(1, len(capture.oopses))
         finally:
             globalErrorUtility._oops_config.publishers[:] = publishers
+
+
+class TestCaptureOopsRabbit(TestCase):
+
+    # Has rabbit + CA.
+    layer = LaunchpadLayer
+
+    def test_no_oopses_no_hang_on_sync(self):
+        capture = self.useFixture(CaptureOops())
+        capture.sync()
