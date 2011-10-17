@@ -16,6 +16,7 @@ import urllib
 
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
+import oops_twisted
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
@@ -34,6 +35,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
+from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
@@ -586,6 +588,11 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
         # If the process deferred is fired with a failure, finishJob is called
         # with CodeImportResultStatus.FAILURE, but the call to run() still
         # succeeds.
+        # Need a twisted error reporting stack (normally set up by
+        # loggingsuppoer.set_up_oops_reporting).
+        errorlog.globalErrorUtility.configure(
+            config_factory=oops_twisted.Config,
+            publisher_adapter=oops_twisted.defer_publisher)
         worker_monitor = self.WorkerMonitor(defer.fail(RuntimeError()))
         return worker_monitor.run().addCallback(
             self.assertFinishJobCalledWithStatus, worker_monitor,
