@@ -106,8 +106,6 @@ class TestScriptRunning(TestCaseWithFactory):
         self.assertEqual(
             0, self.store.find(BinaryPackageReleaseDownloadCount).count())
 
-        last_oops = globalErrorUtility.getLastOopsReport()
-
         process = subprocess.Popen(
             'cronscripts/parse-ppa-apache-access-logs.py', shell=True,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,

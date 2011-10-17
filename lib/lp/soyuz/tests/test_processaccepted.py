@@ -92,11 +92,11 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.assertEqual(published_main.count(), 1)
 
         # And an oops should be filed for the first.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
+        self.assertEqual(1, len(self.oopses))
+        error_report = self.oopses[0]
         expected_error = "Failure processing queue_item"
         self.assertStartsWith(
-                dict(error_report.req_vars)['error-explanation'],
+                dict(error_report['req_vars'])['error-explanation'],
                 expected_error)
 
     def test_accept_copy_archives(self):
