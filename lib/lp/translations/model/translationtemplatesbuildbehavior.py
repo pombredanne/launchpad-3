@@ -128,7 +128,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def storeBuildInfo(build, queue_item):
         """See `IPackageBuild`."""
         def got_log(lfa_id):
-            #import pdb; pdb.set_trace()
             # log, builder and date_finished are read-only, so we must
             # currently remove the security proxy to set them.
             naked_build = removeSecurityProxy(build.build)
@@ -153,7 +152,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         retry it.
         """
         build_status = self.extractBuildStatus(slave_status)
-        #import pdb; pdb.set_trace()
         logger.info(
             "Templates generation job %s for %s finished with status %s." % (
             queue_item.specific_job.getName(),
@@ -173,8 +171,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 logger.error("Build produced no tarball.")
                 return
 
-            #import pdb; pdb.set_trace()
-
             tarball_file = open(filename)
             try:
                 tarball = tarball_file.read()
@@ -190,7 +186,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 os.remove(filename)
 
         def build_info_stored(ignored):
-            #import pdb; pdb.set_trace()
             if build_status == 'OK':
                 logger.debug("Processing successful templates build.")
                 filemap = slave_status.get('filemap')
@@ -199,7 +194,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 d.addCallback(clean_slave)
                 return d
 
-            return clean_slave(None)#.chainDeferred(d_log)
+            return clean_slave(None)
 
         d = self.storeBuildInfo(self, queue_item)
         d.addCallback(build_info_stored)
