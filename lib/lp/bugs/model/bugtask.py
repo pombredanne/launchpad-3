@@ -128,7 +128,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
-    )
+    CannotDeleteBugtask)
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
@@ -619,6 +619,27 @@ class BugTask(SQLBase):
         above.
         """
         return self._status in RESOLVED_BUGTASK_STATUSES
+
+    def canBeDeleted(self):
+        num_bugtasks = Store.of(self).find(
+            BugTask, bug=self.bug).count()
+
+        return num_bugtasks > 1
+
+    def destroySelf(self):
+        """See `IBugTask`."""
+
+        if not self.canBeDeleted():
+            raise CannotDeleteBugtask(
+                "Cannot delete bugtask: %s" % self.title)
+
+        bug = self.bug
+        target = self.target
+        super(SQLBase, self).destroySelf()
+        del get_property_cache(bug).bugtasks
+
+        # When a task is deleted the bug's heat needs to be recalculated.
+        target.recalculateBugHeatCache()
 
     def findSimilarBugs(self, user, limit=10):
         """See `IBugTask`."""

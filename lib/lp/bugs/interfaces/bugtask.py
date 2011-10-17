@@ -17,6 +17,7 @@ __all__ = [
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
+    'CannotDeleteBugtask',
     'DB_INCOMPLETE_BUGTASK_STATUSES',
     'DB_UNRESOLVED_BUGTASK_STATUSES',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
@@ -58,6 +59,8 @@ from lazr.restful.declarations import (
     call_with,
     error_status,
     export_as_webservice_entry,
+    export_destructor_operation,
+    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -435,6 +438,15 @@ DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
     for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
 
 
+@error_status(httplib.BAD_REQUEST)
+class CannotDeleteBugtask(Exception):
+    """The bugtask cannot be deleted.
+
+    Raised when a user tries to delete a bugtask but the deletion cannot
+    proceed because of a model constraint or other business rule violation.
+    """
+
+
 @error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskStatus(Unauthorized):
     """User not permitted to change status.
@@ -677,6 +689,19 @@ class IBugTask(IHasDateCreated, IHasBug):
                 "True or False depending on whether or not there is more "
                 "work required on this bug task."),
              readonly=True))
+
+#    @export_destructor_operation()
+    @export_write_operation()
+    @export_operation_as('delete')
+    @operation_for_version("devel")
+    def destroySelf():
+        """Delete this bugtask.
+
+        :raises: CannotDeleteBugtask if the bugtask cannot be deleted due to a
+            business rule or other model constraint.
+        :raises: UserCannotDeleteBugtask if the user does not have permission
+            to delete the bugtask.
+        """
 
     @operation_returns_collection_of(Interface)  # Actually IBug.
     @call_with(user=REQUEST_USER, limit=10)

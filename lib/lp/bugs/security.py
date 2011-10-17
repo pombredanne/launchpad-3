@@ -19,9 +19,13 @@ from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.features import getFeatureFlag
 
 
 class EditBugNominationStatus(AuthorizationBase):
@@ -45,6 +49,41 @@ class EditBugTask(AuthorizationBase):
     def checkAuthenticated(self, user):
         # Delegated entirely to the bug.
         return self.obj.bug.userCanView(user)
+
+
+class DeleteBugTask(AuthorizationBase):
+    permission = 'launchpad.Delete'
+    usedfor = IBugTask
+
+    def checkAuthenticated(self, user):
+        """Check that a user may delete a bugtask.
+
+        A user may delete a bugtask if:
+         - The disclosure.delete_bugtask.enabled feature flag is enabled,
+         and they are:
+         - project maintainer
+         - task creator
+         - bug supervisor
+        """
+        if user is None:
+            return False
+
+        delete_allowed = bool(getFeatureFlag(
+            'disclosure.delete_bugtask.enabled'))
+        if not delete_allowed:
+            return False
+
+        bugtask = self.obj
+        owner = None
+        if IHasOwner.providedBy(bugtask.pillar):
+            owner = bugtask.pillar.owner
+        bugsupervisor = None
+        if IHasBugSupervisor.providedBy(bugtask.pillar):
+            bugsupervisor = bugtask.pillar.bug_supervisor
+        return (
+            user.inTeam(owner) or
+            user.inTeam(bugsupervisor) or
+            user.inTeam(bugtask.owner))
 
 
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
