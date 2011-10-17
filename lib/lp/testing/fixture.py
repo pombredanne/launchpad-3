@@ -16,6 +16,8 @@ __all__ = [
 from ConfigParser import SafeConfigParser
 import os.path
 
+import amqplib.client_0_8 as amqp
+import bson
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
@@ -44,6 +46,8 @@ from zope.security.checker import (
 
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
+from lp.services.messaging.interfaces import MessagingUnavailable
+from lp.services.messaging.rabbit import connect
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -211,11 +215,30 @@ class CaptureOops(Fixture):
     :ivar oopses: A list of the oops objects raised while the fixture is
         setup.
     """
+
+    AMQP_SENTINEL = "STOP NOW"
     
     def setUp(self):
         super(CaptureOops, self).setUp()
         self.oopses = []
         self.useFixture(ZopeEventHandlerFixture(self._recordOops))
+        try:
+            self.connection = connect()
+        except MessagingUnavailable:
+            self.channel = None
+        else:
+            self.addCleanup(self.connection.close)
+            self.channel = self.connection.channel()
+            self.addCleanup(self.channel.close)
+            self.queue_name, _, _ = self.channel.queue_declare(
+                durable=True, auto_delete=True)
+            # In production the exchange already exists and is durable, but
+            # here we make it just-in-time, and tell it to go when the test
+            # fixture goes.
+            self.channel.exchange_declare(config.error_reports.error_exchange,
+                "fanout", durable=True, auto_delete=True)
+            self.channel.queue_bind(
+                self.queue_name, config.error_reports.error_exchange)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
@@ -223,3 +246,38 @@ class CaptureOops(Fixture):
 
     def sync(self):
         """Sync the in-memory list of OOPS with the external OOPS source."""
+        if not self.channel:
+            return
+        # Send ourselves a message: when we receive this, we've processed all
+        # oopses created before sync() was invoked.
+        message = amqp.Message(self.AMQP_SENTINEL)
+        # Match what oops publishing does
+        message.properties["delivery_mode"] = 2
+        # Publish the message via a new channel (otherwise rabbit shortcircuits
+        # it straight back to us, apparently).
+        sentinel_channel = self.connection.channel()
+        try:
+            sentinel_channel.basic_publish(
+                message, config.error_reports.error_exchange,
+                config.error_reports.error_queue_key)
+        finally:
+            sentinel_channel.close()
+        self.consume_tag = self.channel.basic_consume(
+            self.queue_name, callback=self._handle_message)
+        self._stopped = False
+        while not self._stopped:
+            self.channel.wait()
+
+    def _handle_message(self, message):
+        self.channel.basic_ack(message.delivery_tag)
+        if message.body == self.AMQP_SENTINEL:
+            self.channel.basic_cancel(self.consume_tag)
+            self._stopped = True
+            return
+        try:
+            report = bson.loads(message.body)
+        except KeyError:
+            # Garbage in the queue.
+            report = {'id': 'corrupted OOPS!',
+                'message': message.body}
+        self.oopses.append(report)

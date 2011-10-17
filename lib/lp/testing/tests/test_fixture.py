@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import sys
 
+import oops_amqp
 import psycopg2
 from storm.exceptions import DisconnectionError
 from zope.component import (
@@ -18,7 +19,10 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.config import dbconfig
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.errorlog import (
     globalErrorUtility,
@@ -31,6 +35,7 @@ from canonical.testing.layers import (
     LaunchpadLayer,
     )
 from lp.registry.model.person import Person
+from lp.services.messaging import rabbit
 from lp.testing import TestCase
 from lp.testing.fixture import (
     CaptureOops,
@@ -214,3 +219,18 @@ class TestCaptureOopsRabbit(TestCase):
     def test_no_oopses_no_hang_on_sync(self):
         capture = self.useFixture(CaptureOops())
         capture.sync()
+
+    def test_sync_grabs_pending_oopses(self):
+        factory = rabbit.connect
+        exchange = config.error_reports.error_exchange
+        routing_key = config.error_reports.error_queue_key
+        amqp_publisher = oops_amqp.Publisher(factory, exchange, routing_key)
+        capture = self.useFixture(CaptureOops())
+        oops = {'foo': 'dr'}
+        amqp_publisher(oops)
+        oops2 = {'foo': 'strangelove'}
+        amqp_publisher(oops2)
+        capture.sync()
+        self.assertEqual(
+            ['dr', 'strangelove'],
+            [report['foo'] for report in capture.oopses])

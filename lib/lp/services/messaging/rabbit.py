@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    "connect",
     "session",
     "unreliable_session",
     ]
@@ -55,6 +56,22 @@ class RabbitSessionTransactionSync:
             self.session.reset()
 
 
+def connect():
+    """Connect to AMQP if possible.
+
+    :raises MessagingUnavailable: If the configuration is incomplete.
+    """
+    if (config.rabbitmq.host is None or
+        config.rabbitmq.userid is None or
+        config.rabbitmq.password is None or
+        config.rabbitmq.virtual_host is None):
+        raise MessagingUnavailable("Incomplete configuration")
+    return amqp.Connection(
+        host=config.rabbitmq.host, userid=config.rabbitmq.userid,
+        password=config.rabbitmq.password,
+        virtual_host=config.rabbitmq.virtual_host, insist=False)
+
+
 class RabbitSession(threading.local):
 
     implements(IMessageSession)
@@ -85,15 +102,7 @@ class RabbitSession(threading.local):
         shared between threads.
         """
         if self._connection is None or self._connection.transport is None:
-            if (config.rabbitmq.host is None or
-                config.rabbitmq.userid is None or
-                config.rabbitmq.password is None or
-                config.rabbitmq.virtual_host is None):
-                raise MessagingUnavailable("Incomplete configuration")
-            self._connection = amqp.Connection(
-                host=config.rabbitmq.host, userid=config.rabbitmq.userid,
-                password=config.rabbitmq.password,
-                virtual_host=config.rabbitmq.virtual_host, insist=False)
+            self._connection = connect()
         return self._connection
 
     def disconnect(self):

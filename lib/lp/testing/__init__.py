@@ -554,7 +554,10 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
-        self.oopses = self.useFixture(CaptureOops()).oopses
+        # You can call self.oops_capture.sync() to collect oopses from
+        # subprocesses over amqp.
+        self.oops_capture = self.useFixture(CaptureOops())
+        self.oopses = self.oops_capture.oopses
         self.addCleanup(self.attachOopses)
         if LibrarianLayer.librarian_fixture is not None:
             self.addCleanup(
