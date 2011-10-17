@@ -39,9 +39,10 @@ If we set soft_request_timeout to some value, the page will take
 slightly longer then the soft_request_timeout value to generate, thus
 causing a soft timeout to be logged.
 
-    >>> from canonical.launchpad.webapp.errorlog import globalErrorUtility
+    >>> from lp.testing import CaptureOops
+    >>> capture = CaptureOops()
+    >>> capture.setUp()
     >>> from textwrap import dedent
-    >>> old_lastid = globalErrorUtility.getLastOopsReport().id
     >>> test_data = (dedent("""
     ...     [database]
     ...     soft_request_timeout: 1
@@ -56,10 +57,12 @@ causing a soft timeout to be logged.
     ...
     Soft timeout threshold is set to 1 ms. This page took ... ms to render.
 
-We can now see that an error was logged since lastid has changed:
+    >>> capture.oopses[0]['type']
+    'SoftRequestTimeout'
 
-    >>> old_lastid != globalErrorUtility.getLastOopsReport().id
-    True
+Unregister from the oops collection:
+
+    >>> capture.cleanUp()
 
 Since the page rendered correctly, we assume it's a soft timeout error,
 since otherwise we would have gotten an OOPS page when we tried to
