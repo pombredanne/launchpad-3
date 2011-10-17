@@ -61,10 +61,15 @@ require no action from the Launchpad end.
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
 
-    >>> from lp.bugs.scripts.checkwatches.base import (
-    ...     CheckWatchesErrorUtility)
-    >>> error_utility = CheckWatchesErrorUtility()
-    >>> last_oops_id = error_utility.getLastOopsReport().id
+    >>> from zope.component import adapter
+    >>> from canonical.launchpad.webapp.errorlog import ErrorReportEvent
+    >>> from lp.testing.fixture import ZopeEventHandlerFixture
+    >>> oopses = []
+    >>> @adapter(ErrorReportEvent)
+    ... def recordOops(event):
+    ...     oopses.append(event.object)
+    >>> handler_fixture = ZopeEventHandlerFixture(recordOops)
+    >>> handler_fixture.setUp()
     >>> def do_not_urlopen(url=None, data=None):
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
@@ -74,8 +79,8 @@ require no action from the Launchpad end.
     ...         bug_tracker_names=[example_bug_tracker_name])
     ... finally:
     ...     urllib2.urlopen = urlopen
-    >>> last_oops_id == error_utility.getLastOopsReport().id
-    True
+    >>> oopses
+    []
 
 Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just
