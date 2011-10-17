@@ -194,9 +194,8 @@ class TestImportKeyRing(TestCase):
                 GPGKeyTemporarilyNotFoundError, gpghandler.retrieveKey,
                 'non-existent-fp')
             # An OOPS report is generated for the timeout.
-            error_utility = ErrorReportingUtility()
-            error_report = error_utility.getLastOopsReport()
-            self.assertEqual('TimeoutError', error_report.type)
-            self.assertEqual('timeout exceeded.', error_report.value)
+            error_report = self.oopses[-1]
+            self.assertEqual('TimeoutError', error_report['type'])
+            self.assertEqual('timeout exceeded.', error_report['value'])
         finally:
             set_default_timeout_function(old_timeout_function)
