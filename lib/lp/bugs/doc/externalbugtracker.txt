@@ -733,15 +733,9 @@ We temporarily silence the logging from this function because we're not
 interested in it. Again, the watch's lastchecked field will also be
 updated.
 
-    >>> from zope.component import adapter
-    >>> from canonical.launchpad.webapp.errorlog import ErrorReportEvent
-    >>> from lp.testing.fixture import ZopeEventHandlerFixture
-    >>> oopses = []
-    >>> @adapter(ErrorReportEvent)
-    ... def recordOops(event):
-    ...     oopses.append(event.object)
-    >>> handler_fixture = ZopeEventHandlerFixture(recordOops)
-    >>> handler_fixture.setUp()
+    >>> from lp.testing import CaptureOops
+    >>> capture = CaptureOops()
+    >>> capture.setUp()
 
     >>> external_bugtracker.initialize_remote_bugdb_error = None
     >>> for error in [UnparsableBugData, Exception]:
@@ -749,7 +743,7 @@ updated.
     ...     external_bugtracker.get_remote_status_error = error
     ...     bug_watch_updater.updateBugWatches(
     ...         external_bugtracker, [example_bugwatch])
-    ...     oops = oopses[-1]
+    ...     oops = capture.oopses[-1]
     ...     print "%s: %s (%s; %s)" % (
     ...         example_bugwatch.last_error_type.title,
     ...         example_bugwatch.lastchecked is not None,
@@ -757,7 +751,7 @@ updated.
     Unparsable Bug: True (OOPS-...; http://bugs.example.com/show_bug.cgi?id=1)
     Unknown: True (OOPS-...; http://bugs.example.com/show_bug.cgi?id=1)
 
-    >>> handler_fixture.cleanUp()
+    >>> capture.cleanUp()
 
 
 == Using `LookupTree` to map statuses ==

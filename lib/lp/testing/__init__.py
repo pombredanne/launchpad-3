@@ -14,6 +14,7 @@ __all__ = [
     'api_url',
     'BrowserTestCase',
     'build_yui_unittest_suite',
+    'CaptureOops',
     'celebrity_logged_in',
     'ExpectedException',
     'extract_lp_cache',
@@ -575,20 +576,14 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
-        self.oopses = []
-        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.oopses = self.useFixture(CaptureOops()).oopses
         self.addCleanup(self.attachOopses)
         if LibrarianLayer.librarian_fixture is not None:
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
         set_permit_timeout_from_features(False)
-
-    @adapter(ErrorReportEvent)
-    def _recordOops(self, event):
-        """Add the oops to the testcase's list."""
-        self.oopses.append(event.object)
-
+        
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.
 
@@ -1350,3 +1345,21 @@ def nonblocking_readline(instream, timeout):
             result.write(next_char)
         now = time.time()
     return result.getvalue()
+
+
+class CaptureOops(fixtures.Fixture):
+    """Capture OOPSes notified via zope event notification.
+
+    :ivar oopses: A list of the oops objects raised while the fixture is
+        setup.
+    """
+    
+    def setUp(self):
+        super(CaptureOops, self).setUp()
+        self.oopses = []
+        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
+
+    @adapter(ErrorReportEvent)
+    def _recordOops(self, event):
+        self.oopses.append(event.object)
+
