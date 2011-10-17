@@ -184,7 +184,6 @@ def make_error_utility(pid=None):
         pid = os.getpid()
     error_utility = ErrorReportingUtility()
     error_utility.configure('bzr_lpserve')
-    error_utility.setOopsToken(str(pid))
     return error_utility
 
 

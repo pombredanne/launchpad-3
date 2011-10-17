@@ -332,16 +332,10 @@ class ErrorReportingUtility:
         #    self._ignored_exceptions_for_offsite_referer
         self._oops_config.filters.append(self._filter_bad_urls_by_referer)
 
-    def setOopsToken(self, token):
-        return self._oops_datedir_repo.log_namer.setToken(token)
-
     @property
     def oops_prefix(self):
-        """Get the current effective oops prefix.
-
-        This is the log subtype + anything set via setOopsToken.
-        """
-        return self._oops_datedir_repo.log_namer.get_log_infix()
+        """Get the current effective oops prefix."""
+        return self._oops_config.template['reporter']
 
     def getOopsReport(self, time):
         """Return the contents of the OOPS report logged at 'time'."""

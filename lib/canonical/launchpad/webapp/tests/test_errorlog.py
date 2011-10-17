@@ -179,16 +179,6 @@ class TestErrorReportingUtility(testtools.TestCase):
         # - a notify publisher
         self.assertEqual(oops_config.publishers[1], notify_publisher)
 
-    def test_setOopsToken(self):
-        """Test ErrorReportingUtility.setOopsToken()."""
-        utility = ErrorReportingUtility()
-        utility.setOopsToken('foo')
-        self.assertEqual('Tfoo', utility.oops_prefix)
-        # Some scripts run multiple processes and append a string number
-        # to the prefix.
-        utility.setOopsToken('1')
-        self.assertEqual('T1', utility.oops_prefix)
-
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
         utility = ErrorReportingUtility()

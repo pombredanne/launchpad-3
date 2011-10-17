@@ -51,12 +51,10 @@ class PullerWorkerMixin:
 
     def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
                          default_stacked_on_url=None, protocol=None,
-                         oops_prefix=None, policy=None):
+                         policy=None):
         """Anonymous creation method for PullerWorker."""
         if protocol is None:
             protocol = PullerWorkerProtocol(StringIO())
-        if oops_prefix is None:
-            oops_prefix = ''
         if branch_type is None:
             if policy is None:
                 policy = AcceptAnythingBranchMirrorerPolicy()
@@ -67,7 +65,7 @@ class PullerWorkerMixin:
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type,
             default_stacked_on_url=default_stacked_on_url, protocol=protocol,
-            branch_mirrorer=opener, oops_prefix=oops_prefix)
+            branch_mirrorer=opener)
 
 # XXX MichaelHudson, bug=564375: With changes to the SocketServer module in
 # Python 2.6 the thread created in serveOverHTTP cannot be joined, because
