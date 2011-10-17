@@ -23,7 +23,7 @@
         Y.on('domready', function() {
             Y.lp.registry.structural_subscription.setup(
                 {content_box: "#structural-subscription-content-box"});
-            Y.lp.bugs.buglisting.rendertable()
+            Y.lp.bugs.buglisting.update_listing('status');
         });
     });
   </script>
