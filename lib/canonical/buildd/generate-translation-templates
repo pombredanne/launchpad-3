@@ -62,4 +62,5 @@ debug_exec "$SUDO $CHMOD -v 755 $BUILD_CHROOT$GENERATE_SCRIPT"
 
 # Enter chroot, switch back to unprivileged user, execute the generate script.
 $SUDO $CHROOT $BUILD_CHROOT \
-  $SU - $USER -c "$GENERATE_SCRIPT $BRANCH_URL $RESULT_NAME"
+  $SU - $USER \
+    -c "PYTHONPATH=$PYMODULES $GENERATE_SCRIPT $BRANCH_URL $RESULT_NAME"
