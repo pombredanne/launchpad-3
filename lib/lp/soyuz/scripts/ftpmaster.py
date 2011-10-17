@@ -18,6 +18,7 @@ __all__ = [
     ]
 
 import hashlib
+from itertools import chain
 import os
 import stat
 import sys
@@ -906,19 +907,12 @@ class ObsoleteDistroseries(SoyuzScript):
         binaries = distroseries.getAllPublishedBinaries()
         num_sources = sources.count()
         num_binaries = binaries.count()
-        self.logger.info("There are %d sources and %d binaries." % (
+        self.logger.info(
+            "There are %d published sources and %d published binaries." % (
             num_sources, num_binaries))
 
-        if num_sources == 0 and num_binaries == 0:
-            raise SoyuzScriptError("Nothing to do, no published packages.")
-
-        self.logger.info("Obsoleting sources...")
-        for package in sources:
-            self.logger.debug("Obsoleting %s" % package.displayname)
-            package.requestObsolescence()
-
-        self.logger.info("Obsoleting binaries...")
-        for package in binaries:
+        self.logger.info("Obsoleting packages...")
+        for package in chain(sources, binaries):
             self.logger.debug("Obsoleting %s" % package.displayname)
             package.requestObsolescence()
 
