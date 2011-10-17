@@ -1,8 +1,8 @@
 launchpad-buildd (81) hardy-cat; urgency=low
 
-  * rebuild.
+  * generate-translation-templates: switch to Python 2.7.
 
- -- Danilo Segan (Business) <danilo@canonical.com>  Fri, 14 Oct 2011 09:56:58 +0200
+ -- Danilo Šegan <danilo@canonical.com>  Mon, 17 Oct 2011 14:46:13 +0200
 
 launchpad-buildd (80) hardy-cat; urgency=low
 

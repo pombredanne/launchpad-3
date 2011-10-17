@@ -21,6 +21,7 @@ from zope.interface import (
 from zope.security.proxy import ProxyFactory
 
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.code.model.branchjob import (
     BranchJob,
@@ -48,6 +49,11 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
     branch_id = Int(name='branch', allow_none=False)
     branch = Reference(branch_id, 'Branch.id')
+
+    @property
+    def title(self):
+        return u'%s for %s' % (
+            self.__class__.__name__, self.branch.displayname,)
 
     def __init__(self, build_farm_job, branch):
         super(TranslationTemplatesBuild, self).__init__()
@@ -110,3 +116,10 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.branch == branch)
+
+    @property
+    def log_url(self):
+        """See `IBuildFarmJob`."""
+        if self.log is None:
+            return None
+        return self.log.http_url

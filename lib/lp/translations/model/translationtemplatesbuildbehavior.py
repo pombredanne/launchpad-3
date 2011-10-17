@@ -13,8 +13,9 @@ __all__ = [
 
 import datetime
 import os
-import tempfile
 import pytz
+import tempfile
+import transaction
 
 from twisted.internet import defer
 from zope.component import getUtility
@@ -22,6 +23,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -113,6 +115,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             if len(raw_slave_status) >= 4:
                 status['filemap'] = raw_slave_status[3]
 
+    def setBuildStatus(self, status):
+        self.build.status = status
+
     @staticmethod
     def getLogFromSlave(templates_build, queue_item):
         """See `IPackageBuild`."""
@@ -125,7 +130,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         return d
 
     @staticmethod
-    def storeBuildInfo(build, queue_item):
+    def storeBuildInfo(build, queue_item, build_status):
         """See `IPackageBuild`."""
         def got_log(lfa_id):
             # log, builder and date_finished are read-only, so we must
@@ -182,11 +187,13 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                         queue_item.specific_job.branch, tarball, logger)
                     logger.debug("Upload complete.")
             finally:
+                self.setBuildStatus(BuildStatus.FULLYBUILT)
                 tarball_file.close()
                 os.remove(filename)
 
         def build_info_stored(ignored):
             if build_status == 'OK':
+                self.setBuildStatus(BuildStatus.UPLOADING)
                 logger.debug("Processing successful templates build.")
                 filemap = slave_status.get('filemap')
                 d = self._readTarball(queue_item, filemap, logger)
@@ -194,9 +201,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 d.addCallback(clean_slave)
                 return d
 
+            self.setBuildStatus(BuildStatus.FAILEDTOBUILD)
             return clean_slave(None)
 
-        d = self.storeBuildInfo(self, queue_item)
+        d = self.storeBuildInfo(self, queue_item, build_status)
         d.addCallback(build_info_stored)
         return d
 
