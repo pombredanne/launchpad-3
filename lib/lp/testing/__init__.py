@@ -14,7 +14,6 @@ __all__ = [
     'api_url',
     'BrowserTestCase',
     'build_yui_unittest_suite',
-    'CaptureOops',
     'celebrity_logged_in',
     'ExpectedException',
     'extract_lp_cache',
@@ -98,10 +97,7 @@ from testtools.content_type import UTF8_TEXT
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 import zope.event
 from zope.interface.verify import verifyClass
 from zope.security.proxy import (
@@ -121,7 +117,6 @@ from canonical.launchpad.webapp.adapter import (
     start_sql_logging,
     stop_sql_logging,
     )
-from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
@@ -165,7 +160,7 @@ from lp.testing._webservice import (
     launchpadlib_for,
     oauth_access_token_for,
     )
-from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.fixture import CaptureOops
 from lp.testing.karma import KarmaRecorder
 
 # The following names have been imported for the purpose of being
@@ -1328,21 +1323,3 @@ def nonblocking_readline(instream, timeout):
             result.write(next_char)
         now = time.time()
     return result.getvalue()
-
-
-class CaptureOops(fixtures.Fixture):
-    """Capture OOPSes notified via zope event notification.
-
-    :ivar oopses: A list of the oops objects raised while the fixture is
-        setup.
-    """
-    
-    def setUp(self):
-        super(CaptureOops, self).setUp()
-        self.oopses = []
-        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
-
-    @adapter(ErrorReportEvent)
-    def _recordOops(self, event):
-        self.oopses.append(event.object)
-

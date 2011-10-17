@@ -46,7 +46,7 @@ exceptions. It reports the OOPS.
     ...     except AssertionError, error:
     ...         log_exception('Generated Error: %s', error)
 
-    >>> from lp.testing import CaptureOops
+    >>> from lp.testing.fixture import CaptureOops
     >>> capture = CaptureOops()
     >>> capture.setUp()
     >>> test_log_exception()

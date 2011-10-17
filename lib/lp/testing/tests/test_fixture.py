@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import sys
+
 import psycopg2
 from storm.exceptions import DisconnectionError
 from zope.component import (
@@ -18,14 +20,20 @@ from zope.interface import (
 
 from canonical.config import dbconfig
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.webapp.errorlog import (
+    globalErrorUtility,
+    notify_publisher,
+    )
 from canonical.testing.layers import (
     BaseLayer,
     DatabaseLayer,
     LaunchpadZopelessLayer,
+    LaunchpadLayer,
     )
 from lp.registry.model.person import Person
 from lp.testing import TestCase
 from lp.testing.fixture import (
+    CaptureOops,
     PGBouncerFixture,
     ZopeAdapterFixture,
     )
@@ -179,3 +187,20 @@ class TestPGBouncerFixtureWithoutCA(TestCase):
         # Note that because pgbouncer was left running, we can't confirm
         # that we are now connecting directly to the database.
         self.assertTrue(self.is_db_available())
+
+
+class TestCaptureOops(TestCase):
+
+    # Need rabbit + CA for notification tests.
+    layer = LaunchpadLayer
+
+    def test_subscribes_to_events(self):
+        capture = self.useFixture(CaptureOops())
+        publishers = globalErrorUtility._oops_config.publishers[:]
+        try:
+            globalErrorUtility._oops_config.publishers[:] = [notify_publisher]
+            id = globalErrorUtility.raising(sys.exc_info())['id']
+            self.assertEqual(id, capture.oopses[0]['id'])
+            self.assertEqual(1, len(capture.oopses))
+        finally:
+            globalErrorUtility._oops_config.publishers[:] = publishers

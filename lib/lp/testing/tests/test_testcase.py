@@ -51,6 +51,8 @@ class TestRecordStatements(TestCaseWithFactory):
 
 
 class TestCaptureOops(TestCaseWithFactory):
+    # Note that this tests the testcase specific functionality; see
+    # test_fixture for tests of the CaptureOops fixture.
 
     layer = FunctionalLayer
 

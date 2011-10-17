@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'CaptureOops',
     'PGBouncerFixture',
     'Urllib2Fixture',
     'ZopeAdapterFixture',
@@ -29,6 +30,7 @@ from wsgi_intercept.urllib2_intercept import (
     uninstall_opener,
     )
 from zope.component import (
+    adapter,
     getGlobalSiteManager,
     provideHandler,
     )
@@ -41,6 +43,7 @@ from zope.security.checker import (
     )
 
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -200,3 +203,21 @@ class Urllib2Fixture(Fixture):
         self.addCleanup(remove_wsgi_intercept, 'launchpad.dev', 80)
         install_opener()
         self.addCleanup(uninstall_opener)
+
+
+class CaptureOops(Fixture):
+    """Capture OOPSes notified via zope event notification.
+
+    :ivar oopses: A list of the oops objects raised while the fixture is
+        setup.
+    """
+    
+    def setUp(self):
+        super(CaptureOops, self).setUp()
+        self.oopses = []
+        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
+
+    @adapter(ErrorReportEvent)
+    def _recordOops(self, event):
+        self.oopses.append(event.object)
+

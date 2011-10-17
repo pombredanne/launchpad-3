@@ -61,7 +61,7 @@ require no action from the Launchpad end.
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
 
-    >>> from lp.testing import CaptureOops
+    >>> from lp.testing.fixture import CaptureOops
     >>> capture = CaptureOops()
     >>> capture.setUp()
     >>> def do_not_urlopen(url=None, data=None):

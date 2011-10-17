@@ -79,7 +79,7 @@ exception, and a time machine.
 
 Now we actually demonstrate the behavior.  The view did raise a TimeoutError.
 
-    >>> from lp.testing import CaptureOops
+    >>> from lp.testing.fixture import CaptureOops
     >>> capture = CaptureOops()
     >>> capture.setUp()
     >>> browser = Browser()

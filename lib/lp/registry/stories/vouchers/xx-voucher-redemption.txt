@@ -165,7 +165,7 @@ Log in as a user with lots of vouchers.
 
 Attempt to redeem a valid voucher and see the error message.
 
-    >>> from lp.testing import CaptureOops
+    >>> from lp.testing.fixture import CaptureOops
     >>> capture = CaptureOops()
     >>> capture.setUp()
     >>> browser.getControl(name='field.project').value='mega-money-maker'

@@ -8,7 +8,7 @@ causing a soft timeout to be logged.
 
     >>> from canonical.config import config
     >>> from textwrap import dedent
-    >>> from lp.testing import CaptureOops
+    >>> from lp.testing.fixture import CaptureOops
     >>> capture = CaptureOops()
     >>> capture.setUp()
     >>> test_data = dedent("""
