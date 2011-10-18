@@ -234,6 +234,75 @@ class TestDominator(TestNativePublishingBase):
         self.checkPublications(
             foo_10_all_bins, PackagePublishingStatus.SUPERSEDED)
 
+    def test_any_superseded_by_all(self):
+        # Set up a source, foo, which builds an architecture-dependent
+        # binary, foo-bin.
+        foo_10_src = self.getPubSource(
+            sourcename="foo", version="1.0", architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_10_i386_bin] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version="1.0", pub_source=foo_10_src)
+
+        # Now, make version 1.1 of foo, where foo-bin is now
+        # architecture-independent.
+        foo_11_src = self.getPubSource(
+            sourcename="foo", version="1.1", architecturehintlist="all",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_10_all_bin, foo_10_all_bin_2] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=False, version="1.1", pub_source=foo_11_src)
+
+        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
+        dominator.judgeAndDominate(
+            foo_10_src.distroseries, foo_10_src.pocket)
+
+        # The source will be superseded.
+        self.checkPublication(foo_10_src, PackagePublishingStatus.SUPERSEDED)
+        # The arch-specific is superseded by the new arch-indep.
+        self.checkPublication(
+            foo_10_i386_bin, PackagePublishingStatus.SUPERSEDED)
+
+    def test_schitzoid_package(self):
+        # Test domination of a source that produces an arch-indep and an
+        # arch-all, that then switches both on the next version to the
+        # other arch type.
+        foo_10_src = self.getPubSource(
+            sourcename="foo", version="1.0", architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_10_i386_bin] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version="1.0", pub_source=foo_10_src)
+        [build] = foo_10_src.getBuilds()
+        bpr = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-common", version="1.0", build=build,
+            architecturespecific=False)
+        foo_10_all_bins = self.publishBinaryInArchive(
+            bpr, self.ubuntutest.main_archive, pocket=foo_10_src.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        foo_11_src = self.getPubSource(
+            sourcename="foo", version="1.1", architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_11_i386_bin] = self.getPubBinaries(
+            binaryname="foo-common", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version="1.1", pub_source=foo_11_src)
+        [build] = foo_11_src.getBuilds()
+        bpr = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-bin", version="1.1", build=build,
+            architecturespecific=False)
+        foo_11_all_bins = self.publishBinaryInArchive(
+            bpr, self.ubuntutest.main_archive, pocket=foo_11_src.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
+        dominator.judgeAndDominate(foo_10_src.distroseries, foo_10_src.pocket)
+
+        self.checkPublications(foo_10_all_bins + [foo_10_i386_bin],
+                               PackagePublishingStatus.SUPERSEDED)
+
+
+
 
 class TestDomination(TestNativePublishingBase):
     """Test overall domination procedure."""
@@ -287,35 +356,6 @@ class TestDominationOfObsoletedSeries(TestDomination):
         TestDomination.setUp(self)
         self.ubuntutest['breezy-autotest'].status = (
             SeriesStatus.OBSOLETE)
-
-    def test_any_superseded_by_all(self):
-        # Set up a source, foo, which builds an architecture-dependent
-        # binary, foo-bin.
-        foo_10_src = self.getPubSource(
-            sourcename="foo", version="1.0", architecturehintlist="i386",
-            status=PackagePublishingStatus.PUBLISHED)
-        [foo_10_i386_bin] = self.getPubBinaries(
-            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
-            architecturespecific=True, version="1.0", pub_source=foo_10_src)
-
-        # Now, make version 1.1 of foo, where foo-bin is now
-        # architecture-independent.
-        foo_11_src = self.getPubSource(
-            sourcename="foo", version="1.1", architecturehintlist="all",
-            status=PackagePublishingStatus.PUBLISHED)
-        [foo_10_all_bin, foo_10_all_bin_2] = self.getPubBinaries(
-            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
-            architecturespecific=False, version="1.1", pub_source=foo_11_src)
-
-        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-        dominator.judgeAndDominate(
-            foo_10_src.distroseries, foo_10_src.pocket)
-
-        # The source will be superseded.
-        self.checkPublication(foo_10_src, PackagePublishingStatus.SUPERSEDED)
-        # The arch-specific is superseded by the new arch-indep.
-        self.checkPublication(
-            foo_10_i386_bin, PackagePublishingStatus.SUPERSEDED)
 
 
 def make_spphs_for_versions(factory, versions):

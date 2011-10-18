@@ -489,8 +489,8 @@ class Dominator:
                 ]
             main_clauses.extend(bpph_location_clauses)
 
-            # Arch-indep binaries need to be done last as they depend on
-            # arch-specific binaries being superseded.
+            # Arch-specific binaries need to be done first because any
+            # arch-indep binaries being superseded rely on it.
             arch_specific_clauses = []
             arch_specific_clauses.extend(main_clauses)
             arch_specific_clauses.append(
@@ -503,10 +503,13 @@ class Dominator:
                 self._sortPackages(arch_specific_bins, generalization),
                 generalization)
 
+            # Now we can do the arch-indep binaries. We still need to
+            # include the arch-specific binaries in the results so that
+            # they can be considered in the "live versions". This is
+            # relevant when a binary changes from arch-specific to arch-indep,
+            # or vice-versa.
             arch_indep_clauses = []
             arch_indep_clauses.extend(main_clauses)
-            arch_indep_clauses.append(
-                BinaryPackageRelease.architecturespecific == False)
             self.logger.info("Finding arch-indep binaries...")
             arch_indep_bins = IStore(BinaryPackagePublishingHistory).find(
                 *arch_indep_clauses)
