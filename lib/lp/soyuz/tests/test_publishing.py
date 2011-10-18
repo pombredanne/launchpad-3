@@ -1471,6 +1471,112 @@ class TestSPPHModel(TestCaseWithFactory):
         self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
 
 
+class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
+    """Test parts of the BinaryPackagePublishingHistory model.
+
+    See also lib/lp/soyuz/doc/publishing.txt
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def _makeMixedSingleBuildPackage(self, version="1.0"):
+        # Set up a source with a build that generated four binaries,
+        # two of them an arch-all.
+        foo_src_pub = self.getPubSource(
+            sourcename="foo", version=version, architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_bin_pub] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version=version,
+            pub_source=foo_src_pub)
+        # Now need to grab the build for the source so we can add
+        # more binaries to it.
+        [build] = foo_src_pub.getBuilds()
+        foo_one_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-one-common", version=version, build=build,
+            architecturespecific=False)
+        foo_one_common_pubs = self.publishBinaryInArchive(
+            foo_one_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_two_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-two-common", version=version, build=build,
+            architecturespecific=False)
+        foo_two_common_pubs = self.publishBinaryInArchive(
+            foo_two_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_three = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-three", version=version, build=build,
+            architecturespecific=True)
+        [foo_three_pub] = self.publishBinaryInArchive(
+            foo_three, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        # So now we have source foo, which has arch specific binaries
+        # foo-bin and foo-three, and arch:all binaries foo-one-common and
+        # foo-two-common. The latter two will have multiple publications,
+        # one for each DAS in the series.
+        return (
+            foo_src_pub, foo_bin_pub, foo_one_common_pubs,
+            foo_two_common_pubs, foo_three_pub)
+
+    def test_getOtherPublicationsForSameSource(self):
+        # By default getOtherPublicationsForSameSource should return all
+        # of the other binaries built by the same source as the passed
+        # binary publication, except the arch-indep ones.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+            foo_three_pub) = self._makeMixedSingleBuildPackage()
+
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
+
+        self.assertContentEqual([foo_three_pub, foo_bin_pub], others)
+
+    def test_getOtherPublicationsForSameSource_include_archindep(self):
+        # Check that the arch-indep binaries are returned if requested.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+         foo_three_pub) = self._makeMixedSingleBuildPackage()
+
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource(
+            include_archindep=True)
+        others = list(others)
+
+        # We expect all publications created above to be returned,
+        # except the one we use to call the method on.
+        expected = [foo_three_pub, foo_bin_pub]
+        expected.extend(foo_one_common_pubs[1:])
+        expected.extend(foo_two_common_pubs)
+        self.assertContentEqual(expected, others)
+
+    def test_getOtherPublicationsForSameSource_inactive(self):
+        # Check that inactive publications are not returned.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+             foo_three_pub) = self._makeMixedSingleBuildPackage()
+        foo_bin_pub.status = PackagePublishingStatus.SUPERSEDED
+        foo_three_pub.status = PackagePublishingStatus.SUPERSEDED
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
+
+        self.assertEqual(0, len(others))
+
+    def test_getOtherPublicationsForSameSource_multiple_versions(self):
+        # Check that publications for only the same version as the
+        # context binary publication are returned.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+         foo_three_pub) = self._makeMixedSingleBuildPackage(version="1.0")
+        self._makeMixedSingleBuildPackage(version="1.1")
+
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
+
+        self.assertContentEqual([foo_three_pub, foo_bin_pub], others)
+
+
 class TestGetBuiltBinaries(TestNativePublishingBase):
     """Test SourcePackagePublishingHistory.getBuiltBinaries() works."""
 
