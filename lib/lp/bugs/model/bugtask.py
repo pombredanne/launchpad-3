@@ -1727,19 +1727,23 @@ class BugTaskSet:
 
         Called from `buildQuery` or recursively."""
         if zope_isinstance(status, any):
-            return '(' + ' OR '.join(
-                cls._buildStatusClause(dbitem)
-                for dbitem
-                in status.query_values) + ')'
+            values = list(status.query_values)
+            # Since INCOMPLETE isn't stored as a single value we need to
+            # expand it before generating the SQL.
+            if BugTaskStatus.INCOMPLETE in values:
+                values.remove(BugTaskStatus.INCOMPLETE)
+                values.extend(DB_INCOMPLETE_BUGTASK_STATUSES)
+            return '(BugTask.status {0})'.format(
+                search_value_to_where_condition(any(*values)))
         elif zope_isinstance(status, not_equals):
-            return '(NOT %s)' % cls._buildStatusClause(status.value)
+            return '(NOT {0})'.format(cls._buildStatusClause(status.value))
         elif zope_isinstance(status, BaseItem):
             # INCOMPLETE is not stored in the DB, instead one of
             # DB_INCOMPLETE_BUGTASK_STATUSES is stored, so any request to
             # search for INCOMPLETE should instead search for those values.
             if status == BugTaskStatus.INCOMPLETE:
-                return ('(BugTask.status %s)'
-                    % search_value_to_where_condition(
+                return '(BugTask.status {0})'.format(
+                    search_value_to_where_condition(
                         any(*DB_INCOMPLETE_BUGTASK_STATUSES)))
             else:
                 return '(BugTask.status = %s)' % sqlvalues(status)

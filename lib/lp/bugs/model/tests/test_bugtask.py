@@ -234,16 +234,19 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
 
     def test_any_query(self):
         # An "any" object may be passed in containing a set of statuses to
-        # return.
+        # return.  The resulting SQL uses IN in an effort to be optimal.
         self.assertEqual(
-            '((BugTask.status = 10) OR (BugTask.status = 16))',
+            '(BugTask.status IN (10,16))',
             self.searchClause(any(BugTaskStatus.NEW, BugTaskStatus.OPINION)))
 
     def test_any_query_with_INCOMPLETE(self):
         # Since INCOMPLETE is not a single-value status (see above) an "any"
-        # query causes a slightly more complex query to be generated.
+        # query that includes INCOMPLETE will cause more enum values to be
+        # included in the IN clause than were given.  Note that we go to a bit
+        # of effort to generate an IN expression instead of a series of
+        # ORed-together equality checks.
         self.assertEqual(
-            '((BugTask.status = 10) OR (BugTask.status IN (13,14)))',
+            '(BugTask.status IN (10,13,14))',
             self.searchClause(
                 any(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)))
 
