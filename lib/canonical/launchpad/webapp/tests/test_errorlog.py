@@ -17,6 +17,7 @@ from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
 from lp_sitecustomize import customize_get_converter
+import oops_amqp
 import pytz
 import testtools
 from testtools.matchers import StartsWith
@@ -31,7 +32,9 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad.layers import WebServiceLayer
+from canonical.launchpad.layers import (
+    WebServiceLayer,
+    )
 from canonical.launchpad.webapp.errorlog import (
     _filter_session_statement,
     _is_sensitive,
@@ -45,6 +48,7 @@ from canonical.launchpad.webapp.interfaces import (
     IUnloggedException,
     NoReferrerError,
     )
+from canonical.testing.layers import LaunchpadLayer
 from lp.app import versioninfo
 from lp.app.errors import (
     GoneError,
@@ -134,6 +138,9 @@ class TestErrorReport(testtools.TestCase):
 
 class TestErrorReportingUtility(testtools.TestCase):
 
+    # want rabbit
+    layer = LaunchpadLayer
+
     def setUp(self):
         super(TestErrorReportingUtility, self).setUp()
         # ErrorReportingUtility reads the global config to get the
@@ -154,30 +161,33 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual(config.error_reports.oops_prefix,
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
-            utility._oops_datedir_repo.log_namer._output_root)
+            utility._oops_datedir_repo.root)
         # Some external processes may use another config section to
         # provide the error log configuration.
         utility.configure(section_name='branchscanner')
         self.assertEqual(config.branchscanner.oops_prefix,
             utility.oops_prefix)
         self.assertEqual(config.branchscanner.error_dir,
-            utility._oops_datedir_repo.log_namer._output_root)
+            utility._oops_datedir_repo.root)
 
         # The default error section can be restored.
         utility.configure()
         self.assertEqual(config.error_reports.oops_prefix,
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
-            utility._oops_datedir_repo.log_namer._output_root)
+            utility._oops_datedir_repo.root)
 
-        # We should have had two publishers setup:
+        # We should have had three publishers setup:
         oops_config = utility._oops_config
-        self.assertEqual(2, len(oops_config.publishers))
-        # - a datedir publisher
+        self.assertEqual(3, len(oops_config.publishers))
+        # - a rabbit publisher
+        self.assertIsInstance(oops_config.publishers[0], oops_amqp.Publisher)
+        # - a datedir publisher wrapped in a publish_new_only wrapper
         datedir_repo = utility._oops_datedir_repo
-        self.assertEqual(oops_config.publishers[0], datedir_repo.publish)
+        publisher = oops_config.publishers[1].func_closure[0].cell_contents
+        self.assertEqual(publisher, datedir_repo.publish)
         # - a notify publisher
-        self.assertEqual(oops_config.publishers[1], notify_publisher)
+        self.assertEqual(oops_config.publishers[2], notify_publisher)
 
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""

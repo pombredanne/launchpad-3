@@ -21,6 +21,7 @@ from lazr.restful.utils import (
     safe_hasattr,
     )
 import oops.createhooks
+import oops_amqp
 from oops_datedir_repo import DateDirRepo
 import oops_datedir_repo.serializer
 import oops_timeline
@@ -50,6 +51,7 @@ from canonical.launchpad.webapp.pgsession import PGSessionBase
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app import versioninfo
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.messaging import rabbit
 
 
 UTC = pytz.utc
@@ -313,11 +315,19 @@ class ErrorReportingUtility:
             if publisher_adapter is not None:
                 publisher = publisher_adapter(publisher)
             self._oops_config.publishers.append(publisher)
+        # If amqp is configured we want to publish over amqp.
+        if (config.error_reports.error_exchange and rabbit.is_configured()):
+            exchange = config.error_reports.error_exchange
+            routing_key = config.error_reports.error_queue_key
+            amqp_publisher = oops_amqp.Publisher(
+                rabbit.connect, exchange, routing_key)
+            add_publisher(amqp_publisher)
         # We want to publish reports to disk for gathering to the central
-        # analysis server.
+        # analysis server, but only if we haven't already published to rabbit.
         self._oops_datedir_repo = DateDirRepo(config[section_name].error_dir)
-        add_publisher(self._oops_datedir_repo.publish)
-        # And within the zope application server (only for testing).
+        add_publisher(oops.publish_new_only(self._oops_datedir_repo.publish))
+        # And send everything within the zope application server (only for
+        # testing).
         add_publisher(notify_publisher)
         #
         # Reports are filtered if:
