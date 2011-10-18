@@ -8,6 +8,7 @@ import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from testtools.testcase import ExpectedException
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.event import notify
@@ -18,6 +19,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import (
     all,
     any,
+    not_equals,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
@@ -41,6 +43,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
+    BugTaskSet,
     build_tag_search_clause,
     IllegalTarget,
     validate_new_target,
@@ -190,6 +193,71 @@ class TestBugTaskDelta(TestCaseWithFactory):
             bug_task_before_modification, bug_task,
             importance=dict(old=bug_task_before_modification.importance,
                             new=bug_task.importance))
+
+
+class TestBugTaskSetStatusSearchClauses(TestCase):
+    # BugTaskSets contain a utility function that generates SQL WHERE clauses
+    # used to find sets of bugs.  These tests exercise that utility function.
+
+    def searchClause(self, status_spec):
+        return BugTaskSet._buildStatusClause(status_spec)
+
+    def test_simple_queries(self):
+        # WHERE clauses for simple status values are straightforward.
+        self.assertEqual(
+            '(BugTask.status = 10)',
+            self.searchClause(BugTaskStatus.NEW))
+        self.assertEqual(
+            '(BugTask.status = 16)',
+            self.searchClause(BugTaskStatus.OPINION))
+        self.assertEqual(
+            '(BugTask.status = 22)',
+            self.searchClause(BugTaskStatus.INPROGRESS))
+
+    def test_INCOMPLETE_query(self):
+        # Since we don't really store INCOMPLETE in the DB but instead store
+        # values with finer shades of meaning, asking for INCOMPLETE will
+        # result in a clause that actually matches multiple statuses.
+        self.assertEqual(
+            '(BugTask.status IN (13,14))',
+            self.searchClause(BugTaskStatus.INCOMPLETE))
+
+    def test_negative_query(self):
+        # If a negative is requested then the WHERE clause is simply wrapped
+        # in a "NOT".
+        status = BugTaskStatus.INCOMPLETE
+        base_query = self.searchClause(status)
+        expected_negative_query = '(NOT {0})'.format(base_query)
+        self.assertEqual(
+            expected_negative_query,
+            self.searchClause(not_equals(status)))
+
+    def test_any_query(self):
+        # An "any" object may be passed in containing a set of statuses to
+        # return.
+        self.assertEqual(
+            '((BugTask.status = 10) OR (BugTask.status = 16))',
+            self.searchClause(any(BugTaskStatus.NEW, BugTaskStatus.OPINION)))
+
+    def test_any_query_with_INCOMPLETE(self):
+        # Since INCOMPLETE is not a single-value status (see above) an "any"
+        # query causes a slightly more complex query to be generated.
+        self.assertEqual(
+            '((BugTask.status = 10) OR (BugTask.status IN (13,14)))',
+            self.searchClause(
+                any(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)))
+
+    def test_all_query(self):
+        # Since status is single-valued, asking for "all" statuses in a set
+        # doesn't make any sense.
+        with ExpectedException(ValueError):
+            self.searchClause(
+                all(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE))
+
+    def test_bad_value(self):
+        # If an unrecognized status is provided then an error is raised.
+        with ExpectedException(ValueError):
+            self.searchClause('this-is-not-a-status')
 
 
 class TestBugTaskTagSearchClauses(TestCase):
