@@ -1,7 +1,5 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 """Question models."""
 
@@ -225,8 +223,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         if self.product:
             return self.product
         elif self.sourcepackagename:
-            return self.distribution.getSourcePackage(
-                self.sourcepackagename.name)
+            return self.distribution.getSourcePackage(self.sourcepackagename)
         else:
             return self.distribution
 

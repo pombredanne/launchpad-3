@@ -10,15 +10,11 @@ Remove this script after migration is complete.
 __metaclass__ = type
 __all__ = []
 
-import _pythonpath
-
 from optparse import OptionParser
 import os.path
 from textwrap import dedent
 
-from canonical.config import config
-from canonical.database.sqlbase import connect
-from canonical.launchpad import scripts
+import _pythonpath
 import replication.helpers
 from replication.helpers import (
     LPMAIN_SET_ID,
@@ -27,6 +23,9 @@ from replication.helpers import (
     get_all_cluster_nodes,
     get_master_node,
     )
+
+from canonical.database.sqlbase import connect
+from canonical.launchpad import scripts
 
 
 con = None
@@ -62,7 +61,7 @@ def generate_preamble():
             origin = result[0]
             print >> outf, "define %s_origin %d;" % (set_name, origin)
         else:
-            del sets[set_id] # For testing. Production will have 3 sets.
+            del sets[set_id]  # For testing. Production will have 3 sets.
     outf.close()
 
 
@@ -118,7 +117,7 @@ def generate_rebuild():
             node.node_id, first_node.node_id)
 
     # Create paths so they can communicate.
-    message(outf, "Storing %d paths" % pow(len(nodes),2))
+    message(outf, "Storing %d paths" % pow(len(nodes), 2))
     for client_node in nodes:
         for server_node in nodes:
             print >> outf, (
@@ -158,7 +157,7 @@ def generate_initialize_set(set_id, set_name, outf):
     message(outf, "Adding %d tables to %s" % (len(results), set_name))
     for tab_id, tab_nspname, tab_relname, tab_comment in results:
         if not tab_comment:
-            tab_comment=''
+            tab_comment = ''
         print >> outf, dedent("""\
                 set add table (
                     set id=@%s, origin=@%s_origin, id=%d,
@@ -175,7 +174,7 @@ def generate_initialize_set(set_id, set_name, outf):
     message(outf, "Adding %d sequences to %s" % (len(results), set_name))
     for seq_id, seq_nspname, seq_relname, seq_comment in results:
         if not seq_comment:
-            seq_comment=''
+            seq_comment = ''
         print >> outf, dedent("""\
                 set add sequence (
                     set id=@%s, origin=@%s_origin, id=%d,
@@ -187,7 +186,6 @@ def generate_initialize_set(set_id, set_name, outf):
 
 
 def generate_subscribe_set(set_id, set_name, outf):
-    origin_node = get_master_node(con, set_id)
     cur = con.cursor()
     cur.execute("""
         SELECT sub_receiver FROM _sl.sl_subscribe

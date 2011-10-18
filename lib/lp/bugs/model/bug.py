@@ -1706,8 +1706,23 @@ BugMessage""" % sqlvalues(self.id))
 
         if private_changed or security_related_changed:
             changed_fields = []
+
             if private_changed:
                 changed_fields.append('private')
+                if not f_flag and private:
+                    # If we didn't call reconcileSubscribers, we may have
+                    # bug supervisors who should be on this bug, but aren't.
+                    supervisors = set()
+                    for bugtask in self.bugtasks:
+                        supervisors.add(bugtask.pillar.bug_supervisor)
+                    if None in supervisors:
+                        supervisors.remove(None)
+                    for s in supervisors:
+                        subscriptions = get_structural_subscriptions_for_bug(
+                                            self, s)
+                        if subscriptions != []:
+                            self.subscribe(s, who)
+
             if security_related_changed:
                 changed_fields.append('security_related')
                 if not f_flag and security_related:
@@ -1718,6 +1733,7 @@ BugMessage""" % sqlvalues(self.id))
                     for pillar in self.affected_pillars:
                         if pillar.security_contact is not None:
                             self.subscribe(pillar.security_contact, who)
+
             notify(ObjectModifiedEvent(
                     self, bug_before_modification, changed_fields, user=who))
 

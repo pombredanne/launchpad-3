@@ -223,6 +223,35 @@ class TestDominationOfObsoletedSeries(TestDomination):
         self.ubuntutest['breezy-autotest'].status = (
             SeriesStatus.OBSOLETE)
 
+    def test_any_superseded_by_all(self):
+        # Set up a source, foo, which builds an architecture-dependent
+        # binary, foo-bin.
+        foo_10_src = self.getPubSource(
+            sourcename="foo", version="1.0", architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_10_i386_bin] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version="1.0", pub_source=foo_10_src)
+
+        # Now, make version 1.1 of foo, where foo-bin is now
+        # architecture-independent.
+        foo_11_src = self.getPubSource(
+            sourcename="foo", version="1.1", architecturehintlist="all",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_10_all_bin, foo_10_all_bin_2] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=False, version="1.1", pub_source=foo_11_src)
+
+        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
+        dominator.judgeAndDominate(
+            foo_10_src.distroseries, foo_10_src.pocket)
+
+        # The source will be superseded.
+        self.checkPublication(foo_10_src, PackagePublishingStatus.SUPERSEDED)
+        # The arch-specific is superseded by the new arch-indep.
+        self.checkPublication(
+            foo_10_i386_bin, PackagePublishingStatus.SUPERSEDED)
+
 
 def make_spphs_for_versions(factory, versions):
     """Create publication records for each of `versions`.

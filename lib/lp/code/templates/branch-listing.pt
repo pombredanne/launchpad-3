@@ -42,6 +42,12 @@ function hide_commit(id) {
 
 </script>
 
+<tal:comment
+tal:condition="not: request/features/ajax.batch_navigator.enabled"
+replace='structure string:&lt;script type="text/javascript"&gt;
+    registerLaunchpadFunction(hookUpFilterSubmission);
+&lt;/script&gt;'/>
+
   <tal:needs-batch condition="context/has_multiple_pages">
     <div id="branch-batch-links">
       <tal:navigation replace="structure context/@@+navigation-links-upper" />
