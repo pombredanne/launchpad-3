@@ -1,9 +1,11 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from canonical.launchpad.testing.pages import webservice_for_person
 
 __metaclass__ = type
 
 from datetime import timedelta
+import transaction
 import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -12,7 +14,6 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
-from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -24,8 +25,9 @@ from canonical.launchpad.webapp.authorization import (
     check_permission,
     clear_cache,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag, OAuthPermission
 from canonical.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -2367,17 +2369,26 @@ class TestValidateNewTarget(TestCaseWithFactory):
 class TestWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
 
-    layer = DatabaseFunctionalLayer
+    layer = AppServerLayer
 
     def test_delete_bugtask(self):
         """Test that a bugtask can be deleted."""
-        db_bugtask = self.factory.makeBugTask()
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        db_bugtask = self.factory.makeBugTask(target=product, owner=owner)
         db_bug = db_bugtask.bug
-        launchpad = launchpadlib_for('test', db_bugtask.owner,
-            service_root=self.layer.appserver_root_url('api'))
-        with person_logged_in(db_bugtask.owner):
-            flags = {u"disclosure.delete_bugtask.enabled": u"on"}
-            with FeatureFixture(flags):
-                bugtask = ws_object(launchpad, db_bugtask)
-                bugtask.delete()
-        self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)
+        transaction.commit()
+        logout()
+
+# todo - use the feature flag
+#        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
+#        with FeatureFixture(flags):
+
+        login_person(owner)
+        service = webservice_for_person(
+            owner, permission=OAuthPermission.WRITE_PRIVATE)
+        result = service.delete('/%s/+bug/%d' % (product.name, db_bug.id))
+#        transaction.commit()
+        logout()
+        with person_logged_in(removeSecurityProxy(db_bug).owner):
+            self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)

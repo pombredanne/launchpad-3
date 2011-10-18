@@ -167,7 +167,6 @@
 
         <class
             class="lp.bugs.model.bugtask.BugTask">
-            <!--<implements interface="lp.bugs.model.bugtask.IBugTask"/>-->
             <allow
                 attributes="
                     id

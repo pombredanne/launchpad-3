@@ -690,16 +690,15 @@ class IBugTask(IHasDateCreated, IHasBug):
                 "work required on this bug task."),
              readonly=True))
 
-#    @export_destructor_operation()
-    @export_write_operation()
+    @export_destructor_operation()
     @export_operation_as('delete')
-    @operation_for_version("devel")
+    @operation_for_version('devel')
     def destroySelf():
         """Delete this bugtask.
 
         :raises: CannotDeleteBugtask if the bugtask cannot be deleted due to a
             business rule or other model constraint.
-        :raises: UserCannotDeleteBugtask if the user does not have permission
+        :raises: Unauthorized if the user does not have permission
             to delete the bugtask.
         """
 
