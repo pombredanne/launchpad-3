@@ -489,13 +489,16 @@ class Dominator:
                 ]
             main_clauses.extend(bpph_location_clauses)
 
-            clauses = []
-            clauses.extend(main_clauses)
-            self.logger.info("Finding binaries...")
-            bins = IStore(BinaryPackagePublishingHistory).find(*clauses)
-            self.logger.info("Dominating binaries...")
-            sorted_packages = self._sortPackages(bins, generalization)
-            self._dominatePublications(sorted_packages, generalization)
+            def do_domination(pass2_msg=""):
+                msg = "binaries..." + pass2_msg
+                self.logger.info("Finding %s" % msg)
+                bins = IStore(
+                    BinaryPackagePublishingHistory).find(*main_clauses)
+                self.logger.info("Dominating %s" % msg)
+                sorted_packages = self._sortPackages(bins, generalization)
+                self._dominatePublications(sorted_packages, generalization)
+
+            do_domination()
 
             # We need to make a second pass to cover the cases where:
             #  * arch-specific binaries were not all dominated before arch-all
@@ -504,10 +507,7 @@ class Dominator:
             #  * A package is completely schizophrenic and changes all of
             #    its binaries between arch-all and arch-any (apparently
             #    occurs sometimes!)
-            self.logger.info("Dominating binaries (2nd pass)...")
-            bins = IStore(BinaryPackagePublishingHistory).find(*clauses)
-            sorted_packages = self._sortPackages(bins, generalization)
-            self._dominatePublications(sorted_packages, generalization)
+            do_domination("(2nd pass)")
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
         """Compose ORM condition for restricting relevant source pubs."""
