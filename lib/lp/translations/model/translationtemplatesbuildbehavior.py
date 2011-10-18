@@ -132,16 +132,13 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def storeBuildInfo(build, queue_item, build_status):
         """See `IPackageBuild`."""
         def got_log(lfa_id):
-            # log, builder, date_started and date_finished are read-only,
-            # so we must currently remove the security proxy to set them.
-            naked_build = removeSecurityProxy(build.build)
-            naked_build.log = lfa_id
-            naked_build.builder = queue_item.builder
-            naked_build.date_started = queue_item.date_started
+            build.build.log = lfa_id
+            build.build.builder = queue_item.builder
+            build.build.date_started = queue_item.date_started
             # XXX cprov 20060615 bug=120584: Currently buildduration includes
             # the scanner latency, it should really be asking the slave for
             # the duration spent building locally.
-            naked_build.date_finished = datetime.datetime.now(pytz.UTC)
+            build.build.date_finished = datetime.datetime.now(pytz.UTC)
 
         d = build.getLogFromSlave(build, queue_item)
         return d.addCallback(got_log)

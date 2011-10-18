@@ -663,7 +663,8 @@
         <!-- This is needed for BuildManager to run. The permission isn't
              important; launchpad.Edit isn't actually held by anybody.
              Inspired by the similar change for SourcePackageRecipeBuild. -->
-        <require permission="launchpad.Edit" set_attributes="status" />
+        <require permission="launchpad.Edit"
+            set_attributes="builder date_finished date_started log status" />
 
     </class>
     <securedutility
