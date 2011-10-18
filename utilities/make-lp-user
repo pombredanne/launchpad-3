@@ -121,7 +121,7 @@ def add_ssh_public_keys(person):
         print 'Registered SSH key: %s' % (filename,)
         break
     else:
-        print 'No SSH key files found in %s' % ssh_dir 
+        print 'No SSH key files found in %s' % ssh_dir
 
 
 def parse_fingerprints(gpg_output):

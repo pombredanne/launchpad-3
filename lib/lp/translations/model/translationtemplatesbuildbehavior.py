@@ -15,7 +15,6 @@ import datetime
 import os
 import pytz
 import tempfile
-import transaction
 
 from twisted.internet import defer
 from zope.component import getUtility
@@ -133,8 +132,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def storeBuildInfo(build, queue_item, build_status):
         """See `IPackageBuild`."""
         def got_log(lfa_id):
-            # log, builder and date_finished are read-only, so we must
-            # currently remove the security proxy to set them.
+            # log, builder, date_started and date_finished are read-only,
+            # so we must currently remove the security proxy to set them.
             naked_build = removeSecurityProxy(build.build)
             naked_build.log = lfa_id
             naked_build.builder = queue_item.builder
@@ -157,6 +156,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         retry it.
         """
         build_status = self.extractBuildStatus(slave_status)
+
         logger.info(
             "Templates generation job %s for %s finished with status %s." % (
             queue_item.specific_job.getName(),
@@ -207,4 +207,3 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         d = self.storeBuildInfo(self, queue_item, build_status)
         d.addCallback(build_info_stored)
         return d
-

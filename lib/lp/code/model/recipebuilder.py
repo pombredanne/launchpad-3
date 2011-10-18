@@ -39,6 +39,10 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     status = None
 
     @property
+    def build(self):
+        return self.buildfarmjob.build
+
+    @property
     def display_name(self):
         ret = "%s, %s, %s" % (
             self.build.distroseries.displayname, self.build.recipe.name,

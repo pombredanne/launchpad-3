@@ -13,15 +13,12 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from storm.store import Store
 from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import ProxyFactory
 
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.code.model.branchjob import (
     BranchJob,
