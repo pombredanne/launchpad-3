@@ -224,13 +224,12 @@ class TestCaptureOopsRabbit(TestCase):
         factory = rabbit.connect
         exchange = config.error_reports.error_exchange
         routing_key = config.error_reports.error_queue_key
-        amqp_publisher = oops_amqp.Publisher(factory, exchange, routing_key)
         capture = self.useFixture(CaptureOops())
-        oops = {'foo': 'dr'}
-        amqp_publisher(oops)
-        oops2 = {'foo': 'strangelove'}
-        amqp_publisher(oops2)
+        amqp_publisher = oops_amqp.Publisher(
+            factory, exchange, routing_key, inherit_id=True)
+        oops = {'id': 'fnor', 'foo': 'dr'}
+        self.assertEqual('fnor', amqp_publisher(oops))
+        oops2 = {'id': 'quux', 'foo': 'strangelove'}
+        self.assertEqual('quux', amqp_publisher(oops2))
         capture.sync()
-        self.assertEqual(
-            ['dr', 'strangelove'],
-            [report['foo'] for report in capture.oopses])
+        self.assertEqual([oops, oops2], capture.oopses)

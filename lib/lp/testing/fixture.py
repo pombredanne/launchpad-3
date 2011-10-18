@@ -22,6 +22,8 @@ from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
+import oops
+import oops_amqp
 import pgbouncer.fixture
 from wsgi_intercept import (
     add_wsgi_intercept,
@@ -239,6 +241,8 @@ class CaptureOops(Fixture):
                 "fanout", durable=True, auto_delete=True)
             self.channel.queue_bind(
                 self.queue_name, config.error_reports.error_exchange)
+            self.oops_config = oops.Config()
+            self.oops_config.publishers.append(self.oopses.append)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
@@ -255,29 +259,18 @@ class CaptureOops(Fixture):
         message.properties["delivery_mode"] = 2
         # Publish the message via a new channel (otherwise rabbit shortcircuits
         # it straight back to us, apparently).
-        sentinel_channel = self.connection.channel()
+        connection = connect()
         try:
-            sentinel_channel.basic_publish(
-                message, config.error_reports.error_exchange,
-                config.error_reports.error_queue_key)
+            channel = connection.channel()
+            try:
+                channel.basic_publish(
+                    message, config.error_reports.error_exchange,
+                    config.error_reports.error_queue_key)
+            finally:
+                channel.close()
         finally:
-            sentinel_channel.close()
-        self.consume_tag = self.channel.basic_consume(
-            self.queue_name, callback=self._handle_message)
-        self._stopped = False
-        while not self._stopped:
-            self.channel.wait()
-
-    def _handle_message(self, message):
-        self.channel.basic_ack(message.delivery_tag)
-        if message.body == self.AMQP_SENTINEL:
-            self.channel.basic_cancel(self.consume_tag)
-            self._stopped = True
-            return
-        try:
-            report = bson.loads(message.body)
-        except KeyError:
-            # Garbage in the queue.
-            report = {'id': 'corrupted OOPS!',
-                'message': message.body}
-        self.oopses.append(report)
+            connection.close()
+        receiver = oops_amqp.Receiver(
+            self.oops_config, connect, self.queue_name)
+        receiver.sentinel = self.AMQP_SENTINEL
+        receiver.run_forever()
