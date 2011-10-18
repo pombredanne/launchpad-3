@@ -178,6 +178,7 @@ class NascentUpload:
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
+            self._overrideDDEBSs()
 
         # Override archive location if necessary.
         self.overrideArchive()
