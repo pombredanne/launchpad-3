@@ -489,34 +489,25 @@ class Dominator:
                 ]
             main_clauses.extend(bpph_location_clauses)
 
-            # Arch-specific binaries need to be done first because any
-            # arch-indep binaries being superseded rely on it.
-            arch_specific_clauses = []
-            arch_specific_clauses.extend(main_clauses)
-            arch_specific_clauses.append(
-                BinaryPackageRelease.architecturespecific == True)
-            self.logger.info("Finding arch-specific binaries...")
-            arch_specific_bins = IStore(BinaryPackagePublishingHistory).find(
-                *arch_specific_clauses)
-            self.logger.info("Dominating arch-specific binaries...")
-            self._dominatePublications(
-                self._sortPackages(arch_specific_bins, generalization),
-                generalization)
+            clauses = []
+            clauses.extend(main_clauses)
+            self.logger.info("Finding binaries...")
+            bins = IStore(BinaryPackagePublishingHistory).find(*clauses)
+            self.logger.info("Dominating binaries...")
+            sorted_packages = self._sortPackages(bins, generalization)
+            self._dominatePublications(sorted_packages, generalization)
 
-            # Now we can do the arch-indep binaries. We still need to
-            # include the arch-specific binaries in the results so that
-            # they can be considered in the "live versions". This is
-            # relevant when a binary changes from arch-specific to arch-indep,
-            # or vice-versa.
-            arch_indep_clauses = []
-            arch_indep_clauses.extend(main_clauses)
-            self.logger.info("Finding arch-indep binaries...")
-            arch_indep_bins = IStore(BinaryPackagePublishingHistory).find(
-                *arch_indep_clauses)
-            self.logger.info("Dominating arch-indep binaries...")
-            self._dominatePublications(
-                self._sortPackages(arch_indep_bins, generalization),
-                generalization)
+            # We need to make a second pass to cover the cases where:
+            #  * arch-specific binaries were not all dominated before arch-all
+            #    ones that depend on them
+            #  * An arch-all turned into an arch-specific, or vice-versa
+            #  * A package is completely schizophrenic and changes all of
+            #    its binaries between arch-all and arch-any (apparently
+            #    occurs sometimes!)
+            self.logger.info("Dominating binaries (2nd pass)...")
+            bins = IStore(BinaryPackagePublishingHistory).find(*clauses)
+            sorted_packages = self._sortPackages(bins, generalization)
+            self._dominatePublications(sorted_packages, generalization)
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
         """Compose ORM condition for restricting relevant source pubs."""

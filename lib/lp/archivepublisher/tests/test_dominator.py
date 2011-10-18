@@ -302,8 +302,6 @@ class TestDominator(TestNativePublishingBase):
                                PackagePublishingStatus.SUPERSEDED)
 
 
-
-
 class TestDomination(TestNativePublishingBase):
     """Test overall domination procedure."""
 
