@@ -150,6 +150,7 @@ from lp.bugs.interfaces.bugnomination import (
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -1181,6 +1182,15 @@ BugMessage""" % sqlvalues(self.id))
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
+            for bugtask in self.bugtasks:
+                # Check the stored value so we don't write to unaltered tasks.
+                if (bugtask._status in (
+                    BugTaskStatus.INCOMPLETE,
+                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)):
+                    # This is not a semantic change, so we don't update date
+                    # records or send email.
+                    bugtask._status = (
+                        BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             # XXX 2008-05-27 jamesh:
             # Ensure that BugMessages get flushed in same order as
             # they are created.
@@ -1696,8 +1706,23 @@ BugMessage""" % sqlvalues(self.id))
 
         if private_changed or security_related_changed:
             changed_fields = []
+
             if private_changed:
                 changed_fields.append('private')
+                if not f_flag and private:
+                    # If we didn't call reconcileSubscribers, we may have
+                    # bug supervisors who should be on this bug, but aren't.
+                    supervisors = set()
+                    for bugtask in self.bugtasks:
+                        supervisors.add(bugtask.pillar.bug_supervisor)
+                    if None in supervisors:
+                        supervisors.remove(None)
+                    for s in supervisors:
+                        subscriptions = get_structural_subscriptions_for_bug(
+                                            self, s)
+                        if subscriptions != []:
+                            self.subscribe(s, who)
+
             if security_related_changed:
                 changed_fields.append('security_related')
                 if not f_flag and security_related:
@@ -1708,6 +1733,7 @@ BugMessage""" % sqlvalues(self.id))
                     for pillar in self.affected_pillars:
                         if pillar.security_contact is not None:
                             self.subscribe(pillar.security_contact, who)
+
             notify(ObjectModifiedEvent(
                     self, bug_before_modification, changed_fields, user=who))
 

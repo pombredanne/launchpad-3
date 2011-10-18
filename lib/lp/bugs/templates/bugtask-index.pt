@@ -34,17 +34,6 @@
             });
          });
       </script>
-      <tal:if condition="request/features/bugs.private_notification.enabled">
-      <script type="text/javascript">
-          // We need to set up some bugtask
-            var privacy_notification_enabled = true;
-      </script>
-      </tal:if>
-      <tal:if condition="not: request/features/bugs.private_notification.enabled">
-      <script type="text/javascript">
-            var privacy_notification_enabled = false;
-      </script>
-      </tal:if>
       <tal:if
         condition="request/features/bugs.batched_comment_loading.enabled">
       <script type="text/javascript">
@@ -319,7 +308,8 @@
             <tal:what-next
                 define="view_all_href
                         string:${context/fmt:url}?comments=all">
-              <a href="#" tal:attributes="href view_all_href">
+              <a class="show-comments-link"
+                  href="#" tal:attributes="href view_all_href">
                 View all <span
                 tal:replace="view/total_comments" />
                 comments</a> or <a href="#" tal:attributes="href

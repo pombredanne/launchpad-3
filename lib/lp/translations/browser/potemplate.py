@@ -961,8 +961,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
             .joinOuter(Product, And(
                 Product.id == ProductSeries.productID,
                 Or(
-                    Product._translations_usage == ServiceUsage.LAUNCHPAD,
-                    Product._translations_usage == ServiceUsage.EXTERNAL)))
+                    Product.translations_usage == ServiceUsage.LAUNCHPAD,
+                    Product.translations_usage == ServiceUsage.EXTERNAL)))
             .joinOuter(OtherTemplate, And(
                 OtherTemplate.productseriesID == ProductSeries.id,
                 OtherTemplate.name == POTemplate.name))

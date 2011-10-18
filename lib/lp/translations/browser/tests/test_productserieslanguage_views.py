@@ -31,7 +31,6 @@ class TestProductSeriesView(TestCaseWithFactory):
         # Create a productseries that uses translations.
         super(TestProductSeriesView, self).setUp()
         self.productseries = self.factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
         self.product = self.productseries.product
 
     def _createView(self):
@@ -253,7 +252,6 @@ class TestProductSeriesLanguageView(TestCaseWithFactory):
         # Create a productseries that uses translations.
         super(TestProductSeriesLanguageView, self).setUp()
         self.productseries = self.factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
         self.language = self.factory.makeLanguage()
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)

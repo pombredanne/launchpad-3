@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 set -e
@@ -29,6 +29,7 @@ cleanup () {
 trap cleanup EXIT
 
 suite=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py development`
+archs=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py -s "$suite" archs`
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT
@@ -44,7 +45,7 @@ for component in main universe restricted multiverse; do
   base="dists/$suite/$component"
   mkdir -p "$base/source"
   zcat "$ARCHIVEROOT/$base/source/Sources.gz" > "$base/source/Sources"
-  for arch in i386 amd64 powerpc armel; do
+  for arch in $archs; do
     mkdir -p "$base/binary-$arch" "$base/debian-installer/binary-$arch"
     zcat "$ARCHIVEROOT/$base/binary-$arch/Packages.gz" \
       > "$base/binary-$arch/Packages"
@@ -59,7 +60,7 @@ germinate_components=main,universe,restricted,multiverse
 for distro in ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu ubuntustudio; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
-  for arch in i386 amd64 powerpc armel; do
+  for arch in $archs; do
     # Run germinate
     echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
     germinate --no-rdepends -m "file://$(pwd)/" -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
@@ -68,11 +69,13 @@ for distro in ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu u
     # copies for convenience
     cp structure structure_"$distro"_"$suite"_"$arch"
 
-    # Keep per distro/suite/arch copies of 'all' and 'all.sources' for anastacia
+    # Keep per distro/suite/arch copies of 'all' and 'all.sources' for
+    # anastacia.
     cp all all_"$distro"_"$suite"_"$arch"
     cp all.sources all.sources_"$distro"_"$suite"_"$arch"
 
-    # Keep per distro/suite/arch copies of 'minimal' and 'standard' for jessica
+    # Keep per distro/suite/arch copies of 'minimal' and 'standard' for
+    # jessica.
     cp minimal minimal_"$distro"_"$suite"_"$arch"
     cp standard standard_"$distro"_"$suite"_"$arch"
 
@@ -138,15 +141,16 @@ for supported_suite in $SUITES; do
     echo -n "Running maintenance-check for $supported_suite... "
     # The support timeframe information is stored here
     SUPPORTED="$MISCROOT/more-extra.override.$supported_suite.main.supported"
-    # This is the target override file that contains germinate plus support info
+    # This is the target override file that contains germinate plus
+    # support info.
     TARGET="$MISCROOT/more-extra.override.$supported_suite.main"
-    # Debug/Log information 
+    # Debug/Log information
     LOG="_maintenance-check.$supported_suite.stderr"
     if $MAINTAINCE_CHECK $supported_suite > $SUPPORTED 2> $LOG; then
         # The target file may be missing on the server and the script should
         # not fail if that is the case.
         touch $TARGET
-        # Remove old "Supported" info from extra-overrides as it may be 
+        # Remove old "Supported" info from extra-overrides as it may be
         # stale now and we replace it with fresh content below.
         sed /"^.* Supported"/d $TARGET > ${TARGET}.new
         cat $SUPPORTED >> ${TARGET}.new
