@@ -23,9 +23,7 @@ from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import DevNullLogger
-from lp.soyuz.enums import (
-    PackagePublishingStatus,
-    )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import (
@@ -170,69 +168,6 @@ class TestDominator(TestNativePublishingBase):
             AssertionError,
             dominator._dominatePublications,
             pubs, GeneralizedPublication(True))
-
-    def test_archall_domination(self):
-        # Arch-all binaries should not be dominated when a new source
-        # version builds an updated arch-all binary, because slower builds
-        # of other architectures will leave the previous version
-        # uninstallable if they depend on the arch-all binary.
-        # See https://bugs.launchpad.net/launchpad/+bug/34086
-
-        # Set up a source, "foo" which builds "foo-bin" and foo-common
-        # (which is arch-all).
-        foo_10_src = self.getPubSource(
-            sourcename="foo", version="1.0", architecturehintlist="i386",
-            status=PackagePublishingStatus.PUBLISHED)
-        [foo_10_i386_bin] = self.getPubBinaries(
-            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
-            architecturespecific=True, version="1.0", pub_source=foo_10_src)
-        [build] = foo_10_src.getBuilds()
-        bpr = self.factory.makeBinaryPackageRelease(
-            binarypackagename="foo-common", version="1.0", build=build,
-            architecturespecific=False)
-        foo_10_all_bins = self.publishBinaryInArchive(
-            bpr, self.ubuntutest.main_archive, pocket=foo_10_src.pocket,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # Now, make version 1.1 of foo and add a foo-common but not foo-bin
-        # (imagine that it's not finished building yet).
-        foo_11_src = self.getPubSource(
-            sourcename="foo", version="1.1", architecturehintlist="all",
-            status=PackagePublishingStatus.PUBLISHED)
-        foo_11_all_bins = self.getPubBinaries(
-            binaryname="foo-common", status=PackagePublishingStatus.PUBLISHED,
-            architecturespecific=False, version="1.1", pub_source=foo_11_src)
-
-        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-        dominator.judgeAndDominate(
-            foo_10_src.distroseries, foo_10_src.pocket)
-
-        # The source will be superseded.
-        self.checkPublication(foo_10_src, PackagePublishingStatus.SUPERSEDED)
-        # The arch-specific has no dominant, so it's still published
-        self.checkPublication(
-            foo_10_i386_bin, PackagePublishingStatus.PUBLISHED)
-        # The arch-indep has a dominant but must not be superseded yet
-        # since the arch-specific is still published.
-        self.checkPublications(
-            foo_10_all_bins, PackagePublishingStatus.PUBLISHED)
-
-        # Now creating a newer foo-bin should see those last two
-        # publications superseded.
-        [build2] = foo_11_src.getBuilds()
-        foo_11_bin = self.factory.makeBinaryPackageRelease(
-            binarypackagename="foo-bin", version="1.1", build=build2,
-            architecturespecific=True)
-        self.publishBinaryInArchive(
-            foo_11_bin, self.ubuntutest.main_archive,
-            pocket=foo_10_src.pocket,
-            status=PackagePublishingStatus.PUBLISHED)
-        dominator.judgeAndDominate(
-            foo_10_src.distroseries, foo_10_src.pocket)
-        self.checkPublication(
-            foo_10_i386_bin, PackagePublishingStatus.SUPERSEDED)
-        self.checkPublications(
-            foo_10_all_bins, PackagePublishingStatus.SUPERSEDED)
 
 
 class TestDomination(TestNativePublishingBase):
