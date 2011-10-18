@@ -99,9 +99,10 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     @property
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
-        return Store.of(self).find(BinaryPackageBuild,
+        return Store.of(self).find(
+            BinaryPackageBuild,
             BinaryPackageBuild.source_package_release ==
-            SourcePackageRelease.id,
+                SourcePackageRelease.id,
             SourcePackageRelease.source_package_recipe_build == self.id)
 
     @property
