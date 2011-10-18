@@ -817,8 +817,8 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
 
-        self.assertTrue(
-            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+        self.assertIn(
+            ('breezy-autotest', PackagePublishingPocket.RELEASE),
             publisher.release_files_needed)
 
         publisher.D_writeReleaseFiles(False)
