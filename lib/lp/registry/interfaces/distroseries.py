@@ -628,8 +628,24 @@ class IDistroSeriesPublic(
         Return publications in the main archives only.
         """
 
+    def getAllUncondemnedSources():
+        """Return all uncondemned sources for the distroseries.
+
+        An uncondemned publication is one without scheduleddeletiondate set.
+
+        Return publications in the main archives only.
+        """
+
     def getAllPublishedBinaries():
         """Return all currently published binaries for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
+    def getAllUncondemnedBinaries():
+        """Return all uncondemned binaries for the distroseries.
+
+        An uncondemned publication is one without scheduleddeletiondate set.
 
         Return publications in the main archives only.
         """
