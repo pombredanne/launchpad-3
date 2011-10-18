@@ -6,7 +6,6 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
-import unittest
 
 from zope.component import getUtility
 
@@ -25,9 +24,13 @@ from lp.soyuz.scripts.ftpmaster import (
     ObsoleteDistroseries,
     SoyuzScriptError,
     )
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
-class TestObsoleteDistroseriesScript(unittest.TestCase):
+class TestObsoleteDistroseriesScript(TestCase):
     """Test the obsolete-distroseries.py script."""
     layer = LaunchpadZopelessLayer
 
@@ -65,12 +68,13 @@ class TestObsoleteDistroseriesScript(unittest.TestCase):
             "Expected %s, got %s" % (expected, err))
 
 
-class TestObsoleteDistroseries(unittest.TestCase):
+class TestObsoleteDistroseries(TestCaseWithFactory):
     """Test the ObsoleteDistroseries class."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up test data common to all test cases."""
+        super(TestObsoleteDistroseries, self).setUp()
         self.warty = getUtility(IDistributionSet)['ubuntu']['warty']
 
         # Re-process the returned list otherwise it ends up being a list
@@ -127,25 +131,6 @@ class TestObsoleteDistroseries(unittest.TestCase):
         # Default to warty, which is not obsolete.
         self.assertTrue(self.warty.status != PackagePublishingStatus.OBSOLETE)
         obsoleter = self.getObsoleter(suite='warty')
-        self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
-
-    def testNothingToDoCase(self):
-        """When there is nothing to do, we expect an exception."""
-        obsoleter = self.getObsoleter()
-        self.warty.status = SeriesStatus.OBSOLETE
-
-        # Get all the published sources in warty.
-        published_sources, published_binaries = (
-            self.getPublicationsForDistroseries())
-
-        # Reset their status to OBSOLETE.
-        for package in published_sources:
-            package.status = PackagePublishingStatus.OBSOLETE
-        for package in published_binaries:
-            package.status = PackagePublishingStatus.OBSOLETE
-
-        # Call the script and ensure it does nothing.
-        self.layer.txn.commit()
         self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
 
     def testObsoleteDistroseriesWorks(self):
@@ -210,3 +195,40 @@ class TestObsoleteDistroseries(unittest.TestCase):
             binary = BinaryPackagePublishingHistory.get(id)
             self.assertTrue(
                 binary.status != PackagePublishingStatus.OBSOLETE)
+
+    def test_schedules_deletion_of_uncondemned_pubs(self):
+        # Any publications that were no longer Published but never
+        # condemned by the dominator get condemned now.
+        # eg. superseded sources that released with published NBS
+        # binaries.
+
+        obsolete_series = self.factory.makeDistroSeries(
+            status=SeriesStatus.OBSOLETE)
+        other_series = self.factory.makeDistroSeries(
+            distribution=obsolete_series.distribution,
+            status=SeriesStatus.CURRENT)
+        obsoleter = self.getObsoleter(
+            distribution=obsolete_series.distribution.name,
+            suite=obsolete_series.name)
+
+        pubs = dict()
+        for series in (obsolete_series, other_series):
+            arch = self.factory.makeDistroArchSeries(distroseries=series)
+            pubs[series] = [
+                self.factory.makeSourcePackagePublishingHistory(
+                    distroseries=series,
+                    status=PackagePublishingStatus.SUPERSEDED),
+                self.factory.makeBinaryPackagePublishingHistory(
+                    distroarchseries=arch,
+                    status=PackagePublishingStatus.SUPERSEDED),
+                ]
+
+        for pub in pubs[obsolete_series] + pubs[other_series]:
+            self.assertIs(None, pub.scheduleddeletiondate)
+
+        obsoleter.mainTask()
+
+        for pub in pubs[obsolete_series]:
+            self.assertIsNot(None, pub.scheduleddeletiondate)
+        for pub in pubs[other_series]:
+            self.assertIs(None, pub.scheduleddeletiondate)

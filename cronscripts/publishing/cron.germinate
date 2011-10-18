@@ -29,6 +29,7 @@ cleanup () {
 trap cleanup EXIT
 
 suite=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py development`
+archs=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py -s "$suite" archs`
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT
@@ -44,7 +45,7 @@ for component in main universe restricted multiverse; do
   base="dists/$suite/$component"
   mkdir -p "$base/source"
   zcat "$ARCHIVEROOT/$base/source/Sources.gz" > "$base/source/Sources"
-  for arch in i386 amd64 powerpc armel; do
+  for arch in $archs; do
     mkdir -p "$base/binary-$arch" "$base/debian-installer/binary-$arch"
     zcat "$ARCHIVEROOT/$base/binary-$arch/Packages.gz" \
       > "$base/binary-$arch/Packages"
@@ -59,7 +60,7 @@ germinate_components=main,universe,restricted,multiverse
 for distro in ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu ubuntustudio; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
-  for arch in i386 amd64 powerpc armel; do
+  for arch in $archs; do
     # Run germinate
     echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
     germinate --no-rdepends -m "file://$(pwd)/" -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
