@@ -32,8 +32,15 @@ from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
+from lp.archiveuploader.nascentupload import NascentUpload
+from lp.archiveuploader.nascentuploadfile import DdebBinaryUploadFile
+from lp.archiveuploader.tests import (
+    datadir,
+    getPolicy,
+    )
 from lp.archiveuploader.uploadpolicy import (
     AbstractUploadPolicy,
+    ArchiveUploadType,
     findPolicyByName,
     IArchiveUploadPolicy,
     )
@@ -57,7 +64,10 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.features.testing import FeatureFixture
-from lp.services.log.logger import BufferLogger
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -1926,6 +1936,28 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "INFO Failed to parse changes file")
         self.assertEqual(len(stub.test_emails), 0)
         self.assertNoNewOops(last_oops)
+
+    def test_ddeb_upload_overrides(self):
+        # DDEBs should always be overridden to the same values as their
+        # counterpart DEB's.
+        policy = getPolicy(
+            name="sync", distro="ubuntu", distroseries="hoary")
+        policy.accepted_type = ArchiveUploadType.BINARY_ONLY
+        uploader = NascentUpload.from_changesfile_path(
+            datadir("suite/debug_1.0-1/debug_1.0-1_i386.changes"),
+            policy, DevNullLogger())
+        uploader.process()
+
+        # The package data on disk that we just uploaded has a different
+        # priority setting between the deb and the ddeb. We can now assert
+        # that the process() method above overrode the ddeb.
+        for uploaded_file in uploader.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                ddeb = uploaded_file
+            else:
+                deb = uploaded_file
+
+        self.assertEqual(deb.priority_name, ddeb.priority_name)
 
 
 class TestBuildUploadProcessor(TestUploadProcessorBase):

@@ -22,4 +22,4 @@ Checksums-Sha256:
  9c0013badb1bb78fa1ccbf1508398cbf51904f7242d8931f4994c1aa18519b63 668 debug-bin-dbgsym_1.0-1_i386.ddeb
 Files: 
  48b4eed5980c754cc74a06ffc4372f64 654 devel optional debug-bin_1.0-1_i386.deb
- ac5c44025ffc026485b22722e0f13804 668 devel optional debug-bin-dbgsym_1.0-1_i386.ddeb
+ ac5c44025ffc026485b22722e0f13804 668 devel extra debug-bin-dbgsym_1.0-1_i386.ddeb
