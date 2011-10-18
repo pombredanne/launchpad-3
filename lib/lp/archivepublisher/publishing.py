@@ -493,8 +493,8 @@ class Publisher(object):
             to the filesystem.
         """
         location = os.path.join(self._config.distsroot, suite)
-        #if not file_exists(location):
-        #    os.makedirs(location)
+        if not file_exists(location):
+            os.makedirs(location)
         with open(os.path.join(location, "Release"), "w") as release_file:
             release_data.dump(release_file, "utf-8")
 
