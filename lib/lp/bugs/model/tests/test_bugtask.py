@@ -1418,6 +1418,18 @@ class TestBugTaskDeletion(TestCaseWithFactory):
             self.assertFalse(
                 check_permission('launchpad.Delete', bug.default_bugtask))
 
+    def test_admin_can_delete(self):
+        # With the feature flag on, an admin can delete a bug task.
+        bug = self.factory.makeBug()
+        login_person(bug.default_bugtask.pillar.owner)
+        with FeatureFixture(self.flags):
+            self.assertTrue(
+                check_permission('launchpad.Admin', bug.default_bugtask))
+        # They can't delete the task without the feature flag.
+        clear_cache()
+        self.assertFalse(
+            check_permission('launchpad.Admin', bug.default_bugtask))
+
     def test_pillar_owner_can_delete(self):
         # With the feature flag on, the pillar owner can delete a bug task.
         bug = self.factory.makeBug()
