@@ -1886,12 +1886,12 @@ BugMessage""" % sqlvalues(self.id))
 
     def _setTags(self, tags):
         """Set the tags from a list of strings."""
-        # The cache will be stale after we add/remove tags, clear it.
-        del get_property_cache(self)._cached_tags
         # Sets provide an easy way to get the difference between the old and
         # new tags.
         new_tags = set([tag.lower() for tag in tags])
         old_tags = set(self.tags)
+        # The cache will be stale after we add/remove tags, clear it.
+        del get_property_cache(self)._cached_tags
         # Find the set of tags that are to be removed and remove them.
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
