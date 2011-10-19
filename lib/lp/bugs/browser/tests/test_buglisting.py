@@ -289,8 +289,8 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             self.assertThat(
                 view.render(), Not(HTMLContains(sort_selector_matches)))
 
-    def test_search_macro_css_for_dynamic_bug_listings_div_node(self):
-        # Thd <div> enclosing the search form in the macro
+    def test_search_macro_div_node_no_css_class_by_default(self):
+        # The <div> enclosing the search form in the macro
         # `simple-search-form` has by default no CSS class.
         product = self.factory.makeProduct(
             displayname='Test Product', official_malone=True)
@@ -302,7 +302,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             attrs={'id': 'bugs-search-form'})
         self.assertThat(
             rendered_view, HTMLContains(search_div_matches))
-        # But is has no 'class' attribute.
+        # But it has no 'class' attribute.
         attributes = {
             'id': 'bugs-search-form',
             'class': True,
@@ -313,8 +313,11 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             rendered_view,
             HTMLContains(Not(search_div_with_class_attribute_matches)))
 
+    def test_search_macro_div_node_with_css_class_for_dynamic_listings(self):
         # If the feature flag bugs.dynamic_bug_listings.enabled
         # is set, the <div> node has the CSS class "dynamic_bug_listing".
+        product = self.factory.makeProduct(
+            displayname='Test Product', official_malone=True)
         attributes = {
             'id': 'bugs-search-form',
             'class': 'dynamic_bug_listing',
@@ -329,7 +332,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
                 view.render(),
                 HTMLContains(search_div_with_class_attribute_matches))
 
-    def test_search_macro_css_for_dynamic_bug_listings_form_node(self):
+    def test_search_macro_css_for_form_node_default(self):
         # The <form> node of the search form in the macro
         # `simple-search-form` has by default the CSS classes
         # 'prmary search'
@@ -348,9 +351,12 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertThat(
             rendered_view, HTMLContains(search_form_matches))
 
+    def test_search_macro_css_for_form_node_with_dynamic_bug_listings(self):
         # If the feature flag bugs.dynamic_bug_listings.enabled
         # is set, the <form> node has the CSS classes
         # "primary search dynamic_bug_listing".
+        product = self.factory.makeProduct(
+            displayname='Test Product', official_malone=True)
         attributes = {
             'name': 'search',
             'class': 'primary search dynamic_bug_listing',

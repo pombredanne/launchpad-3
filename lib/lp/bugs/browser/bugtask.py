@@ -3049,7 +3049,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @property
     def search_macro_title(self):
-        """Feature flag: Can the bug listing be customized?"""
+        """The search macro's title text."""
         return u"Search bugs %s" % self.context_description
 
     @property
