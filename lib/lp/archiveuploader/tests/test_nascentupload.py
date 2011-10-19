@@ -103,5 +103,3 @@ class TestOverrideDDEBs(TestMatchDDEBs):
             ddeb,
             MatchesStructure.fromExample(
                 deb, "component_name", "section_name", "priority_name"))
-
-

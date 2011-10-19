@@ -184,7 +184,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         if builds is None:
             builds = self.options.builds
 
-        def getPolicy(distro, build):
+        def getUploadPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
             if builds:
@@ -196,8 +196,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         upload_processor = UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
-            self.options.nomails, builds, self.options.keep, getPolicy, txn,
-            self.log)
+            self.options.nomails, builds, self.options.keep, getUploadPolicy,
+            txn, self.log)
         self.switchToUploader()
         return upload_processor
 
@@ -1238,7 +1238,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
 
-    def disabled_per_bug_825486_testPartnerUploadToNonReleaseOrProposedPocket(self):
+    def disabled_testPartnerUploadToNonReleaseOrProposedPocket(self):
         # XXX: bug 825486 robertcollins 2011-08-13 this test is broken.
         """Test partner upload pockets.
 

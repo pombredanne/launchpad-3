@@ -381,6 +381,7 @@ class NascentUpload:
     #
     # Helpers for warnings and rejections
     #
+
     def run_and_check_error(self, callable):
         """Run the given callable and process errors and warnings.
 
