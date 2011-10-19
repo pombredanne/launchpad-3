@@ -302,9 +302,9 @@ class PackageBuildDerived:
         if method is None:
             logger.critical("Unknown BuildStatus '%s' for builder '%s'"
                             % (status, self.buildqueue_record.builder.url))
-            return
-        d = method(librarian, slave_status, logger, send_notification)
-        return d
+            return None
+        else:
+            return method(librarian, slave_status, logger, send_notification)
 
     def _destroy_buildqueue_record(self, unused_arg):
         """Destroy this build's `BuildQueue` record."""

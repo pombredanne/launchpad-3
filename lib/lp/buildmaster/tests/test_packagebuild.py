@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IPackageBuild`."""
@@ -22,9 +22,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.archiveuploader.uploadprocessor import (
-    parse_build_upload_leaf_name,
-    )
+from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -37,9 +35,7 @@ from lp.buildmaster.interfaces.packagebuild import (
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     login,
     login_person,
@@ -390,13 +386,12 @@ class TestHandleStatusMixin:
 
         def got_status(ignored):
             if expected_notification:
-                self.failIf(
-                    len(pop_notifications()) == 0,
-                    "No notifications received")
+                self.assertNotEqual(
+                    0, len(pop_notifications()), "No notifications received.")
             else:
-                self.failIf(
-                    len(pop_notifications()) > 0,
-                    "Notifications received")
+                self.assertContentEqual(
+                    [], pop_notifications(),
+                    "Received unexpected notifications.")
 
         d = self.build.handleStatus(status, None, {})
         return d.addCallback(got_status)
