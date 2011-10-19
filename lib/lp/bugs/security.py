@@ -86,6 +86,11 @@ class DeleteBugTask(AuthorizationBase):
             user.inTeam(bugtask.owner))
 
 
+class AdminDeleteBugTask(DeleteBugTask):
+    """Launchpad admins can also delete bug tasks."""
+    permission = 'launchpad.Admin'
+
+
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IHasBug
