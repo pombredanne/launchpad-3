@@ -206,6 +206,8 @@ class TestTranslationTemplatesBuildBehavior(
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
+            # Log file is stored.
+            self.assertIsNotNone(behavior.build.log)
             slave_call_log = behavior._builder.slave.call_log
             self.assertEqual(1, queue_item.destroySelf.call_count)
             self.assertIn('clean', slave_call_log)
@@ -246,6 +248,8 @@ class TestTranslationTemplatesBuildBehavior(
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FAILEDTOBUILD, behavior.build.status)
+            # Log file is stored.
+            self.assertIsNotNone(behavior.build.log)
             self.assertEqual(1, queue_item.destroySelf.call_count)
             slave_call_log = behavior._builder.slave.call_log
             self.assertIn('clean', slave_call_log)
