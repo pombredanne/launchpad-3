@@ -99,7 +99,7 @@ The Translations administrators also receive an email about the error.
     >>> len(test_emails)
     0
     >>> to_addrs
-    ['rosetta@launchpad.net']
+    ['launchpad-error-reports@lists.canonical.com']
     >>> in_header = True
     >>> for line in body.splitlines():
     ...     if in_header:
