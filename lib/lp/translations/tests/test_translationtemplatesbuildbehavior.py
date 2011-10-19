@@ -165,6 +165,7 @@ class TestTranslationTemplatesBuildBehavior(
         path = behavior.templates_tarball_path
         # Poke the file we're expecting into the mock slave.
         behavior._builder.slave.valid_file_hashes.append(path)
+
         def got_tarball(filename):
             tarball = open(filename, 'r')
             try:
