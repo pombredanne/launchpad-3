@@ -33,6 +33,7 @@ from storm.expr import (
     Desc,
     LeftJoin,
     Or,
+    Select,
     Sum,
     )
 from storm.store import Store
@@ -1117,6 +1118,60 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 component=self.component,
                 section=self.section,
                 priority=self.priority)
+
+    def getOtherPublicationsForSameSource(self, include_archindep=False):
+        """Return all the other published or pending binaries for this
+        source.
+
+        For example if source package foo builds:
+        foo - i386
+        foo - amd64
+        foo-common - arch-all (published in i386 and amd64)
+        then if this publication is the arch-all amd64, return foo(i386),
+        foo(amd64). If include_archindep is True then also return
+        foo-common (i386)
+
+        :param include_archindep: If True, return architecture independent
+            publications too. Defaults to False.
+
+        :return: an iterable of `BinaryPackagePublishingHistory`
+        """
+        # Avoid circular wotsits.
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+        source_select = Select(
+            SourcePackageRelease.id,
+            And(
+                BinaryPackageBuild.source_package_release_id ==
+                    SourcePackageRelease.id,
+                BinaryPackageRelease.build == BinaryPackageBuild.id,
+                self.binarypackagereleaseID == BinaryPackageRelease.id,
+            ))
+        pubs = [
+            BinaryPackageBuild.source_package_release_id ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.id.is_in(source_select),
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID == self.archive.id,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == self.distroseries.id,
+            BinaryPackagePublishingHistory.pocket == self.pocket,
+            BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status),
+            BinaryPackagePublishingHistory.id != self.id
+            ]
+
+        if not include_archindep:
+            pubs.append(BinaryPackageRelease.architecturespecific == True)
+
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            *pubs
+            )
 
     def supersede(self, dominant=None, logger=None):
         """See `IBinaryPackagePublishingHistory`."""
