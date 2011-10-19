@@ -5,6 +5,7 @@ import logging
 import os
 import threading
 import urllib
+import urllib2
 import urlparse
 import xmlrpclib
 
@@ -187,6 +188,7 @@ class RootApp:
         lp_server = get_lp_server(user, branch_transport=self.get_transport())
         lp_server.start_server()
         try:
+
             try:
                 transport_type, info, trail = self.branchfs.translatePath(
                     user, urlutils.escape(path))
@@ -236,6 +238,21 @@ class RootApp:
             if not os.path.isdir(cachepath):
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
+            branch_api_url = urlparse.urljoin(
+                config.appserver_root_url('api'), branch_name)
+            req = urllib2.Request(branch_api_url)
+            try:
+                # We need to determine if the branch is private
+                response = urllib2.urlopen(req)
+            except urllib2.HTTPError:
+                # The only reason we get an HTTPError is if the branch is
+                # private.
+                self.log.info("Branch is private")
+                private = True
+            else:
+                self.log.info("Branch is public")
+                private = False
+
             try:
                 bzr_branch = safe_open(
                     lp_server.get_url().strip(':/'), branch_url)
