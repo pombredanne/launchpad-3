@@ -1067,12 +1067,21 @@ class BugTaskViewsTestBase:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
         self.assertThat(recorder, HasQueryCount(LessThan(3)))
 
+    def test_context_description(self):
+        # view.context_description returns a string that can be used
+        # in texts like "Bugs in $context_descirption"
+        view = create_initialized_view(self.person, self.view_name)
+        self.assertEqual(
+            self.expected_context_description % self.person.displayname,
+            view.context_description)
+
 
 class TestPersonRelatedBugTaskSearchListingView(
     BugTaskViewsTestBase, TestCaseWithFactory):
     """Tests for PersonRelatedBugTaskSearchListingView."""
 
     view_name = '+bugs'
+    expected_context_description = 'related to %s'
 
     def setUp(self):
         super(TestPersonRelatedBugTaskSearchListingView, self).setUp()
@@ -1089,6 +1098,7 @@ class TestPersonAssignedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+assignedbugs'
+    expected_context_description = 'assigned to %s'
 
     def setUp(self):
         super(TestPersonAssignedBugTaskSearchListingView, self).setUp()
@@ -1102,6 +1112,7 @@ class TestPersonCommentedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+commentedbugs'
+    expected_context_description = 'commented on by %s'
 
     def setUp(self):
         super(TestPersonCommentedBugTaskSearchListingView, self).setUp()
@@ -1115,6 +1126,7 @@ class TestPersonReportedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+reportedbugs'
+    expected_context_description = 'reported by %s'
 
     def setUp(self):
         super(TestPersonReportedBugTaskSearchListingView, self).setUp()
@@ -1128,6 +1140,7 @@ class TestPersonSubscribedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+subscribedbugs'
+    expected_context_description = '%s is subscribed to'
 
     def setUp(self):
         super(TestPersonSubscribedBugTaskSearchListingView, self).setUp()
@@ -1142,6 +1155,7 @@ class TestPersonAffectingBugTaskSearchListingView(
     """Tests for PersonAffectingBugTaskSearchListingView."""
 
     view_name = '+affectingbugs'
+    expected_context_description = 'affecting %s'
 
     def setUp(self):
         super(TestPersonAffectingBugTaskSearchListingView, self).setUp()
