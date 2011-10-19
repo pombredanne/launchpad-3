@@ -5,8 +5,14 @@
 
 __metaclass__ = type
 
+from canonical.launchpad.searchbuilder import (
+    all,
+    any,
+    )
 from lp.testing import TestCase
 from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
@@ -105,3 +111,29 @@ class TestFunctions(TestCase):
             (status, normalize_bugtask_status(status))
             for status in BugTaskStatusSearchDisplay.items)
         self.assertEqual(expected, observed)
+
+
+class TestBugTaskSearchParams(TestCase):
+
+    def test_asDict(self):
+        def btsearch(**kwargs):
+            search_params = BugTaskSearchParams(user=None, **kwargs)
+            return search_params.asDict()[kwargs.keys()[0]]
+        self.assertEqual('abc', btsearch(searchtext='abc'))
+        self.assertEqual(
+            ['NEW', 'OPINION'],
+            btsearch(status=any(BugTaskStatus.NEW, BugTaskStatus.OPINION)))
+        self.assertEqual(
+            ['HIGH', 'LOW'],
+            btsearch(importance=any(
+                BugTaskImportance.HIGH, BugTaskImportance.LOW)))
+        self.assertIs(True, btsearch(omit_dupes=True))
+        self.assertIs(False, btsearch(omit_dupes=False))
+
+    def test_asDict_tag(self):
+        result = BugTaskSearchParams(user=None, tag=any('foo', 'bar')).asDict()
+        self.assertEqual(['foo', 'bar'], result['tag'])
+        self.assertEqual('ANY', result['tags_combinator'])
+        result = BugTaskSearchParams(user=None, tag=all('foo', 'bar')).asDict()
+        self.assertEqual(['foo', 'bar'], result['tag'])
+        self.assertEqual('ALL', result['tags_combinator'])

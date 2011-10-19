@@ -1462,6 +1462,12 @@ class BugTaskSearchParams:
             if isinstance(value, (any, all)):
                 value = self.anyAsValue(value)
             search_dict[key] = value
+
+        if isinstance(self.tag, any):
+            combinator = BugTagsSearchCombinator.ANY
+        else:
+            combinator = BugTagsSearchCombinator.ALL
+        search_dict['tags_combinator'] = combinator.name
         return search_dict
 
 
