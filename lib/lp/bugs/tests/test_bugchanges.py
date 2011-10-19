@@ -1420,13 +1420,13 @@ class TestBugChanges(TestCaseWithFactory):
         task_deleted_activity = {
             'person': self.user,
             'whatchanged': 'bug task deleted',
-            'oldvalue': 'Bugtask for %s' % target.bugtargetname,
+            'oldvalue': target.bugtargetname,
             }
 
         task_deleted_notification = {
             'person': self.user,
             'text': (
-                "** Bugtask deleted: %s" % target.bugtargetname),
+                "** No longer affects: %s" % target.bugtargetname),
             }
 
         self.assertRecordedChange(

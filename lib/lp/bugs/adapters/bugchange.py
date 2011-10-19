@@ -272,13 +272,13 @@ class BugTaskDeleted(BugChangeBase):
         """See `IBugChange`."""
         return dict(
             whatchanged='bug task deleted',
-            oldvalue='Bugtask for %s' % self.targetname)
+            oldvalue=self.targetname)
 
     def getBugNotification(self):
         """See `IBugChange`."""
         return {
             'text': (
-                "** Bugtask deleted: %s" % self.targetname),
+                "** No longer affects: %s" % self.targetname),
             }
 
 
