@@ -99,3 +99,14 @@ class TestBugSubscriberPackageBugsSearchListingView(TestCaseWithFactory):
             self.assertEqual(1, fake_canonical_url.call_count)
         finally:
             person.canonical_url = real_canonical_url
+
+    def test_package_bugs_context_description(self):
+        # BugSubscriberPackageBugsSearchListingView.context_description
+        # returns the string $package in $distribution related to $person
+        form = self.makeForm(self.spn.name, self.distribution.name)
+        view = create_initialized_view(
+            self.person, name='+packagebugs-search', form=form)
+        expected = 'in %s in %s related to %s' % (
+            self.spn.name, self.distribution.displayname,
+            self.person.displayname)
+        self.assertEqual(expected, view.context_description)

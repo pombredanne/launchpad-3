@@ -56,6 +56,7 @@ from operator import attrgetter
 import re
 import transaction
 import urllib
+import urlparse
 
 from lazr.delegates import delegates
 from lazr.enum import (
@@ -264,6 +265,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import (
     cachedproperty,
@@ -2462,6 +2464,18 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 "Unrecognized context; don't know which report "
                 "columns to show.")
 
+    bugtask_table_template = ViewPageTemplateFile(
+        '../templates/bugs-table-include.pt')
+
+    @property
+    def template(self):
+        query_string = self.request.get('QUERY_STRING') or ''
+        query_params = urlparse.parse_qs(query_string)
+        if 'batch_request' in query_params:
+            return self.bugtask_table_template
+        else:
+            return super(BugTaskSearchListingView, self).template
+
     def validate_search_params(self):
         """Validate the params passed for the search.
 
@@ -3027,6 +3041,26 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     view_name='+addquestion')
         else:
             return None
+
+    @cachedproperty
+    def dynamic_bug_listing_enabled(self):
+        """Feature flag: Can the bug listing be customized?"""
+        return bool(getFeatureFlag('bugs.dynamic_bug_listings.enabled'))
+
+    @property
+    def search_macro_title(self):
+        """The search macro's title text."""
+        return u"Search bugs %s" % self.context_description
+
+    @property
+    def context_description(self):
+        """A phrase describing the context of the bug.
+
+        The phrase is intended to be used for headings like
+        "Bugs in $context", "Search bugs in $context". This
+        property should be overridden for person related views.
+        """
+        return "in %s" % self.context.displayname
 
 
 class BugNominationsView(BugTaskSearchListingView):

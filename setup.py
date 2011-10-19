@@ -66,6 +66,7 @@ setup(
         'python-memcached',
         'pyasn1',
         'pydkim',
+        'pystache',
         'python-openid',
         'pytz',
         'rabbitfixture',

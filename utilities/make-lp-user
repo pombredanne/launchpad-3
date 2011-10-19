@@ -44,6 +44,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.lazr.timeout import set_default_timeout_function
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.ssh import ISSHKeySet
@@ -57,6 +58,7 @@ _pythonpath = _pythonpath
 DEFAULT_PASSWORD = 'test'
 factory = LaunchpadObjectFactory()
 
+set_default_timeout_function(lambda: 100)
 
 def make_person(username, email):
     """Create and return a person with the given username.
@@ -119,7 +121,7 @@ def add_ssh_public_keys(person):
         print 'Registered SSH key: %s' % (filename,)
         break
     else:
-        print 'No SSH key files found in %s' % ssh_dir 
+        print 'No SSH key files found in %s' % ssh_dir
 
 
 def parse_fingerprints(gpg_output):
