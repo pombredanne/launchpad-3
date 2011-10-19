@@ -1,4 +1,5 @@
-= POFile statistics =
+POFile statistics
+=================
 
 We frequently display statistics about POFiles: how many of its messages
 remain untranslated, how many have been changed in Ubuntu, how many have
@@ -14,7 +15,8 @@ recomputing translation statistics and noting any divergence between the
 cached values and the ones it recomputes from scratch.
 
 
-== Direct invocation ==
+Direct invocation
+-----------------
 
 The statistics verifier is invoked by the cron job, but we can also call
 it directly.
@@ -35,7 +37,8 @@ All POFile statistics in our database are now correct, and we can test in
 more detail.
 
 
-== Limited runs ==
+Limited runs
+------------
 
 Old data will probably change less, either because it's superseded by later
 distro/product series or because it has reached maturity and stabilized.  To
@@ -56,7 +59,8 @@ cron script does not allow us to do, but the underlying machinery supports).
 Again we find no errors.  The next section shows what happens when we do.
 
 
-== Reports and correction ==
+Reports and correction
+----------------------
 
 If for any reason any POFiles' statistics are found to be wrong, the script
 reports this giving both the wrong and the corrected statistics.
@@ -115,7 +119,8 @@ The Translations administrators also receive an email about the error.
     <BLANKLINE>
     See the log file for detailed information.
 
-== Verify recently touched POFiles runs ==
+Verify recently touched POFiles runs
+------------------------------------
 
 A separate script is used to verify statistics on POFiles that have
 been modified in the last week (or whatever number of days is configured
@@ -183,7 +188,8 @@ all fixed already.
     INFO    Verifying a total of 1 POFiles.
     INFO    Done.
 
-== Cron job ==
+Cron job
+--------
 
 The rosetta-pofile-stats cron script invokes the verifier code.  It
 completes without finding any errors: the one we introduced earlier was
