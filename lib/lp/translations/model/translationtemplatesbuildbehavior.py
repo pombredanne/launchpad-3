@@ -171,6 +171,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             # dangerous.
             if filename is None:
                 logger.error("Build produced no tarball.")
+                self.setBuildStatus(BuildStatus.FULLYBUILT)
                 return
 
             tarball_file = open(filename)
