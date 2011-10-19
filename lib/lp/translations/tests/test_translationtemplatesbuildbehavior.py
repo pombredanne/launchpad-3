@@ -57,6 +57,9 @@ class FakeBuildQueue:
         """
         self.builder = behavior._builder
         self.specific_job = behavior.buildfarmjob
+        self.date_started = None
+        self.date_finished = None
+        self.log = None
         self.destroySelf = FakeMethod()
 
 
