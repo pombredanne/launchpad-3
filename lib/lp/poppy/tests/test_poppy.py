@@ -83,7 +83,7 @@ class SFTPServer(Fixture):
     def __init__(self, root_dir, factory):
         self.root_dir = root_dir
         self._factory = factory
-        self.port = 5022
+        self.port = 5023
 
     def addSSHKey(self, person, public_key_path):
         f = open(public_key_path, 'r')

@@ -49,8 +49,8 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
 
     @property
     def title(self):
-        return u'%s for %s' % (
-            self.__class__.__name__, self.branch.displayname,)
+        return u'Translation template build for %s' % (
+            self.branch.displayname)
 
     def __init__(self, build_farm_job, branch):
         super(TranslationTemplatesBuild, self).__init__()
