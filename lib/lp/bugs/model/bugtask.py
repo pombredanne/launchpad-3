@@ -627,16 +627,17 @@ class BugTask(SQLBase):
 
         return num_bugtasks > 1
 
-    def destroySelf(self):
+    def delete(self, who=None):
         """See `IBugTask`."""
+        if who is None:
+            who = getUtility(ILaunchBag).user
 
         if not self.canBeDeleted():
             raise CannotDeleteBugtask(
                 "Cannot delete bugtask: %s" % self.title)
-
         bug = self.bug
         target = self.target
-        super(SQLBase, self).destroySelf()
+        self.destroySelf()
         del get_property_cache(bug).bugtasks
 
         # When a task is deleted the bug's heat needs to be recalculated.

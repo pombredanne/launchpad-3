@@ -497,10 +497,12 @@ class IllegalRelatedBugTasksParams(Exception):
 class IBugTaskDelete(Interface):
     """An interface for operations allowed with the Delete permission."""
     @export_destructor_operation()
+    @call_with(who=REQUEST_USER)
     @operation_for_version('devel')
-    def destroySelf():
+    def delete(who):
         """Delete this bugtask.
 
+        :param who: the user who is removing the bugtask.
         :raises: CannotDeleteBugtask if the bugtask cannot be deleted due to a
             business rule or other model constraint.
         :raises: Unauthorized if the user does not have permission

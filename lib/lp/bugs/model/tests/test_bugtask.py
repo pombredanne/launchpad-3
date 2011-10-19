@@ -1462,7 +1462,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bugtask = bug.default_bugtask
         login_person(bugtask.owner)
         with FeatureFixture(self.flags):
-            self.assertRaises(CannotDeleteBugtask, bugtask.destroySelf)
+            self.assertRaises(CannotDeleteBugtask, bugtask.delete)
 
     def test_delete_bugtask(self):
         # A bugtask can be deleted.
@@ -1470,7 +1470,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bug = bugtask.bug
         login_person(bugtask.owner)
         with FeatureFixture(self.flags):
-            bugtask.destroySelf()
+            bugtask.delete()
         self.assertEqual([bug.default_bugtask], bug.bugtasks)
 
     def test_delete_default_bugtask(self):
@@ -1479,7 +1479,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bug = bugtask.bug
         login_person(bug.default_bugtask.owner)
         with FeatureFixture(self.flags):
-            bug.default_bugtask.destroySelf()
+            bug.default_bugtask.delete()
         self.assertEqual([bugtask], bug.bugtasks)
         self.assertEqual(bugtask, bug.default_bugtask)
 
@@ -1492,7 +1492,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         dsp_task = bug.addTask(bug.owner, dsp)
         self.assertTrue(dsp.total_bug_heat > 0)
         with FeatureFixture(self.flags):
-            dsp_task.destroySelf()
+            dsp_task.delete()
         self.assertTrue(dsp.total_bug_heat == 0)
 
 
