@@ -27,6 +27,7 @@ __all__ = [
     'BugTaskAdded',
     'BugTaskAssigneeChange',
     'BugTaskBugWatchChange',
+    'BugTaskDeleted',
     'BugTaskImportanceChange',
     'BugTaskMilestoneChange',
     'BugTaskStatusChange',
@@ -257,6 +258,27 @@ class BugTaskAdded(BugChangeBase):
             u"Status", self.bug_task.status.title))
         return {
             'text': '\n'.join(lines),
+            }
+
+
+class BugTaskDeleted(BugChangeBase):
+    """A bugtask was removed from the bug."""
+
+    def __init__(self, when, person, bugtask):
+        super(BugTaskDeleted, self).__init__(when, person)
+        self.targetname = bugtask.bugtargetname
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='bug task deleted',
+            oldvalue='Bugtask for %s' % self.targetname)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {
+            'text': (
+                "** Bugtask deleted: %s" % self.targetname),
             }
 
 

@@ -29,7 +29,10 @@ from operator import attrgetter
 import re
 
 from lazr.enum import BaseItem
-from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.event import (
+    ObjectDeletedEvent,
+    ObjectModifiedEvent,
+    )
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import (
@@ -637,6 +640,7 @@ class BugTask(SQLBase):
                 "Cannot delete bugtask: %s" % self.title)
         bug = self.bug
         target = self.target
+        notify(ObjectDeletedEvent(self, who))
         self.destroySelf()
         del get_property_cache(bug).bugtasks
 
