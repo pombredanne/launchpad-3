@@ -6,8 +6,11 @@
 __metaclass__ = type
 __all__ = []
 
+from zope.component import getUtility
+
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from lp.services.messages.interfaces.message import IMessage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
@@ -67,6 +70,10 @@ class DeleteBugTask(AuthorizationBase):
         """
         if user is None:
             return False
+
+        # Admins can always delete bugtasks.
+        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            return True
 
         delete_allowed = bool(getFeatureFlag(
             'disclosure.delete_bugtask.enabled'))
