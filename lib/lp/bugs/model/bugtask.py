@@ -114,6 +114,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
+    CannotDeleteBugtask,
     DB_INCOMPLETE_BUGTASK_STATUSES,
     DB_UNRESOLVED_BUGTASK_STATUSES,
     get_bugtask_status,
@@ -128,7 +129,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
-    CannotDeleteBugtask)
+    )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
