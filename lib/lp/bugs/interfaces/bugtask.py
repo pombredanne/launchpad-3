@@ -25,6 +25,7 @@ __all__ = [
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
+    'IBugTaskDelete',
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
@@ -60,7 +61,6 @@ from lazr.restful.declarations import (
     error_status,
     export_as_webservice_entry,
     export_destructor_operation,
-    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -494,7 +494,21 @@ class IllegalRelatedBugTasksParams(Exception):
     in a search for related bug tasks"""
 
 
-class IBugTask(IHasDateCreated, IHasBug):
+class IBugTaskDelete(Interface):
+    """An interface for operations allowed with the Delete permission."""
+    @export_destructor_operation()
+    @operation_for_version('devel')
+    def destroySelf():
+        """Delete this bugtask.
+
+        :raises: CannotDeleteBugtask if the bugtask cannot be deleted due to a
+            business rule or other model constraint.
+        :raises: Unauthorized if the user does not have permission
+            to delete the bugtask.
+        """
+
+
+class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -689,18 +703,6 @@ class IBugTask(IHasDateCreated, IHasBug):
                 "True or False depending on whether or not there is more "
                 "work required on this bug task."),
              readonly=True))
-
-    @export_destructor_operation()
-    @export_operation_as('delete')
-    @operation_for_version('devel')
-    def destroySelf():
-        """Delete this bugtask.
-
-        :raises: CannotDeleteBugtask if the bugtask cannot be deleted due to a
-            business rule or other model constraint.
-        :raises: Unauthorized if the user does not have permission
-            to delete the bugtask.
-        """
 
     @operation_returns_collection_of(Interface)  # Actually IBug.
     @call_with(user=REQUEST_USER, limit=10)

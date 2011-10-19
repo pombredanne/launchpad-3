@@ -237,9 +237,7 @@
                     getContributorInfo"/>
             <require
                 permission="launchpad.Delete"
-                attributes="
-                    destroySelf
-                    "/>
+                interface="lp.bugs.interfaces.bugtask.IBugTaskDelete"/>
             <require
                 permission="launchpad.Edit"
                 attributes="

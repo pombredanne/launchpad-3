@@ -1,6 +1,5 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from canonical.launchpad.testing.pages import webservice_for_person
 
 __metaclass__ = type
 
@@ -10,6 +9,7 @@ import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restfulclient.errors import Unauthorized
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.event import notify
@@ -25,7 +25,7 @@ from canonical.launchpad.webapp.authorization import (
     check_permission,
     clear_cache,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag, OAuthPermission
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
@@ -72,7 +72,6 @@ from lp.testing import (
     ANONYMOUS,
     EventRecorder,
     feature_flags,
-    launchpadlib_for,
     login,
     login_person,
     logout,
@@ -2372,7 +2371,7 @@ class TestWebservice(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_delete_bugtask(self):
-        """Test that a bugtask can be deleted."""
+        """Test that a bugtask can be deleted with the feature flag on."""
         product = self.factory.makeProduct()
         owner = self.factory.makePerson()
         db_bugtask = self.factory.makeBugTask(target=product, owner=owner)
@@ -2380,15 +2379,17 @@ class TestWebservice(TestCaseWithFactory):
         transaction.commit()
         logout()
 
-# todo - use the feature flag
-#        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
-#        with FeatureFixture(flags):
+        # It will fail without feature flag enabled.
+        launchpad = self.factory.makeLaunchpadService(owner)
+        bugtask = ws_object(launchpad, db_bugtask)
+        self.assertRaises(Unauthorized, bugtask.lp_delete)
 
-        login_person(owner)
-        service = webservice_for_person(
-            owner, permission=OAuthPermission.WRITE_PRIVATE)
-        result = service.delete('/%s/+bug/%d' % (product.name, db_bug.id))
-#        transaction.commit()
-        logout()
+        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
+        with FeatureFixture(flags):
+            launchpad = self.factory.makeLaunchpadService(owner)
+            bugtask = ws_object(launchpad, db_bugtask)
+            bugtask.lp_delete()
+            transaction.commit()
+        # Check the delete really worked.
         with person_logged_in(removeSecurityProxy(db_bug).owner):
             self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)

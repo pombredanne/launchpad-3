@@ -20,7 +20,7 @@ from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtask import IBugTaskDelete
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
@@ -53,7 +53,7 @@ class EditBugTask(AuthorizationBase):
 
 class DeleteBugTask(AuthorizationBase):
     permission = 'launchpad.Delete'
-    usedfor = IBugTask
+    usedfor = IBugTaskDelete
 
     def checkAuthenticated(self, user):
         """Check that a user may delete a bugtask.
