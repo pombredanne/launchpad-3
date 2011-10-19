@@ -1957,6 +1957,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             else:
                 deb = uploaded_file
 
+        self.assertEqual("optional", ddeb.priority_name)
         self.assertEqual(deb.priority_name, ddeb.priority_name)
 
 
