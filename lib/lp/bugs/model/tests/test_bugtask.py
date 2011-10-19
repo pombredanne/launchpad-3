@@ -73,6 +73,7 @@ from lp.testing import (
     EventRecorder,
     feature_flags,
     login,
+    login_celebrity,
     login_person,
     logout,
     normalize_whitespace,
@@ -1421,13 +1422,13 @@ class TestBugTaskDeletion(TestCaseWithFactory):
     def test_admin_can_delete(self):
         # With the feature flag on, an admin can delete a bug task.
         bug = self.factory.makeBug()
-        login_person(bug.default_bugtask.pillar.owner)
+        login_celebrity('admin')
         with FeatureFixture(self.flags):
             self.assertTrue(
                 check_permission('launchpad.Admin', bug.default_bugtask))
-        # They can't delete the task without the feature flag.
+        # Admins can also the task even without the feature flag.
         clear_cache()
-        self.assertFalse(
+        self.assertTrue(
             check_permission('launchpad.Admin', bug.default_bugtask))
 
     def test_pillar_owner_can_delete(self):
