@@ -1270,6 +1270,21 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertEqual(1, len(bugtasks))
         self.assertEqual(item.model, bugtasks[0])
 
+    def test_cache_has_no_search_params_without_flag(self):
+        owner, item = make_bug_task_listing_item(self.factory)
+        self.useContext(person_logged_in(owner))
+        view = self.makeView(item.bugtask)
+        cache = IJSONRequestCache(view.request)
+        self.assertIs(None, cache.objects.get('search_params'))
+
+    def test_cache_search_params(self):
+        owner, item = make_bug_task_listing_item(self.factory)
+        self.useContext(person_logged_in(owner))
+        with self.dynamic_listings():
+            view = self.makeView(item.bugtask)
+        cache = IJSONRequestCache(view.request)
+        self.assertNotEqual(None, cache.objects.get('search_params'))
+
     def getBugtaskBrowser(self):
         bugtask = self.factory.makeBugTask()
         with person_logged_in(bugtask.target.owner):
