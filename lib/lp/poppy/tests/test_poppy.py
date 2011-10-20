@@ -83,7 +83,7 @@ class SFTPServer(Fixture):
     def __init__(self, root_dir, factory):
         self.root_dir = root_dir
         self._factory = factory
-        self.port = 5022
+        self.port = int(config.poppy.port.partition(':')[2])
 
     def addSSHKey(self, person, public_key_path):
         f = open(public_key_path, 'r')
@@ -221,7 +221,7 @@ class TestPoppy(TestCaseWithFactory):
 
         if transport is None:
             transport = self.server.getTransport()
-        transport.stat('foo/bar') # .stat will implicity chdir for us
+        transport.stat('foo/bar')  # .stat will implicity chdir for us
 
         self.server.disconnect(transport)
         self.server.waitForClose()
@@ -400,7 +400,7 @@ class TestPoppy(TestCaseWithFactory):
         self.assertRaises(
             ftplib.error_perm,
             f.storbinary,
-            'STOR '+'foo_source.changes',
+            'STOR ' + 'foo_source.changes',
             fake_file)
 
 
