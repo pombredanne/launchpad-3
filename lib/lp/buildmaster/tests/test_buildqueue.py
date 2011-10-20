@@ -8,6 +8,8 @@ from datetime import (
     datetime,
     timedelta,
     )
+from storm.store import Store
+from storm.sqlobject import SQLObjectNotFound
 
 from pytz import utc
 from zope import component
@@ -542,6 +544,30 @@ class TestBuilderData(SingleArchBuildsBase):
             build.processor, build.is_virtualized)
         self.assertEqual(1, free_count)
 
+
+class TestBuildCancellation(TestCaseWithFactory):
+    """Test cases for cancelling builds."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestBuildCancellation, self).setUp()
+        self.builder = self.factory.makeBuilder()
+
+    def test_binarypackagebuild_cancel(self):
+        build = self.factory.makeBinaryPackageBuild()
+        buildpackagejob = build.makeJob()
+        bq = BuildQueue(
+            job=buildpackagejob.job, lastscore=9999,
+            job_type=BuildFarmJobType.PACKAGEBUILD,
+            estimated_duration=timedelta(seconds=69), virtualized=True)
+        Store.of(build).add(bq)
+        bq.markAsBuilding(self.builder)
+        bq.cancel()
+
+        self.assertEqual(BuildStatus.CANCELLED, buildpackagejob.build.status)
+        self.assertIs(None, buildpackagejob.job)
+        self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
 
 class TestMinTimeToNextBuilder(SingleArchBuildsBase):
     """Test estimated time-to-builder with builds targetting a single
