@@ -569,6 +569,17 @@ class TestBuildCancellation(TestCaseWithFactory):
         self.assertIs(None, buildpackagejob.job)
         self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
 
+    def test_recipebuild_cancel(self):
+        bq = self.factory.makeSourcePackageRecipeBuildJob()
+        build = bq.specific_job.build
+        bq.markAsBuilding(self.builder)
+        bq.cancel()
+
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+        self.assertIs(None, bq.specific_job)
+        self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
+
+
 class TestMinTimeToNextBuilder(SingleArchBuildsBase):
     """Test estimated time-to-builder with builds targetting a single
     processor."""
