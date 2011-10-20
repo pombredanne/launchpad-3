@@ -136,11 +136,11 @@ class TranslationsImport(LaunchpadCronScript):
         if mail_subject is not None and self._shouldNotify(entry.importer):
             # A `mail_subject` of None indicates that there
             # is no notification worth sending out.
-            from_email = config.rosetta.admin_email
+            from_email = config.rosetta.notification_address
             katie = getUtility(ILaunchpadCelebrities).katie
             if entry.importer == katie:
                 # Email import state to Debian imports email.
-                to_email = config.rosetta.debian_import_email
+                to_email = None
             else:
                 to_email = helpers.get_contact_email_addresses(entry.importer)
 
