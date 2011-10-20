@@ -17,6 +17,7 @@ __all__ = [
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
+    'CannotDeleteBugtask',
     'DB_INCOMPLETE_BUGTASK_STATUSES',
     'DB_UNRESOLVED_BUGTASK_STATUSES',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
@@ -24,6 +25,7 @@ __all__ = [
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
+    'IBugTaskDelete',
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
@@ -58,6 +60,7 @@ from lazr.restful.declarations import (
     call_with,
     error_status,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_read_operation,
     export_write_operation,
     exported,
@@ -435,6 +438,15 @@ DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
     for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
 
 
+@error_status(httplib.BAD_REQUEST)
+class CannotDeleteBugtask(Exception):
+    """The bugtask cannot be deleted.
+
+    Raised when a user tries to delete a bugtask but the deletion cannot
+    proceed because of a model constraint or other business rule violation.
+    """
+
+
 @error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskStatus(Unauthorized):
     """User not permitted to change status.
@@ -482,7 +494,23 @@ class IllegalRelatedBugTasksParams(Exception):
     in a search for related bug tasks"""
 
 
-class IBugTask(IHasDateCreated, IHasBug):
+class IBugTaskDelete(Interface):
+    """An interface for operations allowed with the Delete permission."""
+    @export_destructor_operation()
+    @call_with(who=REQUEST_USER)
+    @operation_for_version('devel')
+    def delete(who):
+        """Delete this bugtask.
+
+        :param who: the user who is removing the bugtask.
+        :raises: CannotDeleteBugtask if the bugtask cannot be deleted due to a
+            business rule or other model constraint.
+        :raises: Unauthorized if the user does not have permission
+            to delete the bugtask.
+        """
+
+
+class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
