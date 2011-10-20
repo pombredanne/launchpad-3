@@ -78,40 +78,59 @@
 </metal:block>
 
 <metal:block define-macro="simple-search-form">
-<form method="get" name="search" class="primary search"
-      tal:attributes="action search_url|string:">
-  <p>
-  <tal:searchbox replace="structure view/widgets/searchtext" />
-  <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
-  <input type="submit" name="search" value="Search" />
-  <tal:widget replace="structure view/widgets/status/hidden" />
-  <tal:widget replace="structure view/widgets/importance/hidden" />
-  <tal:widget replace="structure view/widgets/assignee/hidden" />
-  <tal:widget replace="structure view/widgets/bug_reporter/hidden" />
-  <tal:widget replace="structure view/widgets/milestone/hidden" />
-  <tal:widget replace="structure view/widgets/omit_dupes/hidden" />
-  <tal:widget replace="structure view/widgets/has_patch/hidden" />
-  <tal:widget replace="structure view/widgets/component/hidden" />
-  <tal:widget replace="structure view/widgets/has_no_package/hidden" />
-  </p>
-  <p>
-  <a tal:attributes="href advanced_search_url|string:?advanced=1"
-  >Advanced search</a>
-  </p>
+<div id="bugs-search-form"
+     tal:attributes="
+         class python:
+             'dynamic_bug_listing' if view.dynamic_bug_listing_enabled
+                 else None;
+            action search_url|string:">
+  <form method="get" name="search" class="primary search"
+        tal:attributes="
+            class python:
+                'primary search dynamic_bug_listing'
+                    if view.dynamic_bug_listing_enabled
+                    else 'primary search';
+            action search_url|string:">
+    <h3 tal:condition="view/dynamic_bug_listing_enabled"
+        tal:content="view/search_macro_title">
+      Search bugs in Ubuntu
+    </h3>
+    <p>
+    <tal:searchbox replace="structure view/widgets/searchtext" />
+    <tal:without_dynamic_bug_listing
+        condition="not: view/dynamic_bug_listing_enabled">
+        <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
+    </tal:without_dynamic_bug_listing>
+    <input type="submit" name="search" value="Search" />
+    <tal:widget replace="structure view/widgets/status/hidden" />
+    <tal:widget replace="structure view/widgets/importance/hidden" />
+    <tal:widget replace="structure view/widgets/assignee/hidden" />
+    <tal:widget replace="structure view/widgets/bug_reporter/hidden" />
+    <tal:widget replace="structure view/widgets/milestone/hidden" />
+    <tal:widget replace="structure view/widgets/omit_dupes/hidden" />
+    <tal:widget replace="structure view/widgets/has_patch/hidden" />
+    <tal:widget replace="structure view/widgets/component/hidden" />
+    <tal:widget replace="structure view/widgets/has_no_package/hidden" />
+    </p>
+    <p>
+    <a tal:attributes="href advanced_search_url|string:?advanced=1"
+    >Advanced search</a>
+    </p>
 
-  <metal:also-in-ubuntu
-    use-macro="context/@@+bugtarget-macros-search/also-in-ubuntu" />
+    <metal:also-in-ubuntu
+      use-macro="context/@@+bugtarget-macros-search/also-in-ubuntu" />
 
-  <p id="also-in-upstream"
-    tal:define="product view/upstream_launchpad_project | nothing"
-    tal:condition="product">
-    <a tal:replace="structure product/fmt:link:bugs" /> also
-    tracks bugs for this package.
-  </p>
+    <p id="also-in-upstream"
+      tal:define="product view/upstream_launchpad_project | nothing"
+      tal:condition="product">
+      <a tal:replace="structure product/fmt:link:bugs" /> also
+      tracks bugs for this package.
+    </p>
 
-  <div metal:define-slot="extra-search-widgets">
-  </div>
-</form>
+    <div metal:define-slot="extra-search-widgets">
+    </div>
+  </form>
+</div>
 <tal:comment condition="nothing">
   bugtarget-bugs.pt is the only template that uses this form in a page
   where the search field should be auto-focused. If another template

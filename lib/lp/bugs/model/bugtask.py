@@ -1726,62 +1726,34 @@ class BugTaskSet:
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params, _noprejoins=True)
 
-    def _buildStatusClause(self, status):
+    @classmethod
+    def _buildStatusClause(cls, status):
         """Return the SQL query fragment for search by status.
 
         Called from `buildQuery` or recursively."""
         if zope_isinstance(status, any):
-            return '(' + ' OR '.join(
-                self._buildStatusClause(dbitem)
-                for dbitem
-                in status.query_values) + ')'
+            values = list(status.query_values)
+            # Since INCOMPLETE isn't stored as a single value we need to
+            # expand it before generating the SQL.
+            if BugTaskStatus.INCOMPLETE in values:
+                values.remove(BugTaskStatus.INCOMPLETE)
+                values.extend(DB_INCOMPLETE_BUGTASK_STATUSES)
+            return '(BugTask.status {0})'.format(
+                search_value_to_where_condition(any(*values)))
         elif zope_isinstance(status, not_equals):
-            return '(NOT %s)' % self._buildStatusClause(status.value)
+            return '(NOT {0})'.format(cls._buildStatusClause(status.value))
         elif zope_isinstance(status, BaseItem):
-            incomplete_response = (
-                status == BugTaskStatus.INCOMPLETE)
-            with_response = (
-                status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
-            without_response = (
-                status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
-            # TODO: bug 759467 tracks the migration of INCOMPLETE in the db to
-            # INCOMPLETE_WITH_RESPONSE and INCOMPLETE_WITHOUT_RESPONSE. When
-            # the migration is complete, we can convert status lookups to a
-            # simple IN clause.
-            if with_response or without_response:
-                if with_response:
-                    return """(
-                        BugTask.status = %s OR
-                        (BugTask.status = %s
-                        AND (Bug.date_last_message IS NOT NULL
-                             AND BugTask.date_incomplete <=
-                                 Bug.date_last_message)))
-                        """ % sqlvalues(
-                            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
-                            BugTaskStatus.INCOMPLETE)
-                elif without_response:
-                    return """(
-                        BugTask.status = %s OR
-                        (BugTask.status = %s
-                        AND (Bug.date_last_message IS NULL
-                             OR BugTask.date_incomplete >
-                                Bug.date_last_message)))
-                        """ % sqlvalues(
-                            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
-                            BugTaskStatus.INCOMPLETE)
-                assert with_response != without_response
-            elif incomplete_response:
-                # search for any of INCOMPLETE (being migrated from),
-                # INCOMPLETE_WITH_RESPONSE or INCOMPLETE_WITHOUT_RESPONSE
-                return 'BugTask.status %s' % search_value_to_where_condition(
-                    any(BugTaskStatus.INCOMPLETE,
-                        BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
-                        BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE))
+            # INCOMPLETE is not stored in the DB, instead one of
+            # DB_INCOMPLETE_BUGTASK_STATUSES is stored, so any request to
+            # search for INCOMPLETE should instead search for those values.
+            if status == BugTaskStatus.INCOMPLETE:
+                return '(BugTask.status {0})'.format(
+                    search_value_to_where_condition(
+                        any(*DB_INCOMPLETE_BUGTASK_STATUSES)))
             else:
                 return '(BugTask.status = %s)' % sqlvalues(status)
         else:
-            raise AssertionError(
-                'Unrecognized status value: %s' % repr(status))
+            raise ValueError('Unrecognized status value: %r' % (status,))
 
     def _buildExcludeConjoinedClause(self, milestone):
         """Exclude bugtasks with a conjoined master.
