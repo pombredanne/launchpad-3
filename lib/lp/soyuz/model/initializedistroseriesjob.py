@@ -47,9 +47,9 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
     user_error_types = (InitializationError,)
 
     @classmethod
-    def create(cls, child, parents, arches=(), packagesets=(),
-               rebuild=False, overlays=(), overlay_pockets=(),
-               overlay_components=()):
+    def create(cls, child, parents, arches=(), archindep_archtag=None,
+               packagesets=(), rebuild=False, overlays=(),
+               overlay_pockets=(), overlay_components=()):
         """Create a new `InitializeDistroSeriesJob`.
 
         :param child: The child `IDistroSeries` to initialize
@@ -96,6 +96,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
         metadata = {
             'parents': parents,
             'arches': arches,
+            'archindep_archtag': archindep_archtag,
             'packagesets': packagesets,
             'rebuild': rebuild,
             'overlays': overlays,
@@ -137,6 +138,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
             IStore(Packageset).get(Packageset, int(pkgsetid)).name
             for pkgsetid in  self.packagesets]
         parts += ", architectures: %s" % (self.arches,)
+        parts += ", archindep_archtag: %s" % self.archindep_archtag
         parts += ", packagesets: %s" % pkgsets
         parts += ", rebuild: %s" % self.rebuild
         return "<%s>" % parts
@@ -174,6 +176,10 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
             return tuple(self.metadata['arches'])
 
     @property
+    def archindep_archtag(self):
+        return self.metadata['archindep_archtag']
+
+    @property
     def packagesets(self):
         if self.metadata['packagesets'] is None:
             return ()
@@ -192,8 +198,8 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
         """See `IRunnableJob`."""
         ids = InitializeDistroSeries(
             self.distroseries, self.parents, self.arches,
-            self.packagesets, self.rebuild, self.overlays,
-            self.overlay_pockets, self.overlay_components)
+            self.archindep_archtag, self.packagesets, self.rebuild,
+            self.overlays, self.overlay_pockets, self.overlay_components)
         ids.check()
         ids.initialize()
 

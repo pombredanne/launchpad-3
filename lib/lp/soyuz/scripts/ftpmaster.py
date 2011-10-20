@@ -18,6 +18,7 @@ __all__ = [
     ]
 
 import hashlib
+from itertools import chain
 import os
 import stat
 import sys
@@ -26,6 +27,7 @@ import time
 from debian.deb822 import Changes
 from zope.component import getUtility
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.interfaces import (
@@ -902,29 +904,33 @@ class ObsoleteDistroseries(SoyuzScript):
                             distroseries.name,
                             distroseries.distribution.name))
 
+        # First, mark all Published sources as Obsolete.
         sources = distroseries.getAllPublishedSources()
         binaries = distroseries.getAllPublishedBinaries()
-        num_sources = sources.count()
-        num_binaries = binaries.count()
-        self.logger.info("There are %d sources and %d binaries." % (
-            num_sources, num_binaries))
-
-        if num_sources == 0 and num_binaries == 0:
-            raise SoyuzScriptError("Nothing to do, no published packages.")
-
-        self.logger.info("Obsoleting sources...")
-        for package in sources:
+        self.logger.info(
+            "Obsoleting published packages (%d sources, %d binaries)."
+            % (sources.count(), binaries.count()))
+        for package in chain(sources, binaries):
             self.logger.debug("Obsoleting %s" % package.displayname)
             package.requestObsolescence()
 
-        self.logger.info("Obsoleting binaries...")
-        for package in binaries:
-            self.logger.debug("Obsoleting %s" % package.displayname)
-            package.requestObsolescence()
+        # Next, ensure that everything is scheduled for deletion.  The
+        # dominator will normally leave some superseded publications
+        # uncondemned, for example sources that built NBSed binaries.
+        sources = distroseries.getAllUncondemnedSources()
+        binaries = distroseries.getAllUncondemnedBinaries()
+        self.logger.info(
+            "Scheduling deletion of other packages (%d sources, %d binaries)."
+            % (sources.count(), binaries.count()))
+        for package in chain(sources, binaries):
+            self.logger.debug(
+                "Scheduling deletion of %s" % package.displayname)
+            package.scheduleddeletiondate = UTC_NOW
 
-        # The obsoleted packages will be caught by death row processing
-        # the next time it runs.  We skip the domination phase in the
-        # publisher because it won't consider stable distroseries.
+        # The packages from both phases will be caught by death row
+        # processing the next time it runs.  We skip the domination
+        # phase in the publisher because it won't consider stable
+        # distroseries.
 
     def _checkParameters(self, distroseries):
         """Sanity check the supplied script parameters."""

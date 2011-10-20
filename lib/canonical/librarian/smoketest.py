@@ -1,6 +1,6 @@
 #! /usr/bin/python -S
 #
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Perform simple librarian operations to verify the current configuration.
@@ -11,9 +11,9 @@ import datetime
 import sys
 import urllib
 
-from zope.component import getUtility
 import pytz
 import transaction
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
@@ -24,9 +24,10 @@ FILE_LIFETIME = datetime.timedelta(hours=1)
 
 
 def store_file(client):
+    expiry_date = datetime.datetime.now(pytz.UTC) + FILE_LIFETIME
     file_id = client.addFile(
         'smoke-test-file', FILE_SIZE, StringIO(FILE_DATA), 'text/plain',
-        expires=datetime.datetime.now(pytz.UTC)+FILE_LIFETIME)
+        expires=expiry_date)
     # To be able to retrieve the file, we must commit the current transaction.
     transaction.commit()
     alias = getUtility(ILibraryFileAliasSet)[file_id]
