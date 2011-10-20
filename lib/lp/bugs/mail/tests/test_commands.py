@@ -280,6 +280,19 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
         self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
 
+    def test_execute_bug_cannot_add_task(self):
+        bug = self.factory.makeBug(private=True)
+        product = self.factory.makeProduct(name='fnord')
+        login_person(bug.bugtasks[0].target.owner)
+        command = AffectsEmailCommand('affects', ['fnord'])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, bug, None)
+        message = str(error).split('\n')
+        self.assertEqual(
+            ("Bug %s cannot be marked as affecting more than one "
+            "target because it is private." % bug.id),
+            message[0])
+
 
 class BugEmailCommandTestCase(TestCaseWithFactory):
 

@@ -726,6 +726,20 @@ or oldest bugtask.
     >>> print firefox_bug.default_bugtask.bugtargetdisplayname
     Mozilla Firefox
 
+Private bugs can only have one bug task.
+
+    >>> firefox_bug.setPrivate(True, current_user())
+    True
+    >>> firefox_bug.canAddTask()
+    False
+    >>> target = getUtility(IProductSet).getByName('tomcat')
+    >>> firefox_bug.addTask(owner=foobar, target=target)
+    Traceback (most recent call last):
+    ...
+    CannotAddBugTask: Private bugs cannot be marked as affecting more than one target.
+    >>> firefox_bug.setPrivate(False, current_user())
+    True
+
 Changing bug visibility.
 
     >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)

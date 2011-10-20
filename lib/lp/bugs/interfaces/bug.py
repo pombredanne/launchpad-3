@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CannotAddBugTask',
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
@@ -21,12 +22,15 @@ __all__ = [
     'IProjectGroupBugAddForm',
     ]
 
+import httplib
+
 from lazr.enum import DBEnumeratedType
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     accessor_for,
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_factory_operation,
     export_operation_as,
@@ -187,6 +191,11 @@ class IBugBecameQuestionEvent(Interface):
 
 class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class CannotAddBugTask(Exception):
+    """Raised when a new bug task cannot be added to a bug."""
 
 
 def optional_message_subject_field():
@@ -635,7 +644,13 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @operation_parameters(target=copy_field(IBugTask['target']))
     @export_factory_operation(IBugTask, [])
     def addTask(owner, target):
-        """Create a new bug task on this bug."""
+        """Create a new bug task on this bug.
+
+        :raises CannotAddBugTask: if the bug task cannot be added to the bug.
+        """
+
+    def canAddTask():
+        """Can a new bug task be added to this bug?"""
 
     def hasBranch(branch):
         """Is this branch linked to this bug?"""

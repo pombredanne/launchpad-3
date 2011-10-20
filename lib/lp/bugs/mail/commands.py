@@ -576,6 +576,14 @@ class AffectsEmailCommand(EmailCommand):
                     error_templates=error_templates),
                 stop_processing=True)
 
+        if not bug.canAddTask():
+            raise EmailProcessingError(
+                get_error_message(
+                    'cannot-add-task.txt',
+                    error_templates=error_templates,
+                    bug_id=bug.id),
+                stop_processing=True)
+
         string_args = list(self.string_args)
         try:
             path = string_args.pop(0)

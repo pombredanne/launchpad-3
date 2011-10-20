@@ -130,7 +130,8 @@ from lp.bugs.adapters.bugchange import (
     )
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.errors import InvalidDuplicateValue
-from lp.bugs.interfaces.bug import (
+from lp.bugs.interfaces.bug import (\
+    CannotAddBugTask,
     IBug,
     IBugBecameQuestionEvent,
     IBugMute,
@@ -1199,6 +1200,12 @@ BugMessage""" % sqlvalues(self.id))
 
     def addTask(self, owner, target):
         """See `IBug`."""
+
+        if not self.canAddTask():
+            raise CannotAddBugTask(
+                ("Private bugs cannot be marked as affecting more than one "
+                "target."))
+
         new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
 
         # When a new task is added the bug's heat becomes relevant to the
@@ -1206,6 +1213,10 @@ BugMessage""" % sqlvalues(self.id))
         target.recalculateBugHeatCache()
 
         return new_task
+
+    def canAddTask(self):
+        """See `IBug`."""
+        return not self.private or len(self.bugtasks) == 0
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
@@ -1530,6 +1541,8 @@ BugMessage""" % sqlvalues(self.id))
 
     def canBeNominatedFor(self, target):
         """See `IBug`."""
+        if not self.canAddTask():
+            return False
         try:
             self.getNominationFor(target)
         except NotFoundError:

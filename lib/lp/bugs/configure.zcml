@@ -800,6 +800,7 @@
                     getAlsoNotifiedSubscribers
                     getBugWatch
                     canBeNominatedFor
+                    canAddTask
                     getNominationFor
                     getNominations
                     date_last_message

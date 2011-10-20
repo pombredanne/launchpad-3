@@ -49,6 +49,32 @@ class TestPrivateBugLinks(BrowserTestCase):
         self.assertTrue('href' not in dupe_warning)
 
 
+class TestAlsoAffectsLinks(BrowserTestCase):
+    # Tests the visibility of the Also Affects... links on the bug index view.
+    layer = DatabaseFunctionalLayer
+
+    def test_no_also_affects_links_when_cannot_add_bugtask(self):
+        # The also affects links are not visible if a bug task cannot be
+        # added.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(private=True, owner=owner)
+        with person_logged_in(owner):
+            url = canonical_url(bug, rootsite="bugs")
+            browser = self.getUserBrowser(url, user=owner)
+            also_affects = find_tag_by_id(
+                browser.contents, 'also-affects-links')
+            self.assertEqual('display: none', also_affects['style'])
+
+    def test_also_affects_links_when_can_add_bugtask(self):
+        # The also affects links are visible if a bug task can be added.
+        bug = self.factory.makeBug()
+        url = canonical_url(bug, rootsite="bugs")
+        browser = self.getUserBrowser(url)
+        also_affects = find_tag_by_id(
+            browser.contents, 'also-affects-links')
+        self.assertEqual('display: block', also_affects['style'])
+
+
 class TestEmailObfuscated(BrowserTestCase):
     """Test for obfuscated emails on bug pages."""
 

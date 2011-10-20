@@ -82,7 +82,8 @@
 
 </table>
 
-<div class="actions"
+<div id='also-affects-links' class="actions"
+     tal:attributes="style python:'display: '+(context.canAddTask() and 'block' or 'none')"
      tal:define="current_bugtask view/current_bugtask"
      tal:condition="view/displayAlsoAffectsLinks">
   <tal:also-affects-links
