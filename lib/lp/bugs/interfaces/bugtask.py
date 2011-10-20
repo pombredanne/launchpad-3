@@ -1443,33 +1443,6 @@ class BugTaskSearchParams:
 
         return search_params
 
-    @staticmethod
-    def anyAsValue(value):
-        output = []
-        if value is not None:
-            for value in value.query_values:
-                if isinstance(value, DBItem):
-                    value = value.name
-                output.append(value)
-        return output
-
-    def asDict(self):
-        keys = [
-            'searchtext', 'importance', 'status', 'omit_dupes', 'tag']
-        search_dict = {}
-        for key in keys:
-            value = getattr(self, key)
-            if isinstance(value, (any, all)):
-                value = self.anyAsValue(value)
-            search_dict[key] = value
-
-        if isinstance(self.tag, any):
-            combinator = BugTagsSearchCombinator.ANY
-        else:
-            combinator = BugTagsSearchCombinator.ALL
-        search_dict['tags_combinator'] = combinator.name
-        return search_dict
-
 
 class IBugTaskSet(Interface):
     """A utility to retrieving BugTasks."""

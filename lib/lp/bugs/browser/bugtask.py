@@ -2479,7 +2479,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
             cache = IJSONRequestCache(self.request)
             cache.objects['mustache_model'] = self.search().model
-            cache.objects['search_params'] = self.buildSearchParams().asDict()
 
     @property
     def columns_to_show(self):
