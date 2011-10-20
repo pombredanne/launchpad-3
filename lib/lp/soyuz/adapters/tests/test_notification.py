@@ -6,8 +6,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from email.utils import formataddr
-from storm.store import Store
 from textwrap import dedent
+
+from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -18,24 +19,24 @@ from canonical.testing.layers import (
     )
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.mail.sendmail import format_address_for_person
 from lp.services.log.logger import BufferLogger
+from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.adapters.notification import (
     assemble_body,
     calculate_subject,
-    get_recipients,
     fetch_information,
+    get_recipients,
     is_auto_sync_upload,
-    reject_changes_file,
-    person_to_email,
     notify,
+    person_to_email,
+    reject_changes_file,
     )
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadCustomFormat,
     )
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
@@ -383,9 +384,10 @@ class TestNotification(TestCaseWithFactory):
             }
         recipients = self._run_recipients_test(
             changes, blamer, maintainer, changer)
-        expected = [format_address_for_person(p)
-                    for p in (blamer, maintainer, changer)]
-        self.assertEqual(expected, recipients)
+        expected = [
+            format_address_for_person(person)
+            for person in (blamer, maintainer, changer)]
+        self.assertContentEqual(expected, recipients)
 
     def test_get_recipients_bad_maintainer_email(self):
         blamer = self.factory.makePerson()
@@ -401,9 +403,9 @@ class TestNotification(TestCaseWithFactory):
             }
         recipients = self._run_recipients_test(
             changes, blamer, maintainer, changer)
-        expected = [format_address_for_person(p)
-                    for p in (blamer, changer)]
-        self.assertEqual(expected, recipients)
+        expected = [
+            format_address_for_person(person) for person in (blamer, changer)]
+        self.assertContentEqual(expected, recipients)
 
     def test_get_recipients_bad_changedby_email(self):
         # Test get_recipients with invalid changedby email address.
@@ -420,9 +422,10 @@ class TestNotification(TestCaseWithFactory):
             }
         recipients = self._run_recipients_test(
             changes, blamer, maintainer, changer)
-        expected = [format_address_for_person(p)
-                    for p in (blamer, maintainer)]
-        self.assertEqual(expected, recipients)
+        expected = [
+            format_address_for_person(person)
+            for person in (blamer, maintainer)]
+        self.assertContentEqual(expected, recipients)
 
     def test_assemble_body_handles_no_preferred_email_for_changer(self):
         # If changer has no preferred email address,

@@ -533,8 +533,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     Verifies if each copy can be performed using `CopyChecker` and
     raises `CannotCopy` if one or more copies could not be performed.
 
-    When `CannotCopy`is raised call sites are in charge to rollback the
-    transaction or performed copies will be commited.
+    When `CannotCopy` is raised, call sites are responsible for rolling
+    back the transaction.  Otherwise, performed copies will be commited.
 
     Wrapper for `do_direct_copy`.
 

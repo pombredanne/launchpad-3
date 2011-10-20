@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_recipients',  # Available for testing only.
     'notify',
     ]
 
@@ -304,13 +303,12 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     if distroseries.changeslist:
         information['ANNOUNCE'] = "Announcing to %s" % (
             distroseries.changeslist)
-    try:
-        changedby_person = email_to_person(info['changedby'])
-    except ParseMaintError:
-        # Some syncs (e.g. from Debian) will involve packages whose
-        # changed-by person was auto-created in LP and hence does not
-        # have a preferred email address set.
-        changedby_person = None
+
+    # Some syncs (e.g. from Debian) will involve packages whose
+    # changed-by person was auto-created in LP and hence does not have a
+    # preferred email address set.
+    changedby_person = email_to_person(info['changedby'])
+
     if blamer is not None and blamer != changedby_person:
         signer_signature = person_to_email(blamer)
         if signer_signature != info['changedby']:
@@ -448,73 +446,67 @@ def sanitize_string(s):
         return guess_encoding(s)
 
 
-def debug(logger, msg):
+def debug(logger, msg, *args, **kwargs):
     """Shorthand debug notation for publish() methods."""
     if logger is not None:
-        logger.debug(msg)
+        logger.debug(msg, *args, **kwargs)
+
+
+def is_valid_uploader(person, distribution):
+    """Is `person` an uploader for `distribution`?
+
+    A `None` person is not an uploader.
+    """
+    if person is None:
+        return None
+    else:
+        return person.isUploader(distribution)
 
 
 def get_recipients(blamer, archive, distroseries, logger, changes=None,
                    spr=None, bprs=None):
     """Return a list of recipients for notification emails."""
-    candidate_recipients = []
     debug(logger, "Building recipients list.")
+    candidate_recipients = [
+        blamer,
+        ]
     info = fetch_information(spr, bprs, changes)
 
-    if info['changedby']:
-        try:
-            changer = email_to_person(info['changedby'])
-        except ParseMaintError:
-            changer = None
-    else:
-        changer = None
+    changer = email_to_person(info['changedby'])
+    maintainer = email_to_person(info['maintainer'])
 
-    if info['maintainer']:
-        try:
-            maintainer = email_to_person(info['maintainer'])
-        except ParseMaintError:
-            maintainer = None
-    else:
-        maintainer = None
-
-    if blamer:
-        # This is a signed upload.
-        candidate_recipients.append(blamer)
-    else:
-        debug(logger,
-            "Changes file is unsigned, adding changer as recipient")
+    if blamer is None:
+        debug(
+            logger, "Changes file is unsigned; adding changer as recipient.")
         candidate_recipients.append(changer)
 
     if archive.is_ppa:
         # For PPAs, any person or team mentioned explicitly in the
         # ArchivePermissions as uploaders for the archive will also
         # get emailed.
-        uploaders = [
-            permission.person for permission in
-                archive.getUploadersForComponent()]
-        candidate_recipients.extend(uploaders)
+        candidate_recipients.extend([
+            permission.person
+            for permission in archive.getUploadersForComponent()])
+    else:
+        # If this is not a PPA, we also consider maintainer and changed-by.
+        if blamer is not None:
+            if is_valid_uploader(maintainer, distroseries.distribution):
+                debug(logger, "Adding maintainer to recipients")
+                candidate_recipients.append(maintainer)
 
-    # If this is not a PPA, we also consider maintainer and changed-by.
-    elif blamer is not None:
-        if (maintainer and maintainer != blamer and
-                maintainer.isUploader(distroseries.distribution)):
-            debug(logger, "Adding maintainer to recipients")
-            candidate_recipients.append(maintainer)
-
-        if (changer and changer != blamer and
-                changer.isUploader(distroseries.distribution)):
-            debug(logger, "Adding changed-by to recipients")
-            candidate_recipients.append(changer)
+            if is_valid_uploader(changer, distroseries.distribution):
+                debug(logger, "Adding changed-by to recipients")
+                candidate_recipients.append(changer)
 
     # Now filter list of recipients for persons only registered in
     # Launchpad to avoid spamming the innocent.
-    recipients = []
-    for person in candidate_recipients:
-        if person is None or person.preferredemail is None:
-            continue
-        recipient = format_address_for_person(person)
-        debug(logger, "Adding recipient: '%s'" % recipient)
-        recipients.append(recipient)
+    recipients = [
+        format_address_for_person(person)
+        for person in filter(None, set(candidate_recipients))
+            if person.preferredemail is not None]
+
+    for recipient in recipients:
+        debug(logger, "Adding recipient: '%s'", recipient)
 
     return recipients
 
@@ -572,12 +564,23 @@ def build_summary(spr, files, action):
 
 
 def email_to_person(fullemail):
-    """Return an IPerson given an RFC2047 email address."""
-    # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
-    # thing will have already parsed at this point.
-    (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-        fullemail, "email")
-    return getUtility(IPersonSet).getByEmail(email)
+    """Return an `IPerson` given an RFC2047 email address.
+
+    :param fullemail: Potential email address.
+    :return: `IPerson` with the given email address.  None if there
+        isn't one, or if `fullemail` isn't a proper email address.
+    """
+    if fullemail is None or fullemail == '':
+        return None
+
+    try:
+        # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
+        # thing will have already parsed at this point.
+        (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+            fullemail, "email")
+        return getUtility(IPersonSet).getByEmail(email)
+    except ParseMaintError:
+        return None
 
 
 def person_to_email(person):
@@ -595,12 +598,11 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     user (archive@ubuntu.com).
     """
     katie = getUtility(ILaunchpadCelebrities).katie
-    try:
-        changed_by = email_to_person(changed_by_email)
-    except ParseMaintError:
-        return False
+    changed_by = email_to_person(changed_by_email)
     return (
-        spr and not bprs and changed_by == katie and
+        spr and
+        not bprs and
+        changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
 
 
