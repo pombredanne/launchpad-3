@@ -67,7 +67,7 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
     }
     template = get_template(archive, 'rejected')
     body = template % information
-    to_addrs = get_recipients(
+    to_addrs = get_upload_notification_recipients(
         blamer, archive, distroseries, logger, changes=changes)
     debug(logger, "Sending rejection email.")
     if not to_addrs:
@@ -186,7 +186,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     if not files and action != 'rejected':
         return
 
-    recipients = get_recipients(
+    recipients = get_upload_notification_recipients(
         blamer, archive, distroseries, logger, changes=changes, spr=spr,
         bprs=bprs)
 
@@ -463,8 +463,8 @@ def is_valid_uploader(person, distribution):
         return person.isUploader(distribution)
 
 
-def get_recipients(blamer, archive, distroseries, logger, changes=None,
-                   spr=None, bprs=None):
+def get_upload_notification_recipients(blamer, archive, distroseries, logger,
+                                       changes=None, spr=None, bprs=None):
     """Return a list of recipients for notification emails."""
     debug(logger, "Building recipients list.")
     candidate_recipients = [

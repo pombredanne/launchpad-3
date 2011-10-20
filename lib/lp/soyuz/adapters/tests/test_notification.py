@@ -25,7 +25,7 @@ from lp.soyuz.adapters.notification import (
     assemble_body,
     calculate_subject,
     fetch_information,
-    get_recipients,
+    get_upload_notification_recipients,
     is_auto_sync_upload,
     notify,
     person_to_email,
@@ -366,11 +366,11 @@ class TestNotification(TestCaseWithFactory):
                     distroseries=distroseries, component=component))
         archive.newComponentUploader(maintainer, component)
         archive.newComponentUploader(changer, component)
-        return get_recipients(
+        return get_upload_notification_recipients(
             blamer, archive, distroseries, logger=None, changes=changes)
 
-    def test_get_recipients_good_emails(self):
-        # Test get_recipients with good email addresses..
+    def test_get_upload_notification_recipients_good_emails(self):
+        # Test get_upload_notification_recipients with good email addresses..
         blamer = self.factory.makePerson()
         maintainer = self.factory.makePerson(
             'maintainer@canonical.com', displayname='Maintainer')
@@ -389,7 +389,7 @@ class TestNotification(TestCaseWithFactory):
             for person in (blamer, maintainer, changer)]
         self.assertContentEqual(expected, recipients)
 
-    def test_get_recipients_bad_maintainer_email(self):
+    def test_get_upload_notification_recipients_bad_maintainer_email(self):
         blamer = self.factory.makePerson()
         maintainer = self.factory.makePerson(
             'maintainer@canonical.com', displayname='Maintainer')
@@ -407,8 +407,9 @@ class TestNotification(TestCaseWithFactory):
             format_address_for_person(person) for person in (blamer, changer)]
         self.assertContentEqual(expected, recipients)
 
-    def test_get_recipients_bad_changedby_email(self):
-        # Test get_recipients with invalid changedby email address.
+    def test_get_upload_notification_recipients_bad_changedby_email(self):
+        # Test get_upload_notification_recipients with invalid changedby
+        # email address.
         blamer = self.factory.makePerson()
         maintainer = self.factory.makePerson(
             'maintainer@canonical.com', displayname='Maintainer')
