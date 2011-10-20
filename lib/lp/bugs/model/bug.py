@@ -130,7 +130,7 @@ from lp.bugs.adapters.bugchange import (
     )
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.errors import InvalidDuplicateValue
-from lp.bugs.interfaces.bug import (\
+from lp.bugs.interfaces.bug import (
     CannotAddBugTask,
     IBug,
     IBugBecameQuestionEvent,
@@ -1200,7 +1200,6 @@ BugMessage""" % sqlvalues(self.id))
 
     def addTask(self, owner, target):
         """See `IBug`."""
-
         if not self.canAddTask():
             raise CannotAddBugTask(
                 ("Private bugs cannot be marked as affecting more than one "
