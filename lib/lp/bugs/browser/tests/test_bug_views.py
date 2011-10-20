@@ -326,7 +326,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         result_data = simplejson.loads(view.render())
 
         with person_logged_in(person):
-            self.assertTrue(result_data.has_key('can_add_bugtask'))
+            self.assertTrue('can_add_bugtask' in result_data)
             self.assertEqual(bug.canAddTask(), result_data['can_add_bugtask'])
 
         cache_data = result_data['cache_data']
