@@ -376,8 +376,9 @@ class NascentUpload:
         """
         for uploaded_file in self.changes.files:
             if isinstance(uploaded_file, DdebBinaryUploadFile):
-                self._overrideBinaryFile(uploaded_file,
-                                         uploaded_file.deb_file)
+                if uploaded_file.deb_file is not None:
+                    self._overrideBinaryFile(uploaded_file,
+                                             uploaded_file.deb_file)
     #
     # Helpers for warnings and rejections
     #

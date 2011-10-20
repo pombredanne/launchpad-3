@@ -16,10 +16,10 @@ Changes:
    * Testing debug binaries
 Checksums-Sha1: 
  91556113ad38eb35d2fe03d27ae646e0ed487a3d 654 debug-bin_1.0-1_i386.deb
- d120be63a4535e31ec08657cc4d3018cc8b62d54 668 debug-bin-dbgsym_1.0-1_i386.ddeb
+ 0dbf774a1c46ba6c115790d69466a8ccde9de2e4 648 debug-bin-dbgsym_1.0-1_i386.ddeb
 Checksums-Sha256: 
  5ca0ce3d3bfde3cc698d9ad4b027663abecb958bea641d29ac3bf8333fd3ebad 654 debug-bin_1.0-1_i386.deb
- 9c0013badb1bb78fa1ccbf1508398cbf51904f7242d8931f4994c1aa18519b63 668 debug-bin-dbgsym_1.0-1_i386.ddeb
+ 232cec57f6e35995d8715633ba1302d35a0ff9bb69d27399aa18f18b69c5acc0 648 debug-bin-dbgsym_1.0-1_i386.ddeb
 Files: 
  48b4eed5980c754cc74a06ffc4372f64 654 devel optional debug-bin_1.0-1_i386.deb
- ac5c44025ffc026485b22722e0f13804 668 devel extra debug-bin-dbgsym_1.0-1_i386.ddeb
+ 2491341743bc6466f83765eb67d42f0b 648 devel extra debug-bin-dbgsym_1.0-1_i386.ddeb
