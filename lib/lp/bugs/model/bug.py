@@ -53,6 +53,7 @@ from storm.expr import (
     And,
     Desc,
     In,
+    Join,
     LeftJoin,
     Max,
     Not,
@@ -554,22 +555,26 @@ class Bug(SQLBase):
                 # permit use.
                 message_by_id[message.id] = result
             return result
-        # There is possibly some nicer way to do this in storm, but
-        # this is a lot easier to figure out.
         if include_parents:
-            ParentMessage = ClassAlias(Message, name="parent_message")
-            tables = SQL("""
-Message left outer join
-message as parent_message on (
-    message.parent=parent_message.id and
-    parent_message.id in (
-        select bugmessage.message from bugmessage where bugmessage.bug=%s)),
-BugMessage""" % sqlvalues(self.id))
-            lookup = Message, ParentMessage, BugMessage
-            results = store.using(tables).find(
-                lookup,
+            ParentMessage = ClassAlias(Message)
+            ParentBugMessage = ClassAlias(BugMessage)
+            tables = [
+                Message,
+                Join(
+                    BugMessage,
+                    BugMessage.messageID == Message.id),
+                LeftJoin(
+                    Join(
+                        ParentMessage,
+                        ParentBugMessage,
+                        ParentMessage.id == ParentBugMessage.messageID),
+                    And(
+                        Message.parent == ParentMessage.id,
+                        ParentBugMessage.bugID == self.id)),
+                ]
+            results = store.using(*tables).find(
+                (Message, ParentMessage, BugMessage),
                 BugMessage.bugID == self.id,
-                BugMessage.messageID == Message.id,
                 )
         else:
             lookup = Message, BugMessage
