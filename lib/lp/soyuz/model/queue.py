@@ -66,7 +66,10 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
-from lp.soyuz.adapters.notification import notify
+from lp.soyuz.adapters.notification import (
+    get_upload_notification_recipients,
+    notify,
+    )
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,
@@ -864,11 +867,15 @@ class PackageUpload(SQLBase):
             signer = self.signing_key.owner
         else:
             signer = None
+        recipients = get_upload_notification_recipients(
+            signer, self.archive, self.distroseries, logger, changes=changes,
+            spr=self.sourcepackagerelease, bprs=self.builds)
         notify(
             signer, self.sourcepackagerelease, self.builds, self.customfiles,
             self.archive, self.distroseries, self.pocket, summary_text,
             changes, changesfile_content, changes_file_object,
-            status_action[self.status], dry_run, logger)
+            status_action[self.status], dry_run=dry_run, logger=logger,
+            recipients=recipients)
 
     def _isPersonUploader(self, person):
         """Return True if person is an uploader to the package's distro."""

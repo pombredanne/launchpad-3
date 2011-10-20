@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'get_upload_notification_recipients',
     'notify',
     ]
 
@@ -126,8 +127,9 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
            summary_text=None, changes=None, changesfile_content=None,
            changesfile_object=None, action=None, dry_run=False,
-           logger=None, announce_from_person=None, previous_version=None):
-    """Notify about
+           logger=None, announce_from_person=None, previous_version=None,
+           recipients=None):
+    """Notify about an upload or package copy.
 
     :param blamer: The `IPerson` who is to blame for this notification.
     :param spr: The `ISourcePackageRelease` that was created.
@@ -151,7 +153,11 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     :param previous_version: If specified, the change log on the email will
         include all of the source package's change logs after that version
         up to and including the passed spr's version.
+    :param recipients: An iterable of email addresses that are to be
+        notified.
     """
+    assert recipients is not None, "Forgot to pass recipients list."
+
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
     if (
@@ -185,10 +191,6 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     if not files and action != 'rejected':
         return
-
-    recipients = get_upload_notification_recipients(
-        blamer, archive, distroseries, logger, changes=changes, spr=spr,
-        bprs=bprs)
 
     # There can be no recipients if none of the emails are registered
     # in LP.

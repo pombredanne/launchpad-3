@@ -63,9 +63,11 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         distroseries.changeslist = "blah@example.com"
         blamer = self.factory.makePerson()
+        recipients = get_upload_notification_recipients(
+            blamer, archive, distroseries, spr=spr)
         notify(
             blamer, spr, [], [], archive, distroseries, pocket,
-            action='accepted')
+            action='accepted', recipients=recipients)
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
         msg = notifications[1].get_payload(0)
@@ -101,9 +103,12 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         blamer = self.factory.makePerson()
         if from_person is None:
             from_person = self.factory.makePerson()
+        recipients = get_upload_notification_recipients(
+            blamer, archive, distroseries, spr=spr)
         notify(
             blamer, spr, [], [], archive, distroseries, pocket,
-            action='accepted', announce_from_person=from_person)
+            action='accepted', announce_from_person=from_person,
+            recipients=recipients)
 
     def test_notify_from_person_override(self):
         # notify() takes an optional from_person to override the calculated
@@ -117,9 +122,12 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         blamer = self.factory.makePerson()
         from_person = self.factory.makePerson(
             email="lemmy@example.com", displayname="Lemmy Kilmister")
+        recipients = get_upload_notification_recipients(
+            blamer, archive, distroseries, spr=spr)
         notify(
             blamer, spr, [], [], archive, distroseries, pocket,
-            action='accepted', announce_from_person=from_person)
+            action='accepted', announce_from_person=from_person,
+            recipients=recipients)
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
         # The first notification is to the blamer, the second notification is
@@ -142,9 +150,12 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         blamer = self.factory.makePerson()
         from_person = self.factory.makePerson(
             email="loic@example.com", displayname=u"Loïc Motörhead")
+        recipients = get_upload_notification_recipients(
+            blamer, archive, distroseries, spr=spr)
         notify(
             blamer, spr, [], [], archive, distroseries, pocket,
-            action='accepted', announce_from_person=from_person)
+            action='accepted', announce_from_person=from_person,
+            recipients=recipients)
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
         # The first notification is to the blamer, the second notification is
@@ -198,9 +209,11 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
         person = self.factory.makePerson()
+        recipients = get_upload_notification_recipients(
+            person, archive, distroseries, bprs=[bpr])
         notify(
             person, None, [bpr], [], archive, distroseries, pocket,
-            action='rejected')
+            action='rejected', recipients=recipients)
         [notification] = pop_notifications()
         body = notification.get_payload()[0].get_payload()
         self.assertEqual(person_to_email(person), notification['To'])
@@ -320,9 +333,11 @@ class TestNotification(TestCaseWithFactory):
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
         person = self.factory.makePerson()
+        recipients = get_upload_notification_recipients(
+            person, archive, distroseries, bprs=[bpr])
         notify(
             person, None, [bpr], [], archive, distroseries, pocket,
-            action='accepted')
+            action='accepted', recipients=recipients)
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
 
@@ -347,7 +362,11 @@ class TestNotification(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
-        notify(None, None, (), (), archive, distroseries, pocket)
+        recipients = get_upload_notification_recipients(
+            None, archive, distroseries)
+        notify(
+            None, None, (), (), archive, distroseries, pocket,
+            recipients=recipients)
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
 
