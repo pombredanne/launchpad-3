@@ -232,8 +232,8 @@ class TestNotification(TestCaseWithFactory):
     def test_fetch_information_changes(self):
         changes = {
             'Date': '2001-01-01',
-            'Changed-By': 'Foo Bar <foo.bar@canonical.com>',
-            'Maintainer': 'Foo Bar <foo.bar@canonical.com>',
+            'Changed-By': 'Foo Bar <foo.bar@example.com>',
+            'Maintainer': 'Foo Bar <foo.bar@example.com>',
             'Changes': ' * Foo!',
             }
         info = fetch_information(
@@ -247,7 +247,7 @@ class TestNotification(TestCaseWithFactory):
             info['maintainer_displayname'],
             ]
         for field in fields:
-            self.assertEqual('Foo Bar <foo.bar@canonical.com>', field)
+            self.assertEqual('Foo Bar <foo.bar@example.com>', field)
 
     def test_fetch_information_spr(self):
         creator = self.factory.makePerson(displayname=u"foø")
@@ -373,13 +373,13 @@ class TestNotification(TestCaseWithFactory):
         # Test get_upload_notification_recipients with good email addresses..
         blamer = self.factory.makePerson()
         maintainer = self.factory.makePerson(
-            'maintainer@canonical.com', displayname='Maintainer')
+            'maintainer@example.com', displayname='Maintainer')
         changer = self.factory.makePerson(
-            'changer@canonical.com', displayname='Changer')
+            'changer@example.com', displayname='Changer')
         changes = {
             'Date': '2001-01-01',
-            'Changed-By': 'Changer <changer@canonical.com>',
-            'Maintainer': 'Maintainer <maintainer@canonical.com>',
+            'Changed-By': 'Changer <changer@example.com>',
+            'Maintainer': 'Maintainer <maintainer@example.com>',
             'Changes': ' * Foo!',
             }
         recipients = self._run_recipients_test(
@@ -392,13 +392,13 @@ class TestNotification(TestCaseWithFactory):
     def test_get_upload_notification_recipients_bad_maintainer_email(self):
         blamer = self.factory.makePerson()
         maintainer = self.factory.makePerson(
-            'maintainer@canonical.com', displayname='Maintainer')
+            'maintainer@example.com', displayname='Maintainer')
         changer = self.factory.makePerson(
-            'changer@canonical.com', displayname='Changer')
+            'changer@example.com', displayname='Changer')
         changes = {
             'Date': '2001-01-01',
-            'Changed-By': 'Changer <changer@canonical.com>',
-            'Maintainer': 'Maintainer <maintainer at canonical.com>',
+            'Changed-By': 'Changer <changer@example.com>',
+            'Maintainer': 'Maintainer <maintainer at example.com>',
             'Changes': ' * Foo!',
             }
         recipients = self._run_recipients_test(
@@ -412,13 +412,13 @@ class TestNotification(TestCaseWithFactory):
         # email address.
         blamer = self.factory.makePerson()
         maintainer = self.factory.makePerson(
-            'maintainer@canonical.com', displayname='Maintainer')
+            'maintainer@example.com', displayname='Maintainer')
         changer = self.factory.makePerson(
-            'changer@canonical.com', displayname='Changer')
+            'changer@example.com', displayname='Changer')
         changes = {
             'Date': '2001-01-01',
-            'Changed-By': 'Changer <changer at canonical.com>',
-            'Maintainer': 'Maintainer <maintainer@canonical.com>',
+            'Changed-By': 'Changer <changer at example.com>',
+            'Maintainer': 'Maintainer <maintainer@example.com>',
             'Changes': ' * Foo!',
             }
         recipients = self._run_recipients_test(
