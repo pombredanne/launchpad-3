@@ -257,7 +257,6 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def person_picker(self):
-        vocabulary = 'UserTeamsParticipationPlusSelfSimpleDisplay'
         field = copy_field(
             ISourcePackageRecipe['owner'],
             vocabularyName='UserTeamsParticipationPlusSelfSimpleDisplay')
