@@ -732,6 +732,22 @@ Private bugs can only have one bug task.
     True
     >>> firefox_bug.canAddTask()
     False
+
+But we can use a feature flag to avert this restriction.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+    >>> firefox_bug.canAddTask()
+    True
+
+Clean up the feature flag.
+
+    >>> flags.cleanUp()
+
+If we try and a another bug task to a private bug we get an exception.
+
     >>> target = getUtility(IProductSet).getByName('tomcat')
     >>> firefox_bug.addTask(owner=foobar, target=target)
     Traceback (most recent call last):

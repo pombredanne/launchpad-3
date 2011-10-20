@@ -1215,6 +1215,11 @@ BugMessage""" % sqlvalues(self.id))
 
     def canAddTask(self):
         """See `IBug`."""
+        # Some teams need to be able to add more than one bug task to a
+        # private bug (until they get their shit together).
+        if bool(getFeatureFlag(
+            'disclosure.allow_multipillar_private_bugs.enabled')):
+            return True
         return not self.private or len(self.bugtasks) == 0
 
     def addWatch(self, bugtracker, remotebug, owner):
