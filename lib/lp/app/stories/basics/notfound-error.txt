@@ -1,4 +1,5 @@
-= 404 pages =
+404 pages
+=========
 
 If you follow a link from another page to a Launchpad page that doesn't
 exist, the 404 page includes a link back to the referring page.

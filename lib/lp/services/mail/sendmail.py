@@ -47,8 +47,10 @@ import sys
 
 from lazr.restful.utils import get_current_browser_request
 from zope.app import zapi
-from zope.security.proxy import isinstance as zisinstance
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
@@ -214,10 +216,11 @@ class MailController(object):
         self.attachments = []
 
     def addAttachment(self, content, content_type='application/octet-stream',
-                      inline=False, filename=None):
+                      inline=False, filename=None, charset=None):
         attachment = Message()
-        attachment.set_payload(content)
-        attachment['Content-type'] = content_type
+        if charset and isinstance(content, unicode):
+            content = content.encode(charset)
+        attachment.add_header('Content-Type', content_type)
         if inline:
             disposition = 'inline'
         else:
@@ -227,6 +230,7 @@ class MailController(object):
             disposition_kwargs['filename'] = filename
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
+        attachment.set_payload(content, charset)
         self.encodeOptimally(attachment)
         self.attachments.append(attachment)
 
@@ -246,6 +250,10 @@ class MailController(object):
         :param exact: If True, the encoding will ensure newlines are not
             mangled.  If False, 7-bit attachments will not be encoded.
         """
+        # If encoding has already been done by virtue of a charset being
+        # previously specified, then do nothing.
+        if 'Content-Transfer-Encoding' in part:
+            return
         orig_payload = part.get_payload()
         if not exact and is_ascii_only(orig_payload):
             return
@@ -345,13 +353,15 @@ def get_addresses_from_header(email_header):
         formataddr((name, address))
         for name, address in getaddresses([email_header])]
 
+
 def validate_message(message):
     """Validate that the supplied message is suitable for sending."""
-    assert isinstance(message, Message), 'Not an email.Message.Message'
-    assert 'to' in message and bool(message['to']), 'No To: header'
-    assert 'from' in message and bool(message['from']), 'No From: header'
-    assert 'subject' in message and bool(message['subject']), \
-            'No Subject: header'
+    assert isinstance(message, Message), "Not an email.Message.Message"
+    assert 'to' in message and bool(message['to']), "No To: header"
+    assert 'from' in message and bool(message['from']), "No From: header"
+    assert 'subject' in message and bool(message['subject']), (
+            "No Subject: header")
+
 
 def sendmail(message, to_addrs=None, bulk=True):
     """Send an email.Message.Message

@@ -30,6 +30,7 @@ from lp.bugs.model.bug import (
     BugSubscriptionInfo,
     )
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     feature_flags,
     login_person,
@@ -479,6 +480,14 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestBugPrivateAndSecurityRelatedUpdatesMixin, self).setUp()
+        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
+        feature_flag = {f_flag_str: 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
+
     def test_setPrivate_subscribes_person_who_makes_bug_private(self):
         # When setPrivate(True) is called on a bug, the person who is
         # marking the bug private is subscribed to the bug.
@@ -778,6 +787,24 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 bug, expected_recipients, expected_body_text,
                 expected_reason_body, False, True, 'Bug Supervisor')
 
+    def test_structural_bug_supervisor_becomes_direct_on_private(self):
+        # If a bug supervisor has a structural subscription to the bug, and
+        # the bug is marked as private, the supervisor should get a direct
+        # subscription. Otherwise they should be removed, per other tests.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        bug_owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=bug_owner, product=product)
+        with person_logged_in(product.owner):
+            product.addSubscription(bug_supervisor, bug_supervisor)
+
+        self.assertFalse(bug_supervisor in bug.getDirectSubscribers())
+        with person_logged_in(bug_owner):
+            who = self.factory.makePerson(name="who")
+            bug.setPrivacyAndSecurityRelated(
+                private=True, security_related=False, who=who)
+        self.assertTrue(bug_supervisor in bug.getDirectSubscribers())
+
     def test_securityContactUnsubscribedIfBugNotSecurityRelated(self):
         # The security contacts are unsubscribed if a bug has security_related
         # set to false and an email is sent telling them they have been
@@ -845,7 +872,7 @@ class TestBugActivityMethods(TestCaseWithFactory):
         # that bug that falls within a given date range.
         bug = self.factory.makeBug(
             date_created=self.now - timedelta(days=365))
-        self._makeActivityForBug(bug, activity_ages=[200,100])
+        self._makeActivityForBug(bug, activity_ages=[200, 100])
         start_date = self.now - timedelta(days=250)
         end_date = self.now - timedelta(days=150)
         activity = bug.getActivityForDateRange(
@@ -858,7 +885,7 @@ class TestBugActivityMethods(TestCaseWithFactory):
         # falls on the start_ and end_ dates.
         bug = self.factory.makeBug(
             date_created=self.now - timedelta(days=365))
-        self._makeActivityForBug(bug, activity_ages=[300,200,100])
+        self._makeActivityForBug(bug, activity_ages=[300, 200, 100])
         start_date = self.now - timedelta(days=300)
         end_date = self.now - timedelta(days=100)
         activity = bug.getActivityForDateRange(

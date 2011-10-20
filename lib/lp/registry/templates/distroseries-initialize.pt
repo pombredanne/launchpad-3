@@ -72,6 +72,14 @@
       </p>
       </tal:already-initializing>
 
+      <tal:no-publisher
+          condition="view/show_no_publisher_message">
+      <p class="error message">
+        The series' distribution has no publisher configuration.
+        Please ask an administrator to set this up.
+      </p>
+      </tal:no-publisher>
+
     </div>
   </body>
 </html>

@@ -529,8 +529,14 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         remove_all_sample_data_branches()
         self.public_branch = self.factory.makeAnyBranch(name='public')
+        # We make private branch by stacking a public branch on top of a
+        # private one.
+        self.private_stacked_on_branch = self.factory.makeAnyBranch(
+            private=True)
+        self.public_stacked_on_branch = self.factory.makeAnyBranch(
+            stacked_on=self.private_stacked_on_branch)
         self.private_branch1 = self.factory.makeAnyBranch(
-            private=True, name='private1')
+            stacked_on=self.public_stacked_on_branch, name='private1')
         self.private_branch2 = self.factory.makeAnyBranch(
             private=True, name='private2')
         self.all_branches = getUtility(IAllBranches)
@@ -540,7 +546,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # collection.
         self.assertEqual(
             sorted([self.public_branch, self.private_branch1,
-                 self.private_branch2]),
+                 self.private_branch2, self.public_stacked_on_branch,
+                 self.private_stacked_on_branch]),
             sorted(self.all_branches.getBranches()))
 
     def test_anonymous_sees_only_public(self):
@@ -578,7 +585,9 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
         private_branch = self.factory.makeAnyBranch(
-            owner=team, private=True, name='team')
+            owner=team, stacked_on=self.private_stacked_on_branch,
+            name='team')
+        removeSecurityProxy(private_branch).unsubscribe(team, team_owner)
         branches = self.all_branches.visibleByUser(team_owner)
         self.assertEqual(
             sorted([self.public_branch, private_branch]),
@@ -749,7 +758,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         # way, for_branches=None (the default) has a very different behavior
         # than for_branches=[]: the first is no restriction, while the second
         # excludes everything.
-        mp = self.factory.makeBranchMergeProposal()
+        self.factory.makeBranchMergeProposal()
         proposals = self.all_branches.getMergeProposals(for_branches=[])
         self.assertEqual([], list(proposals))
         self.assertIsInstance(proposals, EmptyResultSet)
@@ -760,7 +769,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         # way, merged_revnos=None (the default) has a very different behavior
         # than merged_revnos=[]: the first is no restriction, while the second
         # excludes everything.
-        mp = self.factory.makeBranchMergeProposal()
+        self.factory.makeBranchMergeProposal()
         proposals = self.all_branches.getMergeProposals(merged_revnos=[])
         self.assertEqual([], list(proposals))
         self.assertIsInstance(proposals, EmptyResultSet)

@@ -299,7 +299,7 @@ class BranchLookup:
         result = store.find(
             (Branch.id),
             Branch.id == branch_id,
-            Branch.explicitly_private == False).one()
+            Branch.transitively_private == False).one()
         if result is None:
             return None, None
         else:
@@ -316,7 +316,7 @@ class BranchLookup:
         result = store.find(
             (Branch.id, Branch.unique_name),
             Branch.unique_name.is_in(prefixes),
-            Branch.explicitly_private == False).one()
+            Branch.transitively_private == False).one()
         if result is None:
             return None, None
         else:

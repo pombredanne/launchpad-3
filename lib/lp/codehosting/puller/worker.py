@@ -8,7 +8,7 @@ import socket
 import sys
 import urllib2
 
-import lp.codehosting # to load bzr plugins
+import lp.codehosting  # Needed to load bzr plugins.
 
 from bzrlib import (
     errors,

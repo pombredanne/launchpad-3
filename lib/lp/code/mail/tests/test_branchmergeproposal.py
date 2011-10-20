@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
@@ -219,9 +219,9 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bugtask = bug.default_bugtask
         bmp.source_branch.linkBug(bug, bmp.registrant)
         private_bug = self.factory.makeBug(
-                        title='I am a private bug',
-                        owner = private_bug_owner,
-                        private=True)
+            title='I am a private bug',
+            owner=private_bug_owner,
+            private=True)
         private_bugtask = private_bug.default_bugtask
         with person_logged_in(private_bug_owner):
             bmp.source_branch.linkBug(private_bug, bmp.registrant)
@@ -347,7 +347,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
-        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual(
+            'text/x-diff; charset="utf-8"', attachment['Content-Type'])
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text, attachment.get_payload(decode=True))
@@ -373,7 +374,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
-        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual(
+            'text/x-diff; charset="utf-8"', attachment['Content-Type'])
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text[:25], attachment.get_payload(decode=True))

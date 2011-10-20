@@ -6,10 +6,15 @@ __metaclass__ = type
 from cStringIO import StringIO
 import datetime
 
-from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,
@@ -18,8 +23,17 @@ from canonical.launchpad.testing.pages import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -32,13 +46,21 @@ from lp.registry.model.product import (
     )
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import (
+    celebrity_logged_in,
     login,
     login_person,
     TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.matchers import (
+    DoesNotSnapshot,
+    Provides,
+    )
 from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes,
+    )
 
 
 class TestProduct(TestCaseWithFactory):
@@ -50,6 +72,21 @@ class TestProduct(TestCaseWithFactory):
         # Products are really called Projects
         product = self.factory.makeProduct()
         self.assertEqual("Project", product.pillar_category)
+
+    def test_implements_interfaces(self):
+        # Product fully implements its interfaces.
+        product = removeSecurityProxy(self.factory.makeProduct())
+        self.assertThat(product, Provides(IProduct))
+        self.assertThat(product, Provides(IBugSummaryDimension))
+        self.assertThat(product, Provides(IFAQTarget))
+        self.assertThat(product, Provides(IHasBugHeat))
+        self.assertThat(product, Provides(IHasBugSupervisor))
+        self.assertThat(product, Provides(IHasCustomLanguageCodes))
+        self.assertThat(product, Provides(IHasIcon))
+        self.assertThat(product, Provides(IHasLogo))
+        self.assertThat(product, Provides(IHasMugshot))
+        self.assertThat(product, Provides(ILaunchpadUsage))
+        self.assertThat(product, Provides(IServiceUsage))
 
     def test_deactivation_failure(self):
         # Ensure that a product cannot be deactivated if
@@ -305,29 +342,30 @@ class ProductAttributeCacheTestCase(TestCase):
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
-    """A TestCase for product snapshots."""
+    """Test product snapshots.
 
-    layer = DatabaseFunctionalLayer
+    Some attributes of a product should not be included in snapshots,
+    typically because they are either too costly to fetch unless there's
+    a real need, or because they get too big and trigger a shortlist
+    overflow error.
+
+    To stop an attribute from being snapshotted, wrap its declaration in
+    the interface in `doNotSnapshot`.
+    """
+
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(ProductSnapshotTestCase, self).setUp()
         self.product = self.factory.makeProduct(name="shamwow")
 
-    def test_snapshot(self):
-        """Snapshots of products should not include marked attribues.
-
-        Wrap an export with 'doNotSnapshot' to force the snapshot to not
-        include that attribute.
-        """
-        snapshot = Snapshot(self.product, providing=IProduct)
+    def test_excluded_from_snapshot(self):
         omitted = [
             'series',
+            'recipes',
             'releases',
             ]
-        for attribute in omitted:
-            self.assertFalse(
-                hasattr(snapshot, attribute),
-                "Snapshot should not include %s." % attribute)
+        self.assertThat(self.product, DoesNotSnapshot(omitted, IProduct))
 
 
 class BugSupervisorTestCase(TestCaseWithFactory):
@@ -353,6 +391,24 @@ class BugSupervisorTestCase(TestCaseWithFactory):
             "Instead, bug supervisor for firefox is %s" % (
             self.person.name, self.product.name,
             self.product.bug_supervisor.name))
+
+
+class TestProductTranslations(TestCaseWithFactory):
+    """A TestCase for accessing product translations-related attributes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rosetta_expert(self):
+        # Ensure rosetta-experts can set Product attributes
+        # related to translations.
+        product = self.factory.makeProduct()
+        new_series = self.factory.makeProductSeries(product=product)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('rosetta_experts'):
+            product.translations_usage = ServiceUsage.LAUNCHPAD
+            product.translation_focus = new_series
+            product.translationgroup = group
+            product.translationpermission = TranslationPermission.CLOSED
 
 
 class TestWebService(WebServiceTestCase):

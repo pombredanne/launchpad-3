@@ -40,8 +40,8 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
-    TeamInvitationView,
     )
+from lp.registry.browser.team import TeamInvitationView
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -280,7 +280,7 @@ class TestPersonEditView(TestCaseWithFactory):
         self.assertTrue(self.view.form_fields['name'].for_display)
         self.assertEqual(
             self.view.widgets['name'].hint,
-            "This user has an active PPA with packages published and "
+            "This person has an active PPA with packages published and "
             "may not be renamed.")
 
     def test_cannot_rename_with_deleting_PPA(self):
@@ -1023,9 +1023,11 @@ class BugTaskViewsTestBase:
             self.owned_bug = self.factory.makeBug(owner=self.person)
             self.commented_bug = self.factory.makeBug()
             self.commented_bug.newMessage(owner=self.person)
+            self.affecting_bug = self.factory.makeBug()
+            self.affecting_bug.markUserAffected(self.person)
 
         for bug in (self.subscribed_bug, self.assigned_bug, self.owned_bug,
-                    self.commented_bug):
+                    self.commented_bug, self.affecting_bug):
             with person_logged_in(bug.default_bugtask.product.owner):
                 milestone = self.factory.makeMilestone(
                     product=bug.default_bugtask.product)
@@ -1065,12 +1067,21 @@ class BugTaskViewsTestBase:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
         self.assertThat(recorder, HasQueryCount(LessThan(3)))
 
+    def test_context_description(self):
+        # view.context_description returns a string that can be used
+        # in texts like "Bugs in $context_descirption"
+        view = create_initialized_view(self.person, self.view_name)
+        self.assertEqual(
+            self.expected_context_description % self.person.displayname,
+            view.context_description)
+
 
 class TestPersonRelatedBugTaskSearchListingView(
     BugTaskViewsTestBase, TestCaseWithFactory):
     """Tests for PersonRelatedBugTaskSearchListingView."""
 
     view_name = '+bugs'
+    expected_context_description = 'related to %s'
 
     def setUp(self):
         super(TestPersonRelatedBugTaskSearchListingView, self).setUp()
@@ -1087,6 +1098,7 @@ class TestPersonAssignedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+assignedbugs'
+    expected_context_description = 'assigned to %s'
 
     def setUp(self):
         super(TestPersonAssignedBugTaskSearchListingView, self).setUp()
@@ -1100,6 +1112,7 @@ class TestPersonCommentedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+commentedbugs'
+    expected_context_description = 'commented on by %s'
 
     def setUp(self):
         super(TestPersonCommentedBugTaskSearchListingView, self).setUp()
@@ -1113,6 +1126,7 @@ class TestPersonReportedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+reportedbugs'
+    expected_context_description = 'reported by %s'
 
     def setUp(self):
         super(TestPersonReportedBugTaskSearchListingView, self).setUp()
@@ -1126,10 +1140,28 @@ class TestPersonSubscribedBugTaskSearchListingView(
     """Tests for PersonAssignedBugTaskSearchListingView."""
 
     view_name = '+subscribedbugs'
+    expected_context_description = '%s is subscribed to'
 
     def setUp(self):
         super(TestPersonSubscribedBugTaskSearchListingView, self).setUp()
         self.expected_for_search_unbatched = [
             self.subscribed_bug.default_bugtask,
             self.owned_bug.default_bugtask,
+            ]
+
+
+class TestPersonAffectingBugTaskSearchListingView(
+    BugTaskViewsTestBase, TestCaseWithFactory):
+    """Tests for PersonAffectingBugTaskSearchListingView."""
+
+    view_name = '+affectingbugs'
+    expected_context_description = 'affecting %s'
+
+    def setUp(self):
+        super(TestPersonAffectingBugTaskSearchListingView, self).setUp()
+        # Bugs filed by this user are marked as affecting them by default, so
+        # the bug we filed is returned.
+        self.expected_for_search_unbatched = [
+            self.owned_bug.default_bugtask,
+            self.affecting_bug.default_bugtask,
             ]

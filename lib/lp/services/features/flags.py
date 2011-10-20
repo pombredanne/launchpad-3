@@ -44,6 +44,10 @@ flag_info = sorted([
      'boolean',
      ('Enables the display of bugtracker components.'),
      ''),
+    ('bugs.dynamic_bug_listings.enabled',
+     'boolean',
+     ('Enables the dynamic configuration of bug listings.'),
+     ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
@@ -104,10 +108,6 @@ flag_info = sorted([
      'boolean',
      'Shows the server-side page render time in the login widget.',
      ''),
-    ('bugs.private_notification.enabled',
-     'boolean',
-     'Changes the appearance of notifications on private bugs.',
-     ''),
     ('disclosure.dsp_picker.enabled',
      'boolean',
      'Enables the use of the new DistributionSourcePackage vocabulary for '
@@ -138,6 +138,15 @@ flag_info = sorted([
      ('Enables the application of additional privacy filter terms in bug '
       'queries to allow defined project roles to see private bugs.'),
      ''),
+    ('disclosure.enhanced_private_bug_subscriptions.enabled',
+     'boolean',
+     ('Enables the auto subscribing and unsubscribing of users as a bug '
+      'transitions between public, private and security related states.'),
+     ''),
+    ('disclosure.delete_bugtask.enabled',
+     'boolean',
+     ('Enables bugtasks to be deleted by authorised users.'),
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
@@ -150,6 +159,21 @@ flag_info = sorted([
       'series).  Use the default domain.  Specify a single '
       'asterisk ("*") to enable for all products.'),
      'None are enabled'),
+    ('longpoll.merge_proposals.enabled',
+     'boolean',
+     ('Enables the longpoll mechanism for merge proposals so that diffs, '
+      'for example, are updated in-page when they are ready.'),
+     ''),
+    ('ajax.batch_navigator.enabled',
+     'boolean',
+     ('If true, batch navigators which have been wired to do so use ajax '
+     'calls to load the next batch of data.'),
+     ''),
+    ('disclosure.log_private_team_leaks.enabled',
+     'boolean',
+     ('Enables soft OOPSes for code that is mixing visibility rules, such '
+      'as disclosing private teams, so the data can be analyzed.'),
+     ''),
     ])
 
 # The set of all flag names that are documented.

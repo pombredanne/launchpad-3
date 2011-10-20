@@ -77,6 +77,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
@@ -758,23 +759,25 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     def submit(self, action, data):
         """Stub for the Javascript in the page to use."""
 
-    @property
+    @cachedproperty
     def is_derived_series_feature_enabled(self):
         return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
 
-    @property
+    @cachedproperty
     def show_derivation_not_yet_available(self):
         return not self.is_derived_series_feature_enabled
 
-    @property
+    @cachedproperty
     def show_derivation_form(self):
         return (
             self.is_derived_series_feature_enabled and
             not self.show_previous_series_empty_message and
-            not self.context.isInitializing() and
-            not self.context.isInitialized())
+            not self.show_already_initializing_message and
+            not self.show_already_initialized_message and
+            not self.show_no_publisher_message
+            )
 
-    @property
+    @cachedproperty
     def show_previous_series_empty_message(self):
         # There is a problem here:
         # The distribution already has initialized series and this
@@ -784,17 +787,26 @@ class DistroSeriesInitializeView(LaunchpadFormView):
             self.context.distribution.has_published_sources and
             self.context.previous_series is None)
 
-    @property
+    @cachedproperty
     def show_already_initialized_message(self):
         return (
             self.is_derived_series_feature_enabled and
             self.context.isInitialized())
 
-    @property
+    @cachedproperty
     def show_already_initializing_message(self):
         return (
             self.is_derived_series_feature_enabled and
             self.context.isInitializing())
+
+    @cachedproperty
+    def show_no_publisher_message(self):
+        distribution = self.context.distribution
+        publisherconfigset = getUtility(IPublisherConfigSet)
+        pub_config = publisherconfigset.getByDistribution(distribution)
+        return (
+            self.is_derived_series_feature_enabled and
+            pub_config is None)
 
     @property
     def next_url(self):

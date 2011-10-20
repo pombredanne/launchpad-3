@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize the cluster.
@@ -9,32 +9,42 @@ This script is run once to convert a singledb Launchpad instance to
 a replicated setup.
 """
 
-import _pythonpath
-
 from optparse import OptionParser
 import subprocess
 import sys
 
+import _pythonpath
 import helpers
 
 from canonical.config import config
-from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.database.postgresql import (
-        all_sequences_in_schema, all_tables_in_schema, ConnectionString
-        )
+    all_sequences_in_schema,
+    all_tables_in_schema,
+    ConnectionString,
+    )
+from canonical.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
 from canonical.launchpad.scripts import (
-        logger, logger_options, db_options
-        )
+    db_options,
+    logger,
+    logger_options,
+    )
+
 
 __metaclass__ = type
 __all__ = []
 
 
-log = None # Global logger, initialized in main()
+# Global logger, initialized in main().
+log = None
 
-options = None # Parsed command line options, initialized in main()
+# Parsed command line options, initialized in main().
+options = None
 
-cur = None # Shared database cursor to the master, initialized in main()
+# Shared database cursor to the master, initialized in main().
+cur = None
 
 
 def duplicate_schema():
@@ -83,7 +93,8 @@ def initialize_cluster():
 
 def ensure_live():
     log.info('Ensuring slon daemons are live and propagating events.')
-    helpers.sync(120) # Will exit on failure.
+    # This will exit on failure.
+    helpers.sync(120)
 
 
 def create_replication_sets(lpmain_tables, lpmain_sequences):
@@ -134,7 +145,8 @@ def create_replication_sets(lpmain_tables, lpmain_sequences):
         """)
     helpers.execute_slonik('\n'.join(script), sync=600)
 
-    helpers.validate_replication(cur) # Explode now if we have messed up.
+    # Explode now if we have messed up.
+    helpers.validate_replication(cur)
 
 
 def main():

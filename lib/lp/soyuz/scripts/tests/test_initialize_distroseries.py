@@ -17,6 +17,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
@@ -122,15 +123,22 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                 self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
 
     def _fullInitialize(self, parents, child=None, previous_series=None,
-                        arches=(), packagesets=(), rebuild=False,
-                        distribution=None, overlays=(),
+                        arches=(), archindep_archtag=None, packagesets=(),
+                        rebuild=False, distribution=None, overlays=(),
                         overlay_pockets=(), overlay_components=()):
         if child is None:
             child = self.factory.makeDistroSeries(
                 distribution=distribution, previous_series=previous_series)
+        publisherconfigset = getUtility(IPublisherConfigSet)
+        pub_config = publisherconfigset.getByDistribution(child.distribution)
+        if pub_config is None:
+            self.factory.makePublisherConfig(distribution=child.distribution)
         ids = InitializeDistroSeries(
-            child, [parent.id for parent in parents], arches, packagesets,
-            rebuild, overlays, overlay_pockets, overlay_components)
+            child, [parent.id for parent in parents], arches=arches,
+            archindep_archtag=archindep_archtag,
+            packagesets=packagesets, rebuild=rebuild, overlays=overlays,
+            overlay_pockets=overlay_pockets,
+            overlay_components=overlay_components)
         ids.check()
         ids.initialize()
         return child
@@ -254,7 +262,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         parent, parent_das, parent_das2, source = res
         # Create builds for the architecture of parent_das2.
         source.createMissingBuilds(architectures_available=[parent_das2])
-        # Initialize only with parent_das2's architecture.
+        # Initialize only with parent_das's architecture.
         child = self.factory.makeDistroSeries()
         ids = InitializeDistroSeries(
             child, [parent.id], arches=[parent_das2.architecturetag])
@@ -288,13 +296,13 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # architecture we're initializing with, IDS will succeed.
         res = self.create2archParentAndSource(packages={'p1': '1.1'})
         parent, parent_das, parent_das2, source = res
-        # Create builds for the architecture of parent_das2.
-        source.createMissingBuilds(architectures_available=[parent_das2])
-        # Initialize only with parent_das's architecture.
+        # Create builds for the architecture of parent_das.
+        source.createMissingBuilds(architectures_available=[parent_das])
+        # Initialize only with parent_das2's architecture.
         child = self.factory.makeDistroSeries(
             distribution=parent.distribution, previous_series=parent)
         ids = InitializeDistroSeries(
-            child, arches=[parent_das.architecturetag])
+            child, arches=[parent_das2.architecturetag])
 
         # No error is raised because we're initializing only the architecture
         # which has no pending builds in it.
@@ -1149,6 +1157,19 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
              "and a parent was not explicitly specified."),
             ids.check)
 
+    def test_derive_no_publisher_config(self):
+        # Initializing a series without a publisher config
+        # triggers an error.
+        distribution = self.factory.makeDistribution(
+            no_pubconf=True, name="distro")
+        child = self.factory.makeDistroSeries(distribution=distribution)
+        ids = InitializeDistroSeries(child, [])
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("Distribution distro has no publisher configuration. "
+             "Please ask an administrator to set this up."),
+            ids.check)
+
     def createDistroSeriesWithPublication(self, distribution=None):
         # Create a distroseries with a publication in the DEBUG archive.
         distroseries = self.factory.makeDistroSeries(
@@ -1365,3 +1386,77 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual([], self.getWaitingJobs(child, 'p2', prev_parent2))
         self.assertNotEqual([], self.getWaitingJobs(child, 'p1', parent3))
         self.assertEqual([], self.getWaitingJobs(child, 'p3', parent3))
+
+    def test_multiple_parents_child_nominatedarchindep(self):
+        # If the list of the selected architectures and the list of the
+        # nominatedarchindep for all the parent intersect, the child's
+        # nominatedarchindep is taken from the intersection of the two
+        # lists.
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        parent2, unused = self.setupParent(packages={}, arch_tag='amd64')
+        child = self._fullInitialize(
+            [parent1, parent2],
+            arches=[parent2.nominatedarchindep.architecturetag])
+        self.assertEqual(
+            parent2.nominatedarchindep.architecturetag,
+            child.nominatedarchindep.architecturetag)
+
+    def test_multiple_parents_no_child_nominatedarchindep(self):
+        # If the list of the selected architectures and the list of the
+        # nominatedarchindep for all the parents don't intersect, an
+        # error is raised because it means that the child won't have an
+        # architecture to build architecture independent binaries.
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        self.setupDas(parent1, 'powerpc', 'hppa')
+        parent2, unused = self.setupParent(packages={}, arch_tag='amd64')
+        child = self.factory.makeDistroSeries()
+        ids = InitializeDistroSeries(
+            child, [parent1.id, parent2.id],
+            arches=['hppa'])
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("The distroseries has no architectures selected to "
+             "build architecture independent binaries."),
+            ids.check)
+
+    def test_override_child_nominatedarchindep(self):
+        # One can use archindep_archtag to force the nominatedarchindep
+        # of the derived series.
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        self.setupDas(parent1, 'powerpc', 'hppa')
+        self.setupDas(parent1, 'amd64', 'amd64')
+        parent2, unused = self.setupParent(packages={}, arch_tag='i386')
+        child = self._fullInitialize(
+            [parent1, parent2], arches=['i386', 'hppa'],
+            archindep_archtag='hppa')
+        self.assertEqual(
+            'hppa',
+            child.nominatedarchindep.architecturetag)
+
+    def test_override_child_nominatedarchindep_with_all_arches(self):
+        # If arches is omitted from the call to initialize, all the
+        # parents' architecture are selected.
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        self.setupDas(parent1, 'powerpc', 'hppa')
+        self.setupDas(parent1, 'amd64', 'amd64')
+        parent2, unused = self.setupParent(packages={}, arch_tag='i386')
+        child = self._fullInitialize(
+            [parent1, parent2], archindep_archtag='hppa')
+        self.assertEqual(
+            'hppa',
+            child.nominatedarchindep.architecturetag)
+
+    def test_invalid_archindep_archtag(self):
+        # If the given archindep_archtag is not among the selected
+        # architectures, an error is raised.
+        parent1, unused = self.setupParent(packages={}, arch_tag='i386')
+        parent2, unused = self.setupParent(packages={}, arch_tag='amd64')
+        child = self.factory.makeDistroSeries()
+        ids = InitializeDistroSeries(
+            child, [parent1.id, parent2.id],
+            arches=['i386', 'amd64'], archindep_archtag='hppa')
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("The selected architecture independent architecture tag is not "
+             "among the selected architectures."),
+            ids.check)

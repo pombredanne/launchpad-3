@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -14,6 +14,7 @@ from datetime import (
     timedelta,
     )
 import logging
+import multiprocessing
 import os
 import threading
 import time
@@ -22,12 +23,9 @@ from contrib.glock import (
     GlobalLock,
     LockAlreadyAcquired,
     )
-import multiprocessing
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import (
-    In,
-    )
+from storm.expr import In
 from storm.locals import (
     Max,
     Min,
@@ -47,6 +45,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -60,9 +59,14 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    BugTaskStatusSearch,
+    )
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
@@ -91,8 +95,8 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -192,6 +196,18 @@ class BulkPruner(TunableLoop):
     def cleanUp(self):
         """See `ITunableLoop`."""
         self.store.execute("CLOSE %s" % self.cursor_name)
+
+
+class LoginTokenPruner(BulkPruner):
+    """Remove old LoginToken rows.
+
+    After 1 year, they are useless even for archaeology.
+    """
+    target_table_class = LoginToken
+    ids_to_prune_query = """
+        SELECT id FROM LoginToken WHERE
+        created < CURRENT_TIMESTAMP - CAST('1 year' AS interval)
+        """
 
 
 class POTranslationPruner(BulkPruner):
@@ -1284,6 +1300,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         HWSubmissionEmailLinker,
+        LoginTokenPruner,
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,

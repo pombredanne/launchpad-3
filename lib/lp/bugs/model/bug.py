@@ -30,7 +30,6 @@ from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator
-import pytz
 import re
 
 from lazr.lifecycle.event import (
@@ -39,6 +38,7 @@ from lazr.lifecycle.event import (
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from pytz import timezone
 from sqlobject import (
     BoolCol,
@@ -122,9 +122,9 @@ from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
     BugConvertedToQuestion,
+    BugDuplicateChange,
     BugWatchAdded,
     BugWatchRemoved,
-    BugDuplicateChange,
     SeriesNominated,
     UnsubscribedFromBug,
     )
@@ -150,6 +150,7 @@ from lp.bugs.interfaces.bugnomination import (
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -170,7 +171,7 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
-    get_bug_privacy_filter
+    get_bug_privacy_filter,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
@@ -199,6 +200,7 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.messages.interfaces.message import (
     IMessage,
@@ -1180,6 +1182,15 @@ BugMessage""" % sqlvalues(self.id))
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
+            for bugtask in self.bugtasks:
+                # Check the stored value so we don't write to unaltered tasks.
+                if (bugtask._status in (
+                    BugTaskStatus.INCOMPLETE,
+                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)):
+                    # This is not a semantic change, so we don't update date
+                    # records or send email.
+                    bugtask._status = (
+                        BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             # XXX 2008-05-27 jamesh:
             # Ensure that BugMessages get flushed in same order as
             # they are created.
@@ -1386,7 +1397,9 @@ BugMessage""" % sqlvalues(self.id))
         if len(non_invalid_bugtasks) != 1:
             return None
         [valid_bugtask] = non_invalid_bugtasks
-        if valid_bugtask.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+        pillar = valid_bugtask.pillar
+        if (pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD
+            and pillar.answers_usage == ServiceUsage.LAUNCHPAD):
             return valid_bugtask
         else:
             return None
@@ -1656,11 +1669,15 @@ BugMessage""" % sqlvalues(self.id))
         security_related_changed = False
         bug_before_modification = Snapshot(self, providing=providedBy(self))
 
-        # Before we update the privacy or security_related status, we need to
-        # reconcile the subscribers to avoid leaking private information.
-        if (self.private != private
-                or self.security_related != security_related):
-            self.reconcileSubscribers(private, security_related, who)
+        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
+        f_flag = bool(getFeatureFlag(f_flag_str))
+        if f_flag:
+            # Before we update the privacy or security_related status, we
+            # need to reconcile the subscribers to avoid leaking private
+            # information.
+            if (self.private != private
+                    or self.security_related != security_related):
+                self.reconcileSubscribers(private, security_related, who)
 
         if self.private != private:
             private_changed = True
@@ -1689,10 +1706,34 @@ BugMessage""" % sqlvalues(self.id))
 
         if private_changed or security_related_changed:
             changed_fields = []
+
             if private_changed:
                 changed_fields.append('private')
+                if not f_flag and private:
+                    # If we didn't call reconcileSubscribers, we may have
+                    # bug supervisors who should be on this bug, but aren't.
+                    supervisors = set()
+                    for bugtask in self.bugtasks:
+                        supervisors.add(bugtask.pillar.bug_supervisor)
+                    if None in supervisors:
+                        supervisors.remove(None)
+                    for s in supervisors:
+                        subscriptions = get_structural_subscriptions_for_bug(
+                                            self, s)
+                        if subscriptions != []:
+                            self.subscribe(s, who)
+
             if security_related_changed:
                 changed_fields.append('security_related')
+                if not f_flag and security_related:
+                    # The bug turned out to be security-related, subscribe the
+                    # security contact. We do it here only if the feature flag
+                    # is not set, otherwise it's done in
+                    # reconcileSubscribers().
+                    for pillar in self.affected_pillars:
+                        if pillar.security_contact is not None:
+                            self.subscribe(pillar.security_contact, who)
+
             notify(ObjectModifiedEvent(
                     self, bug_before_modification, changed_fields, user=who))
 
@@ -1861,18 +1902,23 @@ BugMessage""" % sqlvalues(self.id))
 
     def _setTags(self, tags):
         """Set the tags from a list of strings."""
-        # In order to preserve the ordering of the tags, delete all tags
-        # and insert the new ones.
+        # Sets provide an easy way to get the difference between the old and
+        # new tags.
         new_tags = set([tag.lower() for tag in tags])
         old_tags = set(self.tags)
+        # The cache will be stale after we add/remove tags, clear it.
         del get_property_cache(self)._cached_tags
-        added_tags = new_tags.difference(old_tags)
+        # Find the set of tags that are to be removed and remove them.
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
             tag = BugTag.selectOneBy(bug=self, tag=removed_tag)
             tag.destroySelf()
+        # Find the set of tags that are to be added and add them.
+        added_tags = new_tags.difference(old_tags)
         for added_tag in added_tags:
             BugTag(bug=self, tag=added_tag)
+        # Write all pending changes to the DB, including any pending non-tag
+        # changes.
         Store.of(self).flush()
 
     tags = property(_getTags, _setTags)
@@ -2239,6 +2285,7 @@ BugMessage""" % sqlvalues(self.id))
             BugActivity.datechanged >= start_date,
             BugActivity.datechanged <= end_date)
         return activity_in_range
+
 
 @ProxyFactory
 def get_also_notified_subscribers(

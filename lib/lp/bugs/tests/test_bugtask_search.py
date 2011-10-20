@@ -12,9 +12,7 @@ import unittest
 import pytz
 from storm.expr import Join
 from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    )
+from testtools.matchers import Equals
 from zope.component import getUtility
 
 from canonical.launchpad.searchbuilder import (
@@ -23,8 +21,8 @@ from canonical.launchpad.searchbuilder import (
     greater_than,
     )
 from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
@@ -54,6 +52,7 @@ from lp.testing import (
     )
 from lp.testing.matchers import HasQueryCount
 
+
 PRIVATE_BUG_VISIBILITY_FLAG = {
     'disclosure.private_bug_visibility_rules.enabled': 'on'}
 
@@ -76,18 +75,19 @@ class SearchTestBase:
 
     def test_aggregate_by_target(self):
         # BugTaskSet.search supports returning the counts for each target (as
-        # long only one type of target was selected).
+        # long as only one type of target was selected).
         if self.group_on is None:
             # Not a useful/valid permutation.
             return
         self.getBugTaskSearchParams(user=None, multitarget=True)
         # The test data has 3 bugs for searchtarget and 6 for searchtarget2.
+        user = self.factory.makePerson()
         expected = {(self.targetToGroup(self.searchtarget),): 3,
             (self.targetToGroup(self.searchtarget2),): 6}
-        user = self.factory.makePerson()
-        self.assertEqual(expected, self.bugtask_set.countBugs(user,
-            (self.searchtarget, self.searchtarget2),
-            group_on=self.group_on))
+        actual = self.bugtask_set.countBugs(
+            user, (self.searchtarget, self.searchtarget2),
+            group_on=self.group_on)
+        self.assertEqual(expected, actual)
 
     def test_search_all_bugtasks_for_target(self):
         # BugTaskSet.search() returns all bug tasks for a given bug

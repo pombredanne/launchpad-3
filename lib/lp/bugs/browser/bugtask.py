@@ -29,7 +29,6 @@ __all__ = [
     'BugTasksAndNominationsView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
-    'BugTaskStatusView',
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
@@ -57,6 +56,7 @@ from operator import attrgetter
 import re
 import transaction
 import urllib
+import urlparse
 
 from lazr.delegates import delegates
 from lazr.enum import (
@@ -84,14 +84,10 @@ from zope import (
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
-    IDisplayWidget,
     IInputWidget,
     InputErrors,
     )
-from zope.app.form.utility import (
-    setUpWidget,
-    setUpWidgets,
-    )
+from zope.app.form.utility import setUpWidget
 from zope.component import (
     ComponentLookupError,
     getAdapter,
@@ -109,7 +105,6 @@ from zope.interface import (
 from zope.schema import Choice
 from zope.schema.interfaces import (
     IContextSourceBinder,
-    IList,
     )
 from zope.schema.vocabulary import (
     getVocabularyRegistry,
@@ -228,6 +223,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
@@ -269,8 +265,12 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -286,6 +286,8 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
     BugTaskStatus.EXPIRED: False,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE: True,
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE: True,
     }
 
 
@@ -784,7 +786,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             if offset is None:
                 offset = self.visible_initial_comments
             comments = self._getComments([
-                slice(offset, offset+batch_size)])
+                slice(offset, offset + batch_size)])
         else:
             # the comment function takes 0-offset counts where comment 0 is
             # the initial description, so we need to add one to the limits
@@ -1263,6 +1265,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     user_is_subscribed = None
     edit_form = ViewPageTemplateFile('../templates/bugtask-edit-form.pt')
 
+    _next_url_override = None
+
     # The field names that we use by default. This list will be mutated
     # depending on the current context and the permissions of the user viewing
     # the form.
@@ -1359,7 +1363,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     @property
     def next_url(self):
         """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
+        if self._next_url_override is None:
+            return canonical_url(self.context)
+        else:
+            return self._next_url_override
 
     @property
     def initial_values(self):
@@ -1570,7 +1577,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         milestone_ignored = False
         missing = object()
         new_target = new_values.pop("target", missing)
-        if new_target is not missing and bugtask.target != new_target:
+        if (new_target is not missing and
+            bugtask.target.pillar != new_target.pillar):
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
@@ -1705,6 +1713,19 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
 
+            # We clear the known views cache because the bug may not be
+            # viewable anymore by the current user. If the bug is not
+            # viewable, then we redirect to the current bugtask's pillar's
+            # bug index page with a message.
+            get_property_cache(bugtask.bug)._known_viewers = set()
+            if not bugtask.bug.userCanView(self.user):
+                self.request.response.addWarningNotification(
+                    "The bug you have just updated is now a private bug for "
+                    "%s. You do not have permission to view such bugs."
+                    % bugtask.pillar.displayname)
+                self._next_url_override = canonical_url(
+                    new_target.pillar, rootsite='bugs')
+
         if (bugtask.sourcepackagename and (
             self.widgets.get('target') or
             self.widgets.get('sourcepackagename'))):
@@ -1734,36 +1755,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     def save_action(self, action, data):
         """Update the bugtask with the form data."""
         self.updateContextFromData(data)
-
-
-class BugTaskStatusView(LaunchpadView):
-    """Viewing the status of a bug task."""
-
-    page_title = 'View status'
-
-    def initialize(self):
-        """Set up the appropriate widgets.
-
-        Different widgets are shown depending on if it's a remote bug
-        task or not.
-        """
-        field_names = [
-            'status', 'importance', 'assignee']
-        if not self.context.target_uses_malone:
-            field_names += ['bugwatch']
-            self.milestone_widget = None
-        else:
-            field_names += ['milestone']
-            self.bugwatch_widget = None
-
-        if self.context.distroseries or self.context.distribution:
-            field_names += ['sourcepackagename']
-
-        self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
-        self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-        self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
-
-        setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
 
 
 class BugTaskListingView(LaunchpadView):
@@ -1907,6 +1898,17 @@ class BugsInfoMixin:
             return get_buglisting_search_filter_url(assignee=self.user.name)
 
     @property
+    def my_affecting_bugs_url(self):
+        """A URL to a list of bugs affecting the current user, or None if
+        there is no current user.
+        """
+        if self.user is None:
+            return None
+        return get_buglisting_search_filter_url(
+            affecting_me=True,
+            orderby='-date_last_updated')
+
+    @property
     def my_reported_bugs_url(self):
         """A URL to a list of bugs reported by the user, or None."""
         if self.user is None:
@@ -2047,6 +2049,15 @@ class BugsStatsMixin(BugsInfoMixin):
         return self.context.searchTasks(params).count()
 
     @property
+    def my_affecting_bugs_count(self):
+        """A count of bugs affecting the user, or None."""
+        if self.user is None:
+            return None
+        params = get_default_search_params(self.user)
+        params.affects_me = True
+        return self.context.searchTasks(params).count()
+
+    @property
     def bugs_with_patches_count(self):
         """A count of unresolved bugs with patches."""
         return self._bug_stats['with_patch']
@@ -2062,7 +2073,9 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 def get_buglisting_search_filter_url(
         assignee=None, importance=None, status=None, status_upstream=None,
-        has_patches=None, bug_reporter=None):
+        has_patches=None, bug_reporter=None,
+        affecting_me=None,
+        orderby=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -2078,6 +2091,10 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.has_patch', 'on'))
     if bug_reporter is not None:
         search_params.append(('field.bug_reporter', bug_reporter))
+    if affecting_me is not None:
+        search_params.append(('field.affects_me', 'on'))
+    if orderby is not None:
+        search_params.append(('orderby', orderby))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
@@ -2086,57 +2103,6 @@ def get_buglisting_search_filter_url(
         search_filter_url += "&" + query_string
 
     return search_filter_url
-
-
-def getInitialValuesFromSearchParams(search_params, form_schema):
-    """Build a dictionary that can be given as initial values to
-    setUpWidgets, based on the given search params.
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
-    >>> for status in initial['status']:
-    ...     print status.name
-    NEW
-    INCOMPLETE
-    CONFIRMED
-    TRIAGED
-    INPROGRESS
-    FIXCOMMITTED
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': BugTaskStatus.INVALID}, IBugTaskSearch)
-    >>> [status.name for status in initial['status']]
-    ['INVALID']
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'importance': [BugTaskImportance.CRITICAL,
-    ...                   BugTaskImportance.HIGH]}, IBugTaskSearch)
-    >>> [importance.name for importance in initial['importance']]
-    ['CRITICAL', 'HIGH']
-
-    >>> getInitialValuesFromSearchParams(
-    ...     {'assignee': NULL}, IBugTaskSearch)
-    {'assignee': None}
-    """
-    initial = {}
-    for key, value in search_params.items():
-        if IList.providedBy(form_schema[key]):
-            if isinstance(value, any):
-                value = value.query_values
-            elif isinstance(value, (list, tuple)):
-                value = value
-            else:
-                value = [value]
-        elif value == NULL:
-            value = None
-        else:
-            # Should be safe to pass value as it is to setUpWidgets, no need
-            # to worry
-            pass
-
-        initial[key] = value
-
-    return initial
 
 
 class BugTaskListingItem:
@@ -2497,6 +2463,18 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             raise AssertionError(
                 "Unrecognized context; don't know which report "
                 "columns to show.")
+
+    bugtask_table_template = ViewPageTemplateFile(
+        '../templates/bugs-table-include.pt')
+
+    @property
+    def template(self):
+        query_string = self.request.get('QUERY_STRING') or ''
+        query_params = urlparse.parse_qs(query_string)
+        if 'batch_request' in query_params:
+            return self.bugtask_table_template
+        else:
+            return super(BugTaskSearchListingView, self).template
 
     def validate_search_params(self):
         """Validate the params passed for the search.
@@ -3056,10 +3034,33 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def addquestion_url(self):
         """Return the URL for the +addquestion view for the context."""
         if IQuestionTarget.providedBy(self.context):
-            return canonical_url(
-                self.context, rootsite='answers', view_name='+addquestion')
+            answers_usage = IServiceUsage(self.context).answers_usage
+            if answers_usage == ServiceUsage.LAUNCHPAD:
+                return canonical_url(
+                    self.context, rootsite='answers',
+                    view_name='+addquestion')
         else:
             return None
+
+    @cachedproperty
+    def dynamic_bug_listing_enabled(self):
+        """Feature flag: Can the bug listing be customized?"""
+        return bool(getFeatureFlag('bugs.dynamic_bug_listings.enabled'))
+
+    @property
+    def search_macro_title(self):
+        """The search macro's title text."""
+        return u"Search bugs %s" % self.context_description
+
+    @property
+    def context_description(self):
+        """A phrase describing the context of the bug.
+
+        The phrase is intended to be used for headings like
+        "Bugs in $context", "Search bugs in $context". This
+        property should be overridden for person related views.
+        """
+        return "in %s" % self.context.displayname
 
 
 class BugNominationsView(BugTaskSearchListingView):
@@ -3529,10 +3530,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     def initialize(self):
         super(BugTaskTableRowView, self).initialize()
         link = canonical_url(self.context)
-        edit_link = link + '/+editstatus'
-        view_link = link + '/+viewstatus'
+        task_link = edit_link = link + '/+editstatus'
         can_edit = check_permission('launchpad.Edit', self.context)
-        task_link = edit_link if can_edit else view_link
         bugtask_id = self.context.id
         launchbag = getUtility(ILaunchBag)
         is_primary = self.context.id == launchbag.bugtask.id
@@ -3545,7 +3544,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             is_conjoined_slave=self.is_conjoined_slave,
             task_link=task_link,
             edit_link=edit_link,
-            view_link=view_link,
             can_edit=can_edit,
             link=link,
             id=bugtask_id,

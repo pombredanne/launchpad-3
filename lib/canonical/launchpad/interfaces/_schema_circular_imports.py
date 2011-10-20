@@ -31,11 +31,6 @@ from canonical.launchpad.components.apihelpers import (
     patch_reference_property,
     )
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from lp.services.messages.interfaces.message import (
-    IIndexedMessage,
-    IMessage,
-    IUserToUserEmail,
-    )
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
@@ -173,6 +168,11 @@ from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.messages.interfaces.message import (
+    IIndexedMessage,
+    IMessage,
+    IUserToUserEmail,
+    )
 from lp.services.worlddata.interfaces.country import (
     ICountry,
     ICountrySet,
@@ -506,6 +506,8 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'previous_series', IDistroSeries)
+patch_reference_property(
+    IDistroSeries, 'nominatedarchindep', IDistroArchSeries)
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
 patch_collection_return_type(
@@ -678,6 +680,10 @@ patch_collection_return_type(
 patch_reference_property(IProductSeries, 'product', IProduct)
 
 # ISpecification
+ISpecification['linkBug'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
+ISpecification['unlinkBug'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 patch_collection_property(ISpecification, 'dependencies', ISpecification)
 patch_collection_property(
     ISpecification, 'linked_branches', ISpecificationBranch)

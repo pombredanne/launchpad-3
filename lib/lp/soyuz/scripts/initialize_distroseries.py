@@ -18,6 +18,7 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.app.errors import NotFoundError
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -99,8 +100,8 @@ class InitializeDistroSeries:
     """
 
     def __init__(
-        self, distroseries, parents=(), arches=(), packagesets=(),
-        rebuild=False, overlays=(), overlay_pockets=(),
+        self, distroseries, parents=(), arches=(), archindep_archtag=None,
+        packagesets=(), rebuild=False, overlays=(), overlay_pockets=(),
         overlay_components=()):
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
@@ -114,6 +115,7 @@ class InitializeDistroSeries:
             parents_bulk,
             key=lambda parent: self.parent_ids.index(parent.id))
         self.arches = arches
+        self.archindep_archtag = archindep_archtag
         self.packagesets_ids = [
             ensure_unicode(packageset) for packageset in packagesets]
         self.packagesets = bulk.load(
@@ -147,6 +149,7 @@ class InitializeDistroSeries:
                 ("Series {child.name} has already been initialised"
                  ".").format(
                     child=self.distroseries))
+        self._checkPublisherConfig()
         if (self.distroseries.distribution.has_published_sources and
             self.distroseries.previous_series is None):
             raise InitializationError(
@@ -155,10 +158,47 @@ class InitializeDistroSeries:
                  ".").format(
                     child=self.distroseries))
         self._checkParents()
+        self._checkArchindep()
         for parent in self.derivation_parents:
             self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
+
+    def _checkArchindep(self):
+        # Check that the child distroseries has an architecture to
+        # build architecture independent binaries.
+        if self.archindep_archtag is None:
+            # No archindep_archtag was given, so we try to figure out
+            # a proper one among the parents'.
+            potential_nominated_arches = self._potential_nominated_arches(
+                 self.derivation_parents)
+            if len(potential_nominated_arches) == 0:
+                raise InitializationError(
+                    "The distroseries has no architectures selected to "
+                    "build architecture independent binaries.")
+        else:
+            # Make sure that the given archindep_archtag is among the
+            # selected architectures.
+            if (self.arches is not None and
+                len(self.arches) != 0 and
+                self.archindep_archtag not in self.arches):
+                raise InitializationError(
+                    "The selected architecture independent architecture tag "
+                    "is not among the selected architectures.")
+
+    def _checkPublisherConfig(self):
+        """A series cannot be initialized if it has no publisher config
+        set up.
+        """
+        publisherconfigset = getUtility(IPublisherConfigSet)
+        config = publisherconfigset.getByDistribution(
+            self.distroseries.distribution)
+        if config is None:
+            raise InitializationError(
+                ("Distribution {child.name} has no publisher configuration. "
+                 "Please ask an administrator to set this up"
+                 ".").format(
+                    child=self.distroseries.distribution))
 
     def _checkParents(self):
         """If self.first_derivation, the parents list cannot be empty."""
@@ -241,6 +281,7 @@ class InitializeDistroSeries:
         self._set_parents()
         self._copy_configuration()
         self._copy_architectures()
+        self._set_nominatedarchindep()
         self._copy_packages()
         self._copy_packagesets()
         self._create_dsds()
@@ -349,9 +390,30 @@ class InitializeDistroSeries:
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)
             + (das_filter, )))
         self._store.flush()
-        # Take nominatedarchindep from the first parent.
-        self.distroseries.nominatedarchindep = self.distroseries[
-            self.derivation_parents[0].nominatedarchindep.architecturetag]
+
+    def _set_nominatedarchindep(self):
+        if self.archindep_archtag is None:
+            # Select the arch-indep builder from the intersection between
+            # the selected architectures and the list of the parent's
+            # arch-indep builders.
+            arch_tag = self._potential_nominated_arches(
+                self.derivation_parents).pop()
+            self.distroseries.nominatedarchindep = (
+                self.distroseries.getDistroArchSeries(arch_tag))
+        else:
+            self.distroseries.nominatedarchindep = (
+                self.distroseries.getDistroArchSeries(self.archindep_archtag))
+
+    def _potential_nominated_arches(self, parent_list):
+        parent_indep_archtags = set(
+            parent.nominatedarchindep.architecturetag
+            for parent in parent_list
+            if parent.nominatedarchindep is not None)
+
+        if len(self.arches) == 0:
+            return parent_indep_archtags
+        else:
+            return parent_indep_archtags.intersection(self.arches)
 
     def _copy_packages(self):
         # Perform the copies

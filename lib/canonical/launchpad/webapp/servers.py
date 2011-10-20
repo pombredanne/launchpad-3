@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231,E1002
@@ -34,6 +34,7 @@ from zope.app.publication.requestpublicationregistry import (
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import (
     alsoProvides,
     implements,
@@ -81,6 +82,7 @@ from canonical.launchpad.webapp.authorization import (
     )
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.interfaces import (
+    FinishReadOnlyRequestEvent,
     IAPIDocRoot,
     IBasicLaunchpadRequest,
     IBrowserFormNG,
@@ -864,8 +866,10 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     False
 
     """
-    implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
-               canonical.launchpad.layers.LaunchpadLayer)
+    implements(
+        INotificationRequest, IBasicLaunchpadRequest, IParticipation,
+        canonical.launchpad.layers.LaunchpadLayer)
+
     # These two attributes satisfy IParticipation.
     principal = None
     interaction = None
@@ -1206,8 +1210,9 @@ class WebServicePublication(WebServicePublicationMixin,
         else:
             return super(WebServicePublication, self).getResource(request, ob)
 
-    def finishReadOnlyRequest(self, txn):
+    def finishReadOnlyRequest(self, request, ob, txn):
         """Commit the transaction so that created OAuthNonces are stored."""
+        notify(FinishReadOnlyRequestEvent(ob, request))
         # Transaction commits usually need to be aware of the possibility of
         # a doomed transaction.  We do not expect that this code will
         # encounter doomed transactions.  If it does, this will need to be

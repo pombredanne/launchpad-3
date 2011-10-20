@@ -265,6 +265,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         intermediateTable='SectionSelection')
 
     @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.distribution
+
+    @property
     def named_version(self):
         return '%s (%s)' % (self.displayname, self.version)
 
@@ -1136,35 +1141,47 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SeriesStatus.EXPERIMENTAL,
         ]
 
+    def _getAllSources(self):
+        """Get all sources ever published in this series' main archives."""
+        return IStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.distroseriesID == self.id,
+            SourcePackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            ).order_by(SourcePackagePublishingHistory.id)
+
+    def _getAllBinaries(self):
+        """Get all binaries ever published in this series' main archives."""
+        return IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            DistroArchSeries.distroseriesID == self.id,
+            BinaryPackagePublishingHistory.distroarchseriesID
+                == DistroArchSeries.id,
+            BinaryPackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            ).order_by(BinaryPackagePublishingHistory.id)
+
     def getAllPublishedSources(self):
         """See `IDistroSeries`."""
         # Consider main archives only, and return all sources in
         # the PUBLISHED state.
-        archives = self.distribution.getArchiveIDList()
-        return SourcePackagePublishingHistory.select("""
-            distroseries = %s AND
-            status = %s AND
-            archive in %s
-            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
-                            archives),
-            orderBy="id")
+        return self._getAllSources().find(
+            status=PackagePublishingStatus.PUBLISHED)
 
     def getAllPublishedBinaries(self):
         """See `IDistroSeries`."""
         # Consider main archives only, and return all binaries in
         # the PUBLISHED state.
-        archives = self.distribution.getArchiveIDList()
-        return BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            DistroSeries.id = %s AND
-            BinaryPackagePublishingHistory.status = %s AND
-            BinaryPackagePublishingHistory.archive in %s
-            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
-                            archives),
-            clauseTables=["DistroArchSeries", "DistroSeries"],
-            orderBy="BinaryPackagePublishingHistory.id")
+        return self._getAllBinaries().find(
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def getAllUncondemnedSources(self):
+        """See `IDistroSeries`."""
+        return self._getAllSources().find(scheduleddeletiondate=None)
+
+    def getAllUncondemnedBinaries(self):
+        """See `IDistroSeries`."""
+        return self._getAllBinaries().find(scheduleddeletiondate=None)
 
     def getSourcesPublishedForAllArchives(self):
         """See `IDistroSeries`."""
@@ -1681,7 +1698,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 self, format) is not None
 
     def initDerivedDistroSeries(self, user, parents, architectures=(),
-                                packagesets=(), rebuild=False, overlays=(),
+                                archindep_archtag=None, packagesets=(),
+                                rebuild=False, overlays=(),
                                 overlay_pockets=(),
                                 overlay_components=()):
         """See `IDistroSeries`."""
@@ -1689,15 +1707,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise DerivationError(
                 "DistroSeries %s already has parent series." % self.name)
         initialize_series = InitializeDistroSeries(
-            self, parents, architectures, packagesets, rebuild, overlays,
-            overlay_pockets, overlay_components)
+            self, parents, architectures, archindep_archtag, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
         try:
             initialize_series.check()
         except InitializationError, e:
             raise DerivationError(e)
         getUtility(IInitializeDistroSeriesJobSource).create(
-            self, parents, architectures, packagesets, rebuild, overlays,
-            overlay_pockets, overlay_components)
+            self, parents, architectures, archindep_archtag, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
 
     def getParentSeries(self):
         """See `IDistroSeriesPublic`."""

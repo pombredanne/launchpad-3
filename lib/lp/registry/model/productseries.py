@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -68,14 +68,11 @@ from lp.bugs.interfaces.bugtarget import (
     ISeriesBugTarget,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    get_bug_tags,
-    )
+from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -168,6 +165,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
+
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.product
 
     @property
     def answers_usage(self):
@@ -576,12 +578,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             origin = [Language, POFile, POTemplate]
             query = store.using(*origin).find(
                 (Language, POFile),
-                POFile.language==Language.id,
-                Language.visible==True,
-                POFile.potemplate==POTemplate.id,
-                POTemplate.productseries==self,
-                POTemplate.iscurrent==True,
-                Language.id!=english.id)
+                POFile.language == Language.id,
+                Language.visible == True,
+                POFile.potemplate == POTemplate.id,
+                POTemplate.productseries == self,
+                POTemplate.iscurrent == True,
+                Language.id != english.id)
 
             ordered_results = query.order_by(['Language.englishname'])
 
@@ -600,9 +602,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         else:
             # If there is more than one template, do a single
             # query to count total messages in all templates.
-            query = store.find(Sum(POTemplate.messagecount),
-                                POTemplate.productseries==self,
-                                POTemplate.iscurrent==True)
+            query = store.find(
+                Sum(POTemplate.messagecount),
+                POTemplate.productseries == self,
+                POTemplate.iscurrent == True)
             total, = query
             # And another query to fetch all Languages with translations
             # in this ProductSeries, along with their cumulative stats
@@ -615,12 +618,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                  Sum(POFile.rosettacount),
                  Sum(POFile.unreviewed_count),
                  Max(POFile.date_changed)),
-                POFile.language==Language.id,
-                Language.visible==True,
-                POFile.potemplate==POTemplate.id,
-                POTemplate.productseries==self,
-                POTemplate.iscurrent==True,
-                Language.id!=english.id).group_by(Language)
+                POFile.language == Language.id,
+                Language.visible == True,
+                POFile.potemplate == POTemplate.id,
+                POTemplate.productseries == self,
+                POTemplate.iscurrent == True,
+                Language.id != english.id).group_by(Language)
 
             ordered_results = query.order_by(['Language.englishname'])
 

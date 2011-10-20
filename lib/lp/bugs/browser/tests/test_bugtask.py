@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import transaction
 
 from datetime import datetime
 
@@ -12,6 +10,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
 from storm.store import Store
 from testtools.matchers import LessThan
+import transaction
 from zope.component import (
     getMultiAdapter,
     getUtility,
@@ -47,6 +46,10 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTask,
     IBugTaskSet,
+    )
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
     )
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
@@ -149,7 +152,7 @@ class TestBugTaskView(TestCaseWithFactory):
             f.makeSourcePackage(distroseries=ds, publish=True)
             for i in range(5)]
         for sp in sourcepackages:
-            bugtask = f.makeBugTask(bug=bug, owner=owner, target=sp)
+            f.makeBugTask(bug=bug, owner=owner, target=sp)
         url = canonical_url(bug.default_bugtask)
         recorder = QueryCollector()
         recorder.register()
@@ -543,7 +546,6 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         foo_bug = self.factory.makeBug(product=product_foo)
         bugtask_set = getUtility(IBugTaskSet)
         bugtask_set.createTask(foo_bug, foo_bug.owner, product_bar)
-
         removeSecurityProxy(product_bar).active = False
 
         request = LaunchpadTestRequest()
@@ -682,7 +684,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     def test_status_field_bug_task_in_status_expired(self):
         # If a bugtask has the status Expired, this status is included
         # in the options.
-        removeSecurityProxy(self.bug.default_bugtask).status = (
+        removeSecurityProxy(self.bug.default_bugtask)._status = (
             BugTaskStatus.EXPIRED)
         login(NO_PRIVILEGE_EMAIL)
         view = BugTaskEditView(
@@ -909,6 +911,42 @@ class TestBugTaskEditView(TestCaseWithFactory):
         notifications = view.request.response.notifications
         self.assertEqual(0, len(notifications))
 
+    def test_retarget_private_bug(self):
+        # If a private bug is re-targetted such that the bug is no longer
+        # visible to the user, they are redirected to the pillar's bug index
+        # page with a suitable message. This corner case can occur when the
+        # disclosure.private_bug_visibility_rules.enabled feature flag is on
+        # and a bugtask is re-targetted to a pillar for which the user is not
+        # authorised to see any private bugs.
+        first_product = self.factory.makeProduct(name='bunny')
+        with person_logged_in(first_product.owner):
+            bug = self.factory.makeBug(product=first_product, private=True)
+            bug_task = bug.bugtasks[0]
+        second_product = self.factory.makeProduct(name='duck')
+        getFeatureStore().add(FeatureFlag(
+            scope=u'default', value=u'on', priority=1,
+            flag=u'disclosure.private_bug_visibility_rules.enabled'))
+
+        # The first product owner can see the private bug. We will re-target
+        # it to second_product where it will not be visible to that user.
+        with person_logged_in(first_product.owner):
+            form = {
+                'bunny.target': 'product',
+                'bunny.target.product': 'duck',
+                'bunny.actions.save': 'Save Changes',
+                }
+            view = create_initialized_view(
+                bug_task, name='+editstatus', form=form)
+            self.assertEqual(
+                canonical_url(bug_task.pillar, rootsite='bugs'),
+                view.next_url)
+        self.assertEqual([], view.errors)
+        self.assertEqual(second_product, bug_task.target)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = ('The bug you have just updated is now a private bug for')
+        self.assertTrue(notifications.pop().message.startswith(expected))
+
 
 class TestProjectGroupBugs(TestCaseWithFactory):
     """Test the bugs overview page for Project Groups."""
@@ -1056,7 +1094,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
                         bug.default_bugtask.product.owner, 'status',
                         BugTaskStatus.NEW, BugTaskStatus.TRIAGED)
                     bug.addChange(change)
-            for i in range (number_of_comments):
+            for i in range(number_of_comments):
                 msg = self.factory.makeMessage(
                     owner=bug.owner, content="Message %i." % i)
                 bug.linkMessage(msg, user=bug.owner)
@@ -1084,7 +1122,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         # already shown on the page won't appear twice).
         bug_task = self.factory.makeBugTask()
         view = create_initialized_view(bug_task, '+batched-comments')
-        self.assertEqual(view.visible_initial_comments+1, view.offset)
+        self.assertEqual(view.visible_initial_comments + 1, view.offset)
         view = create_initialized_view(
             bug_task, '+batched-comments', form={'offset': 100})
         self.assertEqual(100, view.offset)
