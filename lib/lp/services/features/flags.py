@@ -143,6 +143,10 @@ flag_info = sorted([
      ('Enables the auto subscribing and unsubscribing of users as a bug '
       'transitions between public, private and security related states.'),
      ''),
+    ('disclosure.delete_bugtask.enabled',
+     'boolean',
+     ('Enables bugtasks to be deleted by authorised users.'),
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
