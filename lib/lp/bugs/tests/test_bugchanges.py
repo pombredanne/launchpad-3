@@ -25,7 +25,9 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -1402,6 +1404,34 @@ class TestBugChanges(TestCaseWithFactory):
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=expected_notification)
+
+    def test_bugtask_deleted(self):
+        # Deleting a bug task adds entries in both BugActivity and
+        # BugNotification.
+        target = self.factory.makeProduct()
+        task_to_delete = self.bug.addTask(self.user, target)
+        self.saveOldChanges()
+
+        login_person(self.user)
+        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
+        with FeatureFixture(flags):
+            task_to_delete.delete()
+
+        task_deleted_activity = {
+            'person': self.user,
+            'whatchanged': 'bug task deleted',
+            'oldvalue': target.bugtargetname,
+            }
+
+        task_deleted_notification = {
+            'person': self.user,
+            'text': (
+                "** No longer affects: %s" % target.bugtargetname),
+            }
+
+        self.assertRecordedChange(
+            expected_notification=task_deleted_notification,
+            expected_activity=task_deleted_activity)
 
     def test_product_series_nominated(self):
         # Nominating a bug to be fixed in a product series adds an item
