@@ -931,39 +931,33 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
         entry.syncUpdate()
 
     def test_cleanUpObsoleteEntries_unaffected_statuses(self):
-        # _cleanUpObsoleteEntries leaves entries in some states (i.e.
-        # Approved and Blocked) alone no matter how old they are.
-        one_year_ago = datetime.now(UTC) - timedelta(days=366)
+        # _cleanUpObsoleteEntries leaves entries in states without
+        # expiry age (currently only Blocked) alone no matter how old
+        # they are.
+        unaffected_statuses = (
+            set(RosettaImportStatus.items) -
+                set(translation_import_queue_entry_age.keys()))
+        self.assertNotEqual(
+            0, len(unaffected_statuses),
+            "This test is no longer needed; "
+            "there are no statuses without expiry ages.")
+
+        years_ago = datetime.now(UTC) - timedelta(days=2000)
         entry = self._makeProductEntry()
-        entry.potemplate = (
-            self.factory.makePOTemplate(productseries=entry.productseries))
+        entry.potemplate = self.factory.makePOTemplate(
+                productseries=entry.productseries)
         entry_id = entry.id
-
-        self._setStatus(entry, RosettaImportStatus.APPROVED, one_year_ago)
-        # No write or delete action expected, so no reason to switch the
-        # database user. If it writes or deletes, the test has failed anyway.
-        self.queue._cleanUpObsoleteEntries(self.store)
-        self.assertTrue(self._exists(entry_id))
-
-        self._setStatus(entry, RosettaImportStatus.BLOCKED, one_year_ago)
-        # No write or delete action expected, so no reason to switch the
-        # database user. If it writes or deletes, the test has failed anyway.
-        self.queue._cleanUpObsoleteEntries(self.store)
-        self.assertTrue(self._exists(entry_id))
+        for status in unaffected_statuses:
+            self._setStatus(entry, status, years_ago)
+            self.queue._cleanUpObsoleteEntries(self.store)
+            self.assertTrue(self._exists(entry_id))
 
     def test_cleanUpObsoleteEntries_affected_statuses(self):
         # _cleanUpObsoleteEntries deletes entries in terminal states
         # (Imported, Failed, Deleted) after a few days.  The exact
         # period depends on the state.  Entries in certain other states
         # get cleaned up after longer periods.
-        affected_statuses = [
-            RosettaImportStatus.DELETED,
-            RosettaImportStatus.FAILED,
-            RosettaImportStatus.IMPORTED,
-            RosettaImportStatus.NEEDS_INFORMATION,
-            RosettaImportStatus.NEEDS_REVIEW,
-            ]
-        for status in affected_statuses:
+        for status in translation_import_queue_entry_age.keys():
             entry = self._makeProductEntry()
             entry.potemplate = self.factory.makePOTemplate()
             maximum_age = translation_import_queue_entry_age[status]

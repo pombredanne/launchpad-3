@@ -132,7 +132,7 @@ class BMPMailer(BranchMailer):
                 # inline.
                 ctrl.addAttachment(
                     self.preview_diff.text, content_type='text/x-diff',
-                    inline=True, filename='review-diff.txt')
+                    inline=True, filename='review-diff.txt', charset='utf-8')
 
     def _generateTemplateParams(self):
         """For template params that don't change, calculate just once."""

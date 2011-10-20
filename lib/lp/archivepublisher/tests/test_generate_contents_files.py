@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from optparse import OptionValueError
 import os
-from textwrap import dedent
 
 from testtools.matchers import StartsWith
 

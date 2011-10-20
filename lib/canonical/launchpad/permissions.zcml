@@ -27,6 +27,9 @@
     id="launchpad.Append" title="Adding something" access_level="write" />
 
   <permission
+    id="launchpad.Delete" title="Deleting something" access_level="write" />
+
+  <permission
     id="launchpad.Moderate" title="Moderate something" access_level="write" />
 
   <permission

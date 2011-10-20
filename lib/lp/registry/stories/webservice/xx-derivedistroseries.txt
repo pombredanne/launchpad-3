@@ -11,11 +11,14 @@ Set Up
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from zope.security.proxy import removeSecurityProxy
 
     >>> login(ADMIN_EMAIL)
 
     >>> soyuz_team = factory.makeTeam(name='soyuz-team')
     >>> parent_series = factory.makeDistroSeries(name="parentseries")
+    >>> arch = factory.makeDistroArchSeries(distroseries=parent_series)
+    >>> removeSecurityProxy(parent_series).nominatedarchindep = arch
     >>> child_series = factory.makeDistroSeries(name='child1')
     >>> child_series_with_parent = factory.makeDistroSeries(
     ...     name='child-with-parent')

@@ -284,9 +284,14 @@ class IDistroSeriesPublic(
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    nominatedarchindep = Attribute(
-        "DistroArchSeries designed to build architecture-independent "
-        "packages whithin this distroseries context.")
+    nominatedarchindep = exported(
+        Reference(
+            Interface,  # IDistroArchSeries.
+            title=_("DistroArchSeries designed to build "
+                    "architecture-independent packages whithin this "
+                    "distroseries context."),
+            default=None,
+            required=False))
     messagecount = Attribute("The total number of translatable items in "
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
@@ -628,8 +633,24 @@ class IDistroSeriesPublic(
         Return publications in the main archives only.
         """
 
+    def getAllUncondemnedSources():
+        """Return all uncondemned sources for the distroseries.
+
+        An uncondemned publication is one without scheduleddeletiondate set.
+
+        Return publications in the main archives only.
+        """
+
     def getAllPublishedBinaries():
         """Return all currently published binaries for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
+    def getAllUncondemnedBinaries():
+        """Return all uncondemned binaries for the distroseries.
+
+        An uncondemned publication is one without scheduleddeletiondate set.
 
         Return publications in the main archives only.
         """
@@ -936,19 +957,25 @@ class IDistroSeriesEditRestricted(Interface):
             required=True),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
-            "distroseries."), value_type=TextLine(),
+                    "distroseries."),
+            value_type=TextLine(),
+            required=False),
+        archindep_archtag=TextLine(
+            title=_("Architecture tag to build architecture-independent "
+                    "packages."),
             required=False),
         packagesets=List(
             title=_("The list of packagesets to copy to the derived "
-            "distroseries"), value_type=TextLine(),
+                    "distroseries"),
+            value_type=TextLine(),
             required=False),
         rebuild=Bool(
             title=_("If binaries will be copied to the derived "
-            "distroseries."),
+                    "distroseries."),
             required=True),
         overlays=List(
             title=_("The list of booleans indicating, for each parent, if "
-            "the parent/child relationship should be an overlay."),
+                    "the parent/child relationship should be an overlay."),
             value_type=Bool(),
             required=False),
         overlay_pockets=List(
@@ -963,7 +990,8 @@ class IDistroSeriesEditRestricted(Interface):
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def initDerivedDistroSeries(user, parents, architectures=[],
-                                packagesets=[], rebuild=False, overlays=[],
+                                archindep_archtag=None, packagesets=[],
+                                rebuild=False, overlays=[],
                                 overlay_pockets=[], overlay_components=[]):
         """Initialize this series from parents.
 
@@ -974,6 +1002,9 @@ class IDistroSeriesEditRestricted(Interface):
             from.
         :param architectures: The architectures to copy to the derived
             series. If not specified, all of the architectures are copied.
+        :param archindep_archtag: The architecture tag used to build
+            architecture-independent packages. If not specified, one from
+            the parents' will be used.
         :param packagesets: The packagesets to copy to the derived series.
             If not specified, all of the packagesets are copied.
         :param rebuild: Whether binaries will be copied to the derived

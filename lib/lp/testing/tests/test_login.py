@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the login helpers."""
@@ -17,7 +17,6 @@ from lp.testing import (
     ANONYMOUS,
     anonymous_logged_in,
     celebrity_logged_in,
-    is_logged_in,
     login,
     login_as,
     login_celebrity,
@@ -74,20 +73,13 @@ class TestLoginHelpers(TestCaseWithFactory):
     def test_not_logged_in(self):
         # After logout has been called, we are not logged in.
         logout()
-        self.assertEqual(False, is_logged_in())
         self.assertLoggedOut()
 
     def test_logout_twice(self):
         # Logging out twice don't harm anybody none.
         logout()
         logout()
-        self.assertEqual(False, is_logged_in())
         self.assertLoggedOut()
-
-    def test_logged_in(self):
-        # After login has been called, we are logged in.
-        login_person(self.factory.makePerson())
-        self.assertEqual(True, is_logged_in())
 
     def test_login_person_actually_logs_in(self):
         # login_person changes the currently logged in person.
@@ -276,18 +268,22 @@ class TestLoginHelpers(TestCaseWithFactory):
         # with_celebrity_logged_in decorates a function so that it runs with
         # the given person logged in.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+
         @with_celebrity_logged_in('vcs_imports')
         def f():
             return self.getLoggedInPerson()
+
         logout()
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
 
     def test_with_person_logged_in(self):
         person = self.factory.makePerson()
+
         @with_person_logged_in(person)
         def f():
             return self.getLoggedInPerson()
+
         logout()
         logged_in = f()
         self.assertEqual(person, logged_in)

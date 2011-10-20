@@ -69,7 +69,7 @@
             set_attributes="reviewed_by reviewer_comment"/>
     </class>
     <class
-        class="lp.registry.browser.person.TeamInvitationView">
+        class="lp.registry.browser.team.TeamInvitationView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher"/>
         <allow
@@ -77,7 +77,7 @@
                 __call__"/>
     </class>
     <class
-        class="lp.registry.browser.person.TeamMembershipSelfRenewalView">
+        class="lp.registry.browser.team.TeamMembershipSelfRenewalView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher"/>
         <allow
@@ -471,6 +471,7 @@
                 __getitem__
                 __ne__
                 _getOfficialTagClause
+                binary_names
                 bug_count
                 bugtasks
                 current_publishing_records
@@ -488,6 +489,7 @@
                 getUsedBugTagsWithOpenCounts
                 getVersion
                 get_distroseries_packages
+                is_official
                 latest_overall_publication
                 name
                 official_bug_tags
@@ -869,7 +871,7 @@
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.ITeam"
-            factory="lp.registry.browser.person.TeamBreadcrumb"
+            factory="lp.registry.browser.team.TeamBreadcrumb"
             permission="zope.Public"/>
 
         <adapter
@@ -980,8 +982,8 @@
                 interface="lp.registry.interfaces.person.IPersonSet"/>
         </securedutility>
         <securedutility
-            class="canonical.launchpad.rest.MeLink"
-            provides="canonical.launchpad.rest.IMeLink">
+            class="canonical.launchpad.rest.me.MeLink"
+            provides="canonical.launchpad.rest.me.IMeLink">
             <allow
                 interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
             <allow
@@ -1195,7 +1197,8 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_attributes="answers_usage blueprints_usage codehosting_usage
+                            bug_tracking_usage uses_launchpad"/>
         <require
             permission="launchpad.Edit"
             set_attributes="
@@ -1258,10 +1261,10 @@
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
-                official_rosetta
                 translation_focus
                 translationgroup
-                translationpermission"/>
+                translationpermission
+                translations_usage"/>
         <require
             permission="zope.Public"
             attributes="
@@ -1513,7 +1516,8 @@
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_attributes="answers_usage blueprints_usage codehosting_usage
+                            bug_tracking_usage uses_launchpad"/>
         <require
             permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
@@ -1548,10 +1552,11 @@
             permission="launchpad.TranslationsAdmin"
             set_attributes="
                 language_pack_admin
-                official_rosetta
                 translationgroup
                 translationpermission
-                translation_focus"/>
+                translation_focus
+                translations_usage
+                "/>
 
         <!-- IHasAliases -->
 

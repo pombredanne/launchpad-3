@@ -56,6 +56,7 @@ from operator import attrgetter
 import re
 import transaction
 import urllib
+import urlparse
 
 from lazr.delegates import delegates
 from lazr.enum import (
@@ -104,7 +105,6 @@ from zope.interface import (
 from zope.schema import Choice
 from zope.schema.interfaces import (
     IContextSourceBinder,
-    IList,
     )
 from zope.schema.vocabulary import (
     getVocabularyRegistry,
@@ -223,6 +223,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
@@ -264,6 +265,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import (
     cachedproperty,
@@ -284,6 +286,8 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
     BugTaskStatus.EXPIRED: False,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE: True,
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE: True,
     }
 
 
@@ -2101,57 +2105,6 @@ def get_buglisting_search_filter_url(
     return search_filter_url
 
 
-def getInitialValuesFromSearchParams(search_params, form_schema):
-    """Build a dictionary that can be given as initial values to
-    setUpWidgets, based on the given search params.
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
-    >>> for status in initial['status']:
-    ...     print status.name
-    NEW
-    INCOMPLETE
-    CONFIRMED
-    TRIAGED
-    INPROGRESS
-    FIXCOMMITTED
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': BugTaskStatus.INVALID}, IBugTaskSearch)
-    >>> [status.name for status in initial['status']]
-    ['INVALID']
-
-    >>> initial = getInitialValuesFromSearchParams(
-    ...     {'importance': [BugTaskImportance.CRITICAL,
-    ...                   BugTaskImportance.HIGH]}, IBugTaskSearch)
-    >>> [importance.name for importance in initial['importance']]
-    ['CRITICAL', 'HIGH']
-
-    >>> getInitialValuesFromSearchParams(
-    ...     {'assignee': NULL}, IBugTaskSearch)
-    {'assignee': None}
-    """
-    initial = {}
-    for key, value in search_params.items():
-        if IList.providedBy(form_schema[key]):
-            if isinstance(value, any):
-                value = value.query_values
-            elif isinstance(value, (list, tuple)):
-                value = value
-            else:
-                value = [value]
-        elif value == NULL:
-            value = None
-        else:
-            # Should be safe to pass value as it is to setUpWidgets, no need
-            # to worry
-            pass
-
-        initial[key] = value
-
-    return initial
-
-
 class BugTaskListingItem:
     """A decorated bug task.
 
@@ -2510,6 +2463,18 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             raise AssertionError(
                 "Unrecognized context; don't know which report "
                 "columns to show.")
+
+    bugtask_table_template = ViewPageTemplateFile(
+        '../templates/bugs-table-include.pt')
+
+    @property
+    def template(self):
+        query_string = self.request.get('QUERY_STRING') or ''
+        query_params = urlparse.parse_qs(query_string)
+        if 'batch_request' in query_params:
+            return self.bugtask_table_template
+        else:
+            return super(BugTaskSearchListingView, self).template
 
     def validate_search_params(self):
         """Validate the params passed for the search.
@@ -3076,6 +3041,26 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     view_name='+addquestion')
         else:
             return None
+
+    @cachedproperty
+    def dynamic_bug_listing_enabled(self):
+        """Feature flag: Can the bug listing be customized?"""
+        return bool(getFeatureFlag('bugs.dynamic_bug_listings.enabled'))
+
+    @property
+    def search_macro_title(self):
+        """The search macro's title text."""
+        return u"Search bugs %s" % self.context_description
+
+    @property
+    def context_description(self):
+        """A phrase describing the context of the bug.
+
+        The phrase is intended to be used for headings like
+        "Bugs in $context", "Search bugs in $context". This
+        property should be overridden for person related views.
+        """
+        return "in %s" % self.context.displayname
 
 
 class BugNominationsView(BugTaskSearchListingView):
