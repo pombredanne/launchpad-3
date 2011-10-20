@@ -325,6 +325,10 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         view = self.createInitializedSecrecyView(person, bug, request)
         result_data = simplejson.loads(view.render())
 
+        with person_logged_in(person):
+            self.assertTrue(result_data.has_key('can_add_bugtask'))
+            self.assertEqual(bug.canAddTask(), result_data['can_add_bugtask'])
+
         cache_data = result_data['cache_data']
         self.assertFalse(cache_data['other_subscription_notifications'])
         subscription_data = cache_data['subscription']
