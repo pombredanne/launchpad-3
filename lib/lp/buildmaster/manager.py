@@ -216,6 +216,9 @@ class SlaveScanner:
         self.builder = get_builder(self.builder_name)
 
         if self.builder.builderok:
+            # TODO: check build status for CANCELLING and virtual bulder
+            #   a) set to CANCELLED,
+            #   b) reset builder
             d = self.builder.updateStatus(self.logger)
         else:
             d = defer.succeed(None)
