@@ -131,12 +131,6 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
     def test_link_display_name_id(self):
         """The link to the user profile page using displayname and id."""
         person = self.factory.makePerson()
-        # Enable the picker_enhancements feature to test the commenter name.
-        from lp.services.features.testing import FeatureFixture
-        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
         formatter = getAdapter(person, IPathAdapter, 'fmt')
         result = formatter.link_display_name_id(None)
         expected = '<a href="%s" class="sprite person">%s (%s)</a>' % (

@@ -1,12 +1,6 @@
 Remote bug comments
 ===================
 
-    >>> # Enable the picker_enhancements feature to test the commenter name.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
 Comments imported into Launchpad from external bug trackers are
 formatted for display in a way that distinguishes them from comments
 entered within Launchpad itself.
@@ -122,7 +116,3 @@ hidden, since they can't be used anonymously anyway.
     ...     attrs={'class': 'boardCommentFooter'})
     >>> 'Reply' in extract_text(footer)
     False
-
-Clean up the feature flag.
-
-    >>> flags.cleanUp()
