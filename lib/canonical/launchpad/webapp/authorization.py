@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -26,10 +26,14 @@ from zope.security.permission import (
     checkPermission as check_permission_is_registered,
     )
 from zope.security.proxy import removeSecurityProxy
-from zope.security.simplepolicies import ParanoidSecurityPolicy
+from zope.security.simplepolicies import (
+    ParanoidSecurityPolicy,
+    PermissiveSecurityPolicy,
+    )
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.webapp.interaction import InteractionExtras
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
     ILaunchpadContainer,
@@ -41,14 +45,15 @@ from canonical.lazr.interfaces import IObjectPrivacy
 from lp.app.interfaces.security import IAuthorization
 
 
-steveIsFixingThis = False
-
-
 LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'
 
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
     classProvides(ISecurityPolicy)
+
+    def __init__(self, *participations):
+        ParanoidSecurityPolicy.__init__(self, *participations)
+        self.extras = InteractionExtras()
 
     def _checkRequiredAccessLevel(self, access_level, permission, object):
         """Check that the principal has the level of access required.
@@ -124,7 +129,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           required by the permission, deny.
         - If the object to authorize is private and the principal has no
           access to private objects, deny.
-        - If we have zope.Public, allow.  (We shouldn't ever get this, though.)
+        - If we have zope.Public, allow.  (But we shouldn't ever get this.)
         - If we have launchpad.AnyPerson and the principal is an
           ILaunchpadPrincipal then allow.
         - If the object has an IAuthorization named adapter, named
@@ -190,12 +195,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
 
-        # XXX Steve Alexander 2005-01-12:
-        # This warning should apply to the policy in zope3 also.
         if permission == 'zope.Public':
-            if steveIsFixingThis:
-                warnings.warn(
-                    'zope.Public being used raw on object %r' % object)
             return True
         if permission is CheckerPublic:
             return True
@@ -260,3 +260,10 @@ def clear_cache():
             # method, but it is not in an interface, and not implemented by
             # all classes that implement IApplicationRequest.
             del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
+
+
+class LaunchpadPermissiveSecurityPolicy(PermissiveSecurityPolicy):
+
+    def __init__(self, *participations):
+        PermissiveSecurityPolicy.__init__(self, *participations)
+        self.extras = InteractionExtras()

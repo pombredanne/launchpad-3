@@ -274,7 +274,8 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                     index = second_line.rfind(' ', 0, 90)
                     second_line = second_line[0:index + 1]
                 picker_entry.description = first_line
-                picker_entry.details.append(second_line)
+                if second_line:
+                    picker_entry.details.append(second_line)
                 picker_entry.alt_title = target.name
                 picker_entry.alt_title_link = canonical_url(
                     target, rootsite='mainsite')
@@ -312,17 +313,22 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
 
     def getMaintainer(self, target):
         """See `TargetPickerEntrySource`"""
-        return target.currentrelease.maintainer.displayname
+        return None
 
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
-        binaries = target.publishing_history[0].getBuiltBinaries()
-        binary_names = [binary.binary_package_name for binary in binaries]
-        if binary_names != []:
-            description = ', '.join(binary_names)
+        if target.binary_names:
+            description = ', '.join(target.binary_names)
         else:
             description = 'Not yet built.'
         return description
+
+    def getPickerEntries(self, term_values, context_object, **kwarg):
+        this = super(DistributionSourcePackagePickerEntrySourceAdapter, self)
+        entries = this.getPickerEntries(term_values, context_object, **kwarg)
+        for picker_entry in entries:
+            picker_entry.alt_title = None
+        return entries
 
 
 @adapter(IProjectGroup)

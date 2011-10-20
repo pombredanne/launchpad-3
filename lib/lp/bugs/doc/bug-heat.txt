@@ -68,7 +68,8 @@ Events which trigger bug heat updates
 We current use a feature flag for some privacy related subscription stuff.
 
     >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> feature_flag = {
+    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
     >>> flags = FeatureFixture(feature_flag)
     >>> flags.setUp()
 

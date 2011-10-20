@@ -19,7 +19,6 @@ __all__ = [
     'extract_lp_cache',
     'FakeTime',
     'get_lsb_information',
-    'is_logged_in',
     'launchpadlib_credentials_for',
     'launchpadlib_for',
     'login',
@@ -116,7 +115,6 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.adapter import (
     print_queries,
-    set_permit_timeout_from_features,
     start_sql_logging,
     stop_sql_logging,
     )
@@ -144,7 +142,6 @@ from lp.services.osutils import override_environ
 from lp.testing._login import (
     anonymous_logged_in,
     celebrity_logged_in,
-    is_logged_in,
     login,
     login_as,
     login_celebrity,
@@ -172,7 +169,6 @@ from lp.testing.karma import KarmaRecorder
 anonymous_logged_in
 api_url
 celebrity_logged_in
-is_logged_in
 launchpadlib_credentials_for
 launchpadlib_for
 login_as
@@ -582,7 +578,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
-        set_permit_timeout_from_features(False)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):

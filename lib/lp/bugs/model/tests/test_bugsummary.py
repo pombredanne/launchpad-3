@@ -189,7 +189,7 @@ class TestBugSummary(TestCaseWithFactory):
         for count in range(3):
             bug = self.factory.makeBug(product=product)
             bug_task = self.store.find(BugTask, bug=bug).one()
-            bug_task.status = org_status
+            bug_task._status = org_status
 
             self.assertEqual(
                 self.getPublicCount(
@@ -199,8 +199,8 @@ class TestBugSummary(TestCaseWithFactory):
 
         for count in reversed(range(3)):
             bug_task = self.store.find(
-                BugTask, product=product, status=org_status).any()
-            bug_task.status = new_status
+                BugTask, product=product, _status=org_status).any()
+            bug_task._status = new_status
             self.assertEqual(
                 self.getPublicCount(
                     BugSummary.product == product,

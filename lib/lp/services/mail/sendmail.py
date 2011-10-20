@@ -216,10 +216,11 @@ class MailController(object):
         self.attachments = []
 
     def addAttachment(self, content, content_type='application/octet-stream',
-                      inline=False, filename=None):
+                      inline=False, filename=None, charset=None):
         attachment = Message()
-        attachment.set_payload(content)
-        attachment['Content-type'] = content_type
+        if charset and isinstance(content, unicode):
+            content = content.encode(charset)
+        attachment.add_header('Content-Type', content_type)
         if inline:
             disposition = 'inline'
         else:
@@ -229,6 +230,7 @@ class MailController(object):
             disposition_kwargs['filename'] = filename
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
+        attachment.set_payload(content, charset)
         self.encodeOptimally(attachment)
         self.attachments.append(attachment)
 
@@ -248,6 +250,10 @@ class MailController(object):
         :param exact: If True, the encoding will ensure newlines are not
             mangled.  If False, 7-bit attachments will not be encoded.
         """
+        # If encoding has already been done by virtue of a charset being
+        # previously specified, then do nothing.
+        if 'Content-Transfer-Encoding' in part:
+            return
         orig_payload = part.get_payload()
         if not exact and is_ascii_only(orig_payload):
             return

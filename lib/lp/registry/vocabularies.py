@@ -202,13 +202,8 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class BasePersonVocabulary:
@@ -2191,6 +2186,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
     implements(IHugeVocabulary)
     displayname = 'Select a package'
     step_title = 'Search by name or distro/name'
+    LIMIT = 60
 
     def __init__(self, context):
         self.context = context
@@ -2206,8 +2202,16 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             self.distribution = IDistribution(target)
         except TypeError:
             self.distribution = None
+        if IDistributionSourcePackage.providedBy(target):
+            self.dsp = target
+        else:
+            self.dsp = None
 
     def __contains__(self, spn_or_dsp):
+        if spn_or_dsp == self.dsp:
+            # Historic values are always valid. The DSP used to
+            # initialize the vocabulary is always included.
+            return True
         try:
             self.toTerm(spn_or_dsp)
             return True
@@ -2234,6 +2238,12 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
     def toTerm(self, spn_or_dsp, distribution=None):
         """See `IVocabulary`."""
         dsp = None
+        binary_names = None
+        if isinstance(spn_or_dsp, tuple):
+            # The DSP in DB was passed with its binary_names.
+            spn_or_dsp, binary_names = spn_or_dsp
+            if binary_names is not None:
+                binary_names = binary_names.split()
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
             distribution = spn_or_dsp.distribution
@@ -2249,18 +2259,14 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             distribution = distribution or self.distribution
             if distribution is not None and spn_or_dsp is not None:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
-        try:
+        if dsp is not None and (dsp == self.dsp or dsp.is_official):
+            if binary_names:
+                # Search already did the hard work of looking up binary names.
+                cache = get_property_cache(dsp)
+                cache.binary_names = binary_names
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
-            summary = '%s (%s)' % (token, dsp.name)
-
-            # We try to get the binaries for the dsp; if this fails, we return
-            # lookup error instead.
-            dsp.publishing_history[0].getBuiltBinaries()
-            return SimpleTerm(dsp, token, summary)
-            #return SimpleTerm(dsp, token, summary)
-        except (IndexError, AttributeError):
-            # Either the DSP was None or there is no publishing history.
-            raise LookupError(distribution, spn_or_dsp)
+            return SimpleTerm(dsp, token, token)
+        raise LookupError(distribution, spn_or_dsp)
 
     def getTerm(self, spn_or_dsp):
         """See `IBaseVocabulary`."""
@@ -2282,44 +2288,46 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             # widget must encourage the <distro>/<package> search format.
             return EmptyResultSet()
         search_term = unicode(query)
-        store = IStore(SourcePackagePublishingHistory)
-        dsps = store.using(
-            SourcePackagePublishingHistory,
-            LeftJoin(
-                SourcePackageRelease,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id),
-            LeftJoin(
-                SourcePackageName,
-                SourcePackageRelease.sourcepackagenameID ==
-                    SourcePackageName.id),
-            LeftJoin(
-                DistributionSourcePackageInDatabase,
-                SourcePackageName.id ==
-                    DistributionSourcePackageInDatabase.sourcepackagename_id),
-            LeftJoin(
-                BinaryPackageBuild,
-                BinaryPackageBuild.source_package_release_id ==
-                    SourcePackageRelease.id),
-            LeftJoin(
-                BinaryPackageRelease,
-                BinaryPackageRelease.buildID == BinaryPackageBuild.id),
-            LeftJoin(
-                BinaryPackageName,
-                BinaryPackageRelease.binarypackagenameID ==
-                    BinaryPackageName.id
-            )).find(
-                DistributionSourcePackageInDatabase,
-                DistributionSourcePackageInDatabase.distribution_id ==
-                    distribution.id,
-                SourcePackagePublishingHistory.status.is_in((
-                    PackagePublishingStatus.PENDING,
-                    PackagePublishingStatus.PUBLISHED)),
-                SourcePackagePublishingHistory.archive ==
-                    distribution.main_archive,
-                Or(
-                    SourcePackageName.name.contains_string(search_term),
-                    BinaryPackageName.name.contains_string(
-                        search_term))).config(distinct=True)
-        # XXX sinzui 2011-07-26: This query ignored SPN branches.
+        store = IStore(DistributionSourcePackageInDatabase)
+        # Construct the searchable text that could live in the DSP table.
+        # Limit the results to ensure the user could see all the batches.
+        # Rank only what is returned: exact source name, exact binary
+        # name, partial source name, and lastly partial binary name.
+        searchable_dsp = SQL("""
+            SELECT dsp.id, dsps.name, dsps.binpkgnames, rank
+            FROM DistributionSourcePackage dsp
+                JOIN (
+                SELECT DISTINCT ON (dspc.sourcepackagename)
+                    dspc.sourcepackagename, dspc.name, dspc.binpkgnames,
+                    CASE WHEN dspc.name = ? THEN 100
+                        WHEN dspc.binpkgnames SIMILAR TO
+                            '(^| )' || ? || '( |$)' THEN 75
+                        WHEN dspc.name SIMILAR TO
+                            '(^|.*-)' || ? || '(-|$)' THEN 50
+                        WHEN dspc.binpkgnames SIMILAR TO
+                            '(^|.*-)' || ? || '(-| |$)' THEN 25
+                        ELSE 1
+                        END AS rank
+                FROM DistributionSourcePackageCache dspc
+                    JOIN Archive a ON dspc.archive = a.id AND a.purpose IN (
+                        ?, ?)
+                WHERE
+                    dspc.name like '%%' || ? || '%%'
+                    OR dspc.binpkgnames like '%%' || ? || '%%'
+                LIMIT ?
+                ) dsps ON dsp.sourcepackagename = dsps.sourcepackagename
+            WHERE
+                dsp.distribution = ?
+            ORDER BY rank DESC
+            """, (search_term, search_term, search_term, search_term,
+                  ArchivePurpose.PRIMARY.value, ArchivePurpose.PARTNER.value,
+                  search_term, search_term, self.LIMIT, distribution.id))
+        matching_with = With('SearchableDSP', searchable_dsp)
+        # It might be possible to return the source name and binary names to
+        # reduce the work of the picker adapter.
+        dsps = store.with_(matching_with).using(
+            SQL('SearchableDSP'), DistributionSourcePackageInDatabase).find(
+            (DistributionSourcePackageInDatabase, SQL('binpkgnames')),
+            SQL('DistributionSourcePackage.id = SearchableDSP.id'))
+
         return CountableIterator(dsps.count(), dsps, self.toTerm)
