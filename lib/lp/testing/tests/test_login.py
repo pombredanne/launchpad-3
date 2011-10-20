@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the login helpers."""
@@ -268,18 +268,22 @@ class TestLoginHelpers(TestCaseWithFactory):
         # with_celebrity_logged_in decorates a function so that it runs with
         # the given person logged in.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+
         @with_celebrity_logged_in('vcs_imports')
         def f():
             return self.getLoggedInPerson()
+
         logout()
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
 
     def test_with_person_logged_in(self):
         person = self.factory.makePerson()
+
         @with_person_logged_in(person)
         def f():
             return self.getLoggedInPerson()
+
         logout()
         logged_in = f()
         self.assertEqual(person, logged_in)
