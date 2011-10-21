@@ -184,6 +184,41 @@ redirected to the bug page.
     ...>pmount (Debian)</a>...
     ...
 
+We cannot allow multi-tenanted private bugs.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.product import IProductSet
+
+    >>> def current_user():
+    ...     return getUtility(ILaunchBag).user
+
+    >>> login("foo.bar@canonical.com")
+    >>> productset = getUtility(IProductSet)
+    >>> firefox = productset.get(4)
+    >>> params = CreateBugParams(
+    ...     title="a test private bug",
+    ...     comment="a description of the bug",
+    ...     owner=current_user())
+    >>> private_bug = firefox.createBug(params)
+    >>> private_bug.setPrivate(True, current_user())
+    True
+    >>> logout()
+
+    >>> browser.open(canonical_url(private_bug, rootsite='bugs'))
+    >>> browser.getLink(url='+distrotask').click()
+    >>> browser.getControl(name='field.distribution').value = ['debian']
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/16/+distrotask'
+    >>> print get_feedback_messages(browser.contents)
+    [u'There is 1 error.',
+     u'This private bug is already on Mozilla Firefox.
+       Private, multi-tenanted bugs are not permitted.']
+
+
 = Forwarding bugs upstream =
 
 The +choose-affected-product page is, in fact, a wizard-like page which

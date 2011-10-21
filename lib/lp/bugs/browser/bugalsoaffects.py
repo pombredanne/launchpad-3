@@ -448,7 +448,10 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                     target = target.getSourcePackage(sourcepackagename)
                 validate_new_target(self.context.bug, target)
             except IllegalTarget as e:
-                self.setFieldError('sourcepackagename', e[0])
+                if sourcepackagename:
+                    self.setFieldError('sourcepackagename', e[0])
+                else:
+                    self.setFieldError('distribution', e[0])
 
         super(DistroBugTaskCreationStep, self).validateStep(data)
 
