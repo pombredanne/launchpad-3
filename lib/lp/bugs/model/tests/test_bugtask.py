@@ -2411,6 +2411,8 @@ class TestValidateNewTarget(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+
     def test_products_are_ok(self):
         p1 = self.factory.makeProduct()
         task = self.factory.makeBugTask(target=p1)
@@ -2447,6 +2449,84 @@ class TestValidateNewTarget(TestCaseWithFactory):
             "package in which the bug has not yet been reported."
             % d.displayname,
             validate_new_target, task.bug, d)
+
+    def test_private_multi_tenanted_forbidden(self):
+        # A new task cannot be added if there is already one from another
+        # pillar.
+        d = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(target=d)
+        p = self.factory.makeProduct()
+        with person_logged_in(task.bug.owner):
+            task.bug.setPrivate(True, task.bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "cccc",
+                validate_new_target, task.bug, p)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                validate_new_target(task.bug, p)
+
+    def test_private_incorrect_pillar_task_forbidden(self):
+        # A product or distro cannot be added if there is already a bugtask.
+        p1 = self.factory.makeProduct()
+        p2 = self.factory.makeProduct()
+        d = self.factory.makeDistribution()
+        bug = self.factory.makeBug(product=p1)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug is already on %s. "
+                "Private, multi-tenanted bugs are not permitted." % (
+                    p1.displayname),
+                validate_new_target, bug, p2)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug is already on %s. "
+                "Private, multi-tenanted bugs are not permitted." % (
+                    p1.displayname),
+                validate_new_target, bug, d)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                validate_new_target(bug, p2)
+
+    def test_private_incorrect_product_series_task_forbidden(self):
+        # A product series cannot be added if there is already a bugtask for
+        # a different product.
+        p1 = self.factory.makeProduct()
+        p2 = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=p2)
+        bug = self.factory.makeBug(product=p1)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug is already on %s. "
+                "It cannot also be marked as affecting %s." % (
+                    p1.displayname, series.bugtargetdisplayname),
+                validate_new_target, bug, series)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                validate_new_target(bug, series)
+
+    def test_private_incorrect_distro_series_task_forbidden(self):
+        # A distro series cannot be added if there is already a bugtask for
+        # a different distro.
+        d1 = self.factory.makeDistribution()
+        d2 = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=d2)
+        bug = self.factory.makeBug(distribution=d1)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug is already on %s. "
+                "It cannot also be marked as affecting %s." % (
+                    d1.displayname, series.bugtargetdisplayname),
+                validate_new_target, bug, series)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                validate_new_target(bug, series)
 
 
 class TestWebservice(TestCaseWithFactory):

@@ -36,7 +36,6 @@ from lp.app.errors import (
     )
 from lp.app.validators.name import valid_name
 from lp.bugs.interfaces.bug import (
-    CannotAddBugTask,
     CreateBugParams,
     IBug,
     IBugAddForm,
@@ -46,6 +45,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     IBugTask,
+    IllegalTarget,
     )
 from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -621,12 +621,13 @@ class AffectsEmailCommand(EmailCommand):
         if bugtask is None:
             try:
                 bugtask = self._create_bug_task(bug, bug_target)
-            except CannotAddBugTask:
+            except IllegalTarget as e:
                 raise EmailProcessingError(
                     get_error_message(
                         'cannot-add-task.txt',
                         error_templates=error_templates,
-                        bug_id=bug.id, target_name=bug_target.name),
+                        bug_id=bug.id,
+                        target_name=bug_target.name, reason=e[0]),
                     stop_processing=True)
             event = ObjectCreatedEvent(bugtask)
 

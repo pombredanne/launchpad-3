@@ -284,16 +284,20 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
     def test_execute_bug_cannot_add_task(self):
         # Test that attempts to invalidly add a new bug task results in the
         # expected error message.
-        bug = self.factory.makeBug(private=True)
-        product = self.factory.makeProduct(name='fnord')
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(private=True, product=product)
+        self.factory.makeProduct(name='fnord')
         login_person(bug.bugtasks[0].target.owner)
         command = AffectsEmailCommand('affects', ['fnord'])
         error = self.assertRaises(
             EmailProcessingError, command.execute, bug, None)
+        reason = ("This private bug is already on %s. "
+                    "Private, multi-tenanted bugs are not permitted." %
+                    product.displayname)
         self.assertEqual(
             normalize_whitespace(
-                "Bug %s cannot be marked as affecting %s "
-                "because the bug is private." % (bug.id, product.name)),
+                "Bug %s cannot be marked as affecting fnord. %s"
+                    % (bug.id, reason)),
             normalize_whitespace(str(error)))
 
 

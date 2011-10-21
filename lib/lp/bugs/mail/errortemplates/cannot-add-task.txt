@@ -1,2 +1,3 @@
-Bug %(bug_id)s cannot be marked as affecting %(target_name)s
-because the bug is private.
+Bug %(bug_id)s cannot be marked as affecting %(target_name)s.
+
+%(reason)s

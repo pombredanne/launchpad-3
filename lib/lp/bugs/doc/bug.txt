@@ -773,12 +773,12 @@ If we try and add an invalid bug task to a private bug we get an exception.
     >>> private_bug.addTask(owner=foobar, target=tomcat)
     Traceback (most recent call last):
     ...
-    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+    IllegalTarget: This private bug is already on Mozilla Firefox. Private, multi-tenanted bugs are not permitted.
 
     >>> private_bug.addTask(owner=foobar, target=ubuntu)
     Traceback (most recent call last):
     ...
-    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+    IllegalTarget: This private bug is already on Mozilla Firefox. Private, multi-tenanted bugs are not permitted.
 
 We can add a new product series task so long as it's for the same product as
 is already targetted.
@@ -791,7 +791,7 @@ is already targetted.
     >>> private_bug.addTask(owner=foobar, target=target)
     Traceback (most recent call last):
     ...
-    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+    IllegalTarget: This private bug is already on Mozilla Firefox. It cannot also be marked as affecting Tomcat trunk.
 
 Now we create a bug targetted to a distribution.
 
@@ -830,12 +830,12 @@ We cannot add distro series or source package tasks for different distros.
     >>> private_bug.addTask(owner=foobar, target=warty)
     Traceback (most recent call last):
     ...
-    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+    IllegalTarget: This private bug is already on Tubuntu. It cannot also be marked as affecting Ubuntu Warty.
 
     >>> private_bug.addTask(owner=foobar, target=warty_fox_package)
     Traceback (most recent call last):
     ...
-    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+    IllegalTarget: This private bug is already on Tubuntu. It cannot also be marked as affecting mozilla-firefox (Ubuntu Warty).
 
 
 Changing bug visibility.

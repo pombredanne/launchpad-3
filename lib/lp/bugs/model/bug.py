@@ -132,7 +132,6 @@ from lp.bugs.adapters.bugchange import (
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
-    CannotAddBugTask,
     IBug,
     IBugBecameQuestionEvent,
     IBugMute,
@@ -1211,35 +1210,6 @@ class Bug(SQLBase):
 
     def addTask(self, owner, target):
         """See `IBug`."""
-
-        # First check that we can create a new task for the given target, else
-        # we raise a CannotAddBugTask exception.
-        if not self._allow_mulltipillar_private_bugs and self.private:
-
-            # We cannot add a product or distro task if there are already
-            # any existing tasks.
-            illegal_product_or_distro = (
-                (IProduct.providedBy(target)
-                or IDistribution.providedBy(target))
-                and len(self.bugtasks) > 0)
-
-            # We cannot add a product|distro series or source package with a
-            # different pillar to what exists already.
-            illegal_series_or_sourcepackage = (
-                target.pillar not in self.affected_pillars
-                and (IDistroSeries.providedBy(target)
-                or IProductSeries.providedBy(target)
-                or ISourcePackage.providedBy(target)))
-
-            if (illegal_product_or_distro
-                or illegal_series_or_sourcepackage
-                # We don't allow a bad situation to be made worse by allowing
-                # a new task to be added for existing mult-tenanted bugs.
-                or len(self.affected_pillars) > 1):
-                raise CannotAddBugTask(
-                    ("Private bugs cannot be marked as affecting more "
-                    "than one project or distribution."))
-
         new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
 
         # When a new task is added the bug's heat becomes relevant to the

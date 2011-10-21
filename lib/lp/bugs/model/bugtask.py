@@ -444,6 +444,34 @@ def validate_new_target(bug, target):
                 "specified. You should fill in a package name for "
                 "the existing bug." % target.distribution.displayname)
 
+    if bug.private and not bool(features.getFeatureFlag(
+            'disclosure.allow_multipillar_private_bugs.enabled')):
+
+        # We don't allow a bad situation to be made worse by allowing
+        # a new task to be added for existing multi-tenanted bugs.
+        if len(bug.affected_pillars) > 1:
+            raise IllegalTarget(
+                "Private, multi-tenanted bugs are not permitted.")
+
+        # We cannot add a product or distro task if there are already
+        # any existing tasks.
+        if ((IProduct.providedBy(target) or IDistribution.providedBy(target))
+                and len(bug.bugtasks) > 0):
+            raise IllegalTarget(
+                "This private bug is already on %s. "
+                "Private, multi-tenanted bugs are not permitted." %
+                bug.default_bugtask.target.bugtargetdisplayname)
+
+        # We can add a product|distro series or source package so long as the
+        # pillar exists already.
+        if (len(bug.affected_pillars) > 0
+                and not target.pillar in bug.affected_pillars):
+            raise IllegalTarget(
+                "This private bug is already on %s. It cannot also be "
+                "marked as affecting %s." %
+                (bug.default_bugtask.target.bugtargetdisplayname,
+                 target.bugtargetdisplayname))
+
     validate_target(bug, target)
 
 
