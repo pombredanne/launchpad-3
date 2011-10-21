@@ -1139,8 +1139,8 @@ heterogeneous.
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu Test (Distribution) - class Distribution
+    Ubuntu Linux - class Distribution
+    Ubuntu Test - class Distribution
 
 They can be looked up by their aliases too.
 
@@ -1171,7 +1171,7 @@ Inactive projects and project groups are not available.
     >>> for term in vocab:
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Tomcat (Project) - class Product
+    Tomcat - class Product
 
     >>> tomcat = product_set.getByName('tomcat')
     >>> tomcat in vocab
@@ -1206,8 +1206,8 @@ is heterogeneous.
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu Test (Distribution) - class Distribution
+    Ubuntu Linux - class Distribution
+    Ubuntu Test - class Distribution
 
 They can be looked up by their aliases too.
 
@@ -1257,12 +1257,12 @@ Inactive projects and project groups are not available.
     >>> for term in vocab:
     ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Apache (Project Group) - class ProjectGroup
+    Apache - class ProjectGroup
 
     >>> for term in vocab:
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Tomcat (Project) - class Product
+    Tomcat - class Product
 
 
 FeaturedProjectVocabulary
@@ -1280,15 +1280,15 @@ _clauseTables).
 
     >>> for term in featured_project_vocabulary:
     ...     print term.token, term.value.displayname, term.title
-    applets         Gnome Applets        The Gnome Panel Applets (Project)
-    bazaar          Bazaar               Bazaar (Project)
-    firefox         Mozilla Firefox      Mozilla Firefox (Project)
-    gentoo          Gentoo               The Gentoo Linux (Distribution)
-    gnome           GNOME                The GNOME Project (Project Group)
-    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator (Project)
-    mozilla The     Mozilla Project      The Mozilla Project (Project Group)
-    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Project)
-    ubuntu          Ubuntu               Ubuntu Linux (Distribution)
+    applets         Gnome Applets        The Gnome Panel Applets
+    bazaar          Bazaar               Bazaar
+    firefox         Mozilla Firefox      Mozilla Firefox
+    gentoo          Gentoo               The Gentoo Linux
+    gnome           GNOME                The GNOME Project
+    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator
+    mozilla The     Mozilla Project      The Mozilla Project
+    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird
+    ubuntu          Ubuntu               Ubuntu Linux
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in featured_project_vocabulary
