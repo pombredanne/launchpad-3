@@ -46,8 +46,8 @@ Helper functions to examine emails that were sent:
     ...     return cmp(a[1], b[1])
 
     >>> def print_addrlist(field):
-    ...    for entry in field.split(','):
-    ...        print entry.strip()
+    ...    for entry in sorted([addr.strip() for addr in field.split(',')]):
+    ...        print entry
 
 Import the test keys to use 'insecure' policy.
 
@@ -410,9 +410,9 @@ UNAPPROVED source uploads for 'translations' section via insecure:
     >>> lang_pack.logger = FakeLogger()
     >>> result = lang_pack.do_accept()
     DEBUG Creating queue entry
-    ...
     DEBUG language-pack-pt diff from 1.0-2 to 1.0-3 requested
     DEBUG Setting it to UNAPPROVED
+    ...
     DEBUG Skipping acceptance and announcement, it is a language-package
     upload.
 
@@ -446,8 +446,8 @@ the upload is waiting for approval:
     'Launchpad actually'
 
     >>> print_addrlist(notification['To'])
-    Foo Bar <foo.bar@canonical.com>
     Daniel Silverstone <daniel.silverstone@canonical.com>
+    Foo Bar <foo.bar@canonical.com>
 
     >>> notification['Subject']
     '[ubuntu/hoary-updates] bar 1.0-2 (Waiting for approval)'
@@ -482,8 +482,8 @@ saying they are waiting for approval:
     'Launchpad actually'
 
     >>> print_addrlist(notification['To'])
-    Foo Bar <foo.bar@canonical.com>
     Daniel Silverstone <daniel.silverstone@canonical.com>
+    Foo Bar <foo.bar@canonical.com>
 
     >>> notification['Subject']
     '[ubuntu/hoary-backports] bar 1.0-3 (Waiting for approval)'

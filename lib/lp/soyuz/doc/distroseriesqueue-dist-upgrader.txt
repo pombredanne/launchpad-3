@@ -60,8 +60,8 @@ It was not rejected.
     DEBUG Creating queue entry
     DEBUG Setting it to ACCEPTED
     DEBUG Building recipients list.
-    DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
     ...
+    DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
     DEBUG Sent a mail:
     ...
     DEBUG signer of the above package.
@@ -236,8 +236,8 @@ manual intervention.
     DEBUG Creating queue entry
     DEBUG Setting it to ACCEPTED
     DEBUG Building recipients list.
-    DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
     ...
+    DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
     DEBUG Sent a mail:
     ...
     DEBUG signer of the above package.
