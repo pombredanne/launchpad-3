@@ -465,8 +465,9 @@ def is_valid_uploader(person, distribution):
         return person.isUploader(distribution)
 
 
-def get_upload_notification_recipients(blamer, archive, distroseries, logger,
-                                       changes=None, spr=None, bprs=None):
+def get_upload_notification_recipients(blamer, archive, distroseries,
+                                       logger=None, changes=None, spr=None,
+                                       bprs=None):
     """Return a list of recipients for notification emails."""
     debug(logger, "Building recipients list.")
     candidate_recipients = [

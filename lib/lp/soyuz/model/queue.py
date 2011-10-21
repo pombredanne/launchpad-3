@@ -868,8 +868,8 @@ class PackageUpload(SQLBase):
         else:
             signer = None
         recipients = get_upload_notification_recipients(
-            signer, self.archive, self.distroseries, logger, changes=changes,
-            spr=self.sourcepackagerelease, bprs=self.builds)
+            signer, self.archive, self.distroseries, logger=logger,
+            changes=changes, spr=self.sourcepackagerelease, bprs=self.builds)
         notify(
             signer, self.sourcepackagerelease, self.builds, self.customfiles,
             self.archive, self.distroseries, self.pocket, summary_text,

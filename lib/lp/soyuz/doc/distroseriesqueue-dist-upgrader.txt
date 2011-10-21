@@ -61,6 +61,7 @@ It was not rejected.
     DEBUG Setting it to ACCEPTED
     DEBUG Building recipients list.
     DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+    ...
     DEBUG Sent a mail:
     ...
     DEBUG signer of the above package.
@@ -236,6 +237,7 @@ manual intervention.
     DEBUG Setting it to ACCEPTED
     DEBUG Building recipients list.
     DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+    ...
     DEBUG Sent a mail:
     ...
     DEBUG signer of the above package.

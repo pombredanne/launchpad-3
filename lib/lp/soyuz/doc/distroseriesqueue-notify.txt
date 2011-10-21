@@ -45,6 +45,7 @@ logger object that will extract tracebacks for the purposes of this doctest.
   >>> netapplet_upload.notify(
   ...     changes_file_object=changes_file, logger=FakeLogger())
   DEBUG Building recipients list.
+  ...
   DEBUG Changes file is unsigned, adding changer as recipient
   ...
   DEBUG Sent a mail:
