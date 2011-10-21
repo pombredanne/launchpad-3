@@ -554,6 +554,11 @@ class TestBuildCancellation(TestCaseWithFactory):
         super(TestBuildCancellation, self).setUp()
         self.builder = self.factory.makeBuilder()
 
+    def assertCancelled(self, build, buildqueue):
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+        self.assertIs(None, buildqueue.specific_job)
+        self.assertRaises(SQLObjectNotFound, BuildQueue.get, buildqueue.id)
+
     def test_binarypackagebuild_cancel(self):
         build = self.factory.makeBinaryPackageBuild()
         buildpackagejob = build.makeJob()
@@ -565,9 +570,7 @@ class TestBuildCancellation(TestCaseWithFactory):
         bq.markAsBuilding(self.builder)
         bq.cancel()
 
-        self.assertEqual(BuildStatus.CANCELLED, buildpackagejob.build.status)
-        self.assertIs(None, buildpackagejob.job)
-        self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
+        self.assertCancelled(buildpackagejob.build, bq)
 
     def test_recipebuild_cancel(self):
         bq = self.factory.makeSourcePackageRecipeBuildJob()
@@ -575,9 +578,7 @@ class TestBuildCancellation(TestCaseWithFactory):
         bq.markAsBuilding(self.builder)
         bq.cancel()
 
-        self.assertEqual(BuildStatus.CANCELLED, build.status)
-        self.assertIs(None, bq.specific_job)
-        self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
+        self.assertCancelled(build, bq)
 
 
 class TestMinTimeToNextBuilder(SingleArchBuildsBase):
