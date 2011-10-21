@@ -108,7 +108,7 @@ class BuildStatus(DBEnumeratedType):
         Cancelling build
 
         A cancellation request was made for the build. It cannot be cancelled
-        immediately because request is made in the webapp but we need to wait
+        immediately because a request is made in the webapp but we need to wait
         for the buildd-manager to actually cancel it.
         """)
 
