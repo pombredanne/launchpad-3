@@ -82,21 +82,32 @@
 
 </table>
 
-<div id='also-affects-links' class="actions"
-     tal:attributes="style python:'display: '+(context.canAddTask() and 'block' or 'none')"
+<div class="actions"
      tal:define="current_bugtask view/current_bugtask"
      tal:condition="view/displayAlsoAffectsLinks">
   <tal:also-affects-links
       define="context_menu context/menu:context">
+    <span id="also-affects-product"
+          tal:attributes="class python:not context.canAddProjectTask() and 'private-disallow' or ''"
+    >
     <tal:addupstream
         define="link context_menu/addupstream"
         condition="link/enabled"
-        replace="structure link/render" /><a href="/+help/also-affects-project-help.html" target="help" class="sprite maybe">&nbsp;
-             <span class="invisible-link">(?)</span></a>
+        replace="structure link/render" />
+        <a href="/+help/also-affects-project-help.html"
+           target="help"
+           class="sprite maybe">&nbsp;
+             <span class="invisible-link">(?)</span>
+        </a>
+    </span>
+    <span id="also-affects-package"
+          tal:attributes="class python:not context.canAddPackageTask() and 'private-disallow' or ''"
+    >
     <tal:adddistro
         define="link context_menu/adddistro"
         condition="link/enabled"
         replace="structure link/render" />
+    </span>
     <tal:nominate
         define="link context_menu/nominate"
         condition="link/enabled"

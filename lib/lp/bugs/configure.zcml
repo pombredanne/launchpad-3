@@ -803,7 +803,8 @@
                     getAlsoNotifiedSubscribers
                     getBugWatch
                     canBeNominatedFor
-                    canAddTask
+                    canAddPackageTask
+                    canAddProjectTask
                     getNominationFor
                     getNominations
                     date_last_message

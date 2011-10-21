@@ -387,6 +387,12 @@ class Bug(SQLBase):
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
 
+    @property
+    def _allow_mulltipillar_private_bugs(self):
+        # Some teams still  need to be able to have multi pillar private bugs.
+        return bool(getFeatureFlag(
+            'disclosure.allow_multipillar_private_bugs.enabled'))
+
     @cachedproperty
     def _subscriber_cache(self):
         """Caches known subscribers."""
@@ -1205,10 +1211,34 @@ class Bug(SQLBase):
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        if not self.canAddTask():
-            raise CannotAddBugTask(
-                ("Private bugs cannot be marked as affecting more than one "
-                "target."))
+
+        # First check that we can create a new task for the given target, else
+        # we raise a CannotAddBugTask exception.
+        if not self._allow_mulltipillar_private_bugs and self.private:
+
+            # We cannot add a product or distro task if there are already
+            # any existing tasks.
+            illegal_product_or_distro = (
+                (IProduct.providedBy(target)
+                or IDistribution.providedBy(target))
+                and len(self.bugtasks) > 0)
+
+            # We cannot add a product|distro series or source package with a
+            # different pillar to what exists already.
+            illegal_series_or_sourcepackage = (
+                target.pillar not in self.affected_pillars
+                and (IDistroSeries.providedBy(target)
+                or IProductSeries.providedBy(target)
+                or ISourcePackage.providedBy(target)))
+
+            if (illegal_product_or_distro
+                or illegal_series_or_sourcepackage
+                # We don't allow a bad situation to be made worse by allowing
+                # a new task to be added for existing mult-tenanted bugs.
+                or len(self.affected_pillars) > 1):
+                raise CannotAddBugTask(
+                    ("Private bugs cannot be marked as affecting more "
+                    "than one project or distribution."))
 
         new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
 
@@ -1218,14 +1248,22 @@ class Bug(SQLBase):
 
         return new_task
 
-    def canAddTask(self):
+    def canAddProjectTask(self):
         """See `IBug`."""
-        # Some teams need to be able to add more than one bug task to a
-        # private bug (until they get their shit together).
-        if bool(getFeatureFlag(
-            'disclosure.allow_multipillar_private_bugs.enabled')):
+        if self._allow_mulltipillar_private_bugs:
             return True
-        return not self.private or len(self.bugtasks) == 0
+        return len(self.bugtasks) == 0
+
+    def canAddPackageTask(self):
+        """See `IBug`."""
+        if self._allow_mulltipillar_private_bugs:
+            return True
+        for pillar in self.affected_pillars:
+            if IProduct.providedBy(pillar):
+                return False
+        # We don't allow a bad situation to be made worse by allowing a new
+        # task to be added for existing mult-tenanted bugs.
+        return len(self.affected_pillars) <= 1
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
@@ -1550,8 +1588,6 @@ class Bug(SQLBase):
 
     def canBeNominatedFor(self, target):
         """See `IBug`."""
-        if not self.canAddTask():
-            return False
         try:
             self.getNominationFor(target)
         except NotFoundError:

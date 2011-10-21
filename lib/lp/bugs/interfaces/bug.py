@@ -195,7 +195,7 @@ class CreatedBugWithNoBugTasksError(Exception):
 
 @error_status(httplib.BAD_REQUEST)
 class CannotAddBugTask(Exception):
-    """Raised when a new bug task cannot be added to a bug."""
+    """Raised when a given bug task cannot be added to a bug."""
 
 
 def optional_message_subject_field():
@@ -649,8 +649,23 @@ class IBug(IPrivacy, IHasLinkedBranches):
         :raises CannotAddBugTask: if the bug task cannot be added to the bug.
         """
 
-    def canAddTask():
-        """Can a new bug task be added to this bug?"""
+    def canAddProjectTask():
+        """Can a new bug task targetted to a project be added to this bug?
+
+        If a bug has any bug tasks already, were it to be private, it cannot
+        be marked as also affecting any other project, so return False.
+        """
+
+    def canAddPackageTask():
+        """Can a new bug task targetted to a src pkg be added to this bug?
+
+        If a bug has any existing bug tasks targetted at a project, were it to
+        be private, then it cannot be marked as affecting a package,
+        so return False.
+
+        A task targetted at a given package may still be illegal to add, but
+        this will be caught when addTask() is attempted.
+        """
 
     def hasBranch(branch):
         """Is this branch linked to this bug?"""

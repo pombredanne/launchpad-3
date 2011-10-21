@@ -1,1 +1,2 @@
-Bug %(bug_id)s cannot be marked as affecting more than one target because it is private.
+Bug %(bug_id)s cannot be marked as affecting %(target_name)s
+because the bug is private.

@@ -865,11 +865,11 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             self._handlePrivacyChanged(user_will_be_subscribed)
         if self.request.is_ajax:
             if private_changed or security_related_changed:
-                return self._getResultsData()
+                return self._getSubscriptionDetails()
             else:
                 return ''
 
-    def _getResultsData(self):
+    def _getSubscriptionDetails(self):
         cache = dict()
         # The subscription details for the current user.
         self.extractBugSubscriptionDetails(self.user, self.context.bug, cache)
@@ -884,7 +884,6 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             bug, self.request)
         subscription_data = subscribers_portlet.subscriber_data
         result_data = dict(
-            can_add_bugtask=bug.canAddTask(),
             cache_data=cache,
             subscription_data=subscription_data)
         self.request.response.setHeader('content-type', 'application/json')

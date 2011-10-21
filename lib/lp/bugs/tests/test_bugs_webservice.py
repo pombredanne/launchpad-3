@@ -349,8 +349,10 @@ class TestErrorHandling(TestCaseWithFactory):
         self.assertRaises(
             BadRequest, lp_bug.addTask, target=api_url(product))
 
-    def test_add_bugtask_to_private_bug_gives_bad_request(self):
-        # Test we cannot add a second bug task to a private bug.
+    def test_add_invalid_bugtask_to_private_bug_gives_bad_request(self):
+        # Test we get an error when we attempt to invalidly add a bug task to
+        # a private bug. In this case, we cannot mark a private bug as
+        # affecting more than one project.
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(private=True, owner=owner)
         product = self.factory.makeProduct()

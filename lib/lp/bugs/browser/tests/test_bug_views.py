@@ -50,29 +50,38 @@ class TestPrivateBugLinks(BrowserTestCase):
 
 
 class TestAlsoAffectsLinks(BrowserTestCase):
-    # Tests the visibility of the Also Affects... links on the bug index view.
+    # Tests the rendering of the Also Affects... links on the bug index view.
+    # The links are rendered with a css class 'private-disallow' if they are
+    # not valid for private bugs,
+
     layer = DatabaseFunctionalLayer
 
-    def test_no_also_affects_links_when_cannot_add_bugtask(self):
-        # The also affects links are not visible if a bug task cannot be
-        # added.
-        owner = self.factory.makePerson()
-        bug = self.factory.makeBug(private=True, owner=owner)
-        with person_logged_in(owner):
-            url = canonical_url(bug, rootsite="bugs")
-            browser = self.getUserBrowser(url, user=owner)
-            also_affects = find_tag_by_id(
-                browser.contents, 'also-affects-links')
-            self.assertEqual('display: none', also_affects['style'])
-
-    def test_also_affects_links_when_can_add_bugtask(self):
-        # The also affects links are visible if a bug task can be added.
+    def test_also_affects_links_product_bug(self):
         bug = self.factory.makeBug()
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url)
         also_affects = find_tag_by_id(
-            browser.contents, 'also-affects-links')
-        self.assertEqual('display: block', also_affects['style'])
+            browser.contents, 'also-affects-product')
+        self.assertIn(
+            'private-disallow', also_affects['class'].split(' '))
+        also_affects = find_tag_by_id(
+            browser.contents, 'also-affects-package')
+        self.assertIn(
+            'private-disallow', also_affects['class'].split(' '))
+
+    def test_also_affects_links_distro_bug(self):
+        distro = self.factory.makeDistribution()
+        bug = self.factory.makeBug(distribution=distro)
+        url = canonical_url(bug, rootsite="bugs")
+        browser = self.getUserBrowser(url)
+        also_affects = find_tag_by_id(
+            browser.contents, 'also-affects-product')
+        self.assertIn(
+            'private-disallow', also_affects['class'].split(' '))
+        also_affects = find_tag_by_id(
+            browser.contents, 'also-affects-package')
+        self.assertNotIn(
+            'private-disallow', also_affects['class'].split(' '))
 
 
 class TestEmailObfuscated(BrowserTestCase):
@@ -324,10 +333,6 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             **extra)
         view = self.createInitializedSecrecyView(person, bug, request)
         result_data = simplejson.loads(view.render())
-
-        with person_logged_in(person):
-            self.assertTrue('can_add_bugtask' in result_data)
-            self.assertEqual(bug.canAddTask(), result_data['can_add_bugtask'])
 
         cache_data = result_data['cache_data']
         self.assertFalse(cache_data['other_subscription_notifications'])

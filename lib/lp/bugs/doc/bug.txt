@@ -726,11 +726,30 @@ or oldest bugtask.
     >>> print firefox_bug.default_bugtask.bugtargetdisplayname
     Mozilla Firefox
 
-Private bugs can only have one bug task.
+It's not always possible to add another bug task to a bug.
+Private bugs are not allowed to be multi-tenanted. In many cases we know up
+front whether we can mark a bug as also affecting another project or
+distribution. We use this knowledge to prevent the user from doing the wrong
+thing when using the UI. Here we test the canAdd...() methods.
 
-    >>> firefox_bug.setPrivate(True, current_user())
+    >>> params = CreateBugParams(
+    ...     title="a test private bug",
+    ...     comment="a description of the bug",
+    ...     owner=current_user())
+    >>> private_bug = firefox.createBug(params)
+    >>> private_bug.setPrivate(True, current_user())
     True
-    >>> firefox_bug.canAddTask()
+
+If bug has any bug tasks already, were it to be private, it cannot be marked
+as also affecting any other project.
+
+    >>> private_bug.canAddProjectTask()
+    False
+
+Since the existing bug task is related to a project, we can't mark the bug as
+affecting a package either.
+
+    >>> private_bug.canAddPackageTask()
     False
 
 But we can use a feature flag to avert this restriction.
@@ -739,22 +758,85 @@ But we can use a feature flag to avert this restriction.
     >>> feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
     >>> flags = FeatureFixture(feature_flag)
     >>> flags.setUp()
-    >>> firefox_bug.canAddTask()
+    >>> private_bug.canAddProjectTask()
+    True
+    >>> private_bug.canAddPackageTask()
     True
 
 Clean up the feature flag.
 
     >>> flags.cleanUp()
 
-If we try and a another bug task to a private bug we get an exception.
+If we try and add an invalid bug task to a private bug we get an exception.
 
-    >>> target = getUtility(IProductSet).getByName('tomcat')
-    >>> firefox_bug.addTask(owner=foobar, target=target)
+    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> private_bug.addTask(owner=foobar, target=tomcat)
     Traceback (most recent call last):
     ...
-    CannotAddBugTask: Private bugs cannot be marked as affecting more than one target.
-    >>> firefox_bug.setPrivate(False, current_user())
+    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+
+    >>> private_bug.addTask(owner=foobar, target=ubuntu)
+    Traceback (most recent call last):
+    ...
+    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+
+We can add a new product series task so long as it's for the same product as
+is already targetted.
+
+    >>> target = firefox.getSeries('1.0')
+    >>> private_bug.addTask(owner=foobar, target=target)
+    <BugTask for bug...
+
+    >>> target = tomcat.getSeries('trunk')
+    >>> private_bug.addTask(owner=foobar, target=target)
+    Traceback (most recent call last):
+    ...
+    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+
+Now we create a bug targetted to a distribution.
+
+    >>> private_bug = ubuntu.createBug(params)
+    >>> private_bug.setPrivate(True, current_user())
     True
+
+Since the existing bug task is related to a distro, we can add a new package
+task.
+
+    >>> private_bug.canAddPackageTask()
+    True
+
+But we still are now allowed to add project task.
+
+    >>> private_bug.canAddProjectTask()
+    False
+
+We can add a new distro series task so long as it's for the same distro as
+is already targetted.
+
+    >>> private_bug.addTask(owner=foobar, target=warty)
+    <BugTask for bug...
+
+We can also add an allowed distro series source package.
+
+    >>> private_bug.addTask(owner=foobar, target=warty_fox_package)
+    <BugTask for bug...
+
+We cannot add distro series or source package tasks for different distros.
+
+    >>> private_bug = tubuntu.createBug(params)
+    >>> private_bug.setPrivate(True, current_user())
+    True
+
+    >>> private_bug.addTask(owner=foobar, target=warty)
+    Traceback (most recent call last):
+    ...
+    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+
+    >>> private_bug.addTask(owner=foobar, target=warty_fox_package)
+    Traceback (most recent call last):
+    ...
+    CannotAddBugTask: Private bugs cannot be marked as affecting more than one project or distribution.
+
 
 Changing bug visibility.
 

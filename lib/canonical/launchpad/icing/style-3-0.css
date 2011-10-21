@@ -137,6 +137,10 @@ body.private {
 body.feature-flag-bugs-private-notification-enabled.private {
     background-image: none;
     }
+body.private .private-disallow {
+    /* We want to disable some private artifacts */
+    display: none
+    }
 * html body {
     /* stops floats dropping in IE 5.5/6 */
     word-wrap: break-word;

@@ -30,6 +30,7 @@ from lp.services.mail.interfaces import (
 from lp.testing import (
     login_celebrity,
     login_person,
+    normalize_whitespace,
     TestCaseWithFactory,
     )
 
@@ -281,17 +282,19 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
 
     def test_execute_bug_cannot_add_task(self):
+        # Test that attempts to invalidly add a new bug task results in the
+        # expected error message.
         bug = self.factory.makeBug(private=True)
         product = self.factory.makeProduct(name='fnord')
         login_person(bug.bugtasks[0].target.owner)
         command = AffectsEmailCommand('affects', ['fnord'])
         error = self.assertRaises(
             EmailProcessingError, command.execute, bug, None)
-        message = str(error).split('\n')
         self.assertEqual(
-            ("Bug %s cannot be marked as affecting more than one "
-            "target because it is private." % bug.id),
-            message[0])
+            normalize_whitespace(
+                "Bug %s cannot be marked as affecting %s "
+                "because the bug is private." % (bug.id, product.name)),
+            normalize_whitespace(str(error)))
 
 
 class BugEmailCommandTestCase(TestCaseWithFactory):

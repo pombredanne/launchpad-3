@@ -36,6 +36,7 @@ from lp.app.errors import (
     )
 from lp.app.validators.name import valid_name
 from lp.bugs.interfaces.bug import (
+    CannotAddBugTask,
     CreateBugParams,
     IBug,
     IBugAddForm,
@@ -576,14 +577,6 @@ class AffectsEmailCommand(EmailCommand):
                     error_templates=error_templates),
                 stop_processing=True)
 
-        if not bug.canAddTask():
-            raise EmailProcessingError(
-                get_error_message(
-                    'cannot-add-task.txt',
-                    error_templates=error_templates,
-                    bug_id=bug.id),
-                stop_processing=True)
-
         string_args = list(self.string_args)
         try:
             path = string_args.pop(0)
@@ -626,7 +619,15 @@ class AffectsEmailCommand(EmailCommand):
                     bugtask, bugtask_before_edit, ['sourcepackagename'])
 
         if bugtask is None:
-            bugtask = self._create_bug_task(bug, bug_target)
+            try:
+                bugtask = self._create_bug_task(bug, bug_target)
+            except CannotAddBugTask:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'cannot-add-task.txt',
+                        error_templates=error_templates,
+                        bug_id=bug.id, target_name=bug_target.name),
+                    stop_processing=True)
             event = ObjectCreatedEvent(bugtask)
 
         return bugtask, event, bug_event
