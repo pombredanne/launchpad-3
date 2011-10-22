@@ -2067,6 +2067,9 @@ body.global-notification-visible .login-logout {
 /* ====================
    In-page timeline
 */
+table.debug-timeline {
+    font-size: 10px;
+}
 table.debug-timeline td.amount {
     font-weight: bold;
 }
