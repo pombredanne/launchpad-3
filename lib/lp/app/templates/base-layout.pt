@@ -194,8 +194,10 @@
   <tr tal:repeat="action timeline_actions">
     <td class="amount" tal:content="action/duration/fmt:millisecondduration"/>	  
     <td style="font-family: monospace; text-align: left;">
+      <pre class="wrap">
       <span class="action-category" tal:content="action/category"/>:
       <span class="action-details" tal:content="action/detail"/>	  
+      </pre>
     </td>
   </tr>
 </table>
