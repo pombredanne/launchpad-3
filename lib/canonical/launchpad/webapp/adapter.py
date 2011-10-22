@@ -233,21 +233,9 @@ def summarize_requests():
     return log
 
 
-def format_timeline_details():
-    """Produce a printable detailed view of the request timeline."""
-    request = get_current_browser_request()
-    timeline = get_request_timeline(request)
-    lines = []
-    for action in timeline.actions:
-        dur = action.duration
-        if dur is None:
-            action_str = "-"
-        else:
-            action_str = "%7dms" % (
-                (((dur.days * 3600 * 24) + dur.seconds) * 1000) + (dur.microseconds / 1000))
-        lines.append(
-            "%10s %10s %s" % (action_str, action.category, action.detail.rstrip()))
-    return "\n\n".join(lines)
+def get_timeline_actions():
+    """Return an iterable of timeline actions"""
+    return get_request_timeline(get_current_browser_request()).actions
 
 
 def store_sql_statements_and_request_duration(event):

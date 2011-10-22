@@ -184,14 +184,14 @@
     --&gt;" />
 </tal:template>
 
-<tal:comment
-   replace="structure string:
-&lt;!--
-
-Timeline:
-${modules/canonical.launchpad.webapp.adapter/format_timeline_details}
-
---&gt;" />
+<table 
+  tal:define="timeline_actions modules/canonical.launchpad.webapp.adapter/get_timeline_actions">
+  <tr tal:repeat="action timeline_actions">
+    <td tal:content="action/duration/fmt:exactduration"/>	  
+    <td style="text-wrap: none;"><nobr tal:content="action/category"/></td>
+    <td style="font-family: monospace; text-align: left;" tal:content="action/detail"/>	  
+  </tr>
+</table>
 
 <tal:comment
     tal:condition="request/features/visible_render_time"
