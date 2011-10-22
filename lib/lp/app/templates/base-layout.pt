@@ -184,23 +184,30 @@
     --&gt;" />
 </tal:template>
 
-<table 
-  class="debug-timeline listing"
-  tal:define="timeline_actions modules/canonical.launchpad.webapp.adapter/get_timeline_actions">
-  <thead>
-    <th>Duration</th>
-    <th>Action</th>
-  </thead>
-  <tr tal:repeat="action timeline_actions">
-    <td class="amount" tal:content="action/duration/fmt:millisecondduration"/>	  
-    <td style="font-family: monospace; text-align: left;">
-      <pre class="wrap">
-      <span class="action-category" tal:content="action/category"/>:
-      <span class="action-details" tal:content="action/detail"/>	  
-      </pre>
-    </td>
-  </tr>
-</table>
+<a name="debug_timeline" 
+  id="debug_timeline"
+  class="hidden"
+  >
+  <table 
+    tal:condition="request/features/visible_render_time"
+    tal:define="timeline_actions modules/canonical.launchpad.webapp.adapter/get_timeline_actions"
+    class="debug-timeline listing"
+    >
+    <thead>
+      <th>Duration</th>
+      <th>Action</th>
+    </thead>
+    <tr tal:repeat="action timeline_actions">
+      <td class="amount" tal:content="action/duration/fmt:millisecondduration"/>	  
+      <td style="font-family: monospace; text-align: left;">
+	<pre class="wrap">
+	<span class="action-category" tal:content="action/category"/>:
+	<span class="action-details" tal:content="action/detail"/>	  
+	</pre>
+      </td>
+    </tr>
+  </table>
+</a>
 
 <tal:comment
     tal:condition="request/features/visible_render_time"

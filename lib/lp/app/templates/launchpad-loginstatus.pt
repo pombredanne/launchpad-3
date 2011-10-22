@@ -9,7 +9,12 @@
 <div id="logincontrol" tal:condition="view/logged_in">
   <form action="/+logout" method="post">
     <input type="hidden" name="loggingout" value="1" />
-    <div id="rendertime" tal:condition="request/features/visible_render_time">Loading...</div>
+    <a 
+      href="javascript:removeElementClass(document.getElementById('debug_timeline'),'hidden')"
+      tal:condition="request/features/visible_render_time"
+      >
+      <div id="rendertime">Loading...</div>
+    </a>
     <div id="ajax-time" tal:condition="request/features/visible_render_time">
         <a href="" class="js-action">AJAX Log &darr;</a>
         <ul id="ajax-time-list" class="hidden">
