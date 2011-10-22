@@ -185,7 +185,7 @@
 </tal:template>
 
 <table 
-  class="listing"
+  class="debug-timeline listing"
   tal:define="timeline_actions modules/canonical.launchpad.webapp.adapter/get_timeline_actions">
   <thead>
     <th>Duration</th>

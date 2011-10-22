@@ -2064,6 +2064,12 @@ body.global-notification-visible .login-logout {
     padding: 0;
     }
 
+/* ====================
+   In-page timeline
+*/
+table.debug-timeline td.amount {
+    font-weight: bold;
+}
 
 /*
  * YOU HAVE REACHED THE END OF THIS FILE. IF YOU SEE ANYTHING BELOW SPRITES
