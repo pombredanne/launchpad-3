@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We use global in this module.
@@ -231,6 +231,23 @@ def summarize_requests():
     log = "%s queries/external actions issued in %.2f seconds%s" % (
         len(timeline.actions), secs, oops_str)
     return log
+
+
+def format_timeline_details():
+    """Produce a printable detailed view of the request timeline."""
+    request = get_current_browser_request()
+    timeline = get_request_timeline(request)
+    lines = []
+    for action in timeline.actions:
+        dur = action.duration
+        if dur is None:
+            action_str = "-"
+        else:
+            action_str = "%7dms" % (
+                (((dur.days * 3600 * 24) + dur.seconds) * 1000) + (dur.microseconds / 1000))
+        lines.append(
+            "%10s %10s %s" % (action_str, action.category, action.detail.rstrip()))
+    return "\n\n".join(lines)
 
 
 def store_sql_statements_and_request_duration(event):

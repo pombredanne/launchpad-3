@@ -180,8 +180,18 @@
     in scopes ${request/features/usedScopes}
 
     r${revno}
-  --&gt;" />
+
+    --&gt;" />
 </tal:template>
+
+<tal:comment
+   replace="structure string:
+&lt;!--
+
+Timeline:
+${modules/canonical.launchpad.webapp.adapter/format_timeline_details}
+
+--&gt;" />
 
 <tal:comment
     tal:condition="request/features/visible_render_time"
