@@ -337,7 +337,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(
             'DEBUG Recipe eric/funky-recipe is stale\n'
             'DEBUG  - daily build failed for Warty (4.10): ' +
-            'PPA for Eric is disabled.\n',
+            "ArchiveDisabled(u'PPA for Eric is disabled.',)\n",
             logger.getLogBuffer())
 
     def test_makeDailyBuilds_skips_archive_with_no_permission(self):
@@ -355,8 +355,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual([], daily_builds)
         self.assertEqual(
             'DEBUG Recipe eric/funky-recipe is stale\n'
-            'DEBUG  - daily build failed for Warty (4.10): ' +
-            'Signer has no upload rights to this PPA.\n',
+            'DEBUG  - daily build failed for Warty (4.10): '
+            "CannotUploadToPPA('Signer has no upload rights "
+            "to this PPA.',)\n",
             logger.getLogBuffer())
 
     def test_makeDailyBuilds_with_an_older_build(self):
