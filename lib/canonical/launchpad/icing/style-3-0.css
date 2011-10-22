@@ -1225,7 +1225,7 @@ div.beta img {
     float: left;
     margin: 0.1em 1.2em 0 0;
     color: #666;
-    font-size: 10px;
+    /* font-size: 10px; */
     }
 #ajax-time {
     float: left;
