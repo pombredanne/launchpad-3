@@ -50,7 +50,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
     def test_getUnpublishedBuildsForSources_one_published(self):
         # If we publish a binary for a build, it is no longer returned.
         bpr = self.publisher.uploadBinaryForBuild(self.builds[0], 'gedit')
-        bpph = self.publisher.publishBinaryInArchive(
+        self.publisher.publishBinaryInArchive(
             bpr, self.sources[0].archive,
             status=PackagePublishingStatus.PUBLISHED)
 
