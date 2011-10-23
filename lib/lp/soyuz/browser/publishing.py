@@ -17,7 +17,11 @@ from operator import attrgetter
 from lazr.delegates import delegates
 from zope.interface import implements
 
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.browser.librarian import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
+from canonical.launchpad.webapp import Navigation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
@@ -60,6 +64,11 @@ class BinaryPublicationURL(PublicationURLBase):
     @property
     def path(self):
         return u"+binarypub/%s" % self.context.id
+
+
+class SourcePackagePublishingHistoryNavigation(Navigation,
+                                               FileNavigationMixin):
+    usedfor = ISourcePackagePublishingHistory
 
 
 class ProxiedPackageDiff:
