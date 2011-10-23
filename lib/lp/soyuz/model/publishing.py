@@ -68,6 +68,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
@@ -551,6 +552,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         result_set = publishing_set.getUnpublishedBuildsForSources(
             self, build_states)
         return DecoratedResultSet(result_set, operator.itemgetter(1))
+
+    def getFileByName(self, name):
+        """See `ISourcePackagePublishingHistory`."""
+        changelog = self.sourcepackagerelease.changelog
+        if changelog is not None and name == changelog.filename:
+            return changelog
+        raise NotFoundError(name)
 
     def changesFileUrl(self):
         """See `ISourcePackagePublishingHistory`."""

@@ -533,6 +533,12 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: a list of `IBuilds`.
         """
 
+    def getFileByName(name):
+        """Return the file with the specified name.
+
+        Only supports 'changelog' at present.
+        """
+
     @export_read_operation()
     def changesFileUrl():
         """The .changes file URL for this source publication.

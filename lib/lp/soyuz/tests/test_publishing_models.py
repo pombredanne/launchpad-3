@@ -7,13 +7,18 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     PackagePublishingStatus,
     )
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
+from lp.testing import TestCaseWithFactory
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
@@ -86,3 +91,25 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
         self.assert_(urls[1].endswith('/96/firefox_666_source.changes'))
         self.assert_(urls[2].endswith(
             '/98/getting-things-gnome_666_source.changes'))
+
+
+class TestSourcePackagePublishingHistory(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_getFileByName_changelog(self):
+        spr = self.factory.makeSourcePackageRelease(
+            changelog=self.factory.makeLibraryFileAlias(filename='changelog'))
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEqual(spr.changelog, spph.getFileByName('changelog'))
+
+    def test_changelog_absent(self):
+        spr = self.factory.makeSourcePackageRelease(changelog=None)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertRaises(NotFoundError, spph.getFileByName('changelog'))
+
+    def test_unhandled_name(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        self.assertRaises(NotFoundError, spph.getFileByName('not-changelog'))
