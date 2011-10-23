@@ -583,6 +583,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         the_url = self._proxied_urls((changes_lfa,), self.archive)[0]
         return the_url
 
+    def changelogUrl(self):
+        """See `ISourcePackagePublishingHistory`."""
+        lfa = self.sourcepackagerelease.changelog
+        if lfa is not None:
+            return self._proxied_urls((lfa,), self)[0]
+        return None
+
     def _getAllowedArchitectures(self, available_archs):
         """Filter out any restricted architectures not specifically allowed
         for an archive.
