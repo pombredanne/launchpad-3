@@ -13,6 +13,7 @@ from testtools.matchers import (
 from zope.app.testing.functional import HTTPCaller
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.ftests import logout
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -25,6 +26,7 @@ from lp.soyuz.browser.publishing import (
     SourcePackagePublishingHistoryNavigation,
     )
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     BrowserTestCase,
@@ -127,15 +129,37 @@ class TestSourcePackagePublishingHistoryNavigation(TestCaseWithFactory):
         nav = SourcePackagePublishingHistoryNavigation(spph, req)
         return nav.publishTraverse(req, segments[0])
 
+    def makeSPPHWithChangelog(self, archive=None):
+        lfa = self.factory.makeLibraryFileAlias(
+            filename='changelog',
+            restricted=(archive is not None and archive.private))
+        spr = self.factory.makeSourcePackageRelease(changelog=lfa)
+        return self.factory.makeSourcePackagePublishingHistory(
+            archive=archive,
+            sourcepackagerelease=spr)
+
     def test_changelog(self):
         # SPPH.SPR.changelog is accessible at +files/changelog.
-        spr = self.factory.makeSourcePackageRelease(
-            changelog=self.factory.makeLibraryFileAlias(filename='changelog'))
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr)
+        spph = self.makeSPPHWithChangelog()
         view = self.traverse(spph, ['+files', 'changelog'])
         self.assertIsInstance(view, RedirectionView)
-        self.assertEqual(spr.changelog.http_url, view.target)
+        self.assertEqual(
+            spph.sourcepackagerelease.changelog.http_url, view.target)
+
+    def test_private_changelog(self):
+        # Private changelogs are inaccessible to anonymous users.
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, private=True)
+        spph = self.makeSPPHWithChangelog(archive=archive)
+
+        # A normal user can't traverse to the changelog.
+        self.assertRaises(
+            Unauthorized, self.traverse, spph, ['+files', 'changelog'])
+
+        # But the archive owner gets a librarian URL with a token.
+        with person_logged_in(archive.owner):
+            view = self.traverse(spph, ['+files', 'changelog'])
+        self.assertThat(view.target, Contains('?token='))
 
     def test_unhandled_name(self):
         # Unhandled names raise a NotFound.
@@ -145,11 +169,8 @@ class TestSourcePackagePublishingHistoryNavigation(TestCaseWithFactory):
 
     def test_registered(self):
         # The Navigation is registered and traversable over HTTP.
-        spr = self.factory.makeSourcePackageRelease(
-            changelog=self.factory.makeLibraryFileAlias(filename='changelog'))
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr)
-        lfa_url = spr.changelog.http_url
+        spph = self.makeSPPHWithChangelog()
+        lfa_url = spph.sourcepackagerelease.changelog.http_url
         redir_url = (
             canonical_url(spph, path_only_if_possible=True)
             + '/+files/changelog')
