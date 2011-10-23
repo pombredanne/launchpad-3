@@ -104,12 +104,12 @@ class TestSourcePackagePublishingHistory(TestCaseWithFactory):
             sourcepackagerelease=spr)
         self.assertEqual(spr.changelog, spph.getFileByName('changelog'))
 
-    def test_changelog_absent(self):
+    def test_getFileByName_changelog_absent(self):
         spr = self.factory.makeSourcePackageRelease(changelog=None)
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr)
-        self.assertRaises(NotFoundError, spph.getFileByName('changelog'))
+        self.assertRaises(NotFoundError, spph.getFileByName, 'changelog')
 
-    def test_unhandled_name(self):
+    def test_getFileByName_unhandled_name(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
-        self.assertRaises(NotFoundError, spph.getFileByName('not-changelog'))
+        self.assertRaises(NotFoundError, spph.getFileByName, 'not-changelog')
