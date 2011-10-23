@@ -130,7 +130,6 @@ class BasePublishingRecordView(LaunchpadView):
         accessor = attrgetter(self.timestamp_map[self.context.status])
         return accessor(self.context)
 
-
     def wasDeleted(self):
         """Whether or not a publishing record deletion was requested.
 
@@ -166,17 +165,19 @@ class BasePublishingRecordView(LaunchpadView):
         archive disk once it pass through its quarantine period and it's not
         referred by any other archive publishing record.
         Archive removal represents the act of having its content purged from
-        archive disk, such situation can be triggered for different status,
-        each one representing a distinct step in the Soyuz publishing workflow:
+        archive disk, such situation can be triggered for different
+        status, each one representing a distinct step in the Soyuz
+        publishing workflow:
 
-         * SUPERSEDED -> the publication is not necessary since there is already
-           a newer/higher/modified version available
+         * SUPERSEDED -> the publication is not necessary since there is
+           already a newer/higher/modified version available
 
          * DELETED -> the publishing was explicitly marked for removal by a
            archive-administrator, it's not wanted in the archive.
 
-         * OBSOLETE -> the publication has become obsolete because its targeted
-           distroseries has become obsolete (not supported by its developers).
+         * OBSOLETE -> the publication has become obsolete because its
+           targeted distroseries has become obsolete (not supported by its
+           developers).
         """
         return self.context.dateremoved is not None
 
@@ -312,8 +313,8 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             packagename = package.binarypackagename.name
             if packagename not in packagenames:
                 entry = {
-                    "binarypackagename" : packagename,
-                    "summary" : package.summary,
+                    "binarypackagename": packagename,
+                    "summary": package.summary,
                     }
                 results.append(entry)
                 packagenames.add(packagename)
@@ -340,7 +341,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         return check_permission('launchpad.View', archive)
 
     @property
-    def recipe_build_details(self): 
+    def recipe_build_details(self):
         """Return a linkified string containing details about a
         SourcePackageRecipeBuild.
         """
@@ -402,4 +403,3 @@ class BinaryPublishingRecordView(BasePublishingRecordView):
             return True
 
         return False
-
