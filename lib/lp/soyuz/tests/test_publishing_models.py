@@ -7,6 +7,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -96,6 +97,28 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 class TestSourcePackagePublishingHistory(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
+
+    def test_ancestry(self):
+        """Ancestry can be traversed."""
+        ancestor = self.factory.makeSourcePackagePublishingHistory()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            ancestor=ancestor)
+        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+
+    def test_changelogUrl_missing(self):
+        spr = self.factory.makeSourcePackageRelease(changelog=None)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEqual(None, spph.changelogUrl())
+
+    def test_changelogUrl(self):
+        spr = self.factory.makeSourcePackageRelease(
+            changelog=self.factory.makeChangelog('foo', ['1.0']))
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEqual(
+            canonical_url(spph) + '/+files/%s' % spr.changelog.filename,
+            spph.changelogUrl())
 
     def test_getFileByName_changelog(self):
         spr = self.factory.makeSourcePackageRelease(
