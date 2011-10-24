@@ -109,6 +109,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugBlueprintSearch,
@@ -155,6 +156,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
@@ -629,6 +631,31 @@ class BugTask(SQLBase):
             BugTask, bug=self.bug).count()
 
         return num_bugtasks > 1
+
+    def userCanDelete(self, user):
+        """See `IBugTask`."""
+        if user is None:
+            return False
+
+        # Admins can always delete bugtasks.
+        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            return True
+
+        delete_allowed = bool(features.getFeatureFlag(
+            'disclosure.delete_bugtask.enabled'))
+        if not delete_allowed:
+            return False
+
+        owner = None
+        if IHasOwner.providedBy(self.pillar):
+            owner = self.pillar.owner
+        bugsupervisor = None
+        if IHasBugSupervisor.providedBy(self.pillar):
+            bugsupervisor = self.pillar.bug_supervisor
+        return (
+            user.inTeam(owner) or
+            user.inTeam(bugsupervisor) or
+            user.inTeam(self.owner))
 
     def delete(self, who=None):
         """See `IBugTask`."""

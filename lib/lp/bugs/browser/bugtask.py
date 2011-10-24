@@ -18,6 +18,7 @@ __all__ = [
     'BugTaskBreadcrumb',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
+    'BugTaskDeletionView',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
     'BugTaskListingItem',
@@ -1755,6 +1756,38 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     def save_action(self, action, data):
         """Update the bugtask with the form data."""
         self.updateContextFromData(data)
+
+
+class BugTaskDeletionView(LaunchpadFormView):
+    """Used to delete a bugtask."""
+
+    schema = IBugTask
+    field_names = []
+
+    label = 'Remove bug task'
+    page_title = label
+
+    @property
+    def confirmation_message(self):
+        return ('<p>You are about to mark bug %s<br>'
+                'as no longer affecting %s.</p>'
+                '<p>This operation will be permanent and cannot be '
+                'undone.</p>'
+                % (self.context.bug.title,
+                   self.context.target.bugtargetdisplayname))
+
+    @action('Delete', name='delete_bugtask')
+    def delete_bugtask_action(self, action, data):
+        bugtask = self.context
+        self.next_url = canonical_url(bugtask.bug)
+        message = ("This bug no longer affects %s."
+                    % bugtask.target.bugtargetdisplayname)
+        bugtask.delete()
+        self.request.response.addNotification(message)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class BugTaskListingView(LaunchpadView):
@@ -3552,6 +3585,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             row_css_class='highlight' if is_primary else None,
             target_link=canonical_url(self.context.target),
             target_link_title=self.target_link_title,
+            user_can_delete=self.context.userCanDelete(self.user),
+            delete_link=link + '/+delete',
             user_can_edit_importance=self.context.userCanEditImportance(
                 self.user),
             importance_css_class='importance' + self.context.importance.name,
@@ -3701,6 +3736,14 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         """
         return self.context.userCanEditMilestone(self.user)
 
+    @cachedproperty
+    def user_can_delete_bugtask(self):
+        """Can the user delete the bug task?
+
+        If yes, return True, otherwise return False.
+        """
+        return self.context.userCanDelete(self.user)
+
     @property
     def style_for_add_milestone(self):
         if self.context.milestone is None:
@@ -3748,6 +3791,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             assignee_vocabulary_filters=filter_details,
             hide_assignee_team_selection=hide_assignee_team_selection,
             user_can_unassign=cx.userCanUnassign(user),
+            user_can_delete=self.user_can_delete_bugtask,
             target_is_product=IProduct.providedBy(cx.target),
             status_widget_items=self.status_widget_items,
             status_value=cx.status.title,

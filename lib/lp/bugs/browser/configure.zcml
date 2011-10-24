@@ -589,6 +589,12 @@
             template="../templates/bug-edit.pt"
             permission="launchpad.Edit"/>
         <browser:page
+            name="+delete"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            class="lp.bugs.browser.bugtask.BugTaskDeletionView"
+            template="../templates/bugtask-delete.pt"
+            permission="launchpad.Delete"/>
+        <browser:page
             name="+secrecy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bug.BugSecrecyEditView"

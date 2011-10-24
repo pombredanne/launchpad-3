@@ -201,7 +201,8 @@
                     userCanEditImportance
                     userCanEditMilestone
                     userCanSetAnyAssignee
-                    userCanUnassign"/>
+                    userCanUnassign
+                    userCanDelete"/>
             <require
                 permission="launchpad.View"
                 attributes="
