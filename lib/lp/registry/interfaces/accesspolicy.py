@@ -9,6 +9,7 @@ __all__ = [
     'IAccessPolicy',
     'IAccessPolicyArtifact',
     'IAccessPolicyPermission',
+    'IAccessPolicySource',
     ]
 
 from zope.interface import (
@@ -35,3 +36,18 @@ class IAccessPolicyPermission(Interface):
     person = Attribute("Person")
     abstract_artifact = Attribute("Abstract artifact")
     concrete_artifact = Attribute("Concrete artifact")
+
+
+class IAccessPolicySource(Interface):
+
+    def create(pillar, display_name):
+        """Create an `IAccessPolicy` for the pillar with the given name."""
+
+    def getByID(id):
+        """Return the `IAccessPolicy` with the given ID."""
+
+    def getByPillarAndName(pillar, display_name):
+        """Return the pillar's `IAccessPolicy` with the given name."""
+
+    def findByPillar(pillar):
+        """Return a ResultSet of all `IAccessPolicy`s for the pillar."""
