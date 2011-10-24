@@ -2481,7 +2481,16 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             self.context, self.request, self.user)
         if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
             cache = IJSONRequestCache(self.request)
-            cache.objects['mustache_model'] = self.search().model
+            batch_navigator = self.search()
+            cache.objects['mustache_model'] = batch_navigator.model
+            next_batch = batch_navigator.batch.nextBatch()
+            if next_batch is not None:
+                cache.objects['next_memo'] = next_batch.range_memo
+            prev_batch = batch_navigator.batch.prevBatch()
+            if prev_batch is not None:
+                cache.objects['prev_memo'] = prev_batch.range_memo
+
+
 
     @property
     def columns_to_show(self):
