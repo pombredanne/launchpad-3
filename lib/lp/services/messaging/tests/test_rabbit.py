@@ -9,7 +9,6 @@ from functools import partial
 from itertools import count
 import thread
 
-from amqplib import client_0_8 as amqp
 from testtools.testcase import ExpectedException
 import transaction
 from transaction._transaction import Status as TransactionStatus
@@ -26,7 +25,6 @@ from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
-    MessagingException,
     MessagingUnavailable,
     QueueEmpty,
     QueueNotFound,
@@ -236,19 +234,6 @@ class TestRabbitUnreliableSession(TestRabbitSession):
         self._test_finish_suppresses_exception(
             MessagingUnavailable('Messaging borked.'),
             oops_recorded=False)
-
-    def test_finish_suppresses_AMQPException_with_oops(self):
-        self._test_finish_suppresses_exception(
-            amqp.AMQPException(123, "Suffin broke.", "Whut?"),
-            oops_recorded=True)
-
-    def test_finish_suppresses_MessagingException_with_oops(self):
-        self._test_finish_suppresses_exception(
-            MessagingException("Arm stuck in combine."), oops_recorded=True)
-
-    def test_finish_suppresses_IOError_with_oops(self):
-        self._test_finish_suppresses_exception(
-            IOError("Leg eaten by cow."), oops_recorded=True)
 
     def test_finish_suppresses_other_errors_with_oopses(self):
         self._test_finish_suppresses_exception(
