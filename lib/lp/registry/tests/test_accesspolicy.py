@@ -93,32 +93,51 @@ class TestAccessPolicySource(TestCaseWithFactory):
             getUtility(IAccessPolicySource).findByPillar(product))
 
 
-class TestAccessPolicyArtifactSource(TestCaseWithFactory):
+class TestAccessPolicyArtifactSourceOnce(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
-    def test_ensure(self):
-        bug = self.factory.makeBug()
-        artifact = getUtility(IAccessPolicyArtifactSource).ensure(bug)
-        Store.of(artifact).flush()
-        self.assertEqual(bug, removeSecurityProxy(artifact).bug)
-        self.assertIs(None, removeSecurityProxy(artifact).branch)
-
-    def test_ensure_branch(self):
-        branch = self.factory.makeBranch()
-        artifact = getUtility(IAccessPolicyArtifactSource).ensure(branch)
-        Store.of(artifact).flush()
-        self.assertEqual(branch, removeSecurityProxy(artifact).branch)
-        self.assertIs(None, removeSecurityProxy(artifact).bug)
-
     def test_ensure_other_fails(self):
+        # ensure() rejects unsupported objects.
         self.assertRaises(
             AssertionError,
-            getUtility(IAccessPolicyArtifactSource).ensure, 'foo')
+            getUtility(IAccessPolicyArtifactSource).ensure,
+            self.factory.makeProduct())
 
-    def test_ensure_twice_returns_existing(self):
-        bug = self.factory.makeBug()
-        artifact = getUtility(IAccessPolicyArtifactSource).ensure(bug)
-        Store.of(artifact).flush()
+
+class BaseAccessPolicyArtifactTests:
+    layer = DatabaseFunctionalLayer
+
+    def getConcreteArtifact(self):
+        raise NotImplementedError()
+
+    def test_ensure(self):
+        # ensure() creates an abstract artifact which maps to the
+        # concrete one.
+        concrete = self.getConcreteArtifact()
+        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        Store.of(abstract).flush()
+        self.assertEqual(concrete, abstract.concrete_artifact)
+
+    def test_ensure_twice(self):
+        # ensure() will reuse an existing matching abstract artifact if
+        # it exists.
+        concrete = self.getConcreteArtifact()
+        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+        Store.of(abstract).flush()
         self.assertEqual(
-            artifact.id,
-            getUtility(IAccessPolicyArtifactSource).ensure(bug).id)
+            abstract.id,
+            getUtility(IAccessPolicyArtifactSource).ensure(concrete).id)
+
+
+class TestAccessPolicyArtifactBranch(BaseAccessPolicyArtifactTests,
+                                     TestCaseWithFactory):
+
+    def getConcreteArtifact(self):
+        return self.factory.makeBranch()
+
+
+class TestAccessPolicyArtifactBug(BaseAccessPolicyArtifactTests,
+                                  TestCaseWithFactory):
+
+    def getConcreteArtifact(self):
+        return self.factory.makeBug()
