@@ -69,6 +69,7 @@ from lazr.restful.fields import (
     Reference,
     )
 from lazr.restful.interface import copy_field
+from storm.expr import Join
 from zope.component import getUtility
 from zope.formlib.form import NoInputData
 from zope.interface import (
@@ -101,6 +102,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     IPrivacy,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -522,7 +524,7 @@ class PersonNameField(BlacklistableContentNameField):
 
 
 def team_subscription_policy_can_transition(team, policy):
-    """Can the team can change its subscription policy
+    """Can the team can change its subscription policy?
 
     Returns True when the policy can change. or raises an error. OPEN teams
     cannot be members of MODERATED or RESTRICTED teams. OPEN teams
@@ -544,12 +546,28 @@ def team_subscription_policy_can_transition(team, policy):
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
-        # The team can be open if it has PPAs.
+        # The team can not be open if it has PPAs.
         for ppa in team.ppas:
             if ppa.status != ArchiveStatus.DELETED:
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because it "
                     "has one or more active PPAs." % policy)
+        # Circular imports.
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugsubscription import BugSubscription
+        # The team can not be open if it is subscribed to private bugs.
+        private_bugs = IStore(BugSubscription).using(
+            BugSubscription,
+            Join(Bug,
+                Bug.id == BugSubscription.bug_id)
+            ).find(
+            BugSubscription,
+            BugSubscription.person_id == team.id,
+            Bug.private == True)
+        if private_bugs.count():
+            raise TeamSubscriptionPolicyError(
+                "The team subscription policy cannot be %s because it is "
+                "subscribed to one or more private bugs." % policy)
     elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
         # The team can become MODERATED or RESTRICTED if its member teams
         # are not OPEN.

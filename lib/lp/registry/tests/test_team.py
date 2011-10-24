@@ -36,6 +36,7 @@ from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_celebrity,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -393,6 +394,18 @@ class TestTeamSubscriptionPolicyChoiceModerated(TeamSubscriptionPolicyBase):
             self.field.constraint(TeamSubscriptionPolicy.OPEN))
         self.assertEqual(
             None, self.field.validate(TeamSubscriptionPolicy.OPEN))
+
+    def test_closed_team_with_private_bugs_cannot_become_open(self):
+        # The team cannot become open if it is subscribed to private bugs.
+        self.setUpTeams()
+        bug = self.factory.makeBug(owner=self.team.teamowner, private=True)
+        with person_logged_in(self.team.teamowner):
+            bug.subscribe(self.team, self.team.teamowner)
+        self.assertFalse(
+            self.field.constraint(TeamSubscriptionPolicy.OPEN))
+        self.assertRaises(
+            TeamSubscriptionPolicyError, self.field.validate,
+            TeamSubscriptionPolicy.OPEN)
 
 
 class TestTeamSubscriptionPolicyChoiceRestrcted(
