@@ -13,12 +13,6 @@ When we go to launchpad as an anonymous user, the browser has no cookies.
 
 Now let's log in and show that the session cookie is set.
 
-    >>> # Enable the picker_enhancements feature to test the commenter name.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
     >>> import datetime
     >>> import pytz
     >>> now = datetime.datetime.now(pytz.UTC).replace(microsecond=0)
@@ -38,9 +32,6 @@ Now let's log in and show that the session cookie is set.
     >>> fill_login_form_and_submit(browser, 'foo.bar@canonical.com', 'test')
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar (name16) ...
-
-    >>> # Clean up the feature flag.
-    >>> flags.cleanUp()
 
     # Open a page again so that we see the cookie for a launchpad.dev request
     # and not a testopenid.dev request (as above).
