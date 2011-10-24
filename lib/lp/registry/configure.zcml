@@ -1935,4 +1935,26 @@
         for="lp.registry.interfaces.person.IPerson"
         provides="lp.registry.interfaces.role.IPersonRoles"
         factory="lp.registry.model.personroles.PersonRoles" />
+
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicy">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicy"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicy"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicySource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicySource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicyArtifact">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
+    </class>
+    <class
+        class="lp.registry.model.accesspolicy.AccessPolicyPermission">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyPermission"/>
+    </class>
 </configure>
