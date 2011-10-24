@@ -2212,7 +2212,9 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     @property
     def mustache(self):
-        return pystache.render(self.mustache_template, self.model)
+        cache = IJSONRequestCache(self.request)
+        return pystache.render(self.mustache_template,
+                               cache.objects['mustache_model'])
 
     @property
     def model(self):
