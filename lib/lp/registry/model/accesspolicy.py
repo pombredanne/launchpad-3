@@ -115,6 +115,9 @@ class AccessPolicyArtifact(StormBase):
             obj.bug = concrete_artifact
         elif IBranch.providedBy(concrete_artifact):
             obj.branch = concrete_artifact
+        else:
+            raise AssertionError(
+                "%r is not a valid artifact" % concrete_artifact)
         IStore(cls).add(obj)
         return obj
 
