@@ -175,6 +175,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
@@ -4265,6 +4266,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
+
+    def makeAccessPolicy(self, pillar=None, display_name=None):
+        if pillar is None:
+            pillar = self.makeProduct()
+        if display_name is None:
+            display_name = self.getUniqueUnicode()
+        return getUtility(IAccessPolicySource).create(pillar, display_name)
 
 
 # Some factory methods return simple Python types. We don't add

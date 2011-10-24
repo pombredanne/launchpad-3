@@ -18,10 +18,20 @@ from storm.references import (
     Reference,
     ReferenceSet,
     )
+from zope.interface import implements
+
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicy,
+    IAccessPolicyArtifact,
+    IAccessPolicyPermission,
+    )
 from lp.services.database.stormbase import StormBase
 
 
 class AccessPolicy(StormBase):
+    implements(IAccessPolicy)
+
     __storm_table__ = 'AccessPolicy'
 
     id = Int(primary=True)
@@ -33,8 +43,54 @@ class AccessPolicy(StormBase):
 
     permissions = ReferenceSet(id, "AccessPolicyPermission.policy_id")
 
+    @property
+    def pillar(self):
+        return self.product or self.distribution
+
+    @classmethod
+    def create(cls, pillar, display_name):
+        from lp.registry.interfaces.distribution import IDistribution
+        from lp.registry.interfaces.product import IProduct
+        obj = cls()
+        if IProduct.providedBy(pillar):
+            obj.product = pillar
+        elif IDistribution.providedBy(pillar):
+            obj.distribution = pillar
+        obj.display_name = display_name
+        IStore(cls).add(obj)
+        return obj
+
+    @classmethod
+    def _constraintForPillar(cls, pillar):
+        from lp.registry.interfaces.distribution import IDistribution
+        from lp.registry.interfaces.product import IProduct
+        if IProduct.providedBy(pillar):
+            col = cls.product
+        elif IDistribution.providedBy(pillar):
+            col = cls.distribution
+        else:
+            raise AssertionError("%r is not a supported pillar" % pillar)
+        return col == pillar
+
+    @classmethod
+    def getByID(cls, id):
+        """See `IAccessPolicySource`."""
+        return IStore(cls).get(cls, id)
+
+    @classmethod
+    def findByPillar(cls, pillar):
+        """See `IAccessPolicySource`."""
+        return IStore(cls).find(cls, cls._constraintForPillar(pillar))
+
+    @classmethod
+    def getByPillarAndName(cls, pillar, display_name):
+        """See `IAccessPolicySource`."""
+        return cls.findByPillar(pillar).find(display_name=display_name).one()
+
 
 class AccessPolicyArtifact(StormBase):
+    implements(IAccessPolicyArtifact)
+
     __storm_table__ = 'AccessPolicyArtifact'
 
     id = Int(primary=True)
@@ -51,6 +107,8 @@ class AccessPolicyArtifact(StormBase):
 
 
 class AccessPolicyPermission(StormBase):
+    implements(IAccessPolicyPermission)
+
     __storm_table__ = 'AccessPolicyPermission'
 
     id = Int(primary=True)
