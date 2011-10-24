@@ -4,5 +4,6 @@
 SET client_min_messages=ERROR;
 
 DROP INDEX packageupload__distroseries__status__idx;
+DROP INDEX pacakgeupload__id_distroseries__archive__idx;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 92, 2);
