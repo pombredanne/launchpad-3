@@ -555,19 +555,32 @@ def team_subscription_policy_can_transition(team, policy):
         # Circular imports.
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugsubscription import BugSubscription
+        from lp.bugs.model.bugtask import BugTask
         # The team can not be open if it is subscribed to private bugs.
-        private_bugs = IStore(BugSubscription).using(
+        subscribed_private_bugs = IStore(BugSubscription).using(
             BugSubscription,
             Join(Bug,
                 Bug.id == BugSubscription.bug_id)
             ).find(
-            BugSubscription,
-            BugSubscription.person_id == team.id,
-            Bug.private == True)
-        if private_bugs.count():
+                BugSubscription,
+                BugSubscription.person_id == team.id,
+                Bug.private == True)
+        if subscribed_private_bugs.count():
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it is "
                 "subscribed to one or more private bugs." % policy)
+        assigned_private_bugs = IStore(Bug).using(
+            Bug,
+            Join(BugTask,
+                BugTask.bugID == Bug.id)
+            ).find(
+                Bug,
+                Bug.private == True,
+                BugTask.assignee == team)
+        if assigned_private_bugs.count():
+            raise TeamSubscriptionPolicyError(
+                "The team subscription policy cannot be %s because it is "
+                "assigned to one or more private bugs." % policy)
     elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
         # The team can become MODERATED or RESTRICTED if its member teams
         # are not OPEN.
