@@ -105,19 +105,31 @@ class AccessPolicyArtifact(StormBase):
         assert artifact is not None
         return artifact
 
-    @classmethod
-    def ensure(cls, concrete_artifact):
-        """See `IAccessPolicyArtifactSource`."""
+    @staticmethod
+    def _getConcreteAttribute(concrete_artifact):
         from lp.bugs.interfaces.bug import IBug
         from lp.code.interfaces.branch import IBranch
-        obj = cls()
         if IBug.providedBy(concrete_artifact):
-            obj.bug = concrete_artifact
+            return 'bug'
         elif IBranch.providedBy(concrete_artifact):
-            obj.branch = concrete_artifact
+            return 'branch'
         else:
             raise AssertionError(
                 "%r is not a valid artifact" % concrete_artifact)
+
+    @classmethod
+    def ensure(cls, concrete_artifact):
+        """See `IAccessPolicyArtifactSource`."""
+        constraints = {
+            cls._getConcreteAttribute(concrete_artifact): concrete_artifact}
+        existing = IStore(cls).find(cls, **constraints).one()
+        if existing is not None:
+            return existing
+        # No existing object. Create a new one.
+        obj = cls()
+        setattr(
+            obj, cls._getConcreteAttribute(concrete_artifact),
+            concrete_artifact)
         IStore(cls).add(obj)
         return obj
 

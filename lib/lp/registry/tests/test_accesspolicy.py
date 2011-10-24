@@ -118,6 +118,7 @@ class TestAccessPolicyArtifactSource(TestCaseWithFactory):
     def test_ensure_twice_returns_existing(self):
         bug = self.factory.makeBug()
         artifact = getUtility(IAccessPolicyArtifactSource).ensure(bug)
+        Store.of(artifact).flush()
         self.assertEqual(
             artifact.id,
             getUtility(IAccessPolicyArtifactSource).ensure(bug).id)
