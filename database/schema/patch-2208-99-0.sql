@@ -35,4 +35,12 @@ CREATE TABLE PillarObserverPermission (
 CREATE UNIQUE INDEX pillarobserverpermission__policy__person__key
     ON PillarObserverPermission(policy, person) WHERE artifact IS NULL;
 
+ALTER TABLE bug
+    ADD COLUMN observer_policy integer REFERENCES PillarObserverPolicy;
+CREATE INDEX bug__observer_policy__idx ON bug(observer_policy);
+
+ALTER TABLE branch
+    ADD COLUMN observer_policy integer REFERENCES PillarObserverPolicy;
+CREATE INDEX branch__observer_policy__idx ON branch(observer_policy);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
