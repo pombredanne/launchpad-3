@@ -105,6 +105,19 @@ class AccessPolicyArtifact(StormBase):
         assert artifact is not None
         return artifact
 
+    @classmethod
+    def ensure(cls, concrete_artifact):
+        """See `IAccessPolicyArtifactSource`."""
+        from lp.bugs.interfaces.bug import IBug
+        from lp.code.interfaces.branch import IBranch
+        obj = cls()
+        if IBug.providedBy(concrete_artifact):
+            obj.bug = concrete_artifact
+        elif IBranch.providedBy(concrete_artifact):
+            obj.branch = concrete_artifact
+        IStore(cls).add(obj)
+        return obj
+
 
 class AccessPolicyPermission(StormBase):
     implements(IAccessPolicyPermission)

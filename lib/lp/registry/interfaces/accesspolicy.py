@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IAccessPolicy',
     'IAccessPolicyArtifact',
+    'IAccessPolicyArtifactSource',
     'IAccessPolicyPermission',
     'IAccessPolicySource',
     ]
@@ -51,3 +52,12 @@ class IAccessPolicySource(Interface):
 
     def findByPillar(pillar):
         """Return a ResultSet of all `IAccessPolicy`s for the pillar."""
+
+
+class IAccessPolicyArtifactSource(Interface):
+
+    def ensure(concrete_artifact):
+        """Return the `IAccessPolicyArtifact` for a concrete artifact.
+
+        Creates the abstract artifact if it doesn't already exist.
+        """

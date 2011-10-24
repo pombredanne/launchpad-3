@@ -1952,6 +1952,12 @@
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
     </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyArtifact"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource"/>
+    </securedutility>
     <class
         class="lp.registry.model.accesspolicy.AccessPolicyPermission">
         <allow

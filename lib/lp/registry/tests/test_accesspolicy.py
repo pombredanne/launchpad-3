@@ -6,10 +6,12 @@ __metaclass__ = type
 from storm.store import Store
 from testtools.matchers import MatchesStructure
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicy,
+    IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
 from lp.testing import TestCaseWithFactory
@@ -89,3 +91,33 @@ class TestAccessPolicySource(TestCaseWithFactory):
         self.assertContentEqual(
             policies,
             getUtility(IAccessPolicySource).findByPillar(product))
+
+
+class TestAccessPolicyArtifactSource(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_ensure(self):
+        bug = self.factory.makeBug()
+        artifact = getUtility(IAccessPolicyArtifactSource).ensure(bug)
+        Store.of(artifact).flush()
+        self.assertEqual(bug, removeSecurityProxy(artifact).bug)
+        self.assertIs(None, removeSecurityProxy(artifact).branch)
+
+    def test_ensure_branch(self):
+        branch = self.factory.makeBranch()
+        artifact = getUtility(IAccessPolicyArtifactSource).ensure(branch)
+        Store.of(artifact).flush()
+        self.assertEqual(branch, removeSecurityProxy(artifact).branch)
+        self.assertIs(None, removeSecurityProxy(artifact).bug)
+
+    def test_ensure_other_fails(self):
+        self.assertRaises(
+            AssertionError,
+            getUtility(IAccessPolicyArtifactSource).ensure, 'foo')
+
+    def test_ensure_twice_returns_existing(self):
+        bug = self.factory.makeBug()
+        artifact = getUtility(IAccessPolicyArtifactSource).ensure(bug)
+        self.assertEqual(
+            artifact.id,
+            getUtility(IAccessPolicyArtifactSource).ensure(bug).id)
