@@ -2483,14 +2483,16 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache = IJSONRequestCache(self.request)
             batch_navigator = self.search()
             cache.objects['mustache_model'] = batch_navigator.model
+            def _getBatchInfo(batch):
+                if batch is None:
+                    return None
+                return {'memo': batch.range_memo,
+                        'start': batch.startNumber() - 1}
+
             next_batch = batch_navigator.batch.nextBatch()
-            if next_batch is not None:
-                cache.objects['next_memo'] = next_batch.range_memo
+            cache.objects['next'] = _getBatchInfo(next_batch)
             prev_batch = batch_navigator.batch.prevBatch()
-            if prev_batch is not None:
-                cache.objects['prev_memo'] = prev_batch.range_memo
-
-
+            cache.objects['prev'] = _getBatchInfo(prev_batch)
 
     @property
     def columns_to_show(self):
