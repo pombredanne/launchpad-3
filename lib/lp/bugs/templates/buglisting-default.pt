@@ -24,7 +24,6 @@
             Y.lp.registry.structural_subscription.setup(
                 {content_box: "#structural-subscription-content-box"});
             var navigator = Y.lp.bugs.buglisting.ListingNavigator.fromPage();
-            navigator.change_ordering('status');
         });
     });
   </script>
