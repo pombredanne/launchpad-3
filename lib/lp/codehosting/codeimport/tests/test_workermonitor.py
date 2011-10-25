@@ -594,6 +594,7 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
             config_factory=oops_twisted.Config,
             publisher_adapter=oops_twisted.defer_publisher)
         worker_monitor = self.WorkerMonitor(defer.fail(RuntimeError()))
+        self.addCleanup(errorlog.globalErrorUtility.configure)
         return worker_monitor.run().addCallback(
             self.assertFinishJobCalledWithStatus, worker_monitor,
             CodeImportResultStatus.FAILURE)
