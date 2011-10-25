@@ -3522,10 +3522,15 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         If a bug has any bug tasks already, were it to be private, it cannot
         be marked as also affecting any other project, so return False.
+
+        Note: this check is currently only relevant if a bug is private.
+        Eventually, even public bugs will have this restriction too. So what
+        happens now is that this API is used by the tales to add a class
+        called 'disallow-private' to the Also Affects Project link. A css rule
+        is used to hide the link when body.private is True.
+
         """
         bug = self.context
-        if not bug.private:
-            return True
         if self._allow_multipillar_private_bugs:
             return True
         return len(bug.bugtasks) == 0
@@ -3539,10 +3544,14 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         A task on a given package may still be illegal to add, but
         this will be caught when bug.addTask() is attempted.
+
+        Note: this check is currently only relevant if a bug is private.
+        Eventually, even public bugs will have this restriction too. So what
+        happens now is that this API is used by the tales to add a class
+        called 'disallow-private' to the Also Affects Package link. A css rule
+        is used to hide the link when body.private is True.
         """
         bug = self.context
-        if not bug.private:
-            return True
         if self._allow_multipillar_private_bugs:
             return True
         for pillar in bug.affected_pillars:
