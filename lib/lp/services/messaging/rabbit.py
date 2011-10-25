@@ -161,7 +161,7 @@ class RabbitUnreliableSession(RabbitSession):
     """
 
     suppressed_errors = (
-        MessagingUnavailable,
+#        MessagingUnavailable,
         )
 
     def finish(self):
