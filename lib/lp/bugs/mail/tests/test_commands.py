@@ -291,8 +291,8 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         command = AffectsEmailCommand('affects', ['fnord'])
         error = self.assertRaises(
             EmailProcessingError, command.execute, bug, None)
-        reason = ("This private bug is already on %s. "
-                    "Private, multi-tenanted bugs are not permitted." %
+        reason = ("This private bug already affects %s. "
+                    "Private bugs cannot affect multiple projects." %
                     product.displayname)
         self.assertEqual(
             normalize_whitespace(

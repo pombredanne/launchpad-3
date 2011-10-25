@@ -184,7 +184,7 @@ redirected to the bug page.
     ...>pmount (Debian)</a>...
     ...
 
-We cannot allow multi-tenanted private bugs.
+We cannot allow private bugs to affect more than one pillar.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp import canonical_url
@@ -215,8 +215,8 @@ We cannot allow multi-tenanted private bugs.
     'http://bugs.launchpad.dev/firefox/+bug/16/+distrotask'
     >>> print get_feedback_messages(browser.contents)
     [u'There is 1 error.',
-     u'This private bug is already on Mozilla Firefox.
-       Private, multi-tenanted bugs are not permitted.']
+     u'This private bug already affects Mozilla Firefox.
+       Private bugs cannot affect multiple projects.']
 
 
 = Forwarding bugs upstream =

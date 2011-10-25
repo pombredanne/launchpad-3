@@ -138,7 +138,7 @@ body.feature-flag-bugs-private-notification-enabled.private {
     background-image: none;
     }
 body.private .private-disallow {
-    /* We want to disable some private artifacts */
+    /* We want to disable/hide some actions on private artifacts */
     display: none
     }
 * html body {

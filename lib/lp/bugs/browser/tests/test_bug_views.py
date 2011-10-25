@@ -50,13 +50,17 @@ class TestPrivateBugLinks(BrowserTestCase):
 
 
 class TestAlsoAffectsLinks(BrowserTestCase):
-    # Tests the rendering of the Also Affects... links on the bug index view.
-    # The links are rendered with a css class 'private-disallow' if they are
-    # not valid for private bugs,
+    """ Tests the rendering of the Also Affects links on the bug index view.
+
+    The links are rendered with a css class 'private-disallow' if they are
+    not valid for private bugs.
+    """
 
     layer = DatabaseFunctionalLayer
 
     def test_also_affects_links_product_bug(self):
+        # We expect that both Also Affects links (for project and distro) are
+        # disallowed.
         bug = self.factory.makeBug()
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url)
@@ -70,6 +74,7 @@ class TestAlsoAffectsLinks(BrowserTestCase):
             'private-disallow', also_affects['class'].split(' '))
 
     def test_also_affects_links_distro_bug(self):
+        # We expect that only the Also Affects Project link is disallowed.
         distro = self.factory.makeDistribution()
         bug = self.factory.makeBug(distribution=distro)
         url = canonical_url(bug, rootsite="bugs")

@@ -3511,6 +3511,45 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return None
 
+    @property
+    def _allow_multipillar_private_bugs(self):
+        # Some teams still  need to be able to have multi pillar private bugs.
+        return bool(getFeatureFlag(
+            'disclosure.allow_multipillar_private_bugs.enabled'))
+
+    def canAddProjectTask(self):
+        """Can a new bug task on a project be added to this bug?
+
+        If a bug has any bug tasks already, were it to be private, it cannot
+        be marked as also affecting any other project, so return False.
+        """
+        bug = self.context
+        if not bug.private:
+            return True
+        if self._allow_multipillar_private_bugs:
+            return True
+        return len(bug.bugtasks) == 0
+
+    def canAddPackageTask(self):
+        """Can a new bug task on a src pkg be added to this bug?
+
+        If a bug has any existing bug tasks on a project, were it to
+        be private, then it cannot be marked as affecting a package,
+        so return False.
+
+        A task on a given package may still be illegal to add, but
+        this will be caught when bug.addTask() is attempted.
+        """
+        bug = self.context
+        if not bug.private:
+            return True
+        if self._allow_multipillar_private_bugs:
+            return True
+        for pillar in bug.affected_pillars:
+            if IProduct.providedBy(pillar):
+                return False
+        return True
+
 
 class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     """Browser class for rendering a bugtask row on the bug page."""

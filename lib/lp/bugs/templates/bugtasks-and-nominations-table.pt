@@ -88,7 +88,7 @@
   <tal:also-affects-links
       define="context_menu context/menu:context">
     <span id="also-affects-product"
-          tal:attributes="class python:not context.canAddProjectTask() and 'private-disallow' or ''"
+          tal:attributes="class python:not view.canAddProjectTask() and 'private-disallow' or ''"
     >
     <tal:addupstream
         define="link context_menu/addupstream"
@@ -101,7 +101,7 @@
         </a>
     </span>
     <span id="also-affects-package"
-          tal:attributes="class python:not context.canAddPackageTask() and 'private-disallow' or ''"
+          tal:attributes="class python:not view.canAddPackageTask() and 'private-disallow' or ''"
     >
     <tal:adddistro
         define="link context_menu/adddistro"

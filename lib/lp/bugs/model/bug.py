@@ -386,12 +386,6 @@ class Bug(SQLBase):
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
 
-    @property
-    def _allow_mulltipillar_private_bugs(self):
-        # Some teams still  need to be able to have multi pillar private bugs.
-        return bool(getFeatureFlag(
-            'disclosure.allow_multipillar_private_bugs.enabled'))
-
     @cachedproperty
     def _subscriber_cache(self):
         """Caches known subscribers."""
@@ -1217,23 +1211,6 @@ class Bug(SQLBase):
         target.recalculateBugHeatCache()
 
         return new_task
-
-    def canAddProjectTask(self):
-        """See `IBug`."""
-        if self._allow_mulltipillar_private_bugs:
-            return True
-        return len(self.bugtasks) == 0
-
-    def canAddPackageTask(self):
-        """See `IBug`."""
-        if self._allow_mulltipillar_private_bugs:
-            return True
-        for pillar in self.affected_pillars:
-            if IProduct.providedBy(pillar):
-                return False
-        # We don't allow a bad situation to be made worse by allowing a new
-        # task to be added for existing mult-tenanted bugs.
-        return len(self.affected_pillars) <= 1
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
