@@ -40,6 +40,7 @@ from lp.services.messaging.rabbit import (
     unreliable_session as global_unreliable_session,
     )
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.faketransaction import FakeTransaction
 from lp.testing.matchers import Provides
 
@@ -215,31 +216,24 @@ class TestRabbitUnreliableSession(TestRabbitSession):
             repr(self.prev_oops), repr(oops_report), 'No OOPS reported!')
         self.assertIn(text_in_oops, str(oops_report))
 
-    def _test_finish_suppresses_exception(self, exception,
-                                          oops_recorded=False):
+    def _test_finish_suppresses_exception(self, exception):
         # Simple helper to test that the given exception is suppressed
-        # when raised by finish() and that an oops/no oops is recorded
-        # (depending on the value of oops_recorded).
-        def raise_exception():
-            raise exception
+        # when raised by finish().
         session = self.session_factory()
-        session.defer(raise_exception)
+        session.defer(FakeMethod(failure=exception))
         session.finish()  # Look, no exceptions!
-        if oops_recorded:
-            self.assertOops(str(exception))
-        else:
-            self.assertNoOops()
 
     def test_finish_suppresses_MessagingUnavailable(self):
         self._test_finish_suppresses_exception(
-            MessagingUnavailable('Messaging borked.'),
-            oops_recorded=False)
+            MessagingUnavailable('Messaging borked.'))
+        self.assertNoOops()
 
     def xxx_test_finish_suppresses_other_errors_with_oopses(self):
         # XXX: rvb 2011-10-24 bug=880885: This test works in isolation
         # but fails when it is part of a full run.
-        self._test_finish_suppresses_exception(
-            Exception("That hent worked."), oops_recorded=True)
+        exception = Exception("That hent worked.")
+        self._test_finish_suppresses_exception(exception)
+        self.assertOops(str(exception))
 
 
 class TestRabbitMessageBase(RabbitTestCase):
