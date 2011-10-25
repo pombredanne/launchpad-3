@@ -116,6 +116,7 @@ class TestScriptRunning(TestCaseWithFactory):
 
         # The error log does not match the glob, so it is not processed,
         # and no OOPS is generated.
+        self.oops_capture.sync()
         self.assertEqual([], self.oopses)
 
         # Must commit because the changes were done in another transaction.
