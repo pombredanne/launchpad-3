@@ -370,35 +370,6 @@ class ErrorReportingUtility:
                 continue
             return report
 
-    def getLastOopsReport(self):
-        """Return the last ErrorReport reported with the current config.
-
-        This should only be used in integration tests.
-
-        Note that this function only checks for OOPSes reported today
-        and yesterday (to avoid midnight bugs where an OOPS is logged
-        at 23:59:59 but not checked for until 0:00:01), and ignores
-        OOPSes recorded longer ago.
-
-        Returns None if no OOPS is found.
-        """
-        now = datetime.datetime.now(UTC)
-        # Check today
-        log_namer = self._oops_datedir_repo.log_namer
-        oopsid, filename = log_namer._findHighestSerialFilename(time=now)
-        if filename is None:
-            # Check yesterday, we may have just passed midnight.
-            yesterday = now - datetime.timedelta(days=1)
-            oopsid, filename = log_namer._findHighestSerialFilename(
-                time=yesterday)
-            if filename is None:
-                return None
-        oops_report = open(filename, 'r')
-        try:
-            return ErrorReport.read(oops_report)
-        finally:
-            oops_report.close()
-
     def raising(self, info, request=None):
         """See IErrorReportingUtility.raising()"""
         context = dict(exc_info=info)
