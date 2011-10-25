@@ -1233,7 +1233,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     client_listing = soupmatchers.Tag(
         'client-listing', True, attrs={'id': 'client-listing'})
 
-    def makeView(self, bugtask=None, size=None, memo=None):
+    def makeView(self, bugtask=None, size=None, memo=None, orderby=None):
         query_vars = {}
         if size is not None:
             query_vars['batch']= size
@@ -1241,7 +1241,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             query_vars['memo'] = memo
             query_vars['start'] = memo
         query_string = urllib.urlencode(query_vars)
-        request = LaunchpadTestRequest(QUERY_STRING=query_string)
+        request = LaunchpadTestRequest(
+            QUERY_STRING=query_string, orderby=orderby)
         if bugtask is None:
             bugtask = self.factory.makeBugTask()
         view = BugTaskSearchListingView(bugtask.target, request)
@@ -1314,6 +1315,20 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             view = self.makeView(task2, size=1, memo=1)
         cache = IJSONRequestCache(view.request)
         self.assertEqual({'memo': '1', 'start': 0}, cache.objects.get('prev'))
+
+    def test_default_order_by(self):
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('-importance', cache.objects['order_by'])
+
+    def test_order_by_importance(self):
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, orderby='importance')
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('importance', cache.objects['order_by'])
 
     def getBugtaskBrowser(self):
         bugtask = self.factory.makeBugTask()

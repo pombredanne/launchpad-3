@@ -2494,6 +2494,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['next'] = _getBatchInfo(next_batch)
             prev_batch = batch_navigator.batch.prevBatch()
             cache.objects['prev'] = _getBatchInfo(prev_batch)
+            cache.objects['order_by'] = ','.join(
+                get_sortorder_from_request(self.request))
 
     @property
     def columns_to_show(self):
