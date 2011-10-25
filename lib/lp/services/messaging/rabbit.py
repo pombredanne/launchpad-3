@@ -19,11 +19,10 @@ import time
 from amqplib import client_0_8 as amqp
 import transaction
 from transaction._transaction import Status as TransactionStatus
-from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
@@ -175,7 +174,7 @@ class RabbitUnreliableSession(RabbitSession):
         except self.suppressed_errors:
             pass
         except Exception:
-            error_utility = getUtility(IErrorReportingUtility)
+            error_utility = ErrorReportingUtility()
             error_utility.raising(sys.exc_info())
 
 
