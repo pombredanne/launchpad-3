@@ -1,0 +1,7 @@
+Widget TODO items
+=================
+
+* Final test for clicking
+* bindUI sequences
+* consider syncUI handling
+* CSS for widget display
