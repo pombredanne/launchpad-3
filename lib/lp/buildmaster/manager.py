@@ -187,6 +187,32 @@ class SlaveScanner:
                 exc_info=True)
             transaction.abort()
 
+    def checkCancellation(self, builder):
+        """See if there is a pending cancellation request.
+
+        If the current build is in status CANCELLING then terminate it
+        immediately.
+
+        :return: A deferred whose value is True if we cancelled the build.
+        """
+        if not builder.virtualized:
+            return defer.succeed(False)
+        buildqueue = self.builder.getBuildQueue()
+        if not buildqueue:
+            return defer.succeed(False)
+        build = buildqueue.specific_job.build
+        if build.status != BuildStatus.CANCELLING:
+            return defer.succeed(False)
+
+        def resume_done(ignored):
+            return defer.succeed(True)
+
+        buildqueue.cancel()
+        transaction.commit()
+        d = builder.resumeSlaveHost()
+        d.addCallback(resume_done)
+        return d
+
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
 
@@ -214,11 +240,6 @@ class SlaveScanner:
         # Storm store is invalidated over transaction boundaries.
 
         self.builder = get_builder(self.builder_name)
-
-        if self.builder.builderok:
-            d = self.builder.updateStatus(self.logger)
-        else:
-            d = defer.succeed(None)
 
         def status_updated(ignored):
             # Commit the changes done while possibly rescuing jobs, to
@@ -279,8 +300,22 @@ class SlaveScanner:
                     return None
             return d.addCallback(job_started)
 
-        d.addCallback(status_updated)
-        d.addCallback(build_updated)
+        def cancellation_checked(cancelled):
+            if cancelled:
+                return defer.succeed(None)
+            d = self.builder.updateStatus(self.logger)
+            d.addCallback(status_updated)
+            d.addCallback(build_updated)
+            return d
+
+        if self.builder.builderok:
+            d = self.checkCancellation(self.builder)
+            d.addCallback(cancellation_checked)
+        else:
+            d = self.builder.updateStatus(self.logger)
+            d.addCallback(status_updated)
+            d.addCallback(build_updated)
+
         return d
 
 
