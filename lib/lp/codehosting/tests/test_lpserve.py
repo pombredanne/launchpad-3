@@ -13,7 +13,6 @@ from bzrlib.transport import remote
 from bzrlib.plugins.lpserve.test_lpserve import TestCaseWithSubprocess
 
 from canonical.testing.layers import LaunchpadLayer
-from lp.codehosting.bzrutils import make_error_utility
 from lp.testing.fixture import CaptureOops
 
 
