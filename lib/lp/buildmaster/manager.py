@@ -198,6 +198,8 @@ class SlaveScanner:
         if not builder.virtualized:
             return defer.succeed(False)
         buildqueue = self.builder.getBuildQueue()
+        if not buildqueue:
+            return defer.succeed(False)
         build = buildqueue.specific_job.build
         if build.status != BuildStatus.CANCELLING:
             return defer.succeed(False)
