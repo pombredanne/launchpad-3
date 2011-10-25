@@ -238,6 +238,7 @@ class FeatureController():
         if rule_source is None:
             rule_source = StormFeatureRuleSource()
         self.rule_source = rule_source
+        self._current_scopes = Memoize(self._findCurrentScope)
 
     def getFlag(self, flag):
         """Get the value of a specific flag.
@@ -253,11 +254,26 @@ class FeatureController():
         return self._known_flags.lookup(flag)
 
     def _checkFlag(self, flag):
+        return self._currentValueAndScope(flag)[0]
+
+    def _currentValueAndScope(self, flag):
         self._needRules()
         if flag in self._rules:
             for scope, priority, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
-                    return value
+                    return (value, scope)
+        return (None, None)
+
+    def currentScope(self, flag):
+        """The name of the scope of the matching rule with the highest
+        priority.
+        """
+        return self._current_scopes.lookup(flag)
+
+    def _findCurrentScope(self, flag):
+        """Lookup method for self._current_scopes. See also `currentScope()`.
+        """
+        return self._currentValueAndScope(flag)[1]
 
     def isInScope(self, scope):
         return self._known_scopes.lookup(scope)
