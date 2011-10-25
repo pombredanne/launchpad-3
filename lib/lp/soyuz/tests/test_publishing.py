@@ -1458,19 +1458,6 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
 
 
-class TestSPPHModel(TestCaseWithFactory):
-    """Test parts of the SourcePackagePublishingHistory model."""
-
-    layer = LaunchpadZopelessLayer
-
-    def testAncestry(self):
-        """Ancestry can be traversed."""
-        ancestor = self.factory.makeSourcePackagePublishingHistory()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            ancestor=ancestor)
-        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
-
-
 class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
     """Test parts of the BinaryPackagePublishingHistory model.
 
