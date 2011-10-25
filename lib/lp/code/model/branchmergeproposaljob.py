@@ -13,7 +13,6 @@ __metaclass__ = type
 
 
 __all__ = [
-    'BranchHasPendingWrites',
     'BranchMergeProposalJob',
     'BranchMergeProposalJobFactory',
     'BranchMergeProposalJobSource',
@@ -73,6 +72,10 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchType
+from lp.code.errors import (
+    BranchHasPendingWrites,
+    UpdatePreviewDiffNotReady,
+    )
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
     IBranchMergeProposalJobSource,
@@ -327,19 +330,6 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
         return ('notifying people about the proposal to merge %s into %s' %
             (self.branch_merge_proposal.source_branch.bzr_identity,
              self.branch_merge_proposal.target_branch.bzr_identity))
-
-
-class UpdatePreviewDiffNotReady(Exception):
-    """Raised if the the preview diff is not ready to run."""
-
-
-class BranchHasPendingWrites(Exception):
-    """Raised if the branch can't be processed because a write is pending.
-
-    In this case the operation can usually be retried in a while.
-
-    See bug 612171.
-    """
 
 
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
