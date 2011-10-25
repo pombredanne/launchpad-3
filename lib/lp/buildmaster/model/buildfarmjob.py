@@ -113,6 +113,10 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         pass
 
+    def jobCancel(self):
+        """See `IBuildFarmJobOld`."""
+        pass
+
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmJobOld`."""
