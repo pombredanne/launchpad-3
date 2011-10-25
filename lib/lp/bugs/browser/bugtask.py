@@ -3585,7 +3585,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             row_css_class='highlight' if is_primary else None,
             target_link=canonical_url(self.context.target),
             target_link_title=self.target_link_title,
-            user_can_delete=self.context.userCanDelete(self.user),
+            user_can_delete=self.user_can_delete_bugtask,
             delete_link=link + '/+delete',
             user_can_edit_importance=self.context.userCanEditImportance(
                 self.user),
@@ -3742,7 +3742,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         If yes, return True, otherwise return False.
         """
-        return self.context.userCanDelete(self.user)
+        bugtask = self.context
+        return bugtask.userCanDelete(self.user) and bugtask.canBeDeleted()
 
     @property
     def style_for_add_milestone(self):
@@ -3791,7 +3792,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             assignee_vocabulary_filters=filter_details,
             hide_assignee_team_selection=hide_assignee_team_selection,
             user_can_unassign=cx.userCanUnassign(user),
-            user_can_delete=self.user_can_delete_bugtask,
             target_is_product=IProduct.providedBy(cx.target),
             status_widget_items=self.status_widget_items,
             status_value=cx.status.title,

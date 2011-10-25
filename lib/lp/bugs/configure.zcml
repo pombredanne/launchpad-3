@@ -194,15 +194,16 @@
                     task_age
                     bug_subscribers
                     is_complete
+                    canBeDeleted
                     canTransitionToStatus
                     isSubscribed
                     getPackageComponent
                     maybeConfirm
+                    userCanDelete
                     userCanEditImportance
                     userCanEditMilestone
                     userCanSetAnyAssignee
-                    userCanUnassign
-                    userCanDelete"/>
+                    userCanUnassign"/>
             <require
                 permission="launchpad.View"
                 attributes="

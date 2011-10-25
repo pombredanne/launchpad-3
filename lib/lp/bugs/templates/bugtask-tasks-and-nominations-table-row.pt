@@ -34,7 +34,9 @@
         </button>
         <div class="yui3-activator-message-box yui3-activator-hidden"></div>
         <tal:delete-icon condition="data/user_can_delete">
-            <a tal:attributes="href data/delete_link "
+            <a tal:attributes="
+                id string:bugtask-delete-${data/form_row_id};
+                href data/delete_link"
                class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
         </tal:delete-icon>
       </span>
