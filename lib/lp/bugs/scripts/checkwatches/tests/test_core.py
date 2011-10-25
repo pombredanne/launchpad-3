@@ -30,7 +30,6 @@ from lp.bugs.interfaces.bugtracker import (
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts import checkwatches
 from lp.bugs.scripts.checkwatches.base import (
-    CheckWatchesErrorUtility,
     WorkingBase,
     )
 from lp.bugs.scripts.checkwatches.core import (
@@ -210,8 +209,8 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
             # dict.
             updater.updateRemoteBug()
 
-            # A single oops will have been logged instead of the KeyError being
-            # raised.
+            # A single oops will have been logged instead of the KeyError
+            # being raised.
             self.assertEqual(oops_count + 1, len(self.oopses))
             last_oops = self.oopses[-1]
             self.assertStartsWith(

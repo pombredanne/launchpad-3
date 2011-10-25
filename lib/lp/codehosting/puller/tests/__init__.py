@@ -40,7 +40,6 @@ class AcceptAnythingBranchMirrorerPolicy(AcceptAnythingPolicy,
     """A branch mirror policy that supports mirrorring from anywhere."""
 
 
-
 class PullerWorkerMixin:
     """Mixin for tests that want to make PullerWorker objects.
 
@@ -67,12 +66,12 @@ class PullerWorkerMixin:
             default_stacked_on_url=default_stacked_on_url, protocol=protocol,
             branch_mirrorer=opener)
 
+
 # XXX MichaelHudson, bug=564375: With changes to the SocketServer module in
 # Python 2.6 the thread created in serveOverHTTP cannot be joined, because
 # HttpServer.stop_server doesn't do enough to get the thread out of the select
 # call in SocketServer.BaseServer.handle_request().  So what follows is
 # slightly horrible code to use the version of handle_request from Python 2.5.
-
 def fixed_handle_request(self):
     """Handle one request, possibly blocking. """
     try:

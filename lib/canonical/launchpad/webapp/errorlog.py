@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 import contextlib
-import datetime
 from itertools import repeat
 import logging
 import operator

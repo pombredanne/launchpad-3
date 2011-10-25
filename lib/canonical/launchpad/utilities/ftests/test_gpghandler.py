@@ -25,7 +25,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGKeyTemporarilyNotFoundError,
     IGPGHandler,
     )
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.lazr.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
