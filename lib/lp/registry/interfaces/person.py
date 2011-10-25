@@ -566,13 +566,17 @@ def team_subscription_policy_can_transition(team, policy):
         private_bugs_involved = IStore(Bug).execute(Union(
             Select(
                 Bug.id,
-                tables=(Bug, Join(
-                    BugSubscription, BugSubscription.bug_id == Bug.id)),
-                where=And(Bug.private == True,
+                tables=(
+                    Bug,
+                    Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
+                where=And(
+                    Bug.private == True,
                     BugSubscription.person_id == team.id)),
             Select(
                 Bug.id,
-                tables=(Bug, Join(BugTask, BugTask.bugID == Bug.id)),
+                tables=(
+                    Bug,
+                    Join(BugTask, BugTask.bugID == Bug.id)),
                 where=And(Bug.private == True, BugTask.assignee == team.id)),
             limit=1))
         if private_bugs_involved.rowcount:
