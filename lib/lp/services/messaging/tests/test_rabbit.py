@@ -228,7 +228,7 @@ class TestRabbitUnreliableSession(TestRabbitSession):
             MessagingUnavailable('Messaging borked.'))
         self.assertNoOops()
 
-    def xxx_test_finish_suppresses_other_errors_with_oopses(self):
+    def test_finish_suppresses_other_errors_with_oopses(self):
         # XXX: rvb 2011-10-24 bug=880885: This test works in isolation
         # but fails when it is part of a full run.
         exception = Exception("That hent worked.")
