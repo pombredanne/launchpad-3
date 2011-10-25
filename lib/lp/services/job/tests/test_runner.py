@@ -342,9 +342,8 @@ class TestJobRunner(TestCaseWithFactory):
         JobRunner([job]).runJob(job)
         self.assertEqual(JobStatus.WAITING, job.status)
         runner = JobRunner([job])
-        with self.expectedLog('Job execution raised an exception.'):
-            with ExpectedException(RetryError, ''):
-                runner.runJob(job)
+        with ExpectedException(RetryError, ''):
+            runner.runJob(job)
         self.assertEqual(JobStatus.FAILED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)

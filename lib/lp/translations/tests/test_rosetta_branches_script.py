@@ -16,7 +16,6 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchjob import RosettaUploadJob
 from lp.services.osutils import override_environ
@@ -81,8 +80,6 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
 
     def test_rosetta_branches_script_oops(self):
         # A bogus revision in the job will trigger an OOPS.
-        globalErrorUtility.configure("rosettabranches")
-        previous_oops_report = globalErrorUtility.getLastOopsReport()
         self._clear_import_queue()
         pot_path = self.factory.getUniqueString() + ".pot"
         branch = self._setup_series_branch(pot_path)
@@ -96,9 +93,10 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         queue = getUtility(ITranslationImportQueue)
         self.assertEqual(0, queue.countEntries())
 
-        oops_report = globalErrorUtility.getLastOopsReport()
-        if previous_oops_report is not None:
-            self.assertNotEqual(oops_report.id, previous_oops_report.id)
+        self.oops_capture.sync()
+        self.assertEqual(
+            1, len(self.oopses), "Too Many OOPSes %r" % self.oopses)
+        oops_report = self.oopses[0]
         self.assertIn(
-            'INFO    Job resulted in OOPS: %s\n' % oops_report.id, stderr)
-        self.assertEqual('NoSuchRevision', oops_report.type)
+            'INFO    Job resulted in OOPS: %s\n' % oops_report['id'], stderr)
+        self.assertEqual('NoSuchRevision', oops_report['type'])
