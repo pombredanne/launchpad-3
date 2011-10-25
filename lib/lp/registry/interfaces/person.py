@@ -107,6 +107,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     IPrivacy,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -560,8 +561,9 @@ def team_subscription_policy_can_transition(team, policy):
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugsubscription import BugSubscription
         from lp.bugs.model.bugtask import BugTask
-        # The team can not be open if it is subscribed to private bugs.
-        private_bugs_involved = Union(
+        # The team cannot be open if it is subscribed to or assigned to
+        # private bugs.
+        private_bugs_involved = IStore(Bug).execute(Union(
             Select(
                 Bug.id,
                 tables=(Bug, Join(
@@ -572,8 +574,8 @@ def team_subscription_policy_can_transition(team, policy):
                 Bug.id,
                 tables=(Bug, Join(BugTask, BugTask.bugID == Bug.id)),
                 where=And(Bug.private == True, BugTask.assignee == team.id)),
-            limit=1)
-        if private_bugs_involved:
+            limit=1))
+        if private_bugs_involved.rowcount:
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it is "
                 "subscribed to or assigned to one or more private "
