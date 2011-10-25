@@ -6,7 +6,6 @@ import subprocess
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

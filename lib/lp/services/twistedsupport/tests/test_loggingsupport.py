@@ -5,32 +5,14 @@
 
 __metaclass__ = type
 
-import datetime
-import logging
 import os
-import re
-import shutil
-import StringIO
-import tempfile
-from textwrap import dedent
 
 import pytz
 
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    flush_logged_errors,
-    )
+from fixtures import TempDir
 
-from twisted.python import log
-
-from canonical.config import config
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from lp.services.twistedsupport.loggingsupport import (
     LaunchpadLogFile,
-    )
-from lp.services.twistedsupport.tests.test_processmonitor import (
-    makeFailure,
-    suppress_stderr,
     )
 from lp.testing import TestCase
 
@@ -42,8 +24,7 @@ class TestLaunchpadLogFile(TestCase):
 
     def setUp(self):
         super(TestLaunchpadLogFile, self).setUp()
-        self.temp_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.temp_dir)
+        self.temp_dir = self.useFixture(TempDir()).path
 
     def testInitialization(self):
         """`LaunchpadLogFile` initialization.
@@ -137,4 +118,3 @@ class TestLaunchpadLogFile(TestCase):
         self.assertEqual(
             ['test.log', 'test.log.2.bz2', 'test.log.3'],
             self.listTestFiles())
-
