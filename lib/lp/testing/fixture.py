@@ -17,7 +17,6 @@ from ConfigParser import SafeConfigParser
 import os.path
 
 import amqplib.client_0_8 as amqp
-import bson
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
@@ -219,7 +218,7 @@ class CaptureOops(Fixture):
     """
 
     AMQP_SENTINEL = "STOP NOW"
-    
+
     def setUp(self):
         super(CaptureOops, self).setUp()
         self.oopses = []
@@ -257,8 +256,8 @@ class CaptureOops(Fixture):
         message = amqp.Message(self.AMQP_SENTINEL)
         # Match what oops publishing does
         message.properties["delivery_mode"] = 2
-        # Publish the message via a new channel (otherwise rabbit shortcircuits
-        # it straight back to us, apparently).
+        # Publish the message via a new channel (otherwise rabbit
+        # shortcircuits it straight back to us, apparently).
         connection = connect()
         try:
             channel = connection.channel()

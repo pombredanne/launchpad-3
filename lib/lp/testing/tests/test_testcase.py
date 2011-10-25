@@ -93,7 +93,7 @@ class TestCaptureOops(TestCaseWithFactory):
         content.seek(0)
         # Safety net: ensure that no autocasts have occured even on Python 2.6
         # which is slightly better.
-        self.assertIsInstance(content.getvalue(), str) 
+        self.assertIsInstance(content.getvalue(), str)
         # In tests it should be rfc822 for easy reading.
         from_details = oops_datedir_repo.serializer_rfc822.read(content)
         # Compare with the in-memory model (but only a select key, because the

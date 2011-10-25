@@ -106,10 +106,7 @@ from zope.security.proxy import (
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
-    canonical_url,
-    errorlog,
-    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.adapter import (
     print_queries,
     start_sql_logging,
@@ -559,7 +556,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
-
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.

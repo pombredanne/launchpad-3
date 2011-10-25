@@ -9,8 +9,6 @@ provisions to handle Bazaar branches.
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from bzrlib.revision import NULL_REVISION
 import transaction
 from zope.component import getUtility
@@ -65,7 +63,7 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         self._clear_import_queue()
         pot_path = self.factory.getUniqueString() + ".pot"
         branch = self._setup_series_branch(pot_path)
-        job = RosettaUploadJob.create(branch, NULL_REVISION)
+        RosettaUploadJob.create(branch, NULL_REVISION)
         transaction.commit()
 
         return_code, stdout, stderr = run_script(
@@ -83,7 +81,7 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         self._clear_import_queue()
         pot_path = self.factory.getUniqueString() + ".pot"
         branch = self._setup_series_branch(pot_path)
-        job = RosettaUploadJob.create(branch, self.factory.getUniqueString())
+        RosettaUploadJob.create(branch, self.factory.getUniqueString())
         transaction.commit()
 
         return_code, stdout, stderr = run_script(
