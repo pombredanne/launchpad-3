@@ -312,7 +312,9 @@ class SlaveScanner:
             d = self.checkCancellation(self.builder)
             d.addCallback(cancellation_checked)
         else:
-            d = defer.succeed(None)
+            d = self.builder.updateStatus(self.logger)
+            d.addCallback(status_updated)
+            d.addCallback(build_updated)
 
         return d
 
