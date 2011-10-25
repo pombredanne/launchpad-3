@@ -15,10 +15,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
@@ -525,7 +522,8 @@ class LeaseHeldJob(StaticJobSource):
 
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
-    layer = ZopelessDatabaseLayer
+    # Needs AMQP
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestTwistedJobRunner, self).setUp()
@@ -535,10 +533,6 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         if config.root not in sys.path:
             sys.path.append(config.root)
             self.addCleanup(sys.path.remove, config.root)
-
-    @staticmethod
-    def getOopsReport(runner, index):
-        return runner.error_utility.getOopsReportById(runner.oops_ids[index])
 
     def test_timeout_long(self):
         """When a job exceeds its lease, an exception is raised.
@@ -556,9 +550,11 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
-        oops = self.getOopsReport(runner, 0)
+        self.oops_capture.sync()
+        oops = self.oopses[0]
         self.assertEqual(
-            ('TimeoutError', 'Job ran too long.'), (oops.type, oops.value))
+            ('TimeoutError', 'Job ran too long.'),
+            (oops['type'], oops['value']))
         self.assertThat(logger.getLogBuffer(), MatchesRegex(
             dedent("""\
             INFO Running through Twisted.
@@ -580,8 +576,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         # second slow.
         runner = TwistedJobRunner.runFromSource(
             ShorterStuckJob, 'branchscanner', logger)
-
-        oops = self.getOopsReport(runner, 0)
+        self.oops_capture.sync()
+        oops = self.oopses[0]
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.assertThat(
@@ -591,9 +587,9 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
                 INFO Running ShorterStuckJob \(ID .*\).
                 INFO Running ShorterStuckJob \(ID .*\).
                 INFO Job resulted in OOPS: %s
-                """) % oops.id))
+                """) % oops['id']))
         self.assertEqual(('TimeoutError', 'Job ran too long.'),
-                         (oops.type, oops.value))
+                         (oops['type'], oops['value']))
 
     def test_previous_failure_gives_new_process(self):
         """Failed jobs cause their worker to be terminated.
@@ -628,8 +624,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertEqual(
             (0, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.assertIn('Job resulted in OOPS', logger.getLogBuffer())
-        oops = self.getOopsReport(runner, 0)
-        self.assertEqual('MemoryError', oops.type)
+        self.oops_capture.sync()
+        self.assertEqual('MemoryError', self.oopses[0]['type'])
 
     def test_no_jobs(self):
         logger = BufferLogger()

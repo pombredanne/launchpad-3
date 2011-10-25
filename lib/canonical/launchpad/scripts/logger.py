@@ -90,9 +90,12 @@ class OopsHandler(logging.Handler):
     def emit(self, record):
         """Emit a record as an OOPS."""
         try:
+            info = record.exc_info
+            if info is not None:
+                info = sys.exc_info()
             msg = record.getMessage()
             with globalErrorUtility.oopsMessage(msg):
-                globalErrorUtility.raising(sys.exc_info(), self.request)
+                globalErrorUtility.raising(info, self.request)
         except Exception:
             self.handleError(record)
 

@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import datetime
 import httplib
-import logging
 import StringIO
 import sys
 from textwrap import dedent
@@ -20,7 +19,6 @@ from lp_sitecustomize import customize_get_converter
 import oops_amqp
 import pytz
 import testtools
-from testtools.matchers import StartsWith
 from timeline.timeline import Timeline
 from zope.app.publication.tests.test_zopepublication import (
     UnauthenticatedPrincipal,
@@ -41,7 +39,6 @@ from canonical.launchpad.webapp.errorlog import (
     ErrorReport,
     ErrorReportingUtility,
     notify_publisher,
-    OopsLoggingHandler,
     ScriptRequest,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -126,14 +123,14 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.url, 'http://localhost:9000/foo')
         self.assertEqual(entry.duration, 42)
         self.assertEqual(len(entry.req_vars), 3)
-        self.assertEqual(entry.req_vars[0], ('HTTP_USER_AGENT',
-                                             'Mozilla/5.0'))
-        self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
-                                             'http://localhost:9000/'))
-        self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
+        self.assertEqual(entry.req_vars[0], ['HTTP_USER_AGENT',
+                                             'Mozilla/5.0'])
+        self.assertEqual(entry.req_vars[1], ['HTTP_REFERER',
+                                             'http://localhost:9000/'])
+        self.assertEqual(entry.req_vars[2], ['name=foo', 'hello\nworld'])
         self.assertEqual(len(entry.timeline), 2)
-        self.assertEqual(entry.timeline[0], (1, 5, 'store_a', 'SELECT 1'))
-        self.assertEqual(entry.timeline[1], (5, 10, 'store_b', 'SELECT 2'))
+        self.assertEqual(entry.timeline[0], [1, 5, 'store_a', 'SELECT 1'])
+        self.assertEqual(entry.timeline[1], [5, 10, 'store_b', 'SELECT 2'])
 
 
 class TestErrorReportingUtility(testtools.TestCase):
@@ -598,66 +595,6 @@ class TestRequestWithPrincipal(TestRequest):
         @staticmethod
         def getLogin():
             return u'Login'
-
-
-class TestOopsLoggingHandler(testtools.TestCase):
-    """Tests for a Python logging handler that logs OOPSes."""
-
-    def assertOopsMatches(self, report, exc_type, exc_value):
-        """Assert that 'report' is an OOPS of a particular exception.
-
-        :param report: An `IErrorReport`.
-        :param exc_type: The string of an exception type.
-        :param exc_value: The string of an exception value.
-        """
-        self.assertEqual(exc_type, report['type'])
-        self.assertEqual(exc_value, report['value'])
-        self.assertThat(report['tb_text'],
-                StartsWith('Traceback (most recent call last):\n'))
-        self.assertEqual(None, report.get('topic'))
-        self.assertEqual(None, report.get('username'))
-        self.assertEqual(None, report.get('url'))
-        self.assertEqual([], report['req_vars'])
-        self.assertEqual([], report['timeline'])
-
-    def setUp(self):
-        super(TestOopsLoggingHandler, self).setUp()
-        self.logger = logging.getLogger(self.getUniqueString())
-        self.error_utility = ErrorReportingUtility()
-        self.oopses = []
-
-        def publish(report):
-            report['id'] = str(len(self.oopses))
-            self.oopses.append(report)
-            return report.get('id')
-
-        del self.error_utility._oops_config.publishers[:]
-        self.error_utility._oops_config.publishers.append(publish)
-        self.logger.addHandler(
-            OopsLoggingHandler(error_utility=self.error_utility))
-
-    def test_exception_records_oops(self):
-        # When OopsLoggingHandler is a handler for a logger, any exceptions
-        # logged will have OOPS reports generated for them.
-        error_message = self.getUniqueString()
-        try:
-            1 / 0
-        except ZeroDivisionError:
-            self.logger.exception(error_message)
-        oops_report = self.oopses[-1]
-        self.assertOopsMatches(
-            oops_report, 'ZeroDivisionError',
-            'integer division or modulo by zero')
-
-    def test_warning_does_nothing(self):
-        # Logging a warning doesn't generate an OOPS.
-        self.logger.warning("Cheeseburger")
-        self.assertEqual(0, len(self.oopses))
-
-    def test_error_does_nothing(self):
-        # Logging an error without an exception does nothing.
-        self.logger.error("Delicious ponies")
-        self.assertEqual(0, len(self.oopses))
 
 
 class TestOopsIgnoring(testtools.TestCase):

@@ -9,9 +9,7 @@ __metaclass__ = type
 
 import contextlib
 from itertools import repeat
-import logging
 import operator
-import os
 import re
 import urlparse
 
@@ -346,29 +344,6 @@ class ErrorReportingUtility:
         """Get the current effective oops prefix."""
         return self._oops_config.template['reporter']
 
-    def getOopsReportById(self, oops_id):
-        """Return the oops report for a given OOPS-ID.
-
-        Only recent reports are found.  The report's filename is assumed to
-        have the same numeric suffix as the oops_id.  The OOPS report must be
-        located in the error directory used by this ErrorReportingUtility.
-
-        If no report is found, return None.
-        """
-        suffix = re.search('[0-9]*$', oops_id).group(0)
-        for directory, name in \
-            self._oops_datedir_repo.log_namer.listRecentReportFiles():
-            if not name.endswith(suffix):
-                continue
-            with open(os.path.join(directory, name), 'r') as oops_report_file:
-                try:
-                    report = ErrorReport.read(oops_report_file)
-                except TypeError:
-                    continue
-            if report.id != oops_id:
-                continue
-            return report
-
     def raising(self, info, request=None):
         """See IErrorReportingUtility.raising()"""
         context = dict(exc_info=info)
@@ -474,30 +449,6 @@ class ScriptRequest(ErrorReportRequest):
     @property
     def form(self):
         return dict(self.items())
-
-
-class OopsLoggingHandler(logging.Handler):
-    """Python logging handler that records OOPSes on exception."""
-
-    def __init__(self, error_utility=None, request=None):
-        """Construct an `OopsLoggingHandler`.
-
-        :param error_utility: The error utility to use to log oopses. If not
-            provided, defaults to `globalErrorUtility`.
-        :param request: The `IErrorReportRequest` these errors are associated
-            with.
-        """
-        logging.Handler.__init__(self, logging.ERROR)
-        if error_utility is None:
-            error_utility = globalErrorUtility
-        self._error_utility = error_utility
-        self._request = request
-
-    def emit(self, record):
-        """See `logging.Handler.emit`."""
-        info = record.exc_info
-        if info is not None:
-            self._error_utility.raising(info, self._request)
 
 
 class SoftRequestTimeout(Exception):
