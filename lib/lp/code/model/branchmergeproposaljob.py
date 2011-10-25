@@ -13,6 +13,7 @@ __metaclass__ = type
 
 
 __all__ = [
+    'BranchHasPendingWrites',
     'BranchMergeProposalJob',
     'BranchMergeProposalJobFactory',
     'BranchMergeProposalJobSource',
@@ -332,6 +333,15 @@ class UpdatePreviewDiffNotReady(Exception):
     """Raised if the the preview diff is not ready to run."""
 
 
+class BranchHasPendingWrites(Exception):
+    """Raised if the branch can't be processed because a write is pending.
+
+    In this case the operation can usually be retried in a while.
+
+    See bug 612171.
+    """
+
+
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     """A job to update the preview diff for a branch merge proposal.
 
@@ -346,6 +356,16 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     user_error_types = (UpdatePreviewDiffNotReady, )
 
+    retry_error_types = [BranchHasPendingWrites]
+
+    @classmethod
+    def create(cls, bmp):
+        """See `IMergeProposalCreationJob`."""
+        job = BranchMergeProposalJob(
+            bmp, cls.class_job_type, {})
+        job.max_retries = 20
+        return cls(job)
+
     def checkReady(self):
         """Is this job ready to run?"""
         bmp = self.branch_merge_proposal
@@ -356,8 +376,8 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
             raise UpdatePreviewDiffNotReady(
                 'The target branch has no revisions.')
         if bmp.source_branch.pending_writes:
-            raise UpdatePreviewDiffNotReady(
-                'The source branch has pending writes.')
+            raise BranchHasPendingWrites(
+                'The source branch has pending writes')
 
     @staticmethod
     @contextlib.contextmanager
@@ -814,7 +834,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
             if IUpdatePreviewDiffJob.providedBy(derived_job):
                 try:
                     derived_job.checkReady()
-                except UpdatePreviewDiffNotReady:
+                except (UpdatePreviewDiffNotReady, BranchHasPendingWrites):
                     # If the job was created under 15 minutes ago wait a bit.
                     minutes = (
                         config.codehosting.update_preview_diff_ready_timeout)
