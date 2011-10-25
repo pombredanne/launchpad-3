@@ -102,7 +102,3 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         self.assertIn(
             'INFO    Job resulted in OOPS: %s\n' % oops_report.id, stderr)
         self.assertEqual('NoSuchRevision', oops_report.type)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

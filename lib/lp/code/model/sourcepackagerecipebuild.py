@@ -15,7 +15,6 @@ from datetime import (
     timedelta,
     )
 import logging
-import sys
 
 from psycopg2 import ProgrammingError
 from pytz import utc
@@ -39,7 +38,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.webapp import errorlog
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -236,8 +234,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     raise
                 except:
                     logger.exception(' - problem with %s', series_name)
-                    info = sys.exc_info()
-                    errorlog.globalErrorUtility.raising(info)
                 else:
                     logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
