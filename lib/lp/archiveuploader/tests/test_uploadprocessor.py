@@ -29,7 +29,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (

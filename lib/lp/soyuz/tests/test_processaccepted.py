@@ -12,7 +12,6 @@ from testtools.matchers import LessThan
 import transaction
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
