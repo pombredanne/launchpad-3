@@ -15,7 +15,6 @@ import pytz
 from canonical.launchpad.ftests import (
     login,
     )
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,

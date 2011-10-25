@@ -26,7 +26,6 @@ from twisted.internet import (
     reactor,
     )
 from twisted.protocols.basic import NetstringParseError
-from twisted.python import failure
 from zope.component import getUtility
 
 from canonical.config import config

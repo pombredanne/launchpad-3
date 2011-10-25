@@ -9,6 +9,7 @@ import sys
 import urllib2
 
 import lp.codehosting  # Needed to load bzr plugins.
+lp  # squelch lint.sh
 
 from bzrlib import (
     errors,

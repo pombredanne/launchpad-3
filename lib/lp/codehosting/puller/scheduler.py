@@ -469,4 +469,3 @@ class LockError(StandardError):
 
     def __str__(self):
         return 'Jobmanager unable to get master lock: %s' % self.lockfilename
-

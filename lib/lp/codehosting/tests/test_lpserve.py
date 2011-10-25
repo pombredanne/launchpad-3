@@ -89,7 +89,6 @@ class TestLaunchpadServe(TestCaseWithSubprocess):
         # Starting and stopping the lp-serve process leaves no OOPS.
         capture = self.useFixture(CaptureOops())
         process, transport = self.start_server_inet()
-        error_utility = make_error_utility(process.pid)
         self.finish_lpserve_subprocess(process)
         self.assertEqual([], capture.oopses)
 
@@ -98,7 +97,6 @@ class TestLaunchpadServe(TestCaseWithSubprocess):
         # recorded.
         capture = self.useFixture(CaptureOops())
         process, transport = self.start_server_inet()
-        error_utility = make_error_utility(process.pid)
         # This will trigger an error, because the XML-RPC server is not
         # running, and any filesystem access tries to get at the XML-RPC
         # server. If this *doesn'* raise, then the test is no longer valid and
