@@ -6,6 +6,7 @@ __metaclass__ = type
 from contextlib import contextmanager
 from datetime import datetime
 import re
+import urllib
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interfaces import IJSONRequestCache
@@ -1229,14 +1230,18 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    server_listing = soupmatchers.Tag(
-        'Server', 'em', text='Server-side mustache')
-
     client_listing = soupmatchers.Tag(
         'client-listing', True, attrs={'id': 'client-listing'})
 
-    def makeView(self, bugtask=None):
-        request = LaunchpadTestRequest()
+    def makeView(self, bugtask=None, size=None, memo=None):
+        query_vars = {}
+        if size is not None:
+            query_vars['batch']= size
+        if memo is not None:
+            query_vars['memo'] = memo
+            query_vars['start'] = memo
+        query_string = urllib.urlencode(query_vars)
+        request = LaunchpadTestRequest(QUERY_STRING=query_string)
         if bugtask is None:
             bugtask = self.factory.makeBugTask()
         view = BugTaskSearchListingView(bugtask.target, request)
@@ -1270,6 +1275,46 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertEqual(1, len(bugtasks))
         self.assertEqual(item.model, bugtasks[0])
 
+    def test_no_next_prev_for_single_batch(self):
+        """The IJSONRequestCache should contain data about ajacent batches.
+
+        mustache_model should contain bugtasks, the BugTaskListingItem.model
+        for each BugTask.
+        """
+        owner, item = make_bug_task_listing_item(self.factory)
+        self.useContext(person_logged_in(owner))
+        with self.dynamic_listings():
+            view = self.makeView(item.bugtask)
+        cache = IJSONRequestCache(view.request)
+        self.assertIs(None, cache.objects.get('next'))
+        self.assertIs(None, cache.objects.get('prev'))
+
+    def test_next_for_multiple_batch(self):
+        """The IJSONRequestCache should contain data about the next batch.
+
+        mustache_model should contain bugtasks, the BugTaskListingItem.model
+        for each BugTask.
+        """
+        task = self.factory.makeBugTask()
+        task2 = self.factory.makeBugTask(target=task.target)
+        with self.dynamic_listings():
+            view = self.makeView(task, size=1)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual({'memo': '1', 'start': 1}, cache.objects.get('next'))
+
+    def test_prev_for_multiple_batch(self):
+        """The IJSONRequestCache should contain data about the next batch.
+
+        mustache_model should contain bugtasks, the BugTaskListingItem.model
+        for each BugTask.
+        """
+        task = self.factory.makeBugTask()
+        task2 = self.factory.makeBugTask(target=task.target)
+        with self.dynamic_listings():
+            view = self.makeView(task2, size=1, memo=1)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual({'memo': '1', 'start': 0}, cache.objects.get('prev'))
+
     def getBugtaskBrowser(self):
         bugtask = self.factory.makeBugTask()
         with person_logged_in(bugtask.target.owner):
@@ -1296,15 +1341,13 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         number_tag = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, number_tag, invert=True)
         self.assertHTML(browser, self.client_listing, invert=True)
-        self.assertHTML(browser, self.server_listing, invert=True)
 
     def test_mustache_rendering(self):
         """If the flag is present, then all mustache features appear."""
         with self.dynamic_listings():
             bug_task, browser = self.getBugtaskBrowser()
         bug_number = self.getBugNumberTag(bug_task)
-        self.assertHTML(
-            browser, self.client_listing, self.server_listing, bug_number)
+        self.assertHTML(browser, self.client_listing, bug_number)
 
 
 class TestBugTaskListingItem(TestCaseWithFactory):
