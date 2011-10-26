@@ -45,12 +45,11 @@ logger object that will extract tracebacks for the purposes of this doctest.
   >>> netapplet_upload.notify(
   ...     changes_file_object=changes_file, logger=FakeLogger())
   DEBUG Building recipients list.
-  ...
   DEBUG Changes file is unsigned; adding changer as recipient.
   ...
   DEBUG Sent a mail:
   ...
-  DEBUG Recipients: ... Daniel Silverstone ...
+  DEBUG   Recipients: ... Silverstone ...
   ...
   DEBUG above if files already exist in other distroseries.
   ...
@@ -121,7 +120,7 @@ Now request the email:
   ...
   DEBUG Sent a mail:
   ...
-  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Recipients: ... Bar ...
   ...
   DEBUG Announcing to autotest_changes@ubuntu.com
   ...
@@ -138,22 +137,41 @@ this upload is already accepted.
 The mail 'To:' addresses contain the signer and the changer's email.  The
 announcement email contains the serieses changeslist.
 
-  >>> [msg['To'] for msg in msgs]
-  ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'autotest_changes@ubuntu.com']
+  >>> def to_lower(address):
+  ...     """Return lower-case version of email address."""
+  ...     return address.lower()
+
+  >>> def extract_addresses(header_field):
+  ...     """Extract and sort addresses from an email header field."""
+  ...     return sorted(
+  ...         [addr.strip() for addr in header_field.split(',')],
+  ...         key=to_lower)
+
+  >>> for addr in extract_addresses(msgs[0]['To']):
+  ...     print addr
+  Daniel Silverstone <daniel.silverstone@canonical.com>
+  Foo Bar <foo.bar@canonical.com>
+
+  >>> print msgs[1]['To']
+  autotest_changes@ubuntu.com
 
 The mail 'Bcc:' address is the uploader.  The announcement has the uploader
 and the Debian derivatives address for the package uploaded.
 
-  >>> [msg['Bcc'] for msg in msgs]
-  ['Root <root@localhost>', 'Root <root@localhost>, netapplet_derivatives@packages.qa.debian.org']
+  >>> for msg in msgs:
+  ...     print extract_addresses(msg['Bcc'])
+  ['Root <root@localhost>']
+  ['netapplet_derivatives@packages.qa.debian.org', 'Root <root@localhost>']
 
 The mail 'From:' addresses are the uploader and the changer.
 
-  >>> [msg['From'] for msg in msgs]
-  ['Root <root@localhost>', 'Daniel Silverstone <daniel.silverstone@canonical.com>']
+  >>> for msg in msgs:
+  ...     print msg['From']
+  Root <root@localhost>
+  Daniel Silverstone <daniel.silverstone@canonical.com>
 
-  >>> notification['Subject']
-  '[ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)'
+  >>> print notification['Subject']
+  [ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)
 
 The mail body contains the same list of files again:
 
@@ -189,7 +207,7 @@ the case when nascent upload runs).  This example demonstrates this usage:
   ...
   DEBUG Sent a mail:
   ...
-  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG     Recipients: ... Silverstone ...
   ...
   DEBUG above if files already exist in other distroseries.
   ...
@@ -201,13 +219,15 @@ Only one email is generated:
 
 The mail headers are the same as before:
 
-  >>> notification['To']
-  'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
-  >>> notification['Bcc']
-  'Root <root@localhost>'
+  >>> for addr in extract_addresses(notification['To']):
+  ...     print addr
+  Daniel Silverstone <daniel.silverstone@canonical.com>
+  Foo Bar <foo.bar@canonical.com>
+  >>> print notification['Bcc']
+  Root <root@localhost>
 
-  >>> notification['Subject']
-  '[ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)'
+  >>> print notification['Subject']
+  [ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)
 
 The mail body contains the same list of files again:
 
