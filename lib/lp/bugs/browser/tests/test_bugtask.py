@@ -57,7 +57,6 @@ from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     celebrity_logged_in,
-    normalize_whitespace,
     person_logged_in,
     TestCaseWithFactory,
     )
