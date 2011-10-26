@@ -1354,6 +1354,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertEqual('1', cache.objects['memo'])
         self.assertEqual(0, cache.objects['start'])
         self.assertFalse(cache.objects['forwards'])
+        self.assertEqual(0, cache.objects['last_start'])
 
     def getBugtaskBrowser(self):
         bugtask = self.factory.makeBugTask()

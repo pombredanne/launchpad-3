@@ -2497,6 +2497,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache.objects['order_by'] = ','.join(
                 get_sortorder_from_request(self.request))
             cache.objects['forwards'] = batch_navigator.batch.range_forwards
+            last_batch = batch_navigator.batch.lastBatch()
+            cache.objects['last_start'] = last_batch.startNumber() - 1
             cache.objects.update(_getBatchInfo(batch_navigator.batch))
 
     @property
