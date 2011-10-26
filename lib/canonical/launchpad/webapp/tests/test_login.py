@@ -569,13 +569,6 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_replay_attacks_do_not_succeed(self):
-        # Enable the picker_enhancements feature to test the commenter name.
-        from lp.services.features.testing import FeatureFixture
-        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
-
         browser = Browser(mech_browser=MyMechanizeBrowser())
         browser.open('%s/+login' % self.layer.appserver_root_url())
         # On a JS-enabled browser this page would've been auto-submitted

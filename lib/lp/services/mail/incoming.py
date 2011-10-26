@@ -139,6 +139,12 @@ def _authenticateDkim(signed_message):
     except dkim.DKIMException, e:
         log.warning('DKIM error: %r' % (e,))
         dkim_result = False
+    except dns.resolver.NXDOMAIN, e:
+        # This can easily happen just through bad input data, ie claiming to
+        # be signed by a domain with no visible key of that name.  It's not an
+        # operational error.
+        log.info('DNS exception: %r' % (e,))
+        dkim_result = False
     except dns.exception.DNSException, e:
         # many of them have lame messages, thus %r
         log.warning('DNS exception: %r' % (e,))

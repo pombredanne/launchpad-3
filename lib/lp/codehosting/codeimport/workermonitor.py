@@ -147,11 +147,14 @@ class CodeImportWorkerMonitor:
                 [('code_import_job_id', self._job_id)], self._branch_url)
             }
         report = config.create(context)
-        ids = config.publish(report)
-        if ids:
-            self._logger.info(
-                "Logged OOPS id %s: %s: %s",
-                report['id'], report['type'], report['value'])
+        def log_oops_if_published(ids):
+            if ids:
+                self._logger.info(
+                    "Logged OOPS id %s: %s: %s",
+                    report['id'], report['type'], report['value'])
+        d = config.publish(report)
+        d.addCallback(log_oops_if_published, report)
+        return d
 
     def _trap_nosuchcodeimportjob(self, failure):
         failure.trap(xmlrpc.Fault)

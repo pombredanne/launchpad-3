@@ -153,6 +153,7 @@ class GeneralizedPublication:
     class.
     """
     def __init__(self, is_source=True):
+        self.is_source = is_source
         if is_source:
             self.traits = SourcePublicationTraits
         else:
@@ -203,6 +204,27 @@ class Dominator:
         """
         self.logger = logger
         self.archive = archive
+
+    def _checkArchIndep(self, publication):
+        """Return True if the binary publication can be superseded.
+
+        If the publication is an arch-indep binary, we can only supersede
+        it if all the binaries from the same source are also superseded,
+        else those binaries may become uninstallable.
+        See bug 34086.
+        """
+        binary = publication.binarypackagerelease
+        if not binary.architecturespecific:
+            # getOtherPublicationsForSameSource returns PENDING in
+            # addition to PUBLISHED binaries, and we rely on this since
+            # they must also block domination.
+            others = publication.getOtherPublicationsForSameSource()
+            if others.any():
+                # Don't dominate this arch:all binary as there are
+                # other arch-specific binaries from the same build
+                # that are still active.
+                return False
+        return True
 
     def dominatePackage(self, publications, live_versions, generalization):
         """Dominate publications for a single package.
@@ -260,7 +282,9 @@ class Dominator:
                 pub.supersede(current_dominant, logger=self.logger)
                 self.logger.debug2(
                     "Superseding older publication for version %s.", version)
-            elif version in live_versions:
+            elif (version in live_versions or
+                  (not generalization.is_source and
+                   not self._checkArchIndep(pub))):
                 # This publication stays active; if any publications
                 # that follow right after this are to be superseded,
                 # this is the release that they are superseded by.
@@ -298,6 +322,7 @@ class Dominator:
             # one, this dominatePackage call will never result in a
             # deletion.
             latest_version = generalization.getPackageVersion(publications[0])
+            self.logger.debug2("Dominating %s" % name)
             self.dominatePackage(
                 publications, [latest_version], generalization)
 
@@ -359,27 +384,6 @@ class Dominator:
 
         self.logger.debug("Beginning superseded processing...")
 
-        # XXX: dsilvers 2005-09-22 bug=55030:
-        # Need to make binaries go in groups but for now this'll do.
-        # An example of the concrete problem here is:
-        # - Upload foo-1.0, which builds foo and foo-common (arch all).
-        # - Upload foo-1.1, ditto.
-        # - foo-common-1.1 is built (along with the i386 binary for foo)
-        # - foo-common-1.0 is superseded
-        # Foo is now uninstallable on any architectures which don't yet
-        # have a build of foo-1.1, as the foo-common for foo-1.0 is gone.
-
-        # Essentially we ideally don't want to lose superseded binaries
-        # unless the entire group is ready to be made pending removal.
-        # In this instance a group is defined as all the binaries from a
-        # given build. This assumes we've copied the arch_all binaries
-        # from whichever build provided them into each arch-specific build
-        # which we publish. If instead we simply publish the arch-all
-        # binaries from another build then instead we should scan up from
-        # the binary to its source, and then back from the source to each
-        # binary published in *this* distroarchseries for that source.
-        # if the binaries as a group (in that definition) are all superseded
-        # then we can consider them eligible for removal.
         for pub_record in binary_records:
             binpkg_release = pub_record.binarypackagerelease
             self.logger.debug(
@@ -450,19 +454,19 @@ class Dominator:
         generalization = GeneralizedPublication(is_source=False)
 
         for distroarchseries in distroseries.architectures:
-            self.logger.debug(
+            self.logger.info(
                 "Performing domination across %s/%s (%s)",
                 distroseries.name, pocket.title,
                 distroarchseries.architecturetag)
 
-            bpph_location_clauses = And(
+            bpph_location_clauses = [
                 BinaryPackagePublishingHistory.status ==
                     PackagePublishingStatus.PUBLISHED,
                 BinaryPackagePublishingHistory.distroarchseries ==
                     distroarchseries,
                 BinaryPackagePublishingHistory.archive == self.archive,
                 BinaryPackagePublishingHistory.pocket == pocket,
-                )
+                ]
             candidate_binary_names = Select(
                 BinaryPackageName.id,
                 And(
@@ -474,7 +478,7 @@ class Dominator:
                 ),
                 group_by=BinaryPackageName.id,
                 having=Count(BinaryPackagePublishingHistory.id) > 1)
-            binaries = IStore(BinaryPackagePublishingHistory).find(
+            main_clauses = [
                 BinaryPackagePublishingHistory,
                 BinaryPackageRelease.id ==
                     BinaryPackagePublishingHistory.binarypackagereleaseID,
@@ -482,10 +486,28 @@ class Dominator:
                     candidate_binary_names),
                 BinaryPackageRelease.binpackageformat !=
                     BinaryPackageFormat.DDEB,
-                bpph_location_clauses)
-            self.logger.debug("Dominating binaries...")
-            self._dominatePublications(
-                self._sortPackages(binaries, generalization), generalization)
+                ]
+            main_clauses.extend(bpph_location_clauses)
+
+            def do_domination(pass2_msg=""):
+                msg = "binaries..." + pass2_msg
+                self.logger.info("Finding %s" % msg)
+                bins = IStore(
+                    BinaryPackagePublishingHistory).find(*main_clauses)
+                self.logger.info("Dominating %s" % msg)
+                sorted_packages = self._sortPackages(bins, generalization)
+                self._dominatePublications(sorted_packages, generalization)
+
+            do_domination()
+
+            # We need to make a second pass to cover the cases where:
+            #  * arch-specific binaries were not all dominated before arch-all
+            #    ones that depend on them
+            #  * An arch-all turned into an arch-specific, or vice-versa
+            #  * A package is completely schizophrenic and changes all of
+            #    its binaries between arch-all and arch-any (apparently
+            #    occurs sometimes!)
+            do_domination("(2nd pass)")
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
         """Compose ORM condition for restricting relevant source pubs."""
