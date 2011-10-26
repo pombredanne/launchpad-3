@@ -227,7 +227,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     # disabled, security, wrong pocket etc
                     logger.debug(
                         ' - daily build failed for %s: %s',
-                        series_name, str(e))
+                        series_name, repr(e))
                 except BuildNotAllowedForDistro:
                     logger.debug(
                         ' - cannot build against %s.' % series_name)

@@ -48,8 +48,28 @@ dd .whiteboard {
 }
 
 form.primary.search {
-  margin-bottom: 2em;
+    margin-bottom: 2em;
 }
+
+div#bugs-search-form.dynamic_bug_listing {
+    background: #EEE;
+    padding: 2px 15px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+}
+
+form.primary.search.dynamic_bug_listing {
+    margin-bottom: 0;
+}
+
+form.primary.search.dynamic_bug_listing h3 {
+    margin-top: 5px;
+}
+
+form.primary.search.dynamic_bug_listing p {
+    margin: 3px 0;
+}
+
 @media print {
   .notforprint {display:none;}
 }

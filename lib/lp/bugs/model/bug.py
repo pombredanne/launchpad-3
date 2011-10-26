@@ -53,6 +53,7 @@ from storm.expr import (
     And,
     Desc,
     In,
+    Join,
     LeftJoin,
     Max,
     Not,
@@ -553,22 +554,26 @@ class Bug(SQLBase):
                 # permit use.
                 message_by_id[message.id] = result
             return result
-        # There is possibly some nicer way to do this in storm, but
-        # this is a lot easier to figure out.
         if include_parents:
-            ParentMessage = ClassAlias(Message, name="parent_message")
-            tables = SQL("""
-Message left outer join
-message as parent_message on (
-    message.parent=parent_message.id and
-    parent_message.id in (
-        select bugmessage.message from bugmessage where bugmessage.bug=%s)),
-BugMessage""" % sqlvalues(self.id))
-            lookup = Message, ParentMessage, BugMessage
-            results = store.using(tables).find(
-                lookup,
+            ParentMessage = ClassAlias(Message)
+            ParentBugMessage = ClassAlias(BugMessage)
+            tables = [
+                Message,
+                Join(
+                    BugMessage,
+                    BugMessage.messageID == Message.id),
+                LeftJoin(
+                    Join(
+                        ParentMessage,
+                        ParentBugMessage,
+                        ParentMessage.id == ParentBugMessage.messageID),
+                    And(
+                        Message.parent == ParentMessage.id,
+                        ParentBugMessage.bugID == self.id)),
+                ]
+            results = store.using(*tables).find(
+                (Message, ParentMessage, BugMessage),
                 BugMessage.bugID == self.id,
-                BugMessage.messageID == Message.id,
                 )
         else:
             lookup = Message, BugMessage
@@ -1902,18 +1907,23 @@ BugMessage""" % sqlvalues(self.id))
 
     def _setTags(self, tags):
         """Set the tags from a list of strings."""
-        # In order to preserve the ordering of the tags, delete all tags
-        # and insert the new ones.
+        # Sets provide an easy way to get the difference between the old and
+        # new tags.
         new_tags = set([tag.lower() for tag in tags])
         old_tags = set(self.tags)
+        # The cache will be stale after we add/remove tags, clear it.
         del get_property_cache(self)._cached_tags
-        added_tags = new_tags.difference(old_tags)
+        # Find the set of tags that are to be removed and remove them.
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
             tag = BugTag.selectOneBy(bug=self, tag=removed_tag)
             tag.destroySelf()
+        # Find the set of tags that are to be added and add them.
+        added_tags = new_tags.difference(old_tags)
         for added_tag in added_tags:
             BugTag(bug=self, tag=added_tag)
+        # Write all pending changes to the DB, including any pending non-tag
+        # changes.
         Store.of(self).flush()
 
     tags = property(_getTags, _setTags)

@@ -40,6 +40,10 @@ value_domain_info = sorted([
 # NOTE: "default behaviour" does not specify a default value.  It
 # merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('baselayout.careers_link.disabled',
+     'boolean',
+     'Hide the link to the Canonical Careers site.',
+     ''),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
@@ -113,26 +117,6 @@ flag_info = sorted([
      'Enables the use of the new DistributionSourcePackage vocabulary for '
      'the source and binary package name pickers.',
      ''),
-    ('disclosure.picker_enhancements.enabled',
-     'boolean',
-     ('Enables the display of extra details in the person picker.'),
-     ''),
-    ('disclosure.picker_expander.enabled',
-     'boolean',
-     ('Enables the expanding of extra details in the person picker.'),
-     ''),
-    ('disclosure.personpicker_affiliation.enabled',
-     'boolean',
-     ('Enables display of affiliation details in the person picker.'),
-     ''),
-    ('disclosure.person_affiliation_rank.enabled',
-     'boolean',
-     ('Enables ranking by pillar affiliation in the person picker.'),
-     ''),
-    ('disclosure.target_picker_enhancements.enabled',
-     'boolean',
-     ('Enables the display and use of the enhanced target pickers.'),
-     ''),
     ('disclosure.private_bug_visibility_rules.enabled',
      'boolean',
      ('Enables the application of additional privacy filter terms in bug '
@@ -142,6 +126,10 @@ flag_info = sorted([
      'boolean',
      ('Enables the auto subscribing and unsubscribing of users as a bug '
       'transitions between public, private and security related states.'),
+     ''),
+    ('disclosure.delete_bugtask.enabled',
+     'boolean',
+     ('Enables bugtasks to be deleted by authorised users.'),
      ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',

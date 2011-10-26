@@ -402,6 +402,20 @@ binaryFileUrls() is similar:
     []
     [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice-bin_666_all.deb']
 
+changelogUrl() returns the URL of debian/changelog, if it's available in
+the librarian.
+
+    >>> from lp.testing import celebrity_logged_in
+    >>> with celebrity_logged_in('admin'):
+    ...     spr = factory.makeSourcePackageRelease(
+    ...         changelog=factory.makeLibraryFileAlias(filename='changelog'))
+    ...     spph = factory.makeSourcePackagePublishingHistory(
+    ...         sourcepackagerelease=spr)
+    ...     spph_url = canonical_url(spph, path_only_if_possible=True)
+    >>> print webservice.named_get(
+    ...     spph_url, 'changelogUrl', api_version='devel').jsonBody()
+    http://launchpad.dev/.../+sourcepub/.../+files/changelog
+
 The debdiff to a particular version can also be retrieved using the
 packageDiffUrl() method.  It takes one parameter, 'to_version' which
 specifies the version of the package you want a diff against.  If there

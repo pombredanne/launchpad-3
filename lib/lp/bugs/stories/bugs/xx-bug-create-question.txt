@@ -278,7 +278,7 @@ He reads his comment that was appended to the bug report's messages.
 
     >>> print extract_text(
     ...     find_tags_by_class(str(content), 'boardComment')[-1])
-    No Privileges Person
+    No Privileges Person (no-priv)
     wrote
     ...
     I misunderstood.
