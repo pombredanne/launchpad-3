@@ -706,17 +706,6 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
                 "work required on this bug task."),
              readonly=True))
 
-    def userCanDelete(user):
-        """Check that a user may delete a bugtask.
-
-        A user may delete a bugtask if:
-         - The disclosure.delete_bugtask.enabled feature flag is enabled,
-         and they are:
-         - project maintainer
-         - task creator
-         - bug supervisor
-        """
-
     @operation_returns_collection_of(Interface)  # Actually IBug.
     @call_with(user=REQUEST_USER, limit=10)
     @export_read_operation()

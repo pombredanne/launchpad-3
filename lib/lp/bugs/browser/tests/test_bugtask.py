@@ -9,10 +9,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
 from storm.store import Store
-from testtools.matchers import (
-    LessThan,
-    MatchesRegex,
-    )
+from testtools.matchers import LessThan
 import transaction
 from zope.component import (
     getMultiAdapter,
@@ -31,6 +28,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import clear_cache
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -615,8 +613,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
 
 class TestBugTaskDeleteLinks(TestCaseWithFactory):
-    """ Test that the delete icons/links for each relevant bug task are
-        correctly rendered.
+    """ Test that the delete icons/links are correctly rendered.
 
         Bug task deletion is protected by a feature flag.
         """
@@ -641,10 +638,12 @@ class TestBugTaskDeleteLinks(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask(bug=bug)
         login_person(bugtask.owner)
         view = create_initialized_view(
-            bug, name='+bugtasks-and-nominations-table')
+            bug, name='+bugtasks-and-nominations-table',
+            principal=bugtask.owner)
         row_view = view._getTableRowView(bugtask, False, False)
         self.assertFalse(row_view.user_can_delete_bugtask)
         del get_property_cache(row_view).user_can_delete_bugtask
+        clear_cache()
         with FeatureFixture(DELETE_BUGTASK_ENABLED):
             self.assertTrue(row_view.user_can_delete_bugtask)
 
@@ -652,15 +651,17 @@ class TestBugTaskDeleteLinks(TestCaseWithFactory):
         # The bugtask delete icon is rendered correctly for those tasks the
         # user is allowed to delete.
         bug = self.factory.makeBug()
-        bugtask = self.factory.makeBugTask(bug=bug)
+        bugtask_owner = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(bug=bug, owner=bugtask_owner)
         with FeatureFixture(DELETE_BUGTASK_ENABLED):
-            login_person(bugtask.owner)
             url = canonical_url(bugtask, rootsite='bugs')
-            browser = self.getUserBrowser(url, user=bugtask.owner)
+            browser = self.getUserBrowser(url, user=bugtask_owner)
             # bugtask can be deleted because the user owns it.
             delete_icon = find_tag_by_id(
                 browser.contents, 'bugtask-delete-task%d' % bugtask.id)
-            self.assertEqual(url + '/+delete', delete_icon['href'])
+            delete_url = canonical_url(
+                bugtask, rootsite='bugs', view_name='+delete')
+            self.assertEqual(delete_url, delete_icon['href'])
             # default_bugtask cannot be deleted.
             delete_icon = find_tag_by_id(
                 browser.contents,
@@ -681,10 +682,10 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             login_person(bugtask.owner)
             view = create_initialized_view(
                 bugtask, name='+delete', principal=bugtask.owner)
-            matches = MatchesRegex(
-                '.*You are about to mark bug.*'
-                'This operation will be permanent and cannot be undone.*')
-            self.assertThat(normalize_whitespace(view.render()), matches)
+            contents = view.render()
+            confirmation_message = find_tag_by_id(
+                contents, 'confirmation-message')
+            self.assertIsNotNone(confirmation_message)
             url = canonical_url(bugtask, rootsite='bugs')
             self.assertEqual(view.cancel_url, url)
 

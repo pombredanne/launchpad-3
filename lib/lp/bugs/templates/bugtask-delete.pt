@@ -9,10 +9,15 @@
 
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info">
-      <p tal:content="structure view/confirmation_message">
-          Are you sure?
-      </p>
+    <div id='confirmation-message' metal:fill-slot="extra_info">
+        <p>You are about to mark bug
+            <tal:bug replace="context/bug/title">some bug</tal:bug>
+            <br>as no longer affecting
+            <tal:target
+                replace="context/target/bugtargetdisplayname">some target
+            </tal:target>.
+        </p>
+        <p>Please confirm you really want to do this.</p>
     </div>
   </div>
 </div>

@@ -199,7 +199,6 @@
                     isSubscribed
                     getPackageComponent
                     maybeConfirm
-                    userCanDelete
                     userCanEditImportance
                     userCanEditMilestone
                     userCanSetAnyAssignee

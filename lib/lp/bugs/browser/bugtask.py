@@ -1767,15 +1767,6 @@ class BugTaskDeletionView(LaunchpadFormView):
     label = 'Remove bug task'
     page_title = label
 
-    @property
-    def confirmation_message(self):
-        return ('<p>You are about to mark bug %s<br>'
-                'as no longer affecting %s.</p>'
-                '<p>This operation will be permanent and cannot be '
-                'undone.</p>'
-                % (self.context.bug.title,
-                   self.context.target.bugtargetdisplayname))
-
     @action('Delete', name='delete_bugtask')
     def delete_bugtask_action(self, action, data):
         bugtask = self.context
@@ -3563,7 +3554,9 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     def initialize(self):
         super(BugTaskTableRowView, self).initialize()
         link = canonical_url(self.context)
-        task_link = edit_link = link + '/+editstatus'
+        task_link = edit_link = canonical_url(
+                                    self.context, view_name='+editstatus')
+        delete_link = canonical_url(self.context, view_name='+delete')
         can_edit = check_permission('launchpad.Edit', self.context)
         bugtask_id = self.context.id
         launchbag = getUtility(ILaunchBag)
@@ -3586,7 +3579,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             target_link=canonical_url(self.context.target),
             target_link_title=self.target_link_title,
             user_can_delete=self.user_can_delete_bugtask,
-            delete_link=link + '/+delete',
+            delete_link=delete_link,
             user_can_edit_importance=self.context.userCanEditImportance(
                 self.user),
             importance_css_class='importance' + self.context.importance.name,
@@ -3743,7 +3736,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         If yes, return True, otherwise return False.
         """
         bugtask = self.context
-        return bugtask.userCanDelete(self.user) and bugtask.canBeDeleted()
+        return (check_permission('launchpad.Delete', bugtask)
+                and bugtask.canBeDeleted())
 
     @property
     def style_for_add_milestone(self):
