@@ -112,7 +112,7 @@
         define="link context_menu/nominate"
         condition="link/enabled"
         replace="structure link/render" />
-    <div class="private-only"
+    <div class="private-only formHelp"
         tal:condition="python:not view.canAddPackageTask() or not view.canAddProjectTask()">
         Private bugs cannot affect multiple projects.
     </div>
