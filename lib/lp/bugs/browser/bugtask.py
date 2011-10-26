@@ -78,6 +78,7 @@ from lazr.uri import URI
 import pystache
 from pytz import utc
 from simplejson import dumps
+from simplejson.encoder import JSONEncoderForHTML
 from z3c.pt.pagetemplate import ViewPageTemplateFile
 from zope import (
     component,
@@ -2208,7 +2209,8 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     @property
     def mustache_listings(self):
-        return 'LP.mustache_listings = %s;' % dumps(self.mustache_template)
+        return 'LP.mustache_listings = %s;' % dumps(
+            self.mustache_template, cls=JSONEncoderForHTML)
 
     @property
     def mustache(self):

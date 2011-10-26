@@ -45,6 +45,7 @@ from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
     BugTaskEditView,
+    BugListingBatchNavigator,
     BugTaskListingItem,
     BugTasksAndNominationsView,
     BugTaskSearchListingView,
@@ -1305,6 +1306,18 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         bug_number = self.getBugNumberTag(bug_task)
         self.assertHTML(
             browser, self.client_listing, self.server_listing, bug_number)
+
+
+class TestBugListingBatchNavigator(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_mustache_listings_escaped(self):
+        """Mustache template is encoded such that it has no unescaped tags."""
+        navigator = BugListingBatchNavigator(
+            [], LaunchpadTestRequest(), [], 0)
+        self.assertNotIn('<', navigator.mustache_listings)
+        self.assertNotIn('>', navigator.mustache_listings)
 
 
 class TestBugTaskListingItem(TestCaseWithFactory):
