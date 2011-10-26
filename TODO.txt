@@ -1,7 +1,0 @@
-Widget TODO items
-=================
-
-* validator for sort_order ??
-
-== Now or later? ==
-* CSS for widget display
