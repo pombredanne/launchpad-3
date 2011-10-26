@@ -119,6 +119,18 @@ class TestDKIM(TestCaseWithFactory):
         if l.find(substring) == -1:
             self.fail("didn't find %r in log: %s" % (substring, l))
 
+    def test_dkim_broken_pubkey(self):
+        """Handle a subtly-broken pubkey like qq.com, see bug 881237."""
+        signed_message = self.fake_signing(plain_content)
+        self._dns_responses['example._domainkey.canonical.com.'] = \
+            sample_dns.replace(';', '')
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
+        self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
+        self.assertDkimLogContains('invalid format in _domainkey txt record')
+
     def test_dkim_garbage_pubkey(self):
         signed_message = self.fake_signing(plain_content)
         self._dns_responses['example._domainkey.canonical.com.'] = \
