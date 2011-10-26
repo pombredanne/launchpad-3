@@ -96,9 +96,6 @@ class IBuildFarmJobOld(Interface):
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
 
-    def jobCancel():
-        """'Job cancel' life cycle event."""
-
     def addCandidateSelectionCriteria(processor, virtualized):
         """Provide a sub-query to refine the candidate job selection.
 

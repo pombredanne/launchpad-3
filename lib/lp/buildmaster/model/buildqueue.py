@@ -209,11 +209,6 @@ class BuildQueue(SQLBase):
         self.logtail = None
         self.specific_job.jobReset()
 
-    def cancel(self):
-        """See `IBuildQueue`."""
-        self.specific_job.jobCancel()
-        self.destroySelf()
-
     def setDateStarted(self, timestamp):
         """See `IBuildQueue`."""
         self.job.date_started = timestamp
