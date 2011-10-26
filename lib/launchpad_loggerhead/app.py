@@ -239,19 +239,24 @@ class RootApp:
                 os.makedirs(cachepath)
             self.log.info('branch_url: %s', branch_url)
             branch_api_url = urlparse.urljoin(
-                config.appserver_root_url('api'), branch_name)
+                config.appserver_root_url('api'), 'devel', branch_name)
+            self.log.info('branch_api_url: %s', branch_api_url)
             req = urllib2.Request(branch_api_url)
+            private = False
             try:
                 # We need to determine if the branch is private
                 response = urllib2.urlopen(req)
-            except urllib2.HTTPError:
-                # The only reason we get an HTTPError is if the branch is
-                # private.
-                self.log.info("Branch is private")
-                private = True
+            except urllib2.HTTPError as response:
+                if response.getcode() in (400, 403):
+                    ## 400 and 403 are the possible returns for api requests
+                    ## on a private branch without authentication.
+                    self.log.info("Branch is private")
+                    private = True
+                self.log.info(
+                    "Branch state not determined; api error, return code: %s",
+                    response.getcode())
             else:
                 self.log.info("Branch is public")
-                private = False
 
             try:
                 bzr_branch = safe_open(
