@@ -120,7 +120,11 @@ class TestDKIM(TestCaseWithFactory):
             self.fail("didn't find %r in log: %s" % (substring, l))
 
     def test_dkim_broken_pubkey(self):
-        """Handle a subtly-broken pubkey like qq.com, see bug 881237."""
+        """Handle a subtly-broken pubkey like qq.com, see bug 881237.
+
+        The message is not trusted but inbound message processing does not
+        abort either.
+        """
         signed_message = self.fake_signing(plain_content)
         self._dns_responses['example._domainkey.canonical.com.'] = \
             sample_dns.replace(';', '')
@@ -129,7 +133,7 @@ class TestDKIM(TestCaseWithFactory):
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
-        self.assertDkimLogContains('invalid format in _domainkey txt record')
+        self.assertDkimLogContains('unexpected error in DKIM verification')
 
     def test_dkim_garbage_pubkey(self):
         signed_message = self.fake_signing(plain_content)
