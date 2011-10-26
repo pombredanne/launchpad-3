@@ -40,6 +40,10 @@ value_domain_info = sorted([
 # NOTE: "default behaviour" does not specify a default value.  It
 # merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('baselayout.careers_link.disabled',
+     'boolean',
+     'Hide the link to the Canonical Careers site.',
+     ''),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
