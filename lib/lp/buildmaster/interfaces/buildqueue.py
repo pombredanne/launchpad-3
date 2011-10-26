@@ -106,9 +106,6 @@ class IBuildQueue(Interface):
     def reset():
         """Reset this job, so it can be re-dispatched."""
 
-    def cancel():
-        """Cancel this job, it will not be re-dispatched."""
-
     specific_job = Reference(
         IBuildFarmJob, title=_("Job"),
         description=_("Data and operations common to all build farm jobs."))

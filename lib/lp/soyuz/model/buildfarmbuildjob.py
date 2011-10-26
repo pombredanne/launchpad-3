@@ -48,7 +48,3 @@ class BuildFarmBuildJob(BuildFarmJobOld):
     def jobAborted(self):
         """See `IBuildFarmJob`."""
         self.build.status = BuildStatus.NEEDSBUILD
-
-    def jobCancel(self):
-        """See `IBuildFarmJob`."""
-        self.build.status = BuildStatus.CANCELLED
