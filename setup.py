@@ -59,6 +59,7 @@ setup(
         'oops',
         'oops_datedir_repo',
         'oops_timeline',
+        'oops_twisted',
         'oops_wsgi',
         'paramiko',
         'pgbouncer',

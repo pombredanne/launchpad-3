@@ -7,14 +7,10 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import ProductVocabulary
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
     )
-
-
-PICKER_ENHANCEMENTS_FLAG = {'disclosure.picker_enhancements.enabled': 'on'}
 
 
 class TestProductVocabulary(TestCaseWithFactory):
@@ -66,8 +62,7 @@ class TestProductVocabulary(TestCaseWithFactory):
             name='foo-bar', displayname='Foo bar', summary='quux')
         quux_product = self.factory.makeProduct(
             name='foo-quux', displayname='Foo quux')
-        with FeatureFixture(PICKER_ENHANCEMENTS_FLAG):
-            result = self.vocabulary.search('quux')
+        result = self.vocabulary.search('quux')
         self.assertEqual(
             [quux_product, bar_product], list(result))
 
@@ -77,8 +72,7 @@ class TestProductVocabulary(TestCaseWithFactory):
             name='the-quux', displayname='The quux')
         quux_product = self.factory.makeProduct(
             name='quux', displayname='The quux')
-        with FeatureFixture(PICKER_ENHANCEMENTS_FLAG):
-            result = self.vocabulary.search('quux')
+        result = self.vocabulary.search('quux')
         self.assertEqual(
             [quux_product, the_quux_product], list(result))
 

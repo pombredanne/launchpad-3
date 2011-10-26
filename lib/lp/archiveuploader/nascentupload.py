@@ -178,6 +178,7 @@ class NascentUpload:
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
+            self._overrideDDEBSs()
 
         # Override archive location if necessary.
         self.overrideArchive()
@@ -365,9 +366,23 @@ class NascentUpload:
                 "Orphaned debug packages: %s" % ', '.join(
                     '%s %s (%s)' % d for d in unmatched_ddebs))
 
+    def _overrideDDEBSs(self):
+        """Make sure that any DDEBs in the upload have the same overrides
+        as their counterpart DEBs.  This method needs to be called *after*
+        _matchDDEBS.
+
+        This is required so that domination can supersede both files in
+        lockstep.
+        """
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                if uploaded_file.deb_file is not None:
+                    self._overrideBinaryFile(uploaded_file,
+                                             uploaded_file.deb_file)
     #
     # Helpers for warnings and rejections
     #
+
     def run_and_check_error(self, callable):
         """Run the given callable and process errors and warnings.
 
@@ -697,7 +712,9 @@ class NascentUpload:
             override.binarypackagerelease.title,
             override.distroarchseries.architecturetag,
             override.pocket.name))
+        self._overrideBinaryFile(uploaded_file, override)
 
+    def _overrideBinaryFile(self, uploaded_file, override):
         uploaded_file.component_name = override.component.name
         uploaded_file.section_name = override.section.name
         # Both, changesfiles and nascentuploadfile local maps, reffer to

@@ -5,7 +5,6 @@
 
 from urlparse import urlparse
 
-from lazr.restful.testing.webservice import FakeRequest
 import transaction
 from zope.publisher.interfaces import NotFound
 
@@ -14,7 +13,6 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
@@ -29,19 +27,12 @@ from lp.registry.browser.product import ProductNavigation
 from lp.registry.browser.productseries import ProductSeriesNavigation
 from lp.registry.browser.project import ProjectNavigation
 from lp.testing import (
+    FakeLaunchpadRequest,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
     )
 from lp.testing.views import create_initialized_view
-
-
-class FakeLaunchpadRequest(FakeRequest):
-
-    @property
-    def stepstogo(self):
-        """See `IBasicLaunchpadRequest`."""
-        return StepsToGo(self)
 
 
 class StructuralSubscriptionTraversalTestBase(TestCaseWithFactory):
