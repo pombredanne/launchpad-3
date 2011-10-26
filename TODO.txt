@@ -1,7 +1,7 @@
 Widget TODO items
 =================
 
-* Final test for clicking
-* bindUI sequences
-* consider syncUI handling
+* validator for sort_order ??
+
+== Now or later? ==
 * CSS for widget display
