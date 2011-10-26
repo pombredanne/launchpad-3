@@ -1236,7 +1236,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def makeView(self, bugtask=None, size=None, memo=None, orderby=None):
         query_vars = {}
         if size is not None:
-            query_vars['batch']= size
+            query_vars['batch'] = size
         if memo is not None:
             query_vars['memo'] = memo
             query_vars['start'] = memo
@@ -1297,7 +1297,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         for each BugTask.
         """
         task = self.factory.makeBugTask()
-        task2 = self.factory.makeBugTask(target=task.target)
+        self.factory.makeBugTask(target=task.target)
         with self.dynamic_listings():
             view = self.makeView(task, size=1)
         cache = IJSONRequestCache(view.request)
