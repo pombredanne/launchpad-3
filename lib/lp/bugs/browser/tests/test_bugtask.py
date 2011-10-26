@@ -1235,6 +1235,16 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     def makeView(self, bugtask=None, size=None, memo=None, orderby=None,
                  forwards=True):
+        """Make a BugTaskSearchListingView.
+
+        :param bugtask: The task to use for searching.
+        :param size: The size of the batches.  Required if forwards is False.
+        :param memo: Batch identifier.
+        :param orderby: The way to order the batch.
+        :param forwards: If true, walk forwards from the memo.  Else walk
+            backwards.
+
+        """
         query_vars = {}
         if size is not None:
             query_vars['batch'] = size
@@ -1257,6 +1267,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     @contextmanager
     def dynamic_listings(self):
+        """Context manager to enable new bug listings."""
         with feature_flags():
             set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
             yield
@@ -1323,6 +1334,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertEqual({'memo': '1', 'start': 0}, cache.objects.get('prev'))
 
     def test_default_order_by(self):
+        """order_by defaults to '-importance in JSONRequestCache"""
         task = self.factory.makeBugTask()
         with self.dynamic_listings():
             view = self.makeView(task)
@@ -1330,6 +1342,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertEqual('-importance', cache.objects['order_by'])
 
     def test_order_by_importance(self):
+        """order_by follows query params in JSONRequestCache"""
         task = self.factory.makeBugTask()
         with self.dynamic_listings():
             view = self.makeView(task, orderby='importance')
@@ -1337,6 +1350,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertEqual('importance', cache.objects['order_by'])
 
     def test_cache_has_all_batch_vars_defaults(self):
+        """Cache has all the needed variables.
+
+        order_by, memo, start, forwards.  These default to sane values.
+        """
         task = self.factory.makeBugTask()
         with self.dynamic_listings():
             view = self.makeView(task)
@@ -1347,6 +1364,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertTrue(cache.objects['forwards'])
 
     def test_cache_has_all_batch_vars_specified(self):
+        """Cache has all the needed variables.
+
+        order_by, memo, start, forwards.  These are calculated appropriately.
+        """
         task = self.factory.makeBugTask()
         with self.dynamic_listings():
             view = self.makeView(task, memo=1, forwards=False, size=1)
@@ -1357,6 +1378,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertEqual(0, cache.objects['last_start'])
 
     def getBugtaskBrowser(self):
+        """Return a browser for a new bugtask."""
         bugtask = self.factory.makeBugTask()
         with person_logged_in(bugtask.target.owner):
             bugtask.target.official_malone = True
@@ -1365,6 +1387,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         return bugtask, browser
 
     def assertHTML(self, browser, *tags, **kwargs):
+        """Assert something about a browser's HTML."""
         matcher = soupmatchers.HTMLContains(*tags)
         if kwargs.get('invert', False):
             matcher = Not(matcher)
