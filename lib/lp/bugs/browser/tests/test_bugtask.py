@@ -29,6 +29,7 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import clear_cache
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -653,17 +654,25 @@ class TestBugTaskDeleteLinks(TestCaseWithFactory):
         bugtask_owner = self.factory.makePerson()
         bugtask = self.factory.makeBugTask(bug=bug, owner=bugtask_owner)
         with FeatureFixture(DELETE_BUGTASK_ENABLED):
-            url = canonical_url(bugtask, rootsite='bugs')
-            browser = self.getUserBrowser(url, user=bugtask_owner)
+            login_person(bugtask.owner)
+            getUtility(ILaunchBag).add(bug.default_bugtask)
+            view = create_initialized_view(
+                bug, name='+bugtasks-and-nominations-table',
+                principal=bugtask.owner)
+            # We render the bug task table rows - there are 2 bug tasks.
+            subviews = view.getBugTaskAndNominationViews()
+            self.assertEqual(2, len(subviews))
+            default_bugtask_contents = subviews[0]()
+            bugtask_contents = subviews[1]()
             # bugtask can be deleted because the user owns it.
             delete_icon = find_tag_by_id(
-                browser.contents, 'bugtask-delete-task%d' % bugtask.id)
+                bugtask_contents, 'bugtask-delete-task%d' % bugtask.id)
             delete_url = canonical_url(
                 bugtask, rootsite='bugs', view_name='+delete')
             self.assertEqual(delete_url, delete_icon['href'])
             # default_bugtask cannot be deleted.
             delete_icon = find_tag_by_id(
-                browser.contents,
+                default_bugtask_contents,
                 'bugtask-delete-task%d' % bug.default_bugtask.id)
             self.assertIsNone(delete_icon)
 
