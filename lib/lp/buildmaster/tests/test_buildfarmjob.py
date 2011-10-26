@@ -144,12 +144,6 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
             BuildStatus.NEEDSBUILD, self.build_farm_job.status)
         self.failUnless(self.build_farm_job.date_started is None)
 
-    def test_jobCancel(self):
-        # Cancelling a job sets its status to CANCELLED.
-        self.build_farm_job.jobStarted()
-        self.build_farm_job.jobCancel()
-        self.assertEqual(BuildStatus.CANCELLED, self.build_farm_job.status)
-
     def test_title(self):
         # The default title simply uses the job type's title.
         self.assertEqual(

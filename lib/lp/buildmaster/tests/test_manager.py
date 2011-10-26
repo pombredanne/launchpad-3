@@ -82,6 +82,8 @@ class TestSlaveScannerScan(TestCase):
         'bob' builder.
         """
         super(TestSlaveScannerScan, self).setUp()
+        self.slave = self.useFixture(BuilddSlaveTestSetup())
+
         # Creating the required chroots needed for dispatching.
         test_publisher = make_publisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -210,7 +212,6 @@ class TestSlaveScannerScan(TestCase):
 
     def testScanRescuesJobFromBrokenBuilder(self):
         # The job assigned to a broken builder is rescued.
-        self.useFixture(BuilddSlaveTestSetup())
 
         # Sampledata builder is enabled and is assigned to an active job.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
@@ -418,48 +419,6 @@ class TestSlaveScannerScan(TestCase):
             self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
 
         return d.addCallback(check)
-
-    def test_cancelling_a_build(self):
-        # When scanning an in-progress build, if its state is CANCELLING
-        # then the build should be stopped and moved to the CANCELLED state.
-
-        # Set up a building slave with a fake resume method so we can see
-        # if it got called later.
-        slave = BuildingSlave(build_id="8-1")
-        call_counter = FakeMethod()
-        def fake_resume():
-            call_counter()
-            return defer.succeed((None, None, 0))
-        slave.resume = fake_resume
-
-        # Set the sample data builder building with the slave from above.
-        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
-        login('foo.bar@canonical.com')
-        builder.builderok = True
-        # For now, we can only cancel virtual builds.
-        builder.virtualized = True
-        builder.vm_host = "fake_vm_host"
-        builder.setSlaveForTesting(slave)
-        transaction.commit()
-        login(ANONYMOUS)
-        buildqueue = builder.currentjob
-        self.assertBuildingJob(buildqueue, builder)
-
-        # Now set the build to CANCELLING.
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.status = BuildStatus.CANCELLING
-
-        # Run 'scan' and check its results.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
-        scanner = self._getScanner()
-        d = scanner.scan()
-
-        def check_cancelled(ignore, builder, buildqueue):
-            self.assertEqual(1, call_counter.call_count)
-            self.assertEqual(BuildStatus.CANCELLED, build.status)
-
-        d.addCallback(check_cancelled, builder, buildqueue)
-        return d
 
 
 class TestBuilddManager(TestCase):
