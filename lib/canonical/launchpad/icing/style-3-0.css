@@ -141,6 +141,14 @@ body.private .private-disallow {
     /* We want to disable/hide some actions on private artifacts */
     display: none
     }
+.private-only {
+    /* We want to only show some items on private artifacts */
+    display: none;
+    }
+body.private .private-only {
+    /* We want to only show some items on private artifacts */
+    display: block;
+    }
 * html body {
     /* stops floats dropping in IE 5.5/6 */
     word-wrap: break-word;

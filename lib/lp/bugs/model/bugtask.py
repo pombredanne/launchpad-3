@@ -411,10 +411,9 @@ def validate_target(bug, target):
 
     if bug.private and not bool(features.getFeatureFlag(
             'disclosure.allow_multipillar_private_bugs.enabled')):
-        # We can add a product|distro series or source package so long as the
-        # pillar exists already.
+        # We can add a target so long as the pillar exists already.
         if (len(bug.affected_pillars) > 0
-                and not target.pillar in bug.affected_pillars):
+                and target.pillar not in bug.affected_pillars):
             raise IllegalTarget(
                 "This private bug already affects %s. "
                 "Private bugs cannot affect multiple projects."

@@ -3513,7 +3513,7 @@ class BugTasksAndNominationsView(LaunchpadView):
 
     @property
     def _allow_multipillar_private_bugs(self):
-        # Some teams still  need to be able to have multi pillar private bugs.
+        """ Some teams still need to have multi pillar private bugs."""
         return bool(getFeatureFlag(
             'disclosure.allow_multipillar_private_bugs.enabled'))
 

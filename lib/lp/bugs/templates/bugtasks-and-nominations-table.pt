@@ -112,6 +112,10 @@
         define="link context_menu/nominate"
         condition="link/enabled"
         replace="structure link/render" />
+    <div class="private-only"
+        tal:condition="python:not view.canAddPackageTask() or not view.canAddProjectTask()">
+        Private bugs cannot affect multiple projects.
+    </div>
   </tal:also-affects-links>
 
 </div>
