@@ -1233,13 +1233,19 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     client_listing = soupmatchers.Tag(
         'client-listing', True, attrs={'id': 'client-listing'})
 
-    def makeView(self, bugtask=None, size=None, memo=None, orderby=None):
+    def makeView(self, bugtask=None, size=None, memo=None, orderby=None,
+                 forwards=True):
         query_vars = {}
         if size is not None:
             query_vars['batch'] = size
         if memo is not None:
             query_vars['memo'] = memo
-            query_vars['start'] = memo
+            if forwards:
+                query_vars['start'] = memo
+            else:
+                query_vars['start'] = int(memo) - size
+        if not forwards:
+            query_vars['direction'] = 'backwards'
         query_string = urllib.urlencode(query_vars)
         request = LaunchpadTestRequest(
             QUERY_STRING=query_string, orderby=orderby)
@@ -1329,6 +1335,25 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             view = self.makeView(task, orderby='importance')
         cache = IJSONRequestCache(view.request)
         self.assertEqual('importance', cache.objects['order_by'])
+
+    def test_cache_has_all_batch_vars_defaults(self):
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('-importance', cache.objects['order_by'])
+        self.assertIs(None, cache.objects['memo'])
+        self.assertEqual(0, cache.objects['start'])
+        self.assertTrue(cache.objects['forwards'])
+
+    def test_cache_has_all_batch_vars_specified(self):
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, memo=1, forwards=False, size=1)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('1', cache.objects['memo'])
+        self.assertEqual(0, cache.objects['start'])
+        self.assertFalse(cache.objects['forwards'])
 
     def getBugtaskBrowser(self):
         bugtask = self.factory.makeBugTask()
