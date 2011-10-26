@@ -113,6 +113,10 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         pass
 
+    def jobCancel(self):
+        """See `IBuildFarmJobOld`."""
+        pass
+
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmJobOld`."""
@@ -299,6 +303,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     # a job.
     jobAborted = jobReset
 
+    def jobCancel(self):
+        """See `IBuildFarmJob`."""
+        self.status = BuildStatus.CANCELLED
+
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmJob`."""
@@ -346,6 +354,8 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.CANCELLED,
+                                   BuildStatus.CANCELLING,
                                    BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
