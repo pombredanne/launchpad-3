@@ -75,5 +75,8 @@ class IAccessPolicyPermissionSource(Interface):
             granted to all artifacts under the policy.
         """
 
+    def getByID(id):
+        """Return the `IAccessPolicyPermission` with the given ID."""
+
     def findByPolicy(policy):
         """Return all `IAccessPolicyPermission` objects for the policy."""
