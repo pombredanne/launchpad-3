@@ -91,7 +91,7 @@ class OopsHandler(logging.Handler):
         """Emit a record as an OOPS."""
         try:
             info = record.exc_info
-            if info is not None:
+            if info is None:
                 info = sys.exc_info()
             msg = record.getMessage()
             with globalErrorUtility.oopsMessage(msg):
