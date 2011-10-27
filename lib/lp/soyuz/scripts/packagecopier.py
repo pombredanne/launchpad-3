@@ -609,8 +609,6 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             if series is None:
                 series = source.distroseries
             # In zopeless mode this email will be sent immediately.
-            # XXX JeroenVermeulen 2011-10-20, bug=876594: We need to
-            # re-think the recipients list for package copies.
             notify(
                 person, source.sourcepackagerelease, [], [], archive,
                 series, pocket, summary_text=error_text, action='rejected')
@@ -647,8 +645,6 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 create_dsd_job=create_dsd_job,
                 close_bugs_since_version=old_version, creator=person)
             if send_email:
-                # XXX JeroenVermeulen 2011-10-20, bug=876594: We need to
-                # re-think the recipients list for package copies.
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
                     destination_series, pocket, action='accepted',
