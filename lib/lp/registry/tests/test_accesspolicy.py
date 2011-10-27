@@ -10,7 +10,9 @@ from zope.component import getUtility
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicy,
+    IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,
+    IAccessPolicyPermission,
     IAccessPolicyPermissionSource,
     IAccessPolicySource,
     )
@@ -93,6 +95,15 @@ class TestAccessPolicySource(TestCaseWithFactory):
             getUtility(IAccessPolicySource).findByPillar(product))
 
 
+class TestAccessPolicyArtifact(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_provides_interface(self):
+        self.assertThat(
+            self.factory.makeAccessPolicyArtifact(),
+            Provides(IAccessPolicyArtifact))
+
+
 class TestAccessPolicyArtifactSourceOnce(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
@@ -141,6 +152,27 @@ class TestAccessPolicyArtifactBug(BaseAccessPolicyArtifactTests,
 
     def getConcreteArtifact(self):
         return self.factory.makeBug()
+
+
+class TestAccessPolicyPermission(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_provides_interface(self):
+        self.assertThat(
+            self.factory.makeAccessPolicyPermission(),
+            Provides(IAccessPolicyPermission))
+
+    def test_concrete_artifact(self):
+        bug = self.factory.makeBug()
+        abstract = self.factory.makeAccessPolicyArtifact(bug)
+        permission = self.factory.makeAccessPolicyPermission(
+            abstract_artifact=abstract)
+        self.assertEqual(bug, permission.concrete_artifact)
+
+    def test_no_concrete_artifact(self):
+        permission = self.factory.makeAccessPolicyPermission(
+            abstract_artifact=None)
+        self.assertIs(None, permission.concrete_artifact)
 
 
 class TestAccessPolicyPermissionSource(TestCaseWithFactory):
