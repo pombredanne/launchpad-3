@@ -66,9 +66,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
-from lp.soyuz.adapters.notification import (
-    notify,
-    )
+from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,

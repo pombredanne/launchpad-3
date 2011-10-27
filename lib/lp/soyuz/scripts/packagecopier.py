@@ -28,9 +28,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.soyuz.adapters.notification import (
-    notify,
-    )
+from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
     ArchivePurpose,
