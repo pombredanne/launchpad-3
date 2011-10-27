@@ -152,3 +152,13 @@ class AccessPolicyPermission(StormBase):
     def concrete_artifact(self):
         if self.abstract_artifact is not None:
             return self.abstract_artifact.concrete_artifact
+
+    @classmethod
+    def grant(cls, person, policy, abstract_artifact=None):
+        """See `IAccessPolicyPermissionSource`."""
+        obj = cls()
+        obj.policy = policy
+        obj.person = person
+        obj.abstract_artifact = abstract_artifact
+        IStore(cls).add(obj)
+        return obj

@@ -11,6 +11,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicy,
     IAccessPolicyArtifactSource,
+    IAccessPolicyPermissionSource,
     IAccessPolicySource,
     )
 from lp.testing import TestCaseWithFactory
@@ -140,3 +141,61 @@ class TestAccessPolicyArtifactBug(BaseAccessPolicyArtifactTests,
 
     def getConcreteArtifact(self):
         return self.factory.makeBug()
+
+
+class TestAccessPolicyPermissionSource(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_grant_for_policy(self):
+        policy = self.factory.makeAccessPolicy()
+        person = self.factory.makePerson()
+        permission = getUtility(IAccessPolicyPermissionSource).grant(
+            person, policy)
+        self.assertThat(
+            permission,
+            MatchesStructure.byEquality(
+                person=person,
+                policy=policy,
+                abstract_artifact=None,
+                concrete_artifact=None))
+
+    def test_grant_with_artifact(self):
+        policy = self.factory.makeAccessPolicy()
+        person = self.factory.makePerson()
+        artifact = self.factory.makeAccessPolicyArtifact()
+        permission = getUtility(IAccessPolicyPermissionSource).grant(
+            person, policy, artifact)
+        self.assertThat(
+            permission,
+            MatchesStructure.byEquality(
+                person=person,
+                policy=policy,
+                abstract_artifact=artifact,
+                concrete_artifact=artifact.concrete_artifact))
+
+    def test_getByID(self):
+        # getByID finds the right permission.
+        permission = self.factory.makeAccessPolicyPermission()
+        # Flush so we get an ID.
+        Store.of(permission).flush()
+        self.assertEqual(
+            permission,
+            getUtility(IAccessPolicyPermissionSource).getByID(permission.id))
+
+    def test_getByID_nonexistent(self):
+        # getByID returns None if the permission doesn't exist.
+        self.assertIs(
+            None,
+            getUtility(IAccessPolicyPermissionSource).getByID(
+                self.factory.getUniqueInteger()))
+
+    def test_findByPolicy(self):
+        # findByPolicy finds only the relevant permissions.
+        policy = self.factory.makeAccessPolicy()
+        permissions = [
+            self.factory.makeAccessPolicyPermission(policy=policy)
+            for i in range(3)]
+        self.factory.makeAccessPolicyPermission()
+        self.assertContentEqual(
+            permissions,
+            getUtility(IAccessPolicyPermissionSource).findByPolicy(policy))

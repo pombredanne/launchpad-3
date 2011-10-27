@@ -1963,4 +1963,10 @@
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyPermission"/>
     </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyPermission"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyPermissionSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyPermissionSource"/>
+    </securedutility>
 </configure>

@@ -61,3 +61,19 @@ class IAccessPolicyArtifactSource(Interface):
 
         Creates the abstract artifact if it doesn't already exist.
         """
+
+
+class IAccessPolicyPermissionSource(Interface):
+
+    def grant(person, policy, abstract_artifact=None):
+        """Create an `IAccessPolicyPermission`.
+
+        :param person: the `IPerson` to hold the access.
+        :param policy: the `IAccessPolicy` to grant access to.
+        :param abstract_artifact: an optional `IAccessPolicyArtifact` to
+            which the grant should be restricted. If omitted, access is
+            granted to all artifacts under the policy.
+        """
+
+    def findByPolicy(policy):
+        """Return all `IAccessPolicyPermission` objects for the policy."""
