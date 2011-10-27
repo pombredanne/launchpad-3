@@ -100,4 +100,3 @@ def schedule(pofile):
         job = POFileStatsJob(pofile)
 
     return job
-

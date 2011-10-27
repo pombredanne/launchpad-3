@@ -10,16 +10,11 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
-from lp.registry.interfaces.packaging import IPackagingUtil
 from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
-from lp.testing import (
-    person_logged_in,
-    TestCaseWithFactory,
-    )
-
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model import pofilestatsjob
