@@ -17,6 +17,7 @@ __all__ = [
     'celebrity_logged_in',
     'ExpectedException',
     'extract_lp_cache',
+    'FakeLaunchpadRequest',
     'FakeTime',
     'get_lsb_information',
     'launchpadlib_credentials_for',
@@ -85,6 +86,7 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+from lazr.restful.testing.webservice import FakeRequest
 import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
@@ -122,6 +124,7 @@ from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
+    StepsToGo,
     WebServiceTestRequest,
     )
 from lp.codehosting.vfs import (
@@ -1345,3 +1348,11 @@ def nonblocking_readline(instream, timeout):
             result.write(next_char)
         now = time.time()
     return result.getvalue()
+
+
+class FakeLaunchpadRequest(FakeRequest):
+
+    @property
+    def stepstogo(self):
+        """See `IBasicLaunchpadRequest`."""
+        return StepsToGo(self)

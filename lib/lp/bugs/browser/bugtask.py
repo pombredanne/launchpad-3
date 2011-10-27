@@ -53,6 +53,7 @@ from math import (
     log,
     )
 from operator import attrgetter
+import os.path
 import re
 import transaction
 import urllib
@@ -74,6 +75,7 @@ from lazr.restful.interfaces import (
     )
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
+import pystache
 from pytz import utc
 from simplejson import dumps
 from z3c.pt.pagetemplate import ViewPageTemplateFile
@@ -265,6 +267,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import (
     cachedproperty,
@@ -2136,6 +2139,25 @@ class BugTaskListingItem:
         """Returns the bug heat flames HTML."""
         return bugtask_heat_html(self.bugtask, target=self.target_context)
 
+    @property
+    def model(self):
+        """Provide flattened data about bugtask for simple templaters."""
+        badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
+        target_image = getAdapter(self.target, IPathAdapter, 'image')
+        return {
+            'importance': self.importance.title,
+            'importance_class': 'importance' + self.importance.name,
+            'status': self.status.title,
+            'status_class': 'status' + self.status.name,
+            'title': self.bug.title,
+            'id': self.bug.id,
+            'bug_url': canonical_url(self.bugtask),
+            'bugtarget': self.bugtargetdisplayname,
+            'bugtarget_css': target_image.sprite_css(),
+            'bug_heat_html': self.bug_heat_html,
+            'badges': badges,
+            }
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
@@ -2176,6 +2198,26 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""
         return [self._getListingItem(bugtask) for bugtask in self.batch]
+
+    @cachedproperty
+    def mustache_template(self):
+        template_path = os.path.join(
+            config.root, 'lib/lp/bugs/templates/buglisting.mustache')
+        with open(template_path) as template_file:
+            return template_file.read()
+
+    @property
+    def mustache_listings(self):
+        return 'LP.mustache_listings = %s;' % dumps(self.mustache_template)
+
+    @property
+    def mustache(self):
+        return pystache.render(self.mustache_template, self.model)
+
+    @property
+    def model(self):
+        bugtasks = [bugtask.model for bugtask in self.getBugListingItems()]
+        return {'bugtasks': bugtasks}
 
 
 class NominatedBugReviewAction(EnumeratedType):
@@ -2435,6 +2477,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
+        if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
+            cache = IJSONRequestCache(self.request)
+            cache.objects['mustache_model'] = self.search().model
 
     @property
     def columns_to_show(self):
@@ -3040,6 +3085,26 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     view_name='+addquestion')
         else:
             return None
+
+    @cachedproperty
+    def dynamic_bug_listing_enabled(self):
+        """Feature flag: Can the bug listing be customized?"""
+        return bool(getFeatureFlag('bugs.dynamic_bug_listings.enabled'))
+
+    @property
+    def search_macro_title(self):
+        """The search macro's title text."""
+        return u"Search bugs %s" % self.context_description
+
+    @property
+    def context_description(self):
+        """A phrase describing the context of the bug.
+
+        The phrase is intended to be used for headings like
+        "Bugs in $context", "Search bugs in $context". This
+        property should be overridden for person related views.
+        """
+        return "in %s" % self.context.displayname
 
 
 class BugNominationsView(BugTaskSearchListingView):

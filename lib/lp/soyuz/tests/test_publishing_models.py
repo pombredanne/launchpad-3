@@ -7,13 +7,19 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     PackagePublishingStatus,
     )
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
+from lp.testing import TestCaseWithFactory
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
@@ -45,7 +51,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
     def test_getUnpublishedBuildsForSources_one_published(self):
         # If we publish a binary for a build, it is no longer returned.
         bpr = self.publisher.uploadBinaryForBuild(self.builds[0], 'gedit')
-        bpph = self.publisher.publishBinaryInArchive(
+        self.publisher.publishBinaryInArchive(
             bpr, self.sources[0].archive,
             status=PackagePublishingStatus.PUBLISHED)
 
@@ -86,3 +92,47 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
         self.assert_(urls[1].endswith('/96/firefox_666_source.changes'))
         self.assert_(urls[2].endswith(
             '/98/getting-things-gnome_666_source.changes'))
+
+
+class TestSourcePackagePublishingHistory(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_ancestry(self):
+        """Ancestry can be traversed."""
+        ancestor = self.factory.makeSourcePackagePublishingHistory()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            ancestor=ancestor)
+        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+
+    def test_changelogUrl_missing(self):
+        spr = self.factory.makeSourcePackageRelease(changelog=None)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEqual(None, spph.changelogUrl())
+
+    def test_changelogUrl(self):
+        spr = self.factory.makeSourcePackageRelease(
+            changelog=self.factory.makeChangelog('foo', ['1.0']))
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEqual(
+            canonical_url(spph) + '/+files/%s' % spr.changelog.filename,
+            spph.changelogUrl())
+
+    def test_getFileByName_changelog(self):
+        spr = self.factory.makeSourcePackageRelease(
+            changelog=self.factory.makeLibraryFileAlias(filename='changelog'))
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEqual(spr.changelog, spph.getFileByName('changelog'))
+
+    def test_getFileByName_changelog_absent(self):
+        spr = self.factory.makeSourcePackageRelease(changelog=None)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertRaises(NotFoundError, spph.getFileByName, 'changelog')
+
+    def test_getFileByName_unhandled_name(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        self.assertRaises(NotFoundError, spph.getFileByName, 'not-changelog')

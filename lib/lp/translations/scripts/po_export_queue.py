@@ -314,7 +314,7 @@ class ExportResult:
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
-                from_addr=config.rosetta.admin_email,
+                from_addr=config.rosetta.notification_address,
                 to_addrs=[recipient],
                 subject='Launchpad translation download: %s' % self.name,
                 body=body)
@@ -334,7 +334,7 @@ class ExportResult:
             admins_email_body = self._getUnicodeDecodeErrorEmailBody()
 
         simple_sendmail(
-            from_addr=config.rosetta.admin_email,
+            from_addr=config.rosetta.notification_address,
             to_addrs=[config.launchpad.errors_address],
             subject=(
                 'Launchpad translation download errors: %s' % self.name),

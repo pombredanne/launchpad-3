@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from testtools import TestCase
+from testtools.matchers import MatchesStructure
 
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import determine_file_class_and_name
@@ -32,13 +33,15 @@ class TestMatchDDEBs(TestCase):
         self.changes = FakeChangesFile()
         self.upload = NascentUpload(self.changes, None, DevNullLogger())
 
-    def addFile(self, filename):
+    def addFile(self, filename, comp_and_section='main/devel',
+                priority='extra'):
         """Add a file of the right type to the upload."""
         package, cls = determine_file_class_and_name(filename)
         file = cls(
-            filename, None, 100, 'devel', 'extra', package, '666',
+            filename, None, 100, comp_and_section, priority, package, '666',
             self.changes, None, self.upload.logger)
         self.changes.files.append(file)
+        return file
 
     def assertMatchDDEBErrors(self, error_list):
         self.assertEquals(
@@ -83,3 +86,20 @@ class TestMatchDDEBs(TestCase):
         self.addFile('libblah-dbgsym_1.0_amd64.ddeb')
         self.assertMatchDDEBErrors(
             ['Orphaned debug packages: libblah-dbgsym 666 (amd64)'])
+
+
+class TestOverrideDDEBs(TestMatchDDEBs):
+
+    def test_DDEBsGetOverrideFromDEBs(self):
+        # Test the basic case ensuring that DDEB files always match the
+        # DEB's overrides.
+        deb = self.addFile("foo_1.0_i386.deb", "main/devel", "extra")
+        ddeb = self.addFile(
+            "foo-dbgsym_1.0_i386.ddeb", "universe/web",  "low")
+        self.assertMatchDDEBErrors([])
+        self.upload._overrideDDEBSs()
+
+        self.assertThat(
+            ddeb,
+            MatchesStructure.fromExample(
+                deb, "component_name", "section_name", "priority_name"))

@@ -1,86 +1,21 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the integration between Twisted's logging and Launchpad's."""
 
 __metaclass__ = type
 
-import datetime
-import logging
 import os
-import re
 import shutil
-import StringIO
 import tempfile
-from textwrap import dedent
 
 import pytz
 
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    flush_logged_errors,
-    )
-
-from twisted.python import log
-
-from canonical.config import config
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from lp.services.twistedsupport.loggingsupport import (
-    LaunchpadLogFile,
-    OOPSLoggingObserver,
-    )
-from lp.services.twistedsupport.tests.test_processmonitor import (
-    makeFailure,
-    suppress_stderr,
-    )
+from lp.services.twistedsupport.loggingsupport import LaunchpadLogFile
 from lp.testing import TestCase
 
 
 UTC = pytz.utc
-
-
-class LoggingSupportTests(TestCase):
-
-    run_tests_with = AsynchronousDeferredRunTest
-
-    def setUp(self):
-        super(LoggingSupportTests, self).setUp()
-        self.temp_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.temp_dir)
-        config.push('testing', dedent("""
-            [error_reports]
-            oops_prefix: O
-            error_dir: %s
-            """ % self.temp_dir))
-        globalErrorUtility.configure()
-        self.log_stream = StringIO.StringIO()
-        self.logger = logging.getLogger('test')
-        self.logger.setLevel(logging.DEBUG)
-        self.logger.addHandler(logging.StreamHandler(self.log_stream))
-        self.observer = OOPSLoggingObserver('test')
-
-    def tearDown(self):
-        config.pop('testing')
-        globalErrorUtility.configure()
-        super(LoggingSupportTests, self).tearDown()
-
-    def assertLogMatches(self, pattern):
-        """Assert that the messages logged by self.logger matches a regexp."""
-        log_text = self.log_stream.getvalue()
-        self.failUnless(re.match(pattern, log_text, re.M))
-
-    @suppress_stderr
-    def test_oops_reporting(self):
-        # Calling log.err should result in an OOPS being logged.
-        log.addObserver(self.observer.emit)
-        self.addCleanup(log.removeObserver, self.observer.emit)
-        error_time = datetime.datetime.now(UTC)
-        fail = makeFailure(RuntimeError)
-        log.err(fail, error_time=error_time)
-        flush_logged_errors(RuntimeError)
-        oops = self.oopses[-1]
-        self.assertEqual(oops['type'], 'RuntimeError')
-        self.assertLogMatches('^Logged OOPS id.*')
 
 
 class TestLaunchpadLogFile(TestCase):
@@ -163,9 +98,11 @@ class TestLaunchpadLogFile(TestCase):
 
         # Monkey-patch DailyLogFile.suffix to be time independent.
         self.local_index = 0
+
         def testSuffix(tupledate):
             self.local_index += 1
             return str(self.local_index)
+
         log_file.suffix = testSuffix
 
         log_file.rotate()
@@ -182,4 +119,3 @@ class TestLaunchpadLogFile(TestCase):
         self.assertEqual(
             ['test.log', 'test.log.2.bz2', 'test.log.3'],
             self.listTestFiles())
-
