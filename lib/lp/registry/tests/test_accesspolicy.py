@@ -6,7 +6,6 @@ __metaclass__ = type
 from storm.store import Store
 from testtools.matchers import MatchesStructure
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.accesspolicy import (
