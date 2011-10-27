@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for source package builds."""
@@ -9,15 +9,14 @@ from datetime import (
     datetime,
     timedelta,
     )
-from pytz import utc
 import re
 
+from pytz import utc
 from storm.locals import Store
 import transaction
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
-from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
@@ -45,8 +44,8 @@ from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -594,8 +593,10 @@ class TestBuildNotifications(TrialTestCase):
 
     def assertDeferredNotifyCount(self, status, build, expected_count):
         d = build.handleStatus(status, None, {'filemap': {}})
+
         def cb(result):
             self.assertEqual(expected_count, len(pop_notifications()))
+
         d.addCallback(cb)
         return d
 

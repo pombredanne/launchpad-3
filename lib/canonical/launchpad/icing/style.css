@@ -25,13 +25,25 @@
 
 /* === Fonts and colors === */
 
-.unavailable {color: #999; background: none;}
+.unavailable {
+    color: #999;
+    background: none;
+}
 
-.duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
+.duplicate-details p {
+    padding: 0em;
+    margin-top: 0em;
+    margin-bottom: 0.2em;
+}
 
 /* Using colored text as you wish. */
-.green {color: green;}
-.red {color: red;}
+.green {
+    color: green;
+}
+
+.red {
+    color: red;
+}
 
 .helpwanted {
     background-color: #fafca9;
@@ -39,12 +51,14 @@
     padding: 0.5em;
     padding-left: 3em;
 }
+
 .whiteboard {
-  color: #666;
+    color: #666;
 }
+
 /* When shown as in a definition description, indent slightly. */
 dd .whiteboard {
-  padding-left: 1em;
+    padding-left: 1em;
 }
 
 form.primary.search {
