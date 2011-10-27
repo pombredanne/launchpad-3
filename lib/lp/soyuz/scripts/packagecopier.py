@@ -29,7 +29,6 @@ from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.adapters.notification import (
-    get_upload_notification_recipients,
     notify,
     )
 from lp.soyuz.adapters.packagelocation import build_package_location
@@ -614,12 +613,9 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             # In zopeless mode this email will be sent immediately.
             # XXX JeroenVermeulen 2011-10-20, bug=876594: We need to
             # re-think the recipients list for package copies.
-            recipients = get_upload_notification_recipients(
-                person, archive, series, spr=source.sourcepackagerelease)
             notify(
                 person, source.sourcepackagerelease, [], [], archive,
-                series, pocket, summary_text=error_text,
-                action='rejected', recipients=recipients)
+                series, pocket, summary_text=error_text, action='rejected')
         raise CannotCopy(error_text)
 
     overrides_index = 0
@@ -655,13 +651,11 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             if send_email:
                 # XXX JeroenVermeulen 2011-10-20, bug=876594: We need to
                 # re-think the recipients list for package copies.
-                recipients = get_upload_notification_recipients(
-                    person, archive, series, spr=source.sourcepackagerelease)
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
                     destination_series, pocket, action='accepted',
                     announce_from_person=announce_from_person,
-                    previous_version=old_version, recipients=recipients)
+                    previous_version=old_version)
 
         overrides_index += 1
         copies.extend(sub_copies)
