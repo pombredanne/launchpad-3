@@ -851,6 +851,7 @@
                     setPrivate
                     setSecurityRelated
                     setPrivacyAndSecurityRelated
+                    setAccessPolicy
                     setStatus
                     subscribe
                     unlinkBranch

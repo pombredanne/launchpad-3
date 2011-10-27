@@ -298,3 +298,15 @@ class TestBugCreation(TestCaseWithFactory):
         params.setBugTarget(product=target)
         bug = getUtility(IBugSet).createBug(params)
         self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
+
+
+class TestBugAccessPolicy(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_setAccessPolicy(self):
+        policy = self.factory.makeAccessPolicy()
+        bug = self.factory.makeBug()
+        self.assertIs(None, bug.access_policy)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(policy)
+        self.assertEqual(policy, bug.access_policy)

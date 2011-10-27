@@ -1760,6 +1760,11 @@ class Bug(SQLBase):
         return self.setPrivacyAndSecurityRelated(
             self.private, security_related, who)[1]
 
+    def setAccessPolicy(self, policy):
+        """See `IBug`."""
+        # XXX: Verify pillar match, privacy.
+        self.access_policy = policy
+
     def getRequiredSubscribers(self, for_private, for_security_related, who):
         """Return the mandatory subscribers for a bug with given attributes.
 
