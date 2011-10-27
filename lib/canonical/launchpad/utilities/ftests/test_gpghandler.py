@@ -170,7 +170,11 @@ class TestImportKeyRing(TestCase):
         now = floor(time())
         gpghandler.touchConfigurationDirectory()
         for fname in files_to_check:
-            self.assertTrue(now <= floor(os.path.getmtime(fname)))
+            file_time = os.path.getmtime(fname)
+            self.assertTrue(
+                now <= file_time,
+                'file %r expected to change no later than %r actually %r'
+                % (fname, now, file_time))
 
     def test_retrieveKey_raises_GPGKeyDoesNotExistOnServer(self):
         # GPGHandler.retrieveKey() raises GPGKeyDoesNotExistOnServer
