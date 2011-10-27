@@ -35,7 +35,10 @@ echo -n "Running germinate... "
 cd $GERMINATEROOT
 
 # Clean up temporary files
-rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MYTHBUNTU-* LUBUNTU-* UBUNTUSTUDIO-*
+rm -f \
+    germinate.output ALL ALL.sources \
+    UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MYTHBUNTU-* LUBUNTU-* \
+    UBUNTUSTUDIO-*
 rm -f all_* all.sources_*
 rm -rf dists
 
@@ -57,13 +60,22 @@ done
 > "$MISCROOT/more-extra.override.$suite.main.new"
 
 germinate_components=main,universe,restricted,multiverse
-for distro in ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu ubuntustudio; do
+for distro in \
+    ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu \
+    ubuntustudio
+do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
   for arch in $archs; do
     # Run germinate
     echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
-    germinate --no-rdepends -m "file://$(pwd)/" -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
+    germinate \
+        --no-rdepends \
+        -m "file://$(pwd)/" \
+        -s "$germinate_suite" \
+        -d "$suite" \
+        -c "$germinate_components" \
+        -a $arch >> germinate.output 2>&1
 
     # The structure file is generally useful; keep per distro/suite/arch
     # copies for convenience
@@ -114,26 +126,36 @@ for distro in ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu u
 	fi
       fi
       if grep -iq '^Task-Seeds:' "$seed.seedtext"; then
-	scanseeds="$( (grep '^Task-Seeds:' "$seed.seedtext" | cut -d: -f2 | xargs -n1; echo "$seed") | sort -u )"
+          scanseeds="$( (grep '^Task-Seeds:' "$seed.seedtext" | cut -d: -f2 | xargs -n1; echo "$seed") | sort -u )"
       else
 	scanseeds="$seed"
       fi
       for scanseed in $scanseeds; do
-	egrep -v -- "^(-|Package| )" "$scanseed"_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Task  $task," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+          egrep -v -- \
+              "^(-|Package| )" "$scanseed"_"$distro"_"$suite"_"$arch" |
+          awk '{print $1}' |
+          sed -e "s,$,/$arch  Task  $task," |
+          sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
       done
     done
 
     # Generate apt-ftparchive 'extra' overrides for Build-Essential: fields
     if [ -e build-essential ] && [ "$distro" = ubuntu ]; then
-      # Keep a copy, just for convenience
-      cp build-essential build-essential_"$distro"_"$suite"_"$arch"
-      egrep -v -- "^(-|Package| )" build-essential_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Build-Essential  yes," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+        # Keep a copy, just for convenience
+        cp build-essential build-essential_"$distro"_"$suite"_"$arch"
+        egrep -v -- \
+            "^(-|Package| )" build-essential_"$distro"_"$suite"_"$arch" |
+        awk '{print $1}' |
+        sed -e "s,$,/$arch  Build-Essential  yes," |
+        sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
     fi
   done
 done
 echo " done."
 
-mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.override.$suite.main"
+mv -f \
+    "$MISCROOT/more-extra.override.$suite.main.new" \
+    "$MISCROOT/more-extra.override.$suite.main"
 
 # Now generate the Supported extra overrides for all supported distros.
 SUITES=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py supported`
