@@ -27,7 +27,6 @@ from canonical.config import config
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from lp.services.twistedsupport.loggingsupport import (
     LaunchpadLogFile,
-    OOPSLoggingObserver,
     )
 from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
@@ -37,50 +36,6 @@ from lp.testing import TestCase
 
 
 UTC = pytz.utc
-
-
-class LoggingSupportTests(TestCase):
-
-    run_tests_with = AsynchronousDeferredRunTest
-
-    def setUp(self):
-        super(LoggingSupportTests, self).setUp()
-        self.temp_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.temp_dir)
-        config.push('testing', dedent("""
-            [error_reports]
-            oops_prefix: O
-            error_dir: %s
-            """ % self.temp_dir))
-        globalErrorUtility.configure()
-        self.log_stream = StringIO.StringIO()
-        self.logger = logging.getLogger('test')
-        self.logger.setLevel(logging.DEBUG)
-        self.logger.addHandler(logging.StreamHandler(self.log_stream))
-        self.observer = OOPSLoggingObserver('test')
-
-    def tearDown(self):
-        config.pop('testing')
-        globalErrorUtility.configure()
-        super(LoggingSupportTests, self).tearDown()
-
-    def assertLogMatches(self, pattern):
-        """Assert that the messages logged by self.logger matches a regexp."""
-        log_text = self.log_stream.getvalue()
-        self.failUnless(re.match(pattern, log_text, re.M))
-
-    @suppress_stderr
-    def test_oops_reporting(self):
-        # Calling log.err should result in an OOPS being logged.
-        log.addObserver(self.observer.emit)
-        self.addCleanup(log.removeObserver, self.observer.emit)
-        error_time = datetime.datetime.now(UTC)
-        fail = makeFailure(RuntimeError)
-        log.err(fail, error_time=error_time)
-        flush_logged_errors(RuntimeError)
-        oops = self.oopses[-1]
-        self.assertEqual(oops['type'], 'RuntimeError')
-        self.assertLogMatches('^Logged OOPS id.*')
 
 
 class TestLaunchpadLogFile(TestCase):

@@ -1029,16 +1029,16 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # errors.
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
-            'áří, but uploaded version has different '
-            'contents. See more information about this error in '
-            'https://help.launchpad.net/Packaging/UploadErrors.\n'
-            'File bar_1.0-1.diff.gz already exists in unicode PPA name: '
-            'áří, but uploaded version has different contents. See more '
-            'information about this error in '
-            'https://help.launchpad.net/Packaging/UploadErrors.\n'
-            'Files specified in DSC are broken or missing, skipping package '
-            'unpack verification.')
+            u'File bar_1.0.orig.tar.gz already exists in unicode PPA name: '
+            u'áří, but uploaded version has different '
+            u'contents. See more information about this error in '
+            u'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            u'File bar_1.0-1.diff.gz already exists in unicode PPA name: '
+            u'áří, but uploaded version has different contents. See more '
+            u'information about this error in '
+            u'https://help.launchpad.net/Packaging/UploadErrors.\n'
+            u'Files specified in DSC are broken or missing, skipping package '
+            u'unpack verification.')
 
         # Also, the email generated should be sane.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()

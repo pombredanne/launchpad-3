@@ -37,7 +37,6 @@ from lp.app.browser.vocabulary import (
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -197,12 +196,6 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestDistributionSourcePackagePickerEntrySourceAdapter,
-              self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
-
     def getPickerEntry(self, dsp):
         return get_picker_entry(dsp, object())
 
@@ -276,11 +269,6 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestProductPickerEntrySourceAdapter, self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
-
     def getPickerEntry(self, product):
         return get_picker_entry(product, object())
 
@@ -333,11 +321,6 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestProjectGroupPickerEntrySourceAdapter, self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
 
     def getPickerEntry(self, projectgroup):
         return get_picker_entry(projectgroup, object())
@@ -392,11 +375,6 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
 class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestDistributionPickerEntrySourceAdapter, self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
 
     def getPickerEntry(self, distribution):
         return get_picker_entry(distribution, object())
@@ -532,14 +510,6 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     def test_json_entries(self):
         # The results are JSON encoded.
-        feature_flag = {
-            'disclosure.picker_enhancements.enabled': 'on',
-            'disclosure.picker_expander.enabled': 'on',
-            'disclosure.personpicker_affiliation.enabled': 'on',
-            }
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
         team = self.factory.makeTeam(name='xpting-team')
         person = self.factory.makePerson(name='xpting-person')
         creation_date = datetime(

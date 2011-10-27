@@ -355,7 +355,8 @@ class TestBranchView(BrowserTestCase):
             self.assertTrue(
                 bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
 
-    def test_linked_bugs_nonseries_branch_query_scaling(self):
+    # XXX wgrant 2011-10-21 bug=879197: Disabled due to spurious failure.
+    def disabled_test_linked_bugs_nonseries_branch_query_scaling(self):
         # As we add linked bugs, the query count for a branch index page stays
         # constant.
         branch = self.factory.makeAnyBranch()
