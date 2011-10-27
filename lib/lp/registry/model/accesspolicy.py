@@ -165,5 +165,10 @@ class AccessPolicyPermission(StormBase):
 
     @classmethod
     def getByID(cls, id):
-        """See `IAccessPolicyPermission`."""
+        """See `IAccessPolicyPermissionSource`."""
         return IStore(cls).get(cls, id)
+
+    @classmethod
+    def findByPolicy(cls, policy):
+        """See `IAccessPolicyPermissionSource`."""
+        return IStore(cls).find(cls, policy=policy)
