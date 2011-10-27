@@ -79,6 +79,11 @@ from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
+from lp.services.features import (
+    currentScope,
+    defaultFlagValue,
+    getFeatureFlag,
+    )
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
@@ -362,6 +367,25 @@ class LaunchpadView(UserAttributeCache):
         # By default, a LaunchpadView cannot be traversed through.
         # Those that can be must override this method.
         raise NotFound(self, name, request=request)
+
+    # Flags for new features in beta status which affect a view.
+    beta_features = ()
+
+    @property
+    def active_beta_features(self):
+        """Beta feature flags that are active for this context and scope.
+
+        This property consists of all feature flags from beta_features
+        whose current value is not the default value.
+        """
+        def flag_in_beta_status(flag):
+            return (
+                currentScope(flag) not in ('default', None) and
+                defaultFlagValue(flag) != getFeatureFlag(flag))
+
+        return [
+            flag for flag in self.beta_features if flag_in_beta_status(flag)
+            ]
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

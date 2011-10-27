@@ -313,6 +313,15 @@ class FeatureController():
         """Return {scope: active} for scopes that have been used so far."""
         return dict(self._known_scopes._known)
 
+    def defaultFlagValue(self, flag):
+        """Return the flag's value in the default scope."""
+        self._needRules()
+        if flag in self._rules:
+            for scope, priority, value in self._rules[flag]:
+                if scope == 'default':
+                    return value
+        return None
+
 
 class NullFeatureController(FeatureController):
     """For use in testing: everything is turned off"""

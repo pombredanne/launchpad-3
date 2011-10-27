@@ -84,10 +84,27 @@ class TestFeatureFlags(TestCase):
             ['default', 'beta_user'])
         self.assertEqual('beta_user', control.currentScope('ui.icing'))
 
-    def test_currentScope_undefined_feature(self):
+    def test_currentScope__undefined_feature(self):
         # currentScope() returns None for a non-existent flaeture flag.
+        self.populateStore()
         control, call_log = self.makeControllerInScopes(['default'])
-        self.assertIs(None, control.currentScope('unspecified'))
+        self.assertIs(None, control.currentScope('undefined_feature'))
+
+    def test_defaultFlagValue(self):
+        # defaultFlagValue() returns the default value of a flag even if
+        # another scopewith a higher priority matches.
+        self.populateStore()
+        control, call_log = self.makeControllerInScopes(
+            ['default', 'beta_user'])
+        self.assertEqual('3.0', control.defaultFlagValue('ui.icing'))
+
+    def test_defaultFlagValue__undefined_feature(self):
+        # defaultFlagValue() returns None if no default scope is defined
+        # for a feature.
+        self.populateStore()
+        control, call_log = self.makeControllerInScopes(
+            ['default', 'beta_user'])
+        self.assertIs(None, control.defaultFlagValue('undefined_feature'))
 
     def test_getAllFlags(self):
         # can fetch all the active flags, and it gives back only the
