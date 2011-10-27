@@ -32,6 +32,7 @@ from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
     ArchivePurpose,
+    BinaryPackageFileType,
     SourcePackageFormat,
     )
 from lp.soyuz.interfaces.archive import CannotCopy
@@ -489,6 +490,10 @@ class CopyChecker:
                 for binary_file in binary_pub.binarypackagerelease.files:
                     if binary_file.libraryfile.expires is not None:
                         raise CannotCopy('source has expired binaries')
+                    if (self.archive.is_main and
+                        binary_file.filetype == BinaryPackageFileType.DDEB):
+                        raise CannotCopy(
+                            "Cannot copy DDEBs to a primary archive")
 
         # Check if there is already a source with the same name and version
         # published in the destination archive.
