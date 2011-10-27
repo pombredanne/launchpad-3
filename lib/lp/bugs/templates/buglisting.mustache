@@ -1,0 +1,25 @@
+<table class="listing narrow-listing">
+<tbody>
+{{#bugtasks}}
+    <tr>
+        <td class={{importance_class}}>
+            {{importance}}
+        </td>
+        <td>
+            #{{id}} <a href="{{bug_url}}">{{title}}</a>
+        </td>
+        <td align="right">
+            {{{badges}}}{{{bug_heat_html}}}
+        </td>
+    </tr>
+    <tr >
+        <td class={{status_class}} style="border-style: none">
+            {{status}}
+        </td>
+        <td colspan="2" style="border-style: none">
+            <span class="{{bugtarget_css}}">{{bugtarget}}</span>
+        </td>
+    </tr>
+{{/bugtasks}}
+</tbody>
+</table>

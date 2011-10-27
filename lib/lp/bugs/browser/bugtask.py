@@ -54,6 +54,7 @@ from math import (
     log,
     )
 from operator import attrgetter
+import os.path
 import re
 import transaction
 import urllib
@@ -75,6 +76,7 @@ from lazr.restful.interfaces import (
     )
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
+import pystache
 from pytz import utc
 from simplejson import dumps
 from z3c.pt.pagetemplate import ViewPageTemplateFile
@@ -2161,6 +2163,25 @@ class BugTaskListingItem:
         """Returns the bug heat flames HTML."""
         return bugtask_heat_html(self.bugtask, target=self.target_context)
 
+    @property
+    def model(self):
+        """Provide flattened data about bugtask for simple templaters."""
+        badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
+        target_image = getAdapter(self.target, IPathAdapter, 'image')
+        return {
+            'importance': self.importance.title,
+            'importance_class': 'importance' + self.importance.name,
+            'status': self.status.title,
+            'status_class': 'status' + self.status.name,
+            'title': self.bug.title,
+            'id': self.bug.id,
+            'bug_url': canonical_url(self.bugtask),
+            'bugtarget': self.bugtargetdisplayname,
+            'bugtarget_css': target_image.sprite_css(),
+            'bug_heat_html': self.bug_heat_html,
+            'badges': badges,
+            }
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
@@ -2201,6 +2222,26 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""
         return [self._getListingItem(bugtask) for bugtask in self.batch]
+
+    @cachedproperty
+    def mustache_template(self):
+        template_path = os.path.join(
+            config.root, 'lib/lp/bugs/templates/buglisting.mustache')
+        with open(template_path) as template_file:
+            return template_file.read()
+
+    @property
+    def mustache_listings(self):
+        return 'LP.mustache_listings = %s;' % dumps(self.mustache_template)
+
+    @property
+    def mustache(self):
+        return pystache.render(self.mustache_template, self.model)
+
+    @property
+    def model(self):
+        bugtasks = [bugtask.model for bugtask in self.getBugListingItems()]
+        return {'bugtasks': bugtasks}
 
 
 class NominatedBugReviewAction(EnumeratedType):
@@ -2460,6 +2501,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
+        if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
+            cache = IJSONRequestCache(self.request)
+            cache.objects['mustache_model'] = self.search().model
 
     @property
     def columns_to_show(self):
@@ -3534,6 +3578,54 @@ class BugTasksAndNominationsView(LaunchpadView):
                 self.context.users_affected_count)
         else:
             return None
+
+    @property
+    def _allow_multipillar_private_bugs(self):
+        """ Some teams still need to have multi pillar private bugs."""
+        return bool(getFeatureFlag(
+            'disclosure.allow_multipillar_private_bugs.enabled'))
+
+    def canAddProjectTask(self):
+        """Can a new bug task on a project be added to this bug?
+
+        If a bug has any bug tasks already, were it to be private, it cannot
+        be marked as also affecting any other project, so return False.
+
+        Note: this check is currently only relevant if a bug is private.
+        Eventually, even public bugs will have this restriction too. So what
+        happens now is that this API is used by the tales to add a class
+        called 'disallow-private' to the Also Affects Project link. A css rule
+        is used to hide the link when body.private is True.
+
+        """
+        bug = self.context
+        if self._allow_multipillar_private_bugs:
+            return True
+        return len(bug.bugtasks) == 0
+
+    def canAddPackageTask(self):
+        """Can a new bug task on a src pkg be added to this bug?
+
+        If a bug has any existing bug tasks on a project, were it to
+        be private, then it cannot be marked as affecting a package,
+        so return False.
+
+        A task on a given package may still be illegal to add, but
+        this will be caught when bug.addTask() is attempted.
+
+        Note: this check is currently only relevant if a bug is private.
+        Eventually, even public bugs will have this restriction too. So what
+        happens now is that this API is used by the tales to add a class
+        called 'disallow-private' to the Also Affects Package link. A css rule
+        is used to hide the link when body.private is True.
+        """
+        bug = self.context
+        if self._allow_multipillar_private_bugs:
+            return True
+        for pillar in bug.affected_pillars:
+            if IProduct.providedBy(pillar):
+                return False
+        return True
 
 
 class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):

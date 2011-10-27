@@ -7,7 +7,6 @@ from datetime import datetime
 import doctest
 import unittest
 
-from lazr.restful.testing.webservice import FakeRequest
 import pytz
 from testtools.matchers import (
     DocTestMatches,
@@ -22,7 +21,6 @@ from canonical.launchpad.testing.pages import (
     find_tag_by_id,
     )
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
-from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
@@ -32,6 +30,7 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
     )
 from lp.testing import (
+    FakeLaunchpadRequest,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -49,17 +48,6 @@ class TestSpecificationSearch(TestCaseWithFactory):
         form = {'field.search_text': r'%'}
         view = create_initialized_view(specs, '+index', form=form)
         self.assertEqual([], view.errors)
-
-
-class LocalFakeRequest(FakeRequest):
-
-    @property
-    def stepstogo(self):
-        """See IBasicLaunchpadRequest.
-
-        This method is called by traversal machinery.
-        """
-        return StepsToGo(self)
 
 
 class TestBranchTraversal(TestCaseWithFactory):
@@ -80,7 +68,7 @@ class TestBranchTraversal(TestCaseWithFactory):
     def traverse(self, segments):
         stack = list(reversed(['+branch'] + segments))
         name = stack.pop()
-        request = LocalFakeRequest([], stack)
+        request = FakeLaunchpadRequest([], stack)
         traverser = specification.SpecificationNavigation(
             self.specification, request)
         return traverser.publishTraverse(request, name)

@@ -3,13 +3,20 @@
 
 __metaclass__ = type
 
+from contextlib import contextmanager
 from datetime import datetime
+import re
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.interfaces import IJSONRequestCache
 from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
+import soupmatchers
 from storm.store import Store
-from testtools.matchers import LessThan
+from testtools.matchers import (
+    LessThan,
+    Not,
+    )
 import transaction
 from zope.component import (
     getMultiAdapter,
@@ -40,7 +47,9 @@ from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
     BugTaskEditView,
+    BugTaskListingItem,
     BugTasksAndNominationsView,
+    BugTaskSearchListingView,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
@@ -57,8 +66,11 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    BrowserTestCase,
     celebrity_logged_in,
+    feature_flags,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
@@ -716,6 +728,67 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             self.assertEqual(expected, notifications[0].message)
 
 
+class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
+    """ Tests the boolean methods on the view used to indicate whether the
+        Also Affects... links should be allowed or not. Currently these
+        restrictions are only used for private bugs. ie where body.private
+        is true.
+
+        A feature flag is used to turn off the new restrictions. Each test
+        is performed with and without the feature flag.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+
+    def _createView(self, bug):
+        request = LaunchpadTestRequest()
+        bugtasks_and_nominations_view = getMultiAdapter(
+            (bug, request), name="+bugtasks-and-nominations-table")
+        return bugtasks_and_nominations_view
+
+    def test_project_bug_cannot_affect_something_else(self):
+        # A bug affecting a project cannot also affect another project or
+        # package.
+        bug = self.factory.makeBug()
+        view = self._createView(bug)
+        self.assertFalse(view.canAddProjectTask())
+        self.assertFalse(view.canAddPackageTask())
+        with FeatureFixture(self.feature_flag):
+            self.assertTrue(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+
+    def test_distro_bug_cannot_affect_project(self):
+        # A bug affecting a distro cannot also affect another project but it
+        # could affect another package.
+        distro = self.factory.makeDistribution()
+        bug = self.factory.makeBug(distribution=distro)
+        view = self._createView(bug)
+        self.assertFalse(view.canAddProjectTask())
+        self.assertTrue(view.canAddPackageTask())
+        with FeatureFixture(self.feature_flag):
+            self.assertTrue(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+
+    def test_sourcepkg_bug_cannot_affect_project(self):
+        # A bug affecting a source pkg cannot also affect another project but
+        # it could affect another package.
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        sp_name = self.factory.getOrMakeSourcePackageName()
+        self.factory.makeSourcePackage(
+            sourcepackagename=sp_name, distroseries=distroseries)
+        bug = self.factory.makeBug(
+            distribution=distro, sourcepackagename=sp_name)
+        view = self._createView(bug)
+        self.assertFalse(view.canAddProjectTask())
+        self.assertTrue(view.canAddPackageTask())
+        with FeatureFixture(self.feature_flag):
+            self.assertTrue(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+
+
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     """We show only those options as possible value in the status
     field that the user can select.
@@ -1304,3 +1377,126 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         self._assertThatUnbatchedAndBatchedActivityMatch(
             unbatched_view.activity_and_comments[4:],
             batched_view.activity_and_comments)
+
+
+def make_bug_task_listing_item(factory):
+    owner = factory.makePerson()
+    bug = factory.makeBug(
+        owner=owner, private=True, security_related=True)
+    bugtask = bug.default_bugtask
+    bug_task_set = getUtility(IBugTaskSet)
+    bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
+        [bugtask])
+    badge_property = bug_badge_properties[bugtask]
+    return owner, BugTaskListingItem(
+        bugtask,
+        badge_property['has_branch'],
+        badge_property['has_specification'],
+        badge_property['has_patch'],
+        target_context=bugtask.target)
+
+
+class TestBugTaskSearchListingView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    server_listing = soupmatchers.Tag(
+        'Server', 'em', text='Server-side mustache')
+
+    client_listing = soupmatchers.Tag(
+        'client-listing', True, attrs={'id': 'client-listing'})
+
+    def makeView(self, bugtask=None):
+        request = LaunchpadTestRequest()
+        if bugtask is None:
+            bugtask = self.factory.makeBugTask()
+        view = BugTaskSearchListingView(bugtask.target, request)
+        view.initialize()
+        return view
+
+    @contextmanager
+    def dynamic_listings(self):
+        with feature_flags():
+            set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
+            yield
+
+    def test_mustache_model_missing_if_no_flag(self):
+        """The IJSONRequestCache should contain mustache_model."""
+        view = self.makeView()
+        cache = IJSONRequestCache(view.request)
+        self.assertIs(None, cache.objects.get('mustache_model'))
+
+    def test_mustache_model_in_json(self):
+        """The IJSONRequestCache should contain mustache_model.
+
+        mustache_model should contain bugtasks, the BugTaskListingItem.model
+        for each BugTask.
+        """
+        owner, item = make_bug_task_listing_item(self.factory)
+        self.useContext(person_logged_in(owner))
+        with self.dynamic_listings():
+            view = self.makeView(item.bugtask)
+        cache = IJSONRequestCache(view.request)
+        bugtasks = cache.objects['mustache_model']['bugtasks']
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(item.model, bugtasks[0])
+
+    def getBugtaskBrowser(self):
+        bugtask = self.factory.makeBugTask()
+        with person_logged_in(bugtask.target.owner):
+            bugtask.target.official_malone = True
+        browser = self.getViewBrowser(
+            bugtask.target, '+bugs', rootsite='bugs')
+        return bugtask, browser
+
+    def assertHTML(self, browser, *tags, **kwargs):
+        matcher = soupmatchers.HTMLContains(*tags)
+        if kwargs.get('invert', False):
+            matcher = Not(matcher)
+        self.assertThat(browser.contents, matcher)
+
+    @staticmethod
+    def getBugNumberTag(bug_task):
+        """Bug numbers with a leading hash are unique to new rendering."""
+        bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
+        return soupmatchers.Tag('bug_number', 'td', text=bug_number_re)
+
+    def test_mustache_rendering_missing_if_no_flag(self):
+        """If the flag is missing, then no mustache features appear."""
+        bug_task, browser = self.getBugtaskBrowser()
+        number_tag = self.getBugNumberTag(bug_task)
+        self.assertHTML(browser, number_tag, invert=True)
+        self.assertHTML(browser, self.client_listing, invert=True)
+        self.assertHTML(browser, self.server_listing, invert=True)
+
+    def test_mustache_rendering(self):
+        """If the flag is present, then all mustache features appear."""
+        with self.dynamic_listings():
+            bug_task, browser = self.getBugtaskBrowser()
+        bug_number = self.getBugNumberTag(bug_task)
+        self.assertHTML(
+            browser, self.client_listing, self.server_listing, bug_number)
+
+
+class TestBugTaskListingItem(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_model(self):
+        """Model contains expected fields with expected values."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            model = item.model
+            self.assertEqual('Undecided', model['importance'])
+            self.assertEqual('importanceUNDECIDED', model['importance_class'])
+            self.assertEqual('New', model['status'])
+            self.assertEqual('statusNEW', model['status_class'])
+            self.assertEqual(item.bug.title, model['title'])
+            self.assertEqual(item.bug.id, model['id'])
+            self.assertEqual(canonical_url(item.bugtask), model['bug_url'])
+            self.assertEqual(item.bugtargetdisplayname, model['bugtarget'])
+            self.assertEqual('sprite product', model['bugtarget_css'])
+            self.assertEqual(item.bug_heat_html, model['bug_heat_html'])
+            self.assertEqual(
+                '<span alt="private" title="Private" class="sprite private">'
+                '&nbsp;</span>', model['badges'])
