@@ -533,8 +533,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     Verifies if each copy can be performed using `CopyChecker` and
     raises `CannotCopy` if one or more copies could not be performed.
 
-    When `CannotCopy`is raised call sites are in charge to rollback the
-    transaction or performed copies will be commited.
+    When `CannotCopy` is raised, call sites are responsible for rolling
+    back the transaction.  Otherwise, performed copies will be commited.
 
     Wrapper for `do_direct_copy`.
 
@@ -611,8 +611,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             # In zopeless mode this email will be sent immediately.
             notify(
                 person, source.sourcepackagerelease, [], [], archive,
-                series, pocket, summary_text=error_text,
-                action='rejected')
+                series, pocket, summary_text=error_text, action='rejected')
         raise CannotCopy(error_text)
 
     overrides_index = 0
@@ -648,8 +647,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
-                    destination_series, pocket, changes=None,
-                    action='accepted',
+                    destination_series, pocket, action='accepted',
                     announce_from_person=announce_from_person,
                     previous_version=old_version)
 
