@@ -1434,6 +1434,12 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         allowed.
         """
 
+    def canCreatePPA():
+        """Check if a person or team can create a PPA.
+
+        :return: a boolean.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
