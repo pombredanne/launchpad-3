@@ -248,6 +248,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability."),
              required=False, default=False, readonly=True))
+    access_policy = Attribute("Access policy")
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = exported(

@@ -352,6 +352,8 @@ class Bug(SQLBase):
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
     security_related = BoolCol(notNull=True, default=False)
+    access_policy_id = Int(name="access_policy")
+    access_policy = Reference(access_policy_id, 'AccessPolicy.id')
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
