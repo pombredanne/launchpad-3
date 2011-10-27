@@ -307,10 +307,12 @@ class ErrorReportingUtility:
         # In the zope environment we track how long a script / http
         # request has been running for - this is useful data!
         self._oops_config.on_create.append(attach_adapter_duration)
+
         def add_publisher(publisher):
             if publisher_adapter is not None:
                 publisher = publisher_adapter(publisher)
             self._oops_config.publishers.append(publisher)
+
         # We want to publish reports to disk for gathering to the central
         # analysis server.
         self._oops_datedir_repo = DateDirRepo(
