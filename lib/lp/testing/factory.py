@@ -177,6 +177,7 @@ from lp.registry.enum import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
+    IAccessPolicyPermissionSource,
     IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -4281,6 +4282,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if concrete is None:
             concrete = self.makeBranch()
         return getUtility(IAccessPolicyArtifactSource).ensure(concrete)
+
+    def makeAccessPolicyPermission(self, person=None, policy=None,
+                                   abstract_artifact=None):
+        if person is None:
+            person = self.makePerson()
+        if policy is None:
+            policy = self.makeAccessPolicy()
+        return getUtility(IAccessPolicyPermissionSource).grant(
+            person, policy, abstract_artifact)
 
 
 # Some factory methods return simple Python types. We don't add

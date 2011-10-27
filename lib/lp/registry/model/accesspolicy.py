@@ -162,3 +162,8 @@ class AccessPolicyPermission(StormBase):
         obj.abstract_artifact = abstract_artifact
         IStore(cls).add(obj)
         return obj
+
+    @classmethod
+    def getByID(cls, id):
+        """See `IAccessPolicyPermission`."""
+        return IStore(cls).get(cls, id)
