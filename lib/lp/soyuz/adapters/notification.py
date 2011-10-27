@@ -306,7 +306,7 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
 
     # Some syncs (e.g. from Debian) will involve packages whose
     # changed-by person was auto-created in LP and hence does not have a
-    # preferred email address set.
+    # preferred email address set.  We'll get a None here.
     changedby_person = email_to_person(info['changedby'])
 
     if blamer is not None and blamer != changedby_person:
@@ -499,8 +499,9 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
                 debug(logger, "Adding changed-by to recipients")
                 candidate_recipients.append(changer)
 
-    # Now filter list of recipients for persons only registered in
-    # Launchpad to avoid spamming the innocent.
+    # Collect email addresses to notify.  Skip persons who do not have a
+    # preferredemail set, such as people who have not activated their
+    # Launchpad accounts (and are therefore not expecting this email).
     recipients = [
         format_address_for_person(person)
         for person in filter(None, set(candidate_recipients))
@@ -571,7 +572,7 @@ def email_to_person(fullemail):
     :return: `IPerson` with the given email address.  None if there
         isn't one, or if `fullemail` isn't a proper email address.
     """
-    if fullemail is None or fullemail == '':
+    if not fullemail:
         return None
 
     try:
@@ -586,8 +587,8 @@ def email_to_person(fullemail):
 
 def person_to_email(person):
     """Return a string of full name <e-mail address> given an IPerson."""
-    # This will use email.Header to encode any unicode.
     if person and person.preferredemail:
+        # This will use email.Header to encode any non-ASCII characters.
         return format_address_for_person(person)
 
 
