@@ -14,6 +14,11 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from testtools.matchers import (
+    Not,
+    LessThan,
+    )
+
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     keys_for_tests,
@@ -171,10 +176,8 @@ class TestImportKeyRing(TestCase):
         gpghandler.touchConfigurationDirectory()
         for fname in files_to_check:
             file_time = os.path.getmtime(fname)
-            self.assertTrue(
-                now <= file_time,
-                'file %r expected to change no later than %r actually %r'
-                % (fname, now, file_time))
+            self.assertThat(
+                file_time, Not(LessThan(now)), fname)
 
     def test_retrieveKey_raises_GPGKeyDoesNotExistOnServer(self):
         # GPGHandler.retrieveKey() raises GPGKeyDoesNotExistOnServer
