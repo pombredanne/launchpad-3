@@ -501,8 +501,7 @@ class TestPullerMasterSpawning(TestCase):
 
     def setUp(self):
         super(TestPullerMasterSpawning, self).setUp()
-        self.eventHandler = self.makePullerMaster(
-            'HOSTED')
+        self.eventHandler = self.makePullerMaster('HOSTED')
         self.patch(reactor, 'spawnProcess', self.spawnProcess)
         self.commands_spawned = []
 

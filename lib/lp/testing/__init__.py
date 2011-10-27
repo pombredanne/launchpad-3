@@ -528,6 +528,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.addCleanup(config.pop, name)
 
     def attachOopses(self):
+        self.oops_capture.sync()
         if len(self.oopses) > 0:
             for (i, report) in enumerate(self.oopses):
                 content = Content(UTF8_TEXT,

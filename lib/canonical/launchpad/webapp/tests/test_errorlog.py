@@ -15,7 +15,6 @@ import traceback
 from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
-from lp_sitecustomize import customize_get_converter
 import oops_amqp
 import pytz
 import testtools
@@ -30,9 +29,7 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad.layers import (
-    WebServiceLayer,
-    )
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     _filter_session_statement,
     _is_sensitive,
@@ -51,6 +48,7 @@ from lp.app.errors import (
     GoneError,
     TranslationUnavailable,
     )
+from lp_sitecustomize import customize_get_converter
 
 
 UTC = pytz.utc

@@ -215,6 +215,8 @@ class CaptureOops(Fixture):
 
     :ivar oopses: A list of the oops objects raised while the fixture is
         setup.
+    :ivar oops_ids: A set of observed oops ids. Used to de-dup reports
+        received over AMQP.
     """
 
     AMQP_SENTINEL = "STOP NOW"
@@ -222,6 +224,7 @@ class CaptureOops(Fixture):
     def setUp(self):
         super(CaptureOops, self).setUp()
         self.oopses = []
+        self.oops_ids = set()
         self.useFixture(ZopeEventHandlerFixture(self._recordOops))
         try:
             self.connection = connect()
@@ -241,11 +244,21 @@ class CaptureOops(Fixture):
             self.channel.queue_bind(
                 self.queue_name, config.error_reports.error_exchange)
             self.oops_config = oops.Config()
-            self.oops_config.publishers.append(self.oopses.append)
+            self.oops_config.publishers.append(self._add_oops)
+
+    def _add_oops(self, report):
+        """Add an oops if it isn't already recorded.
+
+        This is called from both amqp and in-appserver situations.
+        """
+        if report['id'] not in self.oops_ids:
+            self.oopses.append(report)
+            self.oops_ids.add(report['id'])
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
-        self.oopses.append(event.object)
+        """Callback from zope publishing to publish oopses."""
+        self._add_oops(event.object)
 
     def sync(self):
         """Sync the in-memory list of OOPS with the external OOPS source."""

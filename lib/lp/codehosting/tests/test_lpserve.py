@@ -89,6 +89,7 @@ class TestLaunchpadServe(TestCaseWithSubprocess):
         capture = self.useFixture(CaptureOops())
         process, transport = self.start_server_inet()
         self.finish_lpserve_subprocess(process)
+        capture.sync()
         self.assertEqual([], capture.oopses)
 
     def test_unexpected_error_logs_oops(self):
