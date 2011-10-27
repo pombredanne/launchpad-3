@@ -697,9 +697,8 @@
   <class
       class="lp.translations.model.pofilestatsjob.POFileStatsJob">
       <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
-      <allow interface='lp.services.job.interfaces.job.IJobSource'/>
   </class>
-  <securedutility
+  <utility
       component="lp.translations.model.pofilestatsjob.POFileStatsJob"
       provides="lp.translations.interfaces.pofilestatsjob.IPOFileStatsJobSource"
       />
