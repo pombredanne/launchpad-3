@@ -1550,7 +1550,8 @@ class TestBugTaskDeletion(TestCaseWithFactory):
 
     def test_delete_bugtask(self):
         # A bugtask can be deleted.
-        bugtask = self.factory.makeBugTask()
+        bug = self.factory.makeBug()
+        bugtask = self.factory.makeBugTask(bug=bug)
         bug = bugtask.bug
         login_person(bugtask.owner)
         with FeatureFixture(self.flags):
@@ -1559,7 +1560,8 @@ class TestBugTaskDeletion(TestCaseWithFactory):
 
     def test_delete_default_bugtask(self):
         # The default bugtask can be deleted.
-        bugtask = self.factory.makeBugTask()
+        bug = self.factory.makeBug()
+        bugtask = self.factory.makeBugTask(bug=bug)
         bug = bugtask.bug
         login_person(bug.default_bugtask.owner)
         with FeatureFixture(self.flags):
@@ -2287,6 +2289,8 @@ class ValidateTargetMixin:
         # another pillar.
         d = self.factory.makeDistribution()
         bug = self.factory.makeBug(distribution=d)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
         p = self.factory.makeProduct()
         with person_logged_in(bug.owner):
             bug.setPrivate(True, bug.owner)
@@ -2306,6 +2310,8 @@ class ValidateTargetMixin:
         p2 = self.factory.makeProduct()
         d = self.factory.makeDistribution()
         bug = self.factory.makeBug(product=p1)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
         with person_logged_in(bug.owner):
             bug.setPrivate(True, bug.owner)
             self.assertRaisesWithContent(
@@ -2331,6 +2337,8 @@ class ValidateTargetMixin:
         p2 = self.factory.makeProduct()
         series = self.factory.makeProductSeries(product=p2)
         bug = self.factory.makeBug(product=p1)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
         with person_logged_in(bug.owner):
             bug.setPrivate(True, bug.owner)
             self.assertRaisesWithContent(
@@ -2350,6 +2358,8 @@ class ValidateTargetMixin:
         d2 = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=d2)
         bug = self.factory.makeBug(distribution=d1)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
         with person_logged_in(bug.owner):
             bug.setPrivate(True, bug.owner)
             self.assertRaisesWithContent(
@@ -2366,6 +2376,8 @@ class ValidateTargetMixin:
 class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
 
     layer = DatabaseFunctionalLayer
+
+    multi_tenant_test_one_task_only = False
 
     @property
     def validate_method(self):
@@ -2504,6 +2516,8 @@ class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
 
     layer = DatabaseFunctionalLayer
 
+    multi_tenant_test_one_task_only = True
+
     @property
     def validate_method(self):
         # Used for ValidateTargetMixin.
@@ -2554,10 +2568,9 @@ class TestWebservice(TestCaseWithFactory):
 
     def test_delete_bugtask(self):
         """Test that a bugtask can be deleted with the feature flag on."""
-        product = self.factory.makeProduct()
         owner = self.factory.makePerson()
-        db_bugtask = self.factory.makeBugTask(target=product, owner=owner)
-        db_bug = db_bugtask.bug
+        db_bug = self.factory.makeBug()
+        db_bugtask = self.factory.makeBugTask(bug=db_bug, owner=owner)
         transaction.commit()
         logout()
 

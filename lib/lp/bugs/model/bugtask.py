@@ -387,7 +387,7 @@ def validate_assignee(self, attr, value):
     return validate_person(self, attr, value)
 
 
-def validate_target(bug, target):
+def validate_target(bug, target, retarget_existing=True):
     """Validate a bugtask target against a bug's existing tasks.
 
     Checks that no conflicting tasks already exist.
@@ -411,7 +411,12 @@ def validate_target(bug, target):
 
     if bug.private and not bool(features.getFeatureFlag(
             'disclosure.allow_multipillar_private_bugs.enabled')):
+        # Perhaps we are replacing the one and only existing bugtask, in
+        # which case that's ok.
+        if retarget_existing and len(bug.bugtasks) <= 1:
+            return
         # We can add a target so long as the pillar exists already.
+        num_affected_pillars = len(bug.affected_pillars)
         if (len(bug.affected_pillars) > 0
                 and target.pillar not in bug.affected_pillars):
             raise IllegalTarget(
@@ -454,7 +459,7 @@ def validate_new_target(bug, target):
                 "specified. You should fill in a package name for "
                 "the existing bug." % target.distribution.displayname)
 
-    validate_target(bug, target)
+    validate_target(bug, target, retarget_existing=False)
 
 
 class BugTask(SQLBase):
