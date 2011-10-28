@@ -503,9 +503,27 @@ class TestCancellationChecking(TestCaseWithFactory):
         d.addCallback(lambda result: self.assertFalse(result))
 
     def test_cancelling_build_is_cancelled(self):
-        # If a build is CANCELLING, make sure True is returned.
+        # If a build is CANCELLING, make sure True is returned and the
+        # slave was resumed.
+        call_counter = FakeMethod()
+        def fake_resume():
+            call_counter()
+            return defer.succeed((None, None, 0))
+        slave = OkSlave()
+        slave.resume = fake_resume
+        self.builder.vm_host = "fake_vm_host"
+        self.builder.setSlaveForTesting(slave)
+        buildqueue = self.builder.currentjob
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+        build.status = BuildStatus.CANCELLING
+
+        def check(result):
+            self.assertEqual(1, call_counter.call_count)
+            self.assertTrue(result)
+            self.assertEqual(BuildStatus.CANCELLED, build.status)
+
         d = self.scanner.checkCancellation(self.builder)
-        d.addCallback(lambda result: self.assertTrue(result))
+        d.addCallback(check)
 
 
 class TestBuilddManager(TestCase):
