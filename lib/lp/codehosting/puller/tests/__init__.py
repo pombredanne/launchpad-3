@@ -11,12 +11,8 @@ import socket
 from StringIO import StringIO
 
 from bzrlib import urlutils
-from bzrlib.tests import (
-    TestCaseWithTransport,
-    )
-from bzrlib.tests.http_server import (
-    HttpServer,
-    )
+from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests.http_server import HttpServer
 from bzrlib.tests.http_server import (
     TestingHTTPServer,
     TestingThreadingHTTPServer,
@@ -103,8 +99,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
     """Some useful code for the more-integration-y puller tests."""
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        TestCaseWithFactory.setUp(self)
+        super(PullerBranchTestCase, self).setUp()
         self.disable_directory_isolation()
 
     def getHostedPath(self, branch):

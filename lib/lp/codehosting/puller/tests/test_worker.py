@@ -499,14 +499,11 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
             self.calls.append(type)
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestWorkerProgressReporting, self).setUp()
         SafeBranchOpener.install_hook()
         self.saved_factory = bzrlib.ui.ui_factory
         self.disable_directory_isolation()
-
-    def tearDown(self):
-        TestCaseWithTransport.tearDown(self)
-        bzrlib.ui.ui_factory = self.saved_factory
+        self.addCleanUp(setattr, bzrlib.ui, 'ui_factory', self.saved_factory)
 
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""
