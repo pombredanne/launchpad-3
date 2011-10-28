@@ -5,8 +5,6 @@ from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent,
     IObjectModifiedEvent,
     )
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -288,7 +286,7 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(private=True, product=product)
         self.factory.makeProduct(name='fnord')
-        login_person(removeSecurityProxy(bug).owner)
+        login_celebrity('admin')
         command = AffectsEmailCommand('affects', ['fnord'])
         error = self.assertRaises(
             EmailProcessingError, command.execute, bug, None)

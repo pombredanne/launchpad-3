@@ -27,6 +27,7 @@ from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -1086,14 +1087,8 @@ class TestBugChanges(TestCaseWithFactory):
             bug, maintainer, bug_supervisor)
 
         # Now make the bug visible to the bug supervisor and re-test.
-        # Only people in project roles can assign other people.
-        # Subscribe the owner so they can see the bug, and then get them
-        # to assign the bug.
-        with person_logged_in(bug.owner):
-            bug.subscribe(bug.default_bugtask.pillar.owner, bug.owner)
-            with person_logged_in(bug.default_bugtask.pillar.owner):
-                bug.default_bugtask.transitionToAssignee(bug_supervisor)
-            bug.unsubscribe(bug.default_bugtask.pillar.owner, bug.owner)
+        with celebrity_logged_in('admin'):
+            bug.default_bugtask.transitionToAssignee(bug_supervisor)
 
         # Test with bug supervisor = maintainer.
         self._test_retarget_private_security_bug_to_product(
