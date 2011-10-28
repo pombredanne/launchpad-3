@@ -706,14 +706,14 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             confirmation_message = find_tag_by_id(
                 contents, 'confirmation-message')
             self.assertIsNotNone(confirmation_message)
-            url = canonical_url(bugtask, rootsite='bugs')
+            url = canonical_url(bugtask.bug, rootsite='bugs')
             self.assertEqual(view.cancel_url, url)
 
     def test_delete_action(self):
         # Test that the delete action works as expected.
         bug = self.factory.makeBug()
         bugtask = self.factory.makeBugTask(bug=bug)
-        pillar_name = bugtask.pillar.displayname
+        target_name = bugtask.bugtargetdisplayname
         with FeatureFixture(DELETE_BUGTASK_ENABLED):
             login_person(bugtask.owner)
             form = {
@@ -724,7 +724,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             self.assertEqual([bug.default_bugtask], bug.bugtasks)
             notifications = view.request.response.notifications
             self.assertEqual(1, len(notifications))
-            expected = 'This bug no longer affects %s.' % pillar_name
+            expected = 'This bug no longer affects %s.' % target_name
             self.assertEqual(expected, notifications[0].message)
 
 

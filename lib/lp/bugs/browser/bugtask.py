@@ -1780,7 +1780,8 @@ class BugTaskDeletionView(LaunchpadFormView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        bugtask = self.context
+        return canonical_url(bugtask.bug)
 
 
 class BugTaskListingView(LaunchpadView):

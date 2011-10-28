@@ -18,6 +18,11 @@
           tal:content="view/getSeriesTargetName"
         />
       </tal:not-conjoined-task>
+        <a tal:condition="data/user_can_delete"
+           tal:attributes="
+            id string:bugtask-delete-${data/form_row_id};
+            href data/delete_link"
+           class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
     </td>
     <td tal:condition="not:data/indent_task">
       <span tal:attributes="id string:bugtarget-picker-${data/row_id}">
@@ -33,11 +38,11 @@
           Edit
         </button>
         <div class="yui3-activator-message-box yui3-activator-hidden"></div>
-            <a tal:condition="data/user_can_delete"
-               tal:attributes="
-                id string:bugtask-delete-${data/form_row_id};
-                href data/delete_link"
-               class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
+        <a tal:condition="data/user_can_delete"
+           tal:attributes="
+            id string:bugtask-delete-${data/form_row_id};
+            href data/delete_link"
+           class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
       </span>
     </td>
 
