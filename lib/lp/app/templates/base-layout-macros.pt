@@ -266,6 +266,11 @@
       &nbsp;&bull;&nbsp;
       <a href="http://blog.launchpad.net/"
 	>Blog</a>
+      <tal:careers_link condition="not: features/baselayout.careers_link.disabled">
+	&nbsp;&bull;&nbsp;
+	<a href="http://www.canonical.com/about-canonical/careers"
+		>Careers</a>
+      </tal:careers_link>
       &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
