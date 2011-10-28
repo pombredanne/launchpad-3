@@ -2108,10 +2108,13 @@ class Bug(SQLBase):
             return True
 
         filter = get_bug_privacy_filter(user)
-        if not filter:
+        store = Store.of(self)
+        store.flush()
+        if (not filter or
+            not store.find(Bug, Bug.id == self.id, filter).is_empty()):
+            self._known_viewers.add(user.id)
             return True
-        return not Store.of(self).find(
-            Bug, Bug.id == self.id, filter).is_empty()
+        return False
 
     def linkHWSubmission(self, submission):
         """See `IBug`."""
