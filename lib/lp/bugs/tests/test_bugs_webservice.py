@@ -37,6 +37,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.testing import (
     api_url,
     launchpadlib_for,
+    login_person,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
@@ -344,6 +345,20 @@ class TestErrorHandling(TestCaseWithFactory):
         self.factory.makeBugTask(bug=bug, target=product)
 
         launchpad = launchpadlib_for('test', bug.owner)
+        lp_bug = launchpad.load(api_url(bug))
+        self.assertRaises(
+            BadRequest, lp_bug.addTask, target=api_url(product))
+
+    def test_add_invalid_bugtask_to_private_bug_gives_bad_request(self):
+        # Test we get an error when we attempt to invalidly add a bug task to
+        # a private bug. In this case, we cannot mark a private bug as
+        # affecting more than one project.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(private=True, owner=owner)
+        product = self.factory.makeProduct()
+
+        login_person(owner)
+        launchpad = launchpadlib_for('test', owner)
         lp_bug = launchpad.load(api_url(bug))
         self.assertRaises(
             BadRequest, lp_bug.addTask, target=api_url(product))
