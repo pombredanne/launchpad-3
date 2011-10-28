@@ -21,17 +21,6 @@ from lp.translations.model import pofilestatsjob
 from lp.translations.model.pofilestatsjob import POFileStatsJob
 
 
-def runable_jobs():
-    """Returns a list of the currently runnable stats update jobs.
-
-    Provides a nicer spelling for tests than the crazy static method on the
-    job class.
-
-    The return value is listified because that's what we want for tests.
-    """
-    return list(POFileStatsJob.iterReady())
-
-
 class TestPOFileStatsJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -69,3 +58,17 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         # If we schedule a job, then we'll get it back.
         job = pofilestatsjob.schedule(pofile.id)
         self.assertIs(list(POFileStatsJob.iterReady())[0], job)
+
+    def test_duplicate_scheduling(self):
+        # If there is already a The POFileStatsJob scheduled for a particular
+        # POFile, then a new one is not scheduled.
+        self.assertEqual(len(list(POFileStatsJob.iterReady())), 0)
+        # We need a POFile to update.
+        pofile = self.factory.makePOFile(side=TranslationSide.UPSTREAM)
+        # If we schedule a job, then there will be one scheduled.
+        pofilestatsjob.schedule(pofile.id)
+        self.assertIs(len(list(POFileStatsJob.iterReady())), 1)
+        # If we attempt to schedule another job for the same POFile, no new
+        # job is added.
+        pofilestatsjob.schedule(pofile.id)
+        self.assertIs(len(list(POFileStatsJob.iterReady())), 1)

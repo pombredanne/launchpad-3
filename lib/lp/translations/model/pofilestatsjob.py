@@ -87,7 +87,11 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
 
 def schedule(pofile):
     """Schedule a job to update a POFile's stats (if not scheduled)."""
-    # If there's already a job for the pofile, don't create a new one.
+    # If there's already a job for the pofile, don't create a new one.  This
+    # is a race in that it's possible for two requests to check for an
+    # already-scheduled job simultaneously and both get a negative result and
+    # then schedule duplicate jobs.  Since the job processing isn't resource
+    # intensive, that's OK and not worth the extra effort to avoid.
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     job = store.find(
         POFileStatsJob,
