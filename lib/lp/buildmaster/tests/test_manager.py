@@ -454,12 +454,36 @@ class TestSlaveScannerScan(TestCase):
         scanner = self._getScanner()
         d = scanner.scan()
 
+        # The build state should be cancelled and we should have also
+        # called the resume() method on the slave that resets the virtual
+        # machine.
         def check_cancelled(ignore, builder, buildqueue):
             self.assertEqual(1, call_counter.call_count)
             self.assertEqual(BuildStatus.CANCELLED, build.status)
 
         d.addCallback(check_cancelled, builder, buildqueue)
         return d
+
+
+class TestCancellationChecking(TestCase):
+    """Unit tests for the checkCancellation method."""
+
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+
+    def setUp(self):
+        super(TestCancellationChecking, self).setUp()
+        builder_name = BOB_THE_BUILDER_NAME
+        self.scanner = SlaveScanner(builder_name, BufferLogger())
+        self.scanner.logger.name = 'slave-scanner'
+
+    def test_ignores_nonvirtual(self):
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        builder.virtualized = False
+        d = self.scanner.checkCancellation(builder)
+        d.addCallback(
+            lambda result: self.assertFalse(result))
+
 
 
 class TestBuilddManager(TestCase):
