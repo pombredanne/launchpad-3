@@ -60,10 +60,6 @@ class PGBouncerLibrarianLayer(DatabaseFunctionalLayer):
     def testSetUp(cls):
         cls.pgbouncer_fixture.start()
 
-    @classmethod
-    def testTearDown(cls):
-        cls.pgbouncer_fixture.start()
-
 
 class TestLibrarianDBOutage(TestCase):
     layer = PGBouncerLibrarianLayer
