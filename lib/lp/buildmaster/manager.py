@@ -207,6 +207,7 @@ class SlaveScanner:
         def resume_done(ignored):
             return defer.succeed(True)
 
+        self.logger.info("Cancelling build '%s'" % build.title)
         buildqueue.cancel()
         transaction.commit()
         d = builder.resumeSlaveHost()
