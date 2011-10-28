@@ -71,6 +71,7 @@ The pidfile must also be removed if the process is exited with SIGINT (Ctrl-C)
 or SIGTERM, too. We'll demonstrate this with a couple of functions, because
 we'll need them again later.
 
+    >>> import errno
     >>> import time
     >>> subprocess_code = '''
     ... import time
@@ -92,13 +93,21 @@ we'll need them again later.
     ...
     >>> def stop(pid, sig):
     ...     os.kill(pid, sig)
-    ...     for i in range(20):
+    ...     for i in range(300):
     ...         if not os.path.exists(pidfile_path('nuts')):
     ...             print 'Stopped successfully'
     ...             break
     ...         time.sleep(0.1)
     ...     else:
-    ...         print 'Error: pid file was not removed'
+    ...         try:
+    ...             # Is it still here at all?
+    ...             os.kill(pid, 0)
+    ...         except OSError, e:
+    ...             if e.errno == errno.ESRCH:
+    ...                 print 'Error: pid file was not removed'
+    ...             else: raise
+    ...         else:
+    ...             print 'Error: process did not exit'
     ...
 
 Here's our example.  We start, and then stop with SIGINT.

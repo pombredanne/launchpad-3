@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the integration between Twisted's logging and Launchpad's."""
@@ -7,13 +7,10 @@ __metaclass__ = type
 
 import os
 
+from fixtures import TempDir
 import pytz
 
-from fixtures import TempDir
-
-from lp.services.twistedsupport.loggingsupport import (
-    LaunchpadLogFile,
-    )
+from lp.services.twistedsupport.loggingsupport import LaunchpadLogFile
 from lp.testing import TestCase
 
 
@@ -99,9 +96,11 @@ class TestLaunchpadLogFile(TestCase):
 
         # Monkey-patch DailyLogFile.suffix to be time independent.
         self.local_index = 0
+
         def testSuffix(tupledate):
             self.local_index += 1
             return str(self.local_index)
+
         log_file.suffix = testSuffix
 
         log_file.rotate()

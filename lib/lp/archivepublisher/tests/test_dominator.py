@@ -23,9 +23,7 @@ from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import DevNullLogger
-from lp.soyuz.enums import (
-    PackagePublishingStatus,
-    )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import (
@@ -199,7 +197,9 @@ class TestDominator(TestNativePublishingBase):
         foo_11_src = self.getPubSource(
             sourcename="foo", version="1.1", architecturehintlist="all",
             status=PackagePublishingStatus.PUBLISHED)
-        foo_11_all_bins = self.getPubBinaries(
+        # Generate binary publications for architecture "all" (actually,
+        # one such publication per architecture).
+        self.getPubBinaries(
             binaryname="foo-common", status=PackagePublishingStatus.PUBLISHED,
             architecturespecific=False, version="1.1", pub_source=foo_11_src)
 
@@ -291,7 +291,9 @@ class TestDominator(TestNativePublishingBase):
         bpr = self.factory.makeBinaryPackageRelease(
             binarypackagename="foo-bin", version="1.1", build=build,
             architecturespecific=False)
-        foo_11_all_bins = self.publishBinaryInArchive(
+        # Generate binary publications for architecture "all" (actually,
+        # one such publication per architecture).
+        self.publishBinaryInArchive(
             bpr, self.ubuntutest.main_archive, pocket=foo_11_src.pocket,
             status=PackagePublishingStatus.PUBLISHED)
 

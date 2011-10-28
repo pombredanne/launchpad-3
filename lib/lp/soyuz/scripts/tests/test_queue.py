@@ -1116,8 +1116,9 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         # we're testing.
         spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
         archive_admin = self.factory.makePerson()
-        bug = self.factory.makeBug(private=True)
-        bug_task = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
+        bug_task = self.factory.makeBugTask(
+            target=spr.sourcepackage, private=True)
+        bug = bug_task.bug
         changes = StringIO(changes_file_template % bug.id)
 
         with person_logged_in(archive_admin):

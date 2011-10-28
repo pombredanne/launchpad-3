@@ -185,7 +185,9 @@ class SSHService(service.Service):
         deferred = gatherResults([
             defer.maybeDeferred(service.Service.stopService, self),
             defer.maybeDeferred(self.service.stopService)])
+
         def log_stopped(ignored):
             notify(events.ServerStopped())
             return ignored
+
         return deferred.addBoth(log_stopped)
