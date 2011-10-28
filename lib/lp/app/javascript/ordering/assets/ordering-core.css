@@ -3,12 +3,12 @@
 .yui3-orderbybar {
     border:1px solid #EEE;
     float: left;
-    min-width: 585px;
+    min-width: 600px;
     width: 100%;
 }
 .yui3-orderbybar p {
     float: left;
-    margin: 5px 5px;
+    margin: 5px;
 }
 .yui3-orderbybar ul li {
     float: left;
