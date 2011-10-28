@@ -233,3 +233,8 @@ class TestCaptureOopsRabbit(TestCase):
         self.assertEqual('quux', amqp_publisher(oops2))
         capture.sync()
         self.assertEqual([oops, oops2], capture.oopses)
+
+    def test_sync_twice_works(self):
+        capture = self.useFixture(CaptureOops())
+        capture.sync()
+        capture.sync()

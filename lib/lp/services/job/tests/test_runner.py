@@ -625,7 +625,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             (0, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.assertIn('Job resulted in OOPS', logger.getLogBuffer())
         self.oops_capture.sync()
-        self.assertEqual('MemoryError', self.oopses[0]['type'])
+        self.assertIn(self.oopses[0]['type'],
+            ['MemoryError', 'UnknownRemoteError'])
 
     def test_no_jobs(self):
         logger = BufferLogger()

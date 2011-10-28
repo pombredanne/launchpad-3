@@ -234,17 +234,25 @@ class CaptureOops(Fixture):
             self.addCleanup(self.connection.close)
             self.channel = self.connection.channel()
             self.addCleanup(self.channel.close)
-            self.queue_name, _, _ = self.channel.queue_declare(
-                durable=True, auto_delete=True)
-            # In production the exchange already exists and is durable, but
-            # here we make it just-in-time, and tell it to go when the test
-            # fixture goes.
-            self.channel.exchange_declare(config.error_reports.error_exchange,
-                "fanout", durable=True, auto_delete=True)
-            self.channel.queue_bind(
-                self.queue_name, config.error_reports.error_exchange)
             self.oops_config = oops.Config()
             self.oops_config.publishers.append(self._add_oops)
+            self.setUpQueue()
+
+    def setUpQueue(self):
+        """Sets up the queue to be used to receive reports.
+
+        The queue is autodelete which means we can only use it once: after that
+        it will be automatically nuked and must be recreated.
+        """
+        self.queue_name, _, _ = self.channel.queue_declare(
+            durable=True, auto_delete=True)
+        # In production the exchange already exists and is durable, but
+        # here we make it just-in-time, and tell it to go when the test
+        # fixture goes.
+        self.channel.exchange_declare(config.error_reports.error_exchange,
+            "fanout", durable=True, auto_delete=True)
+        self.channel.queue_bind(
+            self.queue_name, config.error_reports.error_exchange)
 
     def _add_oops(self, report):
         """Add an oops if it isn't already recorded.
@@ -285,4 +293,9 @@ class CaptureOops(Fixture):
         receiver = oops_amqp.Receiver(
             self.oops_config, connect, self.queue_name)
         receiver.sentinel = self.AMQP_SENTINEL
-        receiver.run_forever()
+        try:
+            receiver.run_forever()
+        finally:
+            # Ensure we leave the queue ready to roll, or later calls to sync()
+            # will fail.
+            self.setUpQueue()
