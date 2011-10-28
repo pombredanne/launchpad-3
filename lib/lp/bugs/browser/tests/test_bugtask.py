@@ -45,6 +45,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
+    BugListingBatchNavigator,
     BugTaskEditView,
     BugTaskListingItem,
     BugTasksAndNominationsView,
@@ -1413,6 +1414,19 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             bug_task, browser = self.getBugtaskBrowser()
         bug_number = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, self.client_listing, bug_number)
+
+    def test_hiding_fields(self):
+        request = LaunchpadTestRequest()
+        cache = IJSONRequestCache(request)
+        cache.objects['mustache_model'] = {
+                'bugtasks': [{'id': '3.14159', 'show_id': True}],
+        }
+        mustache_model = cache.objects['mustache_model']
+        navigator = BugListingBatchNavigator([], request, [], 1)
+        self.assertIn('3.14159', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_id'] = False
+        self.assertNotIn('3.14159', navigator.mustache)
+
 
 
 class TestBugTaskListingItem(TestCaseWithFactory):

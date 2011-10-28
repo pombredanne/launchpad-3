@@ -6,7 +6,8 @@
             {{importance}}
         </td>
         <td>
-            #{{id}} <a href="{{bug_url}}">{{title}}</a>
+            {{#show_id}}#{{id}}{{/show_id}}&#32;
+            <a href="{{bug_url}}">{{title}}</a>
         </td>
         <td align="right">
             {{{badges}}}{{{bug_heat_html}}}
