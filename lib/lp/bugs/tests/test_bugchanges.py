@@ -1086,8 +1086,14 @@ class TestBugChanges(TestCaseWithFactory):
             bug, maintainer, bug_supervisor)
 
         # Now make the bug visible to the bug supervisor and re-test.
-        with person_logged_in(bug.default_bugtask.pillar.owner):
-            bug.default_bugtask.transitionToAssignee(bug_supervisor)
+        # Only people in project roles can assign other people.
+        # Subscribe the owner so they can see the bug, and then get them
+        # to assign the bug.
+        with person_logged_in(bug.owner):
+            bug.subscribe(bug.default_bugtask.pillar.owner, bug.owner)
+            with person_logged_in(bug.default_bugtask.pillar.owner):
+                bug.default_bugtask.transitionToAssignee(bug_supervisor)
+            bug.unsubscribe(bug.default_bugtask.pillar.owner, bug.owner)
 
         # Test with bug supervisor = maintainer.
         self._test_retarget_private_security_bug_to_product(
