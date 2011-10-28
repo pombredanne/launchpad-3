@@ -25,7 +25,16 @@
                 {content_box: "#structural-subscription-content-box"});
             var navigator = Y.lp.bugs.buglisting.ListingNavigator.from_page();
             var orderby = new Y.lp.ordering.OrderByBar({
-                srcNode: Y.one('#bugs-orderby')
+                srcNode: Y.one('#bugs-orderby'),
+                sort_keys: [
+                    ['id', 'Bug number'],
+                    ['title', 'Bug title'],
+                    ['importance', 'Importance'],
+                    ['status', 'Status'],
+                    ['heat', 'Bug heat']
+                ],
+                active: 'importance',
+                sort_order: 'desc'
             });
             orderby.render();
             Y.on('orderbybar:sort', function(e) {
