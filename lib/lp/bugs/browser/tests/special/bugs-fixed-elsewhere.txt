@@ -1,4 +1,5 @@
-= Bugs Fixed Elsewhere =
+Bugs Fixed Elsewhere
+====================
 
 The +bugtarget-portlet-bugfilters-info view for a distribution or
 product contains a property for a URL to a list of bugs fixed
@@ -79,7 +80,8 @@ resolved elsewhere":
     FIXRELEASED
 
 
-== Private Bugs ==
+Private Bugs
+------------
 
 Only bugs that the user has permission to view are included in the count.
 We are moving away from allowing private bugs to affect multiple projects.
@@ -120,7 +122,8 @@ there are two bugs fixed.
     2L
 
 
-== Duplicate Bugs ==
+Duplicate Bugs
+--------------
 
 Bugs that are duplicate of other bugs aren't included in the count.
 
@@ -130,7 +133,8 @@ Bugs that are duplicate of other bugs aren't included in the count.
     1L
 
 
-== Resolved Bugs ==
+Resolved Bugs
+-------------
 
 The count includes only bugs that are open in the current context.
 

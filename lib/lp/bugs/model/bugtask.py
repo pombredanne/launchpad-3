@@ -416,7 +416,6 @@ def validate_target(bug, target, retarget_existing=True):
         if retarget_existing and len(bug.bugtasks) <= 1:
             return
         # We can add a target so long as the pillar exists already.
-        num_affected_pillars = len(bug.affected_pillars)
         if (len(bug.affected_pillars) > 0
                 and target.pillar not in bug.affected_pillars):
             raise IllegalTarget(
