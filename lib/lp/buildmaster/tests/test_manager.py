@@ -465,7 +465,7 @@ class TestSlaveScannerScan(TestCase):
         return d
 
 
-class TestCancellationChecking(TestCase):
+class TestCancellationChecking(TestCaseWithFactory):
     """Unit tests for the checkCancellation method."""
 
     layer = ZopelessDatabaseLayer
@@ -475,6 +475,7 @@ class TestCancellationChecking(TestCase):
         super(TestCancellationChecking, self).setUp()
         builder_name = BOB_THE_BUILDER_NAME
         self.builder = getUtility(IBuilderSet)[builder_name]
+        self.builder.virtualized = True
         self.scanner = SlaveScanner(builder_name, BufferLogger())
         self.scanner.builder = self.builder
         self.scanner.logger.name = 'slave-scanner'
@@ -488,10 +489,18 @@ class TestCancellationChecking(TestCase):
     def test_ignores_no_buildqueue(self):
         # If the builder has no buildqueue associated,
         # make sure we return False.
-        self.builder.virtualized = True
+        buildqueue = self.builder.currentjob
+        buildqueue.reset()
         d = self.scanner.checkCancellation(self.builder)
         d.addCallback(lambda result: self.assertFalse(result))
 
+    def test_ignores_build_not_cancelling(self):
+        # If the active build is not in a CANCELLING state, ignore it.
+        buildqueue = self.builder.currentjob
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+        build.status = BuildStatus.BUILDING
+        d = self.scanner.checkCancellation(self.builder)
+        d.addCallback(lambda result: self.assertFalse(result))
 
 
 
