@@ -468,21 +468,30 @@ class TestSlaveScannerScan(TestCase):
 class TestCancellationChecking(TestCase):
     """Unit tests for the checkCancellation method."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     def setUp(self):
         super(TestCancellationChecking, self).setUp()
         builder_name = BOB_THE_BUILDER_NAME
+        self.builder = getUtility(IBuilderSet)[builder_name]
         self.scanner = SlaveScanner(builder_name, BufferLogger())
+        self.scanner.builder = self.builder
         self.scanner.logger.name = 'slave-scanner'
 
     def test_ignores_nonvirtual(self):
-        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
-        builder.virtualized = False
-        d = self.scanner.checkCancellation(builder)
-        d.addCallback(
-            lambda result: self.assertFalse(result))
+        # If the builder is nonvirtual make sure we return False.
+        self.builder.virtualized = False
+        d = self.scanner.checkCancellation(self.builder)
+        d.addCallback(lambda result: self.assertFalse(result))
+
+    def test_ignores_no_buildqueue(self):
+        # If the builder has no buildqueue associated,
+        # make sure we return False.
+        self.builder.virtualized = True
+        d = self.scanner.checkCancellation(self.builder)
+        d.addCallback(lambda result: self.assertFalse(result))
+
 
 
 
