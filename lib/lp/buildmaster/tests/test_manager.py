@@ -502,6 +502,10 @@ class TestCancellationChecking(TestCaseWithFactory):
         d = self.scanner.checkCancellation(self.builder)
         d.addCallback(lambda result: self.assertFalse(result))
 
+    def test_cancelling_build_is_cancelled(self):
+        # If a build is CANCELLING, make sure True is returned.
+        d = self.scanner.checkCancellation(self.builder)
+        d.addCallback(lambda result: self.assertTrue(result))
 
 
 class TestBuilddManager(TestCase):
