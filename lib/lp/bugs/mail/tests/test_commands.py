@@ -288,6 +288,7 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         bug = self.factory.makeBug(private=True, product=product)
         self.factory.makeProduct(name='fnord')
         login_celebrity('admin')
+        login_person(bug.owner)
         command = AffectsEmailCommand('affects', ['fnord'])
         error = self.assertRaises(
             EmailProcessingError, command.execute, bug, None)
