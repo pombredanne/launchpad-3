@@ -1451,7 +1451,6 @@ class ProductSet:
     def forReview(self, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
                   license_info_is_empty=None,
-                  has_zero_licenses=None,
                   created_after=None, created_before=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
@@ -1555,26 +1554,6 @@ class ProductSet:
         else:
             raise AssertionError('license_info_is_empty invalid: %r'
                                  % license_info_is_empty)
-
-        has_license_subquery = '''%s (
-            SELECT 1
-            FROM ProductLicense
-            WHERE ProductLicense.product = Product.id
-            LIMIT 1
-            )
-            '''
-        if has_zero_licenses is True:
-            # The subquery finds zero rows.
-            or_conditions.append(has_license_subquery % 'NOT EXISTS')
-        elif has_zero_licenses is False:
-            # The subquery finds at least one row.
-            or_conditions.append(has_license_subquery % 'EXISTS')
-        elif has_zero_licenses is None:
-            # Don't restrict results if has_zero_licenses is None.
-            pass
-        else:
-            raise AssertionError('has_zero_licenses is invalid: %r'
-                                 % has_zero_licenses)
 
         if licenses is not None and len(licenses) > 0:
             or_conditions.append('''EXISTS (

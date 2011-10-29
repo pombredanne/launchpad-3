@@ -411,20 +411,6 @@ any one of the licenses listed.
     ...     print product.name
     bzr
 
-You can also search for projects that have zero licenses. This is also
-convenient for searching for projects with at least one license.
-
-    >>> for product in product_set.forReview(
-    ...     has_zero_licenses=True, search_text='firefox|a52dec|bzr|derby'):
-    ...     print product.name
-    firefox
-    a52dec
-    >>> for product in product_set.forReview(
-    ...     has_zero_licenses=False, search_text='firefox|a52dec|bzr|derby'):
-    ...     print product.name
-    bzr
-    derby
-
 You can search for products whose license_info field is empty or not empty.
 This OR the licenses search field must match.
 
