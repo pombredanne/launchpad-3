@@ -205,6 +205,8 @@ We cannot allow private bugs to affect more than one pillar.
     >>> private_bug = firefox.createBug(params)
     >>> private_bug.setPrivate(True, current_user())
     True
+    >>> private_bug.subscribe(firefox.owner, firefox.owner)
+    <lp.bugs.model.bugsubscription.BugSubscription object at ...>
     >>> logout()
 
     >>> browser.open(canonical_url(private_bug, rootsite='bugs'))
