@@ -5,7 +5,7 @@
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
-    person_logged_in,
+    celebrity_logged_in,
     TestCaseWithFactory,
     )
 
@@ -44,7 +44,7 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
         self.bug_team = self.factory.makeTeam(
             name="bugteam", owner=self.product.owner)
         self.bug_team_member = self.factory.makePerson(name="bugteammember")
-        with person_logged_in(self.product.owner):
+        with celebrity_logged_in('admin'):
             self.bug_team.addMember(self.bug_team_member, self.product.owner)
             self.product.setBugSupervisor(
                 bug_supervisor=self.bug_team,
@@ -68,14 +68,14 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
     def test_privateBugSubscriber(self):
         # A person subscribed to a private bug can see it.
         user = self.factory.makePerson()
-        with person_logged_in(self.owner):
+        with celebrity_logged_in('admin'):
             self.bug.subscribe(user, self.owner)
         self.assertTrue(self.bug.userCanView(user))
 
     def test_privateBugAssignee(self):
         # The bug assignee can see the private bug.
         bug_assignee = self.factory.makePerson(name="bugassignee")
-        with person_logged_in(self.product.owner):
+        with celebrity_logged_in('admin'):
             self.bug.default_bugtask.transitionToAssignee(bug_assignee)
         self.assertTrue(self.bug.userCanView(bug_assignee))
 
