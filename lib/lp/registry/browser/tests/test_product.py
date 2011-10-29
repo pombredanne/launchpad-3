@@ -321,6 +321,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
              'license_approved': False,
              'search_text': None,
              'licenses': set(),
+             'has_subscription': None,
              'created_after': None,
              'created_before': None,
              'subscription_expires_after': None,

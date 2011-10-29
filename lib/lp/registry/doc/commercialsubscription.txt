@@ -383,14 +383,14 @@ then display name.
     Gnome Applets
     gnomebaker
 
-The license_info field is also serch for matching search_text:
+The license_info field is also searched for matching search_text:
 
     >>> bzr.license_info = 'Code in /contrib is under a mit-like license.'
     >>> for product in product_set.forReview(search_text='mit'):
     ...     print product.name
     bzr
 
-The whiteboard field is also serch for matching search_text:
+The whiteboard field is also searched for matching search_text:
 
     >>> from lp.testing import celebrity_logged_in
     >>> with celebrity_logged_in('registry_experts'):
@@ -491,6 +491,13 @@ the web form delivers.
     ...     created_before=bzr.datecreated.date() + one_day):
     ...     print product.name
     bzr
+
+A reviewer can search for projects without a commercial subscription.
+
+    >>> for product in product_set.forReview(
+    ...     has_subscription=False, licenses=[License.OTHER_PROPRIETARY]):
+    ...     print product.name
+    mega-money-maker
 
 You can search for products based on the date of that
 its commercial subscription was modified, which only

@@ -1451,6 +1451,7 @@ class ProductSet:
     def forReview(self, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
                   created_after=None, created_before=None,
+                  has_subscription=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
                   subscription_modified_after=None,
@@ -1536,9 +1537,18 @@ class ProductSet:
                     subscription_modified_before)
             needs_join = True
 
-        if needs_join:
+        if needs_join or has_subscription:
             conditions.append(
                 CommercialSubscription.productID == Product.id)
+
+        if has_subscription is False:
+            conditions.append(SQL('''
+                NOT EXISTS (
+                    SELECT 1
+                    FROM CommercialSubscription
+                    WHERE CommercialSubscription.product = Product.id
+                    LIMIT 1)
+                '''))
 
         if licenses is not None and len(licenses) > 0:
             conditions.append(SQL('''EXISTS (

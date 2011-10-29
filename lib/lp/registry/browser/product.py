@@ -1872,6 +1872,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         'project_reviewed',
         'license_approved',
         'licenses',
+        'has_subscription',
         ]
 
     side_by_side_field_names = [
@@ -1888,6 +1889,8 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget('project_reviewed', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('license_approved', LaunchpadRadioWidget,
+                  _messageNoValue="(do not filter)")
+    custom_widget('has_subscription', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)

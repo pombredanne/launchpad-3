@@ -919,6 +919,7 @@ class IProductSet(Interface):
                        value_type=Choice(vocabulary=License)),
         created_after=Date(title=_("Created after date")),
         created_before=Date(title=_("Created before date")),
+        has_subscription=Bool(title=_("Has a commercial subscription")),
         subscription_expires_after=Date(
             title=_("Subscription expires after")),
         subscription_expires_before=Date(
@@ -936,6 +937,7 @@ class IProductSet(Interface):
                   licenses=None,
                   created_after=None,
                   created_before=None,
+                  has_subscription=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
                   subscription_modified_after=None,
@@ -1065,6 +1067,10 @@ class IProductReviewSearch(Interface):
         value_type=Choice(vocabulary=License),
         required=False,
         default=set())
+
+    has_subscription = Choice(
+        title=_('Has Commercial Subscription'),
+        values=[True, False], required=False)
 
     created_after = Date(title=_("Created between"), required=False)
 
