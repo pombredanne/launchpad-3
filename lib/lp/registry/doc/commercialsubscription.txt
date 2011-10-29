@@ -383,6 +383,13 @@ then display name.
     Gnome Applets
     gnomebaker
 
+The license_info field is also serch for matching search_text:
+
+    >>> bzr.license_info = 'Code in /contrib is under a mit-like license.'
+    >>> for product in product_set.forReview(search_text='mit'):
+    ...     print product.name
+    bzr
+
 You can search for whether the product is active or not.
 
     >>> for product in product_set.forReview(active=False):
@@ -410,28 +417,6 @@ any one of the licenses listed.
     ...     licenses=[License.GNU_GPL_V2, License.MIT]):
     ...     print product.name
     bzr
-
-You can search for products whose license_info field is empty or not empty.
-This OR the licenses search field must match.
-
-    >>> for product in product_set.forReview(license_info_is_empty=True):
-    ...     print product.name
-    tomcat
-    python-gnome2-dev
-    unassigned
-    arch-mirrors
-    firefox
-    ...
-    >>> for product in product_set.forReview(license_info_is_empty=False):
-    ...     print product.name
-    mega-money-maker
-    obsolete-junk
-    >>> for product in product_set.forReview(license_info_is_empty=False,
-    ...                                      licenses=[License.GNU_GPL_V2]):
-    ...     print product.name
-    bzr
-    mega-money-maker
-    obsolete-junk
 
 It is possible to search for problem project that have been reviewed, but
 not approved
@@ -519,13 +504,6 @@ All the products are returned when no parameters are passed in.
     >>> from lp.registry.model.product import Product
     >>> product_set.forReview().count() == Product.select().count()
     True
-
-The license_info_is_empty parameter only accepts True, False, or None.
-
-    >>> product_set.forReview(license_info_is_empty='foo').count()
-    Traceback (most recent call last):
-    ...
-    AssertionError...
 
 The full text search will not match strings with dots in their name
 but a clause is included to search specifically for the name.

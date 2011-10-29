@@ -1871,7 +1871,6 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         'active',
         'project_reviewed',
         'license_approved',
-        'license_info_is_empty',
         'licenses',
         ]
 
@@ -1889,8 +1888,6 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget('project_reviewed', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('license_approved', LaunchpadRadioWidget,
-                  _messageNoValue="(do not filter)")
-    custom_widget('license_info_is_empty', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)

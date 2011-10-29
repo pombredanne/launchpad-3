@@ -917,7 +917,6 @@ class IProductSet(Interface):
         project_reviewed=Bool(title=_("Is the project license reviewed")),
         licenses=Set(title=_('Licenses'),
                        value_type=Choice(vocabulary=License)),
-        license_info_is_empty=Bool(title=_("License info is empty")),
         created_after=Date(title=_("Created after date")),
         created_before=Date(title=_("Created before date")),
         subscription_expires_after=Date(
@@ -935,7 +934,6 @@ class IProductSet(Interface):
                   active=None,
                   project_reviewed=None,
                   licenses=None,
-                  license_info_is_empty=None,
                   created_after=None,
                   created_before=None,
                   subscription_expires_after=None,
@@ -1061,12 +1059,6 @@ class IProductReviewSearch(Interface):
     license_approved = Choice(
         title=_('Project Approved'), values=[True, False],
         required=False, default=False)
-
-    license_info_is_empty = Choice(
-        title=_('Description of additional licenses'),
-        description=_('Either this field or any one of the selected licenses'
-                      ' must match.'),
-        vocabulary=emptiness_vocabulary, required=False, default=None)
 
     licenses = Set(
         title=_('Licenses'),

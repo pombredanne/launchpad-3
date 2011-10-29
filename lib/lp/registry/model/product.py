@@ -1450,7 +1450,6 @@ class ProductSet:
 
     def forReview(self, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
-                  license_info_is_empty=None,
                   created_after=None, created_before=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
@@ -1472,8 +1471,9 @@ class ProductSet:
         if search_text is not None and search_text.strip() != '':
             conditions.append(SQL('''
                 Product.fti @@ ftq(%(text)s) OR
-                Product.name = lower(%(text)s)
-                ''' % sqlvalues(text=search_text)))
+                Product.name = %(text)s OR
+                strpos(lower(Product.license_info), %(text)s) > 0
+                ''' % sqlvalues(text=search_text.lower())))
 
         def dateToDatetime(date):
             """Convert a datetime.date to a datetime.datetime
@@ -1540,21 +1540,6 @@ class ProductSet:
                 CommercialSubscription.productID == Product.id)
 
         or_conditions = []
-        if license_info_is_empty is True:
-            # Match products whose license_info doesn't contain
-            # any non-space characters.
-            or_conditions.append("Product.license_info IS NULL")
-            or_conditions.append(r"Product.license_info ~ E'^\\s*$'")
-        elif license_info_is_empty is False:
-            # license_info contains something besides spaces.
-            or_conditions.append(r"Product.license_info ~ E'[^\\s]'")
-        elif license_info_is_empty is None:
-            # Don't restrict result if license_info_is_empty is None.
-            pass
-        else:
-            raise AssertionError('license_info_is_empty invalid: %r'
-                                 % license_info_is_empty)
-
         if licenses is not None and len(licenses) > 0:
             or_conditions.append('''EXISTS (
                 SELECT 1
