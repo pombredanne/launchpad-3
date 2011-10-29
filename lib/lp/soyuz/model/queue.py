@@ -868,7 +868,7 @@ class PackageUpload(SQLBase):
             signer, self.sourcepackagerelease, self.builds, self.customfiles,
             self.archive, self.distroseries, self.pocket, summary_text,
             changes, changesfile_content, changes_file_object,
-            status_action[self.status], dry_run, logger)
+            status_action[self.status], dry_run=dry_run, logger=logger)
 
     def _isPersonUploader(self, person):
         """Return True if person is an uploader to the package's distro."""
