@@ -1472,7 +1472,8 @@ class ProductSet:
             conditions.append(SQL('''
                 Product.fti @@ ftq(%(text)s) OR
                 Product.name = %(text)s OR
-                strpos(lower(Product.license_info), %(text)s) > 0
+                strpos(lower(Product.license_info), %(text)s) > 0 OR
+                strpos(lower(Product.reviewer_whiteboard), %(text)s) > 0
                 ''' % sqlvalues(text=search_text.lower())))
 
         def dateToDatetime(date):
@@ -1539,19 +1540,15 @@ class ProductSet:
             conditions.append(
                 CommercialSubscription.productID == Product.id)
 
-        or_conditions = []
         if licenses is not None and len(licenses) > 0:
-            or_conditions.append('''EXISTS (
+            conditions.append(SQL('''EXISTS (
                 SELECT 1
                 FROM ProductLicense
                 WHERE ProductLicense.product = Product.id
                     AND license IN %s
                 LIMIT 1
                 )
-                ''' % sqlvalues(tuple(licenses)))
-
-        if len(or_conditions) != 0:
-            conditions.append(SQL('(%s)' % '\nOR '.join(or_conditions)))
+                ''' % sqlvalues(tuple(licenses))))
 
         result = IStore(Product).find(
             Product, *conditions).config(

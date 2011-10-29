@@ -390,6 +390,16 @@ The license_info field is also serch for matching search_text:
     ...     print product.name
     bzr
 
+The whiteboard field is also serch for matching search_text:
+
+    >>> from lp.testing import celebrity_logged_in
+    >>> with celebrity_logged_in('registry_experts'):
+    ...     bzr.reviewer_whiteboard = (
+    ...         'cc-nc discriminates against commercial uses.')
+    >>> for product in product_set.forReview(search_text='cc-nc'):
+    ...     print product.name
+    bzr
+
 You can search for whether the product is active or not.
 
     >>> for product in product_set.forReview(active=False):
