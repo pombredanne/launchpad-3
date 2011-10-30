@@ -287,7 +287,8 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(private=True, product=product)
         self.factory.makeProduct(name='fnord')
-        login_person(bug.bugtasks[0].target.owner)
+        login_celebrity('admin')
+        login_person(bug.owner)
         command = AffectsEmailCommand('affects', ['fnord'])
         error = self.assertRaises(
             EmailProcessingError, command.execute, bug, None)
@@ -348,7 +349,7 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
 
     def test_execute_bug(self):
         bug = self.factory.makeBug()
-        login_person(bug.bugtasks[0].target.owner)
+        login_person(bug.owner)
         command = PrivateEmailCommand('private', ['yes'])
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)
@@ -386,7 +387,7 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
 
     def test_execute_bug(self):
         bug = self.factory.makeBug()
-        login_person(bug.bugtasks[0].target.owner)
+        login_person(bug.owner)
         command = SecurityEmailCommand('security', ['yes'])
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)
