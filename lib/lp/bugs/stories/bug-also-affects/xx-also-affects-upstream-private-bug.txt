@@ -1,4 +1,5 @@
-= Notification of Confidentiality on Upstream Bugfix Requests =
+Notification of Confidentiality on Upstream Bugfix Requests
+===========================================================
 
 When a user files an upstream bugfix request against a bug that is
 confidential but not a security vulnerability, the user will be told that the
@@ -11,7 +12,8 @@ processes. So we need to use a feature flag to perform the next tests.
 
     >>> from lp.services.features.testing import FeatureFixture
     >>> feature_flag = {
-    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on',
+    ...     }
     >>> privacy_flags = FeatureFixture(feature_flag)
     >>> privacy_flags.setUp()
 
@@ -19,12 +21,15 @@ processes. So we need to use a feature flag to perform the next tests.
     >>> admin_browser.getControl('Bug Supervisor').value = 'name16'
     >>> admin_browser.getControl('Change').click()
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12/+secrecy')
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/12/+secrecy')
     >>> admin_browser.getControl(
     ...     'This bug report should be private').selected = True
     >>> admin_browser.getControl('Change').click()
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12/+choose-affected-product')
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/12/'
+    ...     '+choose-affected-product')
     >>> admin_browser.getControl('Project:').value = 'firefox'
     >>> admin_browser.getControl('Continue').click()
 

@@ -7,8 +7,8 @@ from datetime import (
     datetime,
     timedelta,
     )
-from pytz import UTC
 
+from pytz import UTC
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
@@ -21,14 +21,14 @@ from lp.bugs.enum import (
     BugNotificationLevel,
     BugNotificationStatus,
     )
-from lp.bugs.model.bugnotification import BugNotificationRecipient
-from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
+from lp.bugs.model.bugnotification import BugNotificationRecipient
+from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
@@ -759,7 +759,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.setPrivacyAndSecurityRelated(
                 private=False, security_related=True, who=who)
             subscribers = bug.getDirectSubscribers()
-            self.assertFalse(default_bugtask.pillar.bug_supervisor in subscribers)
+            self.assertNotIn(
+                default_bugtask.pillar.bug_supervisor, subscribers)
 
             expected_recipients = [
                 default_bugtask.pillar.bug_supervisor,
