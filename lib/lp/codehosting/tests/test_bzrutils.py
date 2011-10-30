@@ -195,7 +195,7 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # This makes sure the connections held by the branches opened in the
         # test are dropped, so the daemon threads serving those branches can
         # exit.
-        self.addCleanUp(gc.collect)
+        self.addCleanup(gc.collect)
 
     def test_get_vfs_format_classes(self):
         # get_vfs_format_classes for a returns the underlying format classes

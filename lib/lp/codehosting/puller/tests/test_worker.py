@@ -503,7 +503,7 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
         SafeBranchOpener.install_hook()
         self.saved_factory = bzrlib.ui.ui_factory
         self.disable_directory_isolation()
-        self.addCleanUp(setattr, bzrlib.ui, 'ui_factory', self.saved_factory)
+        self.addCleanup(setattr, bzrlib.ui, 'ui_factory', self.saved_factory)
 
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""
