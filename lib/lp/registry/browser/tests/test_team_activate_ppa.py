@@ -3,8 +3,13 @@
 
 __metaclass__ = type
 
+from canonical.launchpad.testing.pages import first_tag_by_class
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -16,26 +21,31 @@ class TestTeamActivatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_moderated_team_has_link(self):
-        # Moderated teams have a link to create a new PPA.
-        team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        with person_logged_in(team.teamowner):
-            view = create_initialized_view(
-                team, '+index', principal=team.teamowner)
-            html = view()
-        self.assertTrue('Create a new PPA' in html)
-        self.assertFalse(
-            'Open or Delegated teams can not create PPAs.' in html)
+    def test_closed_teams_has_link(self):
+        # Closed teams (a subscription policy of Moderated or Restricted)
+        # have a link to create a new PPA.
+        for policy in CLOSED_TEAM_POLICY:
+            team = self.factory.makeTeam(subscription_policy=policy)
+            with person_logged_in(team.teamowner):
+                view = create_initialized_view(
+                    team, '+index', principal=team.teamowner)
+                html = view()
+            create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')
+            self.assertEqual(create_ppa.get('href'), 
+                '%s/+activate-ppa' % canonical_url(team))
+            message = first_tag_by_class(html, 'cannot-create-ppa-message')
+            self.assertIs(None, message)
 
     def test_open_team_does_not_have_link(self):
-        # Open teams do not have a link to create a new PPA.
-        team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
-        with person_logged_in(team.teamowner):
-            view = create_initialized_view(
-                team, '+index', principal=team.teamowner)
-            html = view()
-        self.assertFalse('Create a new PPA' in html)
-        self.assertTrue(
-            'Open or Delegated teams can not create PPAs.' in html)
+        # Open teams (a subscription policy of Open or Delegated) do not
+        # have a link to create a new PPA.
+        for policy in OPEN_TEAM_POLICY:
+            team = self.factory.makeTeam(subscription_policy=policy)
+            with person_logged_in(team.teamowner):
+                view = create_initialized_view(
+                    team, '+index', principal=team.teamowner)
+                html = view()
+            create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')
+            self.assertIs(None, create_ppa)
+            message = first_tag_by_class(html, 'cannot-create-ppa-message')
+            self.assertIsNot(None, message)

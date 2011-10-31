@@ -15,7 +15,7 @@
             tal:content="structure link/fmt:icon-link" />
       </tal:can-create-ppa>
       <tal:cannot-create-ppa condition="not: context/canCreatePPA">
-        <span>
+        <span class="cannot-create-ppa-message">
           <span class="security sprite"></span>
           Open or Delegated teams can not create PPAs.&nbsp;
           <a href="+edit" class="edit sprite"></a>
