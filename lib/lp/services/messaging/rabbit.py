@@ -24,7 +24,6 @@ from transaction._transaction import Status as TransactionStatus
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
@@ -190,8 +189,8 @@ class RabbitUnreliableSession(RabbitSession):
         except self.suppressed_errors:
             pass
         except Exception:
-            error_utility = ErrorReportingUtility()
-            error_utility.raising(sys.exc_info())
+            from canonical.launchpad.webapp import errorlog
+            errorlog.globalErrorUtility.raising(sys.exc_info())
 
 
 # Per-thread "unreliable" sessions.

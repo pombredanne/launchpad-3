@@ -198,21 +198,25 @@ class TestRabbitSession(RabbitTestCase):
 class TestRabbitUnreliableSession(TestRabbitSession):
 
     session_factory = RabbitUnreliableSession
-    layer = LaunchpadFunctionalLayer
+    layer = RabbitMQLayer
 
     def setUp(self):
         super(TestRabbitUnreliableSession, self).setUp()
-        self.oops_capture.sync()
-        self.prev_oops = self.oopses[-1]
+        self.prev_oops = self.getOops()
+
+    def getOops(self):
+        try:
+            self.oops_capture.sync()
+            return self.oopses[-1]
+        except IndexError:
+            return None
 
     def assertNoOops(self):
-        self.oops_capture.sync()
-        oops_report = self.oopses[-1]
+        oops_report = self.getOops()
         self.assertEqual(repr(self.prev_oops), repr(oops_report))
 
     def assertOops(self, text_in_oops):
-        self.oops_capture.sync()
-        oops_report = self.oopses[-1]
+        oops_report = self.getOops()
         self.assertNotEqual(
             repr(self.prev_oops), repr(oops_report), 'No OOPS reported!')
         self.assertIn(text_in_oops, str(oops_report))
