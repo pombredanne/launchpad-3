@@ -10,6 +10,10 @@ provisions to handle Bazaar branches.
 __metaclass__ = type
 
 from bzrlib.revision import NULL_REVISION
+from testtools.matchers import (
+    Equals,
+    MatchesAny,
+    )
 import transaction
 from zope.component import getUtility
 
@@ -91,10 +95,16 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         queue = getUtility(ITranslationImportQueue)
         self.assertEqual(0, queue.countEntries())
 
+        # XXX: Robert Collins - bug 884036 - test_rosetta_branches_script does
+        # a commit() which resets the test db out from under the running slave
+        # appserver, requests to it then (correctly) log oopses as a DB
+        # connection is *not normal*. So when both tests are run, we see 8 of
+        # these oopses (4 pairs of 2); when run alone we don't.
         self.oops_capture.sync()
-        self.assertEqual(
-            1, len(self.oopses), "Too Many OOPSes %r" % self.oopses)
-        oops_report = self.oopses[0]
+        self.assertThat(
+            len(self.oopses), MatchesAny(Equals(1), Equals(9)),
+            "Unexpected number of OOPSes %r" % self.oopses)
+        oops_report = self.oopses[-1]
         self.assertIn(
             'INFO    Job resulted in OOPS: %s\n' % oops_report['id'], stderr)
         self.assertEqual('NoSuchRevision', oops_report['type'])
