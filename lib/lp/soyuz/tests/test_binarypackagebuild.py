@@ -15,7 +15,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
@@ -39,7 +43,11 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    api_url,
+    logout,
+    TestCaseWithFactory,
+    )
 
 
 class TestBinaryPackageBuild(TestCaseWithFactory):
@@ -524,3 +532,28 @@ class TestGetUploadMethodsForBinaryPackageBuild(
 class TestHandleStatusForBinaryPackageBuild(
     MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TrialTestCase):
     """IPackageBuild.handleStatus works with binary builds."""
+
+
+class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
+    """Test cases for BinaryPackageBuild on the webservice.
+
+    NB. Note that most tests are currently in
+    lib/lp/soyuz/stories/webservice/xx-builds.txt but unit tests really
+    ought to be here instead.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBinaryPackageBuildWebservice, self).setUp()
+        self.webservice = LaunchpadWebServiceCaller()
+
+    def test_exports_can_be_cancelled(self):
+        build = self.factory.makeBinaryPackageBuild()
+        expected = build.can_be_cancelled
+        entry_url = api_url(build)
+        logout()
+        entry = self.webservice.get(
+            entry_url, api_version='devel').jsonBody()
+        self.assertEqual(expected, entry['can_be_cancelled'])
+

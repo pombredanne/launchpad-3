@@ -66,3 +66,6 @@ class TestBuilderEntry(TestCaseWithFactory):
         entry = self.webservice.get(
             api_url(builder), api_version='devel').jsonBody()
         self.assertEndsWith(entry['processor_link'], '/+processors/s1')
+
+    def test_exports_can_be_cancelled(self):
+
