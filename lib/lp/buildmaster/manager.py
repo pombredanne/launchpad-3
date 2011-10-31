@@ -6,11 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'BaseDispatchResult',
     'BuilddManager',
     'BUILDD_MANAGER_LOG_NAME',
-    'FailDispatchResult',
-    'ResetDispatchResult',
     ]
 
 import logging
@@ -172,7 +169,7 @@ class SlaveScanner:
                     "job '%s' failure count: %s" % (
                         self.builder_name,
                         builder.failure_count,
-                        build_farm_job.title, 
+                        build_farm_job.title,
                         build_farm_job.failure_count))
             else:
                 self.logger.info(
@@ -290,6 +287,7 @@ class SlaveScanner:
             # See if there is a job we can dispatch to the builder slave.
 
             d = self.builder.findAndStartJob()
+
             def job_started(candidate):
                 if self.builder.currentjob is not None:
                     # After a successful dispatch we can reset the

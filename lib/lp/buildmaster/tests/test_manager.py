@@ -427,6 +427,7 @@ class TestSlaveScannerScan(TestCase):
         # if it got called later.
         slave = BuildingSlave(build_id="8-1")
         call_counter = FakeMethod()
+
         def fake_resume():
             call_counter()
             return defer.succeed((None, None, 0))
@@ -506,6 +507,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         # If a build is CANCELLING, make sure True is returned and the
         # slave was resumed.
         call_counter = FakeMethod()
+
         def fake_resume():
             call_counter()
             return defer.succeed((None, None, 0))
@@ -707,7 +709,7 @@ def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
         increase if the process is logging to this file.
     """
     last_size = None
-    for poll in range(poll_repeat+1):
+    for poll in range(poll_repeat + 1):
         try:
             statinfo = os.stat(filepath)
             if last_size is None:
@@ -751,7 +753,7 @@ class TestBuilddManagerScript(TestCaseWithFactory):
         self.assertTrue(is_file_growing(logfilepath))
         # After rotating the log, the process keeps using the old file, no
         # new file is created.
-        rotated_logfilepath = logfilepath+'.1'
+        rotated_logfilepath = logfilepath + '.1'
         os.rename(logfilepath, rotated_logfilepath)
         self.assertTrue(is_file_growing(rotated_logfilepath))
         self.assertFalse(os.access(logfilepath, os.F_OK))
@@ -767,7 +769,7 @@ class TestBuilddManagerScript(TestCaseWithFactory):
         # 1000000 bytes but this is deactivated for the buildd manager.
         test_setup = BuilddManagerTestSetup()
         logfilepath = test_setup.logfile
-        rotated_logfilepath = logfilepath+'.1'
+        rotated_logfilepath = logfilepath + '.1'
         # Prefill the log file to just under 1000000 bytes.
         test_setup.precreateLogfile(
             "2010-07-27 12:36:54+0200 [-] Starting scanning cycle.\n", 18518)
