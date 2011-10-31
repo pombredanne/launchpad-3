@@ -92,9 +92,6 @@ def create_initialized_view(context, name, form=None, layer=None,
             method = 'GET'
         else:
             method = 'POST'
-    if not server_url:
-        server_url = canonical_url(context)
-        path_info = ''
     view = create_view(
         context, name, form, layer, server_url, method, principal,
         query_string, cookie, request, path_info, rootsite=rootsite,

@@ -21,15 +21,19 @@ class TestTeamActivatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def create_view(self, team):
+        with person_logged_in(team.teamowner):
+            view = create_initialized_view(
+                team, '+index', principal=team.teamowner,
+                server_url=canonical_url(team), path_info='')
+            return view()
+
     def test_closed_teams_has_link(self):
         # Closed teams (a subscription policy of Moderated or Restricted)
         # have a link to create a new PPA.
         for policy in CLOSED_TEAM_POLICY:
             team = self.factory.makeTeam(subscription_policy=policy)
-            with person_logged_in(team.teamowner):
-                view = create_initialized_view(
-                    team, '+index', principal=team.teamowner)
-                html = view()
+            html = self.create_view(team)
             create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')
             self.assertEqual(
                 create_ppa.get('href'),
@@ -42,10 +46,7 @@ class TestTeamActivatePPA(TestCaseWithFactory):
         # have a link to create a new PPA.
         for policy in OPEN_TEAM_POLICY:
             team = self.factory.makeTeam(subscription_policy=policy)
-            with person_logged_in(team.teamowner):
-                view = create_initialized_view(
-                    team, '+index', principal=team.teamowner)
-                html = view()
+            html = self.create_view(team)
             create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')
             self.assertIs(None, create_ppa)
             message = first_tag_by_class(html, 'cannot-create-ppa-message')
