@@ -484,7 +484,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         # If the builder is nonvirtual make sure we return False.
         self.builder.virtualized = False
         d = self.scanner.checkCancellation(self.builder)
-        d.addCallback(lambda result: self.assertFalse(result))
+        return d.addCallback(lambda result: self.assertFalse(result))
 
     def test_ignores_no_buildqueue(self):
         # If the builder has no buildqueue associated,
@@ -492,7 +492,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         buildqueue = self.builder.currentjob
         buildqueue.reset()
         d = self.scanner.checkCancellation(self.builder)
-        d.addCallback(lambda result: self.assertFalse(result))
+        return d.addCallback(lambda result: self.assertFalse(result))
 
     def test_ignores_build_not_cancelling(self):
         # If the active build is not in a CANCELLING state, ignore it.
@@ -500,7 +500,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.status = BuildStatus.BUILDING
         d = self.scanner.checkCancellation(self.builder)
-        d.addCallback(lambda result: self.assertFalse(result))
+        return d.addCallback(lambda result: self.assertFalse(result))
 
     def test_cancelling_build_is_cancelled(self):
         # If a build is CANCELLING, make sure True is returned and the
@@ -523,7 +523,7 @@ class TestCancellationChecking(TestCaseWithFactory):
             self.assertEqual(BuildStatus.CANCELLED, build.status)
 
         d = self.scanner.checkCancellation(self.builder)
-        d.addCallback(check)
+        return d.addCallback(check)
 
 
 class TestBuilddManager(TestCase):
