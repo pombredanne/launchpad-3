@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0603
@@ -247,17 +247,18 @@ class TxLongPollService(Service):
         return config.txlongpoll.launch
 
     def launch(self):
-        txlongpoll_bin = os.path.join(config.root, 'bin', 'txlongpoll')
+        twistd_bin = os.path.join(
+            config.root, 'bin', 'twistd-for-txlongpoll')
         broker_hostname, broker_port = as_host_port(
             config.rabbitmq.host, None, None)
         self.server = TxLongPollServer(
-            txlongpoll_bin = txlongpoll_bin,
-            frontend_port = config.txlongpoll.frontend_port,
-            broker_user = config.rabbitmq.userid,
-            broker_password = config.rabbitmq.password,
-            broker_vhost = config.rabbitmq.virtual_host,
-            broker_host = broker_hostname,
-            broker_port = broker_port)
+            twistd_bin=twistd_bin,
+            frontend_port=config.txlongpoll.frontend_port,
+            broker_user=config.rabbitmq.userid,
+            broker_password=config.rabbitmq.password,
+            broker_vhost=config.rabbitmq.virtual_host,
+            broker_host=broker_hostname,
+            broker_port=broker_port)
         self.useFixture(self.server)
 
 
@@ -357,19 +358,21 @@ def start_testapp(argv=list(sys.argv)):
     assert config.instance_name.startswith('testrunner-appserver'), (
         '%r does not start with "testrunner-appserver"' %
         config.instance_name)
-    interactive_tests = 'INTERACTIVE_TESTS' in os.environ
 
     def setup():
         # This code needs to be run after other zcml setup happens in
         # runlaunchpad, so it is passed in as a callable.
+        # Note that this changes the config instance-name, with the result that
+        # the configuration of utilities may become invalidated.
+        # XXX: Robert Collins - see bug 883980 about this. In short, we should
+        # inherit the other services from the test runner, rather than
+        # duplicating the work of test setup within the slave appserver. That
+        # will permit reuse of the librarian, DB, rabbit etc and
+        # correspondingly easier assertions and inspection of interactions with
+        # other services. That would mean we do not need to setup rabbit or the
+        # librarian here : the test runner would control and take care of that.
         BaseLayer.setUp()
-        if interactive_tests:
-            # The test suite runs its own RabbitMQ.  We only need this
-            # for interactive tests.  We set it up here rather than by
-            # passing it in as an argument to start_launchpad because
-            # the appserver config does not normally need/have
-            # RabbitMQ config set.
-            RabbitMQLayer.setUp()
+        RabbitMQLayer.setUp()
         # We set up the database here even for the test suite because we want
         # to be able to control the database here in the subprocess.  It is
         # possible to do that when setting the database up in the parent
@@ -389,11 +392,10 @@ def start_testapp(argv=list(sys.argv)):
         LibrarianLayer.tearDown()
         DatabaseLayer.tearDown()
         uninstallFakeConnect()
-        if interactive_tests:
-            try:
-                RabbitMQLayer.tearDown()
-            except NotImplementedError:
-                pass
+        try:
+            RabbitMQLayer.tearDown()
+        except NotImplementedError:
+            pass
         BaseLayer.tearDown()
 
 

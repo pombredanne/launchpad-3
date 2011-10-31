@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ApportJobs."""
@@ -25,6 +25,8 @@ from canonical.testing.layers import (
     )
 from lp.bugs.interfaces.apportjob import (
     ApportJobType,
+    IApportJob,
+    IProcessApportBlobJob,
     IProcessApportBlobJobSource,
     )
 from lp.bugs.model.apportjob import (
@@ -65,6 +67,7 @@ class ApportJobTestCase(TestCaseWithFactory):
         # passed in.
         metadata_expected = [u'some', u'arbitrary', u'metadata']
         self.assertEqual(metadata_expected, apport_job.metadata)
+        self.assertProvides(apport_job, IApportJob)
 
 
 class ApportJobDerivedTestCase(TestCaseWithFactory):
@@ -95,7 +98,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         blob_data = blob_file.read()
 
         self.blob = self.factory.makeBlob(blob_data)
-        transaction.commit() # We need the blob available from the Librarian.
+        transaction.commit()  # We need the blob available from the Librarian.
 
     def _assertFileBugDataMatchesDict(self, filebug_data, data_dict):
         """Asser that the data in a FileBugData object matches a dict."""
@@ -173,6 +176,11 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
                     "The attachment's file alias doesn't match it's "
                     "file_alias_id")
 
+    def test_interface(self):
+        # ProcessApportBlobJob instances provide IProcessApportBlobJobSource.
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
+        self.assertProvides(job, IProcessApportBlobJob)
+
     def test_run(self):
         # IProcessApportBlobJobSource.run() extracts salient data from an
         # Apport BLOB and stores it in the job's metadata attribute.
@@ -237,7 +245,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             "There should be only one ProcessApportBlobJob. Found %s" %
             len(current_jobs))
 
-        another_job = blobjobsource.create(self.blob)
+        blobjobsource.create(self.blob)  # Another job.
         current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             1, len(current_jobs),
@@ -366,7 +374,7 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
 
         self.assertEqual(
             len(blob_meta['attachments']), 2,
-            "BLOB metadata: %s" %(str(blob_meta)))
+            "BLOB metadata: %s" % str(blob_meta))
 
     def test_adding_blob_adds_job(self):
         # Using the TemporaryBlobStorageAddView to upload a new BLOB

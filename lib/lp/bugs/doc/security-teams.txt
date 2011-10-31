@@ -202,8 +202,17 @@ subscribed.
     >>> subscriber_names(bug)
     [u'name12', u'name16']
 
-    >>> bug_in_evolution = bugtaskset.createTask(bug, foobar, evolution)
+We are moving away from allowing private bugs to affect multiple projects.
+This is required still for some teams until they update their tools and
+processes. So we need to use a feature flag to perform the next tests.
 
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+    >>> privacy_flags = FeatureFixture(feature_flag)
+    >>> privacy_flags.setUp()
+
+    >>> bug_in_evolution = bugtaskset.createTask(bug, foobar, evolution)
     >>> subscriber_names(bug)
     [u'name12', u'name16']
 
@@ -283,13 +292,13 @@ When a bug becomes security-related, the security contacts for the pillars it
 affects are subscribed to it. This happens regardless of whether the feature
 flag is set.
 
-We current use a feature flag to control who is subscribed when a bug is made
-security related.
+We currently use a feature flag to control who is subscribed when a bug is
+made security related.
 
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
+    >>> feature_flag = {
+    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> security_flags = FeatureFixture(feature_flag)
+    >>> security_flags.setUp()
 
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
@@ -317,9 +326,10 @@ security related.
     Distribution Security Contact
     Product Security Contact
 
-Clean up the feature flag.
+Clean up the feature flags.
 
-    >>> flags.cleanUp()
+    >>> security_flags.cleanUp()
+    >>> privacy_flags.cleanUp()
 
 And once more without the feature flag.
 

@@ -24,7 +24,6 @@ from lp.services.mail.incoming import (
     authenticateEmail,
     extract_addresses,
     handleMail,
-    MailErrorUtility,
     ORIGINAL_TO_HEADER,
     )
 from lp.services.mail.sendmail import MailController
@@ -58,14 +57,8 @@ class TestIncoming(TestCaseWithFactory):
             email_address, 'to@example.com', 'subject', invalid_body,
             bulk=False)
         ctrl.send()
-        error_utility = MailErrorUtility()
-        old_oops = error_utility.getLastOopsReport()
         handleMail()
-        current_oops = error_utility.getLastOopsReport()
-        if old_oops is None:
-            self.assertIs(None, current_oops)
-        else:
-            self.assertEqual(old_oops.id, current_oops.id)
+        self.assertEqual([], self.oopses)
         [notification] = pop_notifications()
         body = notification.get_payload()[0].get_payload(decode=True)
         self.assertIn(
@@ -83,14 +76,8 @@ class TestIncoming(TestCaseWithFactory):
         # To and CC headers from the raw_mail. Also, TestMailer is used here
         # because MailController won't send an email with a broken To: header.
         TestMailer().send("from@example.com", "to@example.com", raw_mail)
-        error_utility = MailErrorUtility()
-        old_oops = error_utility.getLastOopsReport()
         handleMail()
-        current_oops = error_utility.getLastOopsReport()
-        if old_oops is None:
-            self.assertIs(None, current_oops)
-        else:
-            self.assertEqual(old_oops.id, current_oops.id)
+        self.assertEqual([], self.oopses)
 
     def test_bad_signature_timestamp(self):
         """If the signature is nontrivial future-dated, it's not trusted."""

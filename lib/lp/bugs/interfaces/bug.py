@@ -635,7 +635,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @operation_parameters(target=copy_field(IBugTask['target']))
     @export_factory_operation(IBugTask, [])
     def addTask(owner, target):
-        """Create a new bug task on this bug."""
+        """Create a new bug task on this bug.
+
+        :raises IllegalTarget: if the bug task cannot be added to the bug.
+        """
 
     def hasBranch(branch):
         """Is this branch linked to this bug?"""

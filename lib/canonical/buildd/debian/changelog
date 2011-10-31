@@ -1,3 +1,9 @@
+launchpad-buildd (81) hardy-cat; urgency=low
+
+  * generate-translation-templates: switch to Python 2.7.
+
+ -- Danilo Šegan <danilo@canonical.com>  Mon, 17 Oct 2011 14:46:13 +0200
+
 launchpad-buildd (80) hardy-cat; urgency=low
 
   * binfmt-support demonstrated umount ordering issues for us.  LP: #851934

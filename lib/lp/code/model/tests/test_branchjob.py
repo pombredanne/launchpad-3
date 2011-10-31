@@ -36,7 +36,6 @@ from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file,
     )
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -99,8 +98,9 @@ class TestBranchJob(TestCaseWithFactory):
     def test_providesInterface(self):
         """Ensure that BranchJob implements IBranchJob."""
         branch = self.factory.makeAnyBranch()
-        verifyObject(
-            IBranchJob, BranchJob(branch, BranchJobType.STATIC_DIFF, {}))
+        self.assertProvides(
+            BranchJob(branch, BranchJobType.STATIC_DIFF, {}),
+            IBranchJob)
 
     def test_destroySelf_destroys_job(self):
         """Ensure that BranchJob.destroySelf destroys the Job as well."""
@@ -132,7 +132,7 @@ class TestBranchScanJob(TestCaseWithFactory):
         """Ensure that BranchScanJob implements IBranchScanJob."""
         branch = self.factory.makeAnyBranch()
         job = BranchScanJob.create(branch)
-        verifyObject(IBranchScanJob, job)
+        self.assertProvides(job, IBranchScanJob)
 
     def test_run(self):
         """Ensure the job scans the branch."""
@@ -187,7 +187,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         job = BranchUpgradeJob.create(branch, self.factory.makePerson())
-        verifyObject(IBranchUpgradeJob, job)
+        self.assertProvides(job, IBranchUpgradeJob)
 
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
@@ -271,8 +271,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         job = BranchUpgradeJob(branch_job)
         self.becomeDbUser(config.upgrade_branches.dbuser)
         runner = JobRunner([job])
-        with self.noOops():
-            runner.runJobHandleError(job)
+        runner.runJobHandleError(job)
+        self.assertEqual([], self.oopses)
         (mail,) = pop_notifications()
         self.assertEqual(
             'Launchpad error while upgrading a branch', mail['subject'])
@@ -289,7 +289,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', 'subject')
-        verifyObject(IRevisionMailJob, job)
+        self.assertProvides(job, IRevisionMailJob)
 
     def test_repr(self):
         """Ensure that the revision mail job as a reasonable repr."""
@@ -972,7 +972,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         job = self._makeRosettaUploadJob()
-        verifyObject(IRosettaUploadJob, job)
+        self.assertProvides(job, IRosettaUploadJob)
 
     def test_upload_pot(self):
         # A POT can be uploaded to a product series that is

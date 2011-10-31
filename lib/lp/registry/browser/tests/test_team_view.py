@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -21,6 +21,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
     TeamMembershipRenewalPolicy)
+from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -159,17 +160,32 @@ class TestTeamEditView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_cannot_rename_team_with_ppa(self):
-        # A team with a ppa cannot be renamed.
+    def test_cannot_rename_team_with_active_ppa(self):
+        # A team with an active PPA that contains publications cannot be
+        # renamed.
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(owner=owner)
-        removeSecurityProxy(team).archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(owner=team)
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        removeSecurityProxy(team).archive = archive
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
-                'This team cannot be renamed because it has a PPA.',
-                view.widgets['name'].hint)
+                'This team has an active PPA with packages published and '
+                'may not be renamed.', view.widgets['name'].hint)
+
+    def test_can_rename_team_with_deleted_ppa(self):
+        # A team with a deleted PPA can be renamed.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner)
+        archive = self.factory.makeArchive()
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        removeSecurityProxy(archive).status = ArchiveStatus.DELETED
+        removeSecurityProxy(team).archive = archive
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertFalse(view.form_fields['name'].for_display)
 
     def test_cannot_rename_team_with_active_mailinglist(self):
         # Because renaming mailing lists is non-trivial in Mailman 2.1,
@@ -181,7 +197,7 @@ class TestTeamEditView(TestCaseWithFactory):
             view = create_initialized_view(team, name="+edit")
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
-                'This team cannot be renamed because it has a mailing list.',
+                'This team has a mailing list and may not be renamed.',
                 view.widgets['name'].hint)
 
     def test_can_rename_team_with_purged_mailinglist(self):
@@ -203,13 +219,15 @@ class TestTeamEditView(TestCaseWithFactory):
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(owner=owner)
         self.factory.makeMailingList(team, owner)
-        removeSecurityProxy(team).archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(owner=team)
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        removeSecurityProxy(team).archive = archive
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
-                ('This team cannot be renamed because it has a mailing list '
-                 'and has a PPA.'),
+                'This team has an active PPA with packages published and '
+                'a mailing list and may not be renamed.',
                 view.widgets['name'].hint)
 
     def test_edit_team_view_permission(self):

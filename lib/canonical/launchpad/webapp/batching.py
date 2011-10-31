@@ -419,10 +419,10 @@ class StormRangeFactory:
     def reverseSortOrder(self):
         """Return a list of reversed sort expressions."""
         def invert_sort_expression(expr):
-            if isinstance(expression, Desc):
-                return expression.expr
+            if isinstance(expr, Desc):
+                return expr.expr
             else:
-                return Desc(expression)
+                return Desc(expr)
 
         return [
             invert_sort_expression(expression)

@@ -14,6 +14,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.adapters.bugchange import (
     BugTaskAdded,
+    BugTaskDeleted,
     BugWatchAdded,
     BugWatchRemoved,
     CveLinkedToBug,
@@ -96,11 +97,11 @@ def what_changed(sqlobject_modified_event):
 @block_implicit_flushes
 def record_bug_added(bug, object_created_event):
     activity = getUtility(IBugActivitySet).new(
-        bug = bug.id,
-        datechanged = UTC_NOW,
-        person = IPerson(object_created_event.user),
-        whatchanged = "bug",
-        message = "added bug")
+        bug=bug.id,
+        datechanged=UTC_NOW,
+        person=IPerson(object_created_event.user),
+        whatchanged="bug",
+        message="added bug")
     bug.addCommentNotification(bug.initial_message, activity=activity)
 
 
@@ -162,6 +163,16 @@ def notify_bugtask_added(bugtask, event):
     IObjectModifiedEvent.
     """
     bugtask.bug.addChange(BugTaskAdded(UTC_NOW, IPerson(event.user), bugtask))
+
+
+@block_implicit_flushes
+def notify_bugtask_deleted(bugtask, event):
+    """A bugtask has been deleted (removed from a bug).
+
+    bugtask must be in IBugTask. event must be anIObjectDeletedEvent.
+    """
+    bugtask.bug.addChange(
+        BugTaskDeleted(UTC_NOW, IPerson(event.user), bugtask))
 
 
 @block_implicit_flushes
