@@ -1798,8 +1798,6 @@ class BugTaskDeletionView(LaunchpadFormView):
         if self.request.is_ajax:
             launchbag = getUtility(ILaunchBag)
             launchbag.add(bug.default_bugtask)
-#            cache = IJSONRequestCache(self.request)
-#            cache.objects[''] web_link
             view = getMultiAdapter(
                 (bugtask.bug, self.request),
                 name='+bugtasks-and-nominations-table')
