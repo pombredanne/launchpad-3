@@ -6,9 +6,8 @@
 __metaclass__ = type
 
 import os
-import shutil
-import tempfile
 
+from fixtures import TempDir
 import pytz
 
 from lp.services.twistedsupport.loggingsupport import LaunchpadLogFile
@@ -22,8 +21,7 @@ class TestLaunchpadLogFile(TestCase):
 
     def setUp(self):
         super(TestLaunchpadLogFile, self).setUp()
-        self.temp_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.temp_dir)
+        self.temp_dir = self.useFixture(TempDir()).path
 
     def testInitialization(self):
         """`LaunchpadLogFile` initialization.
