@@ -1461,50 +1461,47 @@ def get_bug_privacy_filter_with_decorator(user):
         pillar_privacy_filters = """
              UNION
              SELECT BugTask.bug
-             FROM BugTask, TeamParticipation, Product
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = Product.owner AND
+             FROM BugTask, Product
+             WHERE Product.owner IN (SELECT team FROM teams) AND
                    BugTask.product = Product.id AND
                    BugTask.bug = Bug.id AND
                    Bug.security_related IS False
              UNION
              SELECT BugTask.bug
-             FROM BugTask, TeamParticipation, ProductSeries
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = ProductSeries.owner AND
+             FROM BugTask, ProductSeries
+             WHERE ProductSeries.owner IN (SELECT team FROM teams) AND
                    BugTask.productseries = ProductSeries.id AND
                    BugTask.bug = Bug.id AND
                    Bug.security_related IS False
              UNION
              SELECT BugTask.bug
-             FROM BugTask, TeamParticipation, Distribution
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = Distribution.owner AND
+             FROM BugTask, Distribution
+             WHERE Distribution.owner IN (SELECT team FROM teams) AND
                    BugTask.distribution = Distribution.id AND
                    BugTask.bug = Bug.id AND
                    Bug.security_related IS False
              UNION
              SELECT BugTask.bug
-             FROM BugTask, TeamParticipation, DistroSeries, Distribution
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = Distribution.owner AND
+             FROM BugTask, DistroSeries, Distribution
+             WHERE Distribution.owner IN (SELECT team FROM teams) AND
                    DistroSeries.distribution = Distribution.id AND
                    BugTask.distroseries = DistroSeries.id AND
                    BugTask.bug = Bug.id AND
                    Bug.security_related IS False
-        """ % sqlvalues(personid=user.id)
+        """
     query = """
         (Bug.private = FALSE OR EXISTS (
+             WITH teams AS (
+                SELECT team from TeamParticipation WHERE person = %(personid)s
+             )
              SELECT BugSubscription.bug
-             FROM BugSubscription, TeamParticipation
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = BugSubscription.person AND
+             FROM BugSubscription
+             WHERE BugSubscription.person IN (SELECT team FROM teams) AND
                    BugSubscription.bug = Bug.id
              UNION
              SELECT BugTask.bug
-             FROM BugTask, TeamParticipation
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = BugTask.assignee AND
+             FROM BugTask
+             WHERE BugTask.assignee IN (SELECT team FROM teams) AND
                    BugTask.bug = Bug.id
              %(extra_filters)s
                    ))
