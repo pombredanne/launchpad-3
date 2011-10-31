@@ -57,10 +57,6 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskSet,
     )
-from lp.services.features.model import (
-    FeatureFlag,
-    getFeatureStore,
-    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
@@ -998,9 +994,6 @@ class TestBugTaskEditView(TestCaseWithFactory):
             bug = self.factory.makeBug(product=first_product, private=True)
             bug_task = bug.bugtasks[0]
         second_product = self.factory.makeProduct(name='duck')
-        getFeatureStore().add(FeatureFlag(
-            scope=u'default', value=u'on', priority=1,
-            flag=u'disclosure.private_bug_visibility_rules.enabled'))
 
         # The first product owner can see the private bug. We will re-target
         # it to second_product where it will not be visible to that user.
@@ -1010,8 +1003,10 @@ class TestBugTaskEditView(TestCaseWithFactory):
                 'bunny.target.product': 'duck',
                 'bunny.actions.save': 'Save Changes',
                 }
-            view = create_initialized_view(
-                bug_task, name='+editstatus', form=form)
+            with FeatureFixture({
+                'disclosure.private_bug_visibility_rules.enabled': 'on'}):
+                view = create_initialized_view(
+                    bug_task, name='+editstatus', form=form)
             self.assertEqual(
                 canonical_url(bug_task.pillar, rootsite='bugs'),
                 view.next_url)
@@ -1424,6 +1419,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertIs(None, cache.objects['memo'])
         self.assertEqual(0, cache.objects['start'])
         self.assertTrue(cache.objects['forwards'])
+        self.assertEqual(1, cache.objects['total'])
 
     def test_cache_has_all_batch_vars_specified(self):
         """Cache has all the needed variables.
