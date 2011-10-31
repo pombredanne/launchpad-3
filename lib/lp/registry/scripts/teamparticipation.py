@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from itertools import islice
+
 import transaction
 from zope.component import getUtility
 

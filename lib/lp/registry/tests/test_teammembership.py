@@ -33,6 +33,7 @@ from canonical.launchpad.testing.systemdocs import (
     )
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -51,12 +52,15 @@ from lp.registry.model.teammembership import (
     TeamMembership,
     TeamParticipation,
     )
+from lp.registry.scripts.teamparticipation import check_teamparticipation
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
     login,
     login_celebrity,
     login_person,
     person_logged_in,
     StormStatementRecorder,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
@@ -1042,7 +1046,7 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         self.assertEqual(0, len(notifications))
 
 
-class TestCheckTeamParticipationScript(TestCaseWithFactory):
+class TestCheckTeamParticipationScript(TestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -1146,6 +1150,11 @@ class TestCheckTeamParticipationScript(TestCaseWithFactory):
         self.failUnless(
             re.search('Circular references found', err), (out, err))
 
+
+class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
+
+    layer = LaunchpadScriptLayer
+
     def test_queries(self):
         # Create a deeply nested team and member structure.
         team = self.factory.makeTeam()
@@ -1156,10 +1165,9 @@ class TestCheckTeamParticipationScript(TestCaseWithFactory):
                 team.addMember(another_team, team.teamowner)
                 team.addMember(another_person, team.teamowner)
             team = another_team
-        transaction.commit()
-        out, err = self._runScript(expected_returncode=0)
-        self.assertEqual("", out, (out, err))
-        self.assertEqual("", err, (out, err))
+        flush_database_updates()
+        logger = BufferLogger()
+        check_teamparticipation(logger)
 
 
 def test_suite():
