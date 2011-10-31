@@ -170,6 +170,20 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertEquals("Somebody <somebody@ubuntu.com>",
             self.build.getUploader(MockChanges()))
 
+    def test_can_be_cancelled(self):
+        # For all states that can be cancelled, assert can_be_cancelled
+        # returns True.
+        ok_cases = [
+            BuildStatus.BUILDING,
+            BuildStatus.NEEDSBUILD,
+            ]
+        for status in BuildStatus:
+            if status in ok_cases:
+                self.assertTrue(self.build.can_be_cancelled)
+            else:
+                self.assertFalse(self.build.can_be_cancelled)
+
+
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
 
