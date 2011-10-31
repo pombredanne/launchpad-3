@@ -580,6 +580,7 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         login(ANONYMOUS)
 
     def test_can_be_cancelled_is_exported(self):
+        # Check that the can_be_cancelled property is exported.
         expected = self.build.can_be_cancelled
         entry_url = api_url(self.build)
         logout()
@@ -588,6 +589,7 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         self.assertEqual(expected, entry['can_be_cancelled'])
 
     def test_cancel_is_exported(self):
+        # Check that the cancel() named op is exported.
         build_url = api_url(self.build)
         self.build.queueBuild()
         logout()
@@ -600,3 +602,16 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
             build_url, api_version='devel').jsonBody()
         self.assertEqual(BuildStatus.CANCELLED.title, entry['buildstate'])
 
+    def test_cancel_security(self):
+        # Check that unauthorised users cannot call cancel()
+        build_url = api_url(self.build)
+        person = self.factory.makePerson()
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PUBLIC)
+        logout()
+
+        entry = webservice.get(
+            build_url, api_version='devel').jsonBody()
+        response = webservice.named_post(
+            entry['self_link'], 'cancel', api_version='devel')
+        self.assertEqual(401, response.status)
