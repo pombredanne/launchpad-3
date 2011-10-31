@@ -46,15 +46,19 @@ exceptions. It reports the OOPS.
     ...     except AssertionError, error:
     ...         log_exception('Generated Error: %s', error)
 
+    >>> from lp.testing.fixture import CaptureOops
+    >>> capture = CaptureOops()
+    >>> capture.setUp()
     >>> test_log_exception()
-    >>> oops = error_utility.getLastOopsReport()
-    >>> print oops.id
+    >>> oops = capture.oopses[0]
+    >>> capture.cleanUp()
+    >>> print oops['id']
     OOPS-...TMMX...
-    >>> print oops.type
+    >>> print oops['type']
     AssertionError
-    >>> print oops.value
+    >>> print oops['value']
     There is an OOPS in progress.
-    >>> print oops.tb_text
+    >>> print oops['tb_text']
     Traceback (most recent call last):
     ...
     AssertionError: There is an OOPS in progress.
