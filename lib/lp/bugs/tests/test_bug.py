@@ -24,6 +24,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     )
+from lp.registry.interfaces.accesspolicy import UnsuitableAccessPolicyError
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -304,9 +305,19 @@ class TestBugAccessPolicy(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_setAccessPolicy(self):
-        policy = self.factory.makeAccessPolicy()
-        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        policy = self.factory.makeAccessPolicy(pillar=product)
+        bug = self.factory.makeBug(product=product)
         self.assertIs(None, bug.access_policy)
         with person_logged_in(bug.owner):
             bug.setAccessPolicy(policy)
         self.assertEqual(policy, bug.access_policy)
+
+    def test_setAccessPolicy_other_pillar(self):
+        policy = self.factory.makeAccessPolicy()
+        bug = self.factory.makeBug()
+        self.assertIs(None, bug.access_policy)
+        with person_logged_in(bug.owner):
+            self.assertRaises(
+                UnsuitableAccessPolicyError, bug.setAccessPolicy, policy)
+        self.assertIs(None, bug.access_policy)

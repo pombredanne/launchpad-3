@@ -11,12 +11,21 @@ __all__ = [
     'IAccessPolicyArtifactSource',
     'IAccessPolicyPermission',
     'IAccessPolicySource',
+    'UnsuitableAccessPolicyError',
     ]
 
+import httplib
+
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
     )
+
+
+@error_status(httplib.BAD_REQUEST)
+class UnsuitableAccessPolicyError(Exception):
+    pass
 
 
 class IAccessPolicy(Interface):
