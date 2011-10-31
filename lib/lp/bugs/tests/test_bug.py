@@ -313,6 +313,16 @@ class TestBugAccessPolicy(TestCaseWithFactory):
             bug.setAccessPolicy(policy)
         self.assertEqual(policy, bug.access_policy)
 
+    def test_setAccessPolicy_none(self):
+        product = self.factory.makeProduct()
+        policy = self.factory.makeAccessPolicy(pillar=product)
+        bug = self.factory.makeBug(product=product)
+        self.assertIs(None, bug.access_policy)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(policy)
+            bug.setAccessPolicy(None)
+        self.assertIs(None, bug.access_policy)
+
     def test_setAccessPolicy_other_pillar(self):
         policy = self.factory.makeAccessPolicy()
         bug = self.factory.makeBug()

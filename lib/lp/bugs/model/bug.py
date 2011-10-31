@@ -1763,7 +1763,8 @@ class Bug(SQLBase):
 
     def setAccessPolicy(self, policy):
         """See `IBug`."""
-        if policy.pillar != self.default_bugtask.pillar:
+        if (policy is not None and
+            policy.pillar != self.default_bugtask.pillar):
             raise UnsuitableAccessPolicyError(
                 "Only access policies for %s can be used."
                 % self.default_bugtask.pillar.name)
