@@ -9,13 +9,10 @@ from datetime import (
     )
 import re
 import subprocess
-from testtools.matchers import Equals
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestLoader
 
 import pytz
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -26,10 +23,6 @@ from canonical.database.sqlbase import (
     flush_database_caches,
     flush_database_updates,
     sqlvalues,
-    )
-from canonical.launchpad.ftests import (
-    login,
-    login_person,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.systemdocs import (
@@ -53,16 +46,19 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.model.teammembership import (\
+from lp.registry.model.teammembership import (
     find_team_participations,
     TeamMembership,
     TeamParticipation,
     )
 from lp.testing import (
+    login,
     login_celebrity,
+    login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
-    StormStatementRecorder)
+    )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
 from lp.testing.storm import reload_object
@@ -1046,7 +1042,8 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         self.assertEqual(0, len(notifications))
 
 
-class TestCheckTeamParticipationScript(TestCase):
+class TestCheckTeamParticipationScript(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def _runScript(self, expected_returncode=0):
@@ -1148,6 +1145,21 @@ class TestCheckTeamParticipationScript(TestCase):
         self.assertEqual(out, '', (out, err))
         self.failUnless(
             re.search('Circular references found', err), (out, err))
+
+    def test_queries(self):
+        # Create a deeply nested team and member structure.
+        team = self.factory.makeTeam()
+        for num in xrange(10):
+            another_team = self.factory.makeTeam()
+            another_person = self.factory.makePerson()
+            with person_logged_in(team.teamowner):
+                team.addMember(another_team, team.teamowner)
+                team.addMember(another_person, team.teamowner)
+            team = another_team
+        transaction.commit()
+        out, err = self._runScript(expected_returncode=0)
+        self.assertEqual("", out, (out, err))
+        self.assertEqual("", err, (out, err))
 
 
 def test_suite():

@@ -19,11 +19,21 @@ situation, but that's not a simple thing and this should do for now.
 """
 
 import _pythonpath
-
 import transaction
+from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor
-from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+
+
+def chunked(things, chunk_size=50):
+    """Yield `things` in chunks of not more than `chunk_size` slices."""
+    for offset in xrange(0, len(things), chunk_size):
+        yield things[offset:offset + chunk_size]
 
 
 def check_teamparticipation(log):
@@ -56,7 +66,7 @@ def check_teamparticipation(log):
 
     # Check if there are any missing/spurious TeamParticipation entries.
     cur.execute("SELECT id FROM Person WHERE teamowner IS NOT NULL")
-    team_ids = cur.fetchall()
+    team_ids = [row[0] for row in cur.fetchall()]
     transaction.abort()
 
     def get_participants(team):
@@ -68,12 +78,10 @@ def check_teamparticipation(log):
                 participants.update(get_participants(member))
         return participants
 
-    from lp.registry.model.person import Person
-    batch = team_ids[:50]
-    team_ids = team_ids[50:]
-    while batch:
-        for [id] in batch:
-            team = Person.get(id)
+    load_teams = getUtility(IPersonSet).getPrecachedPersonsFromIDs
+
+    for batch in chunked(team_ids):
+        for team in load_teams(batch):
             expected = get_participants(team)
             found = set(team.allmembers)
             difference = expected.difference(found)
@@ -89,8 +97,6 @@ def check_teamparticipation(log):
                 log.warn("%s (%s): spurious TeamParticipation entries for %s."
                          % (team.name, team.id, people))
             transaction.abort()
-        batch = team_ids[:50]
-        team_ids = team_ids[50:]
 
 
 class CheckTeamParticipationScript(LaunchpadScript):
