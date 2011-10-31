@@ -3923,7 +3923,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             hide_assignee_team_selection=hide_assignee_team_selection,
             user_can_unassign=cx.userCanUnassign(user),
             user_can_delete=self.user_can_delete_bugtask,
-            delete_link = self.data['delete_link'],
+            delete_link=self.data['delete_link'],
             target_is_product=IProduct.providedBy(cx.target),
             status_widget_items=self.status_widget_items,
             status_value=cx.status.title,
