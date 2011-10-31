@@ -183,6 +183,13 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
             else:
                 self.assertFalse(self.build.can_be_cancelled)
 
+    def test_can_be_cancelled_virtuality(self):
+        # Only virtual builds can be cancelled.
+        bq = self.build.queueBuild()
+        bq.virtualized = True
+        self.assertTrue(self.build.can_be_cancelled)
+        bq.virtualized = False
+        self.assertFalse(self.build.can_be_cancelled)
 
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
