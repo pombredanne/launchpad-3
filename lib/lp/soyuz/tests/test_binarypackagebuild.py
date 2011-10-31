@@ -15,7 +15,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from canonical.launchpad.testing.pages import (
+    webservice_for_person,
+    )
+from canonical.launchpad.webapp.interaction import ANONYMOUS
+from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -48,6 +52,7 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     api_url,
+    login,
     logout,
     TestCaseWithFactory,
     )
@@ -568,14 +573,30 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBinaryPackageBuildWebservice, self).setUp()
-        self.webservice = LaunchpadWebServiceCaller()
+        self.ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.build = self.factory.makeBinaryPackageBuild(archive=self.ppa)
+        self.webservice = webservice_for_person(
+            self.ppa.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        login(ANONYMOUS)
 
-    def test_exports_can_be_cancelled(self):
-        build = self.factory.makeBinaryPackageBuild()
-        expected = build.can_be_cancelled
-        entry_url = api_url(build)
+    def test_can_be_cancelled_is_exported(self):
+        expected = self.build.can_be_cancelled
+        entry_url = api_url(self.build)
         logout()
         entry = self.webservice.get(
             entry_url, api_version='devel').jsonBody()
         self.assertEqual(expected, entry['can_be_cancelled'])
+
+    def test_cancel_is_exported(self):
+        build_url = api_url(self.build)
+        self.build.queueBuild()
+        logout()
+        entry = self.webservice.get(
+            build_url, api_version='devel').jsonBody()
+        response = self.webservice.named_post(
+            entry['self_link'], 'cancel', api_version='devel')
+        self.assertEqual(200, response.status)
+        entry = self.webservice.get(
+            build_url, api_version='devel').jsonBody()
+        self.assertEqual(BuildStatus.CANCELLED.title, entry['buildstate'])
 
