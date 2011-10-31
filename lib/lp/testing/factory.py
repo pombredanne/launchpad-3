@@ -1698,10 +1698,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         bugtask = bug.default_bugtask
         if date_closed is not None:
-            bugtask.transitionToStatus(
-                BugTaskStatus.FIXRELEASED, owner, when=date_closed)
+            with person_logged_in(owner):
+                bugtask.transitionToStatus(
+                    BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         if milestone is not None:
-            bugtask.transitionToMilestone(milestone, milestone.target.owner)
+            with person_logged_in(owner):
+                bugtask.transitionToMilestone(
+                    milestone, milestone.target.owner)
         if series is not None:
             with person_logged_in(owner):
                 task = bug.addTask(owner, series)
