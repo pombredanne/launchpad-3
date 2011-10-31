@@ -27,6 +27,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     )
 from lazr.restful.fields import Reference
@@ -227,6 +228,22 @@ class IBinaryPackageBuildEdit(Interface):
 
         Build record loses its history, is moved to NEEDSBUILD and a new
         non-scored BuildQueue entry is created for it.
+        """
+
+    @export_write_operation()
+    @operation_for_version("devel")
+    def cancel():
+        """Cancel the build if it is either pending or in progress.
+
+        Call the can_be_cancelled() method prior to this one to find out if
+        cancelling the build is possible.
+
+        If the build is in progress, it is marked as CANCELLING until the
+        buildd manager terminates the build and marks it CANCELLED. If the
+        build is not in progress, it is marked CANCELLED immediately and is
+        removed from the build queue.
+
+        If the build is not in a cancellable state, this method is a no-op.
         """
 
 

@@ -31,7 +31,10 @@ from lp.buildmaster.tests.test_packagebuild import (
     TestHandleStatusMixin,
     )
 from lp.services.job.model.job import Job
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
     IBinaryPackageBuildSet,
@@ -198,6 +201,25 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertTrue(self.build.can_be_cancelled)
         bq.virtualized = False
         self.assertFalse(self.build.can_be_cancelled)
+
+    def test_cancel_not_in_progress(self):
+        # Testing the cancel() method for a pending build.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        build.queueBuild()
+        build.cancel()
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+        self.assertIs(None, build.buildqueue_record)
+
+    def test_cancel_in_progress(self):
+        # Testing the cancel() method for a building build.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        bq = build.queueBuild()
+        build.status = BuildStatus.BUILDING
+        build.cancel()
+        self.assertEqual(BuildStatus.CANCELLING, build.status)
+        self.assertEqual(bq, build.buildqueue_record)
 
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):

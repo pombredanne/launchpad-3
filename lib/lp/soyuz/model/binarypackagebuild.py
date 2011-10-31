@@ -391,6 +391,20 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         else:
             return self.buildqueue_record.lastscore
 
+    def cancel(self):
+        """See `IBinaryPackageBuild`."""
+        if not self.can_be_cancelled:
+            return
+
+        # If the build is currently building we need to tell the
+        # buildd-manager to terminate it.
+        if self.status == BuildStatus.BUILDING:
+            self.status = BuildStatus.CANCELLING
+            return
+
+        # Otherwise we can cancel it here.
+        self.buildqueue_record.cancel()
+
     def makeJob(self):
         """See `IBuildFarmJob`."""
         store = Store.of(self)
