@@ -119,6 +119,12 @@ class IBinaryPackageBuildView(IPackageBuild):
             description=_(
                 "Whether or not this build record can be retried.")))
 
+    can_be_cancelled = exported(
+        Bool(
+            title=_("Can Be Cancelled"), required=False, readonly=True,
+            description=_(
+                "Whether or not this build record can be cancelled.")))
+
     is_virtualized = Attribute(
         "Whether or not this build requires a virtual build host or not.")
 

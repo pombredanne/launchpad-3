@@ -349,6 +349,20 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """See `IBuild`."""
         return self.status is BuildStatus.NEEDSBUILD
 
+    @property
+    def can_be_cancelled(self):
+        """See `IBuild`."""
+        if not self.buildqueue_record:
+            return False
+        if self.buildqueue_record.virtualized is False:
+            return False
+
+        cancellable_statuses = [
+            BuildStatus.BUILDING,
+            BuildStatus.NEEDSBUILD,
+            ]
+        return self.status in cancellable_statuses
+
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id

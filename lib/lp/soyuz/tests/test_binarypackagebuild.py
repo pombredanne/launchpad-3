@@ -185,7 +185,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
 
     def test_can_be_cancelled_virtuality(self):
         # Only virtual builds can be cancelled.
-        bq = self.build.queueBuild()
+        bq = removeSecurityProxy(self.build.queueBuild())
         bq.virtualized = True
         self.assertTrue(self.build.can_be_cancelled)
         bq.virtualized = False
