@@ -31,7 +31,8 @@ class TestTeamActivatePPA(TestCaseWithFactory):
                     team, '+index', principal=team.teamowner)
                 html = view()
             create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')
-            self.assertEqual(create_ppa.get('href'),
+            self.assertEqual(
+                create_ppa.get('href'),
                 canonical_url(team, view_name='+activate-ppa'))
             message = first_tag_by_class(html, 'cannot-create-ppa-message')
             self.assertIs(None, message)
