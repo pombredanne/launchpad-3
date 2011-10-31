@@ -118,6 +118,7 @@ from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
     )
+from zope.traversing.browser import absoluteURL
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
@@ -676,11 +677,20 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             cancel_url = canonical_url(self.context)
         return cancel_url
 
+    @cachedproperty
+    def api_request(self):
+        return IWebServiceClientRequest(self.request)
+
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
         cache = IJSONRequestCache(self.request)
         cache.objects['bug'] = bug
+        subscribers_url_data = {
+            'web_link': canonical_url(bug, rootsite='bugs'),
+            'self_link': absoluteURL(bug, self.api_request),
+            }
+        cache.objects['subscribers_portlet_url_data'] = subscribers_url_data
         cache.objects['total_comments_and_activity'] = (
             self.total_comments + self.total_activity)
         cache.objects['initial_comment_batch_offset'] = (
@@ -1523,7 +1533,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         If yes, return True, otherwise return False.
         """
-        return self.context.userCanEditImportance(self.user)
+        return (self.context.userCanEditImportance(self.user)
+                and not self.context.bugwatch)
 
     def validate(self, data):
         if self.show_sourcepackagename_widget and 'sourcepackagename' in data:
@@ -1769,14 +1780,31 @@ class BugTaskDeletionView(LaunchpadFormView):
     label = 'Remove bug task'
     page_title = label
 
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax:
+            return canonical_url(self.context.bug)
+        return None
+
     @action('Delete', name='delete_bugtask')
     def delete_bugtask_action(self, action, data):
         bugtask = self.context
-        self.next_url = canonical_url(bugtask.bug)
+        bug = bugtask.bug
         message = ("This bug no longer affects %s."
                     % bugtask.target.bugtargetdisplayname)
         bugtask.delete()
         self.request.response.addNotification(message)
+        if self.request.is_ajax:
+            launchbag = getUtility(ILaunchBag)
+            launchbag.add(bug.default_bugtask)
+#            cache = IJSONRequestCache(self.request)
+#            cache.objects[''] web_link
+            view = getMultiAdapter(
+                (bugtask.bug, self.request),
+                name='+bugtasks-and-nominations-table')
+            view.initialize()
+            return view.render()
 
     @property
     def cancel_url(self):
@@ -3644,6 +3672,10 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         super(BugTaskTableRowView, self).__init__(context, request)
         self.milestone_source = MilestoneVocabulary
 
+    @cachedproperty
+    def api_request(self):
+        return IWebServiceClientRequest(self.request)
+
     def initialize(self):
         super(BugTaskTableRowView, self).initialize()
         link = canonical_url(self.context)
@@ -3680,7 +3712,16 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             # We always look up all milestones, so there's no harm
             # using len on the list here and avoid the COUNT query.
             target_has_milestones=len(self._visible_milestones) > 0,
+            user_can_edit_status=not self.context.bugwatch,
             )
+
+        if not self.many_bugtasks:
+            cache = IJSONRequestCache(self.request)
+            bugtask_data = cache.objects.get('bugtask_data', None)
+            if bugtask_data is None:
+                bugtask_data = dict()
+                cache.objects['bugtask_data'] = bugtask_data
+            bugtask_data[bugtask_id] = self.bugtask_config()
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
@@ -3784,7 +3825,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             items = vocabulary_to_choice_edit_items(
                 self._visible_milestones,
                 value_fn=lambda item: canonical_url(
-                    item, request=IWebServiceClientRequest(self.request)))
+                    item, request=self.api_request))
             items.append({
                 "name": "Remove milestone",
                 "disabled": False,
@@ -3804,7 +3845,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         If yes, return True, otherwise return False.
         """
-        return self.context.userCanEditImportance(self.user)
+        return (self.context.userCanEditImportance(self.user)
+                and not self.context.bugwatch)
 
     @property
     def user_can_edit_assignee(self):
@@ -3846,8 +3888,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         else:
             return ''
 
-    def js_config(self):
-        """Configuration for the JS widgets on the row, JSON-serialized."""
+    def bugtask_config(self):
+        """Configuration for the bugtask JS widgets on the row."""
         assignee_vocabulary, assignee_vocabulary_filters = (
             get_assignee_vocabulary_info(self.context))
         # If we have no filters or just the ALL filter, then no filtering
@@ -3869,16 +3911,21 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             not self.context.userCanSetAnyAssignee(user) and
             (user is None or user.teams_participated_in.count() == 0))
         cx = self.context
-        return dumps(dict(
+        return dict(
             row_id=self.data['row_id'],
+            form_row_id=self.data['form_row_id'],
             bugtask_path='/'.join([''] + self.data['link'].split('/')[3:]),
             prefix=get_prefix(cx),
+            targetname=cx.target.bugtargetdisplayname,
+            bug_title=cx.bug.title,
             assignee_value=cx.assignee and cx.assignee.name,
             assignee_is_team=cx.assignee and cx.assignee.is_team,
             assignee_vocabulary=assignee_vocabulary,
             assignee_vocabulary_filters=filter_details,
             hide_assignee_team_selection=hide_assignee_team_selection,
             user_can_unassign=cx.userCanUnassign(user),
+            user_can_delete=self.user_can_delete_bugtask,
+            delete_link = self.data['delete_link'],
             target_is_product=IProduct.providedBy(cx.target),
             status_widget_items=self.status_widget_items,
             status_value=cx.status.title,
@@ -3888,14 +3935,13 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             milestone_value=(
                 canonical_url(
                     cx.milestone,
-                    request=IWebServiceClientRequest(self.request))
+                    request=self.api_request)
                 if cx.milestone else None),
             user_can_edit_assignee=self.user_can_edit_assignee,
             user_can_edit_milestone=self.user_can_edit_milestone,
             user_can_edit_status=not cx.bugwatch,
-            user_can_edit_importance=(
-                self.user_can_edit_importance and not cx.bugwatch)
-            ))
+            user_can_edit_importance=self.user_can_edit_importance,
+            )
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):

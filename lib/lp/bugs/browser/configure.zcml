@@ -1029,6 +1029,12 @@
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
             permission="launchpad.View"
+            name="+bugtasks-and-nominations-portal"
+            template="../templates/bugtasks-and-nominations-portal.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
+            permission="launchpad.View"
             name="+bugtasks-and-nominations-table"
             template="../templates/bugtasks-and-nominations-table.pt"/>
         <browser:page

@@ -568,7 +568,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         request = LaunchpadTestRequest()
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-table")
+            (foo_bug, request), name="+bugtasks-and-nominations-portal")
         foo_bugtasks_and_nominations_view.initialize()
 
         task_and_nomination_views = (
@@ -592,7 +592,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         request = LaunchpadTestRequest()
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-table")
+            (foo_bug, request), name="+bugtasks-and-nominations-portal")
         foo_bugtasks_and_nominations_view.initialize()
 
         task_and_nomination_views = (
@@ -745,7 +745,7 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
     def _createView(self, bug):
         request = LaunchpadTestRequest()
         bugtasks_and_nominations_view = getMultiAdapter(
-            (bug, request), name="+bugtasks-and-nominations-table")
+            (bug, request), name="+bugtasks-and-nominations-portal")
         return bugtasks_and_nominations_view
 
     def test_project_bug_cannot_affect_something_else(self):
