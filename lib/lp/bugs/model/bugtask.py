@@ -390,12 +390,22 @@ def validate_assignee(self, attr, value):
 def validate_target(bug, target):
     """Validate a bugtask target against a bug's existing tasks.
 
-    Checks that no conflicting tasks already exist.
+    Checks that no conflicting tasks already exist, and that the new
+    target's pillar matches the bug access policy if one is set.
     """
     if bug.getBugTask(target):
         raise IllegalTarget(
             "A fix for this bug has already been requested for %s"
             % target.displayname)
+
+    # Because we don't have a sensible way to determine a new access
+    # policy, it is presently forbidden to transition a task to another
+    # pillar.
+    if (bug.access_policy is not None and
+        target.pillar != bug.access_policy.pillar):
+        raise IllegalTarget(
+            "%s is not allowed by this bug's access policy."
+            % target.pillar.displayname)
 
     if (IDistributionSourcePackage.providedBy(target) or
         ISourcePackage.providedBy(target)):

@@ -2406,6 +2406,33 @@ class TestValidateTarget(TestCaseWithFactory):
             % (dsp.sourcepackagename.name, dsp.distribution.displayname),
             validate_target, task.bug, dsp)
 
+    def test_access_policy_permits_same_pillar(self):
+        # If an access policy is set, targets within the policy's pillar
+        # are permitted.
+        distro = self.factory.makeDistribution()
+        bug = self.factory.makeBug(distribution=distro)
+        policy = self.factory.makeAccessPolicy(pillar=distro)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(policy)
+        validate_target(
+            bug,
+            self.factory.makeDistributionSourcePackage(distribution=distro))
+
+    def test_access_policy_forbids_other_pillars(self):
+        # If an access policy is set, targets outside the policy's pillar
+        # are forbidden.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        policy = self.factory.makeAccessPolicy(pillar=product)
+        with person_logged_in(bug.owner):
+            bug.setAccessPolicy(policy)
+        other_product = self.factory.makeProduct()
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "%s is not allowed by this bug's access policy."
+            % other_product.displayname,
+            validate_target, bug, other_product)
+
 
 class TestValidateNewTarget(TestCaseWithFactory):
 
