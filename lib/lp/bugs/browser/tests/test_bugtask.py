@@ -1419,6 +1419,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertIs(None, cache.objects['memo'])
         self.assertEqual(0, cache.objects['start'])
         self.assertTrue(cache.objects['forwards'])
+        self.assertEqual(1, cache.objects['total'])
 
     def test_cache_has_all_batch_vars_specified(self):
         """Cache has all the needed variables.
