@@ -15,7 +15,6 @@ from transaction._transaction import Status as TransactionStatus
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.interfaces import FinishReadOnlyRequestEvent
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -203,15 +202,17 @@ class TestRabbitUnreliableSession(TestRabbitSession):
 
     def setUp(self):
         super(TestRabbitUnreliableSession, self).setUp()
-        self.error_utility = ErrorReportingUtility()
-        self.prev_oops = self.error_utility.getLastOopsReport()
+        self.oops_capture.sync()
+        self.prev_oops = self.oopses[-1]
 
     def assertNoOops(self):
-        oops_report = self.error_utility.getLastOopsReport()
+        self.oops_capture.sync()
+        oops_report = self.oopses[-1]
         self.assertEqual(repr(self.prev_oops), repr(oops_report))
 
     def assertOops(self, text_in_oops):
-        oops_report = self.error_utility.getLastOopsReport()
+        self.oops_capture.sync()
+        oops_report = self.oopses[-1]
         self.assertNotEqual(
             repr(self.prev_oops), repr(oops_report), 'No OOPS reported!')
         self.assertIn(text_in_oops, str(oops_report))
@@ -223,16 +224,12 @@ class TestRabbitUnreliableSession(TestRabbitSession):
         session.defer(FakeMethod(failure=exception))
         session.finish()  # Look, no exceptions!
 
-    def xxx_test_finish_suppresses_MessagingUnavailable(self):
-        # XXX: rvb 2011-10-24 bug=880885: This test works in isolation
-        # but fails when it is part of a full run.
+    def test_finish_suppresses_MessagingUnavailable(self):
         self._test_finish_suppresses_exception(
             MessagingUnavailable('Messaging borked.'))
         self.assertNoOops()
 
-    def xxx_test_finish_suppresses_other_errors_with_oopses(self):
-        # XXX: rvb 2011-10-24 bug=880885: This test works in isolation
-        # but fails when it is part of a full run.
+    def test_finish_suppresses_other_errors_with_oopses(self):
         exception = Exception("That hent worked.")
         self._test_finish_suppresses_exception(exception)
         self.assertOops(str(exception))
