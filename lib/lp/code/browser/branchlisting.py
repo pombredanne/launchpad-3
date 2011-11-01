@@ -31,6 +31,7 @@ __all__ = [
     ]
 
 from operator import attrgetter
+import urlparse
 
 from lazr.delegates import delegates
 from lazr.enum import (
@@ -41,7 +42,6 @@ from storm.expr import (
     Asc,
     Desc,
     )
-import urlparse
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
@@ -135,6 +135,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.browser_helpers import get_plural_text
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -850,7 +851,9 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'mergequeues']
+             'active_reviews', 'mergequeues',
+             'simplified_subscribed', 'simplified_registered',
+             'simplified_owned', 'simplified_active_reviews']
     extra_attributes = [
         'active_review_count',
         'owned_branch_count',
@@ -858,6 +861,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         'show_summary',
         'subscribed_branch_count',
         'mergequeue_count',
+        'simplified_branch_menu',
         ]
 
     def _getCountCollection(self):
@@ -881,13 +885,86 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         """
         return self.context
 
+    @cachedproperty
+    def has_branches(self):
+        """Should the template show the summary view with the links."""
+
     @property
     def show_summary(self):
         """Should the template show the summary view with the links."""
-        return (self.owned_branch_count or
-                self.registered_branch_count or
-                self.subscribed_branch_count or
-                self.active_review_count)
+
+        if self.simplified_branch_menu:
+            return (
+                self.registered_branch_not_empty or
+                self.owned_branch_not_empty or
+                self.subscribed_branch_not_empty or
+                self.active_review_not_empty
+                )
+        else:
+            return (self.owned_branch_count or
+                    self.registered_branch_count or
+                    self.subscribed_branch_count or
+                    self.active_review_count)
+
+    @cachedproperty
+    def simplified_branch_menu(self):
+        return getFeatureFlag('code.simplified_branches_menu.enabled')
+
+    @cachedproperty
+    def registered_branch_not_empty(self):
+        """False if the number of branches registered by self.person
+        is zero.
+        """
+        return (
+            not self._getCountCollection().registeredBy(
+                self.person).is_empty())
+
+    @cachedproperty
+    def owned_branch_not_empty(self):
+        """False if the number of branches owned by self.person is zero."""
+        return not self._getCountCollection().ownedBy(self.person).is_empty()
+
+    @cachedproperty
+    def subscribed_branch_not_empty(self):
+        """False if the number of branches subscribed to by self.person
+        is zero.
+        """
+        return (
+            not self._getCountCollection().subscribedBy(
+                self.person).is_empty())
+
+    @cachedproperty
+    def active_review_not_empty(self):
+        """Return the number of active reviews for self.person's branches."""
+        active_reviews = PersonActiveReviewsView(self.context, self.request)
+        return not active_reviews.getProposals().is_empty()
+
+    def simplified_owned(self):
+        return Link(
+            canonical_url(self.context, rootsite='code'),
+            'Owned branches',
+            enabled=self.owned_branch_not_empty)
+
+    def simplified_registered(self):
+        person_is_individual = (not self.person.is_team)
+        return Link(
+            '+registeredbranches',
+            'Registered branches',
+            enabled=(
+                person_is_individual and
+                self.registered_branch_not_empty))
+
+    def simplified_subscribed(self):
+        return Link(
+            '+subscribedbranches',
+            'Subscribed branches',
+            enabled=self.subscribed_branch_not_empty)
+
+    def simplified_active_reviews(self):
+        return Link(
+            '+activereviews',
+            'Active reviews',
+            enabled=self.active_review_not_empty)
 
     @cachedproperty
     def registered_branch_count(self):
