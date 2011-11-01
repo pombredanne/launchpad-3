@@ -6,6 +6,7 @@ __metaclass__ = type
 from contextlib import contextmanager
 from datetime import datetime
 import re
+import simplejson
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interfaces import IJSONRequestCache
@@ -735,6 +736,82 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             self.assertEqual(1, len(notifications))
             expected = 'This bug no longer affects %s.' % target_name
             self.assertEqual(expected, notifications[0].message)
+
+    def test_ajax_delete_current_bugtask(self):
+        # Test that deleting the current bugtask returns a JSON dict
+        # containing the URL of the bug's default task to redirect to.
+        bug = self.factory.makeBug()
+        bugtask = self.factory.makeBugTask(bug=bug)
+        target_name = bugtask.bugtargetdisplayname
+        bugtask_url = canonical_url(bugtask, rootsite='bugs')
+        with FeatureFixture(DELETE_BUGTASK_ENABLED):
+            login_person(bugtask.owner)
+            # Set up the request so that we correctly simulate an XHR call
+            # from the URL of the bugtask we are deleting.
+            server_url = canonical_url(
+                getUtility(ILaunchpadRoot), rootsite='bugs')
+            extra = {
+                'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+                'HTTP_REFERER': bugtask_url,
+                }
+            form = {
+                'field.actions.delete_bugtask': 'Delete'
+                }
+            view = create_initialized_view(
+                bugtask, name='+delete', server_url=server_url, form=form,
+                principal=bugtask.owner, **extra)
+            result_data = simplejson.loads(view.render())
+            self.assertEqual([bug.default_bugtask], bug.bugtasks)
+            notifications = simplejson.loads(
+                view.request.response.getHeader('X-Lazr-Notifications'))
+            self.assertEqual(1, len(notifications))
+            expected = 'This bug no longer affects %s.' % target_name
+            self.assertEqual(expected, notifications[0][1])
+            self.assertEqual(
+                view.request.response.getHeader('content-type'),
+                'application/json')
+            expected_url = canonical_url(bug.default_bugtask, rootsite='bugs')
+            self.assertEqual(dict(bugtask_url=expected_url), result_data)
+
+    def test_ajax_delete_non_current_bugtask(self):
+        # Test that deleting the non-current bugtask returns the new bugtasks
+        # table as HTML.
+        bug = self.factory.makeBug()
+        bugtask = self.factory.makeBugTask(bug=bug)
+        target_name = bugtask.bugtargetdisplayname
+        default_bugtask_url = canonical_url(
+            bug.default_bugtask, rootsite='bugs')
+        with FeatureFixture(DELETE_BUGTASK_ENABLED):
+            login_person(bugtask.owner)
+            # Set up the request so that we correctly simulate an XHR call
+            # from the URL of the default bugtask, not the one we are
+            # deleting.
+            server_url = canonical_url(
+                getUtility(ILaunchpadRoot), rootsite='bugs')
+            extra = {
+                'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+                'HTTP_REFERER': default_bugtask_url,
+                }
+            form = {
+                'field.actions.delete_bugtask': 'Delete'
+                }
+            view = create_initialized_view(
+                bugtask, name='+delete', server_url=server_url, form=form,
+                principal=bugtask.owner, **extra)
+            result_html = view.render()
+            self.assertEqual([bug.default_bugtask], bug.bugtasks)
+            notifications = view.request.response.notifications
+            self.assertEqual(1, len(notifications))
+            expected = 'This bug no longer affects %s.' % target_name
+            self.assertEqual(expected, notifications[0].message)
+            self.assertEqual(
+                view.request.response.getHeader('content-type'), 'text/html')
+            table = find_tag_by_id(result_html, 'affected-software')
+            self.assertIsNotNone(table)
+            [row] = table.tbody.findAll('tr', {'class': 'highlight'})
+            target_link = row.find('a', {'class': 'sprite product'})
+            self.assertIn(
+                bug.default_bugtask.bugtargetdisplayname, target_link)
 
 
 class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):

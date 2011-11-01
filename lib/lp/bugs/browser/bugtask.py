@@ -1792,6 +1792,7 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
     def delete_bugtask_action(self, action, data):
         bugtask = self.context
         bug = bugtask.bug
+        deleted_bugtask_url = canonical_url(self.context, rootsite='bugs')
         message = ("This bug no longer affects %s."
                     % bugtask.target.bugtargetdisplayname)
         bugtask.delete()
@@ -1799,8 +1800,17 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
         if self.request.is_ajax:
             launchbag = getUtility(ILaunchBag)
             launchbag.add(bug.default_bugtask)
+            # If we are deleting the current highlighted bugtask via ajax,
+            # we must force a redirect to the new default bugtask to ensure
+            # all URLs and other client cache content is correctly refreshed.
+            if self._return_url == deleted_bugtask_url:
+                next_url = canonical_url(
+                    bug.default_bugtask, rootsite='bugs')
+                self.request.response.setHeader('Content-type',
+                    'application/json')
+                return dumps(dict(bugtask_url=next_url))
             view = getMultiAdapter(
-                (bugtask.bug, self.request),
+                (bug, self.request),
                 name='+bugtasks-and-nominations-table')
             view.initialize()
             return view.render()
