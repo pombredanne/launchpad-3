@@ -1803,12 +1803,15 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
             # If we are deleting the current highlighted bugtask via ajax,
             # we must force a redirect to the new default bugtask to ensure
             # all URLs and other client cache content is correctly refreshed.
+            # We can't do the redirect here since the XHR caller won't see it
+            # so we return the URL to go to and let the caller do it.
             if self._return_url == deleted_bugtask_url:
                 next_url = canonical_url(
                     bug.default_bugtask, rootsite='bugs')
                 self.request.response.setHeader('Content-type',
                     'application/json')
                 return dumps(dict(bugtask_url=next_url))
+            # No redirect required so return the new bugtask table HTML.
             view = getMultiAdapter(
                 (bug, self.request),
                 name='+bugtasks-and-nominations-table')
