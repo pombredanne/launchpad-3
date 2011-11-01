@@ -226,6 +226,8 @@ class BuildView(LaunchpadView):
     def label(self):
         return self.context.title
 
+    page_title = label
+
     @property
     def user_can_retry_build(self):
         """Return True if the user is permitted to Retry Build.

@@ -8,6 +8,7 @@ from datetime import (
     timedelta,
     )
 import pytz
+import soupmatchers
 from testtools.matchers import (
     MatchesException,
     Not,
@@ -240,6 +241,16 @@ class TestBuildViews(TestCaseWithFactory):
         notification = view.request.response.notifications[0]
         self.assertEquals(notification.message, "Build rescored to 0.")
         self.assertEquals(pending_build.buildqueue_record.lastscore, 0)
+
+    def test_build_page_has_cancel_link(self):
+        build = self.factory.makeBinaryPackageBuild()
+        build_view = create_initialized_view(build, "+index")
+        page = build_view()
+        url = canonical_url(build) + "/+cancel"
+        matches_cancel_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "CANCEL_LINK", "a", attrs=dict(href=url)))
+        self.assertThat(page, matches_cancel_link)
 
     def test_cancelling_pending_build(self):
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
