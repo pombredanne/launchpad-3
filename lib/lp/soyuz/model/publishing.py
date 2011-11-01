@@ -1416,14 +1416,6 @@ def expand_binary_requests(distroseries, binaries):
     return expanded
 
 
-# A simple one-off object meaning than we should use the creator from
-# the releted spr (sourcepackagerelease) when we create a new
-# publication.  This covers 99% of the cases but we still need a way to
-# set the creator to None in some cases, hence the
-# DEFAULT_CREATOR_FROM_SPR object.
-DEFAULT_CREATOR_FROM_SPR = object()
-
-
 class PublishingSet:
     """Utilities for manipulating publications in batches."""
 
@@ -1569,14 +1561,11 @@ class PublishingSet:
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
                              ancestor=None, create_dsd_job=True,
-                             creator=DEFAULT_CREATOR_FROM_SPR):
+                             creator=None):
         """See `IPublishingSet`."""
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage)
-
-        if creator is DEFAULT_CREATOR_FROM_SPR:
-            creator = sourcepackagerelease.creator
 
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,

@@ -726,7 +726,8 @@ class SourcePackagePublisher:
             component=component,
             section=section,
             pocket=self.pocket,
-            archive=archive)
+            archive=archive,
+            creator=sourcepackagerelease.creator)
         entry.setPublished()
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
