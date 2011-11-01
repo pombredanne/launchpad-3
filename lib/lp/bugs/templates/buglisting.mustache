@@ -21,9 +21,11 @@
             <a href="{{bug_url}}" class="bugtitile">{{title}}</a>
         </div>
         <div class="buginfo-extras">
+            {{#show_bugtarget}}
             <div class="{{bugtarget_css}}">
               {{bugtarget}}
             </div>
+            {{/show_bugtarget}}
         </div>
     </div>
 

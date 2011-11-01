@@ -1473,7 +1473,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         bug_number = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, self.client_listing, bug_number)
 
-    def test_hiding_fields(self):
+    def getNavigator(self):
         request = LaunchpadTestRequest()
         cache = IJSONRequestCache(request)
         cache.objects['mustache_model'] = {
@@ -1483,6 +1483,9 @@ class TestBugTaskSearchListingView(BrowserTestCase):
                     'status': 'status1',
                     'importance': 'importance1',
                     'importance_class': 'importance_class1',
+                    'bugtarget': 'bugtarget1',
+                    'bugtarget_css': 'bugtarget_css1',
+                    'show_bugtarget': True,
                     'show_id': True,
                     'show_status': True,
                     'show_importance': True,
@@ -1490,17 +1493,35 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         }
         mustache_model = cache.objects['mustache_model']
         navigator = BugListingBatchNavigator([], request, [], 1)
+        return navigator, mustache_model
+
+    def test_hiding_bug_number(self):
+        navigator, mustache_model = self.getNavigator()
         self.assertIn('3.14159', navigator.mustache)
         mustache_model['bugtasks'][0]['show_id'] = False
         self.assertNotIn('3.14159', navigator.mustache)
+
+    def test_hiding_status(self):
+        navigator, mustache_model = self.getNavigator()
         self.assertIn('status1', navigator.mustache)
         mustache_model['bugtasks'][0]['show_status'] = False
         self.assertNotIn('status1', navigator.mustache)
+
+    def test_hiding_importance(self):
+        navigator, mustache_model = self.getNavigator()
         self.assertIn('importance1', navigator.mustache)
         self.assertIn('importance_class1', navigator.mustache)
         mustache_model['bugtasks'][0]['show_importance'] = False
         self.assertNotIn('importance1', navigator.mustache)
         self.assertNotIn('importance_class1', navigator.mustache)
+
+    def test_hiding_bugtarget(self):
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('bugtarget1', navigator.mustache)
+        self.assertIn('bugtarget_css1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_bugtarget'] = False
+        self.assertNotIn('bugtarget1', navigator.mustache)
+        self.assertNotIn('bugtarget_css1', navigator.mustache)
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
