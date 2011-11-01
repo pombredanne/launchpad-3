@@ -24,7 +24,7 @@ def chunked(things, chunk_size=50):
         yield islice(things, offset, offset + chunk_size)
 
 
-def check_teamparticipation(log):
+def check_teamparticipation_self(log):
     # Check self-participation.
     query = """
         SELECT id, name
@@ -39,7 +39,10 @@ def check_teamparticipation(log):
         log.warn("Some people/teams are not members of themselves: %s"
                  % non_self_participants)
 
+
+def check_teamparticipation_circular(log):
     # Check if there are any circular references between teams.
+    cur = cursor()
     cur.execute("""
         SELECT tp.team, tp2.team
         FROM teamparticipation AS tp, teamparticipation AS tp2
@@ -52,7 +55,10 @@ def check_teamparticipation(log):
         raise LaunchpadScriptFailure(
             "Circular references found: %s" % circular_references)
 
+
+def check_teamparticipation_consistency(log):
     # Check if there are any missing/spurious TeamParticipation entries.
+    cur = cursor()
     cur.execute("SELECT id FROM Person WHERE teamowner IS NOT NULL")
     team_ids = [row[0] for row in cur.fetchall()]
     transaction.abort()
@@ -85,3 +91,12 @@ def check_teamparticipation(log):
                 log.warn("%s (%s): spurious TeamParticipation entries for %s."
                          % (team.name, team.id, people))
             transaction.abort()
+
+
+def check_teamparticipation(log):
+    # Check self-participation.
+    check_teamparticipation_self(log)
+    # Check if there are any circular references between teams.
+    check_teamparticipation_circular(log)
+    # Check if there are any missing/spurious TeamParticipation entries.
+    check_teamparticipation_consistency(log)
