@@ -21,7 +21,6 @@ __all__ = [
     'is_branch_stackable',
     'read_locked',
     'remove_exception_logging_hook',
-    'safe_open',
     ]
 
 from contextlib import contextmanager
@@ -47,7 +46,6 @@ from bzrlib.transport import (
     unregister_transport,
     )
 from bzrlib.transport.local import LocalTransport
-import lp.codehosting.safe_open
 from lazr.uri import URI
 
 from canonical.launchpad.webapp.errorlog import (
@@ -184,7 +182,6 @@ def make_error_utility(pid=None):
         pid = os.getpid()
     error_utility = ErrorReportingUtility()
     error_utility.configure('bzr_lpserve')
-    error_utility.setOopsToken(str(pid))
     return error_utility
 
 

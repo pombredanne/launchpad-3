@@ -511,7 +511,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         tms = trunk_message.potmsgset.getAllTranslationMessages()
         self.assertEqual(list(tms), [trunk_message])
 
-    def test_clashingPOFileTranslatorEntries(self):
+    # XXX: GavinPanella 2011-10-28 bug=883274: Spurious failure in buildbot.
+    def disabled_test_clashingPOFileTranslatorEntries(self):
         # POFileTranslator is maintained by a trigger on
         # TranslationMessage.  Fiddling with TranslationTemplateItems
         # directly bypasses it, so the script must make sure that

@@ -57,6 +57,7 @@ setup(
         'mocker',
         'oauth',
         'oops',
+        'oops_amqp',
         'oops_datedir_repo',
         'oops_timeline',
         'oops_twisted',
