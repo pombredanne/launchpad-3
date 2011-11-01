@@ -208,7 +208,8 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertFalse(self.build.can_be_cancelled)
 
     def test_cancel_not_in_progress(self):
-        # Testing the cancel() method for a pending build.
+        # Testing the cancel() method for a pending build should leave
+        # it in the CANCELLED state.
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         build = self.factory.makeBinaryPackageBuild(archive=ppa)
         build.queueBuild()
@@ -217,7 +218,8 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertIs(None, build.buildqueue_record)
 
     def test_cancel_in_progress(self):
-        # Testing the cancel() method for a building build.
+        # Testing the cancel() method for a building build should leave
+        # it in the CANCELLING state.
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         build = self.factory.makeBinaryPackageBuild(archive=ppa)
         bq = build.queueBuild()
