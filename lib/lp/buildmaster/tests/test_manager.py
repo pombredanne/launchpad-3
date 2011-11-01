@@ -427,6 +427,7 @@ class TestSlaveScannerScan(TestCase):
         # if it got called later.
         slave = BuildingSlave(build_id="8-1")
         call_counter = FakeMethod()
+
         def fake_resume():
             call_counter()
             return defer.succeed((None, None, 0))
@@ -454,12 +455,77 @@ class TestSlaveScannerScan(TestCase):
         scanner = self._getScanner()
         d = scanner.scan()
 
+        # The build state should be cancelled and we should have also
+        # called the resume() method on the slave that resets the virtual
+        # machine.
         def check_cancelled(ignore, builder, buildqueue):
             self.assertEqual(1, call_counter.call_count)
             self.assertEqual(BuildStatus.CANCELLED, build.status)
 
         d.addCallback(check_cancelled, builder, buildqueue)
         return d
+
+
+class TestCancellationChecking(TestCaseWithFactory):
+    """Unit tests for the checkCancellation method."""
+
+    layer = ZopelessDatabaseLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+
+    def setUp(self):
+        super(TestCancellationChecking, self).setUp()
+        builder_name = BOB_THE_BUILDER_NAME
+        self.builder = getUtility(IBuilderSet)[builder_name]
+        self.builder.virtualized = True
+        self.scanner = SlaveScanner(builder_name, BufferLogger())
+        self.scanner.builder = self.builder
+        self.scanner.logger.name = 'slave-scanner'
+
+    def test_ignores_nonvirtual(self):
+        # If the builder is nonvirtual make sure we return False.
+        self.builder.virtualized = False
+        d = self.scanner.checkCancellation(self.builder)
+        return d.addCallback(self.assertFalse)
+
+    def test_ignores_no_buildqueue(self):
+        # If the builder has no buildqueue associated,
+        # make sure we return False.
+        buildqueue = self.builder.currentjob
+        buildqueue.reset()
+        d = self.scanner.checkCancellation(self.builder)
+        return d.addCallback(self.assertFalse)
+
+    def test_ignores_build_not_cancelling(self):
+        # If the active build is not in a CANCELLING state, ignore it.
+        buildqueue = self.builder.currentjob
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+        build.status = BuildStatus.BUILDING
+        d = self.scanner.checkCancellation(self.builder)
+        return d.addCallback(self.assertFalse)
+
+    def test_cancelling_build_is_cancelled(self):
+        # If a build is CANCELLING, make sure True is returned and the
+        # slave was resumed.
+        call_counter = FakeMethod()
+
+        def fake_resume():
+            call_counter()
+            return defer.succeed((None, None, 0))
+        slave = OkSlave()
+        slave.resume = fake_resume
+        self.builder.vm_host = "fake_vm_host"
+        self.builder.setSlaveForTesting(slave)
+        buildqueue = self.builder.currentjob
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+        build.status = BuildStatus.CANCELLING
+
+        def check(result):
+            self.assertEqual(1, call_counter.call_count)
+            self.assertTrue(result)
+            self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+        d = self.scanner.checkCancellation(self.builder)
+        return d.addCallback(check)
 
 
 class TestBuilddManager(TestCase):
@@ -643,7 +709,7 @@ def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
         increase if the process is logging to this file.
     """
     last_size = None
-    for poll in range(poll_repeat+1):
+    for poll in range(poll_repeat + 1):
         try:
             statinfo = os.stat(filepath)
             if last_size is None:
@@ -687,7 +753,7 @@ class TestBuilddManagerScript(TestCaseWithFactory):
         self.assertTrue(is_file_growing(logfilepath))
         # After rotating the log, the process keeps using the old file, no
         # new file is created.
-        rotated_logfilepath = logfilepath+'.1'
+        rotated_logfilepath = logfilepath + '.1'
         os.rename(logfilepath, rotated_logfilepath)
         self.assertTrue(is_file_growing(rotated_logfilepath))
         self.assertFalse(os.access(logfilepath, os.F_OK))
@@ -703,7 +769,7 @@ class TestBuilddManagerScript(TestCaseWithFactory):
         # 1000000 bytes but this is deactivated for the buildd manager.
         test_setup = BuilddManagerTestSetup()
         logfilepath = test_setup.logfile
-        rotated_logfilepath = logfilepath+'.1'
+        rotated_logfilepath = logfilepath + '.1'
         # Prefill the log file to just under 1000000 bytes.
         test_setup.precreateLogfile(
             "2010-07-27 12:36:54+0200 [-] Starting scanning cycle.\n", 18518)

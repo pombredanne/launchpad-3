@@ -16,24 +16,21 @@ from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 class CrashScript(LaunchpadCronScript):
 
-    def last_oops_id(self):
-        return getattr(globalErrorUtility.getLastOopsReport(), 'id', None)
-
     def main(self):
-        initial_oops = self.last_oops_id()
+        self.oopses = []
+        globalErrorUtility._oops_config.publishers[:] = [self.oopses.append]
 
         self.logger.debug("This is debug level")
         # Debug messages do not generate an OOPS.
-        assert self.last_oops_id() == initial_oops
+        assert not self.oopses, "oops reported %r" % (self.oopses,)
 
         self.logger.warn("This is a warning")
-        first_oops = self.last_oops_id()
-        if first_oops != initial_oops:
+        if len(self.oopses):
             self.logger.info("New OOPS detected")
+        del self.oopses[:]
 
         self.logger.critical("This is critical")
-        second_oops = self.last_oops_id()
-        if second_oops != first_oops:
+        if len(self.oopses):
             self.logger.info("New OOPS detected")
 
         raise NotImplementedError("Whoops")

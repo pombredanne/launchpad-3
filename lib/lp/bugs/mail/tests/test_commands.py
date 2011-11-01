@@ -30,6 +30,7 @@ from lp.services.mail.interfaces import (
 from lp.testing import (
     login_celebrity,
     login_person,
+    normalize_whitespace,
     TestCaseWithFactory,
     )
 
@@ -280,6 +281,26 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
         self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
 
+    def test_execute_bug_cannot_add_task(self):
+        # Test that attempts to invalidly add a new bug task results in the
+        # expected error message.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(private=True, product=product)
+        self.factory.makeProduct(name='fnord')
+        login_celebrity('admin')
+        login_person(bug.owner)
+        command = AffectsEmailCommand('affects', ['fnord'])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, bug, None)
+        reason = ("This private bug already affects %s. "
+                    "Private bugs cannot affect multiple projects." %
+                    product.displayname)
+        self.assertEqual(
+            normalize_whitespace(
+                "Bug %s cannot be marked as affecting fnord. %s"
+                    % (bug.id, reason)),
+            normalize_whitespace(str(error)))
+
 
 class BugEmailCommandTestCase(TestCaseWithFactory):
 
@@ -328,7 +349,7 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
 
     def test_execute_bug(self):
         bug = self.factory.makeBug()
-        login_person(bug.bugtasks[0].target.owner)
+        login_person(bug.owner)
         command = PrivateEmailCommand('private', ['yes'])
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)
@@ -366,7 +387,7 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
 
     def test_execute_bug(self):
         bug = self.factory.makeBug()
-        login_person(bug.bugtasks[0].target.owner)
+        login_person(bug.owner)
         command = SecurityEmailCommand('security', ['yes'])
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)

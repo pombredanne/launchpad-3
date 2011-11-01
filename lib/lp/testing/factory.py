@@ -116,6 +116,7 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
@@ -175,7 +176,10 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
@@ -219,6 +223,7 @@ from lp.registry.interfaces.poll import (
     PollSecrecy,
     )
 from lp.registry.interfaces.product import (
+    IProduct,
     IProductSet,
     License,
     )
@@ -1693,10 +1698,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         bugtask = bug.default_bugtask
         if date_closed is not None:
-            bugtask.transitionToStatus(
-                BugTaskStatus.FIXRELEASED, owner, when=date_closed)
+            with person_logged_in(owner):
+                bugtask.transitionToStatus(
+                    BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         if milestone is not None:
-            bugtask.transitionToMilestone(milestone, milestone.target.owner)
+            with person_logged_in(owner):
+                bugtask.transitionToMilestone(
+                    milestone, milestone.target.owner)
         if series is not None:
             with person_logged_in(owner):
                 task = bug.addTask(owner, series)
@@ -1704,27 +1712,45 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True,
+                    private=False):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
         bug task is returned.
 
+        Private (and soon all) bugs cannot affect multiple projects
+        so we ensure that if a bug has not been specified and one is
+        created, it is for the same pillar as that of the specified target.
+
         :param bug: The `IBug` the bug tasks should be part of. If None,
             one will be created.
         :param target: The `IBugTarget`, to which the bug will be
             targeted to.
+        :param private: If a bug is not specified, the privacy state to use
+            when creating the bug for the bug task..
         """
-        if bug is None:
-            bug = self.makeBug()
-        if target is None:
-            target = self.makeProduct()
-        existing_bugtask = bug.getBugTask(target)
-        if existing_bugtask is not None:
-            return existing_bugtask
 
-        if owner is None:
-            owner = self.makePerson()
+        # Find and return the existing target if one exists.
+        if bug is not None and target is not None:
+            existing_bugtask = bug.getBugTask(target)
+            if existing_bugtask is not None:
+                return existing_bugtask
+
+        # If we are adding a task to an existing bug, and no target is
+        # is specified, we use the same pillar as already exists to ensure
+        # that we don't end up with a bug affecting multiple projects.
+        if target is None:
+            default_bugtask = bug and removeSecurityProxy(bug.default_bugtask)
+            if default_bugtask is not None:
+                existing_pillar = default_bugtask.pillar
+                if IProduct.providedBy(existing_pillar):
+                    target = self.makeProductSeries(product=existing_pillar)
+                elif IDistribution.providedBy(existing_pillar):
+                    target = self.makeDistroSeries(
+                        distribution=existing_pillar)
+            if target is None:
+                target = self.makeProduct()
 
         prerequisite_target = None
         if IProductSeries.providedBy(target):
@@ -1746,10 +1772,41 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     distroseries=target.distribution.currentseries,
                     sourcepackagename=target.sourcepackagename)
         if prerequisite_target is not None:
-            prerequisite = bug.getBugTask(prerequisite_target)
+            prerequisite = bug and bug.getBugTask(prerequisite_target)
             if prerequisite is None:
-                self.makeBugTask(bug, prerequisite_target, publish=publish)
+                prerequisite = self.makeBugTask(
+                    bug, prerequisite_target, publish=publish)
+                bug = prerequisite.bug
 
+        # Private (and soon all) bugs cannot affect multiple projects
+        # so we ensure that if a bug has not been specified and one is
+        # created, it is for the same pillar as that of the specified target.
+        result_bug_task = None
+        if bug is None and private:
+            product = distribution = sourcepackagename = None
+            pillar = target.pillar
+            if IProduct.providedBy(pillar):
+                product = pillar
+            elif IDistribution.providedBy(pillar):
+                distribution = pillar
+            if (IDistributionSourcePackage.providedBy(target)
+                or ISourcePackage.providedBy(target)):
+                    sourcepackagename = target.sourcepackagename
+            bug = self.makeBug(
+                private=private, product=product, distribution=distribution,
+                sourcepackagename=sourcepackagename)
+            if not ISeriesBugTarget.providedBy(target):
+                result_bug_task = bug.default_bugtask
+        # We keep the existing behaviour for public bugs because
+        # test_bugtask_search breaks spectacularly otherwise. Almost all other
+        # tests pass.
+        if bug is None:
+            bug = self.makeBug()
+
+        if result_bug_task is not None:
+            return result_bug_task
+        if owner is None:
+            owner = self.makePerson()
         return removeSecurityProxy(bug).addTask(owner, target)
 
     def makeBugNomination(self, bug=None, target=None):

@@ -46,6 +46,7 @@ from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
     BugTaskEditView,
+    BugListingBatchNavigator,
     BugTaskListingItem,
     BugTasksAndNominationsView,
     BugTaskSearchListingView,
@@ -57,10 +58,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskSet,
     )
-from lp.services.features.model import (
-    FeatureFlag,
-    getFeatureStore,
-    )
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
@@ -619,6 +617,67 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.assertIn(series.product.displayname, content)
 
 
+class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
+    """ Tests the boolean methods on the view used to indicate whether the
+        Also Affects... links should be allowed or not. Currently these
+        restrictions are only used for private bugs. ie where body.private
+        is true.
+
+        A feature flag is used to turn off the new restrictions. Each test
+        is performed with and without the feature flag.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+
+    def _createView(self, bug):
+        request = LaunchpadTestRequest()
+        bugtasks_and_nominations_view = getMultiAdapter(
+            (bug, request), name="+bugtasks-and-nominations-table")
+        return bugtasks_and_nominations_view
+
+    def test_project_bug_cannot_affect_something_else(self):
+        # A bug affecting a project cannot also affect another project or
+        # package.
+        bug = self.factory.makeBug()
+        view = self._createView(bug)
+        self.assertFalse(view.canAddProjectTask())
+        self.assertFalse(view.canAddPackageTask())
+        with FeatureFixture(self.feature_flag):
+            self.assertTrue(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+
+    def test_distro_bug_cannot_affect_project(self):
+        # A bug affecting a distro cannot also affect another project but it
+        # could affect another package.
+        distro = self.factory.makeDistribution()
+        bug = self.factory.makeBug(distribution=distro)
+        view = self._createView(bug)
+        self.assertFalse(view.canAddProjectTask())
+        self.assertTrue(view.canAddPackageTask())
+        with FeatureFixture(self.feature_flag):
+            self.assertTrue(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+
+    def test_sourcepkg_bug_cannot_affect_project(self):
+        # A bug affecting a source pkg cannot also affect another project but
+        # it could affect another package.
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        sp_name = self.factory.getOrMakeSourcePackageName()
+        self.factory.makeSourcePackage(
+            sourcepackagename=sp_name, distroseries=distroseries)
+        bug = self.factory.makeBug(
+            distribution=distro, sourcepackagename=sp_name)
+        view = self._createView(bug)
+        self.assertFalse(view.canAddProjectTask())
+        self.assertTrue(view.canAddPackageTask())
+        with FeatureFixture(self.feature_flag):
+            self.assertTrue(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+
+
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     """We show only those options as possible value in the status
     field that the user can select.
@@ -936,9 +995,6 @@ class TestBugTaskEditView(TestCaseWithFactory):
             bug = self.factory.makeBug(product=first_product, private=True)
             bug_task = bug.bugtasks[0]
         second_product = self.factory.makeProduct(name='duck')
-        getFeatureStore().add(FeatureFlag(
-            scope=u'default', value=u'on', priority=1,
-            flag=u'disclosure.private_bug_visibility_rules.enabled'))
 
         # The first product owner can see the private bug. We will re-target
         # it to second_product where it will not be visible to that user.
@@ -948,8 +1004,10 @@ class TestBugTaskEditView(TestCaseWithFactory):
                 'bunny.target.product': 'duck',
                 'bunny.actions.save': 'Save Changes',
                 }
-            view = create_initialized_view(
-                bug_task, name='+editstatus', form=form)
+            with FeatureFixture({
+                'disclosure.private_bug_visibility_rules.enabled': 'on'}):
+                view = create_initialized_view(
+                    bug_task, name='+editstatus', form=form)
             self.assertEqual(
                 canonical_url(bug_task.pillar, rootsite='bugs'),
                 view.next_url)
@@ -1213,7 +1271,7 @@ def make_bug_task_listing_item(factory):
     owner = factory.makePerson()
     bug = factory.makeBug(
         owner=owner, private=True, security_related=True)
-    bugtask = factory.makeBugTask(bug)
+    bugtask = bug.default_bugtask
     bug_task_set = getUtility(IBugTaskSet)
     bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
         [bugtask])
@@ -1413,6 +1471,18 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             bug_task, browser = self.getBugtaskBrowser()
         bug_number = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, self.client_listing, bug_number)
+
+
+class TestBugListingBatchNavigator(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_mustache_listings_escaped(self):
+        """Mustache template is encoded such that it has no unescaped tags."""
+        navigator = BugListingBatchNavigator(
+            [], LaunchpadTestRequest(), [], 0)
+        self.assertNotIn('<', navigator.mustache_listings)
+        self.assertNotIn('>', navigator.mustache_listings)
 
 
 class TestBugTaskListingItem(TestCaseWithFactory):

@@ -271,8 +271,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         job = BranchUpgradeJob(branch_job)
         self.becomeDbUser(config.upgrade_branches.dbuser)
         runner = JobRunner([job])
-        with self.noOops():
-            runner.runJobHandleError(job)
+        runner.runJobHandleError(job)
+        self.assertEqual([], self.oopses)
         (mail,) = pop_notifications()
         self.assertEqual(
             'Launchpad error while upgrading a branch', mail['subject'])
