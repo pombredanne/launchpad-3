@@ -1,26 +1,37 @@
-<table class="listing narrow-listing">
-<tbody>
+<div class="listing">
 {{#bugtasks}}
-    <tr>
-        <td class={{importance_class}}>
-            {{importance}}
-        </td>
-        <td>
-            {{#show_id}}#{{id}}{{/show_id}}&#32;
-            <a href="{{bug_url}}">{{title}}</a>
-        </td>
-        <td align="right">
-            {{{badges}}}{{{bug_heat_html}}}
-        </td>
-    </tr>
-    <tr >
-        <td class={{status_class}} style="border-style: none">
+  <div class="buglisting-row">
+
+    <div class="buglisting-col1">
+        <div class="importance {{importance_class}}">
+          {{importance}}
+        </div>
+        <div class="status {{status_class}}">
             {{status}}
-        </td>
-        <td colspan="2" style="border-style: none">
-            <span class="{{bugtarget_css}}">{{bugtarget}}</span>
-        </td>
-    </tr>
+        </div>
+    </div>
+
+    <div class="buglisting-col2">
+        <div class="buginfo">
+            {{#show_id}}<span class="bugnumber">#{{id}}</span>{{/show_id}}
+            <a href="{{bug_url}}" class="bugtitile">{{title}}</a>
+        </div>
+        <div class="buginfo-extras">
+            <div class="{{bugtarget_css}}">
+              {{bugtarget}}
+            </div>
+        </div>
+    </div>
+
+    <div class="buglisting-col3">
+        <span class="bug-heat-icons">
+             {{{bug_heat_html}}}
+        </span>
+        <span class="bug-related-icons">
+            {{{badges}}}
+        </span>
+    </div>
+
+  </div>
 {{/bugtasks}}
-</tbody>
-</table>
+</div>

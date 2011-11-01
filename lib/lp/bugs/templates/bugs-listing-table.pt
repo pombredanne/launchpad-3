@@ -23,10 +23,10 @@
     <tal:mustache
         condition="request/features/bugs.dynamic_bug_listings.enabled">
         <div id="bugs-orderby"></div>
-        <span id="client-listing" tal:content="structure context/mustache" />
+        <div id="client-listing" tal:content="structure context/mustache" />
         <script tal:content="structure context/mustache_listings" />
     </tal:mustache>
-    <div class="lesser"
+    <div class="lesser" style="float:left;"
          tal:content="structure context/@@+navigation-links-lower" />
   </tal:results>
 

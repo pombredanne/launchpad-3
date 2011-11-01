@@ -2104,6 +2104,88 @@ tr.bug-branch-summary td.first {
     padding-left: 0px;
     }
 
+/** XXX: deryck This may be moved out.  Just want to get things looking
+ * beter first and will consider where best to put all this when it's
+ * really done.
+ *
+ * These are rules for the new Custom Bug Listings feature.
+ */
+div#client-listing {
+    float: left;
+    }
+div.buglisting-row {
+    float: left;
+    margin-top: 5px;
+    border-bottom: 1px solid #EEE;
+    min-width: 585px;
+    width: 100%;
+    }
+div.buglisting-col1 {
+    width: 100px;
+    float: left;
+    padding-bottom: 8px;
+    }
+div.buglisting-col2 {
+    width: 70%;
+    float: left;
+    }
+div.buglisting-col3 {
+    width: 10%;
+    float: right;
+    }
+div#client-listing .importance {
+    height: 1.5em;
+    width: 6em;
+    font-size: .8em;
+    padding: 0 5px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    line-height: 1.5em;
+    margin: 5px 50px 5px 0;
+    text-align: center;
+    position: relative;
+    left: 10px;
+    }
+div#client-listing .buglisting-col2 {
+    color: #999;
+    }
+div#client-listing .bug-related-icons {
+    float: right;
+    margin: 3px 0 3px 0;
+    }
+div#client-listing .bug-heat-icons {
+    float: right;
+    margin: 3px 0 3px 0;
+    }
+div#client-listing .status {
+    position: relative;
+    left: 10px;
+    }
+#client-listing .importanceCRITICAL, #client-listing .importanceCRITICAL a {
+    background: red;
+    color: white;
+    }
+#client-listing .importanceHIGH, #client-listing .importanceHIGH a {
+    background:#f60;
+    color: white;
+    }
+#client-listing .importanceMEDIUM, #client-listing .importanceMEDIUM a {
+    background: green;
+    color: white;
+    }
+#client-listing .importanceLOW, #client-listing .importanceLOW a {
+    background: black;
+    color: white;
+    }
+#client-listing .importanceWISHLIST, #client-listing .importanceWISHLIST a {
+    background: blue;
+    color: white;
+    }
+#client-listing .importanceUNDECIDED, #client-listing .importanceUNDECIDED a {
+    background: #999;
+    color: white;
+    }
+
 
 /* =====
    Soyuz
