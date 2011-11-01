@@ -60,12 +60,15 @@ class TestBuildViews(TestCaseWithFactory):
         # archive. For instance the 'PPA' action-menu link is not enabled
         # for builds targeted to the PRIMARY archive.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        removeSecurityProxy(archive).require_virtualized = False
         build = self.factory.makeBinaryPackageBuild(archive=archive)
         build_menu = BuildContextMenu(build)
         self.assertEquals(build_menu.links,
-            ['ppa', 'records', 'retry', 'rescore'])
+            ['ppa', 'records', 'retry', 'rescore', 'cancel'])
         self.assertFalse(build_menu.is_ppa_build)
         self.assertFalse(build_menu.ppa().enabled)
+        # Cancel is not enabled on non-virtual builds.
+        self.assertFalse(build_menu.cancel().enabled)
 
     def test_build_menu_ppa(self):
         # The 'PPA' action-menu item will be enabled if we target the build
@@ -74,9 +77,11 @@ class TestBuildViews(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild(archive=ppa)
         build_menu = BuildContextMenu(build)
         self.assertEquals(build_menu.links,
-            ['ppa', 'records', 'retry', 'rescore'])
+            ['ppa', 'records', 'retry', 'rescore', 'cancel'])
         self.assertTrue(build_menu.is_ppa_build)
         self.assertTrue(build_menu.ppa().enabled)
+        # Cancel is enabled on virtual builds.
+        self.assertTrue(build_menu.cancel().enabled)
 
     def test_cannot_retry_stable_distroseries(self):
         # 'BuildView.user_can_retry_build' property checks not only the
