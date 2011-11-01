@@ -499,13 +499,14 @@ class Dominator:
             self.logger.info("Dominating binaries...")
             self._dominatePublications(sorted_packages, generalization)
 
-            # We need to make a second pass to cover the cases where:
-            #  * arch-specific binaries were not all dominated before arch-all
-            #    ones that depend on them
-            #  * An arch-all turned into an arch-specific, or vice-versa
-            #  * A package is completely schizophrenic and changes all of
-            #    its binaries between arch-all and arch-any (apparently
-            #    occurs sometimes!)
+        # We need to make a second pass to cover the cases where:
+        #  * arch-specific binaries were not all dominated before arch-all
+        #    ones that depend on them
+        #  * An arch-all turned into an arch-specific, or vice-versa
+        #  * A package is completely schizophrenic and changes all of
+        #    its binaries between arch-all and arch-any (apparently
+        #    occurs sometimes!)
+        for distroarchseries in distroseries.architectures:
             self.logger.info("Finding binaries...(2nd pass)")
             bins = self.findBinariesForDomination(distroarchseries, pocket)
             sorted_packages = self._sortPackages(bins, generalization)
