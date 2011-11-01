@@ -1,37 +1,16 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the integration between Twisted's logging and Launchpad's."""
 
 __metaclass__ = type
 
-import datetime
-import logging
 import os
-import re
-import shutil
-import StringIO
-import tempfile
-from textwrap import dedent
 
+from fixtures import TempDir
 import pytz
 
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    flush_logged_errors,
-    )
-
-from twisted.python import log
-
-from canonical.config import config
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from lp.services.twistedsupport.loggingsupport import (
-    LaunchpadLogFile,
-    )
-from lp.services.twistedsupport.tests.test_processmonitor import (
-    makeFailure,
-    suppress_stderr,
-    )
+from lp.services.twistedsupport.loggingsupport import LaunchpadLogFile
 from lp.testing import TestCase
 
 
@@ -42,8 +21,7 @@ class TestLaunchpadLogFile(TestCase):
 
     def setUp(self):
         super(TestLaunchpadLogFile, self).setUp()
-        self.temp_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.temp_dir)
+        self.temp_dir = self.useFixture(TempDir()).path
 
     def testInitialization(self):
         """`LaunchpadLogFile` initialization.
@@ -118,9 +96,11 @@ class TestLaunchpadLogFile(TestCase):
 
         # Monkey-patch DailyLogFile.suffix to be time independent.
         self.local_index = 0
+
         def testSuffix(tupledate):
             self.local_index += 1
             return str(self.local_index)
+
         log_file.suffix = testSuffix
 
         log_file.rotate()
@@ -137,4 +117,3 @@ class TestLaunchpadLogFile(TestCase):
         self.assertEqual(
             ['test.log', 'test.log.2.bz2', 'test.log.3'],
             self.listTestFiles())
-

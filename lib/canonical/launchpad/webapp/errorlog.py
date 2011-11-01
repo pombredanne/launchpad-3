@@ -8,11 +8,8 @@
 __metaclass__ = type
 
 import contextlib
-import datetime
 from itertools import repeat
-import logging
 import operator
-import os
 import re
 import urlparse
 
@@ -21,8 +18,9 @@ from lazr.restful.utils import (
     safe_hasattr,
     )
 import oops.createhooks
+import oops_amqp
 from oops_datedir_repo import DateDirRepo
-import oops_datedir_repo.serializer_rfc822
+import oops_datedir_repo.serializer
 import oops_timeline
 import pytz
 from zope.component.interfaces import ObjectEvent
@@ -50,6 +48,7 @@ from canonical.launchpad.webapp.pgsession import PGSessionBase
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app import versioninfo
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.messaging import rabbit
 
 
 UTC = pytz.utc
@@ -120,7 +119,7 @@ class ErrorReport:
     @classmethod
     def read(cls, fp):
         # Deprecated: use the oops module directly now, when possible.
-        report = oops_datedir_repo.serializer_rfc822.read(fp)
+        report = oops_datedir_repo.serializer.read(fp)
         return cls(**report)
 
 
@@ -289,6 +288,8 @@ class ErrorReportingUtility:
         # Constants:
         self._oops_config.template['branch_nick'] = versioninfo.branch_nick
         self._oops_config.template['revno'] = versioninfo.revno
+        reporter = config[section_name].oops_prefix
+        self._oops_config.template['reporter'] = reporter
         # Should go in an HTTP module.
         self._oops_config.template['req_vars'] = []
         # Exceptions, with the zope formatter.
@@ -311,13 +312,19 @@ class ErrorReportingUtility:
             if publisher_adapter is not None:
                 publisher = publisher_adapter(publisher)
             self._oops_config.publishers.append(publisher)
+        # If amqp is configured we want to publish over amqp.
+        if (config.error_reports.error_exchange and rabbit.is_configured()):
+            exchange = config.error_reports.error_exchange
+            routing_key = config.error_reports.error_queue_key
+            amqp_publisher = oops_amqp.Publisher(
+                rabbit.connect, exchange, routing_key)
+            add_publisher(amqp_publisher)
         # We want to publish reports to disk for gathering to the central
-        # analysis server.
-        self._oops_datedir_repo = DateDirRepo(
-                config[section_name].error_dir,
-                config[section_name].oops_prefix)
-        add_publisher(self._oops_datedir_repo.publish)
-        # And within the zope application server (only for testing).
+        # analysis server, but only if we haven't already published to rabbit.
+        self._oops_datedir_repo = DateDirRepo(config[section_name].error_dir)
+        add_publisher(oops.publish_new_only(self._oops_datedir_repo.publish))
+        # And send everything within the zope application server (only for
+        # testing).
         add_publisher(notify_publisher)
         #
         # Reports are filtered if:
@@ -332,87 +339,10 @@ class ErrorReportingUtility:
         #    self._ignored_exceptions_for_offsite_referer
         self._oops_config.filters.append(self._filter_bad_urls_by_referer)
 
-    def setOopsToken(self, token):
-        return self._oops_datedir_repo.log_namer.setToken(token)
-
     @property
     def oops_prefix(self):
-        """Get the current effective oops prefix.
-
-        This is the log subtype + anything set via setOopsToken.
-        """
-        return self._oops_datedir_repo.log_namer.get_log_infix()
-
-    def getOopsReport(self, time):
-        """Return the contents of the OOPS report logged at 'time'."""
-        # How this works - get a serial that was logging in the dir
-        # that logs for time are logged in.
-        log_namer = self._oops_datedir_repo.log_namer
-        serial_from_time = log_namer._findHighestSerial(
-            log_namer.output_dir(time))
-        # Calculate a filename which combines this most recent serial,
-        # the current log_namer naming rules and the exact timestamp.
-        oops_filename = log_namer.getFilename(serial_from_time, time)
-        # Note that if there were no logs written, or if there were two
-        # oops that matched the time window of directory on disk, this
-        # call can raise an IOError.
-        oops_report = open(oops_filename, 'r')
-        try:
-            return ErrorReport.read(oops_report)
-        finally:
-            oops_report.close()
-
-    def getOopsReportById(self, oops_id):
-        """Return the oops report for a given OOPS-ID.
-
-        Only recent reports are found.  The report's filename is assumed to
-        have the same numeric suffix as the oops_id.  The OOPS report must be
-        located in the error directory used by this ErrorReportingUtility.
-
-        If no report is found, return None.
-        """
-        suffix = re.search('[0-9]*$', oops_id).group(0)
-        for directory, name in \
-            self._oops_datedir_repo.log_namer.listRecentReportFiles():
-            if not name.endswith(suffix):
-                continue
-            with open(os.path.join(directory, name), 'r') as oops_report_file:
-                try:
-                    report = ErrorReport.read(oops_report_file)
-                except TypeError:
-                    continue
-            if report.id != oops_id:
-                continue
-            return report
-
-    def getLastOopsReport(self):
-        """Return the last ErrorReport reported with the current config.
-
-        This should only be used in integration tests.
-
-        Note that this function only checks for OOPSes reported today
-        and yesterday (to avoid midnight bugs where an OOPS is logged
-        at 23:59:59 but not checked for until 0:00:01), and ignores
-        OOPSes recorded longer ago.
-
-        Returns None if no OOPS is found.
-        """
-        now = datetime.datetime.now(UTC)
-        # Check today
-        log_namer = self._oops_datedir_repo.log_namer
-        oopsid, filename = log_namer._findHighestSerialFilename(time=now)
-        if filename is None:
-            # Check yesterday, we may have just passed midnight.
-            yesterday = now - datetime.timedelta(days=1)
-            oopsid, filename = log_namer._findHighestSerialFilename(
-                time=yesterday)
-            if filename is None:
-                return None
-        oops_report = open(filename, 'r')
-        try:
-            return ErrorReport.read(oops_report)
-        finally:
-            oops_report.close()
+        """Get the current effective oops prefix."""
+        return self._oops_config.template['reporter']
 
     def raising(self, info, request=None):
         """See IErrorReportingUtility.raising()"""
@@ -519,30 +449,6 @@ class ScriptRequest(ErrorReportRequest):
     @property
     def form(self):
         return dict(self.items())
-
-
-class OopsLoggingHandler(logging.Handler):
-    """Python logging handler that records OOPSes on exception."""
-
-    def __init__(self, error_utility=None, request=None):
-        """Construct an `OopsLoggingHandler`.
-
-        :param error_utility: The error utility to use to log oopses. If not
-            provided, defaults to `globalErrorUtility`.
-        :param request: The `IErrorReportRequest` these errors are associated
-            with.
-        """
-        logging.Handler.__init__(self, logging.ERROR)
-        if error_utility is None:
-            error_utility = globalErrorUtility
-        self._error_utility = error_utility
-        self._request = request
-
-    def emit(self, record):
-        """See `logging.Handler.emit`."""
-        info = record.exc_info
-        if info is not None:
-            self._error_utility.raising(info, self._request)
 
 
 class SoftRequestTimeout(Exception):

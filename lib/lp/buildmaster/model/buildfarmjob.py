@@ -32,7 +32,6 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import (
     ComponentLookupError,
-    getAdapter,
     getUtility,
     )
 from zope.interface import (
