@@ -272,6 +272,12 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    registered_branches_matcher = soupmatchers.HTMLContains(
+        soupmatchers.Tag(
+            'Registered link', 'a', text='Registered branches',
+            attrs={'href': 'http://launchpad.dev/~barney'
+                           '/+registeredbranches'}))
+
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.user = self.factory.makePerson()
@@ -294,12 +300,6 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
             soupmatchers.Tag(
                 'Title', 'h1', text='Bazaar branches owned by Barney'))
         self.assertThat(page, h1_matcher)
-
-    registered_branches_matcher = soupmatchers.HTMLContains(
-        soupmatchers.Tag(
-            'Registered link', 'a', text='Registered branches',
-            attrs={'href': 'http://launchpad.dev/~barney'
-                           '/+registeredbranches'}))
 
     def test_branch_list_empty(self):
         page = self.get_branch_list_page()
