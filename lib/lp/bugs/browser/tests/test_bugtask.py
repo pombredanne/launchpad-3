@@ -1477,14 +1477,30 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         request = LaunchpadTestRequest()
         cache = IJSONRequestCache(request)
         cache.objects['mustache_model'] = {
-                'bugtasks': [{'id': '3.14159', 'show_id': True}],
+                'bugtasks': [{
+                    'id': '3.14159',
+                    'title':'title1',
+                    'status': 'status1',
+                    'importance': 'importance1',
+                    'importance_class': 'importance_class1',
+                    'show_id': True,
+                    'show_status': True,
+                    'show_importance': True,
+                    }],
         }
         mustache_model = cache.objects['mustache_model']
         navigator = BugListingBatchNavigator([], request, [], 1)
         self.assertIn('3.14159', navigator.mustache)
         mustache_model['bugtasks'][0]['show_id'] = False
         self.assertNotIn('3.14159', navigator.mustache)
-
+        self.assertIn('status1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_status'] = False
+        self.assertNotIn('status1', navigator.mustache)
+        self.assertIn('importance1', navigator.mustache)
+        self.assertIn('importance_class1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_importance'] = False
+        self.assertNotIn('importance1', navigator.mustache)
+        self.assertNotIn('importance_class1', navigator.mustache)
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):

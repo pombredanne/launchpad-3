@@ -3,12 +3,16 @@
   <div class="buglisting-row">
 
     <div class="buglisting-col1">
+        {{#show_importance}}
         <div class="importance {{importance_class}}">
           {{importance}}
         </div>
+        {{/show_importance}}
+        {{#show_status}}
         <div class="status {{status_class}}">
             {{status}}
         </div>
+        {{/show_status}}
     </div>
 
     <div class="buglisting-col2">
