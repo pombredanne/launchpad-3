@@ -442,63 +442,62 @@ class Dominator:
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
 
+    def findBinariesForDomination(self, distroarchseries, pocket):
+        """Find binary publications that need dominating."""
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
+        bpph_location_clauses = [
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                distroarchseries,
+            BinaryPackagePublishingHistory.archive == self.archive,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            ]
+        candidate_binary_names = Select(
+            BinaryPackageName.id,
+            And(
+                BinaryPackageRelease.binarypackagenameID ==
+                    BinaryPackageName.id,
+                BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                    BinaryPackageRelease.id,
+                bpph_location_clauses,
+            ),
+            group_by=BinaryPackageName.id,
+            having=Count(BinaryPackagePublishingHistory.id) > 1)
+        main_clauses = [
+            BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            BinaryPackageRelease.binarypackagenameID.is_in(
+                candidate_binary_names),
+            BinaryPackageRelease.binpackageformat !=
+                BinaryPackageFormat.DDEB,
+            ]
+        main_clauses.extend(bpph_location_clauses)
+
+        store = IStore(BinaryPackagePublishingHistory)
+        return store.find(BinaryPackagePublishingHistory, *main_clauses)
+
     def dominateBinaries(self, distroseries, pocket):
         """Perform domination on binary package publications.
 
         Dominates binaries, restricted to `distroseries`, `pocket`, and
         `self.archive`.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
         generalization = GeneralizedPublication(is_source=False)
 
         for distroarchseries in distroseries.architectures:
             self.logger.info(
                 "Performing domination across %s/%s (%s)",
-                distroseries.name, pocket.title,
+                distroarchseries.distroseries.name, pocket.title,
                 distroarchseries.architecturetag)
 
-            bpph_location_clauses = [
-                BinaryPackagePublishingHistory.status ==
-                    PackagePublishingStatus.PUBLISHED,
-                BinaryPackagePublishingHistory.distroarchseries ==
-                    distroarchseries,
-                BinaryPackagePublishingHistory.archive == self.archive,
-                BinaryPackagePublishingHistory.pocket == pocket,
-                ]
-            candidate_binary_names = Select(
-                BinaryPackageName.id,
-                And(
-                    BinaryPackageRelease.binarypackagenameID ==
-                        BinaryPackageName.id,
-                    BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                        BinaryPackageRelease.id,
-                    bpph_location_clauses,
-                ),
-                group_by=BinaryPackageName.id,
-                having=Count(BinaryPackagePublishingHistory.id) > 1)
-            main_clauses = [
-                BinaryPackagePublishingHistory,
-                BinaryPackageRelease.id ==
-                    BinaryPackagePublishingHistory.binarypackagereleaseID,
-                BinaryPackageRelease.binarypackagenameID.is_in(
-                    candidate_binary_names),
-                BinaryPackageRelease.binpackageformat !=
-                    BinaryPackageFormat.DDEB,
-                ]
-            main_clauses.extend(bpph_location_clauses)
-
-            def do_domination(pass2_msg=""):
-                msg = "binaries..." + pass2_msg
-                self.logger.info("Finding %s" % msg)
-                bins = IStore(
-                    BinaryPackagePublishingHistory).find(*main_clauses)
-                self.logger.info("Dominating %s" % msg)
-                sorted_packages = self._sortPackages(bins, generalization)
-                self._dominatePublications(sorted_packages, generalization)
-
-            do_domination()
+            self.logger.info("Finding binaries...")
+            bins = self.findBinariesForDomination(distroarchseries, pocket)
+            sorted_packages = self._sortPackages(bins, generalization)
+            self.logger.info("Dominating binaries...")
+            self._dominatePublications(sorted_packages, generalization)
 
             # We need to make a second pass to cover the cases where:
             #  * arch-specific binaries were not all dominated before arch-all
@@ -507,7 +506,11 @@ class Dominator:
             #  * A package is completely schizophrenic and changes all of
             #    its binaries between arch-all and arch-any (apparently
             #    occurs sometimes!)
-            do_domination("(2nd pass)")
+            self.logger.info("Finding binaries...(2nd pass)")
+            bins = self.findBinariesForDomination(distroarchseries, pocket)
+            sorted_packages = self._sortPackages(bins, generalization)
+            self.logger.info("Dominating binaries...(2nd pass)")
+            self._dominatePublications(sorted_packages, generalization)
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
         """Compose ORM condition for restricting relevant source pubs."""
