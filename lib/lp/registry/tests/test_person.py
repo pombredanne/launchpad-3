@@ -38,6 +38,7 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
     reconnect_stores,
     )
 from lp.answers.model.answercontact import AnswerContact
@@ -76,6 +77,10 @@ from lp.services.propertycache import clear_property_cache
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
+    )
+from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
+from lp.soyuz.scripts.tests.test_initialize_distroseries import (
+    InitializationHelperTestCase,
     )
 from lp.testing import (
     ANONYMOUS,
@@ -439,14 +444,14 @@ class TestPerson(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(Equals(1)))
 
     def createCopiedPackage(self, spph, copier, dest_distroseries=None,
-                            dest_archive=None):
+                            dest_archive=None,
+                            dest_pocket=PackagePublishingPocket.UPDATES):
         if dest_distroseries is None:
             dest_distroseries = self.factory.makeDistroSeries()
         if dest_archive is None:
             dest_archive = dest_distroseries.main_archive
         return spph.copyTo(
-            dest_distroseries, creator=copier,
-            pocket=PackagePublishingPocket.UPDATES,
+            dest_distroseries, creator=copier, pocket=dest_pocket,
             archive=dest_archive)
 
     def test_getLatestSynchronisedPublishings_most_recent_first(self):
@@ -519,6 +524,38 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(
             0,
             synchronised_spphs.count())
+
+
+class TestPersonInitializedSeries(TestPerson, InitializationHelperTestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_getLatestSynchronisedPublishings_derived_series(self):
+        # The publishings copied over when a new series is initialized
+        # are not picked up by getLatestSynchronisedPublishings.
+        copier = self.factory.makePerson()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE, creator=copier)
+        parent, unused = self.setupParent(
+            packages={}, arch_tag='i386')
+        self.createCopiedPackage(spph, copier, parent)
+        copied_spph2 = self.createCopiedPackage(
+            spph, copier, parent,
+            dest_pocket=PackagePublishingPocket.RELEASE)
+
+        # Initialize a new series from 'parent'.
+        child = self.factory.makeDistroSeries(previous_series=parent)
+        ids = InitializeDistroSeries(child, [parent.id])
+        ids.check()
+        ids.initialize()
+        synchronised_spphs = copier.getLatestSynchronisedPublishings()
+
+        # The publishings copied from the parent are not picked up by
+        # getLatestSynchronisedPublishings because creator=None for
+        # these new publishings.
+        self.assertContentEqual(
+            [copied_spph2],
+            synchronised_spphs)
 
 
 class TestPersonStates(TestCaseWithFactory):
