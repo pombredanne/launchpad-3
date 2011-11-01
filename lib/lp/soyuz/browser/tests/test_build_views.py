@@ -236,6 +236,47 @@ class TestBuildViews(TestCaseWithFactory):
         self.assertEquals(notification.message, "Build rescored to 0.")
         self.assertEquals(pending_build.buildqueue_record.lastscore, 0)
 
+    def test_cancelling_pending_build(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        pending_build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        pending_build.queueBuild()
+        with person_logged_in(ppa.owner):
+            view = create_initialized_view(
+                pending_build, name="+cancel", form={
+                    'field.actions.cancel': 'Cancel'})
+        notification = view.request.response.notifications[0]
+        self.assertEqual(notification.message, "Build cancelled")
+        self.assertEqual(BuildStatus.CANCELLED, pending_build.status)
+
+    def test_cancelling_building_build(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        pending_build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        pending_build.queueBuild()
+        removeSecurityProxy(pending_build).status = BuildStatus.BUILDING
+        with person_logged_in(ppa.owner):
+            view = create_initialized_view(
+                pending_build, name="+cancel", form={
+                    'field.actions.cancel': 'Cancel'})
+        notification = view.request.response.notifications[0]
+        self.assertEqual(
+            notification.message, "Build cancellation in progress")
+        self.assertEqual(BuildStatus.CANCELLING, pending_build.status)
+
+    def test_cancelling_uncancellable_build(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        removeSecurityProxy(archive).require_virtualized = False
+        pending_build = self.factory.makeBinaryPackageBuild(archive=archive)
+        pending_build.queueBuild()
+        removeSecurityProxy(pending_build).status = BuildStatus.BUILDING
+        with person_logged_in(archive.owner):
+            view = create_initialized_view(
+                pending_build, name="+cancel", form={
+                    'field.actions.cancel': 'Cancel'})
+        notification = view.request.response.notifications[0]
+        self.assertEqual(
+            notification.message, "Unable to cancel build")
+        self.assertEqual(BuildStatus.BUILDING, pending_build.status)
+
     def test_build_records_view(self):
         # The BuildRecordsView can also be used to filter by architecture tag.
         distroseries = self.factory.makeDistroSeries()
