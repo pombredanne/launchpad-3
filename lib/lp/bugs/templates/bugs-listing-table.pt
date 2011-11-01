@@ -26,7 +26,7 @@
         <div id="client-listing" tal:content="structure context/mustache" />
         <script tal:content="structure context/mustache_listings" />
     </tal:mustache>
-    <div class="lesser" style="float:left;"
+    <div class="lesser"
          tal:content="structure context/@@+navigation-links-lower" />
   </tal:results>
 

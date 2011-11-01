@@ -1882,6 +1882,7 @@ a.unofficial-tag {
 
 .discreet, .lesser, .duplicate-details {
     font-size: 10px;
+    clear: left;
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
