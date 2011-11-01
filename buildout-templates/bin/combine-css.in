@@ -38,6 +38,7 @@ names = [
     'build/picker/assets/skins/sam/picker.css',
     'build/activator/assets/skins/sam/activator.css',
     'build/choiceedit/assets/choiceedit-core.css',
+    'build/ordering/assets/ordering-core.css',
     GALLERY_ACCORDION + 'gallery-accordion-core.css',
     GALLERY_ACCORDION + 'skins/sam/gallery-accordion-skin.css',
     'build/sprite.css',
