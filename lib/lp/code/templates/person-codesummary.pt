@@ -8,7 +8,7 @@
       features request/features"
   tal:condition="menu/show_summary">
 
-  <table tal:condition="not: menu/simplified_branch_menu">
+  <table tal:condition="not: menu/simplified_branches_menu">
     <tr class="code-links">
       <td class="code-count" tal:content="menu/owned_branch_count">100</td>
       <td tal:content="structure menu/owned/render"
@@ -35,7 +35,7 @@
     </tr>
   </table>
 
-  <table tal:condition="menu/simplified_branch_menu">
+  <table tal:condition="menu/simplified_branches_menu">
     <tr class="code-links"
         tal:condition="menu/simplified_owned/enabled">
       <td tal:content="structure menu/simplified_owned/render" />

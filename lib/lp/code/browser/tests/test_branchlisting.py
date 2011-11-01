@@ -275,7 +275,6 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.user = self.factory.makePerson()
-
         self.person = self.factory.makePerson(name='barney')
         self.team = self.factory.makeTeam(owner=self.person)
         self.product = self.factory.makeProduct(name='bambam')
