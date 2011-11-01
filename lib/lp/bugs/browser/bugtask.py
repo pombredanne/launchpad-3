@@ -159,6 +159,7 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    ReturnToReferrerMixin,
     )
 from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
@@ -1760,7 +1761,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         self.updateContextFromData(data)
 
 
-class BugTaskDeletionView(LaunchpadFormView):
+class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
     """Used to delete a bugtask."""
 
     schema = IBugTask
@@ -1772,16 +1773,10 @@ class BugTaskDeletionView(LaunchpadFormView):
     @action('Delete', name='delete_bugtask')
     def delete_bugtask_action(self, action, data):
         bugtask = self.context
-        self.next_url = canonical_url(bugtask.bug)
         message = ("This bug no longer affects %s."
                     % bugtask.target.bugtargetdisplayname)
         bugtask.delete()
         self.request.response.addNotification(message)
-
-    @property
-    def cancel_url(self):
-        bugtask = self.context
-        return canonical_url(bugtask.bug)
 
 
 class BugTaskListingView(LaunchpadView):
