@@ -36,7 +36,10 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import clear_cache
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag,
+    ILaunchpadRoot,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -698,16 +701,22 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
         # Test the view rendering, including confirmation message, cancel url.
         bug = self.factory.makeBug()
         bugtask = self.factory.makeBugTask(bug=bug)
+        bug_url = canonical_url(bugtask.bug, rootsite='bugs')
+        # Set up request so that the ReturnToReferrerMixin can correctly
+        # extra the referer url.
+        server_url = canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='bugs')
+        extra = {'HTTP_REFERER': bug_url}
         with FeatureFixture(DELETE_BUGTASK_ENABLED):
             login_person(bugtask.owner)
             view = create_initialized_view(
-                bugtask, name='+delete', principal=bugtask.owner)
+                bugtask, name='+delete', principal=bugtask.owner,
+                server_url=server_url, **extra)
             contents = view.render()
             confirmation_message = find_tag_by_id(
                 contents, 'confirmation-message')
             self.assertIsNotNone(confirmation_message)
-            url = canonical_url(bugtask.bug, rootsite='bugs')
-            self.assertEqual(view.cancel_url, url)
+            self.assertEqual(bug_url, view.cancel_url)
 
     def test_delete_action(self):
         # Test that the delete action works as expected.

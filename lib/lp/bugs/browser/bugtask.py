@@ -160,6 +160,7 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    ReturnToReferrerMixin,
     )
 from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
@@ -1771,7 +1772,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         self.updateContextFromData(data)
 
 
-class BugTaskDeletionView(LaunchpadFormView):
+class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
     """Used to delete a bugtask."""
 
     schema = IBugTask
@@ -1784,7 +1785,7 @@ class BugTaskDeletionView(LaunchpadFormView):
     def next_url(self):
         """Return the next URL to call when this call completes."""
         if not self.request.is_ajax:
-            return canonical_url(self.context.bug)
+            return super(BugTaskDeletionView).next_url
         return None
 
     @action('Delete', name='delete_bugtask')
@@ -1803,11 +1804,6 @@ class BugTaskDeletionView(LaunchpadFormView):
                 name='+bugtasks-and-nominations-table')
             view.initialize()
             return view.render()
-
-    @property
-    def cancel_url(self):
-        bugtask = self.context
-        return canonical_url(bugtask.bug)
 
 
 class BugTaskListingView(LaunchpadView):
