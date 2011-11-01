@@ -12,6 +12,7 @@ import subprocess
 from unittest import TestLoader
 
 import pytz
+from testtools.content import text_content
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
@@ -1055,14 +1056,19 @@ class TestCheckTeamParticipationScript(TestCase):
             'cronscripts/check-teamparticipation.py', shell=True,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        (out, err) = process.communicate()
-        self.assertEqual(process.returncode, expected_returncode, (out, err))
+        out, err = process.communicate()
+        if len(out) > 0:
+            self.addDetail("stdout", text_content(out))
+        if len(err) > 0:
+            self.addDetail("stderr", text_content(err))
+        self.assertEqual(process.returncode, expected_returncode)
         return out, err
 
     def test_no_output_if_no_invalid_entries(self):
         """No output if there's no invalid teamparticipation entries."""
         out, err = self._runScript()
-        self.assertEqual((out, err), ('', ''))
+        self.assertEqual(0, len(out))
+        self.assertEqual(0, len(err))
 
     def test_report_invalid_teamparticipation_entries(self):
         """The script reports missing/spurious TeamParticipation entries.
@@ -1104,16 +1110,13 @@ class TestCheckTeamParticipationScript(TestCase):
         transaction.commit()
 
         out, err = self._runScript()
-        self.assertEqual(out, '', (out, err))
+        self.assertEqual(0, len(out))
         self.failUnless(
-            re.search('missing TeamParticipation entries for zzzzz', err),
-            (out, err))
+            re.search('missing TeamParticipation entries for zzzzz', err))
         self.failUnless(
-            re.search('spurious TeamParticipation entries for zzzzz', err),
-            (out, err))
+            re.search('spurious TeamParticipation entries for zzzzz', err))
         self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', err),
-            (out, err))
+            re.search('not members of themselves:.*zzzzz.*', err))
 
     def test_report_circular_team_references(self):
         """The script reports circular references between teams.
@@ -1146,9 +1149,8 @@ class TestCheckTeamParticipationScript(TestCase):
         import transaction
         transaction.commit()
         out, err = self._runScript(expected_returncode=1)
-        self.assertEqual(out, '', (out, err))
-        self.failUnless(
-            re.search('Circular references found', err), (out, err))
+        self.assertEqual(0, len(out))
+        self.failUnless(re.search('Circular references found', err))
 
 
 class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
