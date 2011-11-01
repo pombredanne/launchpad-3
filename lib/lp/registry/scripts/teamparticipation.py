@@ -15,7 +15,6 @@ from collections import (
 from itertools import (
     chain,
     imap,
-    islice,
     )
 
 import transaction
@@ -23,12 +22,6 @@ import transaction
 from canonical.database.sqlbase import cursor
 from lp.registry.interfaces.teammembership import ACTIVE_STATES
 from lp.services.scripts.base import LaunchpadScriptFailure
-
-
-def chunked(things, chunk_size=50):
-    """Yield `things` in chunks of not more than `chunk_size` slices."""
-    for offset in xrange(0, len(things), chunk_size):
-        yield islice(things, offset, offset + chunk_size)
 
 
 def check_teamparticipation_self(log):
