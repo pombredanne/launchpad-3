@@ -265,7 +265,7 @@ class TestBuildViews(TestCaseWithFactory):
                 pending_build, name="+cancel", form={
                     'field.actions.cancel': 'Cancel'})
         notification = view.request.response.notifications[0]
-        self.assertEqual(notification.message, "Build cancelled")
+        self.assertEqual(notification.message, "Build cancelled.")
         self.assertEqual(BuildStatus.CANCELLED, pending_build.status)
 
     def test_cancelling_building_build(self):
@@ -279,7 +279,7 @@ class TestBuildViews(TestCaseWithFactory):
                     'field.actions.cancel': 'Cancel'})
         notification = view.request.response.notifications[0]
         self.assertEqual(
-            notification.message, "Build cancellation in progress")
+            notification.message, "Build cancellation in progress.")
         self.assertEqual(BuildStatus.CANCELLING, pending_build.status)
 
     def test_cancelling_uncancellable_build(self):
@@ -294,7 +294,7 @@ class TestBuildViews(TestCaseWithFactory):
                     'field.actions.cancel': 'Cancel'})
         notification = view.request.response.notifications[0]
         self.assertEqual(
-            notification.message, "Unable to cancel build")
+            notification.message, "Unable to cancel build.")
         self.assertEqual(BuildStatus.BUILDING, pending_build.status)
 
     def test_build_records_view(self):

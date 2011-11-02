@@ -430,11 +430,11 @@ class BuildCancelView(LaunchpadFormView):
         self.context.cancel()
         if self.context.status == BuildStatus.CANCELLING:
             self.request.response.addNotification(
-                "Build cancellation in progress")
+                "Build cancellation in progress.")
         elif self.context.status == BuildStatus.CANCELLED:
-            self.request.response.addNotification("Build cancelled")
+            self.request.response.addNotification("Build cancelled.")
         else:
-            self.request.response.addNotification("Unable to cancel build")
+            self.request.response.addNotification("Unable to cancel build.")
 
 
 class CompleteBuild:
