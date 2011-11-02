@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from testtools.matchers import (
-    Equals,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
@@ -48,18 +45,17 @@ class TestDistroSeriesParent(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent(
             derived_series=derived_series,
             parent_series=parent_series,
-            initialized=True
-            )
+            initialized=True)
 
         self.assertThat(
             dsp,
-            MatchesStructure(
-                derived_series=Equals(derived_series),
-                parent_series=Equals(parent_series),
-                initialized=Equals(True),
-                is_overlay=Equals(False),
-                component=Equals(None),
-                pocket=Equals(None),
+            MatchesStructure.byEquality(
+                derived_series=derived_series,
+                parent_series=parent_series,
+                initialized=True,
+                is_overlay=False,
+                component=None,
+                pocket=None,
                 ))
 
     def test_properties_overlay(self):
@@ -78,13 +74,13 @@ class TestDistroSeriesParent(TestCaseWithFactory):
 
         self.assertThat(
             dsp,
-            MatchesStructure(
-                derived_series=Equals(derived_series),
-                parent_series=Equals(parent_series),
-                initialized=Equals(True),
-                is_overlay=Equals(True),
-                component=Equals(universe_component),
-                pocket=Equals(PackagePublishingPocket.SECURITY),
+            MatchesStructure.byEquality(
+                derived_series=derived_series,
+                parent_series=parent_series,
+                initialized=True,
+                is_overlay=True,
+                component=universe_component,
+                pocket=PackagePublishingPocket.SECURITY,
                 ))
 
     def test_getByDerivedSeries(self):

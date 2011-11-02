@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AlreadyLatestFormat',
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchCannotBePrivate',
@@ -20,6 +21,8 @@ __all__ = [
     'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CannotDeleteBranch',
+    'CannotUpgradeBranch',
+    'CannotUpgradeNonHosted',
     'CannotHaveLinkedBranch',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
@@ -36,6 +39,7 @@ __all__ = [
     'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
+    'UpgradePending',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
@@ -56,6 +60,7 @@ class BadBranchMergeProposalSearchContext(Exception):
     """The context is not valid for a branch merge proposal search."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
 
@@ -165,6 +170,36 @@ class CannotHaveLinkedBranch(InvalidBranchException):
     """Raised when we try to get the linked branch for a thing that can't."""
 
     _msg_template = "%s cannot have linked branches."
+
+
+class CannotUpgradeBranch(Exception):
+    """"Made for subclassing."""
+
+    def __init__(self, branch):
+        super(CannotUpgradeBranch, self).__init__(
+            self._msg_template % branch.bzr_identity)
+        self.branch = branch
+
+
+class AlreadyLatestFormat(CannotUpgradeBranch):
+    """Raised on attempt to upgrade a branch already in the latest format."""
+
+    _msg_template = (
+        'Branch %s is in the latest format, so it cannot be upgraded.')
+
+
+class CannotUpgradeNonHosted(CannotUpgradeBranch):
+
+    """Raised on attempt to upgrade a non-Hosted branch."""
+
+    _msg_template = 'Cannot upgrade non-hosted branch %s'
+
+
+class UpgradePending(CannotUpgradeBranch):
+
+    """Raised on attempt to upgrade a branch already in the latest format."""
+
+    _msg_template = 'An upgrade is already in progress for branch %s.'
 
 
 class ClaimReviewFailed(Exception):

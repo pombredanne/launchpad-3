@@ -27,7 +27,7 @@ Let's create some utilities which keep track of which mails they
 handle, and register them for some domains:
 
     >>> from zope.interface import implements
-    >>> from canonical.launchpad.interfaces.mail import IMailHandler
+    >>> from lp.services.mail.interfaces import IMailHandler
     >>> class MockHandler:
     ...     implements(IMailHandler)
     ...     def __init__(self, allow_unknown_users=False):
@@ -46,9 +46,9 @@ handle, and register them for some domains:
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> from lp.services.mail.tests.helpers import read_test_message
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.mail import sendmail as original_sendmail
+    >>> from lp.services.mail.sendmail import sendmail as original_sendmail
 
 For these examples, we don't want the Precedence header added. Domains
 are treated without regard to case: for incoming mail, foo.com and
@@ -133,7 +133,7 @@ a link to the original message.
     <BLANKLINE>
     If this is blocking your work, please file a question at
     https://answers.launchpad.net/launchpad/+addquestion
-    and include the error ID OOPS-... in the description.
+    and include the error ID OOPS-... in the descr...
     ...
     From: Sample Person <test@canonical.com>
     To: 123@baz.com
@@ -270,7 +270,7 @@ to the user, citing the OOPS ID, with the original message attached.
     <BLANKLINE>
     If this is blocking your work, please file a question at
     https://answers.launchpad.net/launchpad/+addquestion
-    and include the error ID OOPS-...TEMAIL... in the description.
+    and include the error ID OOPS-...... in the descr...
     ...
     From: Foo Bar <foo.bar@canonical.com>
     To: launchpad@oops.com
@@ -315,7 +315,7 @@ reporting in the web interface, are not ignored in the email interface.
     <BLANKLINE>
     If this is blocking your work, please file a question at
     https://answers.launchpad.net/launchpad/+addquestion
-    and include the error ID OOPS-...TEMAIL... in the description.
+    and include the error ID OOPS-...... in the descr...
     ...
     From: Foo Bar <foo.bar@canonical.com>
     To: launchpad@unauthorized.com

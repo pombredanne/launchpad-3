@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211, E0213
@@ -50,6 +50,9 @@ class IBranchCollection(Interface):
     def count():
         """The number of branches in this collection."""
 
+    def is_empty():
+        """Is this collection empty?"""
+
     def ownerCounts():
         """Return the number of different branch owners.
 
@@ -70,7 +73,7 @@ class IBranchCollection(Interface):
         """
 
     def getMergeProposals(statuses=None, for_branches=None,
-                          target_branch=None):
+                          target_branch=None, eager_load=False):
         """Return a result set of merge proposals for the branches in this
         collection.
 
@@ -81,6 +84,8 @@ class IBranchCollection(Interface):
             branch is one of the branches specified.
         :param target_branch: If specified, only return merge proposals
             that target the specified branch.
+        :param eager_load: If True, preloads all the related information for
+            merge proposals like PreviewDiffs and Branches.
         """
 
     def getMergeProposalsForPerson(person, status=None):

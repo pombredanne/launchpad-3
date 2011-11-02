@@ -4,9 +4,6 @@
 """Test for the popup diff."""
 
 __metaclass__ = type
-__all__ = []
-
-import unittest
 
 import transaction
 import windmill
@@ -136,7 +133,3 @@ class TestPopupOnBugPage(WindmillTestCase):
         client.waits.forElement(xpath=BRANCH_SEARCCH_RESULT)
         client.click(xpath=BRANCH_SEARCCH_RESULT)
         client.waits.forElement(xpath=POPUP_DIFF)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

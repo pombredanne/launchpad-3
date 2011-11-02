@@ -19,7 +19,6 @@ from storm.database import (
 from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import directlyProvides
 from zope.publisher.interfaces import (
     NotFound,
@@ -149,14 +148,14 @@ class TestReadOnlyModeSwitches(TestCase):
 
     def test_no_mode_changes(self):
         # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         self.publication.beforeTraversal(self.request)
 
         # Since the mode didn't change, the stores were left in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         # With the store's connection being the same as before.
         master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
@@ -171,8 +170,8 @@ class TestReadOnlyModeSwitches(TestCase):
 
     def test_changing_modes(self):
         # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('launchpad-main-master', self.zstorm_stores)
-        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertIn('main-master', self.zstorm_stores)
+        self.assertIn('main-slave', self.zstorm_stores)
 
         try:
             touch_read_only_file()
@@ -185,8 +184,8 @@ class TestReadOnlyModeSwitches(TestCase):
 
         # Here the mode has changed to read-only, so the stores were removed
         # from zstorm.
-        self.assertNotIn('launchpad-main-master', self.zstorm_stores)
-        self.assertNotIn('launchpad-main-slave', self.zstorm_stores)
+        self.assertNotIn('main-master', self.zstorm_stores)
+        self.assertNotIn('main-slave', self.zstorm_stores)
 
         # If they're needed again, they'll be re-created by ZStorm, and when
         # that happens they will point to the read-only databases.
@@ -271,9 +270,6 @@ class TestWebServicePublication(TestCaseWithFactory):
         self.failIf(principal is None)
 
     def test_disconnect_logs_oops(self):
-        error_reporting_utility = getUtility(IErrorReportingUtility)
-        last_oops = error_reporting_utility.getLastOopsReport()
-
         # Ensure that OOPS reports are generated for database
         # disconnections, as per Bug #373837.
         request = LaunchpadTestRequest()
@@ -287,26 +283,17 @@ class TestWebServicePublication(TestCaseWithFactory):
                 publication.handleException,
                 None, request, sys.exc_info(), True)
         dbadapter.clear_request_started()
-        next_oops = error_reporting_utility.getLastOopsReport()
+        self.assertEqual(1, len(self.oopses))
+        oops = self.oopses[0]
 
         # Ensure the OOPS mentions the correct exception
-        self.assertTrue(repr(next_oops).find("DisconnectionError") != -1,
-            "next_oops was %r" % next_oops)
-
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
-
-        # Ensure that it is different to the last logged OOPS.
-        self.assertNotEqual(repr(last_oops), repr(next_oops))
+        self.assertEqual(oops['type'], "DisconnectionError")
 
     def test_store_disconnected_after_request_handled_logs_oops(self):
         # Bug #504291 was that a Store was being left in a disconnected
         # state after a request, causing subsequent requests handled by that
         # thread to fail. We detect this state in endRequest and log an
         # OOPS to help track down the trigger.
-        error_reporting_utility = getUtility(IErrorReportingUtility)
-        last_oops = error_reporting_utility.getLastOopsReport()
-
         request = LaunchpadTestRequest()
         publication = WebServicePublication(None)
         dbadapter.set_request_started()
@@ -318,16 +305,11 @@ class TestWebServicePublication(TestCaseWithFactory):
         # Invoke the endRequest hook.
         publication.endRequest(request, None)
 
-        next_oops = error_reporting_utility.getLastOopsReport()
-
-        # Ensure that it is different to the last logged OOPS.
-        self.assertNotEqual(repr(last_oops), repr(next_oops))
+        self.assertEqual(1, len(self.oopses))
+        oops = self.oopses[0]
 
         # Ensure the OOPS mentions the correct exception
-        self.assertNotEqual(repr(next_oops).find("Bug #504291"), -1)
-
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
+        self.assertStartsWith(oops['value'], "Bug #504291")
 
         # Ensure the store has been rolled back and in a usable state.
         self.assertEqual(store._connection._state, STATE_RECONNECT)

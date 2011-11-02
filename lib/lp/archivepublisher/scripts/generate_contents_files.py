@@ -27,7 +27,7 @@ from lp.services.command_spawner import (
     ReturnCodeReceiver,
     )
 from lp.services.scripts.base import (
-    LaunchpadScript,
+    LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
@@ -87,7 +87,7 @@ def execute(logger, command, args=None):
     # and friends to provide "live" log output.  Simpler ways of running
     # commands tend to save it all up and then dump it at the end, or
     # have trouble logging it as neat lines.
-    stderr_logger = OutputLineHandler(logger.warn)
+    stderr_logger = OutputLineHandler(logger.info)
     stdout_logger = OutputLineHandler(logger.debug)
     receiver = ReturnCodeReceiver()
     spawner = CommandSpawner()
@@ -112,7 +112,7 @@ def move_file(old_path, new_path):
     os.rename(old_path, new_path)
 
 
-class GenerateContentsFiles(LaunchpadScript):
+class GenerateContentsFiles(LaunchpadCronScript):
 
     distribution = None
 

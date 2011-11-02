@@ -3,20 +3,28 @@
 
 """Profile requests when enabled."""
 
-__all__ = []
+__all__ = ['profiling',
+           'start',
+           'stop',
+          ]
 
 __metaclass__ = type
 
+import contextlib
 from cProfile import Profile
 from datetime import datetime
+from functools import partial
+import heapq
 import os
 import pstats
-import threading
+import re
 import StringIO
+import sys
+import threading
 
-from bzrlib import errors
-from bzrlib.lsprof import BzrProfiler
-from zope.pagetemplate.pagetemplatefile import PageTemplateFile
+from bzrlib import lsprof
+import oops_datedir_repo.serializer_rfc822
+from z3c.pt.pagetemplate import PageTemplateFile
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
     adapter,
@@ -24,6 +32,7 @@ from zope.component import (
     )
 from zope.contenttype.parse import parse
 from zope.error.interfaces import IErrorReportingUtility
+from zope.exceptions.exceptionformatter import format_exception
 from zope.traversing.namespace import view
 
 from canonical.config import config
@@ -43,29 +52,46 @@ class ProfilingOops(Exception):
     """Fake exception used to log OOPS information when profiling pages."""
 
 
-class PStatsProfiler(BzrProfiler):
-    """This provides a wrapper around the standard library's profiler.
+class Profiler:
 
-    It makes the BzrProfiler and the PStatsProfiler follow a similar API.
-    It also makes them both honor the BzrProfiler's thread lock.
-    """
+    profiler_lock = threading.Lock()
+    """Global lock used to serialise profiles."""
+
+    started = enabled = False
+
+    def disable(self):
+        if self.enabled:
+            self.p.disable()
+            self.enabled = False
+            stats = pstats.Stats(self.p)
+            if self.pstats is None:
+                self.pstats = stats
+            else:
+                self.pstats.add(stats)
+            self.count += 1
+
+    def enable(self):
+        if not self.started:
+            self.start()
+        elif not self.enabled:
+            self.p = Profile()
+            self.p.enable(subcalls=True)
+            self.enabled = True
 
     def start(self):
         """Start profiling.
-
-        This will record all calls made until stop() is called.
-
-        Unlike the BzrProfiler, we do not try to get profiles of sub-threads.
         """
-        self.p = Profile()
-        permitted = self.__class__.profiler_lock.acquire(
-            self.__class__.profiler_block)
-        if not permitted:
-            raise errors.InternalBzrError(msg="Already profiling something")
+        if self.started:
+            return
+        self.count = 0
+        self.pstats = None
+        self.started = True
+        self.profiler_lock.acquire(True)  # Blocks.
         try:
-            self.p.enable(subcalls=True)
+            self.enable()
         except:
-            self.__class__.profiler_lock.release()
+            self.profiler_lock.release()
+            self.started = False
             raise
 
     def stop(self):
@@ -77,38 +103,41 @@ class PStatsProfiler(BzrProfiler):
         :return: A bzrlib.lsprof.Stats object.
         """
         try:
-            self.p.disable()
+            self.disable()
             p = self.p
-            self.p = None
-            return PStats(p)
+            del self.p
+            return Stats(self.pstats, p.getstats(), self.count)
         finally:
-            self.__class__.profiler_lock.release()
+            self.profiler_lock.release()
+            self.started = False
 
 
-class PStats:
-    """Emulate enough of the Bzr stats class for our needs."""
+class Stats:
 
-    _stats = None
+    _callgrind_stats = None
 
-    def __init__(self, profiler):
-        self.p = profiler
+    def __init__(self, stats, rawstats, count):
+        self.stats = stats
+        self.rawstats = rawstats
+        self.count = count
 
     @property
-    def stats(self):
-        if self._stats is None:
-            self._stats = pstats.Stats(self.p).strip_dirs()
-        return self._stats
+    def callgrind_stats(self):
+        if self._callgrind_stats is None:
+            self._callgrind_stats = lsprof.Stats(self.rawstats, {})
+        return self._callgrind_stats
 
-    def save(self, filename):
-        self.p.dump_stats(filename)
+    def save(self, filename, callgrind=False):
+        if callgrind:
+            self.callgrind_stats.save(filename, format="callgrind")
+        else:
+            self.stats.dump_stats(filename)
+
+    def strip_dirs(self):
+        self.stats.strip_dirs()
 
     def sort(self, name):
-        mapping = {
-            'inlinetime': 'time',
-            'totaltime': 'cumulative',
-            'callcount': 'calls',
-            }
-        self.stats.sort_stats(mapping[name])
+        self.stats.sort_stats(name)
 
     def pprint(self, file):
         stats = self.stats
@@ -121,7 +150,18 @@ class PStats:
 
 
 # Profilers may only run one at a time, but block and serialize.
-_profilers = threading.local()
+
+
+class Profilers(threading.local):
+    """A simple subclass to initialize our thread local values."""
+
+    def __init__(self):
+        self.profiling = False
+        self.actions = None
+        self.profiler = None
+        self.memory_profile_start = None
+
+_profilers = Profilers()
 
 
 def before_traverse(event):
@@ -164,28 +204,74 @@ def _maybe_profile(event):
     except AttributeError:
         # The first call in on a new thread cannot be profiling at the start.
         pass
+    # If this assertion has reason to fail, we'll need to add code
+    # to try and stop the profiler before we delete it, in case it is
+    # still running.
+    assert _profilers.profiler is None
     actions = get_desired_profile_actions(event.request)
     if config.profiling.profile_all_requests:
-        actions.add('callgrind')
-    _profilers.actions = actions
-    _profilers.profiler = None
-    _profilers.profiling = True
-    if actions:
-        if actions.difference(('help',)):
-            # If this assertion has reason to fail, we'll need to add code
-            # to try and stop the profiler before we delete it, in case it is
-            # still running.
-            assert getattr(_profilers, 'profiler', None) is None
-            if 'pstats' in actions and 'callgrind' not in actions:
-                _profilers.profiler = PStatsProfiler()
-            else:  # 'callgrind' is the default, and wins in a conflict.
-                _profilers.profiler = BzrProfiler()
-            _profilers.profiler.start()
+        actions['callgrind'] = ''
     if config.profiling.memory_profile_log:
-        _profilers.memory_profile_start = (memory(), resident())
+        actions['memory_profile_start'] = (memory(), resident())
+    if actions:
+        if 'sql' in actions:
+            condition = actions['sql']
+            if condition not in (True, False):
+                condition = condition['condition']
+            da.start_sql_logging(condition)
+        if 'show' in actions or available_profilers.intersection(actions):
+            _profilers.profiler = Profiler()
+            _profilers.profiler.start()
+        _profilers.profiling = True
+        _profilers.actions = actions
 
 template = PageTemplateFile(
     os.path.join(os.path.dirname(__file__), 'profile.pt'))
+
+
+available_profilers = frozenset(('pstats', 'callgrind'))
+
+
+def start():
+    """Turn on profiling from code.
+    """
+    actions = _profilers.actions
+    profiler = _profilers.profiler
+    if actions is None:
+        actions = _profilers.actions = {}
+        _profilers.profiling = True
+    elif 'inline' not in actions and (
+        'show' in actions or available_profilers.intersection(actions)):
+        # We have a request-based profile in progress.  That wins.
+        actions['inline_ignored'] = ''
+        return
+    actions.update((k, '') for k in ('pstats', 'show', 'inline'))
+    if profiler is None:
+        profiler = _profilers.profiler = Profiler()
+        profiler.start()
+    else:
+        # For simplicity, we just silently ignore start requests when we
+        # have already started.
+        profiler.enable()
+
+
+def stop():
+    """Stop profiling."""
+    # For simplicity, we just silently ignore stop requests when we
+    # have not started.
+    actions = _profilers.actions
+    profiler = _profilers.profiler
+    if actions is not None and 'inline' in actions and profiler is not None:
+        profiler.disable()
+
+
+@contextlib.contextmanager
+def profiling():
+    start()
+    try:
+        yield
+    finally:
+        stop()
 
 
 @adapter(IEndRequestEvent)
@@ -200,7 +286,7 @@ def end_request(event):
         # a start request event.  Just be quiet about it.
         return
     actions = _profilers.actions
-    del _profilers.actions
+    _profilers.actions = None
     request = event.request
     # Create a timestamp including milliseconds.
     now = datetime.fromtimestamp(da.get_request_start_time())
@@ -216,68 +302,60 @@ def end_request(event):
         _major, _minor, content_type_params = parse(content_type)
         is_html = _major == 'text' and _minor == 'html'
     template_context = {
-        # Dicts are easier for tal expressions.
-        'actions': dict((action, True) for action in actions),
+        'actions': dict((key, True) for key in actions),
         'always_log': config.profiling.profile_all_requests}
     dump_path = config.profiling.profile_dir
     if _profilers.profiler is not None:
         prof_stats = _profilers.profiler.stop()
         # Free some memory (at least for the BzrProfiler).
-        del _profilers.profiler
+        _profilers.profiler = None
         if oopsid is None:
             # Log an OOPS to get a log of the SQL queries, and other
             # useful information,  together with the profiling
             # information.
             info = (ProfilingOops, None, None)
             error_utility = getUtility(IErrorReportingUtility)
-            oops = error_utility.handling(info, request)
-            oopsid = oops.id
+            oops_report = error_utility.raising(info, request)
+            oopsid = oops_report['id']
         else:
-            oops = request.oops
-        if actions.intersection(('callgrind', 'pstats')):
-            filename = '%s-%s-%s-%s' % (
-                timestamp, pageid, oopsid,
-                threading.currentThread().getName())
-            if 'callgrind' in actions:
-                # callgrind wins in a conflict between it and pstats, as
-                # documented in the help.
-                # The Bzr stats class looks at the filename to know to use
-                # callgrind syntax.
-                filename = 'callgrind.out.' + filename
-            else:
-                filename += '.prof'
-            dump_path = os.path.join(dump_path, filename)
-            prof_stats.save(dump_path)
-            template_context['dump_path'] = os.path.abspath(dump_path)
+            oops_report = request.oops
+        filename = '%s-%s-%s-%s' % (
+            timestamp, pageid, oopsid,
+            threading.currentThread().getName())
+        if 'callgrind' in actions:
+            # The stats class looks at the filename to know to use
+            # callgrind syntax.
+            callgrind_path = os.path.join(
+                dump_path, 'callgrind.out.' + filename)
+            prof_stats.save(callgrind_path, callgrind=True)
+            template_context['callgrind_path'] = os.path.abspath(
+                callgrind_path)
+        if 'pstats' in actions:
+            pstats_path = os.path.join(
+                dump_path, filename + '.prof')
+            prof_stats.save(pstats_path)
+            template_context['pstats_path'] = os.path.abspath(
+                pstats_path)
         if is_html and 'show' in actions:
-            # Generate raw OOPS results.
-            f = StringIO.StringIO()
-            oops.write(f)
-            template_context['oops'] = f.getvalue()
+            # Generate rfc822 OOPS result (might be nice to have an html
+            # serializer..).
+            template_context['oops'] = ''.join(
+                oops_datedir_repo.serializer_rfc822.to_chunks(oops_report))
             # Generate profile summaries.
-            for name in ('inlinetime', 'totaltime', 'callcount'):
+            prof_stats.strip_dirs()
+            for name in ('time', 'cumulative', 'calls'):
                 prof_stats.sort(name)
                 f = StringIO.StringIO()
                 prof_stats.pprint(file=f)
                 template_context[name] = f.getvalue()
+        template_context['profile_count'] = prof_stats.count
+        template_context['multiple_profiles'] = prof_stats.count > 1
         # Try to free some more memory.
         del prof_stats
-    template_context['dump_path'] = os.path.abspath(dump_path)
-    if actions and is_html:
-        # Hack the new HTML in at the end of the page.
-        encoding = content_type_params.get('charset', 'utf-8')
-        added_html = template(**template_context).encode(encoding)
-        existing_html = request.response.consumeBody()
-        e_start, e_close_body, e_end = existing_html.rpartition(
-            '</body>')
-        new_html = ''.join(
-            (e_start, added_html, e_close_body, e_end))
-        request.response.setResult(new_html)
     # Dump memory profiling info.
-    if config.profiling.memory_profile_log:
+    if 'memory_profile_start' in actions:
         log = file(config.profiling.memory_profile_log, 'a')
-        vss_start, rss_start = _profilers.memory_profile_start
-        del _profilers.memory_profile_start
+        vss_start, rss_start = actions.pop('memory_profile_start')
         vss_end, rss_end = memory(), resident()
         if oopsid is None:
             oopsid = '-'
@@ -285,6 +363,137 @@ def end_request(event):
             timestamp, pageid, oopsid, da.get_request_duration(),
             vss_start, rss_start, vss_end, rss_end))
         log.close()
+    trace = None
+    if 'sql' in actions:
+        trace = da.stop_sql_logging() or ()
+        # The trace is a list of dicts, each with the keys "sql" and "stack".
+        # "sql" is a tuple of start time, stop time, database name (with a
+        # "SQL-" prefix), and sql statement.  "stack" is None or a tuple of
+        # filename, line number, function name, text, module name, optional
+        # supplement dict, and optional info string.  The supplement dict has
+        # keys 'source_url', 'line', 'column', 'expression', 'warnings' (an
+        # iterable), and 'extra', any of which may be None.
+        top_sql = []
+        top_python = []
+        triggers = {}
+        ix = 1  # We display these, so start at 1, not 0.
+        last_stop_time = 0
+        _heappushpop = heapq.heappushpop  # This is an optimization.
+        for step in trace:
+            # Set up an identifier for each trace step.
+            step['id'] = ix
+            step['sql'] = dict(zip(
+                ('start', 'stop', 'name', 'statement'), step['sql']))
+            if step['stack'] is not None:
+                # Divide up the stack into the more unique (app) and less
+                # unique (db) bits.
+                app_stack = step['app_stack'] = []
+                db_stack = step['db_stack'] = []
+                storm_found = False
+                for f in step['stack']:
+                    f_data = dict(zip(
+                        ('filename', 'lineno', 'name', 'line', 'module',
+                         'supplement', 'info'), f))
+                    storm_found = storm_found or (
+                        f_data['module'] and
+                        f_data['module'].startswith('storm.'))
+                    if storm_found:
+                        db_stack.append(f_data)
+                    else:
+                        app_stack.append(f_data)
+                # Begin to gather what app code is triggering the most SQL
+                # calls.
+                trigger_key = tuple(
+                    (f['filename'], f['lineno']) for f in app_stack)
+                if trigger_key not in triggers:
+                    triggers[trigger_key] = []
+                triggers[trigger_key].append(ix)
+            # Get the nbest (n=10) sql and python times
+            step['python_time'] = step['sql']['start'] - last_stop_time
+            step['sql_time'] = step['sql']['stop'] - step['sql']['start']
+            python_data = (step['python_time'], ix, step)
+            sql_data = (step['sql_time'], ix, step)
+            if ix < 10:
+                top_sql.append(sql_data)
+                top_python.append(python_data)
+            else:
+                if ix == 10:
+                    heapq.heapify(top_sql)
+                    heapq.heapify(top_python)
+                _heappushpop(top_sql, sql_data)
+                _heappushpop(top_python, python_data)
+            # Reset for next loop.
+            last_stop_time = step['sql']['stop']
+            ix += 1
+        # Finish setting up top sql and python times.
+        top_sql.sort(reverse=True)
+        top_python.sort(reverse=True)
+        top_sql_ids = []
+        for rank, (key, ix, step) in enumerate(top_sql):
+            step['sql_rank'] = rank + 1
+            step['sql_class'] = (
+                'sql_danger' if key > 500 else
+                'sql_warning' if key > 100 else None)
+            top_sql_ids.append(dict(
+                value=key,
+                ix=ix,
+                rank=step['sql_rank'],
+                cls=step['sql_class']))
+        top_python_ids = []
+        for rank, (key, ix, step) in enumerate(top_python):
+            step['python_rank'] = rank + 1
+            step['python_class'] = (
+                'python_danger' if key > 500 else
+                'python_warning' if key > 100 else None)
+            top_python_ids.append(dict(
+                value=key,
+                ix=ix,
+                rank=step['python_rank'],
+                cls=step['python_class']))
+        # Identify the repeated Python calls that generated SQL.
+        triggers = triggers.items()
+        triggers.sort(key=lambda x: len(x[1]))
+        triggers.reverse()
+        top_triggers = []
+        for (key, ixs) in triggers:
+            if len(ixs) == 1:
+                break
+            info = trace[ixs[0] - 1]['app_stack'][-1].copy()
+            info['indexes'] = ixs
+            info['count'] = len(ixs)
+            top_triggers.append(info)
+        template_context.update(dict(
+            sqltrace=trace,
+            top_sql=top_sql_ids,
+            top_python=top_python_ids,
+            top_triggers=top_triggers,
+            sql_count=len(trace)))
+        if actions['sql'] is True:
+            template_context['sql_traceback_all'] = True
+        elif actions['sql'] is False:
+            template_context['sql_traceback_none'] = True
+        else:
+            conditions = actions['sql'].copy()
+            del conditions['condition']
+            template_context['sql_traceback_conditions'] = conditions
+    template_context['dump_path'] = os.path.abspath(dump_path)
+    if actions and is_html:
+        # Hack the new HTML in at the end of the page.
+        encoding = content_type_params.get('charset', 'utf-8')
+        try:
+            added_html = template(**template_context).encode(encoding)
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except:
+            error = ''.join(format_exception(*sys.exc_info(), as_html=True))
+            added_html = (
+                '<div class="profiling_info">' + error + '</div>')
+        existing_html = request.response.consumeBody()
+        e_start, e_close_body, e_end = existing_html.rpartition(
+            '</body>')
+        new_html = ''.join(
+            (e_start, added_html, e_close_body, e_end))
+        request.response.setResult(new_html)
 
 
 def get_desired_profile_actions(request):
@@ -294,7 +503,7 @@ def get_desired_profile_actions(request):
     URL.  Note that ++profile++ alone without actions is interpreted as
     the "help" action.
     """
-    result = set()
+    result = dict()
     path_info = request.get('PATH_INFO')
     if path_info:
         # if not, this is almost certainly a test not bothering to set up
@@ -311,18 +520,106 @@ def get_desired_profile_actions(request):
             # include traversal in the profile.
             actions, slash, tail = end.partition('/')
             result.update(
-                action for action in (
-                    item.strip().lower() for item in actions.split(','))
-                if action)
-            # 'log' is backwards compatible for 'callgrind'
-            result.intersection_update(('log', 'callgrind', 'show', 'pstats'))
+                (name.strip(), config.strip())
+                for name, partition, config in (
+                    item.strip().lower().partition(':')
+                    for item in actions.split('&'))
+                if name.strip())
+            # 'log' is backwards compatible for 'callgrind'.
             if 'log' in result:
-                result.remove('log')
-                if 'pstats' not in result:
-                    result.add('callgrind')
+                result['callgrind'] = result.pop('log')
+            if 'sqltrace' in result:
+                condition = result['sqltrace']
+                if condition:
+                    condition = _make_condition_function(condition)
+                else:
+                    condition = True
+                del result['sqltrace']
+                result['sql'] = condition
+            elif 'sql' in result:
+                result['sql'] = False
+            # Only honor the available options.
+            available_options = set(('show', 'sql', 'help'))
+            available_options.update(available_profilers)
+            # .keys() gives a list, not mutated during iteration.
+            for key in result.keys():
+                if key not in available_options:
+                    del result[key]
+            # If we didn't end up with any known actions, we need to help the
+            # user.
             if not result:
-                result.add('help')
+                result['help'] = ''
     return result
+
+
+def _make_startswith(value):
+    """Return a function that returns true if its argument startswith value"""
+    def startswith(sql):
+        return sql.startswith(value)
+    return startswith
+
+
+def _make_endswith(value):
+    """Return a function that returns true if its argument endswith value"""
+    def endswith(sql):
+        return sql.endswith(value)
+    return endswith
+
+
+def _make_includes(value):
+    """Return a function that returns true if its argument includes value"""
+    def includes(sql):
+        return value in sql
+    return includes
+
+_condition_functions = {
+    'STARTSWITH': _make_startswith,
+    'ENDSWITH': _make_endswith,
+    'INCLUDES': _make_includes
+    }
+
+_normalize_whitespace = partial(re.compile('\s+').sub, ' ')
+
+
+def _make_condition_function(condition_string):
+    """Given DSL string, return dict including function implementing string.
+
+    DSL is very simple. Conditions are separated by semicolons, which
+    represent logical or.  Each condition should begin with (case insensitive)
+    "startswith ", "endswith ", or "includes ".  The part of the condition
+    after this word and before the next semicolon or end-of-string is the
+    match string, which is case-insensitive and whitespace-normalized.
+
+    Returned dict has three elements: the function that implements the DSL,
+    the list of conditions that were included, and the list of conditions
+    that were excluded (because they were not understood).
+    """
+    conditions = []
+    included = []
+    ignored = []
+    for constraint, partition, value in (
+        c.strip().partition(' ') for c
+        in condition_string.upper().split('|')):
+        # Process each condition.
+        constraint = constraint.strip()
+        if not constraint:
+            # This was something ignorable, like a trailing | or something.
+            continue
+        value = _normalize_whitespace(value.strip())
+        description = dict(constraint=constraint, value=value)
+        if constraint in _condition_functions:
+            conditions.append(_condition_functions[constraint](value))
+            included.append(description)
+        else:
+            ignored.append(description)
+
+    def condition_aggregate(sql):
+        for condition in conditions:
+            if condition(sql):
+                return True
+        return False
+    return dict(
+        condition=condition_aggregate, included=included, ignored=ignored)
 
 
 class ProfileNamespace(view):

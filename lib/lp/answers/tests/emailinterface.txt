@@ -31,7 +31,7 @@ AnswerTrackerHandler.
     # Define a helper function to send email to the Answer Tracker handler.
     >>> from lp.answers.mail.handler import AnswerTrackerHandler
     >>> from email.Utils import formatdate, make_msgid, mktime_tz
-    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> handler = AnswerTrackerHandler()
     >>> def send_question_email(question_id, from_addr, subject, body):
     ...     login(from_addr)
@@ -108,8 +108,8 @@ possibilities for the user.
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
+    >>> import transaction
     >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -119,7 +119,7 @@ possibilities for the user.
     ...     "I've tried installing Ubuntu on a Mac. But the installer never "
     ...     "boots.", datecreated=now.next())
     >>> question_id = question.id
-    >>> commit()
+    >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
     # We need to refetch the question, since a new transaction was started.
@@ -129,7 +129,7 @@ possibilities for the user.
     # Define an helper to change the question status easily.
     >>> def setQuestionStatus(question, new_status):
     ...     login('foo.bar@canonical.com')
-    ...     msg = question.setStatus(foo_bar, new_status, 'Status Change',
+    ...     question.setStatus(foo_bar, new_status, 'Status Change',
     ...                            datecreated=now.next())
     ...     login('no-priv@canonical.com')
 
@@ -363,6 +363,7 @@ interpretation is that it is a comment.
     True
     >>> print message.action.title
     Comment
+    >>> transaction.abort()
 
 
 Answers linked to FAQ questions
@@ -378,7 +379,7 @@ Answers may also be linked to FAQ questions.
     ...     no_priv, 'Why everyone think this is weird.',
     ...     "That's an easy one. It's because it is!")
     >>> removeSecurityProxy(question).faq = faq
-    >>> commit()
+    >>> transaction.commit()
 
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
     >>> login('no-priv@canonical.com')

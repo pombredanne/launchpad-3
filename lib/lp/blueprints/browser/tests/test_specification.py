@@ -1,21 +1,26 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime
+import doctest
 import unittest
 
-from lazr.restful.testing.webservice import FakeRequest
 import pytz
-from testtools.matchers import Equals
+from testtools.matchers import (
+    DocTestMatches,
+    Equals,
+    )
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
-from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
@@ -25,6 +30,7 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
     )
 from lp.testing import (
+    FakeLaunchpadRequest,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -42,17 +48,6 @@ class TestSpecificationSearch(TestCaseWithFactory):
         form = {'field.search_text': r'%'}
         view = create_initialized_view(specs, '+index', form=form)
         self.assertEqual([], view.errors)
-
-
-class LocalFakeRequest(FakeRequest):
-
-    @property
-    def stepstogo(self):
-        """See IBasicLaunchpadRequest.
-
-        This method is called by traversal machinery.
-        """
-        return StepsToGo(self)
 
 
 class TestBranchTraversal(TestCaseWithFactory):
@@ -73,7 +68,7 @@ class TestBranchTraversal(TestCaseWithFactory):
     def traverse(self, segments):
         stack = list(reversed(['+branch'] + segments))
         name = stack.pop()
-        request = LocalFakeRequest([], stack)
+        request = FakeLaunchpadRequest([], stack)
         traverser = specification.SpecificationNavigation(
             self.specification, request)
         return traverser.publishTraverse(request, name)
@@ -154,6 +149,21 @@ class TestSpecificationView(TestCaseWithFactory):
         li = find_tag_by_id(view.render(), 'spec-url')
         self.assertEqual('nofollow', li.a['rel'])
         self.assertEqual(spec.specurl, li.a['href'])
+
+    def test_registration_date_displayed(self):
+        """The time frame does not prepend on incorrectly."""
+        spec = self.factory.makeSpecification(
+            owner=self.factory.makePerson(displayname="Some Person"))
+        html = create_initialized_view(
+                spec, '+index')()
+        self.assertThat(
+            extract_text(html), DocTestMatches(
+                extract_text(
+                    "... Registered by Some Person a moment ago ..."),
+                (
+                    doctest.ELLIPSIS |
+                    doctest.NORMALIZE_WHITESPACE |
+                    doctest.REPORT_NDIFF)))
 
 
 class TestSpecificationEditStatusView(TestCaseWithFactory):
@@ -296,12 +306,3 @@ class TestSpecificationFieldXHTMLRepresentations(TestCaseWithFactory):
             blueprint, ISpecification['completer'], None)
         expected = format_link(user) + ' on 2011-01-01'
         self.assertThat(repr_method(), Equals(expected))
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())

@@ -1,33 +1,31 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test SourcePackageRelease."""
 
 __metaclass__ = type
 
+from textwrap import dedent
+
 import transaction
 from zope.component import getUtility
 
 from canonical.testing.layers import (
-    ZopelessDatabaseLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.soyuz.enums import (
-    SourcePackageFormat,
-    )
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.scripts.packagecopier import do_copy
 from lp.testing import (
-    TestCaseWithFactory,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
 from lp.translations.interfaces.translationimportqueue import (
@@ -51,7 +49,6 @@ class TestSourcePackageRelease(TestCaseWithFactory):
 
     def test_uploader_recipe(self):
         recipe_build = self.factory.makeSourcePackageRecipeBuild()
-        recipe = recipe_build.recipe
         spr = self.factory.makeSourcePackageRelease(
             source_package_recipe_build=recipe_build)
         self.assertEqual(recipe_build.requester, spr.uploader)
@@ -81,6 +78,32 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease(homepage="<invalid<url")
         self.assertEquals("<invalid<url", spr.homepage)
 
+    def test_aggregate_changelog(self):
+        # If since_version is passed the "changelog" entry returned
+        # should contain the changelogs for all releases *since*
+        # that version and up to and including the context SPR.
+        changelog = self.factory.makeChangelog(
+            spn="foo", versions=["1.3",  "1.2",  "1.1",  "1.0"])
+        expected_changelog = dedent(u"""\
+            foo (1.3) unstable; urgency=low
+
+              * 1.3.
+
+            foo (1.2) unstable; urgency=low
+
+              * 1.2.
+
+            foo (1.1) unstable; urgency=low
+
+              * 1.1.""")
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename="foo", version="1.3", changelog=changelog)
+        transaction.commit()  # Yay, librarian.
+
+        observed = spph.sourcepackagerelease.aggregate_changelog(
+            since_version="1.0")
+        self.assertEqual(expected_changelog, observed)
+
 
 class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
     """Tests for SourcePackageRelease.getBuildByArch()."""
@@ -106,7 +129,7 @@ class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
             das, PackagePublishingPocket.RELEASE, parent_archive,
             status=BuildStatus.FULLYBUILT)
         bpr = self.factory.makeBinaryPackageRelease(build=orig_build)
-        parent_binary_pub = self.factory.makeBinaryPackagePublishingHistory(
+        self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, distroarchseries=das,
             archive=parent_archive)
 

@@ -6,7 +6,7 @@ This table is read only to most users, but for this test we connect
 as a superuser so we can poke at it directly.
 
     >>> from canonical.database.sqlbase import connect
-    >>> connection = connect('testadmin')
+    >>> connection = connect(user='testadmin')
     >>> cur = connection.cursor()
     >>> def pofiletranslator(person_id, pofile_id):
     ...     cur.execute("""
@@ -86,7 +86,8 @@ If we update the submissin, the cache is updated
     ...     """, vars())
     >>> mark_posubmission_id, date_touched = pofiletranslator(
     ...     mark_id, pofile_id)
-    >>> stub_posubmission_id, date_touched = pofiletranslator(stub_id, pofile_id)
+    >>> stub_posubmission_id, date_touched = pofiletranslator(
+    ...     stub_id, pofile_id)
     >>> mark_posubmission_id == stub_posubmission_id
     False
 

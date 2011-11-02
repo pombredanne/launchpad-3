@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Librarian garbage collection tests"""
@@ -9,10 +9,13 @@ from cStringIO import StringIO
 from datetime import timedelta
 import os
 import shutil
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import sys
 import tempfile
-from unittest import TestLoader
 
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -81,8 +84,9 @@ class TestLibrarianGarbageCollection(TestCase):
                 open(path, 'w').write('whatever')
         self.ztm.abort()
 
-        self.con = connect(config.librarian_gc.dbuser)
-        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.con = connect(
+            user=config.librarian_gc.dbuser,
+            isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
     def tearDown(self):
         self.con.rollback()
@@ -166,8 +170,8 @@ class TestLibrarianGarbageCollection(TestCase):
         self.ztm.begin()
 
         # Confirm that the LibaryFileContents are still there.
-        c1 = LibraryFileContent.get(c1_id)
-        c2 = LibraryFileContent.get(c2_id)
+        LibraryFileContent.get(c1_id)
+        LibraryFileContent.get(c2_id)
 
         # But the LibraryFileAliases should be gone
         self.assertRaises(SQLObjectNotFound, LibraryFileAlias.get, self.f1_id)
@@ -283,7 +287,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # recent past.
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
-        f1.expires = self.recent_past # Within stay of execution.
+        f1.expires = self.recent_past  # Within stay of execution.
         del f1
         self.ztm.commit()
 
@@ -504,8 +508,10 @@ class TestLibrarianGarbageCollection(TestCase):
             # Pretend it is tomorrow to ensure the files don't count as
             # recently created, and run the delete_unwanted_files process.
             org_time = librariangc.time
+
             def tomorrow_time():
                 return org_time() + 24 * 60 * 60 + 1
+
             try:
                 librariangc.time = tomorrow_time
                 librariangc.delete_unwanted_files(self.con)
@@ -749,8 +755,9 @@ class TestBlobCollection(TestCase):
         self.layer.switchDbUser(config.librarian_gc.dbuser)
 
         # Open a connection for our test
-        self.con = connect(config.librarian_gc.dbuser)
-        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.con = connect(
+            user=config.librarian_gc.dbuser,
+            isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.patch(librariangc, 'log', BufferLogger())
 
@@ -870,7 +877,3 @@ class TestBlobCollection(TestCase):
                 ))
         count = cur.fetchone()[0]
         self.failIfEqual(count, 2)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

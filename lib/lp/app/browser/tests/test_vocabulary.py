@@ -10,7 +10,6 @@ from urllib import urlencode
 
 import pytz
 import simplejson
-
 from zope.app.form.interfaces import MissingInputError
 from zope.component import (
     getSiteManager,
@@ -21,25 +20,64 @@ from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
+    VocabularyFilter,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.app.browser.vocabulary import (
     IPickerEntrySource,
     MAX_DESCRIPTION_LENGTH,
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
-from lp.services.features.testing import FeatureFixture
+from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
+
+
+def get_picker_entry(item_subject, context_object, **kwargs):
+    """Adapt `item_subject` to `IPickerEntrySource` and return its item."""
+    [entry] = IPickerEntrySource(item_subject).getPickerEntries(
+        [item_subject], context_object, **kwargs)
+    return entry
+
+
+class DefaultPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_css_image_entry_without_icon(self):
+        # When the context does not have a custom icon, its sprite is used.
+        product = self.factory.makeProduct()
+        entry = get_picker_entry(product, object())
+        self.assertEqual("sprite product", entry.css)
+        self.assertEqual(None, entry.image)
+
+    def test_css_image_entry_without_icon_or_sprite(self):
+        # When the context does not have a custom icon, and there is no
+        # sprite adapter rules, the generic sprite is used.
+        thing = object()
+        entry = get_picker_entry(thing, object())
+        self.assertEqual('sprite bullet', entry.css)
+        self.assertEqual(None, entry.image)
+
+    def test_css_image_entry_with_icon(self):
+        # When the context has a custom icon the URL is used.
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        product = self.factory.makeProduct(icon=icon)
+        entry = get_picker_entry(product, object())
+        self.assertEqual(None, entry.css)
+        self.assertEqual(icon.getURL(), entry.image)
 
 
 class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
@@ -55,16 +93,17 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
     def test_PersonPickerEntrySourceAdapter_email_anonymous(self):
         # Anonymous users cannot see entry email addresses.
         person = self.factory.makePerson(email='snarf@eg.dom')
-        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
-        self.assertEqual('<email address hidden>', entry.description)
+        self.assertEqual(
+            "<email address hidden>",
+            get_picker_entry(person, None).description)
 
     def test_PersonPickerEntrySourceAdapter_visible_email_logged_in(self):
         # Logged in users can see visible email addresses.
         observer = self.factory.makePerson()
         login_person(observer)
         person = self.factory.makePerson(email='snarf@eg.dom')
-        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
-        self.assertEqual('snarf@eg.dom', entry.description)
+        self.assertEqual(
+            'snarf@eg.dom', get_picker_entry(person, None).description)
 
     def test_PersonPickerEntrySourceAdapter_hidden_email_logged_in(self):
         # Logged in users cannot see hidden email addresses.
@@ -73,16 +112,16 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         person.hide_email_addresses = True
         observer = self.factory.makePerson()
         login_person(observer)
-        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
-        self.assertEqual('<email address hidden>', entry.description)
+        self.assertEqual(
+            "<email address hidden>",
+            get_picker_entry(person, None).description)
 
     def test_PersonPickerEntrySourceAdapter_no_email_logged_in(self):
         # Teams without email address have no desriptions.
         team = self.factory.makeTeam()
         observer = self.factory.makePerson()
         login_person(observer)
-        [entry] = IPickerEntrySource(team).getPickerEntries([team], None)
-        self.assertEqual(None, entry.description)
+        self.assertEqual(None, get_picker_entry(team, None).description)
 
     def test_PersonPickerEntrySourceAdapter_logged_in(self):
         # Logged in users can see visible email addresses.
@@ -90,7 +129,7 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         login_person(observer)
         person = self.factory.makePerson(
             email='snarf@eg.dom', name='snarf')
-        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
+        entry = get_picker_entry(person, None)
         self.assertEqual('sprite person', entry.css)
         self.assertEqual('sprite new-window', entry.link_css)
 
@@ -102,8 +141,8 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         removeSecurityProxy(person).datecreated = creation_date
         getUtility(IIrcIDSet).new(person, 'eg.dom', 'snarf')
         getUtility(IIrcIDSet).new(person, 'ex.dom', 'pting')
-        [entry] = IPickerEntrySource(person).getPickerEntries(
-            [person], None, enhanced_picker_enabled=True,
+        entry = get_picker_entry(
+            person, None, enhanced_picker_enabled=True,
             picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~snarf', entry.alt_title_link)
         self.assertEqual(
@@ -113,25 +152,281 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
     def test_PersonPickerEntrySourceAdapter_enhanced_picker_team(self):
         # The enhanced person picker provides more information for teams.
         team = self.factory.makeTeam(email='fnord@eg.dom', name='fnord')
-        [entry] = IPickerEntrySource(team).getPickerEntries(
-            [team], None, enhanced_picker_enabled=True,
+        entry = get_picker_entry(
+            team, None, enhanced_picker_enabled=True,
             picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
-    def test_PersonPickerEntrySourceAdapter_affiliation_badges(self):
-        # The person picker with affiliation enabled provides affilliation
-        # information.
+    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_badges(self):
+        # The enhanced person picker provides affiliation information.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
-        project = self.factory.makeProduct(name='fnord', owner=person)
+        project = self.factory.makeProduct(
+            name='fnord', owner=person, bug_supervisor=person)
         bugtask = self.factory.makeBugTask(target=project)
-        [entry] = IPickerEntrySource(person).getPickerEntries(
-            [person], bugtask, enhanced_picker_enabled=True,
+        entry = get_picker_entry(
+            person, bugtask, enhanced_picker_enabled=True,
             picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
-        self.assertEqual(1, len(entry.badges))
+        self.assertEqual(3, len(entry.badges))
         self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
-        self.assertEqual('Fnord maintainer', entry.badges[0]['alt'])
+        self.assertEqual('Fnord', entry.badges[0]['label'])
+        self.assertEqual('maintainer', entry.badges[0]['role'])
+        self.assertEqual('/@@/product-badge', entry.badges[1]['url'])
+        self.assertEqual('Fnord', entry.badges[1]['label'])
+        self.assertEqual('driver', entry.badges[1]['role'])
+        self.assertEqual('/@@/product-badge', entry.badges[2]['url'])
+        self.assertEqual('Fnord', entry.badges[2]['label'])
+        self.assertEqual('bug supervisor', entry.badges[2]['role'])
+
+    def test_PersonPickerEntryAdapter_badges_without_IHasAffiliation(self):
+        # The enhanced person picker handles objects that do not support
+        # IHasAffilliation.
+        person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
+        thing = object()
+        entry = get_picker_entry(
+            person, thing, enhanced_picker_enabled=True,
+            picker_expander_enabled=True,
+            personpicker_affiliation_enabled=True)
+        self.assertIsNot(None, entry)
+
+
+class TestDistributionSourcePackagePickerEntrySourceAdapter(
+        TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def getPickerEntry(self, dsp):
+        return get_picker_entry(dsp, object())
+
+    def test_dsp_to_picker_entry(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        adapter = IPickerEntrySource(dsp)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_dsp_target_type(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        release = self.factory.makeSourcePackageRelease(
+            distroseries=series,
+            sourcepackagename=dsp.sourcepackagename)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series,
+            sourcepackagerelease=release)
+        self.assertEqual('package', self.getPickerEntry(dsp).target_type)
+
+    def test_dsp_provides_details_no_maintainer(self):
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertEqual(0, len(self.getPickerEntry(dsp).details))
+
+    def test_dsp_provides_summary_unbuilt(self):
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        self.assertEqual(
+            "Not yet built.", self.getPickerEntry(dsp).description)
+
+    def test_dsp_provides_summary_built(self):
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        release = self.factory.makeSourcePackageRelease(
+            distroseries=series,
+            sourcepackagename=dsp.sourcepackagename)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series,
+            sourcepackagerelease=release)
+        archseries = self.factory.makeDistroArchSeries(distroseries=series)
+        bpn = self.factory.makeBinaryPackageName(name='fnord')
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagename=bpn,
+            source_package_release=release,
+            sourcepackagename=dsp.sourcepackagename,
+            distroarchseries=archseries)
+        self.assertEqual("fnord", self.getPickerEntry(dsp).description)
+
+    def test_dsp_alt_title_is_none(self):
+        # DSP titles are contructed from the distro and package Launchapd Ids,
+        # alt_titles are redundant because they are also Launchpad Ids.
+        distro = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distro)
+        self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        dsp = distro.getSourcePackage('snarf')
+        self.assertEqual(None, self.getPickerEntry(dsp).alt_title)
+
+    def test_dsp_provides_alt_title_link(self):
+        distro = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distro)
+        self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        dsp = distro.getSourcePackage('snarf')
+        self.assertEqual(
+            'http://launchpad.dev/fnord/+source/snarf',
+            self.getPickerEntry(dsp).alt_title_link)
+
+
+class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def getPickerEntry(self, product):
+        return get_picker_entry(product, object())
+
+    def test_product_to_picker_entry(self):
+        product = self.factory.makeProduct()
+        adapter = IPickerEntrySource(product)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_product_provides_alt_title(self):
+        product = self.factory.makeProduct()
+        self.assertEqual(product.name, self.getPickerEntry(product).alt_title)
+
+    def test_product_target_type(self):
+        product = self.factory.makeProduct()
+        # We check for project, not product, because users don't see
+        # products.
+        self.assertEqual('project', self.getPickerEntry(product).target_type)
+
+    def test_product_provides_details(self):
+        product = self.factory.makeProduct()
+        self.assertEqual(
+            "Maintainer: %s" % product.owner.displayname,
+            self.getPickerEntry(product).details[0])
+
+    def test_product_provides_summary(self):
+        product = self.factory.makeProduct()
+        self.assertEqual(
+            product.summary, self.getPickerEntry(product).description)
+
+    def test_product_truncates_summary(self):
+        summary = ("This is a deliberately, overly long summary. It goes on"
+                   "and on and on so as to break things up a good bit.")
+        product = self.factory.makeProduct(summary=summary)
+        index = summary.rfind(' ', 0, 45)
+        expected_summary = summary[:index + 1]
+        expected_details = summary[index:]
+        entry = self.getPickerEntry(product)
+        self.assertEqual(
+            expected_summary, entry.description)
+        self.assertEqual(
+            expected_details, entry.details[0])
+
+    def test_product_provides_alt_title_link(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.assertEqual(
+            'http://launchpad.dev/fnord',
+            self.getPickerEntry(product).alt_title_link)
+
+
+class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def getPickerEntry(self, projectgroup):
+        return get_picker_entry(projectgroup, object())
+
+    def test_projectgroup_to_picker_entry(self):
+        projectgroup = self.factory.makeProject()
+        adapter = IPickerEntrySource(projectgroup)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_projectgroup_provides_alt_title(self):
+        projectgroup = self.factory.makeProject()
+        self.assertEqual(
+            projectgroup.name, self.getPickerEntry(projectgroup).alt_title)
+
+    def test_projectgroup_target_type(self):
+        projectgroup = self.factory.makeProject()
+        self.assertEqual(
+            'project group', self.getPickerEntry(projectgroup).target_type)
+
+    def test_projectgroup_provides_details(self):
+        projectgroup = self.factory.makeProject()
+        self.assertEqual(
+            "Maintainer: %s" % projectgroup.owner.displayname,
+            self.getPickerEntry(projectgroup).details[0])
+
+    def test_projectgroup_provides_summary(self):
+        projectgroup = self.factory.makeProject()
+        self.assertEqual(
+            projectgroup.summary,
+            self.getPickerEntry(projectgroup).description)
+
+    def test_projectgroup_truncates_summary(self):
+        summary = ("This is a deliberately, overly long summary. It goes on"
+                   "and on and on so as to break things up a good bit.")
+        projectgroup = self.factory.makeProject(summary=summary)
+        index = summary.rfind(' ', 0, 45)
+        expected_summary = summary[:index + 1]
+        expected_details = summary[index:]
+        entry = self.getPickerEntry(projectgroup)
+        self.assertEqual(
+            expected_summary, entry.description)
+        self.assertEqual(
+            expected_details, entry.details[0])
+
+    def test_projectgroup_provides_alt_title_link(self):
+        projectgroup = self.factory.makeProject(name='fnord')
+        self.assertEqual(
+            'http://launchpad.dev/fnord',
+            self.getPickerEntry(projectgroup).alt_title_link)
+
+
+class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def getPickerEntry(self, distribution):
+        return get_picker_entry(distribution, object())
+
+    def test_distribution_to_picker_entry(self):
+        distribution = self.factory.makeDistribution()
+        adapter = IPickerEntrySource(distribution)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_distribution_provides_alt_title(self):
+        distribution = self.factory.makeDistribution()
+        self.assertEqual(
+            distribution.name, self.getPickerEntry(distribution).alt_title)
+
+    def test_distribution_provides_details(self):
+        distribution = self.factory.makeDistribution()
+        self.factory.makeDistroSeries(
+            distribution=distribution, status=SeriesStatus.CURRENT)
+        self.assertEqual(
+            "Maintainer: %s" % distribution.currentseries.owner.displayname,
+            self.getPickerEntry(distribution).details[0])
+
+    def test_distribution_provides_summary(self):
+        distribution = self.factory.makeDistribution()
+        self.assertEqual(
+            distribution.summary,
+            self.getPickerEntry(distribution).description)
+
+    def test_distribution_target_type(self):
+        distribution = self.factory.makeDistribution()
+        self.assertEqual(
+            'distribution', self.getPickerEntry(distribution).target_type)
+
+    def test_distribution_truncates_summary(self):
+        summary = (
+            "This is a deliberately, overly long summary. It goes on "
+            "and on and on so as to break things up a good bit.")
+        distribution = self.factory.makeDistribution(summary=summary)
+        index = summary.rfind(' ', 0, 45)
+        expected_summary = summary[:index + 1]
+        expected_details = summary[index:]
+        entry = self.getPickerEntry(distribution)
+        self.assertEqual(
+            expected_summary, entry.description)
+        self.assertEqual(
+            expected_details, entry.details[0])
+
+    def test_distribution_provides_alt_title_link(self):
+        distribution = self.factory.makeDistribution(name='fnord')
+        self.assertEqual(
+            'http://launchpad.dev/fnord',
+            self.getPickerEntry(distribution).alt_title_link)
 
 
 class TestPersonVocabulary:
@@ -148,10 +443,27 @@ class TestPersonVocabulary:
     def toTerm(self, person):
         return SimpleTerm(person, person.name, person.displayname)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
+        if vocab_filter is None:
+            filter_term = ''
+        else:
+            filter_term = vocab_filter.filter_terms[0]
         found = [
-            person for person in self.test_persons if query in person.name]
+            person for person in self.test_persons
+                if query in person.name and filter_term in person.name]
         return CountableIterator(len(found), found, self.toTerm)
+
+
+class TestVocabularyFilter(VocabularyFilter):
+    # A filter returning all objects.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'FILTER', 'Test Filter', 'Test')
+
+    @property
+    def filter_terms(self):
+        return ['xpting-person']
 
 
 class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
@@ -198,14 +510,6 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     def test_json_entries(self):
         # The results are JSON encoded.
-        feature_flag = {
-            'disclosure.picker_enhancements.enabled': 'on',
-            'disclosure.picker_expander.enabled': 'on',
-            'disclosure.personpicker_affiliation.enabled': 'on',
-            }
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
         team = self.factory.makeTeam(name='xpting-team')
         person = self.factory.makePerson(name='xpting-person')
         creation_date = datetime(
@@ -222,7 +526,11 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             "alt_title_link": "http://launchpad.dev/~%s" % team.name,
             "api_uri": "/~%s" % team.name,
             "badges":
-                [{"alt": "%s maintainer" % product.displayname,
+                [{"label": product.displayname,
+                  "role": "maintainer",
+                  "url": "/@@/product-badge"},
+                {"label": product.displayname,
+                 "role": "driver",
                   "url": "/@@/product-badge"}],
             "css": "sprite team",
             "details": ['Team members: 1'],
@@ -248,6 +556,21 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             expected[0].items(), result['entries'][0].items())
         self.assertContentEqual(
             expected[1].items(), result['entries'][1].items())
+
+    def test_vocab_filter(self):
+        # The vocab filter is used to filter results.
+        team = self.factory.makeTeam(name='xpting-team')
+        person = self.factory.makePerson(name='xpting-person')
+        TestPersonVocabulary.test_persons.extend([team, person])
+        product = self.factory.makeProduct(owner=team)
+        vocab_filter = TestVocabularyFilter()
+        form = dict(name='TestPerson',
+                    search_text='xpting', search_filter=vocab_filter)
+        view = self.create_vocabulary_view(form, context=product)
+        result = simplejson.loads(view())
+        entries = result['entries']
+        self.assertEqual(1, len(entries))
+        self.assertEqual('xpting-person', entries[0]['value'])
 
     def test_max_description_size(self):
         # Descriptions over 120 characters are truncated and ellipsised.

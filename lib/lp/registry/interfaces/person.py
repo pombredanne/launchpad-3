@@ -27,7 +27,6 @@ __all__ = [
     'ITeamCreation',
     'ITeamReassignment',
     'ImmutableVisibilityError',
-    'InvalidName',
     'NoSuchPerson',
     'OPEN_TEAM_POLICY',
     'PersonCreationRationale',
@@ -70,6 +69,12 @@ from lazr.restful.fields import (
     Reference,
     )
 from lazr.restful.interface import copy_field
+from storm.expr import (
+    And,
+    Join,
+    Select,
+    Union,
+    )
 from zope.component import getUtility
 from zope.formlib.form import NoInputData
 from zope.interface import (
@@ -102,6 +107,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     IPrivacy,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -523,7 +529,7 @@ class PersonNameField(BlacklistableContentNameField):
 
 
 def team_subscription_policy_can_transition(team, policy):
-    """Can the team can change its subscription policy
+    """Can the team can change its subscription policy?
 
     Returns True when the policy can change. or raises an error. OPEN teams
     cannot be members of MODERATED or RESTRICTED teams. OPEN teams
@@ -545,12 +551,39 @@ def team_subscription_policy_can_transition(team, policy):
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
-        # The team can be open if it has PPAs.
+        # The team can not be open if it has PPAs.
         for ppa in team.ppas:
             if ppa.status != ArchiveStatus.DELETED:
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because it "
                     "has one or more active PPAs." % policy)
+        # Circular imports.
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugsubscription import BugSubscription
+        from lp.bugs.model.bugtask import BugTask
+        # The team cannot be open if it is subscribed to or assigned to
+        # private bugs.
+        private_bugs_involved = IStore(Bug).execute(Union(
+            Select(
+                Bug.id,
+                tables=(
+                    Bug,
+                    Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
+                where=And(
+                    Bug.private == True,
+                    BugSubscription.person_id == team.id)),
+            Select(
+                Bug.id,
+                tables=(
+                    Bug,
+                    Join(BugTask, BugTask.bugID == Bug.id)),
+                where=And(Bug.private == True, BugTask.assignee == team.id)),
+            limit=1))
+        if private_bugs_involved.rowcount:
+            raise TeamSubscriptionPolicyError(
+                "The team subscription policy cannot be %s because it is "
+                "subscribed to or assigned to one or more private "
+                "bugs." % policy)
     elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
         # The team can become MODERATED or RESTRICTED if its member teams
         # are not OPEN.
@@ -1241,6 +1274,14 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         for each source package name, distribution series combination.
         """
 
+    def getLatestSynchronisedPublishings():
+        """Return `SourcePackagePublishingHistory`s synchronised by this
+        person.
+
+        This method will only include the latest publishings for each source
+        package name, distribution series combination.
+        """
+
     def getLatestUploadedButNotMaintainedPackages():
         """Return `SourcePackageRelease`s created by this person but
         not maintained by him.
@@ -1405,7 +1446,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None, private=False):
+    def createPPA(name=None, displayname=None, description=None,
+                  private=False):
         """Create a PPA.
 
         :param name: A string with the name of the new PPA to create. If
@@ -1417,6 +1459,19 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         :raises: `PPACreationError` if an error is encountered
 
         :return: a PPA `IArchive` record.
+        """
+
+    def checkRename():
+        """Check if a person or team can be renamed.
+
+        :return: a text string of the reason, or None if the rename is
+        allowed.
+        """
+
+    def canCreatePPA():
+        """Check if a person or team can create a PPA.
+
+        :return: a boolean.
         """
 
 
@@ -2117,6 +2172,16 @@ class IPersonSet(Interface):
         Return None if there is no person with the given email address.
         """
 
+    def getByEmails(emails, include_hidden=True):
+        """Search for people with the given email addresses.
+
+        :param emails: A list of email addresses.
+        :param include_hidden: Include people who have opted to hide their
+            email. Defaults to True.
+
+        :return: A `ResultSet` of `IEmailAddress`, `IPerson`.
+        """
+
     def getByName(name, ignore_merged=True):
         """Return the person with the given name, ignoring merged persons if
         ignore_merged is True.
@@ -2255,8 +2320,8 @@ class IPersonSet(Interface):
         addresses associated with.
 
         When merging teams, from_person must have no IMailingLists
-        associated with it. If it has active members they will be deactivated -
-        and reviewer must be supplied.
+        associated with it. If it has active members they will be deactivated
+        - and reviewer must be supplied.
 
         :param from_person: An IPerson or ITeam that is a duplicate.
         :param to_person: An IPerson or ITeam that is a master.
@@ -2445,10 +2510,6 @@ class ISoftwareCenterAgentApplication(ILaunchpadApplication):
 
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
-
-
-class InvalidName(Exception):
-    """The name given for a person is not valid."""
 
 
 class NoSuchPerson(NameLookupFailed):

@@ -69,7 +69,7 @@
             set_attributes="reviewed_by reviewer_comment"/>
     </class>
     <class
-        class="lp.registry.browser.person.TeamInvitationView">
+        class="lp.registry.browser.team.TeamInvitationView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher"/>
         <allow
@@ -77,7 +77,7 @@
                 __call__"/>
     </class>
     <class
-        class="lp.registry.browser.person.TeamMembershipSelfRenewalView">
+        class="lp.registry.browser.team.TeamMembershipSelfRenewalView">
         <allow
             interface="zope.publisher.interfaces.browser.IBrowserPublisher"/>
         <allow
@@ -233,7 +233,8 @@
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description driver
-                            backports_not_automatic"/>
+                            backports_not_automatic
+                            include_long_descriptions"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
                                  make a huge mess if these get changed and Soyuz has to republish
@@ -458,6 +459,7 @@
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <allow interface="lp.bugs.interfaces.bugtarget.IBugTarget"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
@@ -469,52 +471,36 @@
                 __getitem__
                 __ne__
                 _getOfficialTagClause
-                all_bugtasks
+                binary_names
                 bug_count
-                bug_reported_acknowledgement
-                bug_reporting_guidelines
-                bugtargetdisplayname
-                bugtargetname
                 bugtasks
-                closed_bugtasks
-                critical_bugtasks
                 current_publishing_records
                 currentrelease
+                delete
                 development_version
                 displayname
                 distribution
                 distro
-                enable_bugfiling_duplicate_search
                 findRelatedArchivePublications
                 findRelatedArchives
-                getPersonsByEmail
                 getMergeProposals
                 getReleasesAndPublishingHistory
                 getUsedBugTags
                 getUsedBugTagsWithOpenCounts
                 getVersion
                 get_distroseries_packages
-                has_bugtasks
-                high_bugtasks
-                inprogress_bugtasks
+                is_official
                 latest_overall_publication
                 name
-                new_bugtasks
                 official_bug_tags
-                open_bugtasks
                 publishing_history
                 releases
-                searchTasks
                 sourcepackagename
                 subscribers
                 summary
                 title
                 total_bug_heat
-                unassigned_bugtasks
                 upstream_product"/>
-        <require
-            permission="launchpad.AnyPerson"
-            attributes="createBug"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
@@ -552,6 +538,11 @@
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
+    <adapter
+        provides="lp.registry.interfaces.sourcepackagename.ISourcePackageName"
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        factory="lp.registry.adapters.package_to_sourcepackagename"
         permission="zope.Public"/>
     <adapter
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
@@ -865,12 +856,12 @@
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.registry.interfaces.person.ITeam"
-            factory="canonical.launchpad.browser.TeamPrivacyAdapter"
+            factory="lp.registry.browser.team.TeamPrivacyAdapter"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.badge.IHasBadges"
             for="lp.registry.interfaces.person.ITeam"
-            factory="canonical.launchpad.browser.TeamBadges"
+            factory="lp.registry.browser.team.TeamBadges"
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -880,7 +871,7 @@
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.ITeam"
-            factory="lp.registry.browser.person.TeamBreadcrumb"
+            factory="lp.registry.browser.team.TeamBreadcrumb"
             permission="zope.Public"/>
 
         <adapter
@@ -915,7 +906,10 @@
             for="lp.registry.interfaces.productseries.IProductSeries"
             factory="lp.registry.model.pillaraffiliation.ProductSeriesPillarAffiliation"
             />
-
+        <adapter
+            for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"
+            factory="lp.registry.model.pillaraffiliation.CodeReviewVotePillarAffiliation"
+            />
         <!-- Using
 
     permission="Public" here causes some tests to fail
@@ -988,8 +982,8 @@
                 interface="lp.registry.interfaces.person.IPersonSet"/>
         </securedutility>
         <securedutility
-            class="canonical.launchpad.rest.MeLink"
-            provides="canonical.launchpad.rest.IMeLink">
+            class="canonical.launchpad.rest.me.MeLink"
+            provides="canonical.launchpad.rest.me.IMeLink">
             <allow
                 interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
             <allow
@@ -1203,7 +1197,8 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_attributes="answers_usage blueprints_usage codehosting_usage
+                            bug_tracking_usage uses_launchpad"/>
         <require
             permission="launchpad.Edit"
             set_attributes="
@@ -1266,10 +1261,10 @@
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
-                official_rosetta
                 translation_focus
                 translationgroup
-                translationpermission"/>
+                translationpermission
+                translations_usage"/>
         <require
             permission="zope.Public"
             attributes="
@@ -1475,6 +1470,11 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
+        provides="lp.registry.interfaces.product.IProduct"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        factory="lp.registry.adapters.productseries_to_product"
+        permission="zope.Public"/>
+    <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
@@ -1516,7 +1516,8 @@
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+            set_attributes="answers_usage blueprints_usage codehosting_usage
+                            bug_tracking_usage uses_launchpad"/>
         <require
             permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
@@ -1539,6 +1540,7 @@
                 official_blueprints
                 official_malone
                 owner
+                package_derivatives_email
                 security_contact
                 summary
                 title"/>
@@ -1550,10 +1552,11 @@
             permission="launchpad.TranslationsAdmin"
             set_attributes="
                 language_pack_admin
-                official_rosetta
                 translationgroup
                 translationpermission
-                translation_focus"/>
+                translation_focus
+                translations_usage
+                "/>
 
         <!-- IHasAliases -->
 
@@ -1665,6 +1668,11 @@
         permission="zope.Public"/>
     <adapter
         factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"/>
+    <adapter
+        provides="lp.registry.interfaces.sourcepackagename.ISourcePackageName"
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        factory="lp.registry.adapters.package_to_sourcepackagename"
+        permission="zope.Public"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

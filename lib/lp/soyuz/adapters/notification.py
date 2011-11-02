@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_recipients',  # Available for testing only.
     'notify',
     ]
 
@@ -68,7 +67,7 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
     }
     template = get_template(archive, 'rejected')
     body = template % information
-    to_addrs = get_recipients(
+    to_addrs = get_upload_notification_recipients(
         blamer, archive, distroseries, logger, changes=changes)
     debug(logger, "Sending rejection email.")
     if not to_addrs:
@@ -127,8 +126,8 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
            summary_text=None, changes=None, changesfile_content=None,
            changesfile_object=None, action=None, dry_run=False,
-           logger=None, announce_from_person=None):
-    """Notify about
+           logger=None, announce_from_person=None, previous_version=None):
+    """Notify about an upload or package copy.
 
     :param blamer: The `IPerson` who is to blame for this notification.
     :param spr: The `ISourcePackageRelease` that was created.
@@ -149,6 +148,9 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     :param announce_from_person: If passed, use this `IPerson` as the From: in
         announcement emails.  If the person has no preferred email address,
         the person is ignored and the default From: is used instead.
+    :param previous_version: If specified, the change log on the email will
+        include all of the source package's change logs after that version
+        up to and including the passed spr's version.
     """
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
@@ -184,7 +186,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     if not files and action != 'rejected':
         return
 
-    recipients = get_recipients(
+    recipients = get_upload_notification_recipients(
         blamer, archive, distroseries, logger, changes=changes, spr=spr,
         bprs=bprs)
 
@@ -213,12 +215,13 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     attach_changes = not archive.is_ppa
 
-    def build_and_send_mail(action, recipients, from_addr=None, bcc=None):
+    def build_and_send_mail(action, recipients, from_addr=None, bcc=None,
+                            previous_version=None):
         subject = calculate_subject(
             spr, bprs, customfiles, archive, distroseries, pocket, action)
         body = assemble_body(
             blamer, spr, bprs, archive, distroseries, summarystring, changes,
-            action)
+            action, previous_version=previous_version)
         body = body.encode("utf8")
         send_mail(
             spr, archive, recipients, subject, body, dry_run,
@@ -226,14 +229,14 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             attach_changes=attach_changes, from_addr=from_addr, bcc=bcc,
             logger=logger)
 
-    build_and_send_mail(action, recipients)
+    build_and_send_mail(
+        action, recipients, previous_version=previous_version)
 
     info = fetch_information(spr, bprs, changes)
     from_addr = info['changedby']
     if announce_from_person is not None:
-        email = announce_from_person.preferredemail
-        if email:
-            from_addr = email.email
+        if announce_from_person.preferredemail is not None:
+            from_addr = format_address_for_person(announce_from_person)
 
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
@@ -251,24 +254,27 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         elif bprs:
             name = bprs[0].build.source_package_release.name
         if name:
-            bcc_addr = '%s_derivatives@packages.qa.debian.org' % name
+            email_base = distroseries.distribution.package_derivatives_email
+            if email_base:
+                bcc_addr = email_base.format(package_name=name)
 
         build_and_send_mail(
             'announcement', [str(distroseries.changeslist)], from_addr,
-            bcc_addr)
+            bcc_addr, previous_version=previous_version)
 
 
 def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
-                  action):
+                  action, previous_version=None):
     """Assemble the e-mail notification body."""
     if changes is None:
         changes = {}
-    info = fetch_information(spr, bprs, changes)
+    info = fetch_information(
+        spr, bprs, changes, previous_version=previous_version)
     information = {
         'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
         'DATE': 'Date: %s' % info['date'],
-        'CHANGESFILE': info['changesfile'],
+        'CHANGESFILE': info['changelog'],
         'DISTRO': distroseries.distribution.title,
         'ANNOUNCE': 'No announcement sent',
         'CHANGEDBY': '',
@@ -297,13 +303,12 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     if distroseries.changeslist:
         information['ANNOUNCE'] = "Announcing to %s" % (
             distroseries.changeslist)
-    try:
-        changedby_person = email_to_person(info['changedby'])
-    except ParseMaintError:
-        # Some syncs (e.g. from Debian) will involve packages whose
-        # changed-by person was auto-created in LP and hence does not
-        # have a preferred email address set.
-        changedby_person = None
+
+    # Some syncs (e.g. from Debian) will involve packages whose
+    # changed-by person was auto-created in LP and hence does not have a
+    # preferred email address set.  We'll get a None here.
+    changedby_person = email_to_person(info['changedby'])
+
     if blamer is not None and blamer != changedby_person:
         signer_signature = person_to_email(blamer)
         if signer_signature != info['changedby']:
@@ -441,73 +446,69 @@ def sanitize_string(s):
         return guess_encoding(s)
 
 
-def debug(logger, msg):
+def debug(logger, msg, *args, **kwargs):
     """Shorthand debug notation for publish() methods."""
     if logger is not None:
-        logger.debug(msg)
+        logger.debug(msg, *args, **kwargs)
 
 
-def get_recipients(blamer, archive, distroseries, logger, changes=None,
-                   spr=None, bprs=None):
+def is_valid_uploader(person, distribution):
+    """Is `person` an uploader for `distribution`?
+
+    A `None` person is not an uploader.
+    """
+    if person is None:
+        return None
+    else:
+        return person.isUploader(distribution)
+
+
+def get_upload_notification_recipients(blamer, archive, distroseries,
+                                       logger=None, changes=None, spr=None,
+                                       bprs=None):
     """Return a list of recipients for notification emails."""
-    candidate_recipients = []
     debug(logger, "Building recipients list.")
+    candidate_recipients = [
+        blamer,
+        ]
     info = fetch_information(spr, bprs, changes)
 
-    if info['changedby']:
-        try:
-            changer = email_to_person(info['changedby'])
-        except ParseMaintError:
-            changer = None
-    else:
-        changer = None
+    changer = email_to_person(info['changedby'])
+    maintainer = email_to_person(info['maintainer'])
 
-    if info['maintainer']:
-        try:
-            maintainer = email_to_person(info['maintainer'])
-        except ParseMaintError:
-            maintainer = None
-    else:
-        maintainer = None
-
-    if blamer:
-        # This is a signed upload.
-        candidate_recipients.append(blamer)
-    else:
-        debug(logger,
-            "Changes file is unsigned, adding changer as recipient")
+    if blamer is None:
+        debug(
+            logger, "Changes file is unsigned; adding changer as recipient.")
         candidate_recipients.append(changer)
 
     if archive.is_ppa:
         # For PPAs, any person or team mentioned explicitly in the
         # ArchivePermissions as uploaders for the archive will also
         # get emailed.
-        uploaders = [
-            permission.person for permission in
-                archive.getUploadersForComponent()]
-        candidate_recipients.extend(uploaders)
+        candidate_recipients.extend([
+            permission.person
+            for permission in archive.getUploadersForComponent()])
+    else:
+        # If this is not a PPA, we also consider maintainer and changed-by.
+        if blamer is not None:
+            if is_valid_uploader(maintainer, distroseries.distribution):
+                debug(logger, "Adding maintainer to recipients")
+                candidate_recipients.append(maintainer)
 
-    # If this is not a PPA, we also consider maintainer and changed-by.
-    elif blamer is not None:
-        if (maintainer and maintainer != blamer and
-                maintainer.isUploader(distroseries.distribution)):
-            debug(logger, "Adding maintainer to recipients")
-            candidate_recipients.append(maintainer)
+            if is_valid_uploader(changer, distroseries.distribution):
+                debug(logger, "Adding changed-by to recipients")
+                candidate_recipients.append(changer)
 
-        if (changer and changer != blamer and
-                changer.isUploader(distroseries.distribution)):
-            debug(logger, "Adding changed-by to recipients")
-            candidate_recipients.append(changer)
+    # Collect email addresses to notify.  Skip persons who do not have a
+    # preferredemail set, such as people who have not activated their
+    # Launchpad accounts (and are therefore not expecting this email).
+    recipients = [
+        format_address_for_person(person)
+        for person in filter(None, set(candidate_recipients))
+            if person.preferredemail is not None]
 
-    # Now filter list of recipients for persons only registered in
-    # Launchpad to avoid spamming the innocent.
-    recipients = []
-    for person in candidate_recipients:
-        if person is None or person.preferredemail is None:
-            continue
-        recipient = format_address_for_person(person)
-        debug(logger, "Adding recipient: '%s'" % recipient)
-        recipients.append(recipient)
+    for recipient in recipients:
+        debug(logger, "Adding recipient: '%s'", recipient)
 
     return recipients
 
@@ -565,18 +566,29 @@ def build_summary(spr, files, action):
 
 
 def email_to_person(fullemail):
-    """Return an IPerson given an RFC2047 email address."""
-    # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
-    # thing will have already parsed at this point.
-    (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-        fullemail, "email")
-    return getUtility(IPersonSet).getByEmail(email)
+    """Return an `IPerson` given an RFC2047 email address.
+
+    :param fullemail: Potential email address.
+    :return: `IPerson` with the given email address.  None if there
+        isn't one, or if `fullemail` isn't a proper email address.
+    """
+    if not fullemail:
+        return None
+
+    try:
+        # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
+        # thing will have already parsed at this point.
+        (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+            fullemail, "email")
+        return getUtility(IPersonSet).getByEmail(email)
+    except ParseMaintError:
+        return None
 
 
 def person_to_email(person):
     """Return a string of full name <e-mail address> given an IPerson."""
-    # This will use email.Header to encode any unicode.
     if person and person.preferredemail:
+        # This will use email.Header to encode any non-ASCII characters.
         return format_address_for_person(person)
 
 
@@ -588,16 +600,15 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     user (archive@ubuntu.com).
     """
     katie = getUtility(ILaunchpadCelebrities).katie
-    try:
-        changed_by = email_to_person(changed_by_email)
-    except ParseMaintError:
-        return False
+    changed_by = email_to_person(changed_by_email)
     return (
-        spr and not bprs and changed_by == katie and
+        spr and
+        not bprs and
+        changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
 
 
-def fetch_information(spr, bprs, changes):
+def fetch_information(spr, bprs, changes, previous_version=None):
     changedby = None
     changedby_displayname = None
     maintainer = None
@@ -614,7 +625,7 @@ def fetch_information(spr, bprs, changes):
     elif spr or bprs:
         if not spr and bprs:
             spr = bprs[0].build.source_package_release
-        changesfile = spr.changelog_entry
+        changesfile = spr.aggregate_changelog(previous_version)
         date = spr.dateuploaded
         changedby = person_to_email(spr.creator)
         maintainer = person_to_email(spr.maintainer)
@@ -630,7 +641,7 @@ def fetch_information(spr, bprs, changes):
         changesfile = date = None
 
     return {
-        'changesfile': changesfile,
+        'changelog': changesfile,
         'date': date,
         'changedby': changedby,
         'changedby_displayname': changedby_displayname,

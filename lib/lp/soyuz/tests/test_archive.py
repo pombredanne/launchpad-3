@@ -12,7 +12,6 @@ import doctest
 
 from testtools.matchers import (
     DocTestMatches,
-    Equals,
     MatchesRegex,
     MatchesStructure,
     )
@@ -78,7 +77,10 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.archivepermission import (
+    ArchivePermission,
+    ArchivePermissionSet,
+    )
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
@@ -481,6 +483,9 @@ class TestArchiveCanUpload(TestCaseWithFactory):
     def test_checkArchivePermission_distro_archive(self):
         # Regular users can not upload to ubuntu
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        # The factory sets the archive owner the same as the distro owner,
+        # change that here to ensure the security adapter checks are right.
+        removeSecurityProxy(archive).owner = self.factory.makePerson()
         main = getUtility(IComponentSet)["main"]
         # A regular user doesn't have access
         somebody = self.factory.makePerson()
@@ -488,7 +493,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             archive.checkArchivePermission(somebody, main))
         # An ubuntu core developer does have access
         coredev = self.factory.makePerson()
-        with person_logged_in(archive.owner):
+        with person_logged_in(archive.distribution.owner):
             archive.newComponentUploader(coredev, main.name)
         self.assertEquals(True, archive.checkArchivePermission(coredev, main))
 
@@ -680,8 +685,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         packageset = self.factory.makePackageset(
             distroseries=distroseries, packages=packages)
         person = self.factory.makePerson()
-        techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
-        with person_logged_in(techboard):
+        with person_logged_in(archive.distribution.owner):
             archive.newPackagesetUploader(person, packageset)
         return person, packageset
 
@@ -977,14 +981,17 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def test_main_archive_can_use_restricted(self):
         # Main archives for distributions can always use restricted
-        # architectures.
+        # architectures if they are not using virtual builders.
         distro = self.factory.makeDistribution()
+        distro.main_archive.require_virtualized = False
         self.assertContentEqual([self.arm],
             distro.main_archive.enabled_restricted_families)
 
-    def test_main_archive_can_not_be_restricted(self):
-        # A main archive can not be restricted to certain architectures.
+    def test_main_archive_can_not_be_restricted_not_virtualized(self):
+        # A main archive can not be restricted to certain architectures
+        # (unless it's set to build on virtualized builders).
         distro = self.factory.makeDistribution()
+        distro.main_archive.require_virtualized = False
         # Restricting to all restricted architectures is fine
         distro.main_archive.enabled_restricted_families = [self.arm]
 
@@ -992,6 +999,16 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
             distro.main_archive.enabled_restricted_families = []
 
         self.assertRaises(CannotRestrictArchitectures, restrict)
+
+    def test_main_virtualized_archive_can_be_restricted(self):
+        # A main archive can be restricted to certain architectures
+        # if it's set to build on virtualized builders.
+        distro = self.factory.makeDistribution()
+        distro.main_archive.require_virtualized = True
+
+        # Restricting to architectures is fine.
+        distro.main_archive.enabled_restricted_families = [self.arm]
+        distro.main_archive.enabled_restricted_families = []
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
@@ -1367,7 +1384,6 @@ class TestArchiveDependencies(TestCaseWithFactory):
             sources_list = get_sources_list_for_building(
                 build, build.distro_arch_series,
                 build.source_package_release.name)
-            sources_list_str = '\n'.join(sources_list)
             matches = MatchesRegex(
                 "deb http://buildd:sekrit@private-ppa.launchpad.dev/"
                 "person-name-.*/dependency/ubuntu distroseries-.* main")
@@ -1526,7 +1542,7 @@ class TestOverlays(TestCaseWithFactory):
         if type(parent_series) == str:
             depseries = self.factory.makeDistroSeries(
                 name=parent_series, distribution=depdistro)
-            deparchseries = self.factory.makeDistroArchSeries(
+            self.factory.makeDistroArchSeries(
                 distroseries=depseries, architecturetag=arch_tag)
         else:
             depseries = parent_series
@@ -1594,8 +1610,8 @@ class TestOverlays(TestCaseWithFactory):
                 ".../depdistro4 series12-security main "
                     "restricted universe multiverse\n"
                 ".../depdistro4 series12-updates "
-                    "main restricted universe multiverse\n"
-                , doctest.ELLIPSIS))
+                    "main restricted universe multiverse\n",
+                doctest.ELLIPSIS))
 
 
 class TestComponents(TestCaseWithFactory):
@@ -1941,7 +1957,7 @@ class TestGetPublishedSources(TestCaseWithFactory):
     def test_getPublishedSources_name(self):
         # The name parameter allows filtering with a list of
         # names.
-        distroseries =  self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
         # Create some SourcePackagePublishingHistory.
         for package_name in ['package1', 'package2', 'package3']:
             self.factory.makeSourcePackagePublishingHistory(
@@ -1966,7 +1982,7 @@ class TestGetPublishedSources(TestCaseWithFactory):
     def test_getPublishedSources_multi_pockets(self):
         # Passing an iterable of pockets should return publications
         # with any of them in.
-        distroseries =  self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
         pockets = [
             PackagePublishingPocket.RELEASE,
             PackagePublishingPocket.UPDATES,
@@ -1986,8 +2002,21 @@ class TestGetPublishedSources(TestCaseWithFactory):
             pocket=required_pockets)
 
         self.assertContentEqual(
-            [PackagePublishingPocket.RELEASE, PackagePublishingPocket.UPDATES],
+            [PackagePublishingPocket.RELEASE,
+             PackagePublishingPocket.UPDATES],
             [source.pocket for source in filtered])
+
+    def test_filter_by_component_name(self):
+        # getPublishedSources() can be filtered by component name.
+        distroseries = self.factory.makeDistroSeries()
+        for component in getUtility(IComponentSet):
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=distroseries,
+                component=component,
+                )
+        [filtered] = distroseries.main_archive.getPublishedSources(
+            component_name='universe')
+        self.assertEqual('universe', filtered.component.name)
 
 
 class TestSyncSourceFeatureFlag(TestCaseWithFactory):
@@ -2109,15 +2138,15 @@ class TestSyncSource(TestCaseWithFactory):
         copy_job = job_source.getActiveJobs(target_archive).one()
 
         # Its data should reflect the requested copy.
-        self.assertThat(copy_job, MatchesStructure(
-            package_name=Equals(source_name),
-            package_version=Equals(version),
-            target_archive=Equals(target_archive),
-            source_archive=Equals(source_archive),
-            target_distroseries=Equals(to_series),
-            target_pocket=Equals(to_pocket),
-            include_binaries=Equals(False),
-            copy_policy=Equals(PackageCopyPolicy.INSECURE)))
+        self.assertThat(copy_job, MatchesStructure.byEquality(
+            package_name=source_name,
+            package_version=version,
+            target_archive=target_archive,
+            source_archive=source_archive,
+            target_distroseries=to_series,
+            target_pocket=to_pocket,
+            include_binaries=False,
+            copy_policy=PackageCopyPolicy.INSECURE))
 
     def test_copyPackage_disallows_non_primary_archive_uploaders(self):
         # If copying to a primary archive and you're not an uploader for
@@ -2138,7 +2167,7 @@ class TestSyncSource(TestCaseWithFactory):
          to_series, version) = self._setup_copy_data(
             target_purpose=ArchivePurpose.PRIMARY)
         person = self.factory.makePerson()
-        with person_logged_in(target_archive.owner):
+        with person_logged_in(target_archive.distribution.owner):
             target_archive.newComponentUploader(person, "universe")
         target_archive.copyPackage(
             source_name, version, source_archive, to_pocket.name,
@@ -2191,15 +2220,15 @@ class TestSyncSource(TestCaseWithFactory):
         # There should be one copy job.
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
-        self.assertThat(copy_job, MatchesStructure(
-            package_name=Equals(source_name),
-            package_version=Equals(version),
-            target_archive=Equals(target_archive),
-            source_archive=Equals(source_archive),
-            target_distroseries=Equals(to_series),
-            target_pocket=Equals(to_pocket),
-            include_binaries=Equals(False),
-            copy_policy=Equals(PackageCopyPolicy.MASS_SYNC)))
+        self.assertThat(copy_job, MatchesStructure.byEquality(
+            package_name=source_name,
+            package_version=version,
+            target_archive=target_archive,
+            source_archive=source_archive,
+            target_distroseries=to_series,
+            target_pocket=to_pocket,
+            include_binaries=False,
+            copy_policy=PackageCopyPolicy.MASS_SYNC))
 
     def test_copyPackages_with_multiple_packages(self):
         # PENDING and PUBLISHED packages should both be copied.
@@ -2245,7 +2274,7 @@ class TestSyncSource(TestCaseWithFactory):
          to_series, version) = self._setup_copy_data(
             target_purpose=ArchivePurpose.PRIMARY)
         person = self.factory.makePerson()
-        with person_logged_in(target_archive.owner):
+        with person_logged_in(target_archive.distribution.owner):
             target_archive.newComponentUploader(person, "universe")
         target_archive.copyPackages(
             [source_name], source_archive, to_pocket.name,
@@ -2269,3 +2298,14 @@ class TestSyncSource(TestCaseWithFactory):
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
 
+
+class TestRemovingPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_remove_permission_is_none(self):
+        # Several API functions remove permissions if they are not already
+        # removed.  This verifies that the underlying utility function does
+        # not generate an error if the permission is None.
+        ap_set = ArchivePermissionSet()
+        ap_set._remove_permission(None)

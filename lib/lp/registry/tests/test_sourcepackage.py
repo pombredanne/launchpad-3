@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectDeletedEvent,
@@ -26,6 +24,9 @@ from lp.code.model.seriessourcepackagebranch import (
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackage,
+    )
 from lp.registry.model.packaging import Packaging
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -83,6 +84,10 @@ class TestSourcePackage(TestCaseWithFactory):
         with person_logged_in(sourcepackage.distribution.owner):
             sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
+        # A DSP was created for the official branch.
+        new_dsp = DistributionSourcePackage._get(
+            sourcepackage.distribution, sourcepackage.sourcepackagename)
+        self.assertIsNot(None, new_dsp)
 
     def test_change_branch_once_set(self):
         # We can change the official branch for a a pocket of a source package
@@ -109,6 +114,20 @@ class TestSourcePackage(TestCaseWithFactory):
             sourcepackage.setBranch(pocket, branch, registrant)
             sourcepackage.setBranch(pocket, None, registrant)
         self.assertIs(None, sourcepackage.getBranch(pocket))
+
+    def test_unsetBranch_delete_unpublished_dsp(self):
+        # Setting the official branch for a pocket to 'None' deletes the
+        # official DSP record if there is no SPPH.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
+            sourcepackage.setBranch(pocket, None, registrant)
+        new_dsp = DistributionSourcePackage._get(
+            sourcepackage.distribution, sourcepackage.sourcepackagename)
+        self.assertIs(None, new_dsp)
 
     def test_linked_branches(self):
         # ISourcePackage.linked_branches is a mapping of pockets to branches.
@@ -678,7 +697,3 @@ class TestSourcePackageViews(TestCaseWithFactory):
         self.assertEqual(
             ['trunk', 'current'], options,
             "The obsolete series must NOT be in the vocabulary.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

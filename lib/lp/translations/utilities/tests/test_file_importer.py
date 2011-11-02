@@ -246,7 +246,7 @@ class FileImporterTestCase(TestCaseWithFactory):
         message.addTranslation(0, u'')
 
         potmsgset = self.factory.makePOTMsgSet(
-            potemplate = importer.potemplate, sequence=50)
+            potemplate=importer.potemplate, sequence=50)
         translation = importer.storeTranslationsInDatabase(
             message, potmsgset)
         # No TranslationMessage is created.
@@ -566,7 +566,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
     def test_not_raises_OutdatedTranslationError_on_upstream_uploads(self):
         queue_entry = self._make_queue_entry(True)
         try:
-            importer = POFileImporter(queue_entry, GettextPOImporter(), None)
+            POFileImporter(queue_entry, GettextPOImporter(), None)
         except OutdatedTranslationError:
             self.fail("OutdatedTranslationError raised.")
 
@@ -574,7 +574,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         queue_entry = self._make_queue_entry(True)
         pofile = queue_entry.pofile
         old_raw_header = pofile.header
-        importer = POFileImporter(queue_entry, GettextPOImporter(), None)
+        POFileImporter(queue_entry, GettextPOImporter(), None)
         self.assertEqual(old_raw_header, pofile.header)
 
 
@@ -762,4 +762,3 @@ class FileImporterSharingTest(TestCaseWithFactory):
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(importer.is_upstream_import_on_sourcepackage)
-

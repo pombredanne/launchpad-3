@@ -22,6 +22,7 @@ from lp.soyuz.interfaces.distributionjob import (
     InitializationPending,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -70,23 +71,26 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         packageset2 = self.factory.makePackageset()
 
         overlays = (True, False)
-        overlay_pockets = (('Updates',), ('Release',))
-        overlay_components = (("main",), ("universe",))
+        overlay_pockets = (u'Updates', u'Release')
+        overlay_components = (u"main", u"universe")
         arches = (u'i386', u'amd64')
+        archindep_archtag = u'amd64'
         packagesets = (packageset1.id, packageset2.id)
         rebuild = False
 
         job = self.job_source.create(
-            distroseries, [parent1.id, parent2.id], arches, packagesets,
-            rebuild, overlays, overlay_pockets, overlay_components)
+            distroseries, [parent1.id, parent2.id], arches, archindep_archtag,
+            packagesets, rebuild, overlays, overlay_pockets,
+            overlay_components)
 
         expected = ("<InitializeDistroSeriesJob for "
             "distribution: {distroseries.distribution.name}, "
             "distroseries: {distroseries.name}, "
             "parent[overlay?/pockets/components]: "
-            "{parent1.name}[True/[u'Updates']/[u'main']],"
-            "{parent2.name}[False/[u'Release']/[u'universe']], "
+            "{parent1.name}[True/Updates/main],"
+            "{parent2.name}[False/Release/universe], "
             "architectures: (u'i386', u'amd64'), "
+            "archindep_archtag: amd64, "
             "packagesets: [u'{packageset1.name}', u'{packageset2.name}'], "
             "rebuild: False>".format(
                 distroseries=distroseries,
@@ -98,7 +102,6 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
             expected,
             repr(job)
         )
-
 
     def test_create_with_existing_pending_job(self):
         parent = self.factory.makeDistroSeries()
@@ -147,7 +150,7 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
 
         job = self.job_source.create(distroseries, [parent.id])
         expected_message = (
-            "DistroSeries {child.name} has already been initialized"
+            "Series {child.name} has already been initialised"
             ".").format(child=distroseries)
         self.assertRaisesWithContent(
             InitializationError, expected_message, job.run)
@@ -158,18 +161,20 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         arches = (u'i386', u'amd64')
+        archindep_archtag = u'amd64'
         packagesets = (u'1', u'2', u'3')
         overlays = (True, )
         overlay_pockets = ('Updates', )
         overlay_components = ('restricted', )
 
         job = self.job_source.create(
-            distroseries, [parent.id], arches, packagesets, False, overlays,
-            overlay_pockets, overlay_components)
+            distroseries, [parent.id], arches, archindep_archtag, packagesets,
+            False, overlays, overlay_pockets, overlay_components)
 
         naked_job = removeSecurityProxy(job)
         self.assertEqual(naked_job.distroseries, distroseries)
         self.assertEqual(naked_job.arches, arches)
+        self.assertEqual(naked_job.archindep_archtag, archindep_archtag)
         self.assertEqual(naked_job.packagesets, packagesets)
         self.assertEqual(naked_job.rebuild, False)
         self.assertEqual(naked_job.parents, (parent.id, ))
@@ -197,6 +202,23 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         self.assertIsInstance(job, InitializeDistroSeriesJob)
         self.assertEqual(job.distroseries, distroseries)
 
+    def test_error_description_when_no_error(self):
+        # The InitializeDistroSeriesJob.error_description property returns
+        # None when no error description is recorded.
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        job = self.job_source.create(distroseries, [parent.id])
+        self.assertIs(None, removeSecurityProxy(job).error_description)
+
+    def test_error_description_set_when_notifying_about_user_errors(self):
+        # error_description is set by notifyUserError().
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        job = self.job_source.create(distroseries, [parent.id])
+        message = "This is an example message."
+        job.notifyUserError(InitializationError(message))
+        self.assertEqual(message, removeSecurityProxy(job).error_description)
+
 
 class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
     """Test case for InitializeDistroSeriesJob."""
@@ -206,6 +228,17 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
     @property
     def job_source(self):
         return getUtility(IInitializeDistroSeriesJobSource)
+
+    def setupDas(self, parent, proc, arch_tag):
+        pf = getUtility(IProcessorFamilySet).getByName(proc)
+        parent_das = self.factory.makeDistroArchSeries(
+            distroseries=parent, processorfamily=pf,
+            architecturetag=arch_tag)
+        lf = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        parent_das.addOrUpdateChroot(lf)
+        parent_das.supports_virtualized = True
+        return parent_das
 
     def _create_child(self):
         pf = self.factory.makeProcessorFamily()
@@ -270,14 +303,42 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
     def test_job_with_none_arguments(self):
         parent, child = self._create_child()
         job = self.job_source.create(
-            child, [parent.id], packagesets=None, arches=None,
-            overlays=None, overlay_pockets=None,
+            child, [parent.id], archindep_archtag=None, packagesets=None,
+            arches=None, overlays=None, overlay_pockets=None,
             overlay_components=None, rebuild=True)
         self.layer.switchDbUser('initializedistroseries')
         job.run()
         child.updatePackageCount()
 
         self.assertEqual(parent.sourcecount, child.sourcecount)
+
+    def test_job_with_none_archindep_archtag_argument(self):
+        parent, child = self._create_child()
+        job = self.job_source.create(
+            child, [parent.id], archindep_archtag=None, packagesets=None,
+            arches=None, overlays=None, overlay_pockets=None,
+            overlay_components=None, rebuild=True)
+        self.layer.switchDbUser('initializedistroseries')
+        job.run()
+
+        self.assertEqual(
+            parent.nominatedarchindep.architecturetag,
+            child.nominatedarchindep.architecturetag)
+
+    def test_job_with_archindep_archtag_argument(self):
+        parent, child = self._create_child()
+        self.setupDas(parent, 'amd64', 'amd64')
+        self.setupDas(parent, 'powerpc', 'hppa')
+        job = self.job_source.create(
+            child, [parent.id], archindep_archtag='amd64', packagesets=None,
+            arches=None, overlays=None, overlay_pockets=None,
+            overlay_components=None, rebuild=True)
+        self.layer.switchDbUser('initializedistroseries')
+        job.run()
+
+        self.assertEqual(
+            'amd64',
+            child.nominatedarchindep.architecturetag)
 
     def test_cronscript(self):
         run_script(

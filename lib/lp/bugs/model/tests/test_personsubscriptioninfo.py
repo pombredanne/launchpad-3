@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import DatabaseFunctionalLayer
@@ -18,9 +19,13 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import Provides
+from lp.testing.matchers import (
+    HasQueryCount,
+    Provides,
+    )
 
 
 class TestPersonSubscriptionInfo(TestCaseWithFactory):
@@ -32,6 +37,20 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.subscriber = self.factory.makePerson()
         self.bug = self.factory.makeBug()
         self.subscriptions = PersonSubscriptions(self.subscriber, self.bug)
+
+    def makeDuplicates(self, count=1, subscriber=None):
+        if subscriber is None:
+            subscriber = self.subscriber
+        if subscriber.isTeam():
+            subscribed_by = subscriber.teamowner
+        else:
+            subscribed_by = subscriber
+        duplicates = [self.factory.makeBug() for i in range(count)]
+        with person_logged_in(subscribed_by):
+            for duplicate in duplicates:
+                duplicate.markAsDuplicate(self.bug)
+                duplicate.subscribe(subscriber, subscribed_by)
+        return duplicates
 
     def assertCollectionsAreEmpty(self, except_=None):
         names = ('direct', 'from_duplicate', 'as_owner', 'as_assignee')
@@ -284,10 +303,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
 
     def test_duplicate_direct(self):
         # Subscribed directly to the duplicate bug.
-        duplicate = self.factory.makeBug()
-        with person_logged_in(self.subscriber):
-            duplicate.markAsDuplicate(self.bug)
-            duplicate.subscribe(self.subscriber, self.subscriber)
+        [duplicate] = self.makeDuplicates(count=1)
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
@@ -487,3 +503,35 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.subscriptions.reload()
 
         self.failUnless(self.subscriptions.muted)
+
+    def test_many_duplicate_team_admin_subscriptions_few_queries(self):
+        # This is related to bug 811447. The user is subscribed to a
+        # duplicate bug through team membership in which the user is an admin.
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.addMember(self.subscriber, team.teamowner,
+                           status=TeamMembershipStatus.ADMIN)
+        self.makeDuplicates(count=1, subscriber=team)
+        with StormStatementRecorder() as recorder:
+            self.subscriptions.reload()
+        # This should produce a very small number of queries.
+        self.assertThat(recorder, HasQueryCount(LessThan(5)))
+        count_with_one_subscribed_duplicate = recorder.count
+        # It should have the correct result.
+        self.assertCollectionsAreEmpty(except_='from_duplicate')
+        self.assertCollectionContents(
+            self.subscriptions.from_duplicate, as_team_admin=1)
+        # If we increase the number of duplicates subscribed via the team that
+        # the user administers...
+        self.makeDuplicates(count=4, subscriber=team)
+        with StormStatementRecorder() as recorder:
+            self.subscriptions.reload()
+        # ...then the query count should remain the same.
+        count_with_five_subscribed_duplicates = recorder.count
+        self.assertEqual(
+            count_with_one_subscribed_duplicate,
+            count_with_five_subscribed_duplicates)
+        # We should still have the correct result.
+        self.assertCollectionsAreEmpty(except_='from_duplicate')
+        self.assertCollectionContents(
+            self.subscriptions.from_duplicate, as_team_admin=5)

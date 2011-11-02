@@ -7,12 +7,14 @@ __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
 import soupmatchers
+from storm.store import Store
 from testtools import ExpectedException
 from testtools.matchers import (
     MatchesAny,
     Not,
     )
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
@@ -22,6 +24,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import NoSuchDistroSeries
@@ -39,16 +42,24 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import Provides
 from lp.testing.views import create_initialized_view
+from lp.translations.enums import TranslationPermission
 
 
 class TestDistribution(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_pillar_category(self):
+        # The pillar category is correct.
+        distro = self.factory.makeDistribution()
+        self.assertEqual("Distribution", distro.pillar_category)
 
     def test_distribution_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
@@ -185,6 +196,23 @@ class TestDistribution(TestCaseWithFactory):
             'my-package',
             sourcepackage.distribution.guessPublishedSourcePackageName(
                 'my-package').name)
+
+    def test_derivatives_email(self):
+        # Make sure the package_derivatives_email column stores data
+        # correctly.
+        email = "thingy@foo.com"
+        distro = self.factory.makeDistribution()
+        with person_logged_in(distro.owner):
+            distro.package_derivatives_email = email
+        Store.of(distro).flush()
+        self.assertEqual(email, distro.package_derivatives_email)
+
+    def test_derivatives_email_permissions(self):
+        # package_derivatives_email requires lp.edit to set/change.
+        distro = self.factory.makeDistribution()
+        self.assertRaises(
+            Unauthorized,
+            setattr, distro, "package_derivatives_email", "foo")
 
 
 class TestDistributionCurrentSourceReleases(
@@ -466,3 +494,37 @@ class DistributionSet(TestCaseWithFactory):
         self.factory.makeDistroSeriesParent(derived_series=other_series)
         distroset = getUtility(IDistributionSet)
         self.assertEqual(1, len(list(distroset.getDerivedDistributions())))
+
+
+class TestDistributionTranslations(TestCaseWithFactory):
+    """A TestCase for accessing distro translations-related attributes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rosetta_expert(self):
+        # Ensure rosetta-experts can set Distribution attributes
+        # related to translations.
+        distro = self.factory.makeDistribution()
+        new_series = self.factory.makeDistroSeries(distribution=distro)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('rosetta_experts'):
+            distro.translations_usage = ServiceUsage.LAUNCHPAD
+            distro.translation_focus = new_series
+            distro.translationgroup = group
+            distro.translationpermission = TranslationPermission.CLOSED
+
+    def test_translation_group_owner(self):
+        # Ensure TranslationGroup owner for a Distribution can modify
+        # all attributes related to distribution translations.
+        distro = self.factory.makeDistribution()
+        new_series = self.factory.makeDistroSeries(distribution=distro)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('admin'):
+            distro.translationgroup = group
+
+        new_group = self.factory.makeTranslationGroup()
+        with person_logged_in(group.owner):
+            distro.translations_usage = ServiceUsage.LAUNCHPAD
+            distro.translation_focus = new_series
+            distro.translationgroup = new_group
+            distro.translationpermission = TranslationPermission.CLOSED

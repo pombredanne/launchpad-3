@@ -1,7 +1,8 @@
-= Personal Package Archive pages and work-flow =
+Personal Package Archive pages and work-flow
+============================================
 
-
-== Activating Personal Package Archives for Users ==
+Activating Personal Package Archives for Users
+----------------------------------------------
 
 Personal Package Archives have to be activated before they can be
 accessed, in this section we will cover the activation procedure for
@@ -10,11 +11,11 @@ an user-PPA by its own user.
 A section named 'Personal Package Archives' is presented in the
 user/team page.
 
-   >>> anon_browser.open("http://launchpad.dev/~cprov")
+    >>> anon_browser.open("http://launchpad.dev/~cprov")
 
-   >>> print_tag_with_id(anon_browser.contents, 'ppas')
-   Personal package archives
-   PPA for Celso Providelo
+    >>> print_tag_with_id(anon_browser.contents, 'ppas')
+    Personal package archives
+    PPA for Celso Providelo
 
 There is a link in the body page pointing to Celso's PPA.
 
@@ -152,7 +153,8 @@ user can't have an emtpy displayname on his PPA.
     Required input is missing.
 
 
-== Activating Personal Package Archives for Teams ==
+Activating Personal Package Archives for Teams
+----------------------------------------------
 
 Similarly to the user PPAs activation, team PPAs can be activated by
 anyone with 'launchpad.Edit' permission in the team in question:
@@ -251,7 +253,17 @@ page and discard the changes.
     PPA description
     Yay, I can change it.
 
-Similarly to users, teams with assigned PPAs cannot be renamed either.
+Create a publication in the team's PPA.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('admin@canonical.com')
+    >>> devs = getUtility(IPersonSet).getByName('landscape-developers')
+    >>> archive = devs.getPPAByName('develppa')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(archive=archive)
+    >>> logout()
+
+Similarly to users, teams with active PPAs cannot be renamed either.
 
     >>> sample_browser.open(
     ...     "http://launchpad.dev/~landscape-developers/+edit")
@@ -263,11 +275,12 @@ Similarly to users, teams with assigned PPAs cannot be renamed either.
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'form'))
     Name: landscape-developers
-    This team cannot be renamed because it has a PPA.
+    This team has an active PPA with packages published and may not be renamed.
     ...
 
 
-== Activating someone else's Personal Package Archives  ==
+Activating someone else's Personal Package Archives
+---------------------------------------------------
 
 We also allow LP-admins to create Personal Package Archives in the
 name of other users or teams:
@@ -363,7 +376,7 @@ build on a virtualized builder.
     >>> admin_browser.getControl(name="field.commercial").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl(
-    ...     name="field.require_virtualized").value = False
+    ...     name="field.require_virtualized").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(
     ...     name="field.relative_build_score").value = '199'
@@ -466,7 +479,8 @@ PPA overview page and discards the changes.
     Hack PPA : James Blackwell
 
 
-== Double submission ==
+Double submission
+-----------------
 
 If two browser windows are open at the same time on the activation page
 then when the second activation is clicked after already
@@ -521,7 +535,8 @@ and the rendered form contains the 'name' field.
     boomppa
 
 
-== Activating an additional PPA ==
+Activating an additional PPA
+----------------------------
 
 Users who already have a PPA may activate a second one.  That's the case for
 Celso.
@@ -682,7 +697,8 @@ And direct access to the PPA page is also denied.
     Unauthorized: ...
 
 
-== Enabling or disabling of PPAs by the owner ==
+Enabling or disabling of PPAs by the owner
+------------------------------------------
 
 Users with 'launchpad.Edit' permission for a PPA may disable or enable it.
 They may also change whether the PPA is published to disk or not.
@@ -727,7 +743,8 @@ Once we re-enable the PPA the "disabled" warning message will be gone.
     True
 
 
-== Deleting a PPA ==
+Deleting a PPA
+--------------
 
 Users with launchpad.Edit permission see a "Delete PPA" link in the
 navigation menu.
@@ -791,7 +808,7 @@ no longer "Delete packages", "Edit PPA dependencies", or "Change details".
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-    
+
     >>> print no_priv_browser.getLink("Edit PPA dependencies")
     Traceback (most recent call last):
     ...

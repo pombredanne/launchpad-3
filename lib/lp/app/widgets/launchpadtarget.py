@@ -51,6 +51,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     default_option = "package"
     _widgets_set_up = False
 
+    def getDistributionVocabulary(self):
+        return 'Distribution'
+
     def setUpSubWidgets(self):
         if self._widgets_set_up:
             return
@@ -66,7 +69,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 required=True, vocabulary='Product'),
             Choice(
                 __name__='distribution', title=u"Distribution",
-                required=True, vocabulary='Distribution',
+                required=True, vocabulary=self.getDistributionVocabulary(),
                 default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__='package', title=u"Package",
@@ -146,16 +149,17 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
                         vocab = self.package_widget.context.vocabulary
                         name = package_name.name
-                        source_name = vocab.getTermByToken(name).value
+                        dsp = vocab.getTermByToken(name).value
                     else:
                         source_name = (
                             distribution.guessPublishedSourcePackageName(
                                 package_name.name))
+                        dsp = distribution.getSourcePackage(source_name)
                 except NotFoundError:
                     raise LaunchpadValidationError(
                         "There is no package name '%s' published in %s"
                         % (package_name.name, distribution.displayname))
-                return distribution.getSourcePackage(source_name)
+                return dsp
             else:
                 return distribution
         else:

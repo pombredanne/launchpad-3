@@ -1020,13 +1020,16 @@ def html_report(
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Launchpad Page Performance Report %(date)s</title>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/flot/jquery.min.js"
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/flot/jquery.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/flot/jquery.flot.min.js"
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/jquery.appear-1.1.1.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/sorttable.js"></script>
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/flot/jquery.flot.min.js"
+            ></script>
+        <script language="javascript" type="text/javascript"
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/sorttable.js"></script>
         <style type="text/css">
             h3 { font-weight: normal; font-size: 1em; }
             thead th { padding-left: 1em; padding-right: 1em; }
@@ -1213,13 +1216,18 @@ def html_report(
         if histogram.count == 0:
             continue
         print >> outf, dedent("""\
-            var d = %s;
+            function plot_histogram_%(id)d() {
+                var d = %(data)s;
 
-            $.plot(
-                $("#histogram%d"),
-                [{data: d}], options);
+                $.plot(
+                    $("#histogram%(id)d"),
+                    [{data: d}], options);
+            }
+            $('#histogram%(id)d').appear(function() {
+                plot_histogram_%(id)d();
+            });
 
-            """ % (json.dumps(histogram.bins_relative), i))
+            """ % {'id': i, 'data': json.dumps(histogram.bins_relative)})
 
     print >> outf, dedent("""\
             });

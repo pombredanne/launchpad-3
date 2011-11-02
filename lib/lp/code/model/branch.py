@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -87,14 +87,18 @@ from lp.code.enums import (
     BranchType,
     )
 from lp.code.errors import (
+    AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
     BranchMergeProposalExists,
     BranchTargetError,
     BranchTypeError,
     CannotDeleteBranch,
+    CannotUpgradeBranch,
+    CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
     InvalidMergeQueueConfig,
+    UpgradePending,
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
@@ -167,11 +171,22 @@ class Branch(SQLBase, BzrIdentityMixin):
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
-    private = BoolCol(default=False, notNull=True)
+    # This attribute signifies whether *this* branch is private, irrespective
+    # of the state of any stacked on branches.
+    explicitly_private = BoolCol(
+        default=False, notNull=True, dbName='private')
+    # A branch is transitively private if it is private or it is stacked on a
+    # transitively private branch. The value of this attribute is maintained
+    # by a database trigger.
+    transitively_private = BoolCol(dbName='transitively_private')
+
+    @property
+    def private(self):
+        return self.transitively_private
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
-        if private == self.private:
+        if private == self.explicitly_private:
             return
         # Only check the privacy policy if the user is not special.
         if (not user_has_special_branch_access(user)):
@@ -181,7 +196,13 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
-        self.private = private
+        self.explicitly_private = private
+        # If this branch is private, then it is also transitively_private
+        # otherwise we need to reload the value.
+        if private:
+            self.transitively_private = True
+        else:
+            self.transitively_private = AutoReload
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -372,7 +393,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     def getMergeProposals(self, status=None, visible_by_user=None,
-                          merged_revnos=None):
+                          merged_revnos=None, eager_load=False):
         """See `IBranch`."""
         if not status:
             status = (
@@ -382,7 +403,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
         return collection.getMergeProposals(
-            status, target_branch=self, merged_revnos=merged_revnos)
+            status, target_branch=self, merged_revnos=merged_revnos,
+            eager_load=eager_load)
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
@@ -394,7 +416,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
-                         review_diff=None, commit_message=None):
+                         commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
             raise InvalidBranchMergeProposal(
@@ -447,8 +469,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             prerequisite_branch=prerequisite_branch, whiteboard=whiteboard,
             date_created=date_created,
             date_review_requested=date_review_requested,
-            queue_status=queue_status, review_diff=review_diff,
-            commit_message=commit_message,
+            queue_status=queue_status, commit_message=commit_message,
             description=description)
 
         for reviewer, review_type in review_requests:
@@ -1126,16 +1147,25 @@ class Branch(SQLBase, BzrIdentityMixin):
             DateTrunc(u'day', Revision.revision_date))
         return sorted(results)
 
+    def checkUpgrade(self):
+        if self.branch_type is not BranchType.HOSTED:
+            raise CannotUpgradeNonHosted(self)
+        if self.upgrade_pending:
+            raise UpgradePending(self)
+        if (
+            self.branch_format in CURRENT_BRANCH_FORMATS and
+            self.repository_format in CURRENT_REPOSITORY_FORMATS):
+            raise AlreadyLatestFormat(self)
+
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if self.branch_type is not BranchType.HOSTED:
+        try:
+            self.checkUpgrade()
+        except CannotUpgradeBranch:
             return False
-        if self.upgrade_pending:
-            return False
-        return not (
-            self.branch_format in CURRENT_BRANCH_FORMATS and
-            self.repository_format in CURRENT_REPOSITORY_FORMATS)
+        else:
+            return True
 
     @property
     def upgrade_pending(self):
@@ -1151,10 +1181,10 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
         return jobs.count() > 0
 
-    def requestUpgrade(self):
+    def requestUpgrade(self, requester):
         """See `IBranch`."""
         from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-        return getUtility(IBranchUpgradeJobSource).create(self)
+        return getUtility(IBranchUpgradeJobSource).create(self, requester)
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
@@ -1162,7 +1192,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if not self.private:
+        if not self.explicitly_private:
             return True
         if user is None:
             return False
@@ -1387,6 +1417,7 @@ def update_trigger_modified_fields(branch):
     naked_branch.unique_name = AutoReload
     naked_branch.owner_name = AutoReload
     naked_branch.target_suffix = AutoReload
+    naked_branch.transitively_private = AutoReload
 
 
 def branch_modified_subscriber(branch, event):

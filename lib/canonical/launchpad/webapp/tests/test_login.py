@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2011 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0105
 """Test harness for running the new-login.txt tests."""
 
@@ -19,6 +19,7 @@ from datetime import (
     )
 import httplib
 import unittest
+import urllib2
 
 import mechanize
 from openid.consumer.consumer import (
@@ -27,7 +28,6 @@ from openid.consumer.consumer import (
     )
 from openid.extensions import sreg
 from openid.yadis.discover import DiscoveryFailure
-import urllib2
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -569,13 +569,6 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_replay_attacks_do_not_succeed(self):
-        # Enable the picker_enhancements feature to test the commenter name.
-        from lp.services.features.testing import FeatureFixture
-        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
-
         browser = Browser(mech_browser=MyMechanizeBrowser())
         browser.open('%s/+login' % self.layer.appserver_root_url())
         # On a JS-enabled browser this page would've been auto-submitted
@@ -622,9 +615,11 @@ class TestMissingServerShowsNiceErrorPage(TestCase):
 
     def test_missing_openid_server_shows_nice_error_page(self):
         fixture = ZopeViewReplacementFixture('+login', ILaunchpadApplication)
+
         class OpenIDLoginThatFailsDiscovery(fixture.original):
             def _getConsumer(self):
                 return OpenIDConsumerThatFailsDiscovery()
+
         fixture.replacement = OpenIDLoginThatFailsDiscovery
         self.useFixture(fixture)
         browser = TestBrowser()

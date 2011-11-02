@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.management import newInteraction
 
 from canonical.launchpad.webapp.menu import (
@@ -85,7 +83,3 @@ class TestMenuBaseLinkCaching(TestCase):
         self.assertEquals(len(cache.keys()), 1)
         self.assertContentEqual(
             cache.keys()[0], (menu.__class__, context, 'test_link'))
-
-    
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

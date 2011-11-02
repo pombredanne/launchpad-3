@@ -9,9 +9,9 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from debian.deb822 import Changes
 from optparse import OptionValueError
 from testtools.matchers import LessThan
+import transaction
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
@@ -91,13 +91,12 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.assertEqual(published_main.count(), 1)
 
         # And an oops should be filed for the first.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        expected_error = "error-explanation=Failure processing queue_item"
-        self.assertTrue(expected_error in error_text)
+        self.assertEqual(1, len(self.oopses))
+        error_report = self.oopses[0]
+        expected_error = "Failure processing queue_item"
+        self.assertStartsWith(
+                dict(error_report['req_vars'])['error-explanation'],
+                expected_error)
 
     def test_accept_copy_archives(self):
         """Test that publications in a copy archive are accepted properly."""
@@ -168,7 +167,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
         synch = UploadCheckingSynchronizer()
-        script.txn.registerSynch(synch)
+        transaction.manager.registerSynch(synch)
         script.main()
         self.assertThat(len(uploads), LessThan(synch.commit_count))
 

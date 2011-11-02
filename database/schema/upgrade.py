@@ -30,7 +30,7 @@ SCHEMA_DIR = os.path.dirname(__file__)
 
 
 def main():
-    con = connect(options.dbuser)
+    con = connect()
     patches = get_patchlist(con)
 
     if replication.helpers.slony_installed(con):
@@ -39,7 +39,7 @@ def main():
             parser.error("--dry-run does not make sense with replicated db")
         log.info("Applying patches to Slony-I environment.")
         apply_patches_replicated()
-        con = connect(options.dbuser)
+        con = connect()
     else:
         log.info("Applying patches to unreplicated environment.")
         apply_patches_normal(con)
@@ -172,7 +172,7 @@ def apply_patches_replicated():
 
     # Get an autocommit connection. We use autocommit so we don't have to
     # worry about blocking locks needed by Slony-I.
-    con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
     # We use three slonik scripts to apply our DB patches.
     # The first script applies the DB patches to all nodes.
@@ -397,6 +397,43 @@ def apply_patches_replicated():
     # We also scan for tables and sequences we want to drop and do so using
     # a final slonik script. Instead of dropping tables in the DB patch,
     # we rename them into the ToDrop namespace.
+    #
+    # First, remove all todrop.* sequences from replication.
+    cur.execute("""
+        SELECT seq_nspname, seq_relname, seq_id from %s
+        WHERE seq_nspname='todrop'
+        """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_sequence'))
+    seqs_to_unreplicate = set(
+        (fqn(nspname, relname), tab_id)
+        for nspname, relname, tab_id in cur.fetchall())
+    if seqs_to_unreplicate:
+        log.info("Unreplicating sequences: %s" % ', '.join(
+            name for name, id in seqs_to_unreplicate))
+        # Generate a slonik script to remove sequences from the
+        # replication set.
+        sk = StringIO()
+        print >> sk, "try {"
+        for seq_name, seq_id in seqs_to_unreplicate:
+            if seq_id is not None:
+                print >> sk, dedent("""\
+                    echo 'Removing %s from replication';
+                    set drop sequence (origin=@master_node, id=%d);
+                    """ % (seq_name, seq_id))
+        print >> sk, dedent("""\
+            }
+            on error {
+                echo 'Failed to unreplicate sequences. Aborting.';
+                exit 1;
+                }
+            """)
+        log.info(
+            "Generated slonik(1) script to unreplicate sequences. Invoking.")
+        if not replication.helpers.execute_slonik(sk.getvalue()):
+            log.fatal("Aborting.")
+        log.info("slonik(1) script to drop sequences completed.")
+
+    # Generate a slonik script to remove tables from the replication set,
+    # and a DROP TABLE/DROP SEQUENCE sql script to run after.
     cur.execute("""
         SELECT nspname, relname, tab_id
         FROM pg_class
@@ -407,9 +444,6 @@ def apply_patches_replicated():
     tabs_to_drop = set(
         (fqn(nspname, relname), tab_id)
         for nspname, relname, tab_id in cur.fetchall())
-
-    # Generate a slonik script to remove tables from the replication set,
-    # and a DROP TABLE/DROP SEQUENCE sql script to run after.
     if tabs_to_drop:
         log.info("Dropping tables: %s" % ', '.join(
             name for name, id in tabs_to_drop))
@@ -441,8 +475,8 @@ def apply_patches_replicated():
         log.info("slonik(1) script to drop tables completed.")
         sql.close()
 
-    # Now drop sequences. We don't do this at the same time as the tables,
-    # as most sequences will be dropped implicitly with the table drop.
+    # Now drop any remaining sequences. Most sequences will be dropped
+    # implicitly with the table drop.
     cur.execute("""
         SELECT nspname, relname, seq_id
         FROM pg_class
@@ -573,7 +607,7 @@ if __name__ == '__main__':
             action="store_false", help="Don't actually commit changes"
             )
     parser.add_option(
-            "-p", "--partial", dest="partial", default=False,
+            "--partial", dest="partial", default=False,
             action="store_true",
             help="Commit after applying each patch",
             )

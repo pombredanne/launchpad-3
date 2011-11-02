@@ -20,11 +20,11 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     reconnect_stores,
+    ZopelessDatabaseLayer,
     )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
@@ -36,6 +36,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.enums import (
@@ -54,6 +55,11 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    find_waiting_jobs,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -159,7 +165,7 @@ class SoyuzTestPublisher:
         signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, archive, changes_file_name, changes_file_content,
-            signing_key)
+            signing_key=signing_key)
 
         status_to_method = {
             PackageUploadStatus.DONE: 'setDone',
@@ -275,7 +281,8 @@ class SoyuzTestPublisher:
             datepublished=datepublished,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            archive=archive)
+            archive=archive,
+            creator=creator)
 
         return spph
 
@@ -556,7 +563,8 @@ class SoyuzTestPublisher:
         reconnect_stores(config.statistician.dbuser)
         distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
 
-        distroseries.updateCompletePackageCache(
+        DistroSeriesPackageCache.updateAll(
+            distroseries,
             archive=distroseries.distribution.main_archive,
             ztm=transaction,
             log=DevNullLogger())
@@ -692,12 +700,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
 
         # And an oops should be filed for the error.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        self.assertTrue("PoolFileOverwriteError" in error_text)
+        self.assertEqual("PoolFileOverwriteError", self.oopses[0]['type'])
 
         self.layer.commit()
         self.assertEqual(
@@ -889,7 +892,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
             self.assertEquals(copy.component.name, 'universe')
 
     def test_overrideFromAncestry_fallback_to_source_component(self):
-        # overrideFromancestry on the lack of ancestry, falls back to the
+        # overrideFromAncestry on the lack of ancestry, falls back to the
         # component the source was originally uploaded to.
         source = self.makeSource()
 
@@ -1005,6 +1008,15 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         self.assertEqual('universe', copy.component.name)
         # Section has no default so it comes from the old publication.
         self.assertEqual(spph.section, copy.section)
+
+    def test_copyTo_sets_ancestor(self):
+        # SPPH's ancestor get's populated when a spph is copied over.
+        target_archive = self.factory.makeArchive()
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        copy = spph.copyTo(
+            spph.distroseries, spph.pocket, target_archive)
+
+        self.assertEqual(spph, copy.ancestor)
 
 
 class BuildRecordCreationTests(TestNativePublishingBase):
@@ -1161,6 +1173,62 @@ class PublishingSetTests(TestCaseWithFactory):
         record = self.publishing_set.getByIdAndArchive(
             binary_publishing.id, wrong_archive, source=False)
         self.assertEqual(None, record)
+
+
+class TestPublishingSetLite(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def enableDistroDerivation(self):
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+
+    def test_requestDeletion_marks_SPPHs_deleted(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
+
+    def test_requestDeletion_leaves_other_SPPHs_alone(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        other_spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [other_spph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
+
+    def test_requestDeletion_marks_attached_BPPHs_deleted(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
+
+    def test_requestDeletion_leaves_other_BPPHs_alone(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        unrelated_spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [unrelated_spph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
+
+    def test_requestDeletion_accepts_empty_sources_list(self):
+        person = self.factory.makePerson()
+        getUtility(IPublishingSet).requestDeletion([], person)
+        # The test is that this does not fail.
+        Store.of(person).flush()
+
+    def test_requestDeletion_creates_DistroSeriesDifferenceJobs(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        series = dsp.derived_series
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            series, pocket=PackagePublishingPocket.RELEASE)
+        spn = spph.sourcepackagerelease.sourcepackagename
+
+        self.enableDistroDerivation()
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+
+        self.assertEqual(
+            1, len(find_waiting_jobs(
+                dsp.derived_series, spn, dsp.parent_series)))
 
 
 class TestSourceDomination(TestNativePublishingBase):
@@ -1387,17 +1455,110 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
 
 
-class TestSPPHModel(TestCaseWithFactory):
-    """Test parts of the SourcePackagePublishingHistory model."""
+class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
+    """Test parts of the BinaryPackagePublishingHistory model.
+
+    See also lib/lp/soyuz/doc/publishing.txt
+    """
 
     layer = LaunchpadZopelessLayer
 
-    def testAncestry(self):
-        """Ancestry can be traversed."""
-        ancestor = self.factory.makeSourcePackagePublishingHistory()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            ancestor=ancestor)
-        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+    def _makeMixedSingleBuildPackage(self, version="1.0"):
+        # Set up a source with a build that generated four binaries,
+        # two of them an arch-all.
+        foo_src_pub = self.getPubSource(
+            sourcename="foo", version=version, architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_bin_pub] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version=version,
+            pub_source=foo_src_pub)
+        # Now need to grab the build for the source so we can add
+        # more binaries to it.
+        [build] = foo_src_pub.getBuilds()
+        foo_one_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-one-common", version=version, build=build,
+            architecturespecific=False)
+        foo_one_common_pubs = self.publishBinaryInArchive(
+            foo_one_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_two_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-two-common", version=version, build=build,
+            architecturespecific=False)
+        foo_two_common_pubs = self.publishBinaryInArchive(
+            foo_two_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_three = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-three", version=version, build=build,
+            architecturespecific=True)
+        [foo_three_pub] = self.publishBinaryInArchive(
+            foo_three, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        # So now we have source foo, which has arch specific binaries
+        # foo-bin and foo-three, and arch:all binaries foo-one-common and
+        # foo-two-common. The latter two will have multiple publications,
+        # one for each DAS in the series.
+        return (
+            foo_src_pub, foo_bin_pub, foo_one_common_pubs,
+            foo_two_common_pubs, foo_three_pub)
+
+    def test_getOtherPublicationsForSameSource(self):
+        # By default getOtherPublicationsForSameSource should return all
+        # of the other binaries built by the same source as the passed
+        # binary publication, except the arch-indep ones.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+            foo_three_pub) = self._makeMixedSingleBuildPackage()
+
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
+
+        self.assertContentEqual([foo_three_pub, foo_bin_pub], others)
+
+    def test_getOtherPublicationsForSameSource_include_archindep(self):
+        # Check that the arch-indep binaries are returned if requested.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+         foo_three_pub) = self._makeMixedSingleBuildPackage()
+
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource(
+            include_archindep=True)
+        others = list(others)
+
+        # We expect all publications created above to be returned,
+        # except the one we use to call the method on.
+        expected = [foo_three_pub, foo_bin_pub]
+        expected.extend(foo_one_common_pubs[1:])
+        expected.extend(foo_two_common_pubs)
+        self.assertContentEqual(expected, others)
+
+    def test_getOtherPublicationsForSameSource_inactive(self):
+        # Check that inactive publications are not returned.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+             foo_three_pub) = self._makeMixedSingleBuildPackage()
+        foo_bin_pub.status = PackagePublishingStatus.SUPERSEDED
+        foo_three_pub.status = PackagePublishingStatus.SUPERSEDED
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
+
+        self.assertEqual(0, len(others))
+
+    def test_getOtherPublicationsForSameSource_multiple_versions(self):
+        # Check that publications for only the same version as the
+        # context binary publication are returned.
+        (foo_src_pub, foo_bin_pub, foo_one_common_pubs, foo_two_common_pubs,
+         foo_three_pub) = self._makeMixedSingleBuildPackage(version="1.0")
+        self._makeMixedSingleBuildPackage(version="1.1")
+
+        foo_one_common_pub = foo_one_common_pubs[0]
+        others = foo_one_common_pub.getOtherPublicationsForSameSource()
+        others = list(others)
+
+        self.assertContentEqual([foo_three_pub, foo_bin_pub], others)
 
 
 class TestGetBuiltBinaries(TestNativePublishingBase):

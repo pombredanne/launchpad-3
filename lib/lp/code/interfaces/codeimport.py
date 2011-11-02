@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -108,9 +108,8 @@ class ICodeImport(Interface):
     review_status = exported(
         Choice(
             title=_("Review Status"), vocabulary=CodeImportReviewStatus,
-            default=CodeImportReviewStatus.NEW, readonly=True,
-            description=_("Before a code import is performed, it is reviewed."
-                " Only reviewed imports are processed.")))
+            default=CodeImportReviewStatus.REVIEWED, readonly=True,
+            description=_("Only reviewed imports are processed.")))
 
     rcs_type = exported(
         Choice(title=_("Type of RCS"), readonly=True,
@@ -125,9 +124,9 @@ class ICodeImport(Interface):
             allowed_schemes=["http", "https", "svn", "git"],
             allow_userinfo=True,
             allow_port=True,
-            allow_query=False,    # Query makes no sense in Subversion.
-            allow_fragment=False, # Fragment makes no sense in Subversion.
-            trailing_slash=False)) # See http://launchpad.net/bugs/56357.
+            allow_query=False,      # Query makes no sense in Subversion.
+            allow_fragment=False,   # Fragment makes no sense in Subversion.
+            trailing_slash=False))  # See http://launchpad.net/bugs/56357.
 
     cvs_root = exported(
         TextLine(title=_("Repository"), required=False, readonly=True,

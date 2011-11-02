@@ -8,6 +8,7 @@ from __future__ import absolute_import
 
 __metaclass__ = type
 __all__ = [
+    'AbstractYUITestCase',
     'ANONYMOUS',
     'anonymous_logged_in',
     'api_url',
@@ -16,9 +17,9 @@ __all__ = [
     'celebrity_logged_in',
     'ExpectedException',
     'extract_lp_cache',
+    'FakeLaunchpadRequest',
     'FakeTime',
     'get_lsb_information',
-    'is_logged_in',
     'launchpadlib_credentials_for',
     'launchpadlib_for',
     'login',
@@ -29,6 +30,7 @@ __all__ = [
     'logout',
     'map_branch_contents',
     'normalize_whitespace',
+    'nonblocking_readline',
     'oauth_access_token_for',
     'person_logged_in',
     'quote_jquery_expression',
@@ -58,6 +60,7 @@ from datetime import (
     timedelta,
     )
 from fnmatch import fnmatchcase
+from functools import partial
 from inspect import (
     getargspec,
     getmro,
@@ -68,6 +71,7 @@ import logging
 import os
 from pprint import pformat
 import re
+from select import select
 import shutil
 import subprocess
 import sys
@@ -82,14 +86,11 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+from lazr.restful.testing.webservice import FakeRequest
+import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
-from storm.expr import Variable
 from storm.store import Store
-from storm.tracer import (
-    install_tracer,
-    remove_tracer_type,
-    )
 import subunit
 import testtools
 from testtools.content import Content
@@ -97,10 +98,7 @@ from testtools.content_type import UTF8_TEXT
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 import zope.event
 from zope.interface.verify import verifyClass
 from zope.security.proxy import (
@@ -110,17 +108,16 @@ from zope.security.proxy import (
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
-    canonical_url,
-    errorlog,
-    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.adapter import (
-    set_permit_timeout_from_features,
+    print_queries,
+    start_sql_logging,
+    stop_sql_logging,
     )
-from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
+    StepsToGo,
     WebServiceTestRequest,
     )
 from lp.codehosting.vfs import (
@@ -141,7 +138,6 @@ from lp.services.osutils import override_environ
 from lp.testing._login import (
     anonymous_logged_in,
     celebrity_logged_in,
-    is_logged_in,
     login,
     login_as,
     login_celebrity,
@@ -161,7 +157,7 @@ from lp.testing._webservice import (
     launchpadlib_for,
     oauth_access_token_for,
     )
-from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.fixture import CaptureOops
 from lp.testing.karma import KarmaRecorder
 
 # The following names have been imported for the purpose of being
@@ -169,7 +165,6 @@ from lp.testing.karma import KarmaRecorder
 anonymous_logged_in
 api_url
 celebrity_logged_in
-is_logged_in
 launchpadlib_credentials_for
 launchpadlib_for
 login_as
@@ -265,53 +260,43 @@ class StormStatementRecorder:
         do somestuff
     self.assertThat(recorder, HasQueryCount(LessThan(42)))
 
-    Note that due to the storm API used, only one of these recorders may be in
-    place at a time: all will be removed when the first one is removed (by
-    calling __exit__ or leaving the scope of a with statement).
+    This also can be useful for investigation, such as in make harness.
+    Try printing it after you have collected some queries.  You can
+    even collect tracebacks, passing True to "tracebacks_if" for tracebacks
+    of every SQL query, or a callable that takes the SQL query string and
+    returns a boolean decision as to whether a traceback is desired.
     """
+    # Note that tests for this are in canonical.launchpad.webapp.tests.
+    # test_statementtracer, because this is really just a small wrapper of
+    # the functionality found there.
 
-    def __init__(self):
-        self.statements = []
-
-    @property
-    def count(self):
-        return len(self.statements)
+    def __init__(self, tracebacks_if=False):
+        self.tracebacks_if = tracebacks_if
+        self.query_data = []
 
     @property
     def queries(self):
-        """The statements executed as per get_request_statements."""
-        # Perhaps we could just consolidate this code with the request tracer
-        # code and not need a custom tracer at all - if we provided a context
-        # factory to the tracer, which in the production tracers would
-        # use the adapter magic, and in test created ones would log to a list.
-        # We would need to be able to remove just one tracer though, which I
-        # haven't looked into yet. RBC 20100831
-        result = []
-        for statement in self.statements:
-            result.append((0, 0, 'unknown', statement))
-        return result
+        return [record['sql'] for record in self.query_data]
+
+    @property
+    def count(self):
+        return len(self.query_data)
+
+    @property
+    def statements(self):
+        return [record['sql'][3] for record in self.query_data]
 
     def __enter__(self):
-        """Context manager protocol - return this object as the context."""
-        install_tracer(self)
+        self.query_data = start_sql_logging(self.tracebacks_if)
         return self
 
-    def __exit__(self, _ignored, _ignored2, _ignored3):
-        """Content manager protocol - do not swallow exceptions."""
-        remove_tracer_type(StormStatementRecorder)
-        return False
+    def __exit__(self, exc_type, exc_value, tb):
+        stop_sql_logging()
 
-    def connection_raw_execute(self, ignored, raw_cursor, statement, params):
-        """Increment the counter.  We don't care about the args."""
-
-        raw_params = []
-        for param in params:
-            if isinstance(param, Variable):
-                raw_params.append(param.get())
-            else:
-                raw_params.append(param)
-        raw_params = tuple(raw_params)
-        self.statements.append("%r, %r" % (statement, raw_params))
+    def __str__(self):
+        out = StringIO()
+        print_queries(self.query_data, file=out)
+        return out.getvalue()
 
 
 def record_statements(function, *args, **kwargs):
@@ -435,14 +420,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 'Events were generated: %s.' % event_list)
         return result
 
-    def assertNoNewOops(self, old_oops):
-        """Assert that no oops has been recorded since old_oops."""
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
-        if old_oops is None:
-            self.assertIs(None, oops)
-        else:
-            self.assertEqual(oops.id, old_oops.id)
-
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
 
@@ -552,8 +529,10 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def attachOopses(self):
         if len(self.oopses) > 0:
-            for (i, oops) in enumerate(self.oopses):
-                content = Content(UTF8_TEXT, oops.get_chunks)
+            for (i, report) in enumerate(self.oopses):
+                content = Content(UTF8_TEXT,
+                    partial(oops_datedir_repo.serializer_rfc822.to_chunks,
+                    report))
                 self.addDetail("oops-%d" % i, content)
 
     def attachLibrarianLog(self, fixture):
@@ -571,19 +550,15 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
-        self.oopses = []
-        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
+        # You can call self.oops_capture.sync() to collect oopses from
+        # subprocesses over amqp.
+        self.oops_capture = self.useFixture(CaptureOops())
+        self.oopses = self.oops_capture.oopses
         self.addCleanup(self.attachOopses)
         if LibrarianLayer.librarian_fixture is not None:
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
-        set_permit_timeout_from_features(False)
-
-    @adapter(ErrorReportEvent)
-    def _recordOops(self, event):
-        """Add the oops to the testcase's list."""
-        self.oopses.append(event.object)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.
@@ -848,41 +823,42 @@ def quote_jquery_expression(expression):
         "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
 
 
-class YUIUnitTestCase(TestCase):
+class AbstractYUITestCase(TestCase):
 
     layer = None
     suite_name = ''
     js_timeout = 30000
+    html_uri = None
+    test_path = None
 
     TIMEOUT = object()
     MISSING_REPORT = object()
 
     _yui_results = None
 
-    def __init__(self):
+    def __init__(self, methodName=None):
         """Create a new test case without a choice of test method name.
 
         Preventing the choice of test method ensures that we can safely
         provide a test ID based on the file path.
         """
-        super(YUIUnitTestCase, self).__init__("checkResults")
-
-    def initialize(self, test_path):
-        self.test_path = test_path
+        if methodName is None:
+            methodName = self._testMethodName
+        else:
+            assert methodName == self._testMethodName
+        super(AbstractYUITestCase, self).__init__(methodName)
 
     def id(self):
         """Return an ID for this test based on the file path."""
         return os.path.relpath(self.test_path, config.root)
 
     def setUp(self):
-        super(YUIUnitTestCase, self).setUp()
+        super(AbstractYUITestCase, self).setUp()
         # html5browser imports from the gir/pygtk stack which causes
         # twisted tests to break because of gtk's initialize.
         import html5browser
         client = html5browser.Browser()
-        html_uri = 'file://%s' % os.path.join(
-            config.root, 'lib', self.test_path)
-        page = client.load_page(html_uri, timeout=self.js_timeout)
+        page = client.load_page(self.html_uri, timeout=self.js_timeout)
         if page.return_code == page.CODE_FAIL:
             self._yui_results = self.TIMEOUT
             return
@@ -927,6 +903,17 @@ class YUIUnitTestCase(TestCase):
                     'Failure in %s.%s: %s' % (
                     self.test_path, test_name, result['message']))
         self.assertEqual([], failures, '\n'.join(failures))
+
+
+class YUIUnitTestCase(AbstractYUITestCase):
+
+    _testMethodName = 'checkResults'
+
+    def initialize(self, test_path):
+        # The path is a .html file.
+        self.test_path = test_path
+        self.html_uri = 'file://%s' % os.path.join(
+            config.root, 'lib', self.test_path)
 
 
 def build_yui_unittest_suite(app_testing_path, yui_test_class):
@@ -1312,3 +1299,33 @@ class ExpectedException(TTExpectedException):
 def extract_lp_cache(text):
     match = re.search(r'<script>LP.cache = (\{.*\});</script>', text)
     return simplejson.loads(match.group(1))
+
+
+def nonblocking_readline(instream, timeout):
+    """Non-blocking readline.
+
+    Files must provide a valid fileno() method. This is a test helper
+    as it is inefficient and unlikely useful for production code.
+    """
+    result = StringIO()
+    start = now = time.time()
+    deadline = start + timeout
+    while (now < deadline and not result.getvalue().endswith('\n')):
+        rlist = select([instream], [], [], deadline - now)
+        if rlist:
+            # Reading 1 character at a time is inefficient, but means
+            # we don't need to implement put-back.
+            next_char = os.read(instream.fileno(), 1)
+            if next_char == "":
+                break  # EOF
+            result.write(next_char)
+        now = time.time()
+    return result.getvalue()
+
+
+class FakeLaunchpadRequest(FakeRequest):
+
+    @property
+    def stepstogo(self):
+        """See `IBasicLaunchpadRequest`."""
+        return StepsToGo(self)

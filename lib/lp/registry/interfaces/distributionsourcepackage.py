@@ -82,8 +82,14 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             # interfaces/product.py.
             schema=Interface))
 
+    is_official = Attribute(
+        'Is this source package officially in the distribution?')
+
     summary = Attribute(
         'The summary of binary packages built from this package')
+
+    binary_names = Attribute(
+        'A list of binary package names built from this package.')
 
     currentrelease = Attribute(
         "The latest published `IDistributionSourcePackageRelease` of a "
@@ -209,4 +215,10 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
 
         Distro sourcepackages compare not equal if either of their
         distribution or sourcepackagename compare not equal.
+        """
+
+    def delete():
+        """Delete the persistent DSP if it exists.
+
+        :return: True if a persistent object was removed, otherwise False.
         """

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Quick hack makefile to (re)create the Launchpad database.
@@ -42,8 +42,8 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to drop (if exists) and recreate a database.
 CREATEDB=${PYTHON} ../../utilities/pgmassacre.py -t
 
-HEADER="-- Copyright 2010 Canonical Ltd.  This software is licensed under \
-	the\n-- GNU Affero General Public License version 3 (see the file \
+HEADER="-- Copyright 2010-2011 Canonical Ltd.  This software is licensed \
+  under the\n-- GNU Affero General Public License version 3 (see the file \
 	LICENSE)."
 
 # The command used (in conjunction with $(call)) to dump the contents of the
@@ -63,7 +63,7 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
 # to ensure that the development database remains in sync with reality
 # on production. It is generated using newbaseline.py in
 # bzr+ssh://devpad.canonical.com/code/stub/dbascripts
-# 
+#
 REV=2208
 BASELINE=launchpad-${REV}-00-0.sql
 MD5SUM=12a258f8651ae3bba0c96ec8e62be1dd  launchpad-2208-00-0.sql
@@ -71,7 +71,7 @@ MD5SUM=12a258f8651ae3bba0c96ec8e62be1dd  launchpad-2208-00-0.sql
 default: all
 
 # Create a launchpad_ftest_template DB and load the test sample data into it.
-test: create 
+test: create
 	@ echo "* Creating database \"$(TEMPLATE_WITH_TEST_SAMPLEDATA)\"."
 	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Loading sample data"
@@ -110,7 +110,7 @@ dev: test
 # database schema, full text indexes and grants into it.
 # It will also create session DBs for the test and dev environments.
 # No sample data is added at this point.
-create: 
+create:
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo

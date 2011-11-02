@@ -3,13 +3,22 @@
 
 __metaclass__ = type
 
+import os
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
 from storm.expr import LeftJoin
 from storm.store import Store
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    Not,
+    )
 from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import (
     extract_text,
+    find_main_content,
     find_tag_by_id,
     find_tags_by_class,
     )
@@ -18,6 +27,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.person import Person
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     login_person,
@@ -26,7 +36,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class TestBugTaskSearchListingPage(BrowserTestCase):
@@ -156,6 +169,207 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             [bugtask.owner for bugtask in bugtasks]
         self.assertThat(recorder, HasQueryCount(Equals(2)))
 
+    def test_search_components_error(self):
+        # Searching for using components for bug targets that are not a distro
+        # or distroseries will report an error, but not OOPS.  See bug
+        # 838957.
+        product = self.factory.makeProduct()
+        form = {
+            'search': 'Search',
+            'advanced': 1,
+            'field.component': 1,
+            'field.component-empty-marker': 1}
+        with person_logged_in(product.owner):
+            view = create_initialized_view(product, '+bugs', form=form)
+            view.searchUnbatched()
+        response = view.request.response
+        self.assertEqual(1, len(response.notifications))
+        expected = (
+            "Search by component requires a context with "
+            "a distribution or distroseries.")
+        self.assertEqual(expected, response.notifications[0].message)
+        self.assertEqual(
+            canonical_url(product, rootsite='bugs', view_name='+bugs'),
+            response.getHeader('Location'))
+
+    def test_non_batch_template(self):
+        # The correct template is used for non batch requests.
+        product = self.factory.makeProduct()
+        form = {'search': 'Search'}
+        view = create_view(product, '+bugs', form=form)
+        self.assertEqual(
+            'buglisting-default.pt', os.path.basename(view.template.filename))
+
+    def test_batch_template(self):
+        # The correct template is used for batch requests.
+        product = self.factory.makeProduct()
+        form = {'search': 'Search'}
+        view = create_view(
+            product, '+bugs', form=form, query_string='batch_request=True')
+        self.assertEqual(
+            view.bugtask_table_template.filename, view.template.filename)
+
+    def test_search_batch_request(self):
+        # A search request with a 'batch_request' query parameter causes the
+        # view to just render the next batch of results.
+        product = self.factory.makeProduct()
+        form = {'search': 'Search'}
+        view = create_initialized_view(
+            product, '+bugs', form=form, query_string='batch_request=True')
+        content = view()
+        self.assertIsNone(find_main_content(content))
+        self.assertIsNotNone(
+            find_tag_by_id(content, 'bugs-batch-links-upper'))
+
+    def test_ajax_batch_navigation_feature_flag(self):
+        # The Javascript to wire up the ajax batch navigation behavior is
+        # correctly hidden behind a feature flag.
+        product = self.factory.makeProduct()
+        form = {'search': 'Search'}
+        with person_logged_in(product.owner):
+            product.official_malone = True
+        flags = {u"ajax.batch_navigator.enabled": u"true"}
+        with FeatureFixture(flags):
+            view = create_initialized_view(product, '+bugs', form=form)
+            self.assertTrue(
+                'Y.lp.app.batchnavigator.BatchNavigatorHooks' in view())
+        view = create_initialized_view(product, '+bugs', form=form)
+        self.assertFalse(
+            'Y.lp.app.batchnavigator.BatchNavigatorHooks' in view())
+
+    def test_dynamic_bug_listing_feature_flag(self):
+        # BugTaskSearchListingView.dynamic_bug_listing_enabled provides
+        # access to the feature flag bugs.dynamic_bug_listings.enabled.
+        # The property is False by default.
+        product = self.factory.makeProduct()
+        view = create_initialized_view(product, '+bugs')
+        self.assertFalse(view.dynamic_bug_listing_enabled)
+        # When the feature flag is turned on, dynamic_bug_listing_enabled
+        # is True.
+        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
+        with FeatureFixture(flags):
+            view = create_initialized_view(product, '+bugs')
+            self.assertTrue(view.dynamic_bug_listing_enabled)
+
+    def test_search_macro_title(self):
+        # BugTaskSearchListingView.dynamic_bug_listing_enabled returns
+        # the title text for the macro `simple-search-form`.
+        product = self.factory.makeProduct(
+            displayname='Test Product', official_malone=True)
+        view = create_initialized_view(product, '+bugs')
+        self.assertEqual(
+            'Search bugs in Test Product', view.search_macro_title)
+
+        # The title not shown by default.
+        form_title_matches = Tag(
+            'Search form title', 'h3', text=view.search_macro_title)
+        self.assertThat(view.render(), Not(HTMLContains(form_title_matches)))
+
+        # If the feature flag bugs.dynamic_bug_listings.enabled
+        # is set, the title is shown.
+        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
+        with FeatureFixture(flags):
+            view = create_initialized_view(product, '+bugs')
+            self.assertThat(view.render(), HTMLContains(form_title_matches))
+
+    def test_search_macro_sort_widget_hidden_for_dynamic_bug_listing(self):
+        # The macro `simple-search-form` has by default a sort widget.
+        product = self.factory.makeProduct(
+            displayname='Test Product', official_malone=True)
+        view = create_initialized_view(product, '+bugs')
+        sort_selector_matches = Tag(
+            'Sort widget found', tag_type='select', attrs={'id': 'orderby'})
+        self.assertThat(view.render(), HTMLContains(sort_selector_matches))
+
+        # If the feature flag bugs.dynamic_bug_listings.enabled
+        # is set, the sort widget is not rendered.
+        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
+        with FeatureFixture(flags):
+            view = create_initialized_view(product, '+bugs')
+            self.assertThat(
+                view.render(), Not(HTMLContains(sort_selector_matches)))
+
+    def test_search_macro_div_node_no_css_class_by_default(self):
+        # The <div> enclosing the search form in the macro
+        # `simple-search-form` has by default no CSS class.
+        product = self.factory.makeProduct(
+            displayname='Test Product', official_malone=True)
+        view = create_initialized_view(product, '+bugs')
+        # The <div> node exists.
+        rendered_view = view.render()
+        search_div_matches = Tag(
+            'Main search div', tag_type='div',
+            attrs={'id': 'bugs-search-form'})
+        self.assertThat(
+            rendered_view, HTMLContains(search_div_matches))
+        # But it has no 'class' attribute.
+        attributes = {
+            'id': 'bugs-search-form',
+            'class': True,
+            }
+        search_div_with_class_attribute_matches = Tag(
+            'Main search div', tag_type='div', attrs=attributes)
+        self.assertThat(
+            rendered_view,
+            HTMLContains(Not(search_div_with_class_attribute_matches)))
+
+    def test_search_macro_div_node_with_css_class_for_dynamic_listings(self):
+        # If the feature flag bugs.dynamic_bug_listings.enabled
+        # is set, the <div> node has the CSS class "dynamic_bug_listing".
+        product = self.factory.makeProduct(
+            displayname='Test Product', official_malone=True)
+        attributes = {
+            'id': 'bugs-search-form',
+            'class': 'dynamic_bug_listing',
+            }
+        search_div_with_class_attribute_matches = Tag(
+            'Main search div feature flag bugs.dynamic_bug_listings.enabled',
+            tag_type='div', attrs=attributes)
+        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
+        with FeatureFixture(flags):
+            view = create_initialized_view(product, '+bugs')
+            self.assertThat(
+                view.render(),
+                HTMLContains(search_div_with_class_attribute_matches))
+
+    def test_search_macro_css_for_form_node_default(self):
+        # The <form> node of the search form in the macro
+        # `simple-search-form` has by default the CSS classes
+        # 'prmary search'
+        product = self.factory.makeProduct(
+            displayname='Test Product', official_malone=True)
+        view = create_initialized_view(product, '+bugs')
+        # The <div> node exists.
+        rendered_view = view.render()
+        attributes = {
+            'name': 'search',
+            'class': 'primary search',
+            }
+        search_form_matches = Tag(
+            'Default search form CSS classes', tag_type='form',
+            attrs=attributes)
+        self.assertThat(
+            rendered_view, HTMLContains(search_form_matches))
+
+    def test_search_macro_css_for_form_node_with_dynamic_bug_listings(self):
+        # If the feature flag bugs.dynamic_bug_listings.enabled
+        # is set, the <form> node has the CSS classes
+        # "primary search dynamic_bug_listing".
+        product = self.factory.makeProduct(
+            displayname='Test Product', official_malone=True)
+        attributes = {
+            'name': 'search',
+            'class': 'primary search dynamic_bug_listing',
+            }
+        search_form_matches = Tag(
+            'Search form CSS classes with feature flag '
+            'bugs.dynamic_bug_listings.enabled', tag_type='form',
+            attrs=attributes)
+        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
+        with FeatureFixture(flags):
+            view = create_initialized_view(product, '+bugs')
+            self.assertThat(view.render(), HTMLContains(search_form_matches))
+
 
 class BugTargetTestCase(TestCaseWithFactory):
     """Test helpers for setting up `IBugTarget` tests."""
@@ -224,6 +438,26 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
         link = canonical_url(
             bug_target.ubuntu_packages[0], force_local_path=True)
         self.assertEqual(link, content.a['href'])
+
+    def test_ask_question_does_not_use_launchpad(self):
+        bug_target = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        login_person(bug_target.owner)
+        bug_target.official_answers = False
+        view = create_initialized_view(
+            bug_target, '+bugs', principal=bug_target.owner)
+        self.assertEqual(None, view.addquestion_url)
+
+    def test_ask_question_uses_launchpad(self):
+        bug_target = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        login_person(bug_target.owner)
+        bug_target.official_answers = True
+        view = create_initialized_view(
+            bug_target, '+bugs', principal=bug_target.owner)
+        url = canonical_url(
+            bug_target, rootsite='answers', view_name='+addquestion')
+        self.assertEqual(url, view.addquestion_url)
 
 
 class TestBugTaskSearchListingViewDSP(BugTargetTestCase):

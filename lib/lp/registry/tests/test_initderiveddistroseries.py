@@ -42,6 +42,8 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
     def setUp(self):
         super(TestDeriveDistroSeries, self).setUp()
         self.parent = self.factory.makeDistroSeries()
+        arch = self.factory.makeDistroArchSeries(distroseries=self.parent)
+        removeSecurityProxy(self.parent).nominatedarchindep = arch
         self.child = self.factory.makeDistroSeries()
         removeSecurityProxy(self.child).driver = self.factory.makePerson()
         login_person(self.child.driver)
@@ -163,3 +165,35 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
         # Switch back to launchpad_main to be able to cleanup the
         # feature flags.
         self.layer.switchDbUser('launchpad_main')
+
+    def test_packageset_check_performed(self):
+        # Packagesets passed to initDerivedDistroSeries are passed down
+        # to InitializeDistroSeries to check for any pending builds.
+        parent, parent_das = self.setupParent()
+        # Create packageset p1 with a build.
+        p1, packageset1, unsed = self.createPackageInPackageset(
+            parent, u'p1', u'packageset1', True)
+        # Create packageset p2 without a build.
+        p2, packageset2, unsed = self.createPackageInPackageset(
+            parent, u'p2', u'packageset2', False)
+        child = self.factory.makeDistroSeries(
+            distribution=parent.distribution, previous_series=parent)
+
+        # Packageset p2 has no build so no exception should be raised.
+        child.initDerivedDistroSeries(
+            child.driver, [parent.id], (), None, (str(packageset2.id),))
+
+    def test_arch_check_performed(self):
+        # Architectures passed to initDerivedDistroSeries are passed down
+        # to InitializeDistroSeries to check for any pending builds.
+        res = self.create2archParentAndSource(packages={'p1': '1.1'})
+        parent, parent_das, parent_das2, source = res
+        # Create builds for the architecture of parent_das2.
+        source.createMissingBuilds(architectures_available=[parent_das])
+        child = self.factory.makeDistroSeries(
+            distribution=parent.distribution, previous_series=parent)
+
+        # Initialize only with parent_das2's architecture. The build is
+        # in the other architecture so no exception should be raised.
+        child.initDerivedDistroSeries(
+            child.driver, [parent.id], (parent_das2.architecturetag, ))

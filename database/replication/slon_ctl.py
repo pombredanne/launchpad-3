@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Startup and shutdown slon processes.
@@ -9,18 +9,21 @@ On production and staging we probably want to use the standard
 /etc/init.d/slony1 script instead of this tool.
 """
 
-import _pythonpath
-
+from optparse import OptionParser
 import os.path
 import subprocess
 import sys
-from optparse import OptionParser
+
+import _pythonpath
+import replication.helpers
 
 from canonical.config import config
-from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import logger, logger_options
-import replication.helpers
+from canonical.launchpad.scripts import (
+    logger,
+    logger_options,
+    )
+
 
 __metaclass__ = type
 __all__ = []
@@ -73,7 +76,8 @@ def main():
     if explicit is not None:
         nodes = [explicit]
     else:
-        nodes = replication.helpers.get_all_cluster_nodes(connect('slony'))
+        nodes = replication.helpers.get_all_cluster_nodes(
+            connect(user='slony'))
 
     if command == 'start':
         return start(log, nodes, options.lag)
@@ -131,7 +135,6 @@ def start(log, nodes, lag=None):
 def stop(log, nodes):
     for node in nodes:
         pidfile = get_pidfile(node.nickname)
-        logfile = get_logfile(node.nickname)
 
         if not os.path.exists(pidfile):
             log.info(

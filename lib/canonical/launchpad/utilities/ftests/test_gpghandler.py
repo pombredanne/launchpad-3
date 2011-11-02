@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from calendar import timegm
@@ -10,10 +10,14 @@ from math import floor
 import os
 from time import time
 
-import gpgme
 from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+
+from testtools.matchers import (
+    Not,
+    LessThan,
+    )
 
 from canonical.launchpad.ftests import (
     ANONYMOUS,
@@ -26,7 +30,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGKeyTemporarilyNotFoundError,
     IGPGHandler,
     )
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.lazr.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -149,54 +152,6 @@ class TestImportKeyRing(TestCase):
         """Do we have the expected test keyring files"""
         self.assertEqual(len(list(keys_for_tests.test_keyrings())), 1)
 
-    def testImportKeyRing(self):
-        """Import a sample keyring and check its contents are available."""
-        self.testEmptyGetKeys()
-        importedkeys = set()
-        for ring in keys_for_tests.test_keyrings():
-            keys = self.gpg_handler.importKeyringFile(ring)
-            importedkeys.update(key.fingerprint for key in keys)
-
-        # check that expected keys are in importedkeys set
-        self.assertTrue("340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
-                        in importedkeys)
-        self.assertTrue("A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
-                        in importedkeys)
-
-        # check that importedkeys are in key ring
-        keyring = set(key.fingerprint
-                      for key in self.gpg_handler.localKeys())
-        self.assertNotEqual(len(keyring), 0)
-        self.assertTrue(importedkeys.issubset(keyring))
-
-    def testSetOwnerTrust(self):
-        """Import a key and set the ownertrust."""
-        self.testEmptyGetKeys()
-        for email in keys_for_tests.iter_test_key_emails():
-            pubkey = keys_for_tests.test_pubkey_from_email(email)
-            self.gpg_handler.importPublicKey(pubkey)
-
-        iterator = self.gpg_handler.localKeys()
-        key = iterator.next()
-        self.assertEqual(key.owner_trust, gpgme.VALIDITY_UNKNOWN)
-        key.setOwnerTrust(gpgme.VALIDITY_FULL)
-        self.assertEqual(key.owner_trust, gpgme.VALIDITY_FULL)
-        other_iterator = self.gpg_handler.localKeys()
-        other_key_instance = other_iterator.next()
-        self.assertEqual(key.owner_trust, other_key_instance.owner_trust)
-
-    def testCheckTrustDb(self):
-        """Test IGPGHandler.checkTrustDb()"""
-        self.testEmptyGetKeys()
-
-        # check trust DB with no keys succeeds
-        self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
-
-        # add some keys and check trust DB again
-        for ring in keys_for_tests.test_keyrings():
-            self.gpg_handler.importKeyringFile(ring)
-        self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
-
     def testHomeDirectoryJob(self):
         """Does the job to touch the home work."""
         gpghandler = getUtility(IGPGHandler)
@@ -219,14 +174,14 @@ class TestImportKeyRing(TestCase):
         now = floor(time())
         gpghandler.touchConfigurationDirectory()
         for fname in files_to_check:
-            self.assertTrue(now <= floor(os.path.getmtime(fname)))
+            file_time = os.path.getmtime(fname)
+            self.assertThat(
+                file_time, Not(LessThan(now)), fname)
 
     def test_retrieveKey_raises_GPGKeyDoesNotExistOnServer(self):
         # GPGHandler.retrieveKey() raises GPGKeyDoesNotExistOnServer
         # when called for a key that does not exist on the key server.
-        tac = KeyServerTac()
-        tac.setUp()
-        self.addCleanup(tac.tearDown)
+        self.useFixture(KeyServerTac())
         gpghandler = getUtility(IGPGHandler)
         self.assertRaises(
             GPGKeyDoesNotExistOnServer, gpghandler.retrieveKey,
@@ -236,9 +191,7 @@ class TestImportKeyRing(TestCase):
         self):
         # If the keyserver responds too slowly, GPGHandler.retrieveKey()
         # raises GPGKeyTemporarilyNotFoundError.
-        tac = KeyServerTac()
-        tac.setUp()
-        self.addCleanup(tac.tearDown)
+        self.useFixture(KeyServerTac())
         old_timeout_function = get_default_timeout_function()
         set_default_timeout_function(lambda: 0.01)
         try:
@@ -247,10 +200,8 @@ class TestImportKeyRing(TestCase):
                 GPGKeyTemporarilyNotFoundError, gpghandler.retrieveKey,
                 'non-existent-fp')
             # An OOPS report is generated for the timeout.
-            error_utility = ErrorReportingUtility()
-            error_report = error_utility.getLastOopsReport()
-            self.assertEqual('False', error_report.informational)
-            self.assertEqual('TimeoutError', error_report.type)
-            self.assertEqual('timeout exceeded.', error_report.value)
+            error_report = self.oopses[-1]
+            self.assertEqual('TimeoutError', error_report['type'])
+            self.assertEqual('timeout exceeded.', error_report['value'])
         finally:
             set_default_timeout_function(old_timeout_function)

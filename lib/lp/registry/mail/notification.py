@@ -24,15 +24,6 @@ from canonical.launchpad.helpers import (
     get_email_template,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from lp.services.messages.interfaces.message import (
-    IDirectEmailAuthorization,
-    QuotaReachedError,
-    )
-from canonical.launchpad.mail import (
-    format_address,
-    sendmail,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 from lp.registry.interfaces.mailinglist import IHeldMessageDetails
@@ -46,7 +37,15 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-
+from lp.services.mail.sendmail import (
+    format_address,
+    sendmail,
+    simple_sendmail,
+    )
+from lp.services.messages.interfaces.message import (
+    IDirectEmailAuthorization,
+    QuotaReachedError,
+    )
 
 # Silence lint warnings.
 NotificationRecipientSet

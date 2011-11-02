@@ -22,6 +22,7 @@ import operator
 
 from lazr.delegates import delegates
 from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.utils import smartquote
 import pytz
 from zope.component import (
     adapter,
@@ -51,7 +52,6 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
-from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
@@ -77,12 +77,11 @@ from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
-from lp.soyuz.browser.sourcepackagerelease import (
-    linkify_changelog,
-    )
+from lp.soyuz.browser.sourcepackagerelease import linkify_changelog
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
@@ -304,13 +303,11 @@ class DistributionSourcePackageBaseView(LaunchpadView):
         # case the emails in the changelog will be obfuscated anyway and thus
         # cause no database lookups.
         if self.user:
-            unique_emails = extract_email_addresses(the_changelog)
-            # The method below returns a [(EmailAddress,Person]] result set.
-            result_set = self.context.getPersonsByEmail(unique_emails)
-            # Ignore the persons who want their email addresses hidden.
             self._person_data = dict(
-                [(email.email, person) for (email, person) in result_set
-                 if not person.hide_email_addresses])
+                [(email.email, person) for (email, person) in
+                    getUtility(IPersonSet).getByEmails(
+                        extract_email_addresses(the_changelog),
+                        include_hidden=False)])
         else:
             self._person_data = None
         # Collate diffs for relevant SourcePackageReleases
@@ -346,6 +343,8 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     @property
     def label(self):
         return self.context.title
+
+    page_title = label
 
     @property
     def next_url(self):

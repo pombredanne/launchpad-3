@@ -1,4 +1,8 @@
-= Using BugTracker Login Tokens =
+Using BugTracker Login Tokens
+=============================
+
+# XXX: sinzui 2011-09-28 bug=861510: This test is disabled because it does
+# not tear down all the way, breaking subsequent tests that use feature flags.
 
 Launchpad offers an XML-RPC interface for generating bug tracker tokens.
 

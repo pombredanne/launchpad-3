@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -12,11 +12,10 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-from unittest import (
-    TestCase,
-    )
+from unittest import TestCase
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restfulclient.errors import BadRequest
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
@@ -27,11 +26,9 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from lp.services.messages.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
-    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -78,6 +75,7 @@ from lp.code.tests.helpers import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.messages.interfaces.message import IMessageJob
 from lp.testing import (
     ExpectedException,
     launchpadlib_for,
@@ -85,6 +83,7 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
     ws_object,
     )
 from lp.testing.factory import (
@@ -937,8 +936,8 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
-        removeSecurityProxy(bmp.source_branch).private = True
-        removeSecurityProxy(bmp.target_branch).private = True
+        removeSecurityProxy(bmp.source_branch).explicitly_private = True
+        removeSecurityProxy(bmp.target_branch).explicitly_private = True
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         self.assertFalse(bob in recipients)
@@ -1044,9 +1043,11 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             product = self.factory.makeProduct(name=product_name)
+        stacked_on_branch = self.factory.makeProductBranch(
+            product=product, owner=owner, registrant=registrant)
         branch = self.factory.makeProductBranch(
             product=product, owner=owner, registrant=registrant,
-            name=branch_name)
+            name=branch_name, stacked_on=stacked_on_branch)
         if registrant is None:
             registrant = owner
         bmp = branch.addLandingTarget(
@@ -1165,7 +1166,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         # proposals that the logged in user is able to see.
         proposal = self._make_merge_proposal('albert', 'november', 'work')
         # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).private = True
+        removeSecurityProxy(proposal.source_branch).explicitly_private = True
         self._make_merge_proposal('albert', 'mike', 'work')
 
         albert = getUtility(IPersonSet).getByName('albert')
@@ -1203,8 +1204,10 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 
         proposal = self._make_merge_proposal(
             'xray', 'november', 'work', registrant=albert)
-        # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).private = True
+        # Mark the source branch private by making it's stacked on branch
+        # private.
+        removeSecurityProxy(
+            proposal.source_branch.stacked_on).explicitly_private = True
 
         november = getUtility(IProductSet).getByName('november')
         # The proposal is visible to charles.
@@ -2005,10 +2008,8 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.assertNotIn(r1, partial_revisions)
 
 
-class TestWebservice(TestCaseWithFactory):
+class TestWebservice(WebServiceTestCase):
     """Tests for the webservice."""
-
-    layer = AppServerLayer
 
     def test_getMergeProposals_with_merged_revnos(self):
         """Specifying merged revnos selects the correct merge proposal."""
@@ -2028,15 +2029,22 @@ class TestWebservice(TestCaseWithFactory):
     def test_getRelatedBugTasks(self):
         """Test the getRelatedBugTasks API."""
         db_bmp = self.factory.makeBranchMergeProposal()
-        launchpad = launchpadlib_for(
-            'test', db_bmp.registrant, version="devel",
-            service_root=self.layer.appserver_root_url('api'))
-
-        with person_logged_in(db_bmp.registrant):
-            db_bug = self.factory.makeBug()
-            db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
-            transaction.commit()
-            bmp = ws_object(launchpad, db_bmp)
-            bugtask = ws_object(launchpad, db_bug.default_bugtask)
+        db_bug = self.factory.makeBug()
+        db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
+        transaction.commit()
+        bmp = self.wsObject(db_bmp)
+        bugtask = self.wsObject(db_bug.default_bugtask)
         self.assertEqual(
             [bugtask], list(bmp.getRelatedBugTasks()))
+
+    def test_setStatus_invalid_transition(self):
+        """Emit BadRequest when an invalid transition is requested."""
+        bmp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(bmp.registrant):
+            bmp.resubmit(bmp.registrant)
+        transaction.commit()
+        ws_bmp = self.wsObject(bmp, user=bmp.target_branch.owner)
+        with ExpectedException(
+            BadRequest,
+            '(.|\n)*Invalid state transition for merge proposal(.|\n)*'):
+            ws_bmp.setStatus(status='Approved')

@@ -36,7 +36,13 @@ class CodeImportWorker(LaunchpadScript):
 
     def __init__(self, name, dbuser=None, test_args=None):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
-        set_up_oops_reporting('codeimportworker', name, mangle_stdout=True)
+        set_up_oops_reporting(name, 'codeimportworker', mangle_stdout=True)
+
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option(
+            "--access-policy", type="choice", metavar="ACCESS_POLICY",
+            choices=["anything", "default"], default=None)
 
     def _init_db(self, isolation):
         # This script doesn't access the database.
@@ -59,7 +65,8 @@ class CodeImportWorker(LaunchpadScript):
     def _main(self, job_id):
         worker = CodeImportWorkerMonitor(
             job_id, self.logger,
-            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
+            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url),
+            self.options.access_policy)
         return worker.run()
 
 if __name__ == '__main__':

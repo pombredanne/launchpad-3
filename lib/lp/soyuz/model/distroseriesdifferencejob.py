@@ -8,6 +8,7 @@ __all__ = [
     'DistroSeriesDifferenceJob',
     ]
 
+import simplejson
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -84,8 +85,8 @@ def compose_job_insertion_tuple(derived_series, parent_series,
     :return: A tuple of: derived distribution id, derived distroseries id,
         job type, job id, JSON data map.
     """
-    json = DistributionJob.serializeMetadata(make_metadata(
-        sourcepackagename_id, parent_series.id))
+    json = simplejson.dumps(
+        make_metadata(sourcepackagename_id, parent_series.id))
     return (
         derived_series.distribution.id,
         derived_series.id,
@@ -112,6 +113,10 @@ def create_multiple_jobs(derived_series, parent_series):
         SourcePackagePublishingHistory.distroseries == derived_series.id,
         SourcePackagePublishingHistory.status.is_in(active_publishing_status))
     nb_jobs = source_package_releases.count()
+
+    if nb_jobs == 0:
+        return []
+
     sourcepackagenames = source_package_releases.values(
         SourcePackageRelease.sourcepackagenameID)
     job_ids = Job.createMultiple(store, nb_jobs)
@@ -137,8 +142,7 @@ def find_waiting_jobs(derived_series, sourcepackagename, parent_series):
     # the metadata string.  It's fragile, but this is only an
     # optimization.  It's not actually disastrous to create
     # redundant jobs occasionally.
-    json_metadata = DistributionJob.serializeMetadata(
-        make_metadata(sourcepackagename.id, parent_series.id))
+    json_metadata = make_metadata(sourcepackagename.id, parent_series.id)
 
     # Use master store because we don't like outdated information
     # here.
@@ -149,7 +153,7 @@ def find_waiting_jobs(derived_series, sourcepackagename, parent_series):
         DistributionJob.job_type ==
             DistributionJobType.DISTROSERIESDIFFERENCE,
         DistributionJob.distroseries == derived_series,
-        DistributionJob._json_data == json_metadata,
+        DistributionJob.metadata == json_metadata,
         DistributionJob.job_id.is_in(Job.ready_jobs))
 
     return [
@@ -195,13 +199,16 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
+
         # -backports and -proposed are not really part of a standard
         # distribution's packages so we're ignoring them here.  They can
         # always be manually synced by the users if necessary, in the
         # rare occasions that they require them.
-        if pocket in (
+        ignored_pockets = [
             PackagePublishingPocket.BACKPORTS,
-            PackagePublishingPocket.PROPOSED):
+            PackagePublishingPocket.PROPOSED,
+            ]
+        if pocket in ignored_pockets:
             return
 
         # Create jobs for DSDs between the derived_series' parents and
@@ -219,6 +226,18 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
                 if may_require_job(child, sourcepackagename, derived_series)]
 
         return parent_series_jobs + derived_series_jobs
+
+    @classmethod
+    def createForSPPHs(cls, spphs):
+        """See `IDistroSeriesDifferenceJobSource`."""
+        # XXX JeroenVermeulen 2011-08-25, bug=834499: This won't do for
+        # some of the mass deletions we're planning to support.
+        # Optimize.
+        for spph in spphs:
+            if spph.archive.is_main:
+                cls.createForPackagePublication(
+                    spph.distroseries,
+                    spph.sourcepackagerelease.sourcepackagename, spph.pocket)
 
     @classmethod
     def massCreateForSeries(cls, derived_series):

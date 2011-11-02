@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from lazr.restful.interfaces import IWebServiceConfiguration
 from zope.component import (
     getAdapter,
@@ -292,7 +290,3 @@ class ReadOnlyLaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
             self.assertRaises(
                 ReadOnlyModeDisallowedStore,
                 store_selector.get, store, MASTER_FLAVOR)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

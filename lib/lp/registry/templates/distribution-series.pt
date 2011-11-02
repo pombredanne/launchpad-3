@@ -29,7 +29,7 @@
              tal:content="series/named_version" /></strong>
             <em><span tal:replace="series/status/title" /></em>
             <tal:derives condition="series/previous_series">
-              <br />Derives from
+              <br />Successor to
               <a tal:attributes="href series/previous_series/fmt:url">
                 <tal:distro
                   replace="series/previous_series/distribution/displayname" />

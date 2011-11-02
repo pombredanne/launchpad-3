@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -310,6 +310,25 @@ class IOpenLaunchBag(ILaunchBag):
         '''
 
 
+class IInteractionExtras(Interface):
+    """We attach a provider of this interface to all interactions.
+
+    Because a fresh provider is constructed for every request and between
+    every test, it is less error-prone to add things to this interface than to
+    stash state on a thread local.
+
+    If you add something here, you should go and edit
+    `canonical.launchpad.webapp.interaction.InteractionExtras`,
+    """
+
+    permit_timeout_from_features = Attribute(
+        """A boolean indicating whether to read the 'hard_timeout' feature
+        flag.  We can't check the feature flags early on in request processing
+        because this can trigger nested db lookups.  See the docstring of
+        `canonical.launchpad.webapp.servers.set_permit_timeout_from_features`
+        for more.""")
+
+
 #
 # Request
 #
@@ -345,6 +364,13 @@ class IBasicLaunchpadRequest(Interface):
         returned.
 
         If no matching object is found, the tuple (None, None) is returned.
+        """
+
+    def getURL(level=0, path_only=False, include_query=False):
+        """See `IHTTPApplicationRequest`.
+
+        Additionally, if `include_query` is `True`, the query string is
+        included in the returned URL.
         """
 
 
@@ -878,6 +904,24 @@ except ImportError:
 
         def __init__(self, request):
             self.request = request
+
+
+class IFinishReadOnlyRequestEvent(Interface):
+    """An event which gets sent when the publication is ended"""
+
+    object = Attribute("The object to which this request pertains.")
+
+    request = Attribute("The active request.")
+
+
+class FinishReadOnlyRequestEvent:
+    """An event which gets sent when the publication is ended"""
+
+    implements(IFinishReadOnlyRequestEvent)
+
+    def __init__(self, ob, request):
+        self.object = ob
+        self.request = request
 
 
 class StormRangeFactoryError(Exception):

@@ -3,7 +3,6 @@
 
 import os
 from StringIO import StringIO
-from unittest import TestLoader
 import tarfile
 
 from lp.testing.fakemethod import FakeMethod
@@ -114,7 +113,3 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
             'lib/canonical/buildd/pottery/generate_translation_templates.py',
             args=[tempdir, self.result_name, workdir])
         self.assertEqual(0, retval)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

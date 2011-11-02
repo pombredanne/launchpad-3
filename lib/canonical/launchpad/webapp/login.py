@@ -75,6 +75,12 @@ class UnauthorizedView(SystemErrorView):
     read_only_page = ViewPageTemplateFile(
         '../../../lp/app/templates/launchpad-readonlyfailure.pt')
 
+    def page_title(self):
+        if is_read_only():
+            return super(UnauthorizedView, self).page_title
+        else:
+            return 'Forbidden'
+
     def __call__(self):
         # In read only mode, Unauthorized exceptions get raised by the
         # security policy when write permissions are requested. We need
@@ -86,7 +92,7 @@ class UnauthorizedView(SystemErrorView):
             # a tuple containing (object, attribute_requested, permission).
             lp_permission = getUtility(ILaunchpadPermission, self.context[2])
             if lp_permission.access_level != "read":
-                self.request.response.setStatus(503) # Service Unavailable
+                self.request.response.setStatus(503)  # Service Unavailable
                 return self.read_only_page()
 
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
@@ -102,7 +108,7 @@ class UnauthorizedView(SystemErrorView):
                 # must ensure that form pages require the same rights
                 # as the pages that process those forms.  So, we should never
                 # need to newly authenticate on a POST.
-                self.request.response.setStatus(500) # Internal Server Error
+                self.request.response.setStatus(500)  # Internal Server Error
                 self.request.response.setHeader('Content-type', 'text/plain')
                 return ('Application error.  Unauthenticated user POSTing to '
                         'page that requires authentication.')
@@ -126,7 +132,7 @@ class UnauthorizedView(SystemErrorView):
             # Maybe render page with a link to the redirection?
             return ''
         else:
-            self.request.response.setStatus(403) # Forbidden
+            self.request.response.setStatus(403)  # Forbidden
             return self.forbidden_page()
 
     def getRedirectURL(self, current_url, query_string):
@@ -436,6 +442,13 @@ class AlreadyLoggedInView(LaunchpadView):
 
 def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
+    # Force a fresh session, per Bug #828638. Any changes to any
+    # existing session made this request will be lost, but that should
+    # not be a problem as authentication must be done before
+    # authorization and authorization before we do any actual work.
+    client_id_manager = getUtility(IClientIdManager)
+    new_client_id = client_id_manager.generateUniqueId()
+    client_id_manager.setRequestId(request, new_client_id)
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
@@ -531,5 +544,5 @@ class FeedsUnauthorizedView(UnauthorizedView):
     def __call__(self):
         assert IUnauthenticatedPrincipal.providedBy(self.request.principal), (
             "Feeds user should always be anonymous.")
-        self.request.response.setStatus(403) # Forbidden
+        self.request.response.setStatus(403)  # Forbidden
         return self.forbidden_page()

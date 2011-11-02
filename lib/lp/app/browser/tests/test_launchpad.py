@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
@@ -187,7 +185,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makeProductBranch()
         naked_product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(naked_product).setBranch(branch)
-        removeSecurityProxy(branch).private = True
+        removeSecurityProxy(branch).explicitly_private = True
         login(ANONYMOUS)
         requiredMessage = (
             u"The target %s does not have a linked branch." %
@@ -213,7 +211,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makeProductBranch()
         naked_product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(naked_product).setBranch(branch)
-        removeSecurityProxy(branch).private = True
+        removeSecurityProxy(branch).explicitly_private = True
         login(ANONYMOUS)
         self.assertNotFound(naked_product.name, use_default_referer=False)
 
@@ -417,7 +415,6 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
             view.target.rstrip('/'))
 
 
-
 class TestErrorViews(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -427,7 +424,3 @@ class TestErrorViews(TestCaseWithFactory):
         view = create_view(error, 'index.html')
         self.assertEqual('Error: Page gone', view.page_title)
         self.assertEqual(410, view.request.response.getStatus())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

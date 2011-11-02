@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
 import xmlrpclib
 
 from zope.component import getUtility
@@ -124,7 +123,3 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
             self.assertEqual(404, e.errcode)
 
         self.assertTrue(protocol_error_raised)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

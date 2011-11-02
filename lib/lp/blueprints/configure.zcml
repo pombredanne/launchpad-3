@@ -181,6 +181,7 @@
 
   <class class="lp.blueprints.model.specificationbug.SpecificationBug">
     <allow interface="lp.blueprints.interfaces.specificationbug.ISpecificationBug"/>
+    <allow interface="lazr.restful.interfaces.IJSONPublishable"/>
   </class>
 
   <subscriber

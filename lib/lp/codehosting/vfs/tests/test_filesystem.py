@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import stat
-import unittest
 
 from bzrlib import errors
 from bzrlib.bzrdir import BzrDir
@@ -30,7 +29,7 @@ class TestFilesystem(TestCaseWithTransport):
     # and remove the ones that aren't needed.
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestFilesystem, self).setUp()
         self.disable_directory_isolation()
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
@@ -308,7 +307,3 @@ class TestFilesystem(TestCaseWithTransport):
         # returned_path is equivalent but not equal to escaped_path.
         [returned_path] = list(transport.list_dir('.'))
         self.assertEqual(content, transport.get_bytes(returned_path))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

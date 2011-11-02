@@ -110,18 +110,19 @@ class BugNotificationSet:
         store = IStore(BugNotification)
         source = store.using(BugNotification,
                              Join(Message,
-                                  BugNotification.message==Message.id),
+                                  BugNotification.message == Message.id),
                              LeftJoin(
                                 BugActivity,
-                                BugNotification.activity==BugActivity.id))
+                                BugNotification.activity == BugActivity.id))
         results = list(source.find(
             (BugNotification, BugActivity, Message),
+            BugNotification.status == BugNotificationStatus.PENDING,
             BugNotification.date_emailed == None).order_by(
             'BugNotification.bug', '-BugNotification.id'))
         interval = timedelta(
             minutes=int(config.malone.bugnotification_interval))
         time_limit = (
-            datetime.now(pytz.timezone('UTC')) - interval)
+            datetime.now(pytz.UTC) - interval)
         last_omitted_notification = None
         pending_notifications = []
         people_ids = set()
@@ -141,7 +142,7 @@ class BugNotificationSet:
                 pending_notifications.append(notification)
                 people_ids.add(notification.message.ownerID)
                 bug_ids.add(notification.bugID)
-        # Now we do some calls that are purely for cacheing.
+        # Now we do some calls that are purely for caching.
         # Converting these into lists forces the queries to execute.
         if pending_notifications:
             list(
@@ -154,13 +155,29 @@ class BugNotificationSet:
         pending_notifications.reverse()
         return pending_notifications
 
-    def addNotification(self, bug, is_comment, message, recipients, activity):
+    def getDeferredNotifications(self):
+        """See `IBugNoticationSet`."""
+        store = IStore(BugNotification)
+        results = store.find(
+            BugNotification,
+            BugNotification.date_emailed == None,
+            BugNotification.status == BugNotificationStatus.DEFERRED)
+        return results
+
+    def addNotification(self, bug, is_comment, message, recipients, activity,
+                        deferred=False):
         """See `IBugNotificationSet`."""
-        if not recipients:
-            return
+        if deferred:
+            status = BugNotificationStatus.DEFERRED
+        else:
+            if not recipients:
+                return
+            status = BugNotificationStatus.PENDING
+
         bug_notification = BugNotification(
             bug=bug, is_comment=is_comment,
-            message=message, date_emailed=None, activity=activity)
+            message=message, date_emailed=None, activity=activity,
+            status=status)
         store = Store.of(bug_notification)
         # XXX jamesh 2008-05-21: these flushes are to fix ordering
         # problems in the bugnotification-sending.txt tests.
@@ -173,19 +190,20 @@ class BugNotificationSet:
 
         # We add all the recipients in a single SQL statement to make
         # this a bit more efficient for bugs with many subscribers.
-        store.execute("""
-            INSERT INTO BugNotificationRecipient
-              (bug_notification, person, reason_header, reason_body)
-            VALUES %s;""" % ', '.join(sql_values))
-
-        if len(recipients.subscription_filters) > 0:
-            filter_link_sql = [
-                "(%s, %s)" % sqlvalues(bug_notification, filter.id)
-                for filter in recipients.subscription_filters]
+        if len(sql_values) > 0:
             store.execute("""
-                INSERT INTO BugNotificationFilter
-                  (bug_notification, bug_subscription_filter)
-                VALUES %s;""" % ", ".join(filter_link_sql))
+                INSERT INTO BugNotificationRecipient
+                  (bug_notification, person, reason_header, reason_body)
+                VALUES %s;""" % ', '.join(sql_values))
+
+            if len(recipients.subscription_filters) > 0:
+                filter_link_sql = [
+                    "(%s, %s)" % sqlvalues(bug_notification, filter.id)
+                    for filter in recipients.subscription_filters]
+                store.execute("""
+                    INSERT INTO BugNotificationFilter
+                      (bug_notification, bug_subscription_filter)
+                    VALUES %s;""" % ", ".join(filter_link_sql))
 
         return bug_notification
 
@@ -257,9 +275,12 @@ class BugNotificationSet:
             source_person_id_map[source_person_id]['filters'][filter_id] = (
                 filter_description)
             filter_ids.append(filter_id)
-        no_filter_marker = -1 # This is only necessary while production and
-        # sample data have structural subscriptions without filters.
-        # Assign the filters to each recipient.
+
+        # This is only necessary while production and sample data have
+        # structural subscriptions without filters.  Assign the filters to
+        # each recipient.
+        no_filter_marker = -1
+
         for recipient_data in recipient_id_map.values():
             for source_person_id in recipient_data['source person ids']:
                 recipient_data['filters'].update(
@@ -292,7 +313,7 @@ class BugNotificationSet:
                 filter_descriptions = [
                     description for description
                     in recipient_data['filters'].values() if description]
-                filter_descriptions.sort() # This is good for tests.
+                filter_descriptions.sort()  # This is good for tests.
                 result[recipient_data['principal']] = {
                     'sources': recipient_data['sources'],
                     'filter descriptions': filter_descriptions}

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,6 +10,7 @@ __all__ = [
     'RequestExpiredView',
     'SystemErrorView',
     'TranslationUnavailableView',
+    'UnexpectedFormDataView',
     ]
 
 
@@ -47,7 +48,6 @@ class SystemErrorView(LaunchpadView):
     response_code = httplib.INTERNAL_SERVER_ERROR
 
     show_tracebacks = False
-    pagetesting = False
     debugging = False
     specialuser = False
 
@@ -73,10 +73,6 @@ class SystemErrorView(LaunchpadView):
         self.computeDebugOutput()
         if config.canonical.show_tracebacks:
             self.show_tracebacks = True
-        # if canonical.launchpad.layers.PageTestLayer.providedBy(
-        #     self.request):
-        #     self.pagetesting = True
-        # XXX mpt 20080109 bug=181472: We don't use this any more.
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
         self.specialuser = getUtility(ILaunchBag).developer
@@ -96,7 +92,6 @@ class SystemErrorView(LaunchpadView):
         self.error_object
         self.traceback_lines
         self.htmltext
-        self.plaintext
         """
         self.error_type, self.error_object, tb = sys.exc_info()
         try:
@@ -104,10 +99,6 @@ class SystemErrorView(LaunchpadView):
             self.htmltext = '\n'.join(
                 format_exception(self.error_type, self.error_object,
                                  tb, as_html=True)
-                )
-            self.plaintext = ''.join(
-                format_exception(self.error_type, self.error_object,
-                                 tb, as_html=False)
                 )
         finally:
             del tb
@@ -126,11 +117,7 @@ class SystemErrorView(LaunchpadView):
         # If the config says to show tracebacks, or we're on the debug port,
         # or the logged in user is in the launchpad team, show tracebacks.
         if self.show_tracebacks or self.debugging or self.specialuser:
-            if self.pagetesting:
-                # Show tracebacks in page tests, but formatted as plain text.
-                return self.inside_div('<pre>\n%s</pre>' % self.plaintext)
-            else:
-                return self.inside_div(self.htmltext)
+            return self.inside_div(self.htmltext)
         else:
             return ''
 
@@ -148,18 +135,8 @@ class SystemErrorView(LaunchpadView):
         else:
             return oops_code
 
-    def render_as_text(self):
-        """Render the exception as text.
-
-        This is used to render exceptions in pagetests.
-        """
-        self.request.response.setHeader('Content-Type', 'text/plain')
-        return self.plaintext
-
     def __call__(self):
-        if self.pagetesting:
-            return self.render_as_text()
-        elif (config.launchpad.restrict_to_team and
+        if (config.launchpad.restrict_to_team and
               not self.safe_to_show_in_restricted_mode):
             return self.plain_oops_template()
         else:
@@ -189,6 +166,11 @@ class ProtocolErrorView(SystemErrorView):
         for header, value in exception.headers.items():
             self.request.response.setHeader(header, value)
         return self.index()
+
+
+class UnexpectedFormDataView(SystemErrorView):
+
+    page_title = 'Error: Unexpected form data'
 
 
 class NotFoundView(SystemErrorView):
@@ -305,3 +287,16 @@ class OpenIdDiscoveryFailureView(SystemErrorView):
     def isSystemError(self):
         """We don't need to log these errors in the SiteLog."""
         return False
+
+
+class DisconnectionErrorView(SystemErrorView):
+
+    response_code = httplib.SERVICE_UNAVAILABLE
+    reason = u'our database being temporarily offline'
+    cors_feed = config.launchpad.launchpadstatus_json_cors_feed
+    flash_feed = config.launchpad.launchpadstatus_json_flash_feed
+
+
+class OperationalErrorView(DisconnectionErrorView):
+
+    reason = u'our database having temporary operational issues'

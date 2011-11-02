@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,22 +8,24 @@ import socket
 import sys
 import urllib2
 
+import lp.codehosting  # Needed to load bzr plugins.
+lp  # squelch lint.sh
+
 from bzrlib import (
     errors,
     urlutils,
     )
-from bzrlib.branch import (
-    Branch,
-    BzrBranchFormat4,
-    )
-from bzrlib.repofmt.weaverepo import (
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir
+from bzrlib.plugins.loom.branch import LoomSupport
+from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
+from bzrlib.plugins.weave_fmt.repository import (
     RepositoryFormat4,
     RepositoryFormat5,
     RepositoryFormat6,
     )
-import bzrlib.ui
-from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.transport import get_transport
+import bzrlib.ui
 from bzrlib.ui import SilentUIFactory
 from lazr.uri import (
     InvalidURIError,
@@ -75,8 +77,6 @@ class BadUrlScheme(BadUrl):
     def __init__(self, scheme, url):
         BadUrl.__init__(self, scheme, url)
         self.scheme = scheme
-
-
 
 
 def get_canonical_url_for_branch_name(unique_name):
@@ -214,7 +214,7 @@ class BranchMirrorer(object):
         :return: The destination branch.
         """
         return self.opener.runWithTransformFallbackLocationHookInstalled(
-            self.policy.createDestinationBranch, source_branch,
+            BzrDir.open, self.policy.createDestinationBranch, source_branch,
             destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
@@ -298,8 +298,7 @@ class PullerWorker:
             mirror_stacked_on_url=self.default_stacked_on_url)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 default_stacked_on_url, protocol, branch_mirrorer=None,
-                 oops_prefix=None):
+                 default_stacked_on_url, protocol, branch_mirrorer=None):
         """Construct a `PullerWorker`.
 
         :param src: The URL to pull from.
@@ -315,8 +314,6 @@ class PullerWorker:
         :param protocol: An instance of `PullerWorkerProtocol`.
         :param branch_mirrorer: An instance of `BranchMirrorer`.  If not
             passed, one will be chosen based on the value of `branch_type`.
-        :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
-            global ErrorUtility.
         """
         self.source = src
         self.dest = dest
@@ -332,8 +329,6 @@ class PullerWorker:
         if branch_mirrorer is None:
             branch_mirrorer = self._checkerForBranchType(branch_type)
         self.branch_mirrorer = branch_mirrorer
-        if oops_prefix is not None:
-            errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
     def _record_oops(self, message=None):
         """Record an oops for the current exception.

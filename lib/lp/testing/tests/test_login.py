@@ -1,14 +1,13 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the login helpers."""
 
 __metaclass__ = type
 
-import unittest
-
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
+from zope.security.management import getInteraction
 
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
@@ -18,7 +17,6 @@ from lp.testing import (
     ANONYMOUS,
     anonymous_logged_in,
     celebrity_logged_in,
-    is_logged_in,
     login,
     login_as,
     login_celebrity,
@@ -75,20 +73,13 @@ class TestLoginHelpers(TestCaseWithFactory):
     def test_not_logged_in(self):
         # After logout has been called, we are not logged in.
         logout()
-        self.assertEqual(False, is_logged_in())
         self.assertLoggedOut()
 
     def test_logout_twice(self):
         # Logging out twice don't harm anybody none.
         logout()
         logout()
-        self.assertEqual(False, is_logged_in())
         self.assertLoggedOut()
-
-    def test_logged_in(self):
-        # After login has been called, we are logged in.
-        login_person(self.factory.makePerson())
-        self.assertEqual(True, is_logged_in())
 
     def test_login_person_actually_logs_in(self):
         # login_person changes the currently logged in person.
@@ -215,6 +206,18 @@ class TestLoginHelpers(TestCaseWithFactory):
             self.assertLoggedIn(b)
         self.assertLoggedIn(a)
 
+    def test_person_logged_in_restores_participation(self):
+        # Once outside of the person_logged_in context, the original
+        # participation (e.g., request) is used.  This can be important for
+        # yuixhr test fixtures, in particular.
+        a = self.factory.makePerson()
+        login_as(a)
+        participation = getInteraction().participations[0]
+        b = self.factory.makePerson()
+        with person_logged_in(b):
+            self.assertLoggedIn(b)
+        self.assertIs(participation, getInteraction().participations[0])
+
     def test_person_logged_in_restores_logged_out(self):
         # If we are logged out before the person_logged_in context, then we
         # are logged out afterwards.
@@ -232,7 +235,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         b = self.factory.makePerson()
         try:
             with person_logged_in(b):
-                1/0
+                1 / 0
         except ZeroDivisionError:
             pass
         self.assertLoggedIn(a)
@@ -265,18 +268,22 @@ class TestLoginHelpers(TestCaseWithFactory):
         # with_celebrity_logged_in decorates a function so that it runs with
         # the given person logged in.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+
         @with_celebrity_logged_in('vcs_imports')
         def f():
             return self.getLoggedInPerson()
+
         logout()
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
 
     def test_with_person_logged_in(self):
         person = self.factory.makePerson()
+
         @with_person_logged_in(person)
         def f():
             return self.getLoggedInPerson()
+
         logout()
         logged_in = f()
         self.assertEqual(person, logged_in)
@@ -293,7 +300,3 @@ class TestLoginHelpers(TestCaseWithFactory):
         # anonymous_logged_in is a context logged in as anonymous.
         with anonymous_logged_in():
             self.assertLoggedIn(ANONYMOUS)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

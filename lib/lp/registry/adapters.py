@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Adapters for regisrty objects."""
+"""Adapters for registry objects."""
 
 __metaclass__ = type
 
@@ -130,3 +130,8 @@ def distribution_to_publisherconfig(distro):
     # Used for traversal from distro to +pubconf.
     config = getUtility(IPublisherConfigSet).getByDistribution(distro)
     return config
+
+
+def package_to_sourcepackagename(package):
+    """Adapts a package to its `ISourcePackageName`."""
+    return package.sourcepackagename

@@ -35,6 +35,9 @@ class HWDBSubmissionProcessor(LaunchpadCronScript):
         self.parser.add_option(
             '-m', '--max-submissions',
             help='Limit the number of submissions which will be processed.')
+        self.parser.add_option(
+            '-w', '--warnings', action="store_true", default=False,
+            help='Include warnings.')
 
     def main(self):
         max_submissions = self.options.max_submissions
@@ -51,7 +54,8 @@ class HWDBSubmissionProcessor(LaunchpadCronScript):
                     '--max_submissions must be a positive integer.')
                 return
 
-        process_pending_submissions(self.txn, self.logger, max_submissions)
+        process_pending_submissions(
+            self.txn, self.logger, max_submissions, self.options.warnings)
 
 if __name__ == '__main__':
     script = HWDBSubmissionProcessor(

@@ -76,7 +76,6 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     OfficialBugTag,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -171,6 +170,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     max_bug_heat = Int()
 
     @property
+    def pillar_category(self):
+        """See `IPillar`."""
+        return "Project Group"
+
+    @property
     def products(self):
         return Product.selectBy(
             project=self, active=True, orderBy='displayname')
@@ -197,14 +201,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(ProductSeries, Product.id == ProductSeries.productID),
             Join(POTemplate, ProductSeries.id == POTemplate.productseriesID),
             ]
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
-        # this query is using _translations_usage, but there's no cleaner
-        # way to deal with it. Once the bug above is resolved, this should
-        # should be fixed to use translations_usage.
         return store.using(*origin).find(
             Product,
             Product.project == self.id,
-            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Product.translations_usage == ServiceUsage.LAUNCHPAD,
             ).config(distinct=True)
 
     def has_translatable(self):

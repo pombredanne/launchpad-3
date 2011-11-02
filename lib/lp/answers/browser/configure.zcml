@@ -88,9 +88,16 @@
   <browser:page
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+portlet-answercontacts"
+    class=".questiontarget.QuestionTargetPortletAnswerContacts"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-answercontacts.pt"
     />
+  <browser:page
+      for="lp.answers.interfaces.question.IQuestionTarget"
+      name="+portlet-answercontacts-details"
+      class="
+        lp.answers.browser.questiontarget.QuestionTargetPortletAnswerContactsWithDetails"
+      permission="zope.Public"/>
   <browser:page
     name="+addquestion"
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
@@ -114,7 +121,7 @@
     classes="QuestionCollectionAnswersMenu QuestionTargetAnswersMenu"
     />
   <browser:menus
-    module="canonical.launchpad.browser"
+    module="lp.answers.browser.faq"
     classes="FAQNavigationMenu"
     />
   <browser:menus
@@ -307,7 +314,7 @@
 
   <browser:page
     for="lp.answers.interfaces.questioncollection.IQuestionSet"
-    class="canonical.launchpad.browser.SearchAllQuestionsView"
+    class="lp.answers.browser.question.SearchAllQuestionsView"
     name="+questions"
     permission="zope.Public"
     />

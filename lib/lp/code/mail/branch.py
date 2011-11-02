@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to branches."""
@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (
@@ -18,6 +17,7 @@ from lp.code.enums import (
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail import basemailer
 from lp.services.mail.basemailer import BaseMailer
+from lp.services.mail.sendmail import format_address
 
 
 def send_branch_modified_notifications(branch, event):
@@ -301,7 +301,7 @@ class BranchMailer(BaseMailer):
         # Using .txt as a file extension makes Gmail display it inline.
         ctrl.addAttachment(
             self.diff, content_type='text/x-diff', inline=True,
-                filename='revision-diff.txt')
+                filename='revision-diff.txt', charset='utf-8')
 
     @staticmethod
     def _format_user_address(user):

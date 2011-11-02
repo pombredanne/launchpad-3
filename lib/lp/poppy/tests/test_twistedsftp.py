@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 import tempfile
-import unittest
 
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.sftp import FileIsADirectory
@@ -59,6 +58,3 @@ class TestSFTPServer(TestCase):
             FileIsADirectory,
             "File is a directory: '%s'" % dir_name,
             upload_file.writeChunk, 0, "This is a test")
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,11 +1,6 @@
 Question Workflow
 =================
 
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
 The status of a question changes based on the action done by users on
 it. To demonstrate the workflow, we will use the existing question #2 on
 the Firefox product which was filed by 'Sample Person'.
@@ -461,7 +456,3 @@ similar problem so he asks his own question.
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about...
-
-Clean up the feature flag.
-
-    >>> flags.cleanUp()

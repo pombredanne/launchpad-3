@@ -8,13 +8,14 @@ __all__ = [
     'DistroSeriesSourcePackageReleaseView',
     ]
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     LaunchpadView,
     Navigation,
     stepthrough,
     )
-from canonical.lazr.utils import smartquote
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
