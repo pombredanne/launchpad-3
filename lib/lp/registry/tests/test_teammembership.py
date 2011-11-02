@@ -34,7 +34,6 @@ from canonical.launchpad.testing.systemdocs import (
     )
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -1155,9 +1154,14 @@ class TestCheckTeamParticipationScript(TestCase):
 
 class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
 
-    layer = LaunchpadScriptLayer
+    layer = DatabaseFunctionalLayer
 
     def test_queries(self):
+        """The script does not overly tax the database.
+
+        The whole check_teamparticipation() run executes a constant low number
+        of queries.
+        """
         # Create a deeply nested team and member structure.
         team = self.factory.makeTeam()
         for num in xrange(10):
@@ -1167,9 +1171,11 @@ class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
                 team.addMember(another_team, team.teamowner)
                 team.addMember(another_person, team.teamowner)
             team = another_team
-        flush_database_updates()
-        logger = BufferLogger()
-        check_teamparticipation(logger)
+        transaction.commit()
+        with StormStatementRecorder() as recorder:
+            logger = BufferLogger()
+            check_teamparticipation(logger)
+        self.assertThat(recorder, HasQueryCount(Equals(6)))
 
 
 def test_suite():
