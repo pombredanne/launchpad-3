@@ -47,7 +47,6 @@ from lp.bugs.browser.bugtask import (
     BugActivityItem,
     BugListingBatchNavigator,
     BugTaskEditView,
-    BugListingBatchNavigator,
     BugTaskListingItem,
     BugTasksAndNominationsView,
     BugTaskSearchListingView,
@@ -1479,7 +1478,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(request)
         bugtask = {
             'id': '3.14159',
-            'title':'title1',
+            'title': 'title1',
             'status': 'status1',
             'importance': 'importance1',
             'importance_class': 'importance_class1',
