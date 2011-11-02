@@ -53,6 +53,7 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.services.propertycache import cachedproperty
 
 
@@ -67,6 +68,22 @@ class BugSubscriptionAddView(LaunchpadFormView):
         """Set up 'person' as an input field."""
         super(BugSubscriptionAddView, self).setUpFields()
         self.form_fields['person'].for_input = True
+
+    def validate(self, data):
+        '''Validation hook.
+        Ensures that open and delegated teams aren't allowed to be subscribed
+        to private bugs.
+        '''
+        person = data['person']
+        if person.isTeam() and self.context.bug.private:
+            bad_types = (
+                TeamSubscriptionPolicy.OPEN,
+                TeamSubscriptionPolicy.DELEGATED
+                )
+            if person.subscriptionpolicy in bad_types: 
+                error_msg = ("Open and delegated teams cannot be subscribed "
+                    "to private bugs.")
+                self.setFieldError('person', error_msg)
 
     @action('Subscribe user', name='add')
     def add_action(self, action, data):
