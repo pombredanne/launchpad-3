@@ -80,7 +80,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
                 TeamSubscriptionPolicy.OPEN,
                 TeamSubscriptionPolicy.DELEGATED
                 )
-            if person.subscriptionpolicy in bad_types: 
+            if person.subscriptionpolicy in bad_types:
                 error_msg = ("Open and delegated teams cannot be subscribed "
                     "to private bugs.")
                 self.setFieldError('person', error_msg)
