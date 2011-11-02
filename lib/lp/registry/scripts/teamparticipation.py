@@ -56,9 +56,12 @@ def check_teamparticipation_circular(log):
             "Circular references found: %s" % circular_references)
 
 
+ConsistencyError = namedtuple(
+    "ConsistencyError", ("type", "team", "people"))
+
+
 def check_teamparticipation_consistency(log):
     # Check if there are any missing/spurious TeamParticipation entries.
-
     cur = cursor()
 
     # Slurp everything in.
@@ -72,14 +75,12 @@ def check_teamparticipation_consistency(log):
             "SELECT id, name FROM Person"
             " WHERE teamowner IS NOT NULL"
             "   AND merged IS NULL"))
-
     team_memberships = defaultdict(set)
     results = cur.execute(
         "SELECT team, person FROM TeamMembership"
         " WHERE status in %s", (ACTIVE_STATES,))
     for (team, person) in results:
         team_memberships[team].add(person)
-
     team_participations = defaultdict(set)
     results = cur.execute(
         "SELECT team, person FROM TeamParticipation")
@@ -90,6 +91,7 @@ def check_teamparticipation_consistency(log):
     cur.close()
     transaction.abort()
 
+    # Check team memberships.
     def get_participants(team):
         """Recurse through membership records to get participants."""
         member_people = team_memberships[team].intersection(people)
@@ -99,17 +101,21 @@ def check_teamparticipation_consistency(log):
             chain.from_iterable(imap(get_participants, member_teams)))
 
     errors = []
-    error_rec = namedtuple("error_rec", ("type", "team", "people"))
-
     for team in teams:
         participants_observed = team_participations[team]
         participants_expected = get_participants(team)
         participants_spurious = participants_expected - participants_observed
         participants_missing = participants_observed - participants_expected
         if len(participants_spurious) > 0:
-            errors.append(error_rec("spurious", team, participants_spurious))
+            error = ConsistencyError("spurious", team, participants_spurious)
+            errors.append(error)
         if len(participants_missing) > 0:
-            errors.append(error_rec("missing", team, participants_missing))
+            error = ConsistencyError("missing", team, participants_missing)
+            errors.append(error)
+
+    # TODO:
+    # - Check that the only participant of a *person* is the person.
+    # - Check that merged people and teams do not appear in TeamParticipation.
 
     def get_repr(id):
         return "%s (%d)" % (people[id] if id in people else teams[id], id)
