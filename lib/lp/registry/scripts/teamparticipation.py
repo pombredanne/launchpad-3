@@ -103,7 +103,7 @@ def check_teamparticipation_consistency(log):
     def get_participants(team):
         """Recurse through membership records to get participants."""
         member_people = team_memberships[team].intersection(people)
-        member_people.add(team)  # Teams are always members of themselves.
+        member_people.add(team)  # Teams always participate in themselves.
         member_teams = team_memberships[team].intersection(teams)
         return member_people.union(
             chain.from_iterable(imap(get_participants, member_teams)))
