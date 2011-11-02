@@ -599,7 +599,6 @@ def connect_string(user=None, dbname=None):
     return str(con_str)
 
 
-# XXX: Switch teamparticipation code to use Store.execute().
 class cursor:
     """A DB-API cursor-like object for the Storm connection.
 
@@ -618,7 +617,6 @@ class cursor:
         elif params is not None:
             query = query % sqlvalues(*params)
         self._result = self._connection.execute(query)
-        return self
 
     @property
     def rowcount(self):
@@ -635,10 +633,6 @@ class cursor:
     def fetchall(self):
         assert self._result is not None, "No results to fetch"
         return self._result.get_all()
-
-    def __iter__(self):
-        assert self._result is not None, "No results to fetch"
-        return iter(self._result)
 
     def close(self):
         if self._result is not None:
