@@ -262,6 +262,10 @@ class LaunchpadView(UserAttributeCache):
         self.request = request
         self._error_message = None
         self._info_message = None
+        # We don't have an adapter FakeRequest -> IJSONRequestCache.
+        if request is not None and not isinstance(request, FakeRequest):
+            cache = IJSONRequestCache(self.request)
+            cache.objects['beta_features'] = self.active_beta_features
 
     def initialize(self):
         """Override this in subclasses.
@@ -378,14 +382,20 @@ class LaunchpadView(UserAttributeCache):
         This property consists of all feature flags from beta_features
         whose current value is not the default value.
         """
+        # Avoid circular imports.
+        from lp.services.features.flags import flag_info
+
         def flag_in_beta_status(flag):
             return (
                 currentScope(flag) not in ('default', None) and
                 defaultFlagValue(flag) != getFeatureFlag(flag))
 
-        return [
-            flag for flag in self.beta_features if flag_in_beta_status(flag)
+        active_beta_flags = set(
+            flag for flag in self.beta_features if flag_in_beta_status(flag))
+        beta_info = [
+            info for info in flag_info if info[0] in active_beta_flags
             ]
+        return beta_info
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

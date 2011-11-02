@@ -12,8 +12,12 @@ import simplejson
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.publisher import (
+    FakeRequest,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from lp.services.features.flags import flag_info
 from lp.services.features.testing import FeatureFixture
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.testing import (
@@ -28,6 +32,16 @@ from canonical.launchpad.webapp import publisher
 class TestLaunchpadView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestLaunchpadView, self).setUp()
+        flag_info.append(
+            ('test_feature', 'boolean', 'documentation', 'default',
+             'title', 'http://wiki.lp.dev/LEP/sample'))
+
+    def tearDown(self):
+        flag_info.pop()
+        super(TestLaunchpadView, self).tearDown()
 
     def test_getCacheJSON_non_resource_context(self):
         view = LaunchpadView(object(), LaunchpadTestRequest())
@@ -58,7 +72,8 @@ class TestLaunchpadView(TestCaseWithFactory):
         view = LaunchpadView(object(), request)
         IJSONRequestCache(request).objects['my_bool'] = True
         with person_logged_in(self.factory.makePerson()):
-            self.assertEqual('{"my_bool": true}', view.getCacheJSON())
+            self.assertEqual(
+                '{"beta_features": [], "my_bool": true}', view.getCacheJSON())
 
     def test_getCacheJSON_resource_object(self):
         request = LaunchpadTestRequest()
@@ -144,7 +159,10 @@ class TestLaunchpadView(TestCaseWithFactory):
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.beta_features = ['test_feature']
-        self.assertEqual(['test_feature'], view.active_beta_features)
+        self.assertEqual(
+            [('test_feature', 'boolean', 'documentation', 'default',
+              'title', 'http://wiki.lp.dev/LEP/sample')],
+            view.active_beta_features)
 
     def makeFeatureFlagDictionaries(self, default_value, scope_value):
         # Return two dictionaries describing a feature.
@@ -170,7 +188,10 @@ class TestLaunchpadView(TestCaseWithFactory):
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         view.beta_features = ['test_feature']
-        self.assertEqual(['test_feature'], view.active_beta_features)
+        self.assertEqual(
+            [('test_feature', 'boolean', 'documentation', 'default',
+              'title', 'http://wiki.lp.dev/LEP/sample')],
+            view.active_beta_features)
 
     def test_active_beta_features__enabled_feature_with_default_same_value(
         self):
@@ -186,6 +207,28 @@ class TestLaunchpadView(TestCaseWithFactory):
         view = LaunchpadView(object(), request)
         view.beta_features = ['test_feature']
         self.assertEqual([], view.active_beta_features)
+
+    def test_cache_has_beta_features(self):
+        # The property beta_features is copied into the JSON cache.
+        class TestView(LaunchpadView):
+            beta_features = ['test_feature']
+
+        self.useFixture(FeatureFixture(
+            {}, self.makeFeatureFlagDictionaries(u'', u'on')))
+        request = LaunchpadTestRequest()
+        view = TestView(object(), request)
+        with person_logged_in(self.factory.makePerson()):
+            self.assertEqual(
+                '{"beta_features": [["test_feature", "boolean", '
+                '"documentation", "default", "title", '
+                '"http://wiki.lp.dev/LEP/sample"]]}',
+                view.getCacheJSON())
+
+    def test_view_creation_with_fake_or_none_request(self):
+        # LaunchpadView.__init__() does not crash with a FakeRequest.
+        LaunchpadView(object(), FakeRequest())
+        # Or when no request at all is passed.
+        LaunchpadView(object(), None)
 
 
 def test_suite():
