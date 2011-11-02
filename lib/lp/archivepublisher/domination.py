@@ -258,7 +258,8 @@ class Dominator:
         # Go through publications from latest version to oldest.  This
         # makes it easy to figure out which release superseded which:
         # the dominant is always the oldest live release that is newer
-        # than the one being superseded.
+        # than the one being superseded.  In this loop, that means the
+        # dominant is always the last live publication we saw.
         publications = sorted(
             publications, cmp=generalization.compare, reverse=True)
 
@@ -272,22 +273,26 @@ class Dominator:
         for pub in publications:
             version = generalization.getPackageVersion(pub)
             # There should never be two published releases with the same
-            # version.  So this comparison is really a string
-            # comparison, not a version comparison: if the versions are
-            # equal by either measure, they're from the same release.
-            if dominant_version is not None and version == dominant_version:
+            # version.  So it doesn't matter whether this comparison is
+            # really a string comparison or a version comparison: if the
+            # versions are equal by either measure, they're from the same
+            # release.
+            if version == dominant_version:
                 # This publication is for a live version, but has been
                 # superseded by a newer publication of the same version.
                 # Supersede it.
                 pub.supersede(current_dominant, logger=self.logger)
                 self.logger.debug2(
                     "Superseding older publication for version %s.", version)
-            elif (version in live_versions or
-                  (not generalization.is_source and
-                   not self._checkArchIndep(pub))):
+            elif version in live_versions:
                 # This publication stays active; if any publications
                 # that follow right after this are to be superseded,
                 # this is the release that they are superseded by.
+                current_dominant = pub
+                dominant_version = version
+                self.logger.debug2("Keeping version %s.", version)
+            elif not (generalization.is_source or self._checkArchIndep(pub)):
+                # As a special case, we keep this version live as well.
                 current_dominant = pub
                 dominant_version = version
                 self.logger.debug2("Keeping version %s.", version)
