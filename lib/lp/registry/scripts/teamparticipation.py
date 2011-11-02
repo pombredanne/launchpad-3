@@ -45,9 +45,11 @@ def check_teamparticipation_self(log):
     """
     query = """
         SELECT id, name
-        FROM Person WHERE id NOT IN (
-            SELECT person FROM Teamparticipation WHERE person = team
-            ) AND merged IS NULL
+          FROM Person
+         WHERE id NOT IN (
+            SELECT person FROM TeamParticipation
+             WHERE person = team)
+           AND merged IS NULL
         """
     non_self_participants = list(get_store().execute(query))
     if len(non_self_participants) > 0:
@@ -63,10 +65,11 @@ def check_teamparticipation_circular(log):
     """
     query = """
         SELECT tp.team, tp2.team
-        FROM teamparticipation AS tp, teamparticipation AS tp2
-        WHERE tp.team = tp2.person
-            AND tp.person = tp2.team
-            AND tp.id != tp2.id;
+          FROM TeamParticipation AS tp,
+               TeamParticipation AS tp2
+         WHERE tp.team = tp2.person
+           AND tp.person = tp2.team
+           AND tp.id != tp2.id;
         """
     circular_references = list(get_store().execute(query))
     if len(circular_references) > 0:
