@@ -59,6 +59,10 @@ class BugsubscriptionPrivacyTests(TestCaseWithFactory):
             harness.submit('add', form_data)
         subscription = removeSecurityProxy(self.bug).getSubscriptionForPerson(
             team)
+        error_msg = harness.getFieldError('person')
+        expected_msg = (u'Open and delegated teams cannot be subscribed to '
+            'private bugs.')
+        self.assertEqual(expected_msg, error_msg)
         self.assertIs(None, subscription)
 
     def test_open_team_cannot_be_subscribed_to_private_bug(self):
