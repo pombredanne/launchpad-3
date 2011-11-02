@@ -3463,36 +3463,38 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return self.context.users_affected_count
 
-    @property
+    @cachedproperty
     def affected_statement(self):
         """The default "this bug affects" statement to show.
 
         The outputs of this method should be mirrored in
         MeTooChoiceSource._getSourceNames() (Javascript).
         """
-        if self.other_users_affected_count == 1:
-            if self.current_user_affected_status is None:
+        total_affected = self.context.users_affected_count_with_dupes
+        me_affected = self.current_user_affected_status
+        if me_affected is None:
+            if total_affected == 1:
                 return "This bug affects 1 person. Does this bug affect you?"
-            elif self.current_user_affected_status:
-                return "This bug affects you and 1 other person"
-            else:
-                return "This bug affects 1 person, but not you"
-        elif self.other_users_affected_count > 1:
-            if self.current_user_affected_status is None:
+            elif total_affected > 1:
                 return (
                     "This bug affects %d people. Does this bug "
-                    "affect you?" % (self.other_users_affected_count))
-            elif self.current_user_affected_status:
-                return "This bug affects you and %d other people" % (
-                    self.other_users_affected_count)
+                    "affect you?" % (total_affected))
             else:
-                return "This bug affects %d people, but not you" % (
-                    self.other_users_affected_count)
-        else:
-            if self.current_user_affected_status is None:
                 return "Does this bug affect you?"
-            elif self.current_user_affected_status:
+        elif me_affected is True:
+            if total_affected == 1:
+                return "This bug affects you and 1 other person"
+            elif total_affected > 1:
+                return "This bug affects you and %d other people" % (
+                    total_affected - 1)
+            else:
                 return "This bug affects you"
+        else:
+            if total_affected == 1:
+                return "This bug affects 1 person, but not you"
+            elif total_affected > 1:
+                return "This bug affects %d people, but not you" % (
+                    total_affected)
             else:
                 return "This bug doesn't affect you"
 
