@@ -26,10 +26,17 @@
         </div>
         <div class="buginfo-extras">
             {{#show_bugtarget}}
-            <div class="{{bugtarget_css}}">
+            <span class="{{bugtarget_css}}">
               {{bugtarget}}
-            </div>
+            </span>
             {{/show_bugtarget}}
+            {{#show_milestone_name}}
+            {{#milestone_name}}
+            <span style="margin-left: 1em;" class="sprite milestone">
+                {{milestone_name}}
+            </span>
+            {{/milestone_name}}
+            {{/show_milestone_name}}
         </div>
     </div>
 

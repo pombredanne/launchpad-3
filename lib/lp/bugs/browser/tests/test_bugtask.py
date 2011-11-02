@@ -1475,27 +1475,25 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     def getNavigator(self):
         request = LaunchpadTestRequest()
+        navigator = BugListingBatchNavigator([], request, [], 1)
         cache = IJSONRequestCache(request)
+        bugtask = {
+            'id': '3.14159',
+            'title':'title1',
+            'status': 'status1',
+            'importance': 'importance1',
+            'importance_class': 'importance_class1',
+            'bugtarget': 'bugtarget1',
+            'bugtarget_css': 'bugtarget_css1',
+            'bug_heat_html': 'bug_heat_html1',
+            'bug_url': 'bug_url1',
+            'milestone_name': 'milestone_name1'
+        }
+        bugtask.update(navigator.field_visibility)
         cache.objects['mustache_model'] = {
-                'bugtasks': [{
-                    'id': '3.14159',
-                    'title':'title1',
-                    'status': 'status1',
-                    'importance': 'importance1',
-                    'importance_class': 'importance_class1',
-                    'bugtarget': 'bugtarget1',
-                    'bugtarget_css': 'bugtarget_css1',
-                    'bug_heat_html': 'bug_heat_html1',
-                    'bug_url': 'bug_url1',
-                    'show_bugtarget': True,
-                    'show_bug_heat': True,
-                    'show_id': True,
-                    'show_status': True,
-                    'show_importance': True,
-                    }],
+            'bugtasks': [bugtask],
         }
         mustache_model = cache.objects['mustache_model']
-        navigator = BugListingBatchNavigator([], request, [], 1)
         return navigator, mustache_model
 
     def test_hiding_bug_number(self):
@@ -1542,6 +1540,12 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertNotIn('title1', navigator.mustache)
         self.assertIn('bug_url1', navigator.mustache)
 
+    def test_hiding_milstone_name(self):
+        navigator, mustache_model = self.getNavigator()
+        self.assertNotIn('milestone_name1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_milestone_name'] = True
+        self.assertIn('milestone_name1', navigator.mustache)
+
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
 
@@ -1577,3 +1581,8 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             self.assertEqual(
                 '<span alt="private" title="Private" class="sprite private">'
                 '&nbsp;</span>', model['badges'])
+            self.assertEqual(None, model['milestone_name'])
+            item.bugtask.milestone = self.factory.makeMilestone(
+                product=item.bugtask.target)
+            milestone_name = item.milestone.displayname
+            self.assertEqual(milestone_name, item.model['milestone_name'])

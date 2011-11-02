@@ -2145,6 +2145,10 @@ class BugTaskListingItem:
         """Provide flattened data about bugtask for simple templaters."""
         badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
         target_image = getAdapter(self.target, IPathAdapter, 'image')
+        if self.bugtask.milestone is not None:
+            milestone_name = self.bugtask.milestone.displayname
+        else:
+            milestone_name = None
         return {
             'importance': self.importance.title,
             'importance_class': 'importance' + self.importance.name,
@@ -2157,6 +2161,7 @@ class BugTaskListingItem:
             'bugtarget_css': target_image.sprite_css(),
             'bug_heat_html': self.bug_heat_html,
             'badges': badges,
+            'milestone_name': milestone_name,
             }
 
 
@@ -2169,6 +2174,15 @@ class BugListingBatchNavigator(TableBatchNavigator):
         # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
+        self.field_visibility = {
+            'show_bugtarget': True,
+            'show_bug_heat': True,
+            'show_id': True,
+            'show_importance': True,
+            'show_status': True,
+            'show_title': True,
+            'show_milestone_name': False,
+        }
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -2223,12 +2237,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def model(self):
         bugtasks = [bugtask.model for bugtask in self.getBugListingItems()]
         for bugtask in bugtasks:
-            bugtask['show_bugtarget'] = True
-            bugtask['show_bug_heat'] = True
-            bugtask['show_id'] = True
-            bugtask['show_importance'] = True
-            bugtask['show_status'] = True
-            bugtask['show_title'] = True
+            bugtask.update(self.field_visibility)
         return {'bugtasks': bugtasks}
 
 
