@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -346,15 +346,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     user_error_types = (UpdatePreviewDiffNotReady, )
 
-    retry_error_types = [BranchHasPendingWrites]
+    retry_error_types = (BranchHasPendingWrites, )
 
-    @classmethod
-    def create(cls, bmp):
-        """See `IMergeProposalCreationJob`."""
-        job = BranchMergeProposalJob(
-            bmp, cls.class_job_type, {})
-        job.max_retries = 20
-        return cls(job)
+    max_retries = 20
 
     def checkReady(self):
         """Is this job ready to run?"""
