@@ -18,10 +18,21 @@ from itertools import (
     )
 
 import transaction
+from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.registry.interfaces.teammembership import ACTIVE_STATES
 from lp.services.scripts.base import LaunchpadScriptFailure
+
+
+def get_store():
+    # Return a slave store.
+    return getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
 
 
 def check_teamparticipation_self(log):
@@ -32,12 +43,11 @@ def check_teamparticipation_self(log):
             SELECT person FROM Teamparticipation WHERE person = team
             ) AND merged IS NULL
         """
-    cur = cursor()
-    cur.execute(query)
-    non_self_participants = cur.fetchall()
+    non_self_participants = list(get_store().execute(query))
     if len(non_self_participants) > 0:
-        log.warn("Some people/teams are not members of themselves: %s"
-                 % non_self_participants)
+        log.warn(
+            "Some people/teams are not members of themselves: %s",
+            non_self_participants)
 
 
 def check_teamparticipation_circular(log):
