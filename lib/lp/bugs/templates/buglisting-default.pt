@@ -19,27 +19,11 @@
     <script type="text/javascript"
       tal:condition="not: view/shouldShowAdvancedForm">
     LPS.use('lp.registry.structural_subscription', 'lp.bugs.buglisting',
-            'lp.ordering', function(Y) {
+            function(Y) {
         Y.on('domready', function() {
             Y.lp.registry.structural_subscription.setup(
                 {content_box: "#structural-subscription-content-box"});
             var navigator = Y.lp.bugs.buglisting.ListingNavigator.from_page();
-            var orderby = new Y.lp.ordering.OrderByBar({
-                srcNode: Y.one('#bugs-orderby'),
-                sort_keys: [
-                    ['id', 'Bug number'],
-                    ['title', 'Bug title'],
-                    ['importance', 'Importance'],
-                    ['status', 'Status'],
-                    ['heat', 'Bug heat']
-                ],
-                active: 'importance',
-                sort_order: 'desc'
-            });
-            orderby.render();
-            Y.on('orderbybar:sort', function(e) {
-                navigator.first_batch(e);
-            });
         });
     });
   </script>
