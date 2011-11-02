@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""XXX: Module docstring goes here."""
+"""Script code relating to team participations."""
 
 __metaclass__ = type
 __all__ = [
@@ -31,12 +31,18 @@ from lp.services.scripts.base import LaunchpadScriptFailure
 
 
 def get_store():
-    # Return a slave store.
+    """Return a slave store.
+
+    Errors in `TeamPartipation` can be detected using a replicated copy.
+    """
     return getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
 
 
 def check_teamparticipation_self(log):
-    # Check self-participation.
+    """Check self-participation.
+
+    All people and teams should participate in themselves.
+    """
     query = """
         SELECT id, name
         FROM Person WHERE id NOT IN (
@@ -51,7 +57,10 @@ def check_teamparticipation_self(log):
 
 
 def check_teamparticipation_circular(log):
-    # Check if there are any circular references between teams.
+    """Check circular references.
+
+    There can be no mutual participation between teams.
+    """
     query = """
         SELECT tp.team, tp2.team
         FROM teamparticipation AS tp, teamparticipation AS tp2
@@ -70,7 +79,11 @@ ConsistencyError = namedtuple(
 
 
 def check_teamparticipation_consistency(log):
-    # Check if there are any missing/spurious TeamParticipation entries.
+    """Check for missing or spurious participations.
+
+    For example, participations for people who are not members, or missing
+    participations for people who are members.
+    """
     store = get_store()
 
     # Slurp everything in.
@@ -138,9 +151,7 @@ def check_teamparticipation_consistency(log):
 
 
 def check_teamparticipation(log):
-    # Check self-participation.
+    """Perform various checks on the `TeamParticipation` table."""
     check_teamparticipation_self(log)
-    # Check if there are any circular references between teams.
     check_teamparticipation_circular(log)
-    # Check if there are any missing/spurious TeamParticipation entries.
     check_teamparticipation_consistency(log)
