@@ -2223,9 +2223,11 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def model(self):
         bugtasks = [bugtask.model for bugtask in self.getBugListingItems()]
         for bugtask in bugtasks:
+            bugtask['show_bugtarget'] = True
+            bugtask['show_bug_heat'] = True
             bugtask['show_id'] = True
-            bugtask['show_status'] = True
             bugtask['show_importance'] = True
+            bugtask['show_status'] = True
         return {'bugtasks': bugtasks}
 
 
