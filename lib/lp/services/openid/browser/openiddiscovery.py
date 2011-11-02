@@ -78,5 +78,3 @@ class XRDSContentNegotiationMixin:
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
         return CurrentOpenIDEndPoint.getServiceURL()
-
-

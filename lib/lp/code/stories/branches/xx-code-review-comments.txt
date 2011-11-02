@@ -12,11 +12,6 @@ Set up required objects
     >>> merge_proposal_url = canonical_url(merge_proposal)
     >>> merge_proposal_path = canonical_url(
     ...     merge_proposal, force_local_path=True)
-    >>> # Enable the picker_enhancements feature to test the commenter name.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
     >>> logout()
 
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
@@ -194,7 +189,3 @@ shown as part of the conversation at the time they were pushed to Launchpad.
     Testing commits in conversation
     4. By ... on 2009-09-12
     and it works!
-
-Clean up the feature flag.
-
-    >>> flags.cleanUp()

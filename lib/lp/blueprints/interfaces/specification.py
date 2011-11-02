@@ -593,7 +593,7 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
     @export_write_operation()
     @operation_for_version('devel')
     def linkBug(bug):
-        """Link a bug to this branch.
+        """Link a bug to this specification.
 
         :param bug: IBug to link.
         """
@@ -603,7 +603,7 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
     @export_write_operation()
     @operation_for_version('devel')
     def unlinkBug(bug):
-        """Unlink a bug to this branch.
+        """Unlink a bug to this specification.
 
         :param bug: IBug to unlink.
         """

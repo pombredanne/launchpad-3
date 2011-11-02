@@ -4,10 +4,13 @@
 __metaclass__ = type
 
 from datetime import timedelta
+import transaction
 import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restfulclient.errors import Unauthorized
+from testtools.testcase import ExpectedException
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.event import notify
@@ -18,9 +21,15 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import (
     all,
     any,
+    not_equals,
+    )
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
+    clear_cache,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -32,6 +41,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    CannotDeleteBugtask,
     DB_UNRESOLVED_BUGTASK_STATUSES,
     IBugTaskSet,
     RESOLVED_BUGTASK_STATUSES,
@@ -41,6 +51,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
+    BugTaskSet,
     build_tag_search_clause,
     IllegalTarget,
     validate_new_target,
@@ -58,12 +69,14 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
     ANONYMOUS,
     EventRecorder,
     feature_flags,
     login,
+    login_celebrity,
     login_person,
     logout,
     normalize_whitespace,
@@ -72,6 +85,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
+    ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
@@ -190,6 +204,74 @@ class TestBugTaskDelta(TestCaseWithFactory):
             bug_task_before_modification, bug_task,
             importance=dict(old=bug_task_before_modification.importance,
                             new=bug_task.importance))
+
+
+class TestBugTaskSetStatusSearchClauses(TestCase):
+    # BugTaskSets contain a utility function that generates SQL WHERE clauses
+    # used to find sets of bugs.  These tests exercise that utility function.
+
+    def searchClause(self, status_spec):
+        return BugTaskSet._buildStatusClause(status_spec)
+
+    def test_simple_queries(self):
+        # WHERE clauses for simple status values are straightforward.
+        self.assertEqual(
+            '(BugTask.status = 10)',
+            self.searchClause(BugTaskStatus.NEW))
+        self.assertEqual(
+            '(BugTask.status = 16)',
+            self.searchClause(BugTaskStatus.OPINION))
+        self.assertEqual(
+            '(BugTask.status = 22)',
+            self.searchClause(BugTaskStatus.INPROGRESS))
+
+    def test_INCOMPLETE_query(self):
+        # Since we don't really store INCOMPLETE in the DB but instead store
+        # values with finer shades of meaning, asking for INCOMPLETE will
+        # result in a clause that actually matches multiple statuses.
+        self.assertEqual(
+            '(BugTask.status IN (13,14))',
+            self.searchClause(BugTaskStatus.INCOMPLETE))
+
+    def test_negative_query(self):
+        # If a negative is requested then the WHERE clause is simply wrapped
+        # in a "NOT".
+        status = BugTaskStatus.INCOMPLETE
+        base_query = self.searchClause(status)
+        expected_negative_query = '(NOT {0})'.format(base_query)
+        self.assertEqual(
+            expected_negative_query,
+            self.searchClause(not_equals(status)))
+
+    def test_any_query(self):
+        # An "any" object may be passed in containing a set of statuses to
+        # return.  The resulting SQL uses IN in an effort to be optimal.
+        self.assertEqual(
+            '(BugTask.status IN (10,16))',
+            self.searchClause(any(BugTaskStatus.NEW, BugTaskStatus.OPINION)))
+
+    def test_any_query_with_INCOMPLETE(self):
+        # Since INCOMPLETE is not a single-value status (see above) an "any"
+        # query that includes INCOMPLETE will cause more enum values to be
+        # included in the IN clause than were given.  Note that we go to a bit
+        # of effort to generate an IN expression instead of a series of
+        # ORed-together equality checks.
+        self.assertEqual(
+            '(BugTask.status IN (10,13,14))',
+            self.searchClause(
+                any(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)))
+
+    def test_all_query(self):
+        # Since status is single-valued, asking for "all" statuses in a set
+        # doesn't make any sense.
+        with ExpectedException(ValueError):
+            self.searchClause(
+                all(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE))
+
+    def test_bad_value(self):
+        # If an unrecognized status is provided then an error is raised.
+        with ExpectedException(ValueError):
+            self.searchClause('this-is-not-a-status')
 
 
 class TestBugTaskTagSearchClauses(TestCase):
@@ -1385,6 +1467,121 @@ class TestBugTaskContributor(TestCaseWithFactory):
             bug.default_bugtask.pillar.displayname, result['pillar_name'])
 
 
+class TestBugTaskDeletion(TestCaseWithFactory):
+    """Test the different cases that makes a bugtask deletable or not."""
+
+    layer = DatabaseFunctionalLayer
+
+    flags = {u"disclosure.delete_bugtask.enabled": u"on"}
+
+    def test_cannot_delete_if_not_logged_in(self):
+        # You cannot delete a bug task if not logged in.
+        bug = self.factory.makeBug()
+        with FeatureFixture(self.flags):
+            self.assertFalse(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+
+    def test_unauthorised_cannot_delete(self):
+        # Unauthorised users cannot delete a bug task.
+        bug = self.factory.makeBug()
+        unauthorised = self.factory.makePerson()
+        login_person(unauthorised)
+        with FeatureFixture(self.flags):
+            self.assertFalse(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+
+    def test_admin_can_delete(self):
+        # With the feature flag on, an admin can delete a bug task.
+        bug = self.factory.makeBug()
+        login_celebrity('admin')
+        with FeatureFixture(self.flags):
+            self.assertTrue(
+                check_permission('launchpad.Admin', bug.default_bugtask))
+        # Admins can also the task even without the feature flag.
+        clear_cache()
+        self.assertTrue(
+            check_permission('launchpad.Admin', bug.default_bugtask))
+
+    def test_pillar_owner_can_delete(self):
+        # With the feature flag on, the pillar owner can delete a bug task.
+        bug = self.factory.makeBug()
+        login_person(bug.default_bugtask.pillar.owner)
+        with FeatureFixture(self.flags):
+            self.assertTrue(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+        # They can't delete the task without the feature flag.
+        clear_cache()
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
+
+    def test_bug_supervisor_can_delete(self):
+        # With the feature flag on, the bug supervisor can delete a bug task.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        bug = self.factory.makeBug(product=product)
+        login_person(bug_supervisor)
+        with FeatureFixture(self.flags):
+            self.assertTrue(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+        # They can't delete the task without the feature flag.
+        clear_cache()
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
+
+    def test_task_reporter_can_delete(self):
+        # With the feature flag on, the bug task reporter can delete bug task.
+        bug = self.factory.makeBug()
+        login_person(bug.default_bugtask.owner)
+        with FeatureFixture(self.flags):
+            self.assertTrue(
+                check_permission('launchpad.Delete', bug.default_bugtask))
+        # They can't delete the task without the feature flag.
+        clear_cache()
+        self.assertFalse(
+            check_permission('launchpad.Delete', bug.default_bugtask))
+
+    def test_cannot_delete_only_bugtask(self):
+        # The only bugtask cannot be deleted.
+        bug = self.factory.makeBug()
+        bugtask = bug.default_bugtask
+        login_person(bugtask.owner)
+        with FeatureFixture(self.flags):
+            self.assertRaises(CannotDeleteBugtask, bugtask.delete)
+
+    def test_delete_bugtask(self):
+        # A bugtask can be deleted.
+        bug = self.factory.makeBug()
+        bugtask = self.factory.makeBugTask(bug=bug)
+        bug = bugtask.bug
+        login_person(bugtask.owner)
+        with FeatureFixture(self.flags):
+            bugtask.delete()
+        self.assertEqual([bug.default_bugtask], bug.bugtasks)
+
+    def test_delete_default_bugtask(self):
+        # The default bugtask can be deleted.
+        bug = self.factory.makeBug()
+        bugtask = self.factory.makeBugTask(bug=bug)
+        bug = bugtask.bug
+        login_person(bug.default_bugtask.owner)
+        with FeatureFixture(self.flags):
+            bug.default_bugtask.delete()
+        self.assertEqual([bugtask], bug.bugtasks)
+        self.assertEqual(bugtask, bug.default_bugtask)
+
+    def test_bug_heat_updated(self):
+        # Test that the bug heat is updated when a bugtask is deleted.
+        bug = self.factory.makeBug()
+        distro = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
+        login_person(distro.owner)
+        dsp_task = bug.addTask(bug.owner, dsp)
+        self.assertTrue(dsp.total_bug_heat > 0)
+        with FeatureFixture(self.flags):
+            dsp_task.delete()
+        self.assertTrue(dsp.total_bug_heat == 0)
+
+
 class TestConjoinedBugTasks(TestCaseWithFactory):
     """Tests for conjoined bug task functionality."""
 
@@ -2080,9 +2277,112 @@ class TestBugTargetKeys(TestCaseWithFactory):
             AssertionError, bug_target_from_key, None, None, None, None, None)
 
 
-class TestValidateTarget(TestCaseWithFactory):
+class ValidateTargetMixin:
+    """ A mixin used to test validate_target and validate_new_target when used
+        a private bugs to check for multi-tenant constraints.
+    """
+
+    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+
+    def test_private_multi_tenanted_forbidden(self):
+        # A new task project cannot be added if there is already one from
+        # another pillar.
+        d = self.factory.makeDistribution()
+        bug = self.factory.makeBug(distribution=d)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
+        p = self.factory.makeProduct()
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % d.displayname,
+                self.validate_method, bug, p)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                self.validate_method(bug, p)
+
+    def test_private_incorrect_pillar_task_forbidden(self):
+        # A product or distro cannot be added if there is already a bugtask.
+        p1 = self.factory.makeProduct()
+        p2 = self.factory.makeProduct()
+        d = self.factory.makeDistribution()
+        bug = self.factory.makeBug(product=p1)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % p1.displayname,
+                self.validate_method, bug, p2)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % p1.displayname,
+                self.validate_method, bug, d)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                self.validate_method(bug, p2)
+
+    def test_private_incorrect_product_series_task_forbidden(self):
+        # A product series cannot be added if there is already a bugtask for
+        # a different product.
+        p1 = self.factory.makeProduct()
+        p2 = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=p2)
+        bug = self.factory.makeBug(product=p1)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % p1.displayname,
+                self.validate_method, bug, series)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                self.validate_method(bug, series)
+
+    def test_private_incorrect_distro_series_task_forbidden(self):
+        # A distro series cannot be added if there is already a bugtask for
+        # a different distro.
+        d1 = self.factory.makeDistribution()
+        d2 = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=d2)
+        bug = self.factory.makeBug(distribution=d1)
+        if not self.multi_tenant_test_one_task_only:
+            self.factory.makeBugTask(bug=bug)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % d1.displayname,
+                self.validate_method, bug, series)
+            # It works with the feature flag
+            with FeatureFixture(self.feature_flag):
+                self.validate_method(bug, series)
+
+
+class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
 
     layer = DatabaseFunctionalLayer
+
+    multi_tenant_test_one_task_only = False
+
+    @property
+    def validate_method(self):
+        # Used for ValidateTargetMixin.
+        return validate_target
 
     def test_new_product_is_allowed(self):
         # A new product not on the bug is OK.
@@ -2212,9 +2512,16 @@ class TestValidateTarget(TestCaseWithFactory):
             validate_target, task.bug, dsp)
 
 
-class TestValidateNewTarget(TestCaseWithFactory):
+class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
 
     layer = DatabaseFunctionalLayer
+
+    multi_tenant_test_one_task_only = True
+
+    @property
+    def validate_method(self):
+        # Used for ValidateTargetMixin.
+        return validate_new_target
 
     def test_products_are_ok(self):
         p1 = self.factory.makeProduct()
@@ -2252,3 +2559,32 @@ class TestValidateNewTarget(TestCaseWithFactory):
             "package in which the bug has not yet been reported."
             % d.displayname,
             validate_new_target, task.bug, d)
+
+
+class TestWebservice(TestCaseWithFactory):
+    """Tests for the webservice."""
+
+    layer = AppServerLayer
+
+    def test_delete_bugtask(self):
+        """Test that a bugtask can be deleted with the feature flag on."""
+        owner = self.factory.makePerson()
+        db_bug = self.factory.makeBug()
+        db_bugtask = self.factory.makeBugTask(bug=db_bug, owner=owner)
+        transaction.commit()
+        logout()
+
+        # It will fail without feature flag enabled.
+        launchpad = self.factory.makeLaunchpadService(owner)
+        bugtask = ws_object(launchpad, db_bugtask)
+        self.assertRaises(Unauthorized, bugtask.lp_delete)
+
+        flags = {u"disclosure.delete_bugtask.enabled": u"on"}
+        with FeatureFixture(flags):
+            launchpad = self.factory.makeLaunchpadService(owner)
+            bugtask = ws_object(launchpad, db_bugtask)
+            bugtask.lp_delete()
+            transaction.commit()
+        # Check the delete really worked.
+        with person_logged_in(removeSecurityProxy(db_bug).owner):
+            self.assertEqual([db_bug.default_bugtask], db_bug.bugtasks)

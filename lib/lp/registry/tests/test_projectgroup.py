@@ -7,7 +7,6 @@ from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -153,15 +152,13 @@ class TestLaunchpadlibAPI(TestCaseWithFactory):
         # Make sure a 400 error and not an OOPS is returned when a ValueError
         # is raised when trying to deactivate a project that has source
         # releases.
-        last_oops = globalErrorUtility.getLastOopsReport()
-
         launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
         project = launchpad.projects['evolution']
         project.active = False
         e = self.assertRaises(ClientError, project.lp_save)
 
         # no OOPS was generated as a result of the exception
-        self.assertNoNewOops(last_oops)
+        self.assertEqual([], self.oopses)
         self.assertEqual(400, e.response.status)
         self.assertIn(
             'This project cannot be deactivated since it is linked to source '

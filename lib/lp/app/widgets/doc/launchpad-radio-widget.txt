@@ -1,4 +1,5 @@
-= LaunchpadRadioWidget =
+LaunchpadRadioWidget
+====================
 
 There are two Launchpad radio widgets, one that shows descriptions,
 and one that doesn't.
@@ -35,7 +36,8 @@ buttons inside.
            type="radio" value="REMOTE" />&nbsp;Remote
 
 
-= LaunchpadRadioWidgetWithDescription =
+LaunchpadRadioWidgetWithDescription
+-----------------------------------
 
 The LaunchpadRadioWidgetWithDescription widget renders the descriptions
 along with the titles from the enumerated type vocabulary.

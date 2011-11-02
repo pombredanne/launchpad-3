@@ -24,19 +24,12 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.matchers import HasQueryCount
-
-
-PERSON_AFFILIATION_RANK_FLAG = {
-    'disclosure.picker_enhancements.enabled': 'on',
-    'disclosure.person_affiliation_rank.enabled': 'on',
-    }
 
 
 class VocabularyTestBase:
@@ -88,7 +81,6 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
                 value, person.id, None, **kwargs)
 
     def test_people_with_karma_sort_higher(self):
-        self.useFixture(FeatureFixture(PERSON_AFFILIATION_RANK_FLAG))
         exact_person = self.factory.makePerson(
             name='fooix', displayname='Fooix Bar')
         prefix_person = self.factory.makePerson(
@@ -125,8 +117,7 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
             expected,
             removeSecurityProxy(
                 self.getVocabulary(context))._karma_context_constraint)
-        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
-            self.searchVocabulary(context, 'foo')
+        self.searchVocabulary(context, 'foo')
 
     def test_product_karma_context(self):
         self.assertKarmaContextConstraint(
@@ -147,9 +138,8 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
         person = self.factory.makePerson()
         irc = getUtility(IIrcIDSet).new(
             person, 'somenet', 'MiXeD' + self.factory.getUniqueString())
-        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
-            self.assertContentEqual(
-                [person], self.searchVocabulary(person, irc.nickname.lower()))
+        self.assertContentEqual(
+            [person], self.searchVocabulary(person, irc.nickname.lower()))
 
     def _person_filter_tests(self, person):
         results = self.searchVocabulary(None, '', 'PERSON')
@@ -159,14 +149,11 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
         self.assertEqual([person], list(results))
 
     def test_person_filter(self):
-        # Test that the person filter only returns people
-        # (with and without feature flag).
+        # Test that the person filter only returns people.
         person = self.factory.makePerson(
             name="fredperson", email="fredperson@foo.com")
         self.factory.makeTeam(
             name="fredteam", email="fredteam@foo.com")
-        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
-            self._person_filter_tests(person)
         self._person_filter_tests(person)
 
     def _team_filter_tests(self, team):
@@ -178,13 +165,11 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
 
     def test_team_filter(self):
         # Test that the team filter only returns teams.
-        # (with and without feature flag).
         self.factory.makePerson(
             name="fredperson", email="fredperson@foo.com")
         team = self.factory.makeTeam(
             name="fredteam", email="fredteam@foo.com")
-        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
-            self._team_filter_tests(team)
+        self._team_filter_tests(team)
         self._team_filter_tests(team)
 
 
@@ -213,8 +198,7 @@ class TestValidPersonOrTeamPreloading(VocabularyTestBase,
             (person.id, person.preferredemail) for person in people)
         Store.of(people[0]).invalidate()
 
-        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
-            results = list(self.searchVocabulary(None, u'foobar'))
+        results = list(self.searchVocabulary(None, u'foobar'))
         with StormStatementRecorder() as recorder:
             self.assertEquals(4, len(results))
             for person in results:
