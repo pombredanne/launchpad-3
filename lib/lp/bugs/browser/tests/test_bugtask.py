@@ -690,6 +690,37 @@ class TestBugTaskDeleteLinks(TestCaseWithFactory):
                 'bugtask-delete-task%d' % bug.default_bugtask.id)
             self.assertIsNone(delete_icon)
 
+    def test_client_cache_contents(self):
+        """ Test that the client cache contains the expected data.
+
+            The cache data is used by the Javascript to enable the delete
+            links to work as expected.
+            """
+        bug = self.factory.makeBug()
+        bugtask_owner = self.factory.makePerson()
+        bugtask = self.factory.makeBugTask(bug=bug, owner=bugtask_owner)
+        with FeatureFixture(DELETE_BUGTASK_ENABLED):
+            login_person(bugtask.owner)
+            getUtility(ILaunchBag).add(bug.default_bugtask)
+            view = create_initialized_view(
+                bug, name='+bugtasks-and-nominations-table',
+                principal=bugtask.owner)
+            view.render()
+            cache = IJSONRequestCache(view.request)
+            all_bugtask_data = cache.objects['bugtask_data']
+
+            def check_bugtask_data(bugtask, can_delete):
+                self.assertIn(bugtask.id, all_bugtask_data)
+                bugtask_data = all_bugtask_data[bugtask.id]
+                self.assertEqual(
+                    'task%d' % bugtask.id, bugtask_data['form_row_id'])
+                self.assertEqual(
+                    'tasksummary%d' % bugtask.id, bugtask_data['row_id'])
+                self.assertEqual(can_delete, bugtask_data['user_can_delete'])
+
+            check_bugtask_data(bug.default_bugtask, False)
+            check_bugtask_data(bugtask, True)
+
 
 class TestBugTaskDeleteView(TestCaseWithFactory):
     """Test the bug task delete form."""
