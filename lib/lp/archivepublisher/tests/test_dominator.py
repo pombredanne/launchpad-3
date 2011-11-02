@@ -30,6 +30,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import HasQueryCount
 
 
@@ -72,13 +73,9 @@ class TestDominator(TestNativePublishingBase):
             is_source=ISourcePackagePublishingHistory.providedBy(dominant))
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
-        # The _dominate* test methods require a dictionary where the
-        # package name is the key. The key's value is a list of
-        # source or binary packages representing dominant, the first element
-        # and dominated, the subsequents.
-        pubs = {'foo': [dominant, dominated]}
-
-        dominator._dominatePublications(pubs, generalization)
+        pubs = [dominant, dominated]
+        live_versions = [generalization.getPackageVersion(dominant)]
+        dominator.dominatePackage(pubs, live_versions, generalization)
         flush_database_updates()
 
         # The dominant version remains correctly published.
@@ -158,16 +155,30 @@ class TestDominator(TestNativePublishingBase):
             [foo_10_source] + foo_10_binaries,
             PackagePublishingStatus.SUPERSEDED)
 
-    def testEmptyDomination(self):
-        """Domination asserts for not empty input list."""
+    def test_dominateBinaries_rejects_empty_publication_list(self):
+        """Domination asserts for non-empty input list."""
+        package = self.factory.makeBinaryPackageName()
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-        pubs = {'foo': []}
+        dominator.mapPackages = FakeMethod({package.name: []})
         # This isn't a really good exception. It should probably be
         # something more indicative of bad input.
         self.assertRaises(
             AssertionError,
-            dominator._dominatePublications,
-            pubs, GeneralizedPublication(True))
+            dominator.dominateBinaries,
+            self.factory.makeDistroArchSeries().distroseries,
+            self.factory.getAnyPocket())
+
+    def test_dominateSources_rejects_empty_publication_list(self):
+        """Domination asserts for non-empty input list."""
+        package = self.factory.makeSourcePackageName()
+        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
+        dominator.mapPackages = FakeMethod({package.name: []})
+        # This isn't a really good exception. It should probably be
+        # something more indicative of bad input.
+        self.assertRaises(
+            AssertionError,
+            dominator.dominateSources,
+            self.factory.makeDistroSeries(), self.factory.getAnyPocket())
 
     def test_archall_domination(self):
         # Arch-all binaries should not be dominated when a new source
@@ -591,9 +602,10 @@ class TestDominatorMethods(TestCaseWithFactory):
     def test_dominatePackage_supersedes_older_pub_with_newer_live_pub(self):
         # When marking a package as superseded, dominatePackage
         # designates a newer live version as the superseding version.
+        generalization = GeneralizedPublication(True)
         pubs = make_spphs_for_versions(self.factory, ['1.0', '1.1'])
         self.makeDominator(pubs).dominatePackage(
-            pubs, ['1.1'], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), ['1.1'], generalization)
         self.assertEqual(PackagePublishingStatus.SUPERSEDED, pubs[0].status)
         self.assertEqual(pubs[1].sourcepackagerelease, pubs[0].supersededby)
         self.assertEqual(PackagePublishingStatus.PUBLISHED, pubs[1].status)
@@ -601,10 +613,11 @@ class TestDominatorMethods(TestCaseWithFactory):
     def test_dominatePackage_only_supersedes_with_live_pub(self):
         # When marking a package as superseded, dominatePackage will
         # only pick a live version as the superseding one.
+        generalization = GeneralizedPublication(True)
         pubs = make_spphs_for_versions(
             self.factory, ['1.0', '2.0', '3.0', '4.0'])
         self.makeDominator(pubs).dominatePackage(
-            pubs, ['3.0'], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), ['3.0'], generalization)
         self.assertEqual([
                 pubs[2].sourcepackagerelease,
                 pubs[2].sourcepackagerelease,
@@ -616,23 +629,27 @@ class TestDominatorMethods(TestCaseWithFactory):
     def test_dominatePackage_supersedes_with_oldest_newer_live_pub(self):
         # When marking a package as superseded, dominatePackage picks
         # the oldest of the newer, live versions as the superseding one.
+        generalization = GeneralizedPublication(True)
         pubs = make_spphs_for_versions(self.factory, ['2.7', '2.8', '2.9'])
         self.makeDominator(pubs).dominatePackage(
-            pubs, ['2.8', '2.9'], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), ['2.8', '2.9'],
+            generalization)
         self.assertEqual(pubs[1].sourcepackagerelease, pubs[0].supersededby)
 
     def test_dominatePackage_only_supersedes_with_newer_live_pub(self):
         # When marking a package as superseded, dominatePackage only
         # considers a newer version as the superseding one.
+        generalization = GeneralizedPublication(True)
         pubs = make_spphs_for_versions(self.factory, ['0.1', '0.2'])
         self.makeDominator(pubs).dominatePackage(
-            pubs, ['0.1'], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), ['0.1'], generalization)
         self.assertEqual(None, pubs[1].supersededby)
         self.assertEqual(PackagePublishingStatus.DELETED, pubs[1].status)
 
     def test_dominatePackage_supersedes_replaced_pub_for_live_version(self):
         # Even if a publication record is for a live version, a newer
         # one for the same version supersedes it.
+        generalization = GeneralizedPublication(True)
         spr = self.factory.makeSourcePackageRelease()
         series = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
@@ -649,7 +666,8 @@ class TestDominatorMethods(TestCaseWithFactory):
             ])
 
         self.makeDominator(pubs).dominatePackage(
-            pubs, [spr.version], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), [spr.version],
+            generalization)
         self.assertEqual([
             PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.SUPERSEDED,
@@ -661,12 +679,13 @@ class TestDominatorMethods(TestCaseWithFactory):
 
     def test_dominatePackage_is_efficient(self):
         # dominatePackage avoids issuing too many queries.
+        generalization = GeneralizedPublication(True)
         versions = ["1.%s" % revision for revision in xrange(5)]
         pubs = make_spphs_for_versions(self.factory, versions)
         with StormStatementRecorder() as recorder:
             self.makeDominator(pubs).dominatePackage(
-                pubs, versions[2:-1],
-                GeneralizedPublication(True))
+                generalization.sortPublications(pubs), versions[2:-1],
+                generalization)
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
 
     def test_dominatePackage_advanced_scenario(self):
@@ -677,6 +696,7 @@ class TestDominatorMethods(TestCaseWithFactory):
         # don't just patch up the code or this test.  Create unit tests
         # that specifically cover the difference, then change the code
         # and/or adapt this test to return to harmony.
+        generalization = GeneralizedPublication(True)
         series = self.factory.makeDistroSeries()
         package = self.factory.makeSourcePackageName()
         pocket = PackagePublishingPocket.RELEASE
@@ -723,7 +743,8 @@ class TestDominatorMethods(TestCaseWithFactory):
 
         all_pubs = sum(pubs_by_version.itervalues(), [])
         Dominator(DevNullLogger(), series.main_archive).dominatePackage(
-            all_pubs, live_versions, GeneralizedPublication(True))
+            generalization.sortPublications(all_pubs), live_versions,
+            generalization)
 
         for version in reversed(versions):
             pubs = pubs_by_version[version]
