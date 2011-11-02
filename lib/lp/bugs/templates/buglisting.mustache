@@ -17,8 +17,12 @@
 
     <div class="buglisting-col2">
         <div class="buginfo">
-            {{#show_id}}<span class="bugnumber">#{{id}}</span>{{/show_id}}
-            <a href="{{bug_url}}" class="bugtitile">{{title}}</a>
+            {{#show_id}}
+                <a class="bugnumber" href="{{bug_url}}">#{{id}}</a>
+            {{/show_id}}
+            {{#show_title}}
+                <a href="{{bug_url}}" class="bugtitile">{{title}}</a>
+            {{/show_title}}
         </div>
         <div class="buginfo-extras">
             {{#show_bugtarget}}

@@ -1486,6 +1486,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
                     'bugtarget': 'bugtarget1',
                     'bugtarget_css': 'bugtarget_css1',
                     'bug_heat_html': 'bug_heat_html1',
+                    'bug_url': 'bug_url1',
                     'show_bugtarget': True,
                     'show_bug_heat': True,
                     'show_id': True,
@@ -1532,6 +1533,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['bugtasks'][0]['show_bug_heat'] = False
         self.assertNotIn('bug_heat_html1', navigator.mustache)
         self.assertNotIn('bug-heat-icons', navigator.mustache)
+
+    def test_hiding_bug_title(self):
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('title1', navigator.mustache)
+        self.assertIn('bug_url1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_title'] = False
+        self.assertNotIn('title1', navigator.mustache)
+        self.assertIn('bug_url1', navigator.mustache)
+
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
 

@@ -2228,6 +2228,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             bugtask['show_id'] = True
             bugtask['show_importance'] = True
             bugtask['show_status'] = True
+            bugtask['show_title'] = True
         return {'bugtasks': bugtasks}
 
 
