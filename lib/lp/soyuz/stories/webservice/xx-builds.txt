@@ -42,6 +42,7 @@ of properties:
     >>> pprint_entry(builds['entries'][0])
     arch_tag: u'i386'
     archive_link: u'http://.../beta/~cprov/+archive/ppa'
+    can_be_cancelled: False
     can_be_rescored: False
     can_be_retried: True
     changesfile_url: None
@@ -71,6 +72,7 @@ Whereas the 1.0 webservice for builds maintains the old property names
     archive_link: u'http://.../~cprov/+archive/ppa'
     build_log_url: u'http://.../~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz'
     buildstate: u'Failed to build'
+    can_be_cancelled: False
     can_be_rescored: False
     can_be_retried: True
     changesfile_url: None
