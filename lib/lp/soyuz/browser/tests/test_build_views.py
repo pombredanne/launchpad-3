@@ -244,8 +244,11 @@ class TestBuildViews(TestCaseWithFactory):
 
     def test_build_page_has_cancel_link(self):
         build = self.factory.makeBinaryPackageBuild()
-        build_view = create_initialized_view(build, "+index")
-        page = build_view()
+        person = build.archive.owner
+        with person_logged_in(person):
+            build_view = create_initialized_view(
+                build, "+index", principal=person)
+            page = build_view()
         url = canonical_url(build) + "/+cancel"
         matches_cancel_link = soupmatchers.HTMLContains(
             soupmatchers.Tag(
