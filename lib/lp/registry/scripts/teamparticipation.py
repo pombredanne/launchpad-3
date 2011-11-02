@@ -20,7 +20,7 @@ from itertools import (
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import quote
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
@@ -52,15 +52,14 @@ def check_teamparticipation_self(log):
 
 def check_teamparticipation_circular(log):
     # Check if there are any circular references between teams.
-    cur = cursor()
-    cur.execute("""
+    query = """
         SELECT tp.team, tp2.team
         FROM teamparticipation AS tp, teamparticipation AS tp2
         WHERE tp.team = tp2.person
             AND tp.person = tp2.team
             AND tp.id != tp2.id;
-        """)
-    circular_references = cur.fetchall()
+        """
+    circular_references = list(get_store().execute(query))
     if len(circular_references) > 0:
         raise LaunchpadScriptFailure(
             "Circular references found: %s" % circular_references)
@@ -72,33 +71,32 @@ ConsistencyError = namedtuple(
 
 def check_teamparticipation_consistency(log):
     # Check if there are any missing/spurious TeamParticipation entries.
-    cur = cursor()
+    store = get_store()
 
     # Slurp everything in.
     people = dict(
-        cur.execute(
+        store.execute(
             "SELECT id, name FROM Person"
             " WHERE teamowner IS NULL"
             "   AND merged IS NULL"))
     teams = dict(
-        cur.execute(
+        store.execute(
             "SELECT id, name FROM Person"
             " WHERE teamowner IS NOT NULL"
             "   AND merged IS NULL"))
     team_memberships = defaultdict(set)
-    results = cur.execute(
+    results = store.execute(
         "SELECT team, person FROM TeamMembership"
-        " WHERE status in %s", (ACTIVE_STATES,))
+        " WHERE status in %s" % quote(ACTIVE_STATES))
     for (team, person) in results:
         team_memberships[team].add(person)
     team_participations = defaultdict(set)
-    results = cur.execute(
+    results = store.execute(
         "SELECT team, person FROM TeamParticipation")
     for (team, person) in results:
         team_participations[team].add(person)
 
     # Don't hold any locks.
-    cur.close()
     transaction.abort()
 
     # Check team memberships.
