@@ -9,6 +9,7 @@ from simplejson import dumps
 from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.ftests import LaunchpadFormHarness
@@ -17,11 +18,15 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 from lazr.restful.interfaces import IWebServiceClientRequest
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubscribersWithDetails,
+    BugSubscriptionAddView,
     BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -36,21 +41,35 @@ ON = 'on'
 OFF = None
 
 
-class BugSubscriptionBasicTestCase(TestCaseWithFactory):
+class BugsubscriptionPrivacyTests(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_person_can_be_subscribed(self):
-        pass
+    def setUp(self):
+        super(BugsubscriptionPrivacyTests, self).setUp()
+        self.user = self.factory.makePerson()
+        self.bug = self.factory.makeBug(owner=self.user)
+        removeSecurityProxy(self.bug).private = True
 
-    def test_team_can_be_subscribed(self):
-        pass
+    def _assert_subscription_fails(self, team):
+        with person_logged_in(self.user):
+            harness = LaunchpadFormHarness(
+                self.bug.default_bugtask, BugSubscriptionAddView)
+            form_data = {'field.person': team.name}
+            harness.submit('add', form_data)
+        subscription = removeSecurityProxy(self.bug).getSubscriptionForPerson(
+            team)
+        self.assertIs(None, subscription)
 
     def test_open_team_cannot_be_subscribed_to_private_bug(self):
-        pass
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
+        self._assert_subscription_fails(team)
 
     def test_delegated_team_cannot_be_subscribed_to_private_bug(self):
-        pass
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.DELEGATED)
+        self._assert_subscription_fails(team)
 
 
 class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
