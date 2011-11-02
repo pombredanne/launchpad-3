@@ -2185,6 +2185,9 @@ div#client-listing .status {
     background: #999;
     color: white;
     }
+#client-listing .field {
+    margin-left: 1em;
+}
 
 
 /* =====
