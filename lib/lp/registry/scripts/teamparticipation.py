@@ -110,7 +110,7 @@ def check_teamparticipation_consistency(log):
         team_participations[team].add(person)
 
     # Don't hold any locks.
-    transaction.abort()
+    transaction.commit()
 
     # Check team memberships.
     def get_participants(team):
