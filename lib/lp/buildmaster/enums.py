@@ -100,8 +100,22 @@ class BuildStatus(DBEnumeratedType):
     UPLOADING = DBItem(8, """
         Uploading build
 
-        The build has completed and is waiting to be processed by the 
+        The build has completed and is waiting to be processed by the
         upload processor.
+        """)
+
+    CANCELLING = DBItem(9, """
+        Cancelling build
+
+        A cancellation request was made for the build. It cannot be cancelled
+        immediately because a request is made in the webapp but we need to wait
+        for the buildd-manager to actually cancel it.
+        """)
+
+    CANCELLED = DBItem(10, """
+        Cancelled build
+
+        A build was cancelled. This is a terminal state.
         """)
 
 
