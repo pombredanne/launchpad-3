@@ -1056,9 +1056,9 @@ class TestCheckTeamParticipationScript(TestCase):
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         out, err = process.communicate()
-        if len(out) > 0:
+        if out != "":
             self.addDetail("stdout", text_content(out))
-        if len(err) > 0:
+        if err != "":
             self.addDetail("stderr", text_content(err))
         self.assertEqual(process.returncode, expected_returncode)
         return out, err
