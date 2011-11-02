@@ -361,7 +361,10 @@ class TestDominationOfObsoletedSeries(TestDomination):
 def make_spphs_for_versions(factory, versions):
     """Create publication records for each of `versions`.
 
-    They records are created in the same order in which they are specified.
+    All these publications will be in the same source package, archive,
+    distroseries, and pocket.  They will all be in Published status.
+
+    The records are created in the same order in which they are specified.
     Make the order irregular to prove that version ordering is not a
     coincidence of object creation order etc.
 
@@ -371,6 +374,7 @@ def make_spphs_for_versions(factory, versions):
     spn = factory.makeSourcePackageName()
     distroseries = factory.makeDistroSeries()
     pocket = factory.getAnyPocket()
+    archive = distroseries.main_archive
     sprs = [
         factory.makeSourcePackageRelease(
             sourcepackagename=spn, version=version)
@@ -378,9 +382,32 @@ def make_spphs_for_versions(factory, versions):
     return [
         factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, pocket=pocket,
-            sourcepackagerelease=spr,
+            sourcepackagerelease=spr, archive=archive,
             status=PackagePublishingStatus.PUBLISHED)
         for spr in sprs]
+
+
+def make_bpphs_for_versions(factory, versions):
+    """Create publication records for each of `versions`.
+
+    All these publications will be in the same binary package, source
+    package, archive, distroarchseries, and pocket.  They will all be in
+    Published status.
+    """
+    bpn = factory.makeBinaryPackageName()
+    spn = factory.makeSourcePackageName()
+    das = factory.makeDistroArchSeries()
+    archive = das.distroseries.main_archive
+    pocket = factory.getAnyPocket()
+    bprs = [
+        factory.makeBinaryPackageRelease(binarypackagename=bpn)
+        for version in versions]
+    return [
+        factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, binarypackagename=bpn,
+            distroarchseries=das, pocket=pocket, archive=archive,
+            sourcepackagename=spn, status=PackagePublishingStatus.PUBLISHED)
+        for bpr in bprs]
 
 
 def list_source_versions(spphs):
@@ -921,3 +948,144 @@ class TestDominatorMethods(TestCaseWithFactory):
             [],
             dominator.findPublishedSPPHs(
                 spph.distroseries, spph.pocket, other_package.name))
+
+    def test_findBinariesForDomination_finds_published_publications(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1'])
+        dominator = self.makeDominator(bpphs)
+        self.assertContentEqual(
+            bpphs, dominator.findBinariesForDomination(
+                bpphs[0].distroarchseries, bpphs[0].pocket))
+
+    def test_findBinariesForDomination_skips_single_pub_packages(self):
+        # The domination algorithm that uses findBinariesForDomination
+        # always keeps the latest version live.  Thus, a single
+        # publication isn't worth dominating.  findBinariesForDomination
+        # won't return it.
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0'])
+        dominator = self.makeDominator(bpphs)
+        self.assertContentEqual(
+            [], dominator.findBinariesForDomination(
+                bpphs[0].distroarchseries, bpphs[0].pocket))
+
+    def test_findBinariesForDomination_ignores_other_distroseries(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1'])
+        dominator = self.makeDominator(bpphs)
+        das = bpphs[0].distroarchseries
+        other_series = self.factory.makeDistroSeries(
+            distribution=das.distroseries.distribution)
+        other_das = self.factory.makeDistroArchSeries(
+            distroseries=other_series, architecturetag=das.architecturetag,
+            processorfamily=das.processorfamily)
+        self.assertContentEqual(
+            [], dominator.findBinariesForDomination(
+                other_das, bpphs[0].pocket))
+
+    def test_findBinariesForDomination_ignores_other_architectures(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1'])
+        dominator = self.makeDominator(bpphs)
+        other_das = self.factory.makeDistroArchSeries(
+            distroseries=bpphs[0].distroseries)
+        self.assertContentEqual(
+            [], dominator.findBinariesForDomination(
+                other_das, bpphs[0].pocket))
+
+    def test_findBinariesForDomination_ignores_other_archive(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1'])
+        dominator = self.makeDominator(bpphs)
+        dominator.archive = self.factory.makeArchive()
+        self.assertContentEqual(
+            [], dominator.findBinariesForDomination(
+                bpphs[0].distroarchseries, bpphs[0].pocket))
+
+    def test_findBinariesForDomination_ignores_other_pocket(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1'])
+        dominator = self.makeDominator(bpphs)
+        for bpph in bpphs:
+            removeSecurityProxy(bpph).pocket = PackagePublishingPocket.UPDATES
+        self.assertContentEqual(
+            [], dominator.findBinariesForDomination(
+                bpphs[0].distroarchseries, PackagePublishingPocket.SECURITY))
+
+    def test_findBinariesForDomination_ignores_other_status(self):
+        # If we have one BPPH for each possible status, plus one
+        # Published one to stop findBinariesForDomination from skipping
+        # the package, findBinariesForDomination returns only the
+        # Published ones.
+        versions = [
+            '1.%d' % self.factory.getUniqueInteger()
+            for status in PackagePublishingStatus.items] + ['0.9']
+        bpphs = make_bpphs_for_versions(self.factory, versions)
+        dominator = self.makeDominator(bpphs)
+
+        for bpph, status in zip(bpphs, PackagePublishingStatus.items):
+            bpph.status = status
+
+        # These are the Published publications.  The other ones will all
+        # be ignored.
+        published_bpphs = [
+            bpph
+            for bpph in bpphs
+                if bpph.status == PackagePublishingStatus.PUBLISHED]
+
+        self.assertContentEqual(
+            published_bpphs,
+            dominator.findBinariesForDomination(
+                bpphs[0].distroarchseries, bpphs[0].pocket))
+
+    def test_findSourcesForDomination_finds_published_publications(self):
+        spphs = make_spphs_for_versions(self.factory, ['2.0', '2.1'])
+        dominator = self.makeDominator(spphs)
+        self.assertContentEqual(
+            spphs, dominator.findSourcesForDomination(
+                spphs[0].distroseries, spphs[0].pocket))
+
+    def test_findSourcesForDomination_skips_single_pub_packages(self):
+        # The domination algorithm that uses findSourcesForDomination
+        # always keeps the latest version live.  Thus, a single
+        # publication isn't worth dominating.  findSourcesForDomination
+        # won't return it.
+        spphs = make_spphs_for_versions(self.factory, ['2.0'])
+        dominator = self.makeDominator(spphs)
+        self.assertContentEqual(
+            [], dominator.findSourcesForDomination(
+                spphs[0].distroseries, spphs[0].pocket))
+
+    def test_findSourcesForDomination_ignores_other_distroseries(self):
+        spphs = make_spphs_for_versions(self.factory, ['2.0', '2.1'])
+        dominator = self.makeDominator(spphs)
+        other_series = self.factory.makeDistroSeries(
+            distribution=spphs[0].distroseries.distribution)
+        self.assertContentEqual(
+            [], dominator.findSourcesForDomination(
+                other_series, spphs[0].pocket))
+
+    def test_findSourcesForDomination_ignores_other_pocket(self):
+        spphs = make_spphs_for_versions(self.factory, ['2.0', '2.1'])
+        dominator = self.makeDominator(spphs)
+        for spph in spphs:
+            removeSecurityProxy(spph).pocket = PackagePublishingPocket.UPDATES
+        self.assertContentEqual(
+            [], dominator.findSourcesForDomination(
+                spphs[0].distroseries, PackagePublishingPocket.SECURITY))
+
+    def test_findSourcesForDomination_ignores_other_status(self):
+        versions = [
+            '1.%d' % self.factory.getUniqueInteger()
+            for status in PackagePublishingStatus.items] + ['0.9']
+        spphs = make_spphs_for_versions(self.factory, versions)
+        dominator = self.makeDominator(spphs)
+
+        for spph, status in zip(spphs, PackagePublishingStatus.items):
+            spph.status = status
+
+        # These are the Published publications.  The other ones will all
+        # be ignored.
+        published_spphs = [
+            spph
+            for spph in spphs
+                if spph.status == PackagePublishingStatus.PUBLISHED]
+
+        self.assertContentEqual(
+            published_spphs,
+            dominator.findSourcesForDomination(
+                spphs[0].distroseries, spphs[0].pocket))
