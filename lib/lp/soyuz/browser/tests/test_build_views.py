@@ -244,6 +244,7 @@ class TestBuildViews(TestCaseWithFactory):
 
     def test_build_page_has_cancel_link(self):
         build = self.factory.makeBinaryPackageBuild()
+        build.queueBuild()
         person = build.archive.owner
         with person_logged_in(person):
             build_view = create_initialized_view(
