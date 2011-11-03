@@ -317,21 +317,21 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
         self.assertThat(page, self.registered_branches_matcher)
 
     def test_branch_list_owned_link(self):
+        # The link to the owned branches is always displayed.
         owned_branches_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Owned link', 'a', text='Owned branches',
                 attrs={'href': 'http://code.launchpad.dev/~barney'}))
-        self.factory.makeAnyBranch(owner=self.person)
         page = self.get_branch_list_page('+subscribedbranches')
         self.assertThat(page, owned_branches_matcher)
 
     def test_branch_list_subscribed_link(self):
+        # The link to the subscribed branches is always displayed.
         subscribed_branches_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Subscribed link', 'a', text='Subscribed branches',
                 attrs={'href': 'http://launchpad.dev/~barney'
                                '/+subscribedbranches'}))
-        self.factory.makeAnyBranch(owner=self.person)
         page = self.get_branch_list_page()
         self.assertThat(page, subscribed_branches_matcher)
 

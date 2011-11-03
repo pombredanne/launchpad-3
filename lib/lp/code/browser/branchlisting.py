@@ -894,12 +894,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         """Should the template show the summary view with the links."""
 
         if self.simplified_branches_menu:
-            return (
-                self.registered_branches_not_empty or
-                self.owned_branches_not_empty or
-                self.subscribed_branches_not_empty or
-                self.active_reviews_not_empty
-                )
+            return True
         else:
             return (
                 self.owned_branch_count or
@@ -922,20 +917,6 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
                 self.person).is_empty())
 
     @cachedproperty
-    def owned_branches_not_empty(self):
-        """False if the number of branches owned by self.person is zero."""
-        return not self._getCountCollection().ownedBy(self.person).is_empty()
-
-    @cachedproperty
-    def subscribed_branches_not_empty(self):
-        """False if the number of branches subscribed to by self.person
-        is zero.
-        """
-        return (
-            not self._getCountCollection().subscribedBy(
-                self.person).is_empty())
-
-    @cachedproperty
     def active_reviews_not_empty(self):
         """Return the number of active reviews for self.person's branches."""
         active_reviews = PersonActiveReviewsView(self.context, self.request)
@@ -944,8 +925,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     def simplified_owned(self):
         return Link(
             canonical_url(self.context, rootsite='code'),
-            'Owned branches',
-            enabled=self.owned_branches_not_empty)
+            'Owned branches')
 
     def simplified_registered(self):
         person_is_individual = (not self.person.is_team)
@@ -959,8 +939,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     def simplified_subscribed(self):
         return Link(
             '+subscribedbranches',
-            'Subscribed branches',
-            enabled=self.subscribed_branches_not_empty)
+            'Subscribed branches')
 
     def simplified_active_reviews(self):
         return Link(
