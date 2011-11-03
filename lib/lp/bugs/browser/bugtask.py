@@ -2149,6 +2149,9 @@ class BugTaskListingItem:
             milestone_name = self.bugtask.milestone.displayname
         else:
             milestone_name = None
+        assignee = None
+        if self.assignee is not None:
+            assignee = self.assignee.displayname
         return {
             'importance': self.importance.title,
             'importance_class': 'importance' + self.importance.name,
@@ -2162,6 +2165,7 @@ class BugTaskListingItem:
             'bug_heat_html': self.bug_heat_html,
             'badges': badges,
             'milestone_name': milestone_name,
+            'assignee': assignee,
             }
 
 
@@ -2175,6 +2179,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
         self.request = request
         self.target_context = target_context
         self.field_visibility = {
+            'show_assignee': False,
             'show_bugtarget': True,
             'show_bug_heat': True,
             'show_id': True,

@@ -1488,6 +1488,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         navigator = BugListingBatchNavigator([], request, [], 1)
         cache = IJSONRequestCache(request)
         bugtask = {
+            'assignee': 'assignee1',
             'id': '3.14159',
             'title': 'title1',
             'status': 'status1',
@@ -1563,6 +1564,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['bugtasks'][0]['show_milestone_name'] = True
         self.assertIn('milestone_name1', navigator.mustache)
 
+    def test_hiding_assignee(self):
+        """Showing milestone name shows the text."""
+
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_assignee', navigator.field_visibility)
+        self.assertNotIn('assignee1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_assignee'] = True
+        self.assertIn('assignee1', navigator.mustache)
+
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
 
@@ -1603,3 +1613,13 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 product=item.bugtask.target)
             milestone_name = item.milestone.displayname
             self.assertEqual(milestone_name, item.model['milestone_name'])
+
+    def test_model_assignee(self):
+        """Model contains expected fields with expected values."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            self.assertIs(None, item.model['assignee'])
+            assignee = self.factory.makePerson(displayname='Example Person')
+            item.bugtask.transitionToAssignee(assignee)
+            self.assertEqual('Example Person', item.model['assignee'])
+
