@@ -1437,6 +1437,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertEqual(0, cache.objects['last_start'])
 
     def test_cache_field_visibility(self):
+        """Cache contains sane-looking field_visibility values."""
         task = self.factory.makeBugTask()
         with self.dynamic_listings():
             view = self.makeView(task, memo=1, forwards=False, size=1)
