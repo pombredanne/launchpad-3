@@ -15,7 +15,7 @@ COMMENT ON COLUMN AccessPolicy.display_name IS 'A human-readable name for this p
 
 -- AccessPolicyArtifact
 
-COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access permission can apply to.';
+COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access permission can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyPermission.';
 COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
 COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
 
