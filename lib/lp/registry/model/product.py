@@ -1450,9 +1450,8 @@ class ProductSet:
 
     def forReview(self, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
-                  license_info_is_empty=None,
-                  has_zero_licenses=None,
                   created_after=None, created_before=None,
+                  has_subscription=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
                   subscription_modified_after=None,
@@ -1473,8 +1472,10 @@ class ProductSet:
         if search_text is not None and search_text.strip() != '':
             conditions.append(SQL('''
                 Product.fti @@ ftq(%(text)s) OR
-                Product.name = lower(%(text)s)
-                ''' % sqlvalues(text=search_text)))
+                Product.name = %(text)s OR
+                strpos(lower(Product.license_info), %(text)s) > 0 OR
+                strpos(lower(Product.reviewer_whiteboard), %(text)s) > 0
+                ''' % sqlvalues(text=search_text.lower())))
 
         def dateToDatetime(date):
             """Convert a datetime.date to a datetime.datetime
@@ -1536,58 +1537,28 @@ class ProductSet:
                     subscription_modified_before)
             needs_join = True
 
-        if needs_join:
+        if needs_join or has_subscription:
             conditions.append(
                 CommercialSubscription.productID == Product.id)
 
-        or_conditions = []
-        if license_info_is_empty is True:
-            # Match products whose license_info doesn't contain
-            # any non-space characters.
-            or_conditions.append("Product.license_info IS NULL")
-            or_conditions.append(r"Product.license_info ~ E'^\\s*$'")
-        elif license_info_is_empty is False:
-            # license_info contains something besides spaces.
-            or_conditions.append(r"Product.license_info ~ E'[^\\s]'")
-        elif license_info_is_empty is None:
-            # Don't restrict result if license_info_is_empty is None.
-            pass
-        else:
-            raise AssertionError('license_info_is_empty invalid: %r'
-                                 % license_info_is_empty)
-
-        has_license_subquery = '''%s (
-            SELECT 1
-            FROM ProductLicense
-            WHERE ProductLicense.product = Product.id
-            LIMIT 1
-            )
-            '''
-        if has_zero_licenses is True:
-            # The subquery finds zero rows.
-            or_conditions.append(has_license_subquery % 'NOT EXISTS')
-        elif has_zero_licenses is False:
-            # The subquery finds at least one row.
-            or_conditions.append(has_license_subquery % 'EXISTS')
-        elif has_zero_licenses is None:
-            # Don't restrict results if has_zero_licenses is None.
-            pass
-        else:
-            raise AssertionError('has_zero_licenses is invalid: %r'
-                                 % has_zero_licenses)
+        if has_subscription is False:
+            conditions.append(SQL('''
+                NOT EXISTS (
+                    SELECT 1
+                    FROM CommercialSubscription
+                    WHERE CommercialSubscription.product = Product.id
+                    LIMIT 1)
+                '''))
 
         if licenses is not None and len(licenses) > 0:
-            or_conditions.append('''EXISTS (
+            conditions.append(SQL('''EXISTS (
                 SELECT 1
                 FROM ProductLicense
                 WHERE ProductLicense.product = Product.id
                     AND license IN %s
                 LIMIT 1
                 )
-                ''' % sqlvalues(tuple(licenses)))
-
-        if len(or_conditions) != 0:
-            conditions.append(SQL('(%s)' % '\nOR '.join(or_conditions)))
+                ''' % sqlvalues(tuple(licenses))))
 
         result = IStore(Product).find(
             Product, *conditions).config(

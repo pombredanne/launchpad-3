@@ -228,6 +228,7 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
     ImmutableVisibilityError,
     IPerson,
     IPersonSet,
@@ -2910,6 +2911,10 @@ class Person(
                 atom, ' and '.join(reasons)))
         else:
             return None
+
+    def canCreatePPA(self):
+        """See `IPerson.`"""
+        return self.subscriptionpolicy in CLOSED_TEAM_POLICY
 
 
 class PersonSet:

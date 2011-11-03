@@ -9,14 +9,15 @@ provisions to handle Bazaar branches.
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from bzrlib.revision import NULL_REVISION
+from testtools.matchers import (
+    Equals,
+    MatchesAny,
+    )
 import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchjob import RosettaUploadJob
 from lp.services.osutils import override_environ
@@ -66,7 +67,7 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         self._clear_import_queue()
         pot_path = self.factory.getUniqueString() + ".pot"
         branch = self._setup_series_branch(pot_path)
-        job = RosettaUploadJob.create(branch, NULL_REVISION)
+        RosettaUploadJob.create(branch, NULL_REVISION)
         transaction.commit()
 
         return_code, stdout, stderr = run_script(
@@ -81,12 +82,10 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
 
     def test_rosetta_branches_script_oops(self):
         # A bogus revision in the job will trigger an OOPS.
-        globalErrorUtility.configure("rosettabranches")
-        previous_oops_report = globalErrorUtility.getLastOopsReport()
         self._clear_import_queue()
         pot_path = self.factory.getUniqueString() + ".pot"
         branch = self._setup_series_branch(pot_path)
-        job = RosettaUploadJob.create(branch, self.factory.getUniqueString())
+        RosettaUploadJob.create(branch, self.factory.getUniqueString())
         transaction.commit()
 
         return_code, stdout, stderr = run_script(
@@ -96,13 +95,16 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         queue = getUtility(ITranslationImportQueue)
         self.assertEqual(0, queue.countEntries())
 
-        oops_report = globalErrorUtility.getLastOopsReport()
-        if previous_oops_report is not None:
-            self.assertNotEqual(oops_report.id, previous_oops_report.id)
+        # XXX: Robert Collins - bug 884036 - test_rosetta_branches_script does
+        # a commit() which resets the test db out from under the running slave
+        # appserver, requests to it then (correctly) log oopses as a DB
+        # connection is *not normal*. So when both tests are run, we see 8 of
+        # these oopses (4 pairs of 2); when run alone we don't.
+        self.oops_capture.sync()
+        self.assertThat(
+            len(self.oopses), MatchesAny(Equals(1), Equals(9)),
+            "Unexpected number of OOPSes %r" % self.oopses)
+        oops_report = self.oopses[-1]
         self.assertIn(
-            'INFO    Job resulted in OOPS: %s\n' % oops_report.id, stderr)
-        self.assertEqual('NoSuchRevision', oops_report.type)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+            'INFO    Job resulted in OOPS: %s\n' % oops_report['id'], stderr)
+        self.assertEqual('NoSuchRevision', oops_report['type'])

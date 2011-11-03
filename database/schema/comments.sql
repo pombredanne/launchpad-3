@@ -6,6 +6,27 @@
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
+-- AccessPolicy
+
+COMMENT ON TABLE AccessPolicy IS 'A policy to manage access to a pillar\'s artifacts.';
+COMMENT ON COLUMN AccessPolicy.product IS 'The product that this policy applies to.';
+COMMENT ON COLUMN AccessPolicy.distribution IS 'The distribution that this policy applies to.';
+COMMENT ON COLUMN AccessPolicy.name IS 'A URL name for this policy.';
+COMMENT ON COLUMN AccessPolicy.display_name IS 'A human-readable name for this policy.';
+
+-- AccessPolicyArtifact
+
+COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
+COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
+COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
+
+-- AccessPolicyGrant
+
+COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a policy\'s artifacts.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The access policy on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.person IS 'The person that holds the grant.';
+COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The optional artifact to which the access is restricted.';
+
 -- Announcement
 
 COMMENT ON TABLE Announcement IS 'A project announcement. This is a single item of news or information that the project is communicating. Announcements can be attached to a Project, a Product or a Distribution.';
@@ -823,7 +844,6 @@ of messages that could be found in a potemplate file.';
 COMMENT ON COLUMN POTMsgSet.context IS 'Context uniquely defining a message when there are messages with same primemsgids.';
 COMMENT ON COLUMN POTMsgSet.msgid_singular IS 'The singular msgid for this message.';
 COMMENT ON COLUMN POTMsgSet.msgid_plural IS 'The plural msgid for this message.';
-COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
 COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
 COMMENT ON COLUMN POTMsgSet.filereferences IS 'The list of files and their line number where this message set was extracted from.';

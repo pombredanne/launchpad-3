@@ -1107,6 +1107,8 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.BUILDING: {'src': "/@@/processing"},
             BuildStatus.UPLOADING: {'src': "/@@/processing"},
             BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
+            BuildStatus.CANCELLING: {'src': "/@@/processing"},
+            BuildStatus.CANCELLED: {'src': "/@@/build-failed"},
             }
 
         alt = '[%s]' % self._context.status.name

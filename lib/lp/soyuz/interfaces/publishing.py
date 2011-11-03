@@ -34,6 +34,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     REQUEST_USER,
@@ -533,11 +534,25 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: a list of `IBuilds`.
         """
 
+    def getFileByName(name):
+        """Return the file with the specified name.
+
+        Only supports 'changelog' at present.
+        """
+
     @export_read_operation()
     def changesFileUrl():
         """The .changes file URL for this source publication.
 
         :return: the .changes file URL for this source (a string).
+        """
+
+    @export_read_operation()
+    @operation_for_version('devel')
+    def changelogUrl():
+        """The URL for this source package release's changelog.
+
+        :return: the changelog file URL for this source (a string).
         """
 
     def getUnpublishedBuilds(build_states=None):
