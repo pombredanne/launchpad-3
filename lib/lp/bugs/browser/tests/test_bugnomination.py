@@ -7,6 +7,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+import soupmatchers
+import re
+from testtools.matchers import Not
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
@@ -143,6 +146,56 @@ class TestBugNominationView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
         self.assertEqual(0, len(view.request.notifications))
+
+
+class TestBugEditLinks(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    edit_link_matcher = soupmatchers.HTMLContains(
+        soupmatchers.Tag(
+            'Edit link', 'a',
+            attrs={'class': 'assignee-edit',
+                   'href': re.compile('\+editstatus$')}))
+
+    def _createBug(self, bug_task_number=1):
+        series = self.factory.makeProductSeries()
+        bug = self.factory.makeBug(series=series)
+        for i in range(bug_task_number):
+            self.factory.makeBugTask(bug=bug)
+        launchbag = getUtility(ILaunchBag)
+        launchbag.add(series.product)
+        launchbag.add(bug)
+        launchbag.add(bug.default_bugtask)
+        return bug
+
+    def test_assignee_edit_link_with_many_bugtasks(self):
+        # When the number of bug tasks is >= 10, a link should be
+        # displayed to edit the assignee.
+        bug = self._createBug(11)
+        with person_logged_in(bug.owner):
+            page = create_initialized_view(
+                bug, name='+bugtasks-and-nominations-table',
+                principal=bug.owner).render()
+        self.assertThat(page, self.edit_link_matcher)
+
+    def test_assignee_edit_link_with_only_a_few_bugtasks(self):
+        # When the number of bug tasks is < 10, editing the assignee is
+        # done with a js picker.
+        bug = self._createBug(3)
+        with person_logged_in(bug.owner):
+            page = create_initialized_view(
+                bug, name='+bugtasks-and-nominations-table',
+                principal=bug.owner).render()
+        self.assertThat(page, Not(self.edit_link_matcher))
+
+    def test_assignee_edit_link_no_user_no_link(self):
+        # No link is displayed when the request is from an anonymous
+        # user.
+        bug = self._createBug(11)
+        page = create_initialized_view(
+            bug, name='+bugtasks-and-nominations-table').render()
+        self.assertThat(page, Not(self.edit_link_matcher))
 
 
 class TestBugNominationEditView(TestCaseWithFactory):
