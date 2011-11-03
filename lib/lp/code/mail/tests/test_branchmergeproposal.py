@@ -347,7 +347,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
-        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual(
+            'text/x-diff; charset="utf-8"', attachment['Content-Type'])
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text, attachment.get_payload(decode=True))
@@ -373,7 +374,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
-        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual(
+            'text/x-diff; charset="utf-8"', attachment['Content-Type'])
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text[:25], attachment.get_payload(decode=True))

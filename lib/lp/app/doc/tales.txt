@@ -433,17 +433,8 @@ the mainsite.
     >>> print test_tales("person/fmt:link", person=mark)
     <a ...http://launchpad.dev/~mark...
 
-    >>> # Enable the picker_enhancements feature to test the commenter name.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
     >>> print test_tales("person/fmt:link-display-name-id", person=mark)
     <a ...http://launchpad.dev/~mark...>Mark Shuttleworth (mark)</a>
-
-    >>> # Clean up the feature flag.
-    >>> flags.cleanUp()
 
     >>> print test_tales("team/fmt:link", team=ubuntu_team)
     <a ...http://launchpad.dev/~ubuntu-team...

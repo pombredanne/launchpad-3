@@ -7,8 +7,8 @@ from datetime import (
     datetime,
     timedelta,
     )
-from pytz import UTC
 
+from pytz import UTC
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
@@ -21,14 +21,14 @@ from lp.bugs.enum import (
     BugNotificationLevel,
     BugNotificationStatus,
     )
-from lp.bugs.model.bugnotification import BugNotificationRecipient
-from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
+from lp.bugs.model.bugnotification import BugNotificationRecipient
+from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
@@ -516,8 +516,12 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         bug_supervisor = self.factory.makePerson(
             name='bugsupervisor', email='bugsupervisor@example.com')
         product_owner = self.factory.makePerson(name='productowner')
+        product_driver = self.factory.makePerson(name='productdriver')
+        security_contact = self.factory.makePerson(
+            name='securitycontact', email='securitycontact@example.com')
         bug_product = self.factory.makeProduct(
-            owner=product_owner, bug_supervisor=bug_supervisor)
+            owner=product_owner, bug_supervisor=bug_supervisor,
+            driver=product_driver, security_contact=security_contact)
         if self.private_project:
             removeSecurityProxy(bug_product).private_bugs = True
         bug = self.factory.makeBug(owner=bug_owner, product=bug_product)
@@ -525,24 +529,13 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.setPrivacyAndSecurityRelated(
                 private_security_related, private_security_related, bug_owner)
         owner_a = self.factory.makePerson(name='ownera')
-        security_contact_a = self.factory.makePerson(
-            name='securitycontacta', email='securitycontacta@example.com')
-        bug_supervisor_a = self.factory.makePerson(
-            name='bugsupervisora', email='bugsupervisora@example.com')
-        driver_a = self.factory.makePerson(name='drivera')
-        product_a = self.factory.makeProduct(
-            owner=owner_a,
-            security_contact=security_contact_a,
-            bug_supervisor=bug_supervisor_a,
-            driver=driver_a)
+        product_series_a = self.factory.makeProductSeries(
+            product=bug_product, owner=owner_a)
         owner_b = self.factory.makePerson(name='ownerb')
-        security_contact_b = self.factory.makePerson(
-            name='securitycontactb', email='securitycontactb@example.com')
-        product_b = self.factory.makeProduct(
-            owner=owner_b,
-            security_contact=security_contact_b)
-        bugtask_a = self.factory.makeBugTask(bug=bug, target=product_a)
-        bugtask_b = self.factory.makeBugTask(bug=bug, target=product_b)
+        product_series_b = self.factory.makeProductSeries(
+            product=bug_product, owner=owner_b)
+        bugtask_a = self.factory.makeBugTask(bug=bug, target=product_series_a)
+        bugtask_b = self.factory.makeBugTask(bug=bug, target=product_series_b)
         naked_bugtask_a = removeSecurityProxy(bugtask_a)
         naked_bugtask_b = removeSecurityProxy(bugtask_b)
         naked_default_bugtask = removeSecurityProxy(bug.default_bugtask)
@@ -573,14 +566,11 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 private=True, security_related=True, who=who)
             subscribers = bug.getDirectSubscribers()
         expected_subscribers = set((
-            bugtask_a.pillar.security_contact,
-            bugtask_a.pillar.bug_supervisor,
-            bugtask_a.pillar.driver,
-            bugtask_b.pillar.security_contact,
             bugtask_a.owner,
-            default_bugtask.pillar.owner,
             default_bugtask.pillar.bug_supervisor,
-            bug_owner, bugtask_b.pillar.owner, who))
+            default_bugtask.pillar.driver,
+            default_bugtask.pillar.security_contact,
+            bug_owner, who))
         if not self.private_project:
             expected_subscribers.update(initial_subscribers)
         self.assertContentEqual(expected_subscribers, subscribers)
@@ -609,11 +599,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 private=True, security_related=False, who=who)
             subscribers = bug.getDirectSubscribers()
         expected_subscribers = set((
-            bugtask_a.pillar.bug_supervisor,
-            bugtask_a.pillar.driver,
-            bugtask_b.pillar.owner,
-            default_bugtask.pillar.owner,
             default_bugtask.pillar.bug_supervisor,
+            default_bugtask.pillar.driver,
             bug_owner, who))
         if not self.private_project:
             expected_subscribers.update(initial_subscribers)
@@ -644,14 +631,12 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 private=False, security_related=True, who=who)
             subscribers = bug.getDirectSubscribers()
         expected_subscribers = set((
-            bugtask_a.pillar.security_contact,
-            bugtask_a.pillar.driver,
-            bugtask_b.pillar.security_contact,
-            default_bugtask.pillar.owner,
+            default_bugtask.pillar.driver,
+            default_bugtask.pillar.security_contact,
             bug_owner))
         if not self.private_project:
             expected_subscribers.update(initial_subscribers)
-            expected_subscribers.remove(bugtask_a.pillar.bug_supervisor)
+            expected_subscribers.remove(default_bugtask.pillar.bug_supervisor)
         self.assertContentEqual(expected_subscribers, subscribers)
 
     def test_setPrivateFalseAndSecurityRelatedFalse(self):
@@ -769,16 +754,16 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             self.createBugTasksAndSubscribers(private_security_related=True))
 
         with person_logged_in(bug_owner):
-            bug.subscribe(bugtask_a.pillar.bug_supervisor, bug_owner)
+            bug.subscribe(default_bugtask.pillar.bug_supervisor, bug_owner)
             who = self.factory.makePerson(name="who")
             bug.setPrivacyAndSecurityRelated(
                 private=False, security_related=True, who=who)
             subscribers = bug.getDirectSubscribers()
-            self.assertFalse(bugtask_a.pillar.bug_supervisor in subscribers)
+            self.assertNotIn(
+                default_bugtask.pillar.bug_supervisor, subscribers)
 
             expected_recipients = [
                 default_bugtask.pillar.bug_supervisor,
-                bugtask_a.pillar.bug_supervisor,
                 ]
             expected_body_text = '** This bug is no longer private'
             expected_reason_body = ('You received this bug notification '
@@ -786,6 +771,24 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             self._check_notifications(
                 bug, expected_recipients, expected_body_text,
                 expected_reason_body, False, True, 'Bug Supervisor')
+
+    def test_structural_bug_supervisor_becomes_direct_on_private(self):
+        # If a bug supervisor has a structural subscription to the bug, and
+        # the bug is marked as private, the supervisor should get a direct
+        # subscription. Otherwise they should be removed, per other tests.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        bug_owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=bug_owner, product=product)
+        with person_logged_in(product.owner):
+            product.addSubscription(bug_supervisor, bug_supervisor)
+
+        self.assertFalse(bug_supervisor in bug.getDirectSubscribers())
+        with person_logged_in(bug_owner):
+            who = self.factory.makePerson(name="who")
+            bug.setPrivacyAndSecurityRelated(
+                private=True, security_related=False, who=who)
+        self.assertTrue(bug_supervisor in bug.getDirectSubscribers())
 
     def test_securityContactUnsubscribedIfBugNotSecurityRelated(self):
         # The security contacts are unsubscribed if a bug has security_related

@@ -10,7 +10,9 @@ from simplejson import dumps
 from urllib import quote
 
 from BeautifulSoup import BeautifulSoup
+from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
 from lazr.restful.interfaces import (
@@ -34,6 +36,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import BrowsesWithQueryLimit
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import (
     create_initialized_view,
@@ -63,6 +66,23 @@ class TestSearchQuestionsView(TestCaseWithFactory):
         encoded_string = quote(non_ascii_string.encode('utf-8'))
         # This must not raise UnicodeEncodeError.
         self.assertIn(encoded_string, view.matching_faqs_url)
+
+    def test_query_count(self):
+        # SearchQuestionsView does not query for the target SPN every time.
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution()
+        removeSecurityProxy(distro).official_answers = True
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distro)
+        questions = []
+        for i in range(0, 5):
+            questions.append(self.factory.makeQuestion(
+                target=dsp, owner=owner))
+        # Empty the cache.
+        Store.of(questions[0]).invalidate()
+        browses_under_limit = BrowsesWithQueryLimit(
+            31, owner, view_name="+questions")
+        self.assertThat(dsp, browses_under_limit)
 
 
 class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory):

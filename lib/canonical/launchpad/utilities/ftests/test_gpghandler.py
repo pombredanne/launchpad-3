@@ -14,6 +14,11 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from testtools.matchers import (
+    Not,
+    LessThan,
+    )
+
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     keys_for_tests,
@@ -25,7 +30,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGKeyTemporarilyNotFoundError,
     IGPGHandler,
     )
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.lazr.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -170,7 +174,9 @@ class TestImportKeyRing(TestCase):
         now = floor(time())
         gpghandler.touchConfigurationDirectory()
         for fname in files_to_check:
-            self.assertTrue(now <= floor(os.path.getmtime(fname)))
+            file_time = os.path.getmtime(fname)
+            self.assertThat(
+                file_time, Not(LessThan(now)), fname)
 
     def test_retrieveKey_raises_GPGKeyDoesNotExistOnServer(self):
         # GPGHandler.retrieveKey() raises GPGKeyDoesNotExistOnServer
@@ -194,9 +200,8 @@ class TestImportKeyRing(TestCase):
                 GPGKeyTemporarilyNotFoundError, gpghandler.retrieveKey,
                 'non-existent-fp')
             # An OOPS report is generated for the timeout.
-            error_utility = ErrorReportingUtility()
-            error_report = error_utility.getLastOopsReport()
-            self.assertEqual('TimeoutError', error_report.type)
-            self.assertEqual('timeout exceeded.', error_report.value)
+            error_report = self.oopses[-1]
+            self.assertEqual('TimeoutError', error_report['type'])
+            self.assertEqual('timeout exceeded.', error_report['value'])
         finally:
             set_default_timeout_function(old_timeout_function)

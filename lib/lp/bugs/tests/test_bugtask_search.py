@@ -55,6 +55,8 @@ from lp.testing.matchers import HasQueryCount
 
 PRIVATE_BUG_VISIBILITY_FLAG = {
     'disclosure.private_bug_visibility_rules.enabled': 'on'}
+PRIVATE_BUG_VISIBILITY_CTE_FLAG = {
+    'disclosure.private_bug_visibility_cte.enabled': 'on'}
 
 
 class SearchTestBase:
@@ -75,18 +77,19 @@ class SearchTestBase:
 
     def test_aggregate_by_target(self):
         # BugTaskSet.search supports returning the counts for each target (as
-        # long only one type of target was selected).
+        # long as only one type of target was selected).
         if self.group_on is None:
             # Not a useful/valid permutation.
             return
         self.getBugTaskSearchParams(user=None, multitarget=True)
         # The test data has 3 bugs for searchtarget and 6 for searchtarget2.
+        user = self.factory.makePerson()
         expected = {(self.targetToGroup(self.searchtarget),): 3,
             (self.targetToGroup(self.searchtarget2),): 6}
-        user = self.factory.makePerson()
-        self.assertEqual(expected, self.bugtask_set.countBugs(user,
-            (self.searchtarget, self.searchtarget2),
-            group_on=self.group_on))
+        actual = self.bugtask_set.countBugs(
+            user, (self.searchtarget, self.searchtarget2),
+            group_on=self.group_on)
+        self.assertEqual(expected, actual)
 
     def test_search_all_bugtasks_for_target(self):
         # BugTaskSet.search() returns all bug tasks for a given bug
@@ -153,6 +156,32 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=pillar_owner)
         # Check the results with the feature flag.
         with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks)
+        # Check the results without the feature flag.
+        self.assertSearchFinds(params, self.bugtasks[:-1])
+
+        # Make the bugtask security related.
+        with person_logged_in(self.owner):
+            bugtask.bug.setSecurityRelated(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        # It should now be excluded from the results.
+        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
+            self.assertSearchFinds(params, self.bugtasks[:-1])
+
+    def test_private_bug_in_search_result_pillar_owners_cte(self):
+        # Like test_private_bug_in_search_result_pillar_owners, but with
+        # the new CTE-based visibility query.
+        bugtask = self.bugtasks[-1]
+        pillar_owner = bugtask.pillar.owner
+        with person_logged_in(self.owner):
+            bugtask.bug.setPrivate(True, self.owner)
+            bugtask.bug.unsubscribe(pillar_owner, self.owner)
+        params = self.getBugTaskSearchParams(user=pillar_owner)
+        # Check the results with the feature flag.
+        flags = dict()
+        flags.update(PRIVATE_BUG_VISIBILITY_FLAG)
+        flags.update(PRIVATE_BUG_VISIBILITY_CTE_FLAG)
+        with FeatureFixture(flags):
             self.assertSearchFinds(params, self.bugtasks)
         # Check the results without the feature flag.
         self.assertSearchFinds(params, self.bugtasks[:-1])

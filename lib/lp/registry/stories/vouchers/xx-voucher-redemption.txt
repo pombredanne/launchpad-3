@@ -165,6 +165,9 @@ Log in as a user with lots of vouchers.
 
 Attempt to redeem a valid voucher and see the error message.
 
+    >>> from lp.testing.fixture import CaptureOops
+    >>> capture = CaptureOops()
+    >>> capture.setUp()
     >>> browser.getControl(name='field.project').value='mega-money-maker'
     >>> browser.getControl(name='field.voucher').value = [
     ...     'LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000001']
@@ -177,15 +180,12 @@ Attempt to redeem a valid voucher and see the error message.
 The OOPS report shows the error was logged even though the OOPS was
 not shown to the user.
 
-    >>> from zope.component import getUtility
-    >>> from zope.error.interfaces import IErrorReportingUtility
-    >>> from sys import stdout
-    >>> error_utility = getUtility(IErrorReportingUtility)
-    >>> report = error_utility.getLastOopsReport()
-    >>> report.type
+    >>> report = capture.oopses[0]
+    >>> capture.cleanUp()
+    >>> report['type']
     'SVPNotFoundException'
-    >>> report.value
-    'Something was not found.'
+    >>> report['value']
+    u'Something was not found.'
 
 Reset the class variable to disable forced faults.
 

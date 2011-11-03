@@ -117,9 +117,6 @@ class ILaunchpadUsage(Interface):
     official_malone = Bool(
         title=_('Bugs in this project are tracked in Launchpad'),
         required=True)
-    official_rosetta = Bool(
-        title=_('Translations for this project are done in Launchpad'),
-        required=True)
     official_anything = Bool(
         title=_('Uses Launchpad for something'))
     enable_bug_expiration = Bool(

@@ -588,6 +588,26 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
 
     export_as_webservice_entry(as_of="beta")
 
+    @operation_parameters(
+        bug=Reference(schema=Interface))  # Really IBug
+    @export_write_operation()
+    @operation_for_version('devel')
+    def linkBug(bug):
+        """Link a bug to this specification.
+
+        :param bug: IBug to link.
+        """
+
+    @operation_parameters(
+        bug=Reference(schema=Interface))  # Really IBug
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unlinkBug(bug):
+        """Unlink a bug to this specification.
+
+        :param bug: IBug to unlink.
+        """
+
 
 class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""

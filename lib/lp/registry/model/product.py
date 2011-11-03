@@ -378,8 +378,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_blueprints', notNull=True, default=False)
     official_malone = BoolCol(
         dbName='official_malone', notNull=True, default=False)
-    official_rosetta = BoolCol(
-        dbName='official_rosetta', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
     max_bug_heat = Int()
@@ -403,7 +401,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def official_anything(self):
-        return True in (self.official_malone, self.official_rosetta,
+        return True in (self.official_malone,
+                        self.translations_usage == ServiceUsage.LAUNCHPAD,
                         self.official_blueprints, self.official_answers,
                         self.official_codehosting)
 
@@ -415,7 +414,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName="blueprints_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    _translations_usage = EnumCol(
+    translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
@@ -693,26 +692,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         _get_blueprints_usage,
         _set_blueprints_usage,
         doc="Indicates if the product uses the blueprints service.")
-
-    def _get_translations_usage(self):
-        if self._translations_usage != ServiceUsage.UNKNOWN:
-            # If someone has set something with the enum, use it.
-            return self._translations_usage
-        elif self.official_rosetta:
-            return ServiceUsage.LAUNCHPAD
-        return self._translations_usage
-
-    def _set_translations_usage(self, val):
-        self._translations_usage = val
-        if val == ServiceUsage.LAUNCHPAD:
-            self.official_rosetta = True
-        else:
-            self.official_rosetta = False
-
-    translations_usage = property(
-        _get_translations_usage,
-        _set_translations_usage,
-        doc="Indicates if the product uses the translations service.")
 
     @cachedproperty
     def _cached_licenses(self):
@@ -1471,9 +1450,8 @@ class ProductSet:
 
     def forReview(self, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
-                  license_info_is_empty=None,
-                  has_zero_licenses=None,
                   created_after=None, created_before=None,
+                  has_subscription=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
                   subscription_modified_after=None,
@@ -1494,8 +1472,10 @@ class ProductSet:
         if search_text is not None and search_text.strip() != '':
             conditions.append(SQL('''
                 Product.fti @@ ftq(%(text)s) OR
-                Product.name = lower(%(text)s)
-                ''' % sqlvalues(text=search_text)))
+                Product.name = %(text)s OR
+                strpos(lower(Product.license_info), %(text)s) > 0 OR
+                strpos(lower(Product.reviewer_whiteboard), %(text)s) > 0
+                ''' % sqlvalues(text=search_text.lower())))
 
         def dateToDatetime(date):
             """Convert a datetime.date to a datetime.datetime
@@ -1557,58 +1537,28 @@ class ProductSet:
                     subscription_modified_before)
             needs_join = True
 
-        if needs_join:
+        if needs_join or has_subscription:
             conditions.append(
                 CommercialSubscription.productID == Product.id)
 
-        or_conditions = []
-        if license_info_is_empty is True:
-            # Match products whose license_info doesn't contain
-            # any non-space characters.
-            or_conditions.append("Product.license_info IS NULL")
-            or_conditions.append(r"Product.license_info ~ E'^\\s*$'")
-        elif license_info_is_empty is False:
-            # license_info contains something besides spaces.
-            or_conditions.append(r"Product.license_info ~ E'[^\\s]'")
-        elif license_info_is_empty is None:
-            # Don't restrict result if license_info_is_empty is None.
-            pass
-        else:
-            raise AssertionError('license_info_is_empty invalid: %r'
-                                 % license_info_is_empty)
-
-        has_license_subquery = '''%s (
-            SELECT 1
-            FROM ProductLicense
-            WHERE ProductLicense.product = Product.id
-            LIMIT 1
-            )
-            '''
-        if has_zero_licenses is True:
-            # The subquery finds zero rows.
-            or_conditions.append(has_license_subquery % 'NOT EXISTS')
-        elif has_zero_licenses is False:
-            # The subquery finds at least one row.
-            or_conditions.append(has_license_subquery % 'EXISTS')
-        elif has_zero_licenses is None:
-            # Don't restrict results if has_zero_licenses is None.
-            pass
-        else:
-            raise AssertionError('has_zero_licenses is invalid: %r'
-                                 % has_zero_licenses)
+        if has_subscription is False:
+            conditions.append(SQL('''
+                NOT EXISTS (
+                    SELECT 1
+                    FROM CommercialSubscription
+                    WHERE CommercialSubscription.product = Product.id
+                    LIMIT 1)
+                '''))
 
         if licenses is not None and len(licenses) > 0:
-            or_conditions.append('''EXISTS (
+            conditions.append(SQL('''EXISTS (
                 SELECT 1
                 FROM ProductLicense
                 WHERE ProductLicense.product = Product.id
                     AND license IN %s
                 LIMIT 1
                 )
-                ''' % sqlvalues(tuple(licenses)))
-
-        if len(or_conditions) != 0:
-            conditions.append(SQL('(%s)' % '\nOR '.join(or_conditions)))
+                ''' % sqlvalues(tuple(licenses))))
 
         result = IStore(Product).find(
             Product, *conditions).config(
@@ -1670,16 +1620,12 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
-        # this query is using _translations_usage, but there's no cleaner
-        # way to deal with it. Once the bug above is resolved, this should
-        # should be fixed to use translations_usage.
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
-            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Product.translations_usage == ServiceUsage.LAUNCHPAD,
             Person.id == Product._ownerID).config(
                 distinct=True).order_by(Product.title)
 
