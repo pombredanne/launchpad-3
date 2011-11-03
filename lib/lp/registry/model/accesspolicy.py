@@ -42,7 +42,7 @@ class AccessPolicy(StormBase):
     name = Unicode()
     display_name = Unicode()
 
-    permissions = ReferenceSet(id, "AccessPolicyGrant.policy_id")
+    grants = ReferenceSet(id, "AccessPolicyGrant.policy_id")
 
     @property
     def pillar(self):

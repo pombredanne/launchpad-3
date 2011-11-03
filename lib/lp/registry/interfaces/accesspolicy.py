@@ -24,7 +24,7 @@ class IAccessPolicy(Interface):
     pillar = Attribute("Pillar")
     name = Attribute("Name")
     display_name = Attribute("Display name")
-    permissions = Attribute("Permissions")
+    grants = Attribute("Grants")
 
 
 class IAccessPolicyArtifact(Interface):
