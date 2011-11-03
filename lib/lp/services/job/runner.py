@@ -259,7 +259,7 @@ class BaseJobRunner(object):
                     self.logger.debug('Running %r', job)
                     self.runJob(job)
                 except job.user_error_types, e:
-                    self.logger.info('Job %r failed with user error %r' %
+                    self.logger.info('Job %r failed with user error %r.' %
                         (job, e))
                     job.notifyUserError(e)
                 except Exception:

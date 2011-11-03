@@ -361,7 +361,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
                 'The target branch has no revisions.')
         if bmp.source_branch.pending_writes:
             raise BranchHasPendingWrites(
-                'The source branch has pending writes')
+                'The source branch has pending writes.')
 
     @staticmethod
     @contextlib.contextmanager
