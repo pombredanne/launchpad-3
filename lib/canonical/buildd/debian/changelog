@@ -1,6 +1,8 @@
 launchpad-buildd (82) hardy-cat; urgency=low
 
   * Cut out readyservice from the buildds.  LP: #800295
+  * buildrecipe shows the bzr and bzr-builder versions.  LP: #884092
+  * buildrecipe shows bzr rusage.  LP: 884997
 
  -- Martin Pool <mbp@canonical.com>  Thu, 03 Nov 2011 17:11:25 +1100
 
