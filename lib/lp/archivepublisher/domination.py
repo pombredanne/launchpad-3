@@ -491,7 +491,16 @@ class Dominator:
         main_clauses.extend(bpph_location_clauses)
 
         store = IStore(BinaryPackagePublishingHistory)
-        return store.find(BinaryPackagePublishingHistory, *main_clauses)
+
+        # We're going to access the BPRs as well.  Since we make the
+        # database look them up anyway, and since there won't be many
+        # duplications among them, load them alongside the publications.
+        # We'll also want their BinaryPackageNames, but adding those to
+        # the join would complicate the query.
+        query = store.find(
+            (BinaryPackagePublishingHistory, BinaryPackageRelease),
+            *main_clauses)
+        return DecoratedResultSet(query, itemgetter(0))
 
     def dominateBinaries(self, distroseries, pocket):
         """Perform domination on binary package publications.
