@@ -64,7 +64,8 @@ class TestBuildViews(TestCaseWithFactory):
         removeSecurityProxy(archive).require_virtualized = False
         build = self.factory.makeBinaryPackageBuild(archive=archive)
         build_menu = BuildContextMenu(build)
-        self.assertEquals(build_menu.links,
+        self.assertEquals(
+            build_menu.links,
             ['ppa', 'records', 'retry', 'rescore', 'cancel'])
         self.assertFalse(build_menu.is_ppa_build)
         self.assertFalse(build_menu.ppa().enabled)
@@ -74,15 +75,20 @@ class TestBuildViews(TestCaseWithFactory):
     def test_build_menu_ppa(self):
         # The 'PPA' action-menu item will be enabled if we target the build
         # to a PPA.
-        ppa = self.factory.makeArchive(purpose='PPA')
+        ppa = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, virtualized=True)
         build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        build.queueBuild()
         build_menu = BuildContextMenu(build)
-        self.assertEquals(build_menu.links,
+        self.assertEquals(
+            build_menu.links,
             ['ppa', 'records', 'retry', 'rescore', 'cancel'])
         self.assertTrue(build_menu.is_ppa_build)
         self.assertTrue(build_menu.ppa().enabled)
-        # Cancel is enabled on virtual builds.
-        self.assertTrue(build_menu.cancel().enabled)
+        # Cancel is enabled on virtual builds if the user is in the
+        # owning archive's team.
+        with person_logged_in(ppa.owner):
+            self.assertTrue(build_menu.cancel().enabled)
 
     def test_cannot_retry_stable_distroseries(self):
         # 'BuildView.user_can_retry_build' property checks not only the
