@@ -36,10 +36,14 @@ class TestLaunchpadView(TestCaseWithFactory):
     def setUp(self):
         super(TestLaunchpadView, self).setUp()
         flag_info.append(
-            ('test_feature', 'boolean', 'documentation', 'default',
+            ('test_feature', 'boolean', 'documentation', 'default_value_1',
              'title', 'http://wiki.lp.dev/LEP/sample'))
+        flag_info.append(
+            ('test_feature_2', 'boolean', 'documentation', 'default_value_2',
+             'title', 'http://wiki.lp.dev/LEP/sample2'))
 
     def tearDown(self):
+        flag_info.pop()
         flag_info.pop()
         super(TestLaunchpadView, self).tearDown()
 
@@ -160,22 +164,26 @@ class TestLaunchpadView(TestCaseWithFactory):
         view = LaunchpadView(object(), request)
         view.beta_features = ['test_feature']
         self.assertEqual(
-            [('test_feature', 'boolean', 'documentation', 'default',
+            [('test_feature', 'boolean', 'documentation', 'default_value_1',
               'title', 'http://wiki.lp.dev/LEP/sample')],
             view.active_beta_features)
 
     def makeFeatureFlagDictionaries(self, default_value, scope_value):
-        # Return two dictionaries describing a feature.
-        def makeFeatureDict(value, scope, priority):
+        # Return two dictionaries describing a feature for each test feature.
+        # One dictionary specifies the default value, the other specifies
+        # a more restricted scope.
+        def makeFeatureDict(flag, value, scope, priority):
             return {
-                u'flag': u'test_feature',
+                u'flag': flag,
                 u'scope': scope,
                 u'priority': priority,
                 u'value': value,
                 }
         return (
-            makeFeatureDict(default_value, u'default', 0),
-            makeFeatureDict(scope_value, u'pageid:foo', 10))
+            makeFeatureDict('test_feature', default_value, u'default', 0),
+            makeFeatureDict('test_feature', scope_value, u'pageid:foo', 10),
+            makeFeatureDict('test_feature_2', default_value, u'default', 0),
+            makeFeatureDict('test_feature_2', scope_value, u'pageid:bar', 10))
 
     def test_active_beta_features__enabled_feature_with_default(self):
         # If a view
@@ -189,7 +197,8 @@ class TestLaunchpadView(TestCaseWithFactory):
         view = LaunchpadView(object(), request)
         view.beta_features = ['test_feature']
         self.assertEqual(
-            [('test_feature', 'boolean', 'documentation', 'default',
+
+            [('test_feature', 'boolean', 'documentation', 'default_value_1',
               'title', 'http://wiki.lp.dev/LEP/sample')],
             view.active_beta_features)
 
@@ -208,7 +217,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         view.beta_features = ['test_feature']
         self.assertEqual([], view.active_beta_features)
 
-    def test_cache_has_beta_features(self):
+    def test_json_cache_has_beta_features(self):
         # The property beta_features is copied into the JSON cache.
         class TestView(LaunchpadView):
             beta_features = ['test_feature']
@@ -220,8 +229,33 @@ class TestLaunchpadView(TestCaseWithFactory):
         with person_logged_in(self.factory.makePerson()):
             self.assertEqual(
                 '{"beta_features": [["test_feature", "boolean", '
-                '"documentation", "default", "title", '
+                '"documentation", "default_value_1", "title", '
                 '"http://wiki.lp.dev/LEP/sample"]]}',
+                view.getCacheJSON())
+
+    def test_json_cache_collects_beta_features_from_all_views(self):
+        # A typical page includes data from more than one view,
+        # for example, from macros. Beta features from these sub-views
+        # are included in the JSON cache.
+        class TestView(LaunchpadView):
+            beta_features = ['test_feature']
+
+        class TestView2(LaunchpadView):
+            beta_features = ['test_feature_2']
+
+        self.useFixture(FeatureFixture(
+            {}, self.makeFeatureFlagDictionaries(u'', u'on')))
+        request = LaunchpadTestRequest()
+        view = TestView(object(), request)
+        TestView2(object(), request)
+        with person_logged_in(self.factory.makePerson()):
+            self.assertEqual(
+                '{"beta_features": [["test_feature", "boolean", '
+                '"documentation", "default_value_1", "title", '
+                '"http://wiki.lp.dev/LEP/sample"], '
+                '["test_feature_2", "boolean", "documentation", '
+                '"default_value_2", "title", '
+                '"http://wiki.lp.dev/LEP/sample2"]]}',
                 view.getCacheJSON())
 
     def test_view_creation_with_fake_or_none_request(self):
