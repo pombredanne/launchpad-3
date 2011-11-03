@@ -43,4 +43,4 @@ ALTER TABLE branch
     ADD COLUMN access_policy integer REFERENCES AccessPolicy;
 CREATE INDEX branch__access_policy__idx ON branch(access_policy);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 93, 1);
