@@ -15,6 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.domination import (
+    contains_arch_indep,
     Dominator,
     find_live_binary_versions_pass_1,
     find_live_binary_versions_pass_2,
@@ -1190,3 +1191,28 @@ class TestLivenessFunctions(TestCaseWithFactory):
         make_publications_arch_specific([dependent], True)
         self.assertEqual(
             ['1.2', '1.1'], find_live_binary_versions_pass_2(bpphs))
+
+
+class TestDominationHelpers(TestCaseWithFactory):
+    """Test lightweight helpers for the `Dominator`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_contains_arch_indep_says_True_for_arch_indep(self):
+        bpphs = [self.factory.makeBinaryPackagePublishingHistory()]
+        make_publications_arch_specific(bpphs, False)
+        self.assertTrue(contains_arch_indep(bpphs))
+
+    def test_contains_arch_indep_says_False_for_arch_specific(self):
+        bpphs = [self.factory.makeBinaryPackagePublishingHistory()]
+        make_publications_arch_specific(bpphs, True)
+        self.assertFalse(contains_arch_indep(bpphs))
+
+    def test_contains_arch_indep_says_True_for_combination(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.1', '1.0'])
+        make_publications_arch_specific(bpphs[:1], True)
+        make_publications_arch_specific(bpphs[1:], False)
+        self.assertTrue(contains_arch_indep(bpphs))
+
+    def test_contains_arch_indep_says_False_for_empty_list(self):
+        self.assertFalse(contains_arch_indep([]))

@@ -296,6 +296,11 @@ def find_live_binary_versions_pass_2(publications):
     return get_binary_versions([latest] + arch_specific_pubs + reprieved_pubs)
 
 
+def contains_arch_indep(bpphs):
+    """Are any of the publications among `bpphs` architecture-independent?"""
+    return any(not bpph.architecture_specific for bpph in bpphs)
+
+
 class Dominator:
     """Manage the process of marking packages as superseded.
 
@@ -568,6 +573,18 @@ class Dominator:
         """
         generalization = GeneralizedPublication(is_source=False)
 
+        # Domination happens in two passes.  The first tries to
+        # supersede architecture-dependent publications; the second
+        # tries to supersede architecture-independent ones.  An
+        # architecture-independent pub is kept alive as long as any
+        # architecture-dependent pubs from the same source package build
+        # are still live for any architecture, because they may depend
+        # on the architecture-independent package.
+        # Thus we limit the second pass to those packages that have
+        # published, architecture-independent publications; anything
+        # else will have completed domination in the first pass.
+        packages_w_arch_indep = set()
+
         for distroarchseries in distroseries.architectures:
             self.logger.info(
                 "Performing domination across %s/%s (%s)",
@@ -583,20 +600,25 @@ class Dominator:
                 assert len(pubs) > 0, "Dominating zero binaries!"
                 live_versions = find_live_binary_versions_pass_1(pubs)
                 self.dominatePackage(pubs, live_versions, generalization)
+                if contains_arch_indep(pubs):
+                    packages_w_arch_indep.add(name)
 
-        # We need to make a second pass to cover the cases where:
-        #  * arch-specific binaries were not all dominated before arch-all
-        #    ones that depend on them
-        #  * An arch-all turned into an arch-specific, or vice-versa
-        #  * A package is completely schizophrenic and changes all of
-        #    its binaries between arch-all and arch-any (apparently
-        #    occurs sometimes!)
+        packages_w_arch_indep = frozenset(packages_w_arch_indep)
+
+        # The second pass attempts to supersede arch-all publications of
+        # older versions, from source package releases that no longer
+        # have any active arch-specific publications that might depend
+        # on the arch-indep ones.
+        # (In maintaining this code, bear in mind that some or all of a
+        # source package's binary packages may switch between
+        # arch-specific and arch-indep between releases.)
         for distroarchseries in distroseries.architectures:
             self.logger.info("Finding binaries...(2nd pass)")
             bins = self.findBinariesForDomination(distroarchseries, pocket)
             sorted_packages = self._sortPackages(bins, generalization)
             self.logger.info("Dominating binaries...(2nd pass)")
-            for name, pubs in sorted_packages.iteritems():
+            for name in packages_w_arch_indep.intersection(sorted_packages):
+                pubs = sorted_packages[name]
                 self.logger.debug("Dominating %s" % name)
                 assert len(pubs) > 0, "Dominating zero binaries in 2nd pass!"
                 live_versions = find_live_binary_versions_pass_2(pubs)
