@@ -84,6 +84,21 @@ ConsistencyError = namedtuple(
     "ConsistencyError", ("type", "team", "people"))
 
 
+def report_progress(log, interval, results, what):
+    """Iterate through `results`, reporting on progress.
+
+    :param log: A logger.
+    :param interval: How many results to report progress about.
+    :param results: An iterable of things.
+    :param what: A string descriping what the results are.
+    """
+    for num, result in izip(count(1), results):
+        if num % interval == 0:
+            log.debug("%d %s", num, what)
+        yield result
+    log.debug("%d %s", num, what)
+
+
 def execute_long_query(store, log, interval, query):
     """Execute the given query, reporting as results are fetched.
 
@@ -91,10 +106,10 @@ def execute_long_query(store, log, interval, query):
     the total number of rows fetched thus far.
     """
     log.debug(query)
-    for rows, result in izip(count(1), store.execute(query)):
-        if rows % interval == 0:
-            log.debug("%d rows", rows)
-        yield result
+    results = store.execute(query)
+    # Hackish; the default is 10 which seems fairly low.
+    results._raw_cursor.arraysize = interval
+    return report_progress(log, interval, results, "rows")
 
 
 def check_teamparticipation_consistency(log):
@@ -149,13 +164,15 @@ def check_teamparticipation_consistency(log):
 
     errors = []
 
-    for person in people:
+    log.debug("Checking consistency of %d people", len(people))
+    for person in report_progress(log, 10000, people, "people"):
         participants_expected = set((person,))
         participants_observed = team_participations[person]
         errors.extend(
             check_participants(participants_expected, participants_observed))
 
-    for team in teams:
+    log.debug("Checking consistency of %d teams", len(teams))
+    for team in report_progress(log, 1000, teams, "teams"):
         participants_expected = get_participants(team)
         participants_observed = team_participations[team]
         errors.extend(
