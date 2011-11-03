@@ -1,22 +1,23 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bug nomination views."""
 
 __metaclass__ = type
 
-from zope.component import getUtility
+import re
 
 import soupmatchers
-import re
 from testtools.matchers import Not
-from canonical.testing.layers import DatabaseFunctionalLayer
+from zope.component import getUtility
+
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
     BrowserNotificationLevel,
     ILaunchBag,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     login_person,
