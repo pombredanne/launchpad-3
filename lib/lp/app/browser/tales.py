@@ -2146,6 +2146,40 @@ class DateTimeFormatterAPI:
     def isodate(self):
         return self._datetime.isoformat()
 
+    @staticmethod
+    def _yearDelta(old, new):
+        """Return the difference in years between two datetimes.
+
+        :param old: The old date
+        :param new: The new date
+        """
+        year_delta = new.year - old.year
+        if new.replace(year=old.year) < old:
+            year_delta -= 1
+        return year_delta
+
+    def durationsince(self):
+
+        now = self._now()
+        number = self._yearDelta(self._datetime, now)
+        unit = 'year'
+        if number < 1:
+            delta = now - self._datetime
+            if delta.days > 0:
+                number = delta.days
+                unit = 'day'
+            else:
+                number = delta.seconds / 60
+                unit = 'minute'
+                if number >= 60:
+                    number /= 60
+                    unit = 'hour'
+                if number == 0:
+                    return 'less than a minute'
+        if number != 1:
+            unit += 's'
+        return '%d %s' % (number, unit)
+
 
 class SeriesSourcePackageBranchFormatter(ObjectFormatterAPI):
     """Formatter for a SourcePackage, Pocket -> Branch link.

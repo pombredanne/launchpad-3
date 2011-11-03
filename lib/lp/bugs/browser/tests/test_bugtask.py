@@ -4,7 +4,10 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import re
 import urllib
 
@@ -1488,6 +1491,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         navigator = BugListingBatchNavigator([], request, [], 1)
         cache = IJSONRequestCache(request)
         bugtask = {
+            'age': 'age1',
             'assignee': 'assignee1',
             'id': '3.14159',
             'title': 'title1',
@@ -1566,12 +1570,19 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     def test_hiding_assignee(self):
         """Showing milestone name shows the text."""
-
         navigator, mustache_model = self.getNavigator()
         self.assertIn('show_assignee', navigator.field_visibility)
         self.assertNotIn('assignee1', navigator.mustache)
         mustache_model['bugtasks'][0]['show_assignee'] = True
         self.assertIn('assignee1', navigator.mustache)
+
+    def test_hiding_age(self):
+        """Showing age shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_age', navigator.field_visibility)
+        self.assertNotIn('age1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_age'] = True
+        self.assertIn('age1', navigator.mustache)
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
@@ -1623,3 +1634,9 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             item.bugtask.transitionToAssignee(assignee)
             self.assertEqual('Example Person', item.model['assignee'])
 
+    def test_model_bug_age(self):
+        """Model contains bug age."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
+            self.assertEqual('3 days old', item.model['age'])

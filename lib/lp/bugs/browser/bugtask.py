@@ -167,6 +167,7 @@ from lp.app.browser.lazrjs import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
@@ -2143,6 +2144,8 @@ class BugTaskListingItem:
     @property
     def model(self):
         """Provide flattened data about bugtask for simple templaters."""
+        age = DateTimeFormatterAPI(self.bug.datecreated).durationsince()
+        age += ' old'
         badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
         target_image = getAdapter(self.target, IPathAdapter, 'image')
         if self.bugtask.milestone is not None:
@@ -2153,19 +2156,20 @@ class BugTaskListingItem:
         if self.assignee is not None:
             assignee = self.assignee.displayname
         return {
-            'importance': self.importance.title,
-            'importance_class': 'importance' + self.importance.name,
-            'status': self.status.title,
-            'status_class': 'status' + self.status.name,
-            'title': self.bug.title,
-            'id': self.bug.id,
+            'age': age,
+            'assignee': assignee,
             'bug_url': canonical_url(self.bugtask),
             'bugtarget': self.bugtargetdisplayname,
             'bugtarget_css': target_image.sprite_css(),
             'bug_heat_html': self.bug_heat_html,
             'badges': badges,
+            'id': self.bug.id,
+            'importance': self.importance.title,
+            'importance_class': 'importance' + self.importance.name,
             'milestone_name': milestone_name,
-            'assignee': assignee,
+            'status': self.status.title,
+            'status_class': 'status' + self.status.name,
+            'title': self.bug.title,
             }
 
 
@@ -2179,6 +2183,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
         self.request = request
         self.target_context = target_context
         self.field_visibility = {
+            'show_age': False,
             'show_assignee': False,
             'show_bugtarget': True,
             'show_bug_heat': True,
