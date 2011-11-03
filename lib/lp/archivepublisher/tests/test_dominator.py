@@ -162,7 +162,7 @@ class TestDominator(TestNativePublishingBase):
         """Domination asserts for non-empty input list."""
         package = self.factory.makeBinaryPackageName()
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-        dominator.mapPackages = FakeMethod({package.name: []})
+        dominator._sortPackages = FakeMethod({package.name: []})
         # This isn't a really good exception. It should probably be
         # something more indicative of bad input.
         self.assertRaises(
@@ -175,7 +175,7 @@ class TestDominator(TestNativePublishingBase):
         """Domination asserts for non-empty input list."""
         package = self.factory.makeSourcePackageName()
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-        dominator.mapPackages = FakeMethod({package.name: []})
+        dominator._sortPackages = FakeMethod({package.name: []})
         # This isn't a really good exception. It should probably be
         # something more indicative of bad input.
         self.assertRaises(
@@ -414,7 +414,8 @@ def make_bpphs_for_versions(factory, versions):
     archive = das.distroseries.main_archive
     pocket = factory.getAnyPocket()
     bprs = [
-        factory.makeBinaryPackageRelease(binarypackagename=bpn)
+        factory.makeBinaryPackageRelease(
+            binarypackagename=bpn, version=version)
         for version in versions]
     return [
         factory.makeBinaryPackagePublishingHistory(
@@ -1115,6 +1116,19 @@ class TestDominatorMethods(TestCaseWithFactory):
                 spphs[0].distroseries, spphs[0].pocket))
 
 
+def make_publications_arch_specific(pubs, arch_specific=True):
+    """Set the `architecturespecific` attribute for given SPPHs.
+
+    :param pubs: An iterable of `BinaryPackagePublishingHistory`.
+    :param arch_specific: Whether the binary package releases published
+        by `pubs` are to be architecture-specific.  If not, they will be
+        treated as being for the "all" architecture.
+    """
+    for pub in pubs:
+        bpr = removeSecurityProxy(pub).binarypackagerelease
+        bpr.architecturespecific = arch_specific
+
+
 class TestLivenessFunctions(TestCaseWithFactory):
     """Tests for the functions that say which versions are live."""
 
@@ -1124,21 +1138,40 @@ class TestLivenessFunctions(TestCaseWithFactory):
         spphs = make_spphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
         self.assertEqual(['1.0'], find_live_source_versions(spphs))
 
-# XXX: First make those bpphs architecture-specific!
     def test_find_live_binary_versions_first_pass_blesses_latest(self):
         bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        make_publications_arch_specific(bpphs)
         self.assertEqual(['1.0'], find_live_binary_versions_first_pass(bpphs))
 
     def test_find_live_binary_versions_first_pass_blesses_arch_all(self):
-        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
-        bpphs[-1].binarypackagerelease.architecturespecific = False
+        versions = ['1.%d' % version for version in range(3)]
+        bpphs = make_bpphs_for_versions(self.factory, versions)
+
+        # All of these publications are architecture-specific, except
+        # the last one.  This would happen if the binary package had
+        # just changed from being architecture-specific to being
+        # architecture-independent.
+        make_publications_arch_specific(bpphs, True)
+        make_publications_arch_specific(bpphs[-1:], False)
         self.assertEqual(
-            ['1.0', '1.2'], find_live_binary_versions_first_pass(bpphs))
+            versions[:1] + versions[-1:],
+            find_live_binary_versions_first_pass(bpphs))
 
     def test_find_live_binary_versions_second_pass_blesses_latest(self):
         bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        make_publications_arch_specific(bpphs, False)
         self.assertEqual(
             ['1.0'], find_live_binary_versions_second_pass(bpphs))
 
+    def test_find_live_binary_versions_second_pass_blesses_arch_specific(
+            self):
+        versions = ['1.%d' % version for version in range(3)]
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        make_publications_arch_specific(bpphs)
+        self.assertEqual(
+            versions, find_live_binary_versions_second_pass(bpphs))
+
     def test_find_live_binary_versions_second_pass_reprieves_arch_all(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        make_publications_arch_specific(bpphs)
         self.assertTrue(False) # XXX: Test
