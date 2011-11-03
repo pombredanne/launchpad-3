@@ -6,12 +6,18 @@ CREATE TABLE AccessPolicy (
     id serial PRIMARY KEY,
     product integer REFERENCES Product,
     distribution integer REFERENCES Distribution,
+    name text NOT NULL,
     display_name text NOT NULL,
+    CONSTRAINT accesspolicy__product__name__key
+        UNIQUE (product, name),
     CONSTRAINT accesspolicy__product__display_name__key
         UNIQUE (product, display_name),
+    CONSTRAINT accesspolicy__distribution__name__key
+        UNIQUE (distribution, name),
     CONSTRAINT accesspolicy__distribution__display_name__key
         UNIQUE (distribution, display_name),
-    CONSTRAINT has_target CHECK (product IS NULL != distribution IS NULL)
+    CONSTRAINT has_target CHECK (product IS NULL != distribution IS NULL),
+    CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
 CREATE TABLE AccessPolicyArtifact (

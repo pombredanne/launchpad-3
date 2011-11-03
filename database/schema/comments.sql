@@ -11,6 +11,7 @@
 COMMENT ON TABLE AccessPolicy IS 'A policy to manage access to a pillar\'s artifacts.';
 COMMENT ON COLUMN AccessPolicy.product IS 'The product that this policy applies to.';
 COMMENT ON COLUMN AccessPolicy.distribution IS 'The distribution that this policy applies to.';
+COMMENT ON COLUMN AccessPolicy.name IS 'A URL name for this policy.';
 COMMENT ON COLUMN AccessPolicy.display_name IS 'A human-readable name for this policy.';
 
 -- AccessPolicyArtifact
