@@ -67,6 +67,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
@@ -551,6 +552,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             self, build_states)
         return DecoratedResultSet(result_set, operator.itemgetter(1))
 
+    def getFileByName(self, name):
+        """See `ISourcePackagePublishingHistory`."""
+        changelog = self.sourcepackagerelease.changelog
+        if changelog is not None and name == changelog.filename:
+            return changelog
+        raise NotFoundError(name)
+
     def changesFileUrl(self):
         """See `ISourcePackagePublishingHistory`."""
         # We use getChangesFileLFA() as opposed to getChangesFilesForSources()
@@ -573,6 +581,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # a 302 so that webapp threads are not tied up.
         the_url = self._proxied_urls((changes_lfa,), self.archive)[0]
         return the_url
+
+    def changelogUrl(self):
+        """See `ISourcePackagePublishingHistory`."""
+        lfa = self.sourcepackagerelease.changelog
+        if lfa is not None:
+            return self._proxied_urls((lfa,), self)[0]
+        return None
 
     def _getAllowedArchitectures(self, available_archs):
         """Filter out any restricted architectures not specifically allowed
@@ -1117,6 +1132,51 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 component=self.component,
                 section=self.section,
                 priority=self.priority)
+
+    def getOtherPublicationsForSameSource(self, include_archindep=False):
+        """Return all the other published or pending binaries for this
+        source.
+
+        For example if source package foo builds:
+        foo - i386
+        foo - amd64
+        foo-common - arch-all (published in i386 and amd64)
+        then if this publication is the arch-all amd64, return foo(i386),
+        foo(amd64). If include_archindep is True then also return
+        foo-common (i386)
+
+        :param include_archindep: If True, return architecture independent
+            publications too. Defaults to False.
+
+        :return: an iterable of `BinaryPackagePublishingHistory`
+        """
+        # Avoid circular wotsits.
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        pubs = [
+            BinaryPackageBuild.source_package_release_id ==
+                self.binarypackagerelease.build.source_package_release_id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID == self.archive.id,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == self.distroseries.id,
+            BinaryPackagePublishingHistory.pocket == self.pocket,
+            BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status),
+            BinaryPackagePublishingHistory.id != self.id
+            ]
+
+        if not include_archindep:
+            pubs.append(BinaryPackageRelease.architecturespecific == True)
+
+        return IMasterStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            *pubs
+            )
 
     def supersede(self, dominant=None, logger=None):
         """See `IBinaryPackagePublishingHistory`."""

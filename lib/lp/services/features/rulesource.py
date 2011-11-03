@@ -87,7 +87,8 @@ class FeatureRuleSource(object):
     def parseRules(self, text_form):
         """Return a list of tuples for the parsed form of the text input.
 
-        For each non-blank line gives back a tuple of (flag, scope, priority, value).
+        For each non-blank line gives back a tuple of
+        (flag, scope, priority, value).
 
         Returns a list rather than a generator so that you see any syntax
         errors immediately.
@@ -139,8 +140,8 @@ class StormFeatureRuleSource(FeatureRuleSource):
 
         :param new_rules: List of (name, scope, priority, value) tuples.
         """
-        # XXX: would be slightly better to only update rules as necessary so we keep
-        # timestamps, and to avoid the direct sql etc -- mbp 20100924
+        # XXX: would be slightly better to only update rules as necessary so
+        # we keep timestamps, and to avoid the direct sql etc -- mbp 20100924
         store = getFeatureStore()
         store.execute('DELETE FROM FeatureFlag')
         for (flag, scope, priority, value) in new_rules:
@@ -149,6 +150,7 @@ class StormFeatureRuleSource(FeatureRuleSource):
                 flag=unicode(flag),
                 value=value,
                 priority=priority))
+        store.flush()
 
 
 class NullFeatureRuleSource(FeatureRuleSource):

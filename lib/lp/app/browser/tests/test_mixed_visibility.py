@@ -24,7 +24,7 @@ class TestMixedVisibility(TestCaseWithFactory):
         # about a private team, with the feature flag enabled, an
         # informational OOPS is logged.
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
-        viewer = self.factory.makePerson() 
+        viewer = self.factory.makePerson()
         with FeatureFixture(MIXED_VISIBILITY_FLAG):
             with person_logged_in(viewer):
                 self.assertEqual(

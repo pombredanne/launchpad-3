@@ -190,15 +190,12 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
     """
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestGetVfsFormatClasses, self).setUp()
         self.disable_directory_isolation()
-
-    def tearDown(self):
         # This makes sure the connections held by the branches opened in the
         # test are dropped, so the daemon threads serving those branches can
         # exit.
-        gc.collect()
-        TestCaseWithTransport.tearDown(self)
+        self.addCleanup(gc.collect)
 
     def test_get_vfs_format_classes(self):
         # get_vfs_format_classes for a returns the underlying format classes

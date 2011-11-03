@@ -365,16 +365,24 @@ def start_testapp(argv=list(sys.argv)):
     def setup():
         # This code needs to be run after other zcml setup happens in
         # runlaunchpad, so it is passed in as a callable.
+        # Note that this changes the config instance-name, with the result that
+        # the configuration of utilities may become invalidated.
+        # XXX: Robert Collins - see bug 883980 about this. In short, we should
+        # inherit the other services from the test runner, rather than
+        # duplicating the work of test setup within the slave appserver. That
+        # will permit reuse of the librarian, DB, rabbit etc and
+        # correspondingly easier assertions and inspection of interactions with
+        # other services. That would mean we do not need to setup rabbit or the
+        # librarian here : the test runner would control and take care of that.
         BaseLayer.setUp()
         teardowns.append(BaseLayer.tearDown)
-        if interactive_tests:
-            # The test suite runs its own RabbitMQ.  We only need this
-            # for interactive tests.  We set it up here rather than by
-            # passing it in as an argument to start_launchpad because
-            # the appserver config does not normally need/have
-            # RabbitMQ config set.
-            RabbitMQLayer.setUp()
-            teardowns.append(RabbitMQLayer.tearDown)
+        # The test suite runs its own RabbitMQ.  We only need this
+        # for interactive tests.  We set it up here rather than by
+        # passing it in as an argument to start_launchpad because
+        # the appserver config does not normally need/have
+        # RabbitMQ config set.
+        RabbitMQLayer.setUp()
+        teardowns.append(RabbitMQLayer.tearDown)
         # We set up the database here even for the test suite because we want
         # to be able to control the database here in the subprocess.  It is
         # possible to do that when setting the database up in the parent

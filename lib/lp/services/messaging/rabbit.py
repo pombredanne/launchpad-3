@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    "connect",
+    "is_configured",
     "session",
     "unreliable_session",
     ]
@@ -12,6 +14,7 @@ __all__ = [
 from collections import deque
 from functools import partial
 import json
+import sys
 import threading
 import time
 
@@ -25,7 +28,6 @@ from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
     IMessageSession,
-    MessagingException,
     MessagingUnavailable,
     QueueEmpty,
     QueueNotFound,
@@ -53,6 +55,28 @@ class RabbitSessionTransactionSync:
             self.session.finish()
         else:
             self.session.reset()
+
+
+def is_configured():
+    """Return True if rabbit looks to be configured."""
+    return not (
+        config.rabbitmq.host is None or
+        config.rabbitmq.userid is None or
+        config.rabbitmq.password is None or
+        config.rabbitmq.virtual_host is None)
+
+
+def connect():
+    """Connect to AMQP if possible.
+
+    :raises MessagingUnavailable: If the configuration is incomplete.
+    """
+    if not is_configured():
+        raise MessagingUnavailable("Incomplete configuration")
+    return amqp.Connection(
+        host=config.rabbitmq.host, userid=config.rabbitmq.userid,
+        password=config.rabbitmq.password,
+        virtual_host=config.rabbitmq.virtual_host, insist=False)
 
 
 class RabbitSession(threading.local):
@@ -85,15 +109,7 @@ class RabbitSession(threading.local):
         shared between threads.
         """
         if self._connection is None or self._connection.transport is None:
-            if (config.rabbitmq.host is None or
-                config.rabbitmq.userid is None or
-                config.rabbitmq.password is None or
-                config.rabbitmq.virtual_host is None):
-                raise MessagingUnavailable("Incomplete configuration")
-            self._connection = amqp.Connection(
-                host=config.rabbitmq.host, userid=config.rabbitmq.userid,
-                password=config.rabbitmq.password,
-                virtual_host=config.rabbitmq.virtual_host, insist=False)
+            self._connection = connect()
         return self._connection
 
     def disconnect(self):
@@ -145,26 +161,36 @@ class RabbitUnreliableSession(RabbitSession):
     """An "unreliable" `RabbitSession`.
 
     Unreliable in this case means that certain errors in deferred tasks are
-    silently suppressed, `AMQPException` in particular. This means that
-    services can continue to function even in the absence of a running and
-    fully functional message queue.
+    silently suppressed. This means that services can continue to function
+    even in the absence of a running and fully functional message queue.
+
+    Other types of errors are also caught because we don't want this
+    subsystem to destabilise other parts of Launchpad but we nonetheless
+    record OOPses for these.
+
+    XXX: We only suppress MessagingUnavailable for now because we want to
+    monitor this closely before we add more exceptions to the
+    suppressed_errors list. Potential candidates are `MessagingException`,
+    `IOError` or `amqp.AMQPException`.
     """
 
-    ignored_errors = (
-        IOError,
-        MessagingException,
-        amqp.AMQPException,
+    suppressed_errors = (
+        MessagingUnavailable,
         )
 
     def finish(self):
         """See `IMessageSession`.
 
-        Suppresses errors listed in `ignored_errors`.
+        Suppresses errors listed in `suppressed_errors`. Also suppresses
+        other errors but files an oops report for these.
         """
         try:
             super(RabbitUnreliableSession, self).finish()
-        except self.ignored_errors:
+        except self.suppressed_errors:
             pass
+        except Exception:
+            from canonical.launchpad.webapp import errorlog
+            errorlog.globalErrorUtility.raising(sys.exc_info())
 
 
 # Per-thread "unreliable" sessions.
