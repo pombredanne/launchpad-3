@@ -53,6 +53,7 @@ __metaclass__ = type
 __all__ = ['Dominator']
 
 from datetime import timedelta
+from operator import itemgetter
 
 import apt_pkg
 from storm.expr import (
@@ -66,6 +67,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -258,7 +262,8 @@ class Dominator:
         # Go through publications from latest version to oldest.  This
         # makes it easy to figure out which release superseded which:
         # the dominant is always the oldest live release that is newer
-        # than the one being superseded.
+        # than the one being superseded.  In this loop, that means the
+        # dominant is always the last live publication we saw.
         publications = sorted(
             publications, cmp=generalization.compare, reverse=True)
 
@@ -272,22 +277,26 @@ class Dominator:
         for pub in publications:
             version = generalization.getPackageVersion(pub)
             # There should never be two published releases with the same
-            # version.  So this comparison is really a string
-            # comparison, not a version comparison: if the versions are
-            # equal by either measure, they're from the same release.
-            if dominant_version is not None and version == dominant_version:
+            # version.  So it doesn't matter whether this comparison is
+            # really a string comparison or a version comparison: if the
+            # versions are equal by either measure, they're from the same
+            # release.
+            if version == dominant_version:
                 # This publication is for a live version, but has been
                 # superseded by a newer publication of the same version.
                 # Supersede it.
                 pub.supersede(current_dominant, logger=self.logger)
                 self.logger.debug2(
                     "Superseding older publication for version %s.", version)
-            elif (version in live_versions or
-                  (not generalization.is_source and
-                   not self._checkArchIndep(pub))):
+            elif version in live_versions:
                 # This publication stays active; if any publications
                 # that follow right after this are to be superseded,
                 # this is the release that they are superseded by.
+                current_dominant = pub
+                dominant_version = version
+                self.logger.debug2("Keeping version %s.", version)
+            elif not (generalization.is_source or self._checkArchIndep(pub)):
+                # As a special case, we keep this version live as well.
                 current_dominant = pub
                 dominant_version = version
                 self.logger.debug2("Keeping version %s.", version)
@@ -442,72 +451,81 @@ class Dominator:
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
 
+    def findBinariesForDomination(self, distroarchseries, pocket):
+        """Find binary publications that need dominating.
+
+        This is only for traditional domination, where the latest published
+        publication is always kept published.  It will ignore publications
+        that have no other publications competing for the same binary package.
+        """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
+        bpph_location_clauses = [
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                distroarchseries,
+            BinaryPackagePublishingHistory.archive == self.archive,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            ]
+        candidate_binary_names = Select(
+            BinaryPackageName.id,
+            And(
+                BinaryPackageRelease.binarypackagenameID ==
+                    BinaryPackageName.id,
+                BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                    BinaryPackageRelease.id,
+                bpph_location_clauses,
+            ),
+            group_by=BinaryPackageName.id,
+            having=Count(BinaryPackagePublishingHistory.id) > 1)
+        main_clauses = [
+            BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            BinaryPackageRelease.binarypackagenameID.is_in(
+                candidate_binary_names),
+            BinaryPackageRelease.binpackageformat !=
+                BinaryPackageFormat.DDEB,
+            ]
+        main_clauses.extend(bpph_location_clauses)
+
+        store = IStore(BinaryPackagePublishingHistory)
+        return store.find(BinaryPackagePublishingHistory, *main_clauses)
+
     def dominateBinaries(self, distroseries, pocket):
         """Perform domination on binary package publications.
 
         Dominates binaries, restricted to `distroseries`, `pocket`, and
         `self.archive`.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
         generalization = GeneralizedPublication(is_source=False)
 
         for distroarchseries in distroseries.architectures:
             self.logger.info(
                 "Performing domination across %s/%s (%s)",
-                distroseries.name, pocket.title,
+                distroarchseries.distroseries.name, pocket.title,
                 distroarchseries.architecturetag)
 
-            bpph_location_clauses = [
-                BinaryPackagePublishingHistory.status ==
-                    PackagePublishingStatus.PUBLISHED,
-                BinaryPackagePublishingHistory.distroarchseries ==
-                    distroarchseries,
-                BinaryPackagePublishingHistory.archive == self.archive,
-                BinaryPackagePublishingHistory.pocket == pocket,
-                ]
-            candidate_binary_names = Select(
-                BinaryPackageName.id,
-                And(
-                    BinaryPackageRelease.binarypackagenameID ==
-                        BinaryPackageName.id,
-                    BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                        BinaryPackageRelease.id,
-                    bpph_location_clauses,
-                ),
-                group_by=BinaryPackageName.id,
-                having=Count(BinaryPackagePublishingHistory.id) > 1)
-            main_clauses = [
-                BinaryPackagePublishingHistory,
-                BinaryPackageRelease.id ==
-                    BinaryPackagePublishingHistory.binarypackagereleaseID,
-                BinaryPackageRelease.binarypackagenameID.is_in(
-                    candidate_binary_names),
-                BinaryPackageRelease.binpackageformat !=
-                    BinaryPackageFormat.DDEB,
-                ]
-            main_clauses.extend(bpph_location_clauses)
+            self.logger.info("Finding binaries...")
+            bins = self.findBinariesForDomination(distroarchseries, pocket)
+            sorted_packages = self._sortPackages(bins, generalization)
+            self.logger.info("Dominating binaries...")
+            self._dominatePublications(sorted_packages, generalization)
 
-            def do_domination(pass2_msg=""):
-                msg = "binaries..." + pass2_msg
-                self.logger.info("Finding %s" % msg)
-                bins = IStore(
-                    BinaryPackagePublishingHistory).find(*main_clauses)
-                self.logger.info("Dominating %s" % msg)
-                sorted_packages = self._sortPackages(bins, generalization)
-                self._dominatePublications(sorted_packages, generalization)
-
-            do_domination()
-
-            # We need to make a second pass to cover the cases where:
-            #  * arch-specific binaries were not all dominated before arch-all
-            #    ones that depend on them
-            #  * An arch-all turned into an arch-specific, or vice-versa
-            #  * A package is completely schizophrenic and changes all of
-            #    its binaries between arch-all and arch-any (apparently
-            #    occurs sometimes!)
-            do_domination("(2nd pass)")
+        # We need to make a second pass to cover the cases where:
+        #  * arch-specific binaries were not all dominated before arch-all
+        #    ones that depend on them
+        #  * An arch-all turned into an arch-specific, or vice-versa
+        #  * A package is completely schizophrenic and changes all of
+        #    its binaries between arch-all and arch-any (apparently
+        #    occurs sometimes!)
+        for distroarchseries in distroseries.architectures:
+            self.logger.info("Finding binaries...(2nd pass)")
+            bins = self.findBinariesForDomination(distroarchseries, pocket)
+            sorted_packages = self._sortPackages(bins, generalization)
+            self.logger.info("Dominating binaries...(2nd pass)")
+            self._dominatePublications(sorted_packages, generalization)
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
         """Compose ORM condition for restricting relevant source pubs."""
@@ -522,20 +540,10 @@ class Dominator:
             SourcePackagePublishingHistory.pocket == pocket,
             )
 
-    def dominateSources(self, distroseries, pocket):
-        """Perform domination on source package publications.
-
-        Dominates sources, restricted to `distroseries`, `pocket`, and
-        `self.archive`.
-        """
+    def findSourcesForDomination(self, distroseries, pocket):
+        """Find binary publications that need dominating."""
         # Avoid circular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
-        generalization = GeneralizedPublication(is_source=True)
-
-        self.logger.debug(
-            "Performing domination across %s/%s (Source)",
-            distroseries.name, pocket.title)
 
         spph_location_clauses = self._composeActiveSourcePubsCondition(
             distroseries, pocket)
@@ -546,12 +554,33 @@ class Dominator:
             And(join_spph_spr(), join_spr_spn(), spph_location_clauses),
             group_by=SourcePackageName.id,
             having=having_multiple_active_publications)
-        sources = IStore(SourcePackagePublishingHistory).find(
-            SourcePackagePublishingHistory,
+
+        # We'll also access the SourcePackageReleases associated with
+        # the publications we find.  Since they're in the join anyway,
+        # load them alongside the publications.
+        # Actually we'll also want the SourcePackageNames, but adding
+        # those to the (outer) query would complicate it, and
+        # potentially slow it down.
+        query = IStore(SourcePackagePublishingHistory).find(
+            (SourcePackagePublishingHistory, SourcePackageRelease),
             join_spph_spr(),
             SourcePackageRelease.sourcepackagenameID.is_in(
                 candidate_source_names),
             spph_location_clauses)
+        return DecoratedResultSet(query, itemgetter(0))
+
+    def dominateSources(self, distroseries, pocket):
+        """Perform domination on source package publications.
+
+        Dominates sources, restricted to `distroseries`, `pocket`, and
+        `self.archive`.
+        """
+        self.logger.debug(
+            "Performing domination across %s/%s (Source)",
+            distroseries.name, pocket.title)
+
+        generalization = GeneralizedPublication(is_source=True)
+        sources = self.findSourcesForDomination(distroseries, pocket)
 
         self.logger.debug("Dominating sources...")
         self._dominatePublications(

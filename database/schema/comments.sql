@@ -843,7 +843,6 @@ of messages that could be found in a potemplate file.';
 COMMENT ON COLUMN POTMsgSet.context IS 'Context uniquely defining a message when there are messages with same primemsgids.';
 COMMENT ON COLUMN POTMsgSet.msgid_singular IS 'The singular msgid for this message.';
 COMMENT ON COLUMN POTMsgSet.msgid_plural IS 'The plural msgid for this message.';
-COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
 COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
 COMMENT ON COLUMN POTMsgSet.filereferences IS 'The list of files and their line number where this message set was extracted from.';

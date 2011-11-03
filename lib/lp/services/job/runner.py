@@ -226,7 +226,6 @@ class BaseJobRunner(object):
             job.suspend()
             self.incomplete_jobs.append(job)
         except Exception:
-            self.logger.exception("Job execution raised an exception.")
             transaction.abort()
             job.fail()
             # Record the failure.

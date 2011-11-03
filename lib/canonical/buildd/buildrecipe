@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+#! /usr/bin/env python -u
+# Copyright 2010, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A script that builds a package from a recipe and a chroot."""
@@ -12,7 +12,10 @@ import os.path
 import pwd
 from resource import RLIMIT_AS, setrlimit
 import socket
-from subprocess import call
+from subprocess import (
+    call,
+    check_call,
+    )
 import sys
 
 
@@ -91,6 +94,10 @@ class RecipeBuilder:
         # using buildd@<hostname>.
         hostname = socket.gethostname()
         bzr_email = 'buildd@%s' % hostname
+
+        print 'Bazaar versions:'
+        check_call(['bzr', 'version'])
+        check_call(['bzr', 'plugins'])
 
         print 'Building recipe:'
         print recipe

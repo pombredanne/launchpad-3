@@ -17,6 +17,7 @@ __all__ = [
     'celebrity_logged_in',
     'ExpectedException',
     'extract_lp_cache',
+    'FakeLaunchpadRequest',
     'FakeTime',
     'get_lsb_information',
     'launchpadlib_credentials_for',
@@ -85,6 +86,7 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+from lazr.restful.testing.webservice import FakeRequest
 import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
@@ -96,10 +98,7 @@ from testtools.content_type import UTF8_TEXT
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 import zope.event
 from zope.interface.verify import verifyClass
 from zope.security.proxy import (
@@ -109,19 +108,16 @@ from zope.security.proxy import (
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.config import config
-from canonical.launchpad.webapp import (
-    canonical_url,
-    errorlog,
-    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.adapter import (
     print_queries,
     start_sql_logging,
     stop_sql_logging,
     )
-from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
+    StepsToGo,
     WebServiceTestRequest,
     )
 from lp.codehosting.vfs import (
@@ -161,7 +157,7 @@ from lp.testing._webservice import (
     launchpadlib_for,
     oauth_access_token_for,
     )
-from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.fixture import CaptureOops
 from lp.testing.karma import KarmaRecorder
 
 # The following names have been imported for the purpose of being
@@ -424,23 +420,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 'Events were generated: %s.' % event_list)
         return result
 
-    @contextmanager
-    def noOops(self):
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
-        try:
-            yield
-        finally:
-            self.assertNoNewOops(oops)
-
-    def assertNoNewOops(self, old_oops):
-        """Assert that no oops has been recorded since old_oops."""
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
-        if old_oops is None:
-            self.assertIs(None, oops)
-        else:
-            self.assertTrue(
-                oops.id == old_oops.id, 'Oops recorded: %s' % oops.id)
-
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
 
@@ -571,18 +550,15 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
-        self.oopses = []
-        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
+        # You can call self.oops_capture.sync() to collect oopses from
+        # subprocesses over amqp.
+        self.oops_capture = self.useFixture(CaptureOops())
+        self.oopses = self.oops_capture.oopses
         self.addCleanup(self.attachOopses)
         if LibrarianLayer.librarian_fixture is not None:
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
-
-    @adapter(ErrorReportEvent)
-    def _recordOops(self, event):
-        """Add the oops to the testcase's list."""
-        self.oopses.append(event.object)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.
@@ -1345,3 +1321,11 @@ def nonblocking_readline(instream, timeout):
             result.write(next_char)
         now = time.time()
     return result.getvalue()
+
+
+class FakeLaunchpadRequest(FakeRequest):
+
+    @property
+    def stepstogo(self):
+        """See `IBasicLaunchpadRequest`."""
+        return StepsToGo(self)
