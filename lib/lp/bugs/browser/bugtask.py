@@ -2502,6 +2502,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             cache = IJSONRequestCache(self.request)
             batch_navigator = self.search()
             cache.objects['mustache_model'] = batch_navigator.model
+            cache.objects['field_visibility'] = (
+                batch_navigator.field_visibility)
 
             def _getBatchInfo(batch):
                 if batch is None:

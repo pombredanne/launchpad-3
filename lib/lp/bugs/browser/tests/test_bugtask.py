@@ -1436,6 +1436,14 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertFalse(cache.objects['forwards'])
         self.assertEqual(0, cache.objects['last_start'])
 
+    def test_cache_field_visibility(self):
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, memo=1, forwards=False, size=1)
+        cache = IJSONRequestCache(view.request)
+        field_visibility = cache.objects['field_visibility']
+        self.assertTrue(field_visibility['show_title'])
+
     def getBugtaskBrowser(self):
         """Return a browser for a new bugtask."""
         bugtask = self.factory.makeBugTask()
