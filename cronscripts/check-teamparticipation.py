@@ -18,17 +18,68 @@ Ideally there should be database constraints to prevent this sort of
 situation, but that's not a simple thing and this should do for now.
 """
 
-import _pythonpath
+import bz2
 
-from lp.registry.scripts.teamparticipation import check_teamparticipation
+import _pythonpath
+import cPickle as pickle
+
+from lp.registry.scripts.teamparticipation import (
+    check_teamparticipation_circular,
+    check_teamparticipation_consistency,
+    check_teamparticipation_self,
+    fetch_team_participation_info,
+    )
 from lp.services.scripts.base import LaunchpadScript
+
+
+def save(obj, filename):
+    """Save a bz2 compressed pickle of `obj` to `filename`."""
+    fout = bz2.BZ2File(filename, "w")
+    try:
+        pickle.dump(obj, fout, pickle.HIGHEST_PROTOCOL)
+    finally:
+        fout.close()
+
+
+def load(filename):
+    """Load and return a bz2 compressed pickle from `filename`."""
+    fin = bz2.BZ2File(filename, "r")
+    try:
+        return pickle.load(fin)
+    finally:
+        fin.close()
 
 
 class CheckTeamParticipationScript(LaunchpadScript):
     description = "Check for invalid/missing TeamParticipation entries."
 
+    def add_my_options(self):
+        self.parser.add_option(
+            "--load-participation-info",
+            dest="load_participation_info", metavar="FILE",
+            help=(
+                "File from which to load participation information "
+                "instead of going to the database."))
+        self.parser.add_option(
+            "--save-participation-info",
+            dest="save_participation_info", metavar="FILE",
+            help=(
+                "File in which to save participation information, for "
+                "later processing with --load-participation-info."))
+
     def main(self):
-        check_teamparticipation(self.logger)
+        """Perform various checks on the `TeamParticipation` table."""
+        if self.options.load_participation_info:
+            participation_info = load(self.options.load_participation_info)
+        else:
+            participation_info = fetch_team_participation_info(self.logger)
+
+        check_teamparticipation_self(self.logger)
+        check_teamparticipation_circular(self.logger)
+        check_teamparticipation_consistency(self.logger, participation_info)
+
+        if self.options.save_participation_info:
+            save(participation_info, self.options.save_participation_info)
 
 
 if __name__ == '__main__':

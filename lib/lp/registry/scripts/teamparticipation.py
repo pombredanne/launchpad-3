@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 __all__ = [
-    "check_teamparticipation",
+    "check_teamparticipation_circular",
+    "check_teamparticipation_consistency",
+    "check_teamparticipation_self",
+    "fetch_team_participation_info",
     ]
 
 from collections import (
@@ -144,12 +147,15 @@ def fetch_team_participation_info(log):
     return people, teams, team_memberships, team_participations
 
 
-def check_teamparticipation_consistency(log, info):
+def check_teamparticipation_consistency(log, info=None):
     """Check for missing or spurious participations.
 
     For example, participations for people who are not members, or missing
     participations for people who are members.
     """
+    if info is None:
+        info = fetch_team_participation_info(log)
+
     people, teams, team_memberships, team_participations = info
 
     def get_participants(team):
@@ -160,13 +166,13 @@ def check_teamparticipation_consistency(log, info):
         return member_people.union(
             chain.from_iterable(imap(get_participants, member_teams)))
 
-    def check_participants(expected, observed):
+    def check_participants(person, expected, observed):
         spurious = observed - expected
         missing = expected - observed
         if len(spurious) > 0:
-            yield ConsistencyError("spurious", team, sorted(spurious))
+            yield ConsistencyError("spurious", person, sorted(spurious))
         if len(missing) > 0:
-            yield ConsistencyError("missing", team, sorted(missing))
+            yield ConsistencyError("missing", person, sorted(missing))
 
     errors = []
 
@@ -175,14 +181,16 @@ def check_teamparticipation_consistency(log, info):
         participants_expected = set((person,))
         participants_observed = team_participations[person]
         errors.extend(
-            check_participants(participants_expected, participants_observed))
+            check_participants(
+                person, participants_expected, participants_observed))
 
     log.debug("Checking consistency of %d teams", len(teams))
     for team in report_progress(log, 1000, teams, "teams"):
         participants_expected = get_participants(team)
         participants_observed = team_participations[team]
         errors.extend(
-            check_participants(participants_expected, participants_observed))
+            check_participants(
+                team, participants_expected, participants_observed))
 
     def get_repr(id):
         if id in people:
@@ -200,11 +208,3 @@ def check_teamparticipation_consistency(log, info):
             get_repr(error.team), error.type, people_repr)
 
     return errors
-
-
-def check_teamparticipation(log):
-    """Perform various checks on the `TeamParticipation` table."""
-    check_teamparticipation_self(log)
-    check_teamparticipation_circular(log)
-    team_participation_info = fetch_team_participation_info(log)
-    check_teamparticipation_consistency(log, team_participation_info)
