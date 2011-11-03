@@ -13,8 +13,8 @@ import pwd
 from resource import RLIMIT_AS, setrlimit
 import socket
 from subprocess import (
+    Popen,
     call,
-    check_call,
     )
 import sys
 
@@ -31,6 +31,20 @@ class NotVirtualized(Exception):
 
     def __init__(self):
         Exception.__init__(self, 'Not running under Xen.')
+
+
+def call_report_rusage(args):
+    """Run a subprocess.
+
+    Report that it was run, and the resources used, and complain if it fails.
+
+    :return: The process wait status.
+    """
+    print 'RUN %r' % args
+    proc = Popen(args)
+    pid, status, rusage = os.wait4(proc.pid, 0)
+    print(rusage)
+    return status
 
 
 class RecipeBuilder:
@@ -106,7 +120,7 @@ class RecipeBuilder:
             'DEBEMAIL': self.author_email,
             'DEBFULLNAME': self.author_name.encode('utf-8'),
             'BZR_EMAIL': bzr_email}
-        retcode = call([
+        retcode = call_report_rusage([
             'bzr', 'dailydeb', '--safe', '--no-build', recipe_path,
             self.tree_path, '--manifest', manifest_path,
             '--append-version', '~%s1' % self.distroseries_name], env=env)
