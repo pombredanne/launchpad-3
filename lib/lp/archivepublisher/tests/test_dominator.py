@@ -16,9 +16,9 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.domination import (
     Dominator,
+    find_live_binary_versions_pass_1,
+    find_live_binary_versions_pass_2,
     find_live_source_versions,
-    find_live_binary_versions_first_pass,
-    find_live_binary_versions_second_pass,
     GeneralizedPublication,
     STAY_OF_EXECUTION,
     )
@@ -372,6 +372,16 @@ class TestDominationOfObsoletedSeries(TestDomination):
             SeriesStatus.OBSOLETE)
 
 
+def remove_security_proxies(proxied_objects):
+    """Return list of `proxied_objects`, without their proxies.
+
+    The dominator runs only in scripts, where security proxies don't get
+    in the way.  To test realistically for this environment, strip the
+    proxies wherever necessary and do as you will.
+    """
+    return [removeSecurityProxy(obj) for obj in proxied_objects]
+
+
 def make_spphs_for_versions(factory, versions):
     """Create publication records for each of `versions`.
 
@@ -417,12 +427,12 @@ def make_bpphs_for_versions(factory, versions):
         factory.makeBinaryPackageRelease(
             binarypackagename=bpn, version=version)
         for version in versions]
-    return [
+    return remove_security_proxies([
         factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, binarypackagename=bpn,
             distroarchseries=das, pocket=pocket, archive=archive,
             sourcepackagename=spn, status=PackagePublishingStatus.PUBLISHED)
-        for bpr in bprs]
+        for bpr in bprs])
 
 
 def list_source_versions(spphs):
@@ -1138,12 +1148,12 @@ class TestLivenessFunctions(TestCaseWithFactory):
         spphs = make_spphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
         self.assertEqual(['1.0'], find_live_source_versions(spphs))
 
-    def test_find_live_binary_versions_first_pass_blesses_latest(self):
+    def test_find_live_binary_versions_pass_1_blesses_latest(self):
         bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
         make_publications_arch_specific(bpphs)
-        self.assertEqual(['1.0'], find_live_binary_versions_first_pass(bpphs))
+        self.assertEqual(['1.0'], find_live_binary_versions_pass_1(bpphs))
 
-    def test_find_live_binary_versions_first_pass_blesses_arch_all(self):
+    def test_find_live_binary_versions_pass_1_blesses_arch_all(self):
         versions = ['1.%d' % version for version in range(3)]
         bpphs = make_bpphs_for_versions(self.factory, versions)
 
@@ -1155,23 +1165,22 @@ class TestLivenessFunctions(TestCaseWithFactory):
         make_publications_arch_specific(bpphs[-1:], False)
         self.assertEqual(
             versions[:1] + versions[-1:],
-            find_live_binary_versions_first_pass(bpphs))
+            find_live_binary_versions_pass_1(bpphs))
 
-    def test_find_live_binary_versions_second_pass_blesses_latest(self):
+    def test_find_live_binary_versions_pass_2_blesses_latest(self):
         bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
         make_publications_arch_specific(bpphs, False)
         self.assertEqual(
-            ['1.0'], find_live_binary_versions_second_pass(bpphs))
+            ['1.0'], find_live_binary_versions_pass_2(bpphs))
 
-    def test_find_live_binary_versions_second_pass_blesses_arch_specific(
-            self):
+    def test_find_live_binary_versions_pass_2_blesses_arch_specific(self):
         versions = ['1.%d' % version for version in range(3)]
         bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
         make_publications_arch_specific(bpphs)
         self.assertEqual(
-            versions, find_live_binary_versions_second_pass(bpphs))
+            versions, find_live_binary_versions_pass_2(bpphs))
 
-    def test_find_live_binary_versions_second_pass_reprieves_arch_all(self):
+    def test_find_live_binary_versions_pass_2_reprieves_arch_all(self):
         bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
         make_publications_arch_specific(bpphs)
         self.assertTrue(False) # XXX: Test

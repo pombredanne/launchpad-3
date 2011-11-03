@@ -232,7 +232,7 @@ def get_binary_versions(binary_publications):
     return [pub.binarypackagerelease.version for pub in binary_publications]
 
 
-def find_live_binary_versions_first_pass(publications):
+def find_live_binary_versions_pass_1(publications):
     """Find versions out of Published `publications` that should stay live.
 
     This particular notion of liveness applies to first-pass binary
@@ -250,7 +250,7 @@ def find_live_binary_versions_first_pass(publications):
             pub for pub in publications if not pub.architecture_specific])
 
 
-def find_live_binary_versions_second_pass(publications):
+def find_live_binary_versions_pass_2(publications):
     """Find versions out of Published `publications` that should stay live.
 
     This particular notion of liveness applies to second-pass binary
@@ -581,7 +581,7 @@ class Dominator:
             for name, pubs in sorted_packages.iteritems():
                 self.logger.debug("Dominating %s" % name)
                 assert len(pubs) > 0, "Dominating zero binaries!"
-                live_versions = find_live_binary_versions_first_pass(pubs)
+                live_versions = find_live_binary_versions_pass_1(pubs)
                 self.dominatePackage(pubs, live_versions, generalization)
 
         # We need to make a second pass to cover the cases where:
@@ -599,7 +599,7 @@ class Dominator:
             for name, pubs in sorted_packages.iteritems():
                 self.logger.debug("Dominating %s" % name)
                 assert len(pubs) > 0, "Dominating zero binaries in 2nd pass!"
-                live_versions = find_live_binary_versions_second_pass(pubs)
+                live_versions = find_live_binary_versions_pass_2(pubs)
                 self.dominatePackage(pubs, live_versions, generalization)
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
