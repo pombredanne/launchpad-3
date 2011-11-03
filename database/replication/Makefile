@@ -55,10 +55,9 @@ CREATEDB_83=createdb --encoding=UTF8
 CREATEDB_84=createdb --encoding=UTF8 --locale=C --template=template0
 CREATEDB=${CREATEDB_84}
 
-# Set this to --exit-on-error once our dumps are coming from a PG 8.4
-# source. Currently, the PG 8.3 dumps generate some spurious errors
-# when being restored into a PG 8.4 database.
-EXIT_ON_ERROR=--exit-on-error
+# Set this to --exit-on-error once we have migrated Launchpad production
+# to Slony-I 2.0.x.
+EXIT_ON_ERROR=
 
 # Turn off output silencing so we can see details of staging deployments.
 # Without the timestamps, we are unable to estimate production deployment

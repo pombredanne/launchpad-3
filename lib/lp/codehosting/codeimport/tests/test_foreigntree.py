@@ -43,7 +43,7 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         self.assertEqual(entry.revision, remote.get_latest_revnum())
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestSubversionWorkingTree, self).setUp()
         svn_server = SubversionServer('repository_path')
         svn_server.start_server()
         self.addCleanup(svn_server.stop_server)
@@ -125,7 +125,7 @@ class TestCVSWorkingTree(TestCaseWithTransport):
             self.cvs_server.getRoot(), self.module_name, local_path)
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestCVSWorkingTree, self).setUp()
         self.cvs_server = CVSServer('repository_path')
         self.cvs_server.start_server()
         self.module_name = 'test_module'

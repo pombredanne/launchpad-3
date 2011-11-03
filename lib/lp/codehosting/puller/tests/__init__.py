@@ -11,12 +11,8 @@ import socket
 from StringIO import StringIO
 
 from bzrlib import urlutils
-from bzrlib.tests import (
-    TestCaseWithTransport,
-    )
-from bzrlib.tests.http_server import (
-    HttpServer,
-    )
+from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests.http_server import HttpServer
 from bzrlib.tests.http_server import (
     TestingHTTPServer,
     TestingThreadingHTTPServer,
@@ -40,7 +36,6 @@ class AcceptAnythingBranchMirrorerPolicy(AcceptAnythingPolicy,
     """A branch mirror policy that supports mirrorring from anywhere."""
 
 
-
 class PullerWorkerMixin:
     """Mixin for tests that want to make PullerWorker objects.
 
@@ -51,12 +46,10 @@ class PullerWorkerMixin:
 
     def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
                          default_stacked_on_url=None, protocol=None,
-                         oops_prefix=None, policy=None):
+                         policy=None):
         """Anonymous creation method for PullerWorker."""
         if protocol is None:
             protocol = PullerWorkerProtocol(StringIO())
-        if oops_prefix is None:
-            oops_prefix = ''
         if branch_type is None:
             if policy is None:
                 policy = AcceptAnythingBranchMirrorerPolicy()
@@ -67,14 +60,14 @@ class PullerWorkerMixin:
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type,
             default_stacked_on_url=default_stacked_on_url, protocol=protocol,
-            branch_mirrorer=opener, oops_prefix=oops_prefix)
+            branch_mirrorer=opener)
+
 
 # XXX MichaelHudson, bug=564375: With changes to the SocketServer module in
 # Python 2.6 the thread created in serveOverHTTP cannot be joined, because
 # HttpServer.stop_server doesn't do enough to get the thread out of the select
 # call in SocketServer.BaseServer.handle_request().  So what follows is
 # slightly horrible code to use the version of handle_request from Python 2.5.
-
 def fixed_handle_request(self):
     """Handle one request, possibly blocking. """
     try:
@@ -106,8 +99,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
     """Some useful code for the more-integration-y puller tests."""
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        TestCaseWithFactory.setUp(self)
+        super(PullerBranchTestCase, self).setUp()
         self.disable_directory_isolation()
 
     def getHostedPath(self, branch):

@@ -60,6 +60,7 @@ It was not rejected.
     DEBUG Creating queue entry
     DEBUG Setting it to ACCEPTED
     DEBUG Building recipients list.
+    ...
     DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
     DEBUG Sent a mail:
     ...
@@ -235,6 +236,7 @@ manual intervention.
     DEBUG Creating queue entry
     DEBUG Setting it to ACCEPTED
     DEBUG Building recipients list.
+    ...
     DEBUG Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
     DEBUG Sent a mail:
     ...
