@@ -863,7 +863,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
     """Test notification of branch changes."""
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestBranchChangedNotification, self).setUp()
         self._server = None
         self._branch_changed_log = []
         frontend = InMemoryFrontend()
@@ -1034,7 +1034,7 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
     """Test handling of errors when branchChange is called."""
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestBranchChangedErrorHandling, self).setUp()
         self._server = None
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
