@@ -115,7 +115,6 @@ def check_teamparticipation_consistency(log):
     # Don't hold any locks.
     transaction.commit()
 
-    # Check team memberships.
     def get_participants(team):
         """Recurse through membership records to get participants."""
         member_people = team_memberships[team].intersection(people)
@@ -124,21 +123,29 @@ def check_teamparticipation_consistency(log):
         return member_people.union(
             chain.from_iterable(imap(get_participants, member_teams)))
 
+    def check_participants(expected, observed):
+        spurious = observed - expected
+        missing = expected - observed
+        if len(spurious) > 0:
+            yield ConsistencyError("spurious", team, sorted(spurious))
+        if len(missing) > 0:
+            yield ConsistencyError("missing", team, sorted(missing))
+
     errors = []
+
+    for person in people:
+        participants_expected = set((person,))
+        participants_observed = team_participations[person]
+        errors.extend(
+            check_participants(participants_expected, participants_observed))
+
     for team in teams:
-        participants_observed = team_participations[team]
         participants_expected = get_participants(team)
-        participants_spurious = participants_expected - participants_observed
-        participants_missing = participants_observed - participants_expected
-        if len(participants_spurious) > 0:
-            error = ConsistencyError("spurious", team, participants_spurious)
-            errors.append(error)
-        if len(participants_missing) > 0:
-            error = ConsistencyError("missing", team, participants_missing)
-            errors.append(error)
+        participants_observed = team_participations[team]
+        errors.extend(
+            check_participants(participants_expected, participants_observed))
 
     # TODO:
-    # - Check that the only participant of a *person* is the person.
     # - Check that merged people and teams do not appear in TeamParticipation.
 
     def get_repr(id):
