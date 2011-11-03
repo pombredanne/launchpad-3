@@ -433,6 +433,13 @@ class YUIAppServerTestCase(AbstractYUITestCase):
 
     layer = YUIAppServerLayer
     _testMethodName = 'runTest'
+    # 5 minutes for the suite.  Hopefully we never get close to this.
+    suite_timeout = 300000
+    # 6 seconds for each test.  Hopefully they are three or less for
+    # yuixhr tests, and less than one for pure JS tests.
+    incremental_timeout = 6000
+    # 20 seconds for the first test, to include warmup time.
+    initial_timeout = 20000
 
     def __init__(self, module_name, facet='mainsite'):
         self.module_name = module_name
