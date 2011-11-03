@@ -16,7 +16,7 @@
             <li class="no-events">No AJAX events detected</li>
         </ul>
     </div>
-    <a tal:replace="structure request/lp:person/fmt:link-display-name-id/id-only" /> &bull;
+    <a tal:replace="structure request/lp:person/fmt:link-display-name-id" /> &bull;
     <input type="submit" name="logout" value="Log Out" />
   </form>
 </div>

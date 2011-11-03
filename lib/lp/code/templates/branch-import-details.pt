@@ -41,26 +41,50 @@
 
         <tal:git-import condition="code_import/rcs_type/enumvalue:GIT">
           <p>This branch is an import of the HEAD branch of the Git repository at
-            <span tal:replace="code_import/url" />.
+            <tal:is-web-url condition="view/url_is_web">
+              <a tal:attributes="href code_import/url"
+                 tal:content="code_import/url" />.
+            </tal:is-web-url>
+            <tal:not-web-url condition="not: view/url_is_web">
+              <span tal:replace="code_import/url" />.
+            </tal:not-web-url>
           </p>
         </tal:git-import>
 
         <tal:hg-import condition="code_import/rcs_type/enumvalue:HG">
           <p>This branch is an import of the tip branch of the Mercurial repository at
-            <span tal:replace="code_import/url" />.
+            <tal:is-web-url condition="view/url_is_web">
+              <a tal:attributes="href code_import/url"
+                 tal:content="code_import/url" />.
+            </tal:is-web-url>
+            <tal:not-web-url condition="not: view/url_is_web">
+              <span tal:replace="code_import/url" />.
+            </tal:not-web-url>
           </p>
         </tal:hg-import>
+
+        <tal:bzr-import condition="code_import/rcs_type/enumvalue:BZR">
+          <p>This branch is an import of the Bazaar branch at
+            <tal:is-web-url condition="view/url_is_web">
+              <a tal:attributes="href code_import/url"
+                 tal:content="code_import/url" />.
+            </tal:is-web-url>
+            <tal:not-web-url condition="not: view/url_is_web">
+              <span tal:replace="code_import/url" />.
+            </tal:not-web-url>
+          </p>
+        </tal:bzr-import>
 
         <tal:svn-import condition="view/is_svn_import">
           <p id="svn-import-details">
             This branch is an import of the
             <span tal:attributes="title code_import/rcs_type/title">Subversion</span>
             branch from
-            <tal:is-web-url condition="view/svn_url_is_web">
+            <tal:is-web-url condition="view/url_is_web">
               <a tal:attributes="href code_import/url"
                  tal:content="code_import/url" />.
             </tal:is-web-url>
-            <tal:not-web-url condition="not: view/svn_url_is_web">
+            <tal:not-web-url condition="not: view/url_is_web">
               <span tal:replace="code_import/url" />.
             </tal:not-web-url>
           </p>

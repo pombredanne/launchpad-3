@@ -53,6 +53,7 @@ from storm.expr import (
     And,
     Desc,
     In,
+    Join,
     LeftJoin,
     Max,
     Not,
@@ -150,6 +151,7 @@ from lp.bugs.interfaces.bugnomination import (
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -188,7 +190,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import (
@@ -552,22 +553,26 @@ class Bug(SQLBase):
                 # permit use.
                 message_by_id[message.id] = result
             return result
-        # There is possibly some nicer way to do this in storm, but
-        # this is a lot easier to figure out.
         if include_parents:
-            ParentMessage = ClassAlias(Message, name="parent_message")
-            tables = SQL("""
-Message left outer join
-message as parent_message on (
-    message.parent=parent_message.id and
-    parent_message.id in (
-        select bugmessage.message from bugmessage where bugmessage.bug=%s)),
-BugMessage""" % sqlvalues(self.id))
-            lookup = Message, ParentMessage, BugMessage
-            results = store.using(tables).find(
-                lookup,
+            ParentMessage = ClassAlias(Message)
+            ParentBugMessage = ClassAlias(BugMessage)
+            tables = [
+                Message,
+                Join(
+                    BugMessage,
+                    BugMessage.messageID == Message.id),
+                LeftJoin(
+                    Join(
+                        ParentMessage,
+                        ParentBugMessage,
+                        ParentMessage.id == ParentBugMessage.messageID),
+                    And(
+                        Message.parent == ParentMessage.id,
+                        ParentBugMessage.bugID == self.id)),
+                ]
+            results = store.using(*tables).find(
+                (Message, ParentMessage, BugMessage),
                 BugMessage.bugID == self.id,
-                BugMessage.messageID == Message.id,
                 )
         else:
             lookup = Message, BugMessage
@@ -1181,6 +1186,15 @@ BugMessage""" % sqlvalues(self.id))
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
+            for bugtask in self.bugtasks:
+                # Check the stored value so we don't write to unaltered tasks.
+                if (bugtask._status in (
+                    BugTaskStatus.INCOMPLETE,
+                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)):
+                    # This is not a semantic change, so we don't update date
+                    # records or send email.
+                    bugtask._status = (
+                        BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             # XXX 2008-05-27 jamesh:
             # Ensure that BugMessages get flushed in same order as
             # they are created.
@@ -1696,8 +1710,23 @@ BugMessage""" % sqlvalues(self.id))
 
         if private_changed or security_related_changed:
             changed_fields = []
+
             if private_changed:
                 changed_fields.append('private')
+                if not f_flag and private:
+                    # If we didn't call reconcileSubscribers, we may have
+                    # bug supervisors who should be on this bug, but aren't.
+                    supervisors = set()
+                    for bugtask in self.bugtasks:
+                        supervisors.add(bugtask.pillar.bug_supervisor)
+                    if None in supervisors:
+                        supervisors.remove(None)
+                    for s in supervisors:
+                        subscriptions = get_structural_subscriptions_for_bug(
+                                            self, s)
+                        if subscriptions != []:
+                            self.subscribe(s, who)
+
             if security_related_changed:
                 changed_fields.append('security_related')
                 if not f_flag and security_related:
@@ -1708,6 +1737,7 @@ BugMessage""" % sqlvalues(self.id))
                     for pillar in self.affected_pillars:
                         if pillar.security_contact is not None:
                             self.subscribe(pillar.security_contact, who)
+
             notify(ObjectModifiedEvent(
                     self, bug_before_modification, changed_fields, user=who))
 
@@ -1876,18 +1906,23 @@ BugMessage""" % sqlvalues(self.id))
 
     def _setTags(self, tags):
         """Set the tags from a list of strings."""
-        # In order to preserve the ordering of the tags, delete all tags
-        # and insert the new ones.
+        # Sets provide an easy way to get the difference between the old and
+        # new tags.
         new_tags = set([tag.lower() for tag in tags])
         old_tags = set(self.tags)
+        # The cache will be stale after we add/remove tags, clear it.
         del get_property_cache(self)._cached_tags
-        added_tags = new_tags.difference(old_tags)
+        # Find the set of tags that are to be removed and remove them.
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
             tag = BugTag.selectOneBy(bug=self, tag=removed_tag)
             tag.destroySelf()
+        # Find the set of tags that are to be added and add them.
+        added_tags = new_tags.difference(old_tags)
         for added_tag in added_tags:
             BugTag(bug=self, tag=added_tag)
+        # Write all pending changes to the DB, including any pending non-tag
+        # changes.
         Store.of(self).flush()
 
     tags = property(_getTags, _setTags)
@@ -2054,6 +2089,10 @@ BugMessage""" % sqlvalues(self.id))
         authenticated users.  It is also called in other contexts where the
         user may be anonymous.
 
+        Most logic is delegated to the query provided by
+        get_bug_privacy_filter, but some short-circuits and caching are
+        reimplemented here.
+
         If bug privacy rights are changed here, corresponding changes need
         to be made to the queries which screen for privacy.  See
         Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
@@ -2068,29 +2107,13 @@ BugMessage""" % sqlvalues(self.id))
         if user.id in self._known_viewers:
             return True
 
-        elif IPersonRoles(user).in_admin:
-            # Admins can view all bugs.
+        filter = get_bug_privacy_filter(user)
+        store = Store.of(self)
+        store.flush()
+        if (not filter or
+            not store.find(Bug, Bug.id == self.id, filter).is_empty()):
+            self._known_viewers.add(user.id)
             return True
-        else:
-            # At this point we know the bug is private and the user is
-            # unprivileged.
-
-            # Assignees to bugtasks can see the private bug.
-            for bugtask in self.bugtasks:
-                if user.inTeam(bugtask.assignee):
-                    self._known_viewers.add(user.id)
-                    return True
-            # Explicit subscribers may also view it.
-            for subscription in self.subscriptions:
-                if user.inTeam(subscription.person):
-                    self._known_viewers.add(user.id)
-                    return True
-            # Pillar owners can view it. Note that this is contentious and
-            # possibly incorrect: see bug 702429.
-            for pillar_owner in [bt.pillar.owner for bt in self.bugtasks]:
-                if user.inTeam(pillar_owner):
-                    self._known_viewers.add(user.id)
-                    return True
         return False
 
     def linkHWSubmission(self, submission):

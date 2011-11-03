@@ -113,6 +113,10 @@ class ITranslationMessage(Interface):
         title=_("The translation file from where this translation comes"),
         readonly=False, required=False, schema=IPOFile)
 
+    sequence = Int(
+        title=_("Sequence of a message in the PO file browser_pofile."),
+        readonly=True, required=False)
+
     potemplate = Object(
         title=_("The template this translation is in"),
         readonly=False, required=False, schema=IPOTemplate)

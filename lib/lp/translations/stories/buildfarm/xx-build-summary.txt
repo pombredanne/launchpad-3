@@ -157,5 +157,5 @@ build history.
     Build history for ...
     1 ... 1 of 1 result
     ...
-    Translation template build
+    Translation template build for lp://dev/qblark
     Build started ... and finished ... taking 5 minutes

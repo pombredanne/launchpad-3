@@ -790,6 +790,18 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
             status=PackagePublishingStatus.PUBLISHED)
         self.assertCanCopyBinaries(delayed=True)
 
+    def test_cannot_copy_ddebs_to_primary_archives(self):
+        # The primary archive cannot (yet) cope with DDEBs, see bug
+        # 724237 and anything tagged "ddebs".
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.archive = self.test_publisher.ubuntutest.main_archive
+        self.series = self.test_publisher.breezy_autotest
+        self.source = self.test_publisher.getPubSource(archive=ppa)
+        self.test_publisher.getPubBinaries(
+            pub_source=self.source, with_debug=True)
+        self.assertCannotCopyBinaries(
+            'Cannot copy DDEBs to a primary archive')
+
 
 class CopyCheckerTestCase(TestCaseWithFactory):
 

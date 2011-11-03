@@ -43,6 +43,7 @@ __all__ = [
     'PersonRdfView',
     'PersonRelatedBugTaskSearchListingView',
     'PersonRelatedSoftwareView',
+    'PersonRenameFormMixin',
     'PersonReportedBugTaskSearchListingView',
     'PersonSearchQuestionsView',
     'PersonSetActionNavigationMenu',
@@ -289,8 +290,6 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
-from lp.soyuz.enums import ArchiveStatus
-from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
@@ -1635,6 +1634,12 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def label(self):
         return self.getSearchPageHeading()
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return ("in %s related to %s" %
+                (self.current_package.displayname, self.context.displayname))
+
 
 class RelevantMilestonesMixin:
     """Mixin to narrow the milestone list to only relevant milestones."""
@@ -1695,11 +1700,16 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
             assignee_params, subscriber_params, owner_params,
             commenter_params, prejoins=prejoins)
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "related to %s" % self.context.displayname
+
     def getSearchPageHeading(self):
-        return "Bugs related to %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
-        return "Search bugs related to %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         return canonical_url(self.context, view_name="+bugs")
@@ -1746,13 +1756,18 @@ class PersonAffectingBugTaskSearchListingView(
         """Should the tags combinator widget show on the search page?"""
         return False
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "affecting %s" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs affecting %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
-        return "Search bugs affecting %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
@@ -1800,13 +1815,18 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the tags combinator widget show on the search page?"""
         return False
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "assigned to %s" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs assigned to %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
-        return "Search bugs assigned to %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
@@ -1841,13 +1861,18 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         return sup.searchUnbatched(
             searchtext, context, extra_params, prejoins)
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "commented on by %s" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs commented on by %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
-        return "Search bugs commented on by %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
@@ -1885,13 +1910,18 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         return sup.searchUnbatched(
             searchtext, context, extra_params, prejoins)
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "reported by %s" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs reported by %s" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
-        return "Search bugs reported by %s" % self.context.displayname
+        return "Search bugs %s" % self.context_description
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
@@ -1939,9 +1969,14 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the team subscribed bugs portlet be shown?"""
         return True
 
+    @property
+    def context_description(self):
+        """See `BugTaskSearchListingView`."""
+        return "%s is subscribed to" % self.context.displayname
+
     def getSearchPageHeading(self):
         """The header for the search page."""
-        return "Bugs %s is subscribed to" % self.context.displayname
+        return "Bugs %s" % self.context_description
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
@@ -3431,7 +3466,24 @@ class PersonEditHomePageView(BasePersonEditView):
     page_title = label
 
 
-class PersonEditView(BasePersonEditView):
+class PersonRenameFormMixin(LaunchpadEditFormView):
+
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        Renames are prohibited if a person/team has an active PPA or an
+        active mailing list.
+        """
+        reason = self.context.checkRename()
+        if reason:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
+        super(PersonRenameFormMixin, self).setUpWidgets()
+        if reason:
+            self.widgets['name'].hint = reason
+
+
+class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
@@ -3447,25 +3499,6 @@ class PersonEditView(BasePersonEditView):
     # Will contain an hidden input when the user is renaming his
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
-
-    def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        When a user has a PPA renames are prohibited.
-        """
-        has_ppa_with_published_packages = (
-            getUtility(IArchiveSet).getPPAOwnedByPerson(
-                self.context, has_packages=True,
-                statuses=[ArchiveStatus.ACTIVE,
-                          ArchiveStatus.DELETING]) is not None)
-        if has_ppa_with_published_packages:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-        super(PersonEditView, self).setUpWidgets()
-        if has_ppa_with_published_packages:
-            self.widgets['name'].hint = _(
-                'This user has an active PPA with packages published and '
-                'may not be renamed.')
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""

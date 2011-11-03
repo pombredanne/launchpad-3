@@ -585,7 +585,9 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
         private_branch = self.factory.makeAnyBranch(
-            owner=team, private=True, name='team')
+            owner=team, stacked_on=self.private_stacked_on_branch,
+            name='team')
+        removeSecurityProxy(private_branch).unsubscribe(team, team_owner)
         branches = self.all_branches.visibleByUser(team_owner)
         self.assertEqual(
             sorted([self.public_branch, private_branch]),
