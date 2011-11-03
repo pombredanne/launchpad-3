@@ -84,7 +84,7 @@ ConsistencyError = namedtuple(
     "ConsistencyError", ("type", "team", "people"))
 
 
-def query(store, log, interval, query):
+def execute_long_query(store, log, interval, query):
     """Execute the given query, reporting as results are fetched.
 
     The query is logged, then every `interval` rows a message is logged with
@@ -103,7 +103,7 @@ def check_teamparticipation_consistency(log):
     For example, participations for people who are not members, or missing
     participations for people who are members.
     """
-    slurp = partial(query, get_store(), log, 10000)
+    slurp = partial(execute_long_query, get_store(), log, 10000)
 
     # Slurp everything in.
     people = dict(
