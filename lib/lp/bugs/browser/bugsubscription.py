@@ -537,9 +537,13 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         details = list(bug.getDirectSubscribersWithDetails())
         for person, subscribed_by, subscription in details:
             can_edit = subscription.canBeUnsubscribedByUser(self.user)
-            if person == self.user or (person.private and not can_edit):
+            if (person == self.user
+                or (person.private
+                    and (not can_edit
+                        or not check_permission('launchpad.View', person)))):
                 # Skip the current user viewing the page,
-                # and private teams user is not a member of.
+                # and private teams user is not a member of or does not have
+                # permission to view.
                 continue
 
             subscriber = {

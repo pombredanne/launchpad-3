@@ -21,7 +21,10 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -716,3 +719,40 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             harness = LaunchpadFormHarness(
                 bug, BugPortletSubscribersWithDetails)
             self.assertEqual(dumps([]), harness.view.subscriber_data_js)
+
+    def test_data_unauthorised_private_team_excluded(self):
+        # Private teams a user cannot see are not included in the results.
+        bug = self._makeBugWithNoSubscribers()
+        user = self.factory.makePerson()
+        # subscriber is someone we will see in the results.
+        subscriber = self.factory.makePerson(
+            name='subscriber', displayname='Subscriber')
+        # We will not see the private team.
+        private_team = self.factory.makeTeam(
+            name='team', displayname='Team Name',
+            visibility=PersonVisibility.PRIVATE)
+
+        with person_logged_in(user):
+            bug.subscribe(private_team, user,
+                          level=BugNotificationLevel.LIFECYCLE)
+            sub = bug.subscribe(subscriber, user,
+                          level=BugNotificationLevel.LIFECYCLE)
+
+        with person_logged_in(user):
+            harness = LaunchpadFormHarness(
+                bug, BugPortletSubscribersWithDetails)
+            api_request = IWebServiceClientRequest(harness.request)
+            expected_result = {
+                'subscriber': {
+                    'name': 'subscriber',
+                    'display_name': 'Subscriber',
+                    'is_team': False,
+                    'can_edit': True,
+                    'web_link': canonical_url(subscriber),
+                    'self_link': absoluteURL(subscriber, api_request),
+                    'display_subscribed_by': sub.display_subscribed_by,
+                    },
+                'subscription_level': "Lifecycle",
+                }
+            self.assertEqual(dumps([expected_result]),
+                harness.view.subscriber_data_js)
