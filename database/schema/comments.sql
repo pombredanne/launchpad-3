@@ -15,16 +15,16 @@ COMMENT ON COLUMN AccessPolicy.display_name IS 'A human-readable name for this p
 
 -- AccessPolicyArtifact
 
-COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access permission can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyPermission.';
+COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
 COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
 COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
 
--- AccessPolicyPermission
+-- AccessPolicyGrant
 
-COMMENT ON TABLE AccessPolicyPermission IS 'A permission for a person to access a policy\'s artifacts.';
-COMMENT ON COLUMN AccessPolicyPermission.policy IS 'The access policy on which access is granted.';
-COMMENT ON COLUMN AccessPolicyPermission.person IS 'The person that holds the permission.';
-COMMENT ON COLUMN AccessPolicyPermission.artifact IS 'The optional artifact to which the access is restricted.';
+COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a policy\'s artifacts.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The access policy on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrant.person IS 'The person that holds the grant.';
+COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The optional artifact to which the access is restricted.';
 
 -- Announcement
 

@@ -23,17 +23,17 @@ CREATE TABLE AccessPolicyArtifact (
     CONSTRAINT has_artifact CHECK (bug IS NULL != branch IS NULL)
 );
 
-CREATE TABLE AccessPolicyPermission (
+CREATE TABLE AccessPolicyGrant (
     id serial PRIMARY KEY,
     policy integer NOT NULL REFERENCES AccessPolicy,
     person integer NOT NULL REFERENCES Person,
     artifact integer REFERENCES AccessPolicyArtifact,
-    CONSTRAINT accesspolicypermission__policy__person__artifact__key
+    CONSTRAINT accesspolicygrant__policy__person__artifact__key
         UNIQUE (policy, person, artifact)
 );
 
-CREATE UNIQUE INDEX accesspolicypermission__policy__person__key
-    ON AccessPolicyPermission(policy, person) WHERE artifact IS NULL;
+CREATE UNIQUE INDEX accesspolicygrant__policy__person__key
+    ON AccessPolicyGrant(policy, person) WHERE artifact IS NULL;
 
 ALTER TABLE bug
     ADD COLUMN access_policy integer REFERENCES AccessPolicy;
