@@ -48,7 +48,7 @@ class IAccessPolicySource(Interface):
     def getByID(id):
         """Return the `IAccessPolicy` with the given ID."""
 
-    def getByPillarAndName(pillar, display_name):
+    def getByPillarAndName(pillar, name):
         """Return the pillar's `IAccessPolicy` with the given name."""
 
     def findByPillar(pillar):
