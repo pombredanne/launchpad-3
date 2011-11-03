@@ -421,25 +421,33 @@ After login, a link:
     True
 
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS 38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-38C23">OOPS 38C23</a></p>
 
 OOPS references can take a number of forms:
 
     >>> text = 'oops 38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">oops 38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-38C23">oops 38C23</a></p>
 
     >>> text = 'OOPS-38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS-38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-38C23">OOPS-38C23</a></p>
 
     >>> text = 'OOPS C3'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=C3">OOPS C3</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-C3">OOPS C3</a></p>
 
     >>> text = 'OOPS   38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS   38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-38C23">OOPS   38C23</a></p>
+
+    >>> text = 'OOPS-123abcdef'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-123abcdef">OOPS-123abcdef</a></p>
+
+    >>> text = 'OOPS-abcdef123'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-abcdef123">OOPS-abcdef123</a></p>
 
 If the configuration value doesn't end with a slash, we won't add one. This
 lets us configure the URL to use query parameters.
@@ -452,14 +460,8 @@ lets us configure the URL to use query parameters.
     >>> config.push('oops_root_url', oops_root_url)
     >>> text = 'OOPS 38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="http://foo/bar38C23">OOPS 38C23</a></p>
+    <p><a href="http://foo/barOOPS-38C23">OOPS 38C23</a></p>
     >>> config_data = config.pop('oops_root_url')
-
-Check against false positives:
-
-    >>> text = 'OOPS code'
-    >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>OOPS code</p>
 
 Reset login information.
 

@@ -395,7 +395,7 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
-            url = root_url + match.group('oopscode')
+            url = root_url + "OOPS-" + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
@@ -561,7 +561,7 @@ class FormattersAPI:
       ) |
       (?P<oops>
         \boops\s*-?\s*
-        (?P<oopscode> \d* [a-z]+ \d+)
+        (?P<oopscode> \w+)
       ) |
       (?P<lpbranchurl>
         \blp:(?:///|/)?
