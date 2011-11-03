@@ -78,6 +78,7 @@ from lazr.uri import URI
 import pystache
 from pytz import utc
 from simplejson import dumps
+from simplejson.encoder import JSONEncoderForHTML
 from z3c.pt.pagetemplate import ViewPageTemplateFile
 from zope import (
     component,
@@ -2208,11 +2209,15 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     @property
     def mustache_listings(self):
-        return 'LP.mustache_listings = %s;' % dumps(self.mustache_template)
+        return 'LP.mustache_listings = %s;' % dumps(
+            self.mustache_template, cls=JSONEncoderForHTML)
 
     @property
     def mustache(self):
-        return pystache.render(self.mustache_template, self.model)
+        """The rendered mustache template."""
+        cache = IJSONRequestCache(self.request)
+        return pystache.render(self.mustache_template,
+                               cache.objects['mustache_model'])
 
     @property
     def model(self):
@@ -2479,7 +2484,26 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             self.context, self.request, self.user)
         if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
             cache = IJSONRequestCache(self.request)
-            cache.objects['mustache_model'] = self.search().model
+            batch_navigator = self.search()
+            cache.objects['mustache_model'] = batch_navigator.model
+
+            def _getBatchInfo(batch):
+                if batch is None:
+                    return None
+                return {'memo': batch.range_memo,
+                        'start': batch.startNumber() - 1}
+
+            next_batch = batch_navigator.batch.nextBatch()
+            cache.objects['next'] = _getBatchInfo(next_batch)
+            prev_batch = batch_navigator.batch.prevBatch()
+            cache.objects['prev'] = _getBatchInfo(prev_batch)
+            cache.objects['total'] = batch_navigator.batch.total()
+            cache.objects['order_by'] = ','.join(
+                get_sortorder_from_request(self.request))
+            cache.objects['forwards'] = batch_navigator.batch.range_forwards
+            last_batch = batch_navigator.batch.lastBatch()
+            cache.objects['last_start'] = last_batch.startNumber() - 1
+            cache.objects.update(_getBatchInfo(batch_navigator.batch))
 
     @property
     def columns_to_show(self):

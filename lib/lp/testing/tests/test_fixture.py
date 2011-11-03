@@ -5,6 +5,9 @@
 
 __metaclass__ = type
 
+import sys
+
+import oops_amqp
 import psycopg2
 from storm.exceptions import DisconnectionError
 from zope.component import (
@@ -16,16 +19,26 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.config import dbconfig
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.webapp.errorlog import (
+    globalErrorUtility,
+    notify_publisher,
+    )
 from canonical.testing.layers import (
     BaseLayer,
     DatabaseLayer,
     LaunchpadZopelessLayer,
+    LaunchpadLayer,
     )
 from lp.registry.model.person import Person
+from lp.services.messaging import rabbit
 from lp.testing import TestCase
 from lp.testing.fixture import (
+    CaptureOops,
     PGBouncerFixture,
     ZopeAdapterFixture,
     )
@@ -179,3 +192,49 @@ class TestPGBouncerFixtureWithoutCA(TestCase):
         # Note that because pgbouncer was left running, we can't confirm
         # that we are now connecting directly to the database.
         self.assertTrue(self.is_db_available())
+
+
+class TestCaptureOopsNoRabbit(TestCase):
+
+    # Need CA for subscription.
+    layer = BaseLayer
+
+    def test_subscribes_to_events(self):
+        capture = self.useFixture(CaptureOops())
+        publishers = globalErrorUtility._oops_config.publishers[:]
+        try:
+            globalErrorUtility._oops_config.publishers[:] = [notify_publisher]
+            id = globalErrorUtility.raising(sys.exc_info())['id']
+            self.assertEqual(id, capture.oopses[0]['id'])
+            self.assertEqual(1, len(capture.oopses))
+        finally:
+            globalErrorUtility._oops_config.publishers[:] = publishers
+
+
+class TestCaptureOopsRabbit(TestCase):
+
+    # Has rabbit + CA.
+    layer = LaunchpadLayer
+
+    def test_no_oopses_no_hang_on_sync(self):
+        capture = self.useFixture(CaptureOops())
+        capture.sync()
+
+    def test_sync_grabs_pending_oopses(self):
+        factory = rabbit.connect
+        exchange = config.error_reports.error_exchange
+        routing_key = config.error_reports.error_queue_key
+        capture = self.useFixture(CaptureOops())
+        amqp_publisher = oops_amqp.Publisher(
+            factory, exchange, routing_key, inherit_id=True)
+        oops = {'id': 'fnor', 'foo': 'dr'}
+        self.assertEqual('fnor', amqp_publisher(oops))
+        oops2 = {'id': 'quux', 'foo': 'strangelove'}
+        self.assertEqual('quux', amqp_publisher(oops2))
+        capture.sync()
+        self.assertEqual([oops, oops2], capture.oopses)
+
+    def test_sync_twice_works(self):
+        capture = self.useFixture(CaptureOops())
+        capture.sync()
+        capture.sync()

@@ -9,6 +9,7 @@ import sys
 import urllib2
 
 import lp.codehosting  # Needed to load bzr plugins.
+lp  # squelch lint.sh
 
 from bzrlib import (
     errors,
@@ -297,8 +298,7 @@ class PullerWorker:
             mirror_stacked_on_url=self.default_stacked_on_url)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 default_stacked_on_url, protocol, branch_mirrorer=None,
-                 oops_prefix=None):
+                 default_stacked_on_url, protocol, branch_mirrorer=None):
         """Construct a `PullerWorker`.
 
         :param src: The URL to pull from.
@@ -314,8 +314,6 @@ class PullerWorker:
         :param protocol: An instance of `PullerWorkerProtocol`.
         :param branch_mirrorer: An instance of `BranchMirrorer`.  If not
             passed, one will be chosen based on the value of `branch_type`.
-        :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
-            global ErrorUtility.
         """
         self.source = src
         self.dest = dest
@@ -331,8 +329,6 @@ class PullerWorker:
         if branch_mirrorer is None:
             branch_mirrorer = self._checkerForBranchType(branch_type)
         self.branch_mirrorer = branch_mirrorer
-        if oops_prefix is not None:
-            errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
     def _record_oops(self, message=None):
         """Record an oops for the current exception.

@@ -6,6 +6,7 @@ __metaclass__ = type
 from contextlib import contextmanager
 from datetime import datetime
 import re
+import urllib
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interfaces import IJSONRequestCache
@@ -45,6 +46,7 @@ from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
     BugTaskEditView,
+    BugListingBatchNavigator,
     BugTaskListingItem,
     BugTasksAndNominationsView,
     BugTaskSearchListingView,
@@ -55,10 +57,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTask,
     IBugTaskSet,
-    )
-from lp.services.features.model import (
-    FeatureFlag,
-    getFeatureStore,
     )
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
@@ -997,9 +995,6 @@ class TestBugTaskEditView(TestCaseWithFactory):
             bug = self.factory.makeBug(product=first_product, private=True)
             bug_task = bug.bugtasks[0]
         second_product = self.factory.makeProduct(name='duck')
-        getFeatureStore().add(FeatureFlag(
-            scope=u'default', value=u'on', priority=1,
-            flag=u'disclosure.private_bug_visibility_rules.enabled'))
 
         # The first product owner can see the private bug. We will re-target
         # it to second_product where it will not be visible to that user.
@@ -1009,8 +1004,10 @@ class TestBugTaskEditView(TestCaseWithFactory):
                 'bunny.target.product': 'duck',
                 'bunny.actions.save': 'Save Changes',
                 }
-            view = create_initialized_view(
-                bug_task, name='+editstatus', form=form)
+            with FeatureFixture({
+                'disclosure.private_bug_visibility_rules.enabled': 'on'}):
+                view = create_initialized_view(
+                    bug_task, name='+editstatus', form=form)
             self.assertEqual(
                 canonical_url(bug_task.pillar, rootsite='bugs'),
                 view.next_url)
@@ -1291,14 +1288,35 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    server_listing = soupmatchers.Tag(
-        'Server', 'em', text='Server-side mustache')
-
     client_listing = soupmatchers.Tag(
         'client-listing', True, attrs={'id': 'client-listing'})
 
-    def makeView(self, bugtask=None):
-        request = LaunchpadTestRequest()
+    def makeView(self, bugtask=None, size=None, memo=None, orderby=None,
+                 forwards=True):
+        """Make a BugTaskSearchListingView.
+
+        :param bugtask: The task to use for searching.
+        :param size: The size of the batches.  Required if forwards is False.
+        :param memo: Batch identifier.
+        :param orderby: The way to order the batch.
+        :param forwards: If true, walk forwards from the memo.  Else walk
+            backwards.
+
+        """
+        query_vars = {}
+        if size is not None:
+            query_vars['batch'] = size
+        if memo is not None:
+            query_vars['memo'] = memo
+            if forwards:
+                query_vars['start'] = memo
+            else:
+                query_vars['start'] = int(memo) - size
+        if not forwards:
+            query_vars['direction'] = 'backwards'
+        query_string = urllib.urlencode(query_vars)
+        request = LaunchpadTestRequest(
+            QUERY_STRING=query_string, orderby=orderby)
         if bugtask is None:
             bugtask = self.factory.makeBugTask()
         view = BugTaskSearchListingView(bugtask.target, request)
@@ -1307,6 +1325,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     @contextmanager
     def dynamic_listings(self):
+        """Context manager to enable new bug listings."""
         with feature_flags():
             set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
             yield
@@ -1332,7 +1351,93 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertEqual(1, len(bugtasks))
         self.assertEqual(item.model, bugtasks[0])
 
+    def test_no_next_prev_for_single_batch(self):
+        """The IJSONRequestCache should contain data about ajacent batches.
+
+        mustache_model should contain bugtasks, the BugTaskListingItem.model
+        for each BugTask.
+        """
+        owner, item = make_bug_task_listing_item(self.factory)
+        self.useContext(person_logged_in(owner))
+        with self.dynamic_listings():
+            view = self.makeView(item.bugtask)
+        cache = IJSONRequestCache(view.request)
+        self.assertIs(None, cache.objects.get('next'))
+        self.assertIs(None, cache.objects.get('prev'))
+
+    def test_next_for_multiple_batch(self):
+        """The IJSONRequestCache should contain data about the next batch.
+
+        mustache_model should contain bugtasks, the BugTaskListingItem.model
+        for each BugTask.
+        """
+        task = self.factory.makeBugTask()
+        self.factory.makeBugTask(target=task.target)
+        with self.dynamic_listings():
+            view = self.makeView(task, size=1)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual({'memo': '1', 'start': 1}, cache.objects.get('next'))
+
+    def test_prev_for_multiple_batch(self):
+        """The IJSONRequestCache should contain data about the next batch.
+
+        mustache_model should contain bugtasks, the BugTaskListingItem.model
+        for each BugTask.
+        """
+        task = self.factory.makeBugTask()
+        task2 = self.factory.makeBugTask(target=task.target)
+        with self.dynamic_listings():
+            view = self.makeView(task2, size=1, memo=1)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual({'memo': '1', 'start': 0}, cache.objects.get('prev'))
+
+    def test_default_order_by(self):
+        """order_by defaults to '-importance in JSONRequestCache"""
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('-importance', cache.objects['order_by'])
+
+    def test_order_by_importance(self):
+        """order_by follows query params in JSONRequestCache"""
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, orderby='importance')
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('importance', cache.objects['order_by'])
+
+    def test_cache_has_all_batch_vars_defaults(self):
+        """Cache has all the needed variables.
+
+        order_by, memo, start, forwards.  These default to sane values.
+        """
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('-importance', cache.objects['order_by'])
+        self.assertIs(None, cache.objects['memo'])
+        self.assertEqual(0, cache.objects['start'])
+        self.assertTrue(cache.objects['forwards'])
+        self.assertEqual(1, cache.objects['total'])
+
+    def test_cache_has_all_batch_vars_specified(self):
+        """Cache has all the needed variables.
+
+        order_by, memo, start, forwards.  These are calculated appropriately.
+        """
+        task = self.factory.makeBugTask()
+        with self.dynamic_listings():
+            view = self.makeView(task, memo=1, forwards=False, size=1)
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual('1', cache.objects['memo'])
+        self.assertEqual(0, cache.objects['start'])
+        self.assertFalse(cache.objects['forwards'])
+        self.assertEqual(0, cache.objects['last_start'])
+
     def getBugtaskBrowser(self):
+        """Return a browser for a new bugtask."""
         bugtask = self.factory.makeBugTask()
         with person_logged_in(bugtask.target.owner):
             bugtask.target.official_malone = True
@@ -1341,6 +1446,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         return bugtask, browser
 
     def assertHTML(self, browser, *tags, **kwargs):
+        """Assert something about a browser's HTML."""
         matcher = soupmatchers.HTMLContains(*tags)
         if kwargs.get('invert', False):
             matcher = Not(matcher)
@@ -1358,15 +1464,25 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         number_tag = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, number_tag, invert=True)
         self.assertHTML(browser, self.client_listing, invert=True)
-        self.assertHTML(browser, self.server_listing, invert=True)
 
     def test_mustache_rendering(self):
         """If the flag is present, then all mustache features appear."""
         with self.dynamic_listings():
             bug_task, browser = self.getBugtaskBrowser()
         bug_number = self.getBugNumberTag(bug_task)
-        self.assertHTML(
-            browser, self.client_listing, self.server_listing, bug_number)
+        self.assertHTML(browser, self.client_listing, bug_number)
+
+
+class TestBugListingBatchNavigator(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_mustache_listings_escaped(self):
+        """Mustache template is encoded such that it has no unescaped tags."""
+        navigator = BugListingBatchNavigator(
+            [], LaunchpadTestRequest(), [], 0)
+        self.assertNotIn('<', navigator.mustache_listings)
+        self.assertNotIn('>', navigator.mustache_listings)
 
 
 class TestBugTaskListingItem(TestCaseWithFactory):

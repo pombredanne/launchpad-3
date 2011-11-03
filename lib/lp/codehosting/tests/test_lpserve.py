@@ -12,7 +12,8 @@ from bzrlib.smart import medium
 from bzrlib.transport import remote
 from bzrlib.plugins.lpserve.test_lpserve import TestCaseWithSubprocess
 
-from lp.codehosting.bzrutils import make_error_utility
+from canonical.testing.layers import LaunchpadLayer
+from lp.testing.fixture import CaptureOops
 
 
 class TestLaunchpadServe(TestCaseWithSubprocess):
@@ -22,6 +23,9 @@ class TestLaunchpadServe(TestCaseWithSubprocess):
     bzrlib.tests.blackbox.test_serve in bzr.dev r4445. They have since been
     modified for the Launchpad environment.
     """
+
+    # The oops tests need rabbit available
+    layer = LaunchpadLayer
 
     def assertFinishedCleanly(self, result):
         """Assert that a server process finished cleanly."""
@@ -82,16 +86,17 @@ class TestLaunchpadServe(TestCaseWithSubprocess):
 
     def test_successful_start_then_stop_logs_no_oops(self):
         # Starting and stopping the lp-serve process leaves no OOPS.
+        capture = self.useFixture(CaptureOops())
         process, transport = self.start_server_inet()
-        error_utility = make_error_utility(process.pid)
         self.finish_lpserve_subprocess(process)
-        self.assertIs(None, error_utility.getLastOopsReport())
+        capture.sync()
+        self.assertEqual([], capture.oopses)
 
     def test_unexpected_error_logs_oops(self):
         # If an unexpected error is raised in the plugin, then an OOPS is
         # recorded.
+        capture = self.useFixture(CaptureOops())
         process, transport = self.start_server_inet()
-        error_utility = make_error_utility(process.pid)
         # This will trigger an error, because the XML-RPC server is not
         # running, and any filesystem access tries to get at the XML-RPC
         # server. If this *doesn'* raise, then the test is no longer valid and
@@ -101,7 +106,11 @@ class TestLaunchpadServe(TestCaseWithSubprocess):
             transport.list_dir, 'foo/bar/baz')
         result = self.finish_lpserve_subprocess(process)
         self.assertFinishedCleanly(result)
-        self.assertIsNot(None, error_utility.getLastOopsReport())
+        capture.sync()
+        self.assertEqual(1, len(capture.oopses))
+        self.assertEqual(
+            '[Errno 111] Connection refused', capture.oopses[0]['value'],
+            capture.oopses)
 
 
 def test_suite():

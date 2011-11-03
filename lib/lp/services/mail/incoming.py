@@ -305,18 +305,6 @@ def _gpgAuthenticateEmail(mail, principal, person,
     return principal
 
 
-class MailErrorUtility(ErrorReportingUtility):
-    """An error utility that doesn't ignore exceptions."""
-
-    _ignored_exceptions = set()
-
-    def __init__(self):
-        super(MailErrorUtility, self).__init__()
-        # All errors reported for incoming email will have 'EMAIL'
-        # appended to the configured oops_prefix.
-        self.setOopsToken('EMAIL')
-
-
 ORIGINAL_TO_HEADER = 'X-Launchpad-Original-To'
 
 
@@ -357,11 +345,15 @@ def report_oops(file_alias_url=None, error_msg=None):
         properties.append(('Error message', error_msg))
     request = ScriptRequest(properties)
     request.principal = get_current_principal()
-    errorUtility = MailErrorUtility()
-    errorUtility.raising(info, request)
-    assert request.oopsid is not None, (
-        'MailErrorUtility failed to generate an OOPS.')
-    return request.oopsid
+    errorUtility = ErrorReportingUtility()
+    # Report all exceptions: the mail handling code doesn't expect any in
+    # normal operation.
+    errorUtility._ignored_exceptions = set()
+    report = errorUtility.raising(info, request)
+    # Note that this assert is arguably bogus: raising is permitted to filter
+    # reports.
+    assert report is not None, ('No OOPS generated.')
+    return report['id']
 
 
 def handleMail(trans=transaction,

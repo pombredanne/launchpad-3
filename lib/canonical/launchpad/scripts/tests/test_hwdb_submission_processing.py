@@ -15,7 +15,6 @@ from zope.component import getUtility
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.librarian.interfaces import LibrarianServerError
 from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.testing.layers import (
@@ -5454,11 +5453,10 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
 
         process_pending_submissions(self.layer.txn, self.log)
 
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertEqual('ZeroDivisionError', error_report.type)
+        error_report = self.oopses[0]
+        self.assertEqual('ZeroDivisionError', error_report['type'])
         self.assertStartsWith(
-                dict(error_report.req_vars)['error-explanation'],
+                dict(error_report['req_vars'])['error-explanation'],
                 'Exception while processing HWDB')
 
         messages = [record.getMessage() for record in self.handler.records]
@@ -5494,10 +5492,9 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.assertRaises(
             LibrarianServerError, process_pending_submissions,
             self.layer.txn, self.log)
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertEqual('LibrarianServerError', error_report.type)
-        self.assertEqual('Librarian does not respond', error_report.value)
+        error_report = self.oopses[0]
+        self.assertEqual('LibrarianServerError', error_report['type'])
+        self.assertEqual('Librarian does not respond', error_report['value'])
 
         messages = [record.getMessage() for record in self.handler.records]
         messages = '\n'.join(messages)

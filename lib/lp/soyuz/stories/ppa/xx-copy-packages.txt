@@ -301,6 +301,7 @@ build created during the copy is ready to be dispatched.
     i386 build of pmount 0.1-1
     ...
     Build status Needs building
+    Cancel build
     Start
     Build score:...
     Build details

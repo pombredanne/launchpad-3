@@ -20,7 +20,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -701,9 +700,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
 
         # And an oops should be filed for the error.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertTrue("PoolFileOverwriteError" in str(error_report))
+        self.assertEqual("PoolFileOverwriteError", self.oopses[0]['type'])
 
         self.layer.commit()
         self.assertEqual(
