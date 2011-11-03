@@ -747,6 +747,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -6829,6 +6832,13 @@ ALTER TABLE poexportrequest DISABLE TRIGGER ALL;
 
 
 ALTER TABLE poexportrequest ENABLE TRIGGER ALL;
+
+
+ALTER TABLE pofilestatsjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE pofilestatsjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE pomsgid DISABLE TRIGGER ALL;

@@ -10,4 +10,4 @@ CREATE TABLE POFileStatsJob (
 CREATE INDEX pofilestatsjob__job__idx ON Job(id);
 CREATE INDEX pofilestatsjob__pofile__idx ON POFile(id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 93, 0);
