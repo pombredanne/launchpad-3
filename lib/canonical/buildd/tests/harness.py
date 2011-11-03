@@ -7,7 +7,9 @@ __all__ = [
     'BuilddTestCase',
     ]
 
+import errno
 import os
+import socket
 import tempfile
 import unittest
 from ConfigParser import SafeConfigParser
@@ -131,3 +133,17 @@ class BuilddSlaveTestSetup(TacTestSetup):
     @property
     def logfile(self):
         return '/var/tmp/build-slave.log'
+
+    def _hasDaemonStarted(self):
+        """buildd is up when it starts listening."""
+        try:
+            s = socket.socket()
+            s.settimeout(2.0)
+            s.connect(('localhost', 8221))  # Must match buildd-slave-test.conf.
+            s.close()
+            return True
+        except socket.error, e:
+            if e.errno == errno.ECONNREFUSED:
+                return False
+            else:
+                raise
