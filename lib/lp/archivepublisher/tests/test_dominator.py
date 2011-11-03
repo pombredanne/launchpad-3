@@ -1145,16 +1145,16 @@ class TestLivenessFunctions(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def test_find_live_source_versions_blesses_latest(self):
-        spphs = make_spphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
-        self.assertEqual(['1.0'], find_live_source_versions(spphs))
+        spphs = make_spphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
+        self.assertEqual(['1.2'], find_live_source_versions(spphs))
 
     def test_find_live_binary_versions_pass_1_blesses_latest(self):
-        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        bpphs = make_bpphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
         make_publications_arch_specific(bpphs)
-        self.assertEqual(['1.0'], find_live_binary_versions_pass_1(bpphs))
+        self.assertEqual(['1.2'], find_live_binary_versions_pass_1(bpphs))
 
     def test_find_live_binary_versions_pass_1_blesses_arch_all(self):
-        versions = ['1.%d' % version for version in range(3)]
+        versions = list(reversed(['1.%d' % version for version in range(3)]))
         bpphs = make_bpphs_for_versions(self.factory, versions)
 
         # All of these publications are architecture-specific, except
@@ -1168,19 +1168,25 @@ class TestLivenessFunctions(TestCaseWithFactory):
             find_live_binary_versions_pass_1(bpphs))
 
     def test_find_live_binary_versions_pass_2_blesses_latest(self):
-        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        bpphs = make_bpphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
         make_publications_arch_specific(bpphs, False)
-        self.assertEqual(
-            ['1.0'], find_live_binary_versions_pass_2(bpphs))
+        self.assertEqual(['1.2'], find_live_binary_versions_pass_2(bpphs))
 
     def test_find_live_binary_versions_pass_2_blesses_arch_specific(self):
-        versions = ['1.%d' % version for version in range(3)]
-        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        versions = list(reversed(['1.%d' % version for version in range(3)]))
+        bpphs = make_bpphs_for_versions(self.factory, versions)
         make_publications_arch_specific(bpphs)
-        self.assertEqual(
-            versions, find_live_binary_versions_pass_2(bpphs))
+        self.assertEqual(versions, find_live_binary_versions_pass_2(bpphs))
 
     def test_find_live_binary_versions_pass_2_reprieves_arch_all(self):
-        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
-        make_publications_arch_specific(bpphs)
-        self.assertTrue(False) # XXX: Test
+        # An arch-all BPPH for a BPR built by an SPR that also still has
+        # active arch-dependent BPPHs gets a reprieve: it can't be
+        # superseded until those arch-dependent BPPHs have been
+        # superseded.
+        bpphs = make_bpphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
+        make_publications_arch_specific(bpphs, False)
+        dependent = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpphs[1].binarypackagerelease)
+        make_publications_arch_specific([dependent], True)
+        self.assertEqual(
+            ['1.2', '1.1'], find_live_binary_versions_pass_2(bpphs))
