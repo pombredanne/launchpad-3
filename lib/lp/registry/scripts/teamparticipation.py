@@ -145,11 +145,14 @@ def check_teamparticipation_consistency(log):
         errors.extend(
             check_participants(participants_expected, participants_observed))
 
-    # TODO:
-    # - Check that merged people and teams do not appear in TeamParticipation.
-
     def get_repr(id):
-        return "%s (%d)" % (people[id] if id in people else teams[id], id)
+        if id in people:
+            name = people[id]
+        elif id in teams:
+            name = teams[id]
+        else:
+            name = "<unknown>"
+        return "%s (%d)" % (name, id)
 
     for error in errors:
         people_repr = ", ".join(imap(get_repr, error.people))
