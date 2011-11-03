@@ -9,7 +9,7 @@ __all__ = [
     'IAccessPolicy',
     'IAccessPolicyArtifact',
     'IAccessPolicyArtifactSource',
-    'IAccessPolicyPermission',
+    'IAccessPolicyGrant',
     'IAccessPolicySource',
     'UnsuitableAccessPolicyError',
     ]
@@ -31,8 +31,9 @@ class UnsuitableAccessPolicyError(Exception):
 class IAccessPolicy(Interface):
     id = Attribute("ID")
     pillar = Attribute("Pillar")
+    name = Attribute("Name")
     display_name = Attribute("Display name")
-    permissions = Attribute("Permissions")
+    grants = Attribute("Grants")
 
 
 class IAccessPolicyArtifact(Interface):
@@ -40,7 +41,7 @@ class IAccessPolicyArtifact(Interface):
     concrete_artifact = Attribute("Concrete artifact")
 
 
-class IAccessPolicyPermission(Interface):
+class IAccessPolicyGrant(Interface):
     id = Attribute("ID")
     policy = Attribute("Access policy")
     person = Attribute("Person")
@@ -72,10 +73,10 @@ class IAccessPolicyArtifactSource(Interface):
         """
 
 
-class IAccessPolicyPermissionSource(Interface):
+class IAccessPolicyGrantSource(Interface):
 
     def grant(person, policy, abstract_artifact=None):
-        """Create an `IAccessPolicyPermission`.
+        """Create an `IAccessPolicyGrant`.
 
         :param person: the `IPerson` to hold the access.
         :param policy: the `IAccessPolicy` to grant access to.
@@ -85,7 +86,7 @@ class IAccessPolicyPermissionSource(Interface):
         """
 
     def getByID(id):
-        """Return the `IAccessPolicyPermission` with the given ID."""
+        """Return the `IAccessPolicyGrant` with the given ID."""
 
     def findByPolicy(policy):
-        """Return all `IAccessPolicyPermission` objects for the policy."""
+        """Return all `IAccessPolicyGrant` objects for the policy."""

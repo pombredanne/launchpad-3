@@ -29,7 +29,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import NascentUpload
@@ -1213,6 +1212,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         Helper function to upload a partner package to a non-release
         pocket and ensure it fails."""
         # Set up the uploadprocessor with appropriate options and logger.
+        new_index = len(self.oopses)
         self.options.context = 'insecure'
         uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
@@ -1229,11 +1229,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected email with %s, got:\n%s" % (expect_msg, raw_msg))
 
         # And an oops should be filed for the error.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
+        error_report = self.oopses[new_index]
         expected_explanation = (
             "Verification failed 3 times: ['No data', 'No data', 'No data']")
-        self.assertIn(expected_explanation, error_report.value)
+        self.assertIn(expected_explanation, error_report['value'])
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
@@ -1382,10 +1381,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         processor.processUploadQueue()
 
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertEqual('SomeException', error_report.type)
-        self.assertIn("I am an explanation", error_report.tb_text)
+        error_report = self.oopses[0]
+        self.assertEqual('SomeException', error_report['type'])
+        self.assertIn("I am an explanation", error_report['tb_text'])
 
     def testLZMADebUpload(self):
         """Make sure that data files compressed with lzma in Debs work.
@@ -1927,15 +1925,13 @@ class TestUploadProcessor(TestUploadProcessorBase):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("netapplet_1.0-1")
 
-        last_oops = ErrorReportingUtility().getLastOopsReport()
-
         [result] = self.processUpload(uploadprocessor, upload_dir)
 
         self.assertEqual(UploadStatusEnum.REJECTED, result)
         self.assertLogContains(
             "INFO Failed to parse changes file")
         self.assertEqual(len(stub.test_emails), 0)
-        self.assertNoNewOops(last_oops)
+        self.assertEqual([], self.oopses)
 
     def test_ddeb_upload_overrides(self):
         # DDEBs should always be overridden to the same values as their

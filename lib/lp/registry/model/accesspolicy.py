@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AccessPolicy',
     'AccessPolicyArtifact',
-    'AccessPolicyPermission',
+    'AccessPolicyGrant',
     ]
 
 from storm.properties import (
@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicy,
     IAccessPolicyArtifact,
-    IAccessPolicyPermission,
+    IAccessPolicyGrant,
     )
 from lp.services.database.stormbase import StormBase
 
@@ -39,16 +39,17 @@ class AccessPolicy(StormBase):
     product = Reference(product_id, 'Product.id')
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
+    name = Unicode()
     display_name = Unicode()
 
-    permissions = ReferenceSet(id, "AccessPolicyPermission.policy_id")
+    grants = ReferenceSet(id, "AccessPolicyGrant.policy_id")
 
     @property
     def pillar(self):
         return self.product or self.distribution
 
     @classmethod
-    def create(cls, pillar, display_name):
+    def create(cls, pillar, name, display_name):
         from lp.registry.interfaces.distribution import IDistribution
         from lp.registry.interfaces.product import IProduct
         obj = cls()
@@ -56,6 +57,7 @@ class AccessPolicy(StormBase):
             obj.product = pillar
         elif IDistribution.providedBy(pillar):
             obj.distribution = pillar
+        obj.name = name
         obj.display_name = display_name
         IStore(cls).add(obj)
         return obj
@@ -83,9 +85,9 @@ class AccessPolicy(StormBase):
         return IStore(cls).find(cls, cls._constraintForPillar(pillar))
 
     @classmethod
-    def getByPillarAndName(cls, pillar, display_name):
+    def getByPillarAndName(cls, pillar, name):
         """See `IAccessPolicySource`."""
-        return cls.findByPillar(pillar).find(display_name=display_name).one()
+        return cls.findByPillar(pillar).find(name=name).one()
 
 
 class AccessPolicyArtifact(StormBase):
@@ -134,10 +136,10 @@ class AccessPolicyArtifact(StormBase):
         return obj
 
 
-class AccessPolicyPermission(StormBase):
-    implements(IAccessPolicyPermission)
+class AccessPolicyGrant(StormBase):
+    implements(IAccessPolicyGrant)
 
-    __storm_table__ = 'AccessPolicyPermission'
+    __storm_table__ = 'AccessPolicyGrant'
 
     id = Int(primary=True)
     policy_id = Int(name='policy')
@@ -155,7 +157,7 @@ class AccessPolicyPermission(StormBase):
 
     @classmethod
     def grant(cls, person, policy, abstract_artifact=None):
-        """See `IAccessPolicyPermissionSource`."""
+        """See `IAccessPolicyGrantSource`."""
         obj = cls()
         obj.policy = policy
         obj.person = person
@@ -165,10 +167,10 @@ class AccessPolicyPermission(StormBase):
 
     @classmethod
     def getByID(cls, id):
-        """See `IAccessPolicyPermissionSource`."""
+        """See `IAccessPolicyGrantSource`."""
         return IStore(cls).get(cls, id)
 
     @classmethod
     def findByPolicy(cls, policy):
-        """See `IAccessPolicyPermissionSource`."""
+        """See `IAccessPolicyGrantSource`."""
         return IStore(cls).find(cls, policy=policy)

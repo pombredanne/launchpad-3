@@ -6,12 +6,18 @@ CREATE TABLE AccessPolicy (
     id serial PRIMARY KEY,
     product integer REFERENCES Product,
     distribution integer REFERENCES Distribution,
+    name text NOT NULL,
     display_name text NOT NULL,
+    CONSTRAINT accesspolicy__product__name__key
+        UNIQUE (product, name),
     CONSTRAINT accesspolicy__product__display_name__key
         UNIQUE (product, display_name),
+    CONSTRAINT accesspolicy__distribution__name__key
+        UNIQUE (distribution, name),
     CONSTRAINT accesspolicy__distribution__display_name__key
         UNIQUE (distribution, display_name),
-    CONSTRAINT has_target CHECK (product IS NULL != distribution IS NULL)
+    CONSTRAINT has_target CHECK (product IS NULL != distribution IS NULL),
+    CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
 CREATE TABLE AccessPolicyArtifact (
@@ -23,17 +29,17 @@ CREATE TABLE AccessPolicyArtifact (
     CONSTRAINT has_artifact CHECK (bug IS NULL != branch IS NULL)
 );
 
-CREATE TABLE AccessPolicyPermission (
+CREATE TABLE AccessPolicyGrant (
     id serial PRIMARY KEY,
     policy integer NOT NULL REFERENCES AccessPolicy,
     person integer NOT NULL REFERENCES Person,
     artifact integer REFERENCES AccessPolicyArtifact,
-    CONSTRAINT accesspolicypermission__policy__person__artifact__key
+    CONSTRAINT accesspolicygrant__policy__person__artifact__key
         UNIQUE (policy, person, artifact)
 );
 
-CREATE UNIQUE INDEX accesspolicypermission__policy__person__key
-    ON AccessPolicyPermission(policy, person) WHERE artifact IS NULL;
+CREATE UNIQUE INDEX accesspolicygrant__policy__person__key
+    ON AccessPolicyGrant(policy, person) WHERE artifact IS NULL;
 
 ALTER TABLE bug
     ADD COLUMN access_policy integer REFERENCES AccessPolicy;
@@ -43,4 +49,4 @@ ALTER TABLE branch
     ADD COLUMN access_policy integer REFERENCES AccessPolicy;
 CREATE INDEX branch__access_policy__idx ON branch(access_policy);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 93, 1);

@@ -1959,14 +1959,14 @@
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource"/>
     </securedutility>
     <class
-        class="lp.registry.model.accesspolicy.AccessPolicyPermission">
+        class="lp.registry.model.accesspolicy.AccessPolicyGrant">
         <allow
-            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyPermission"/>
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrant"/>
     </class>
     <securedutility
-        component="lp.registry.model.accesspolicy.AccessPolicyPermission"
-        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyPermissionSource">
+        component="lp.registry.model.accesspolicy.AccessPolicyGrant"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource">
         <allow
-            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyPermissionSource"/>
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource"/>
     </securedutility>
 </configure>

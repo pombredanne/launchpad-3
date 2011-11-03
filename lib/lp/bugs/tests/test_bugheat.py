@@ -40,11 +40,15 @@ class BugUpdateHeat(TestCaseWithFactory):
             def recalculateBugHeatCache(self):
                 self.called = True
 
-        self.target = TestTarget(
-            self.factory.makeDistributionSourcePackage(with_db=True))
-        self.bugtask = self.factory.makeBugTask(target=self.target)
-        self.bugtask.bug.updateHeat()
-        self.assertTrue(self.target.called)
+        distro = self.factory.makeDistribution()
+        target = TestTarget(
+            self.factory.makeDistributionSourcePackage(
+                distribution=distro, with_db=True))
+        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
+        bugtask = self.factory.makeBugTask(target=dsp)
+        another_task = bugtask.bug.addTask(bugtask.bug.owner, target)
+        another_task.bug.updateHeat()
+        self.assertTrue(target.called)
 
 
 class MaxHeatByTargetBase:

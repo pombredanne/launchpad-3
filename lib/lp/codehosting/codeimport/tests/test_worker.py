@@ -125,7 +125,7 @@ class WorkerTest(TestCaseWithTransport, TestCase):
     layer = ForeignBranchPluginLayer
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(WorkerTest, self).setUp()
         self.disable_directory_isolation()
         SafeBranchOpener.install_hook()
 

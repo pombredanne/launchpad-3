@@ -12,8 +12,8 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,
-    IAccessPolicyPermission,
-    IAccessPolicyPermissionSource,
+    IAccessPolicyGrant,
+    IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
 from lp.testing import TestCaseWithFactory
@@ -39,12 +39,15 @@ class TestAccessPolicySource(TestCaseWithFactory):
     def test_create_for_product(self):
         product = self.factory.makeProduct()
         name = self.factory.getUniqueUnicode()
-        policy = getUtility(IAccessPolicySource).create(product, name)
+        display_name = self.factory.getUniqueUnicode()
+        policy = getUtility(IAccessPolicySource).create(
+            product, name, display_name)
         self.assertThat(
             policy,
             MatchesStructure.byEquality(
                 pillar=product,
-                display_name=name))
+                name=name,
+                display_name=display_name))
 
     def test_getByID(self):
         # getByPillarAndName finds the right policy.
@@ -68,7 +71,7 @@ class TestAccessPolicySource(TestCaseWithFactory):
         # Create a policy with the desired attributes, and another
         # random one.
         policy = self.factory.makeAccessPolicy(
-            pillar=product, display_name=name)
+            pillar=product, name=name)
         self.factory.makeAccessPolicy()
         self.assertEqual(
             policy,
@@ -154,37 +157,37 @@ class TestAccessPolicyArtifactBug(BaseAccessPolicyArtifactTests,
         return self.factory.makeBug()
 
 
-class TestAccessPolicyPermission(TestCaseWithFactory):
+class TestAccessPolicyGrant(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_provides_interface(self):
         self.assertThat(
-            self.factory.makeAccessPolicyPermission(),
-            Provides(IAccessPolicyPermission))
+            self.factory.makeAccessPolicyGrant(),
+            Provides(IAccessPolicyGrant))
 
     def test_concrete_artifact(self):
         bug = self.factory.makeBug()
         abstract = self.factory.makeAccessPolicyArtifact(bug)
-        permission = self.factory.makeAccessPolicyPermission(
+        grant = self.factory.makeAccessPolicyGrant(
             abstract_artifact=abstract)
-        self.assertEqual(bug, permission.concrete_artifact)
+        self.assertEqual(bug, grant.concrete_artifact)
 
     def test_no_concrete_artifact(self):
-        permission = self.factory.makeAccessPolicyPermission(
+        grant = self.factory.makeAccessPolicyGrant(
             abstract_artifact=None)
-        self.assertIs(None, permission.concrete_artifact)
+        self.assertIs(None, grant.concrete_artifact)
 
 
-class TestAccessPolicyPermissionSource(TestCaseWithFactory):
+class TestAccessPolicyGrantSource(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_grant_for_policy(self):
         policy = self.factory.makeAccessPolicy()
         person = self.factory.makePerson()
-        permission = getUtility(IAccessPolicyPermissionSource).grant(
+        grant = getUtility(IAccessPolicyGrantSource).grant(
             person, policy)
         self.assertThat(
-            permission,
+            grant,
             MatchesStructure.byEquality(
                 person=person,
                 policy=policy,
@@ -195,10 +198,10 @@ class TestAccessPolicyPermissionSource(TestCaseWithFactory):
         policy = self.factory.makeAccessPolicy()
         person = self.factory.makePerson()
         artifact = self.factory.makeAccessPolicyArtifact()
-        permission = getUtility(IAccessPolicyPermissionSource).grant(
+        grant = getUtility(IAccessPolicyGrantSource).grant(
             person, policy, artifact)
         self.assertThat(
-            permission,
+            grant,
             MatchesStructure.byEquality(
                 person=person,
                 policy=policy,
@@ -206,28 +209,28 @@ class TestAccessPolicyPermissionSource(TestCaseWithFactory):
                 concrete_artifact=artifact.concrete_artifact))
 
     def test_getByID(self):
-        # getByID finds the right permission.
-        permission = self.factory.makeAccessPolicyPermission()
+        # getByID finds the right grant.
+        grant = self.factory.makeAccessPolicyGrant()
         # Flush so we get an ID.
-        Store.of(permission).flush()
+        Store.of(grant).flush()
         self.assertEqual(
-            permission,
-            getUtility(IAccessPolicyPermissionSource).getByID(permission.id))
+            grant,
+            getUtility(IAccessPolicyGrantSource).getByID(grant.id))
 
     def test_getByID_nonexistent(self):
-        # getByID returns None if the permission doesn't exist.
+        # getByID returns None if the grant doesn't exist.
         self.assertIs(
             None,
-            getUtility(IAccessPolicyPermissionSource).getByID(
+            getUtility(IAccessPolicyGrantSource).getByID(
                 self.factory.getUniqueInteger()))
 
     def test_findByPolicy(self):
-        # findByPolicy finds only the relevant permissions.
+        # findByPolicy finds only the relevant grants.
         policy = self.factory.makeAccessPolicy()
-        permissions = [
-            self.factory.makeAccessPolicyPermission(policy=policy)
+        grants = [
+            self.factory.makeAccessPolicyGrant(policy=policy)
             for i in range(3)]
-        self.factory.makeAccessPolicyPermission()
+        self.factory.makeAccessPolicyGrant()
         self.assertContentEqual(
-            permissions,
-            getUtility(IAccessPolicyPermissionSource).findByPolicy(policy))
+            grants,
+            getUtility(IAccessPolicyGrantSource).findByPolicy(policy))

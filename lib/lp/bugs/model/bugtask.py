@@ -387,7 +387,7 @@ def validate_assignee(self, attr, value):
     return validate_person(self, attr, value)
 
 
-def validate_target(bug, target):
+def validate_target(bug, target, retarget_existing=True):
     """Validate a bugtask target against a bug's existing tasks.
 
     Checks that no conflicting tasks already exist, and that the new
@@ -418,6 +418,20 @@ def validate_target(bug, target):
                     target.sourcepackagename.name)
             except NotFoundError, e:
                 raise IllegalTarget(e[0])
+
+    if bug.private and not bool(features.getFeatureFlag(
+            'disclosure.allow_multipillar_private_bugs.enabled')):
+        # Perhaps we are replacing the one and only existing bugtask, in
+        # which case that's ok.
+        if retarget_existing and len(bug.bugtasks) <= 1:
+            return
+        # We can add a target so long as the pillar exists already.
+        if (len(bug.affected_pillars) > 0
+                and target.pillar not in bug.affected_pillars):
+            raise IllegalTarget(
+                "This private bug already affects %s. "
+                "Private bugs cannot affect multiple projects."
+                    % bug.default_bugtask.target.bugtargetdisplayname)
 
 
 def validate_new_target(bug, target):
@@ -454,7 +468,7 @@ def validate_new_target(bug, target):
                 "specified. You should fill in a package name for "
                 "the existing bug." % target.distribution.displayname)
 
-    validate_target(bug, target)
+    validate_target(bug, target, retarget_existing=False)
 
 
 class BugTask(SQLBase):
@@ -1453,60 +1467,116 @@ def get_bug_privacy_filter_with_decorator(user):
     # use TeamParticipation at all.
     pillar_privacy_filters = ''
     if features.getFeatureFlag(
-        'disclosure.private_bug_visibility_rules.enabled'):
-        pillar_privacy_filters = """
-             UNION
-             SELECT BugTask.bug
-             FROM BugTask, TeamParticipation, Product
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = Product.owner AND
-                   BugTask.product = Product.id AND
-                   BugTask.bug = Bug.id AND
-                   Bug.security_related IS False
-             UNION
-             SELECT BugTask.bug
-             FROM BugTask, TeamParticipation, ProductSeries
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = ProductSeries.owner AND
-                   BugTask.productseries = ProductSeries.id AND
-                   BugTask.bug = Bug.id AND
-                   Bug.security_related IS False
-             UNION
-             SELECT BugTask.bug
-             FROM BugTask, TeamParticipation, Distribution
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = Distribution.owner AND
-                   BugTask.distribution = Distribution.id AND
-                   BugTask.bug = Bug.id AND
-                   Bug.security_related IS False
-             UNION
-             SELECT BugTask.bug
-             FROM BugTask, TeamParticipation, DistroSeries, Distribution
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = Distribution.owner AND
-                   DistroSeries.distribution = Distribution.id AND
-                   BugTask.distroseries = DistroSeries.id AND
-                   BugTask.bug = Bug.id AND
-                   Bug.security_related IS False
-        """ % sqlvalues(personid=user.id)
-    query = """
-        (Bug.private = FALSE OR EXISTS (
-             SELECT BugSubscription.bug
-             FROM BugSubscription, TeamParticipation
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = BugSubscription.person AND
-                   BugSubscription.bug = Bug.id
-             UNION
-             SELECT BugTask.bug
-             FROM BugTask, TeamParticipation
-             WHERE TeamParticipation.person = %(personid)s AND
-                   TeamParticipation.team = BugTask.assignee AND
-                   BugTask.bug = Bug.id
-             %(extra_filters)s
-                   ))
-        """ % dict(
-                personid=quote(user.id),
-                extra_filters=pillar_privacy_filters)
+        'disclosure.private_bug_visibility_cte.enabled'):
+        if features.getFeatureFlag(
+            'disclosure.private_bug_visibility_rules.enabled'):
+            pillar_privacy_filters = """
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask, Product
+                WHERE Product.owner IN (SELECT team FROM teams) AND
+                    BugTask.product = Product.id AND
+                    BugTask.bug = Bug.id AND
+                    Bug.security_related IS False
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask, ProductSeries
+                WHERE ProductSeries.owner IN (SELECT team FROM teams) AND
+                    BugTask.productseries = ProductSeries.id AND
+                    BugTask.bug = Bug.id AND
+                    Bug.security_related IS False
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask, Distribution
+                WHERE Distribution.owner IN (SELECT team FROM teams) AND
+                    BugTask.distribution = Distribution.id AND
+                    BugTask.bug = Bug.id AND
+                    Bug.security_related IS False
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask, DistroSeries, Distribution
+                WHERE Distribution.owner IN (SELECT team FROM teams) AND
+                    DistroSeries.distribution = Distribution.id AND
+                    BugTask.distroseries = DistroSeries.id AND
+                    BugTask.bug = Bug.id AND
+                    Bug.security_related IS False
+            """
+        query = """
+            (Bug.private = FALSE OR EXISTS (
+                WITH teams AS (
+                    SELECT team from TeamParticipation
+                    WHERE person = %(personid)s
+                )
+                SELECT BugSubscription.bug
+                FROM BugSubscription
+                WHERE BugSubscription.person IN (SELECT team FROM teams) AND
+                    BugSubscription.bug = Bug.id
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask
+                WHERE BugTask.assignee IN (SELECT team FROM teams) AND
+                    BugTask.bug = Bug.id
+                %(extra_filters)s
+                    ))
+            """ % dict(
+                    personid=quote(user.id),
+                    extra_filters=pillar_privacy_filters)
+    else:
+        if features.getFeatureFlag(
+            'disclosure.private_bug_visibility_rules.enabled'):
+            pillar_privacy_filters = """
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask, TeamParticipation, Product
+                WHERE TeamParticipation.person = %(personid)s AND
+                    TeamParticipation.team = Product.owner AND
+                    BugTask.product = Product.id AND
+                    BugTask.bug = Bug.id AND
+                    Bug.security_related IS False
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask, TeamParticipation, ProductSeries
+                WHERE TeamParticipation.person = %(personid)s AND
+                    TeamParticipation.team = ProductSeries.owner AND
+                    BugTask.productseries = ProductSeries.id AND
+                    BugTask.bug = Bug.id AND
+                    Bug.security_related IS False
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask, TeamParticipation, Distribution
+                WHERE TeamParticipation.person = %(personid)s AND
+                    TeamParticipation.team = Distribution.owner AND
+                    BugTask.distribution = Distribution.id AND
+                    BugTask.bug = Bug.id AND
+                    Bug.security_related IS False
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask, TeamParticipation, DistroSeries, Distribution
+                WHERE TeamParticipation.person = %(personid)s AND
+                    TeamParticipation.team = Distribution.owner AND
+                    DistroSeries.distribution = Distribution.id AND
+                    BugTask.distroseries = DistroSeries.id AND
+                    BugTask.bug = Bug.id AND
+                    Bug.security_related IS False
+            """ % sqlvalues(personid=user.id)
+        query = """
+            (Bug.private = FALSE OR EXISTS (
+                SELECT BugSubscription.bug
+                FROM BugSubscription, TeamParticipation
+                WHERE TeamParticipation.person = %(personid)s AND
+                    TeamParticipation.team = BugSubscription.person AND
+                    BugSubscription.bug = Bug.id
+                UNION
+                SELECT BugTask.bug
+                FROM BugTask, TeamParticipation
+                WHERE TeamParticipation.person = %(personid)s AND
+                    TeamParticipation.team = BugTask.assignee AND
+                    BugTask.bug = Bug.id
+                %(extra_filters)s
+                    ))
+            """ % dict(
+                    personid=quote(user.id),
+                    extra_filters=pillar_privacy_filters)
     return query, _make_cache_user_can_view_bug(user)
 
 
