@@ -1349,7 +1349,9 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         bugtasks = cache.objects['mustache_model']['bugtasks']
         self.assertEqual(1, len(bugtasks))
-        self.assertEqual(item.model, bugtasks[0])
+        combined = dict(item.model)
+        combined.update(view.search().field_visibility)
+        self.assertEqual(combined, bugtasks[0])
 
     def test_no_next_prev_for_single_batch(self):
         """The IJSONRequestCache should contain data about ajacent batches.
