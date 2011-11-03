@@ -112,15 +112,10 @@ def execute_long_query(store, log, interval, query):
     return report_progress(log, interval, results, "rows")
 
 
-def check_teamparticipation_consistency(log):
-    """Check for missing or spurious participations.
-
-    For example, participations for people who are not members, or missing
-    participations for people who are members.
-    """
+def fetch_teamparticipation_info(log):
+    """Fetch people, teams, memberships and participations."""
     slurp = partial(execute_long_query, get_store(), log, 10000)
 
-    # Slurp everything in.
     people = dict(
         slurp(
             "SELECT id, name FROM Person"
@@ -145,6 +140,18 @@ def check_teamparticipation_consistency(log):
 
     # Don't hold any locks.
     transaction.commit()
+
+    return people, teams, team_memberships, team_participations
+
+
+def check_teamparticipation_consistency(log):
+    """Check for missing or spurious participations.
+
+    For example, participations for people who are not members, or missing
+    participations for people who are members.
+    """
+    people, teams, team_memberships, team_participations = (
+        fetch_teamparticipation_info(log))
 
     def get_participants(team):
         """Recurse through membership records to get participants."""
