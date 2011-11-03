@@ -5,7 +5,7 @@
     <div class="buglisting-col1">
         {{#show_importance}}
         <div class="importance {{importance_class}}">
-          {{importance}}
+            {{importance}}
         </div>
         {{/show_importance}}
         {{#show_status}}
@@ -26,15 +26,15 @@
         </div>
         <div class="buginfo-extras">
             {{#show_bugtarget}}
-            <span class="{{bugtarget_css}}">
-              {{bugtarget}}
-            </span>
+                <span class="{{bugtarget_css}}">
+                    {{bugtarget}}
+                </span>
             {{/show_bugtarget}}
             {{#show_milestone_name}}
             {{#milestone_name}}
-            <span class="sprite milestone field">
-                {{milestone_name}}
-            </span>
+                <span class="sprite milestone field">
+                    {{milestone_name}}
+                </span>
             {{/milestone_name}}
             {{/show_milestone_name}}
         </div>
@@ -42,9 +42,9 @@
 
     <div class="buglisting-col3">
         {{#show_bug_heat}}
-        <span class="bug-heat-icons">
-             {{{bug_heat_html}}}
-        </span>
+            <span class="bug-heat-icons">
+                 {{{bug_heat_html}}}
+            </span>
         {{/show_bug_heat}}
         <span class="bug-related-icons">
             {{{badges}}}
