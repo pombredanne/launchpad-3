@@ -571,8 +571,11 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
         others = list(bug.getIndirectSubscribers())
         for person in others:
-            if person == self.user:
-                # Skip the current user viewing the page.
+            if (person == self.user
+                or (person.private
+                    and not check_permission('launchpad.View', person))):
+                # Skip the current user viewing the page,
+                # and private teams user does not have permission to view.
                 continue
             subscriber = {
                 'name': person.name,

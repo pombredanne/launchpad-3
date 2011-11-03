@@ -460,8 +460,13 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
 
         self.assertEqual(bug_content, bugtask_content)
 
-    def _makeBugWithNoSubscribers(self):
-        bug = self.factory.makeBug()
+    def _makeBugWithNoSubscribers(self, product_owner=None,
+                                  official_malone=None):
+        registrant = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=product_owner, registrant=registrant,
+            official_malone=official_malone)
+        bug = self.factory.makeBug(product=product)
         with person_logged_in(bug.owner):
             # Unsubscribe the bug reporter to ensure we have no subscribers.
             bug.unsubscribe(bug.owner, bug.owner)
@@ -722,7 +727,13 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
 
     def test_data_unauthorised_private_team_excluded(self):
         # Private teams a user cannot see are not included in the results.
-        bug = self._makeBugWithNoSubscribers()
+        pillar_owner = self.factory.makeTeam(
+            name='pillar-owner', displayname='Pillar Owner',
+            visibility=PersonVisibility.PRIVATE)
+        # We create a bug with a private indirect subscriber who will not be
+        # visible in the results.
+        bug = self._makeBugWithNoSubscribers(
+            product_owner=pillar_owner, official_malone=True)
         user = self.factory.makePerson()
         # subscriber is someone we will see in the results.
         subscriber = self.factory.makePerson(
