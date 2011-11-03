@@ -50,7 +50,6 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
-from lp.services.features import getFeatureFlag
 from lp.soyuz.interfaces.archive import IArchive
 
 # XXX: EdwinGrubbs 2009-07-27 bug=405476
@@ -156,11 +155,8 @@ class PersonPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
             super(PersonPickerEntrySourceAdapter, self)
                 .getPickerEntries(term_values, context_object))
 
-        personpicker_affiliation_enabled = kwarg.get(
-                                    'personpicker_affiliation_enabled', False)
         affiliated_context = IHasAffiliation(context_object, None)
-        if (affiliated_context is not None
-            and personpicker_affiliation_enabled):
+        if affiliated_context is not None:
             # If a person is affiliated with the associated_object then we
             # can display a badge.
             badges = affiliated_context.getAffiliationBadges(term_values)
@@ -172,10 +168,8 @@ class PersonPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                              label=badge_info.label,
                              role=badge_info.role))
 
-        picker_expander_enabled = kwarg.get('picker_expander_enabled', False)
         for person, picker_entry in izip(term_values, picker_entries):
-            if picker_expander_enabled:
-                picker_entry.details = []
+            picker_entry.details = []
 
             if person.preferredemail is not None:
                 if person.hide_email_addresses:
@@ -187,39 +181,29 @@ class PersonPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                         picker_entry.description = '<email address hidden>'
 
             picker_entry.metadata = get_person_picker_entry_metadata(person)
-            enhanced_picker_enabled = kwarg.get(
-                                            'enhanced_picker_enabled', False)
-            if enhanced_picker_enabled:
-                # We will display the person's name (launchpad id) after their
-                # displayname.
-                picker_entry.alt_title = person.name
-                # We will linkify the person's name so it can be clicked to
-                # open the page for that person.
-                picker_entry.alt_title_link = canonical_url(
-                                                person, rootsite='mainsite')
-                # We will display the person's irc nick(s) after their email
-                # address in the description text.
-                irc_nicks = None
-                if person.ircnicknames:
-                    irc_nicks = ", ".join(
-                        [IRCNicknameFormatterAPI(ircid).displayname()
-                        for ircid in person.ircnicknames])
-                if irc_nicks and not picker_expander_enabled:
-                    if picker_entry.description:
-                        picker_entry.description = ("%s (%s)" %
-                            (picker_entry.description, irc_nicks))
-                    else:
-                        picker_entry.description = "%s" % irc_nicks
-                if picker_expander_enabled:
-                    if irc_nicks:
-                        picker_entry.details.append(irc_nicks)
-                    if person.is_team:
-                        picker_entry.details.append(
-                            'Team members: %s' % person.all_member_count)
-                    else:
-                        picker_entry.details.append(
-                            'Member since %s' % DateTimeFormatterAPI(
-                                person.datecreated).date())
+            # We will display the person's name (launchpad id) after their
+            # displayname.
+            picker_entry.alt_title = person.name
+            # We will linkify the person's name so it can be clicked to
+            # open the page for that person.
+            picker_entry.alt_title_link = canonical_url(
+                                            person, rootsite='mainsite')
+            # We will display the person's irc nick(s) after their email
+            # address in the description text.
+            irc_nicks = None
+            if person.ircnicknames:
+                irc_nicks = ", ".join(
+                    [IRCNicknameFormatterAPI(ircid).displayname()
+                    for ircid in person.ircnicknames])
+            if irc_nicks:
+                picker_entry.details.append(irc_nicks)
+            if person.is_team:
+                picker_entry.details.append(
+                    'Team members: %s' % person.all_member_count)
+            else:
+                picker_entry.details.append(
+                    'Member since %s' % DateTimeFormatterAPI(
+                        person.datecreated).date())
         return picker_entries
 
 
@@ -257,33 +241,30 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                 .getPickerEntries(term_values, context_object, **kwarg))
         for target, picker_entry in izip(term_values, entries):
             picker_entry.description = self.getDescription(target)
-            enhanced = bool(getFeatureFlag(
-                'disclosure.target_picker_enhancements.enabled'))
-            if enhanced:
-                picker_entry.details = []
-                summary = picker_entry.description
-                if len(summary) > 45:
-                    index = summary.rfind(' ', 0, 45)
-                    first_line = summary[0:index + 1]
-                    second_line = summary[index:]
-                else:
-                    first_line = summary
-                    second_line = ''
+            picker_entry.details = []
+            summary = picker_entry.description
+            if len(summary) > 45:
+                index = summary.rfind(' ', 0, 45)
+                first_line = summary[0:index + 1]
+                second_line = summary[index:]
+            else:
+                first_line = summary
+                second_line = ''
 
-                if len(second_line) > 90:
-                    index = second_line.rfind(' ', 0, 90)
-                    second_line = second_line[0:index + 1]
-                picker_entry.description = first_line
-                if second_line:
-                    picker_entry.details.append(second_line)
-                picker_entry.alt_title = target.name
-                picker_entry.alt_title_link = canonical_url(
-                    target, rootsite='mainsite')
-                picker_entry.target_type = self.target_type
-                maintainer = self.getMaintainer(target)
-                if maintainer is not None:
-                    picker_entry.details.append(
-                        'Maintainer: %s' % self.getMaintainer(target))
+            if len(second_line) > 90:
+                index = second_line.rfind(' ', 0, 90)
+                second_line = second_line[0:index + 1]
+            picker_entry.description = first_line
+            if second_line:
+                picker_entry.details.append(second_line)
+            picker_entry.alt_title = target.name
+            picker_entry.alt_title_link = canonical_url(
+                target, rootsite='mainsite')
+            picker_entry.target_type = self.target_type
+            maintainer = self.getMaintainer(target)
+            if maintainer is not None:
+                picker_entry.details.append(
+                    'Maintainer: %s' % self.getMaintainer(target))
         return entries
 
 
@@ -404,12 +385,6 @@ class HugeVocabularyJSONView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.enhanced_picker_enabled = bool(
-            getFeatureFlag('disclosure.picker_enhancements.enabled'))
-        self.picker_expander_enabled = bool(
-            getFeatureFlag('disclosure.picker_expander.enabled'))
-        self.personpicker_affiliation_enabled = bool(
-            getFeatureFlag('disclosure.personpicker_affiliation.enabled'))
 
     def __call__(self):
         name = self.request.form.get('name')
@@ -466,11 +441,7 @@ class HugeVocabularyJSONView:
         for adapter_class, term_values in picker_entry_terms.items():
             picker_entries = adapter_cache[adapter_class].getPickerEntries(
                 term_values,
-                self.context,
-                enhanced_picker_enabled=self.enhanced_picker_enabled,
-                picker_expander_enabled=self.picker_expander_enabled,
-                personpicker_affiliation_enabled=(
-                    self.personpicker_affiliation_enabled))
+                self.context)
             for term_value, picker_entry in izip(term_values, picker_entries):
                 picker_term_entries[term_value] = picker_entry
 

@@ -162,8 +162,8 @@ class VerifyPOFileStatsProcess:
                 'errors': loop.total_incorrect,
                 'total': loop.total_checked}
             simple_sendmail(
-                from_addr=config.rosetta.admin_email,
-                to_addrs=[config.rosetta.admin_email],
+                from_addr=config.canonical.noreply_from_address,
+                to_addrs=[config.launchpad.errors_address],
                 subject="POFile statistics errors",
                 body=MailWrapper().format(message))
             self.transaction.commit()
@@ -199,8 +199,8 @@ class VerifyRecentPOFileStatsProcess:
                 'errors': loop.total_incorrect,
                 'total': loop.total_checked}
             simple_sendmail(
-                from_addr=config.rosetta.admin_email,
-                to_addrs=[config.rosetta.admin_email],
+                from_addr=config.canonical.noreply_from_address,
+                to_addrs=[config.launchpad.errors_address],
                 subject="POFile statistics errors (daily)",
                 body=MailWrapper().format(message))
             self.transaction.commit()

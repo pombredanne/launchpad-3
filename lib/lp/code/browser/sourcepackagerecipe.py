@@ -111,7 +111,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.interfaces.archive import ArchiveDisabled
@@ -258,18 +257,9 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def person_picker(self):
-        # If we are using the enhanced picker, we need to ensure the vocab
-        # gives us terms showing just the displyname rather than displayname
-        # plus Luanchpad id since the enhanced picker provides this extra
-        # information itself.
-        enhanced_picker_enabled = bool(
-                    getFeatureFlag('disclosure.picker_enhancements.enabled'))
-        if enhanced_picker_enabled:
-            vocabulary = 'UserTeamsParticipationPlusSelfSimpleDisplay'
-        else:
-            vocabulary = 'UserTeamsParticipationPlusSelf'
         field = copy_field(
-            ISourcePackageRecipe['owner'], vocabularyName=vocabulary)
+            ISourcePackageRecipe['owner'],
+            vocabularyName='UserTeamsParticipationPlusSelfSimpleDisplay')
         return InlinePersonEditPickerWidget(
             self.context, field,
             format_link(self.context.owner),

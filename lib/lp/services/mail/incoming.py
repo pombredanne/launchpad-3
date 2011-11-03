@@ -131,20 +131,30 @@ def _authenticateDkim(signed_message):
            signed_message['From'],
            signed_message['Sender']))
     signing_details = []
+    dkim_result = False
     try:
-        # NB: if this fails with a keyword argument error, you need the
-        # python-dkim 0.3-3.2 that adds it
         dkim_result = dkim.verify(
             signed_message.parsed_string, dkim_log, details=signing_details)
     except dkim.DKIMException, e:
         log.warning('DKIM error: %r' % (e,))
-        dkim_result = False
+    except dns.resolver.NXDOMAIN, e:
+        # This can easily happen just through bad input data, ie claiming to
+        # be signed by a domain with no visible key of that name.  It's not an
+        # operational error.
+        log.info('DNS exception: %r' % (e,))
     except dns.exception.DNSException, e:
         # many of them have lame messages, thus %r
         log.warning('DNS exception: %r' % (e,))
-        dkim_result = False
-    else:
-        log.info('DKIM verification result=%s' % (dkim_result,))
+    except Exception, e:
+        # DKIM leaks some errors when it gets bad input, as in bug 881237.  We
+        # don't generally want them to cause the mail to be dropped entirely
+        # though.  It probably is reasonable to treat them as potential
+        # operational errors, at least until they're handled properly, by
+        # making pydkim itself more defensive.
+        log.warning(
+            'unexpected error in DKIM verification, treating as unsigned: %r'
+            % (e,))
+    log.info('DKIM verification result: trusted=%s' % (dkim_result,))
     log.debug('DKIM debug log: %s' % (dkim_log.getvalue(),))
     if not dkim_result:
         return None
@@ -295,18 +305,6 @@ def _gpgAuthenticateEmail(mail, principal, person,
     return principal
 
 
-class MailErrorUtility(ErrorReportingUtility):
-    """An error utility that doesn't ignore exceptions."""
-
-    _ignored_exceptions = set()
-
-    def __init__(self):
-        super(MailErrorUtility, self).__init__()
-        # All errors reported for incoming email will have 'EMAIL'
-        # appended to the configured oops_prefix.
-        self.setOopsToken('EMAIL')
-
-
 ORIGINAL_TO_HEADER = 'X-Launchpad-Original-To'
 
 
@@ -347,11 +345,15 @@ def report_oops(file_alias_url=None, error_msg=None):
         properties.append(('Error message', error_msg))
     request = ScriptRequest(properties)
     request.principal = get_current_principal()
-    errorUtility = MailErrorUtility()
-    errorUtility.raising(info, request)
-    assert request.oopsid is not None, (
-        'MailErrorUtility failed to generate an OOPS.')
-    return request.oopsid
+    errorUtility = ErrorReportingUtility()
+    # Report all exceptions: the mail handling code doesn't expect any in
+    # normal operation.
+    errorUtility._ignored_exceptions = set()
+    report = errorUtility.raising(info, request)
+    # Note that this assert is arguably bogus: raising is permitted to filter
+    # reports.
+    assert report is not None, ('No OOPS generated.')
+    return report['id']
 
 
 def handleMail(trans=transaction,

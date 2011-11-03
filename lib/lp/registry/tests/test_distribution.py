@@ -24,6 +24,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import NoSuchDistroSeries
@@ -41,12 +42,14 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import Provides
 from lp.testing.views import create_initialized_view
+from lp.translations.enums import TranslationPermission
 
 
 class TestDistribution(TestCaseWithFactory):
@@ -491,3 +494,37 @@ class DistributionSet(TestCaseWithFactory):
         self.factory.makeDistroSeriesParent(derived_series=other_series)
         distroset = getUtility(IDistributionSet)
         self.assertEqual(1, len(list(distroset.getDerivedDistributions())))
+
+
+class TestDistributionTranslations(TestCaseWithFactory):
+    """A TestCase for accessing distro translations-related attributes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rosetta_expert(self):
+        # Ensure rosetta-experts can set Distribution attributes
+        # related to translations.
+        distro = self.factory.makeDistribution()
+        new_series = self.factory.makeDistroSeries(distribution=distro)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('rosetta_experts'):
+            distro.translations_usage = ServiceUsage.LAUNCHPAD
+            distro.translation_focus = new_series
+            distro.translationgroup = group
+            distro.translationpermission = TranslationPermission.CLOSED
+
+    def test_translation_group_owner(self):
+        # Ensure TranslationGroup owner for a Distribution can modify
+        # all attributes related to distribution translations.
+        distro = self.factory.makeDistribution()
+        new_series = self.factory.makeDistroSeries(distribution=distro)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('admin'):
+            distro.translationgroup = group
+
+        new_group = self.factory.makeTranslationGroup()
+        with person_logged_in(group.owner):
+            distro.translations_usage = ServiceUsage.LAUNCHPAD
+            distro.translation_focus = new_series
+            distro.translationgroup = new_group
+            distro.translationpermission = TranslationPermission.CLOSED

@@ -17,23 +17,27 @@ __all__ = [
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
+    'CannotDeleteBugtask',
     'DB_INCOMPLETE_BUGTASK_STATUSES',
     'DB_UNRESOLVED_BUGTASK_STATUSES',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
+    'get_bugtask_status',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
+    'IBugTaskDelete',
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
     'ICreateQuestionFromBugTaskForm',
     'IFrontPageBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
+    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'IPersonBugTaskSearch',
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamProductBugTaskSearch',
-    'IllegalRelatedBugTasksParams',
-    'IllegalTarget',
+    'normalize_bugtask_status',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskAssignee',
@@ -56,6 +60,7 @@ from lazr.restful.declarations import (
     call_with,
     error_status,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_read_operation,
     export_write_operation,
     exported,
@@ -305,6 +310,33 @@ class BugTaskStatusSearch(DBEnumeratedType):
         """)
 
 
+def get_bugtask_status(status_id):
+    """Get a member of `BugTaskStatus` or `BugTaskStatusSearch` by value.
+
+    `BugTaskStatus` and `BugTaskStatusSearch` intersect, but neither is a
+    subset of the other, so this searches first in `BugTaskStatus` then in
+    `BugTaskStatusSearch` for a member with the given ID.
+    """
+    try:
+        return BugTaskStatus.items[status_id]
+    except KeyError:
+        return BugTaskStatusSearch.items[status_id]
+
+
+def normalize_bugtask_status(status):
+    """Normalize `status`.
+
+    It might be a member of any of three related enums: `BugTaskStatus`,
+    `BugTaskStatusSearch`, or `BugTaskStatusSearchDisplay`. This tries to
+    normalize by value back to the first of those three enums in which the
+    status appears.
+    """
+    try:
+        return BugTaskStatus.items[status.value]
+    except KeyError:
+        return BugTaskStatusSearch.items[status.value]
+
+
 class BugTagsSearchCombinator(EnumeratedType):
     """Bug Tags Search Combinator
 
@@ -406,6 +438,15 @@ DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
     for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
 
 
+@error_status(httplib.BAD_REQUEST)
+class CannotDeleteBugtask(Exception):
+    """The bugtask cannot be deleted.
+
+    Raised when a user tries to delete a bugtask but the deletion cannot
+    proceed because of a model constraint or other business rule violation.
+    """
+
+
 @error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskStatus(Unauthorized):
     """User not permitted to change status.
@@ -453,7 +494,23 @@ class IllegalRelatedBugTasksParams(Exception):
     in a search for related bug tasks"""
 
 
-class IBugTask(IHasDateCreated, IHasBug):
+class IBugTaskDelete(Interface):
+    """An interface for operations allowed with the Delete permission."""
+    @export_destructor_operation()
+    @call_with(who=REQUEST_USER)
+    @operation_for_version('devel')
+    def delete(who):
+        """Delete this bugtask.
+
+        :param who: the user who is removing the bugtask.
+        :raises: CannotDeleteBugtask if the bugtask cannot be deleted due to a
+            business rule or other model constraint.
+        :raises: Unauthorized if the user does not have permission
+            to delete the bugtask.
+        """
+
+
+class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -1039,7 +1096,7 @@ class IUpstreamProductBugTaskSearch(IBugTaskSearch):
         required=False)
 
 
-class IFrontPageBugTaskSearch(IBugTaskSearchBase):
+class IFrontPageBugTaskSearch(IBugTaskSearch):
     """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,

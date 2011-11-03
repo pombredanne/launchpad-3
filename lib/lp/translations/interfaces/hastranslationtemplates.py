@@ -62,9 +62,8 @@ class IHasTranslationTemplates(Interface):
     def getCurrentTemplatesCollection():
         """Return `TranslationTemplatesCollection` of current templates.
 
-        A translation template is considered active when both
-        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
-        containing `Product` or `Distribution` are set to True.
+        A translation template is considered active when
+        `IPOTemplate`.iscurrent flag is set to True.
         """
 
     def getCurrentTranslationTemplates(just_ids=False):
@@ -74,9 +73,8 @@ class IHasTranslationTemplates(Interface):
             than the full `POTemplate`.  Used to save time on retrieving
             and deserializing the objects from the database.
 
-        A translation template is considered active when both
-        `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
-        containing `Product` or `Distribution` are set to True.
+        A translation template is considered active when
+        `IPOTemplate`.iscurrent is set to True.
         """
 
     def getCurrentTranslationFiles(just_ids=False):

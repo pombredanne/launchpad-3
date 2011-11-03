@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401
@@ -19,6 +19,7 @@ __all__ = [
 
 from textwrap import dedent
 
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -82,7 +83,7 @@ class ISourcePackageRecipeData(Interface):
     deb_version_template = exported(
         TextLine(
             title=_('deb-version template'), readonly=True,
-            description = _(
+            description=_(
                 'The template that will be used to generate a deb version.')))
 
     def getReferencedBranches():
@@ -104,31 +105,31 @@ class ISourcePackageRecipeView(Interface):
 
     recipe_text = exported(Text(readonly=True))
 
-    pending_builds = exported(
+    pending_builds = exported(doNotSnapshot(
         CollectionField(
             title=_("The pending builds of this recipe."),
             description=_('Pending builds of this recipe, sorted in '
                     'descending order of creation.'),
             value_type=Reference(schema=Interface),
-            readonly=True))
+            readonly=True)))
 
-    completed_builds = exported(
+    completed_builds = exported(doNotSnapshot(
         CollectionField(
             title=_("The completed builds of this recipe."),
             description=_('Completed builds of this recipe, sorted in '
                     'descending order of finishing (or starting if not'
                     'completed successfully).'),
             value_type=Reference(schema=Interface),
-            readonly=True))
+            readonly=True)))
 
-    builds = exported(
+    builds = exported(doNotSnapshot(
         CollectionField(
             title=_("All builds of this recipe."),
             description=_('All builds of this recipe, sorted in '
                     'descending order of finishing (or starting if not'
                     'completed successfully).'),
             value_type=Reference(schema=Interface),
-            readonly=True))
+            readonly=True)))
 
     last_build = exported(
         Reference(

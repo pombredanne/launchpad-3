@@ -1,4 +1,4 @@
-<div
+<div id="branches-table-listing"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
@@ -39,9 +39,14 @@ function hide_commit(id) {
         div.style.display = "none";
     }
 }
-registerLaunchpadFunction(hookUpFilterSubmission);
 
 </script>
+
+<tal:comment
+tal:condition="not: request/features/ajax.batch_navigator.enabled"
+replace='structure string:&lt;script type="text/javascript"&gt;
+    registerLaunchpadFunction(hookUpFilterSubmission);
+&lt;/script&gt;'/>
 
   <tal:needs-batch condition="context/has_multiple_pages">
     <div id="branch-batch-links">
@@ -189,4 +194,18 @@ registerLaunchpadFunction(hookUpFilterSubmission);
 
   <tal:navigation replace="structure context/@@+navigation-links-lower" />
 
+  <tal:comment
+    tal:condition="request/features/ajax.batch_navigator.enabled"
+    replace='structure string:&lt;script type="text/javascript"&gt;
+    LPS.use("lp.app.batchnavigator",
+        function(Y) {
+            Y.on("domready", function () {
+                var config = {
+                    contentBox: "#branches-table-listing",
+                    post_refresh_hook: hookUpFilterSubmission
+                };
+                new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
+            });
+        });
+  &lt;/script&gt;'/>
 </div>

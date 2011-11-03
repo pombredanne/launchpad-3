@@ -171,6 +171,9 @@
             path_expression="string:+sourcepub"
             attribute_to_parent="archive"
             urldata="lp.soyuz.browser.publishing.SourcePublicationURL"/>
+        <browser:navigation
+            module="lp.soyuz.browser.publishing"
+            classes="SourcePackagePublishingHistoryNavigation" />
     </facet>
     <browser:defaultView
         for="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"
@@ -397,6 +400,15 @@
             name="+rescore"
             facet="overview"
             template="../templates/build-rescore.pt"/>
+    </browser:pages>
+    <browser:pages
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
+        class="lp.soyuz.browser.build.BuildCancelView"
+        permission="launchpad.Edit">
+        <browser:page
+            name="+cancel"
+            facet="overview"
+            template="../../app/templates/generic-edit.pt"/>
     </browser:pages>
     <browser:menus
         classes="

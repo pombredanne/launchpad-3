@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
@@ -33,31 +33,31 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.vocabulary import CountableIterator
 from lp.bugs.interfaces.bugtask import (
-    IBugTaskSet,
     BugTaskSearchParams,
+    IBugTaskSet,
     )
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugtask import BugTask
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import user_has_special_branch_access
 from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     InvalidFilter,
     )
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
-from lp.code.enums import BranchMergeProposalStatus
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchsubscription import BranchSubscription
@@ -131,6 +131,10 @@ class GenericBranchCollection:
     def count(self):
         """See `IBranchCollection`."""
         return self.getBranches(eager_load=False).count()
+
+    def is_empty(self):
+        """See `IBranchCollection`."""
+        return self.getBranches(eager_load=False).is_empty()
 
     def ownerCounts(self):
         """See `IBranchCollection`."""
@@ -811,7 +815,7 @@ class VisibleBranchCollection(GenericBranchCollection):
             Select(Branch.id,
                    And(Branch.owner == TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.explicitly_private == True)),
+                       Branch.transitively_private == True)),
             # Private branches the person is subscribed to, either directly or
             # indirectly.
             Select(Branch.id,

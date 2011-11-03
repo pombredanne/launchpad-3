@@ -8,7 +8,6 @@
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
@@ -47,7 +46,7 @@ class TestRequestDailyBuilds(TestCaseWithFactory):
             'cronscripts/request_daily_builds.py', [])
         self.assertEqual(0, recipe.pending_builds.count())
         self.assertIn('Requested 0 daily builds.', stderr)
-        utility = ErrorReportingUtility()
-        utility.configure('request_daily_builds')
-        oops = utility.getLastOopsReport()
-        self.assertIn('NonPPABuildRequest', oops.tb_text)
+        self.oops_capture.sync()
+        self.assertEqual('NonPPABuildRequest', self.oopses[0]['type'])
+        self.assertEqual(
+            1, len(self.oopses), "Too many OOPSes: %r" % (self.oopses,))

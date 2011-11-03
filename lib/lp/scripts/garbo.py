@@ -59,14 +59,9 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
-    BugTaskStatusSearch,
-    )
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
@@ -813,44 +808,6 @@ class BugHeatUpdater(TunableLoop):
         transaction.commit()
 
 
-class BugTaskIncompleteMigrator(TunableLoop):
-    """Migrate BugTaskStatus 'INCOMPLETE' to a concrete WITH/WITHOUT value."""
-
-    maximum_chunk_size = 20000
-    minimum_chunk_size = 100
-
-    def __init__(self, log, abort_time=None, max_heat_age=None):
-        super(BugTaskIncompleteMigrator, self).__init__(log, abort_time)
-        self.transaction = transaction
-        self.total_processed = 0
-        self.is_done = False
-        self.offset = 0
-        self.store = IMasterStore(BugTask)
-        self.query = self.store.find(
-            (BugTask, Bug),
-            BugTask._status == BugTaskStatus.INCOMPLETE,
-            BugTask.bugID == Bug.id)
-
-    def isDone(self):
-        """See `ITunableLoop`."""
-        return self.query.is_empty()
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        transaction.begin()
-        tasks = list(self.query[:chunk_size])
-        for (task, bug) in tasks:
-            if (bug.date_last_message is None or
-                task.date_incomplete is None or
-                task.date_incomplete > bug.date_last_message):
-                task._status = (
-                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
-            else:
-                task._status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
-        self.log.debug("Updated status on %d tasks" % len(tasks))
-        transaction.commit()
-
-
 class BugWatchActivityPruner(BulkPruner):
     """A TunableLoop to prune BugWatchActivity entries."""
     target_table_class = BugWatchActivity
@@ -1313,7 +1270,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugHeatUpdater,
         SourcePackagePublishingHistorySPNPopulator,
         BinaryPackagePublishingHistoryBPNPopulator,
-        BugTaskIncompleteMigrator,
         ]
     experimental_tunable_loops = []
 
