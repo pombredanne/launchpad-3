@@ -16,6 +16,9 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.domination import (
     Dominator,
+    find_live_source_versions,
+    find_live_binary_versions_first_pass,
+    find_live_binary_versions_second_pass,
     GeneralizedPublication,
     STAY_OF_EXECUTION,
     )
@@ -1110,3 +1113,32 @@ class TestDominatorMethods(TestCaseWithFactory):
             published_spphs,
             dominator.findSourcesForDomination(
                 spphs[0].distroseries, spphs[0].pocket))
+
+
+class TestLivenessFunctions(TestCaseWithFactory):
+    """Tests for the functions that say which versions are live."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_find_live_source_versions_blesses_latest(self):
+        spphs = make_spphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        self.assertEqual(['1.0'], find_live_source_versions(spphs))
+
+# XXX: First make those bpphs architecture-specific!
+    def test_find_live_binary_versions_first_pass_blesses_latest(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        self.assertEqual(['1.0'], find_live_binary_versions_first_pass(bpphs))
+
+    def test_find_live_binary_versions_first_pass_blesses_arch_all(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        bpphs[-1].binarypackagerelease.architecturespecific = False
+        self.assertEqual(
+            ['1.0', '1.2'], find_live_binary_versions_first_pass(bpphs))
+
+    def test_find_live_binary_versions_second_pass_blesses_latest(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.0', '1.1', '1.2'])
+        self.assertEqual(
+            ['1.0'], find_live_binary_versions_second_pass(bpphs))
+
+    def test_find_live_binary_versions_second_pass_reprieves_arch_all(self):
+        self.assertTrue(False) # XXX: Test
