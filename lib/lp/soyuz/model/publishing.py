@@ -33,7 +33,6 @@ from storm.expr import (
     Desc,
     LeftJoin,
     Or,
-    Select,
     Sum,
     )
 from storm.store import Store
@@ -1154,19 +1153,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Avoid circular wotsits.
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import DistroArchSeries
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-        source_select = Select(
-            SourcePackageRelease.id,
-            And(
-                BinaryPackageBuild.source_package_release_id ==
-                    SourcePackageRelease.id,
-                BinaryPackageRelease.build == BinaryPackageBuild.id,
-                self.binarypackagereleaseID == BinaryPackageRelease.id,
-            ))
+
         pubs = [
             BinaryPackageBuild.source_package_release_id ==
-                SourcePackageRelease.id,
-            SourcePackageRelease.id.is_in(source_select),
+                self.binarypackagerelease.build.source_package_release_id,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageRelease.id,
