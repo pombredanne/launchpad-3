@@ -560,7 +560,7 @@ class FormattersAPI:
         0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
-        \boops\s*-?\s*
+        \boops\s*-\s*
         (?P<oopscode> \w+)
       ) |
       (?P<lpbranchurl>
