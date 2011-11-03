@@ -1467,7 +1467,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def getBugNumberTag(bug_task):
         """Bug numbers with a leading hash are unique to new rendering."""
         bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
-        return soupmatchers.Tag('bugnumber', 'span', text=bug_number_re)
+        return soupmatchers.Tag('bugnumber', 'a', text=bug_number_re)
 
     def test_mustache_rendering_missing_if_no_flag(self):
         """If the flag is missing, then no mustache features appear."""
