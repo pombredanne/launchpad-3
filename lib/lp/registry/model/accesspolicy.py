@@ -39,6 +39,7 @@ class AccessPolicy(StormBase):
     product = Reference(product_id, 'Product.id')
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
+    name = Unicode()
     display_name = Unicode()
 
     permissions = ReferenceSet(id, "AccessPolicyPermission.policy_id")
@@ -48,7 +49,7 @@ class AccessPolicy(StormBase):
         return self.product or self.distribution
 
     @classmethod
-    def create(cls, pillar, display_name):
+    def create(cls, pillar, name, display_name):
         from lp.registry.interfaces.distribution import IDistribution
         from lp.registry.interfaces.product import IProduct
         obj = cls()
@@ -56,6 +57,7 @@ class AccessPolicy(StormBase):
             obj.product = pillar
         elif IDistribution.providedBy(pillar):
             obj.distribution = pillar
+        obj.name = name
         obj.display_name = display_name
         IStore(cls).add(obj)
         return obj
@@ -83,9 +85,9 @@ class AccessPolicy(StormBase):
         return IStore(cls).find(cls, cls._constraintForPillar(pillar))
 
     @classmethod
-    def getByPillarAndName(cls, pillar, display_name):
+    def getByPillarAndName(cls, pillar, name):
         """See `IAccessPolicySource`."""
-        return cls.findByPillar(pillar).find(display_name=display_name).one()
+        return cls.findByPillar(pillar).find(name=name).one()
 
 
 class AccessPolicyArtifact(StormBase):

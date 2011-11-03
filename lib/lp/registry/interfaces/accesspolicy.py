@@ -22,6 +22,7 @@ from zope.interface import (
 class IAccessPolicy(Interface):
     id = Attribute("ID")
     pillar = Attribute("Pillar")
+    name = Attribute("Name")
     display_name = Attribute("Display name")
     permissions = Attribute("Permissions")
 

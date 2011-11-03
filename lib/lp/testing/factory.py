@@ -4328,12 +4328,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
 
-    def makeAccessPolicy(self, pillar=None, display_name=None):
+    def makeAccessPolicy(self, pillar=None, name=None, display_name=None):
         if pillar is None:
             pillar = self.makeProduct()
+        if name is None:
+            name = self.getUniqueUnicode()
         if display_name is None:
             display_name = self.getUniqueUnicode()
-        return getUtility(IAccessPolicySource).create(pillar, display_name)
+        return getUtility(IAccessPolicySource).create(
+            pillar, name, display_name)
 
     def makeAccessPolicyArtifact(self, concrete=None):
         if concrete is None:
