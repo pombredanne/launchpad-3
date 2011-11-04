@@ -15,6 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.domination import (
+    ArchSpecificPublicationsCache,
     contains_arch_indep,
     Dominator,
     find_live_binary_versions_pass_1,
@@ -1216,3 +1217,78 @@ class TestDominationHelpers(TestCaseWithFactory):
 
     def test_contains_arch_indep_says_False_for_empty_list(self):
         self.assertFalse(contains_arch_indep([]))
+
+
+class TestArchSpecificPublicationsCache(TestCaseWithFactory):
+    """Tests for `ArchSpecificPublicationsCache`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def makeCache(self):
+        """Shorthand: create a ArchSpecificPublicationsCache."""
+        return ArchSpecificPublicationsCache()
+
+    def makeSPR(self):
+        """Create a `BinaryPackageRelease`."""
+        # Return an un-proxied SPR.  This is script code, so it won't be
+        # running into them in real life.
+        return removeSecurityProxy(self.factory.makeSourcePackageRelease())
+
+    def makeBPPH(self, spr=None, arch_specific=True, archive=None,
+                 distroseries=None):
+        """Create a `BinaryPackagePublishingHistory`."""
+        if spr is None:
+            spr = self.makeSPR()
+        bpb = self.factory.makeBinaryPackageBuild(source_package_release=spr)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=bpb, architecturespecific=arch_specific)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        return removeSecurityProxy(
+            self.factory.makeBinaryPackagePublishingHistory(
+                binarypackagerelease=bpr, archive=archive,
+                distroarchseries=das, pocket=PackagePublishingPocket.UPDATES,
+                status=PackagePublishingStatus.PUBLISHED))
+
+    def test_getKey_is_consistent_and_distinguishing(self):
+        # getKey consistently returns the same key for the same BPPH,
+        # but different keys for non-matching BPPHs.
+        bpphs = [
+            self.factory.makeBinaryPackagePublishingHistory()
+            for counter in range(2)]
+        cache = self.makeCache()
+        self.assertContentEqual(
+            [cache.getKey(bpph) for bpph in bpphs],
+            set(cache.getKey(bpph) for bpph in bpphs * 2))
+
+    def test_hasArchSpecificPublications_is_consistent_and_correct(self):
+        # hasArchSpecificPublications consistently returns the same
+        # result for the same key; different publications can produce
+        # different results.
+        spr = self.makeSPR()
+        dependent = self.makeBPPH(spr, arch_specific=True)
+        bpph1 = self.makeBPPH(
+            spr, arch_specific=False, archive=dependent.archive,
+            distroseries=dependent.distroseries)
+        bpph2 = self.makeBPPH(arch_specific=False)
+        cache = self.makeCache()
+        self.assertEqual(
+            [True, True, False, False],
+            [
+                cache.hasArchSpecificPublications(bpph1),
+                cache.hasArchSpecificPublications(bpph1),
+                cache.hasArchSpecificPublications(bpph2),
+                cache.hasArchSpecificPublications(bpph2),
+            ])
+
+    def test_hasArchSpecificPublications_caches_results(self):
+        # Results are cached, so once the presence of archive-specific
+        # publications has been looked up in the database, the query is
+        # not performed again for the same inputs.
+        spr = self.makeSPR()
+        self.makeBPPH(spr, arch_specific=True)
+        bpph = self.makeBPPH(spr, arch_specific=False)
+        cache = self.makeCache()
+        cache.hasArchSpecificPublications(bpph)
+        spr.getActiveArchSpecificPublications = FakeMethod()
+        cache.hasArchSpecificPublications(bpph)
+        self.assertEqual(0, spr.getActiveArchSpecificPublications.call_count)
