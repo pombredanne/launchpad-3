@@ -47,13 +47,13 @@ from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.errors import SubscriptionPrivacyViolation
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.services.propertycache import cachedproperty
 
 
@@ -69,32 +69,20 @@ class BugSubscriptionAddView(LaunchpadFormView):
         super(BugSubscriptionAddView, self).setUpFields()
         self.form_fields['person'].for_input = True
 
-    def validate(self, data):
-        '''Validation hook.
-        Ensures that open and delegated teams aren't allowed to be subscribed
-        to private bugs.
-        '''
-        person = data['person']
-        if person.isTeam() and self.context.bug.private:
-            bad_types = (
-                TeamSubscriptionPolicy.OPEN,
-                TeamSubscriptionPolicy.DELEGATED
-                )
-            if person.subscriptionpolicy in bad_types:
-                error_msg = ("Open and delegated teams cannot be subscribed "
-                    "to private bugs.")
-                self.setFieldError('person', error_msg)
-
     @action('Subscribe user', name='add')
     def add_action(self, action, data):
         person = data['person']
-        self.context.bug.subscribe(person, self.user, suppress_notify=False)
-        if person.isTeam():
-            message = '%s team has been subscribed to this bug.'
+        try:
+            self.context.bug.subscribe(person, self.user, suppress_notify=False)
+        except SubscriptionPrivacyViolation as error:
+            self.setFieldError('person', unicode(error))
         else:
-            message = '%s has been subscribed to this bug.'
-        self.request.response.addInfoNotification(
-            message % person.displayname)
+            if person.isTeam():
+                message = '%s team has been subscribed to this bug.'
+            else:
+                message = '%s has been subscribed to this bug.'
+            self.request.response.addInfoNotification(
+                message % person.displayname)
 
     @property
     def next_url(self):
