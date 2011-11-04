@@ -6,11 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'BaseDispatchResult',
     'BuilddManager',
     'BUILDD_MANAGER_LOG_NAME',
-    'FailDispatchResult',
-    'ResetDispatchResult',
     ]
 
 import logging
@@ -172,7 +169,7 @@ class SlaveScanner:
                     "job '%s' failure count: %s" % (
                         self.builder_name,
                         builder.failure_count,
-                        build_farm_job.title, 
+                        build_farm_job.title,
                         build_farm_job.failure_count))
             else:
                 self.logger.info(
@@ -186,6 +183,33 @@ class SlaveScanner:
                 "Miserable failure when trying to examine failure counts:\n",
                 exc_info=True)
             transaction.abort()
+
+    def checkCancellation(self, builder):
+        """See if there is a pending cancellation request.
+
+        If the current build is in status CANCELLING then terminate it
+        immediately.
+
+        :return: A deferred whose value is True if we cancelled the build.
+        """
+        if not builder.virtualized:
+            return defer.succeed(False)
+        buildqueue = self.builder.getBuildQueue()
+        if not buildqueue:
+            return defer.succeed(False)
+        build = buildqueue.specific_job.build
+        if build.status != BuildStatus.CANCELLING:
+            return defer.succeed(False)
+
+        def resume_done(ignored):
+            return defer.succeed(True)
+
+        self.logger.info("Cancelling build '%s'" % build.title)
+        buildqueue.cancel()
+        transaction.commit()
+        d = builder.resumeSlaveHost()
+        d.addCallback(resume_done)
+        return d
 
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
@@ -214,11 +238,6 @@ class SlaveScanner:
         # Storm store is invalidated over transaction boundaries.
 
         self.builder = get_builder(self.builder_name)
-
-        if self.builder.builderok:
-            d = self.builder.updateStatus(self.logger)
-        else:
-            d = defer.succeed(None)
 
         def status_updated(ignored):
             # Commit the changes done while possibly rescuing jobs, to
@@ -268,6 +287,7 @@ class SlaveScanner:
             # See if there is a job we can dispatch to the builder slave.
 
             d = self.builder.findAndStartJob()
+
             def job_started(candidate):
                 if self.builder.currentjob is not None:
                     # After a successful dispatch we can reset the
@@ -279,8 +299,22 @@ class SlaveScanner:
                     return None
             return d.addCallback(job_started)
 
-        d.addCallback(status_updated)
-        d.addCallback(build_updated)
+        def cancellation_checked(cancelled):
+            if cancelled:
+                return defer.succeed(None)
+            d = self.builder.updateStatus(self.logger)
+            d.addCallback(status_updated)
+            d.addCallback(build_updated)
+            return d
+
+        if self.builder.builderok:
+            d = self.checkCancellation(self.builder)
+            d.addCallback(cancellation_checked)
+        else:
+            d = defer.succeed(None)
+            d.addCallback(status_updated)
+            d.addCallback(build_updated)
+
         return d
 
 

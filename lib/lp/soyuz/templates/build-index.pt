@@ -144,6 +144,9 @@
       <tal:retry define="link context/menu:context/retry"
                  condition="link/enabled"
                  replace="structure link/fmt:link" />
+      <tal:cancel define="link context/menu:context/cancel"
+                 condition="link/enabled"
+                 replace="structure link/fmt:link" />
     </p>
 
     <ul>
