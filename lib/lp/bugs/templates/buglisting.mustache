@@ -40,10 +40,15 @@
             {{#show_assignee}}
             {{#assignee}}
                 <span class="sprite person field">
-                    {{assignee}}
+                    Assignee: {{assignee}}
                 </span>
             {{/assignee}}
             {{/show_assignee}}
+            {{#show_reporter}}
+                <span class="sprite person field">
+                    Reporter: {{reporter}}
+                </span>
+            {{/show_reporter}}
             {{#show_age}}
                 <span class="sprite milestone field">
                     {{age}}

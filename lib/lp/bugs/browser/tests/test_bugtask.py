@@ -1502,6 +1502,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'importance_class': 'importance_class1',
             'milestone_name': 'milestone_name1',
             'status': 'status1',
+            'reporter': 'reporter1',
             'tags': 'tags1',
             'title': 'title1',
         }
@@ -1573,9 +1574,9 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """Showing milestone name shows the text."""
         navigator, mustache_model = self.getNavigator()
         self.assertIn('show_assignee', navigator.field_visibility)
-        self.assertNotIn('assignee1', navigator.mustache)
+        self.assertNotIn('Assignee: assignee1', navigator.mustache)
         mustache_model['bugtasks'][0]['show_assignee'] = True
-        self.assertIn('assignee1', navigator.mustache)
+        self.assertIn('Assignee: assignee1', navigator.mustache)
 
     def test_hiding_age(self):
         """Showing age shows the text."""
@@ -1592,6 +1593,14 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertNotIn('tags1', navigator.mustache)
         mustache_model['bugtasks'][0]['show_tags'] = True
         self.assertIn('tags1', navigator.mustache)
+
+    def test_hiding_reporter(self):
+        """Showing reporter shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_reporter', navigator.field_visibility)
+        self.assertNotIn('Reporter: reporter1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_reporter'] = True
+        self.assertIn('Reporter: reporter1', navigator.mustache)
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
@@ -1656,3 +1665,9 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         with person_logged_in(owner):
             item.bug.tags = ['tag1', 'tag2']
             self.assertEqual('tag1 tag2', item.model['tags'])
+
+    def test_model_reporter(self):
+        """Model contains bug reporter."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            self.assertEqual(owner.displayname, item.model['reporter'])
