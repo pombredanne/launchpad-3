@@ -1689,7 +1689,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             removeSecurityProxy(item.bug).date_last_message = datetime(
                 2000, 1, 1, tzinfo=UTC)
             self.assertEqual(
-                'last update on 2001-01-01', item.model['last_updated'])
+                'on 2001-01-01', item.model['last_updated'])
 
     def test_model_last_updated_date_last_message(self):
         """last_updated uses date_last_message if newer."""
@@ -1699,4 +1699,4 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             removeSecurityProxy(item.bug).date_last_message = datetime(
                 2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
-                'last update on 2001-01-01', item.model['last_updated'])
+                'on 2001-01-01', item.model['last_updated'])
