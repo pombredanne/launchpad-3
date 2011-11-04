@@ -904,11 +904,14 @@ class AbstractYUITestCase(TestCase):
             if self._last_test_info is not None:
                 try:
                     msg += ('  The last test that ran to '
-                           'completion before timing out was '
-                           '%(testCase)s:%(testName)s.  The test %(type)sed.'
-                           % self._last_test_info)
-                except KeyError:
-                    pass
+                            'completion before timing out was '
+                            '%(testCase)s:%(testName)s.  The test %(type)sed.'
+                            % self._last_test_info)
+                except (KeyError, TypeError):
+                    msg += ('  The test runner received an unexpected error '
+                            'when trying to show information about the last '
+                            'test to run.  The data it received was %r.'
+                            % (self._last_test_info,))
             elif (self.incremental_timeout is not None or
                   self.initial_timeout is not None):
                 msg += '  The test may never have started.'
