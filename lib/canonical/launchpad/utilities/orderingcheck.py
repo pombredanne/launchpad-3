@@ -1,17 +1,20 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-__all__ = ['OrderingCheck']
+__all__ = [
+    'OrderingCheck',
+    ]
 
 
 class OrderingCheck:
     """Helper class: verify that items are in an expected order.
 
     Use this if to verify that a series of items you are iterating over
-    is in some expected order.  If any of the items is not where you
-    expected it, an error is raised.
+    is in some expected order.  Any items that are not ordered the way
+    you expect are reported to a customizable failure handler; it raises
+    an error by default.
     """
     def __init__(self, **kwargs):
         """Define an ordering.  Parameters are as for sorted()."""
@@ -43,4 +46,4 @@ class OrderingCheck:
         """
         raise AssertionError(
             "Unexpected ordering at item %d: %s should come before %s." % (
-                self.item_count, str(item), str(self.last_item)))
+                self.item_count, repr(item), repr(self.last_item)))

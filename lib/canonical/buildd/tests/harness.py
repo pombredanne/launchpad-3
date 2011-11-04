@@ -1,9 +1,8 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
-    'BuildlogSecurityTests',
     'BuilddTestCase',
     ]
 
@@ -13,6 +12,7 @@ import unittest
 from ConfigParser import SafeConfigParser
 
 import canonical
+import canonical.buildd
 
 from canonical.buildd.slave import BuildDSlave
 from canonical.launchpad.daemons.tachandler import TacTestSetup
@@ -119,8 +119,8 @@ class BuilddSlaveTestSetup(TacTestSetup):
     @property
     def tacfile(self):
         return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/buildd-slave.tac'
+            os.path.dirname(canonical.buildd.__file__),
+            'buildd-slave.tac'
             ))
 
     @property
@@ -130,3 +130,11 @@ class BuilddSlaveTestSetup(TacTestSetup):
     @property
     def logfile(self):
         return '/var/tmp/build-slave.log'
+
+    def _hasDaemonStarted(self):
+        """Called by the superclass to check if the daemon is listening.
+
+        The slave is ready when it's accepting connections.
+        """
+        # This must match buildd-slave-test.conf.
+        return self._isPortListening('localhost', 8221)

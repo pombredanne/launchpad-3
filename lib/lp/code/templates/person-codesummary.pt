@@ -8,7 +8,7 @@
       features request/features"
   tal:condition="menu/show_summary">
 
-  <table>
+  <table tal:condition="not: menu/simplified_branches_menu">
     <tr class="code-links">
       <td class="code-count" tal:content="menu/owned_branch_count">100</td>
       <td tal:content="structure menu/owned/render"
@@ -26,6 +26,31 @@
     <tr class="code-links" id="merge-counts">
       <td class="code-count" tal:content="menu/active_review_count">5</td>
       <td tal:content="structure menu/active_reviews/render" />
+    </tr>
+    <tr tal:condition="features/code.branchmergequeue" id="mergequeue-counts">
+      <td class="code-count" tal:content="menu/mergequeue_count">5</td>
+      <td tal:condition="menu"
+          tal:content="structure menu/mergequeues/render"
+          />
+    </tr>
+  </table>
+
+  <table tal:condition="menu/simplified_branches_menu">
+    <tr class="code-links"
+        tal:condition="menu/simplified_owned/enabled">
+      <td tal:content="structure menu/simplified_owned/render" />
+    </tr>
+    <tr class="code-links"
+        tal:condition="menu/simplified_registered/enabled">
+      <td tal:content="structure menu/simplified_registered/render" />
+    </tr>
+    <tr class="code-links"
+        tal:condition="menu/simplified_subscribed/enabled">
+      <td tal:content="structure menu/simplified_subscribed/render" />
+    </tr>
+    <tr class="code-links"
+        tal:condition="menu/simplified_active_reviews/enabled">
+      <td tal:content="structure menu/simplified_active_reviews/render" />
     </tr>
     <tr tal:condition="features/code.branchmergequeue" id="mergequeue-counts">
       <td class="code-count" tal:content="menu/mergequeue_count">5</td>

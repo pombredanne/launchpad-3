@@ -9,13 +9,11 @@ from datetime import (
     )
 import re
 import subprocess
-from testtools.matchers import Equals
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestLoader
 
 import pytz
+from testtools.content import text_content
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -26,10 +24,6 @@ from canonical.database.sqlbase import (
     flush_database_caches,
     flush_database_updates,
     sqlvalues,
-    )
-from canonical.launchpad.ftests import (
-    login,
-    login_person,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.systemdocs import (
@@ -53,16 +47,26 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.model.teammembership import (\
+from lp.registry.model.teammembership import (
     find_team_participations,
     TeamMembership,
     TeamParticipation,
     )
+from lp.registry.scripts.teamparticipation import (
+    check_teamparticipation,
+    check_teamparticipation_consistency,
+    ConsistencyError,
+    )
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
+    login,
     login_celebrity,
+    login_person,
     person_logged_in,
+    StormStatementRecorder,
+    TestCase,
     TestCaseWithFactory,
-    StormStatementRecorder)
+    )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
 from lp.testing.storm import reload_object
@@ -1047,6 +1051,7 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
 
 
 class TestCheckTeamParticipationScript(TestCase):
+
     layer = DatabaseFunctionalLayer
 
     def _runScript(self, expected_returncode=0):
@@ -1054,14 +1059,19 @@ class TestCheckTeamParticipationScript(TestCase):
             'cronscripts/check-teamparticipation.py', shell=True,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        (out, err) = process.communicate()
-        self.assertEqual(process.returncode, expected_returncode, (out, err))
+        out, err = process.communicate()
+        if out != "":
+            self.addDetail("stdout", text_content(out))
+        if err != "":
+            self.addDetail("stderr", text_content(err))
+        self.assertEqual(process.returncode, expected_returncode)
         return out, err
 
     def test_no_output_if_no_invalid_entries(self):
         """No output if there's no invalid teamparticipation entries."""
         out, err = self._runScript()
-        self.assertEqual((out, err), ('', ''))
+        self.assertEqual(0, len(out))
+        self.assertEqual(0, len(err))
 
     def test_report_invalid_teamparticipation_entries(self):
         """The script reports missing/spurious TeamParticipation entries.
@@ -1099,20 +1109,16 @@ class TestCheckTeamParticipationScript(TestCase):
                         LIMIT 1),
                     %s);
             """ % sqlvalues(TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
 
         out, err = self._runScript()
-        self.assertEqual(out, '', (out, err))
+        self.assertEqual(0, len(out))
         self.failUnless(
-            re.search('missing TeamParticipation entries for zzzzz', err),
-            (out, err))
+            re.search('missing TeamParticipation entries for zzzzz', err))
         self.failUnless(
-            re.search('spurious TeamParticipation entries for zzzzz', err),
-            (out, err))
+            re.search('spurious TeamParticipation entries for zzzzz', err))
         self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', err),
-            (out, err))
+            re.search('not members of themselves:.*zzzzz.*', err))
 
     def test_report_circular_team_references(self):
         """The script reports circular references between teams.
@@ -1142,12 +1148,63 @@ class TestCheckTeamParticipationScript(TestCase):
                 TeamParticipation (person, team)
                 VALUES (9997, 9998);
             """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
         out, err = self._runScript(expected_returncode=1)
-        self.assertEqual(out, '', (out, err))
-        self.failUnless(
-            re.search('Circular references found', err), (out, err))
+        self.assertEqual(0, len(out))
+        self.failUnless(re.search('Circular references found', err))
+
+    def test_report_spurious_participants_of_people(self):
+        """The script reports spurious participants of people.
+
+        Teams can have multiple participants, but only the person should be a
+        paricipant of him/herself.
+        """
+        # Create two new people and make both participate in the first.
+        cursor().execute("""
+            INSERT INTO
+                Person (id, name, displayname, creation_rationale)
+                VALUES (6969, 'bobby', 'Dazzler', 1);
+            INSERT INTO
+                Person (id, name, displayname, creation_rationale)
+                VALUES (6970, 'nobby', 'Jazzler', 1);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (6970, 6969);
+            """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
+        transaction.commit()
+        logger = BufferLogger()
+        errors = check_teamparticipation_consistency(logger)
+        if logger.getLogBuffer() != "":
+            self.addDetail("log", text_content(logger.getLogBuffer()))
+        self.assertEqual(
+            [ConsistencyError("spurious", 6969, [6970])],
+            errors)
+
+
+class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_queries(self):
+        """The script does not overly tax the database.
+
+        The whole check_teamparticipation() run executes a constant low number
+        of queries.
+        """
+        # Create a deeply nested team and member structure.
+        team = self.factory.makeTeam()
+        for num in xrange(10):
+            another_team = self.factory.makeTeam()
+            another_person = self.factory.makePerson()
+            with person_logged_in(team.teamowner):
+                team.addMember(another_team, team.teamowner)
+                team.addMember(another_person, team.teamowner)
+            team = another_team
+        transaction.commit()
+        with StormStatementRecorder() as recorder:
+            logger = BufferLogger()
+            check_teamparticipation(logger)
+        self.assertThat(recorder, HasQueryCount(Equals(6)))
 
 
 def test_suite():

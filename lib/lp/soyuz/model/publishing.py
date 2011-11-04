@@ -1512,9 +1512,6 @@ class PublishingSet:
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage)
 
-        if creator is None:
-            creator = sourcepackagerelease.creator
-
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,

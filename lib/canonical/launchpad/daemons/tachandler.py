@@ -11,7 +11,9 @@ __all__ = [
     ]
 
 
+import errno
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -114,6 +116,25 @@ class TacTestSetup(Fixture):
                 return readyservice.LOG_MAGIC in logfile.read()
         else:
             return False
+
+    def _isPortListening(self, host, port):
+        """True if a tcp port is accepting connections.
+
+        This can be used by subclasses overriding _hasDaemonStarted, if they
+        want to check the port is up rather than for the contents of the log
+        file.
+        """
+        try:
+            s = socket.socket()
+            s.settimeout(2.0)
+            s.connect((host, port))
+            s.close()
+            return True
+        except socket.error, e:
+            if e.errno == errno.ECONNREFUSED:
+                return False
+            else:
+                raise
 
     def _waitForDaemonStartup(self):
         """ Wait for the daemon to fully start.
