@@ -1,0 +1,44 @@
+<html>
+  <head>
+  <title>Bug task listing</title>
+
+  <!-- YUI and test setup -->
+  <script type="text/javascript"
+          src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
+  </script>
+  <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+  <script type="text/javascript"
+          src="../../../app/javascript/testing/testrunner.js"></script>
+  <script type="text/javascript"
+          src="../../../app/javascript/testing/assert.js"></script>
+  <script type="text/javascript"
+          src="../../../app/javascript/testing/mockio.js"></script>
+  <script type="text/javascript"
+          src="../../../app/javascript/effects/effects.js"></script>
+  <script type="text/javascript"
+          src="../../../app/javascript/expander.js"></script>
+  <script type="text/javascript"
+          src="../../../app/javascript/lp.js"></script>
+  <script type="text/javascript"
+          src="../../../app/javascript/client.js"></script>
+
+    <script type="text/javascript"
+      src="../../../contrib/javascript/mustache.js"></script>
+
+    <!-- The module under test -->
+    <script type="text/javascript"
+      src="../buglisting.js"></script>
+
+    <!-- The test suite -->
+    <script type="text/javascript"
+      src="test_buglisting.js"></script>
+
+    <!-- Pretty up the sample html -->
+    <style type="text/css">
+      div#sample {margin:15px; width:200px; border:1px solid #999; padding:10px;}
+    </style>
+  </head>
+  <body class="yui3-skin-sam">
+      <div id="fixture"></div>
+  </body>
+</html>

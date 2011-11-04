@@ -87,19 +87,35 @@
      tal:condition="view/displayAlsoAffectsLinks">
   <tal:also-affects-links
       define="context_menu context/menu:context">
+    <span id="also-affects-product"
+          tal:attributes="class python:not view.canAddProjectTask() and 'private-disallow' or ''"
+    >
     <tal:addupstream
         define="link context_menu/addupstream"
         condition="link/enabled"
-        replace="structure link/render" /><a href="/+help/also-affects-project-help.html" target="help" class="sprite maybe">&nbsp;
-             <span class="invisible-link">(?)</span></a>
+        replace="structure link/render" />
+        <a href="/+help/also-affects-project-help.html"
+           target="help"
+           class="sprite maybe">&nbsp;
+             <span class="invisible-link">(?)</span>
+        </a>
+    </span>
+    <span id="also-affects-package"
+          tal:attributes="class python:not view.canAddPackageTask() and 'private-disallow' or ''"
+    >
     <tal:adddistro
         define="link context_menu/adddistro"
         condition="link/enabled"
         replace="structure link/render" />
+    </span>
     <tal:nominate
         define="link context_menu/nominate"
         condition="link/enabled"
         replace="structure link/render" />
+    <div class="private-only formHelp"
+        tal:condition="python:not view.canAddPackageTask() or not view.canAddProjectTask()">
+        Private bugs cannot affect multiple projects.
+    </div>
   </tal:also-affects-links>
 
 </div>

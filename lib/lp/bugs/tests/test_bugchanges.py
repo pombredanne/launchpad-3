@@ -27,6 +27,7 @@ from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -1086,7 +1087,7 @@ class TestBugChanges(TestCaseWithFactory):
             bug, maintainer, bug_supervisor)
 
         # Now make the bug visible to the bug supervisor and re-test.
-        with person_logged_in(bug.default_bugtask.pillar.owner):
+        with celebrity_logged_in('admin'):
             bug.default_bugtask.transitionToAssignee(bug_supervisor)
 
         # Test with bug supervisor = maintainer.

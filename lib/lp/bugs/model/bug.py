@@ -194,7 +194,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import (
@@ -2102,6 +2101,10 @@ class Bug(SQLBase):
         authenticated users.  It is also called in other contexts where the
         user may be anonymous.
 
+        Most logic is delegated to the query provided by
+        get_bug_privacy_filter, but some short-circuits and caching are
+        reimplemented here.
+
         If bug privacy rights are changed here, corresponding changes need
         to be made to the queries which screen for privacy.  See
         Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
@@ -2116,29 +2119,13 @@ class Bug(SQLBase):
         if user.id in self._known_viewers:
             return True
 
-        elif IPersonRoles(user).in_admin:
-            # Admins can view all bugs.
+        filter = get_bug_privacy_filter(user)
+        store = Store.of(self)
+        store.flush()
+        if (not filter or
+            not store.find(Bug, Bug.id == self.id, filter).is_empty()):
+            self._known_viewers.add(user.id)
             return True
-        else:
-            # At this point we know the bug is private and the user is
-            # unprivileged.
-
-            # Assignees to bugtasks can see the private bug.
-            for bugtask in self.bugtasks:
-                if user.inTeam(bugtask.assignee):
-                    self._known_viewers.add(user.id)
-                    return True
-            # Explicit subscribers may also view it.
-            for subscription in self.subscriptions:
-                if user.inTeam(subscription.person):
-                    self._known_viewers.add(user.id)
-                    return True
-            # Pillar owners can view it. Note that this is contentious and
-            # possibly incorrect: see bug 702429.
-            for pillar_owner in [bt.pillar.owner for bt in self.bugtasks]:
-                if user.inTeam(pillar_owner):
-                    self._known_viewers.add(user.id)
-                    return True
         return False
 
     def linkHWSubmission(self, submission):

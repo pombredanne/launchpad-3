@@ -26,7 +26,6 @@ from twisted.internet import (
     reactor,
     )
 from twisted.protocols.basic import NetstringParseError
-from twisted.python import failure
 from zope.component import getUtility
 
 from canonical.config import config
@@ -431,8 +430,7 @@ class TestPullerMaster(TestCase):
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
-            BranchType.HOSTED, None, logging.getLogger(), self.status_client,
-            set(['oops-prefix']))
+            BranchType.HOSTED, None, logging.getLogger(), self.status_client)
 
     def test_unexpectedError(self):
         """The puller master logs an OOPS when it receives an unexpected
@@ -503,18 +501,13 @@ class TestPullerMasterSpawning(TestCase):
 
     def setUp(self):
         super(TestPullerMasterSpawning, self).setUp()
-        self.available_oops_prefixes = set(['foo'])
-        self.eventHandler = self.makePullerMaster(
-            'HOSTED', oops_prefixes=self.available_oops_prefixes)
+        self.eventHandler = self.makePullerMaster('HOSTED')
         self.patch(reactor, 'spawnProcess', self.spawnProcess)
         self.commands_spawned = []
 
-    def makePullerMaster(self, branch_type_name, default_stacked_on_url=None,
-                         oops_prefixes=None):
+    def makePullerMaster(self, branch_type_name, default_stacked_on_url=None):
         if default_stacked_on_url is None:
             default_stacked_on_url = self.factory.getUniqueURL()
-        if oops_prefixes is None:
-            oops_prefixes = set([self.factory.getUniqueString()])
         return scheduler.PullerMaster(
             branch_id=self.factory.getUniqueInteger(),
             source_url=self.factory.getUniqueURL(),
@@ -522,16 +515,7 @@ class TestPullerMasterSpawning(TestCase):
             branch_type_name=branch_type_name,
             default_stacked_on_url=default_stacked_on_url,
             logger=logging.getLogger(),
-            client=FakeCodehostingEndpointProxy(),
-            available_oops_prefixes=oops_prefixes)
-
-    @property
-    def oops_prefixes(self):
-        """The OOPS prefixes passed to workers on the command line."""
-        # The OOPS prefix is the second-last argument on the command line. We
-        # harvest these from 'commands_spawned', which is a log of the
-        # commands passed to reactor.spawnProcess.
-        return [arguments[-2] for arguments in self.commands_spawned]
+            client=FakeCodehostingEndpointProxy())
 
     def spawnProcess(self, protocol, executable, arguments, env):
         self.commands_spawned.append(arguments)
@@ -553,57 +537,6 @@ class TestPullerMasterSpawning(TestCase):
         self.assertEqual(
             [''], [arguments[-1] for arguments in self.commands_spawned])
 
-    def test_getsOopsPrefixFromSet(self):
-        # Different workers should have different OOPS prefixes. They get
-        # those prefixes from a limited set of possible prefixes.
-        self.eventHandler.run()
-        self.assertEqual(self.available_oops_prefixes, set())
-        self.assertEqual(self.oops_prefixes, ['foo'])
-
-    def test_restoresOopsPrefixToSetOnSuccess(self):
-        # When a worker finishes running, they restore the OOPS prefix to the
-        # set of available prefixes.
-        deferred = self.eventHandler.run()
-        # Fake a successful run.
-        deferred.callback(None)
-
-        def check_available_prefixes(ignored):
-            self.assertEqual(self.available_oops_prefixes, set(['foo']))
-
-        return deferred.addCallback(check_available_prefixes)
-
-    def test_restoresOopsPrefixToSetOnFailure(self):
-        # When a worker finishes running, they restore the OOPS prefix to the
-        # set of available prefixes, even if the worker failed.
-        deferred = self.eventHandler.run()
-        # Fake a failed run.
-        try:
-            raise RuntimeError("Spurious error")
-        except RuntimeError:
-            fail = failure.Failure()
-        deferred.errback(fail)
-
-        def check_available_prefixes(ignored):
-            self.assertEqual(self.available_oops_prefixes, set(['foo']))
-
-        return deferred.addErrback(check_available_prefixes)
-
-    def test_logOopsWhenNoAvailablePrefix(self):
-        # If there are no available prefixes then we log an OOPS and re-raise
-        # the error, aborting the rest of the run.
-
-        # Empty the set of available OOPS prefixes
-        self.available_oops_prefixes.clear()
-
-        unexpected_errors = []
-
-        def unexpectedError(failure):
-            unexpected_errors.append(failure)
-
-        self.eventHandler.unexpectedError = unexpectedError
-        self.assertRaises(KeyError, self.eventHandler.run)
-        self.assertEqual(unexpected_errors[0].type, KeyError)
-
 
 # The common parts of all the worker scripts.  See
 # TestPullerMasterIntegration.makePullerMaster for more.
@@ -614,7 +547,7 @@ import sys, time
 parser = OptionParser()
 (options, arguments) = parser.parse_args()
 (source_url, destination_url, branch_id, unique_name,
- branch_type_name, oops_prefix, default_stacked_on_url) = arguments
+ branch_type_name, default_stacked_on_url) = arguments
 from bzrlib import branch
 branch = branch.Branch.open(destination_url)
 protocol = PullerWorkerProtocol(sys.stdout)
@@ -663,8 +596,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         puller_master = cls(
             self.db_branch.id, str(self.db_branch.url),
             self.db_branch.unique_name[1:], self.db_branch.branch_type.name,
-            '', logging.getLogger(), self.client,
-            set([config.error_reports.oops_prefix]))
+            '', logging.getLogger(), self.client)
         puller_master.destination_url = os.path.abspath('dest-branch')
         if script_text is not None:
             script = open('script.py', 'w')
