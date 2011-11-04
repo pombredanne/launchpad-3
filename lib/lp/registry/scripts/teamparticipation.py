@@ -147,15 +147,12 @@ def fetch_team_participation_info(log):
     return people, teams, team_memberships, team_participations
 
 
-def check_teamparticipation_consistency(log, info=None):
+def check_teamparticipation_consistency(log, info):
     """Check for missing or spurious participations.
 
     For example, participations for people who are not members, or missing
     participations for people who are members.
     """
-    if info is None:
-        info = fetch_team_participation_info(log)
-
     people, teams, team_memberships, team_participations = info
 
     def get_participants(team):

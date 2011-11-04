@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 import bz2
-from collections import defaultdict
 from datetime import (
     datetime,
     timedelta,
@@ -1184,7 +1183,8 @@ class TestCheckTeamParticipationScript(TestCase):
         transaction.commit()
         logger = BufferLogger()
         self.addDetail("log", logger.content)
-        errors = check_teamparticipation_consistency(logger)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
         self.assertEqual(
             [ConsistencyError("spurious", 6969, [6970])],
             errors)
@@ -1239,7 +1239,8 @@ class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             check_teamparticipation_self(logger)
             check_teamparticipation_circular(logger)
-            check_teamparticipation_consistency(logger)
+            check_teamparticipation_consistency(
+                logger, fetch_team_participation_info(logger))
         self.assertThat(recorder, HasQueryCount(Equals(6)))
 
 
