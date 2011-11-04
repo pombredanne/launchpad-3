@@ -36,7 +36,7 @@ class CodeImportWorker(LaunchpadScript):
 
     def __init__(self, name, dbuser=None, test_args=None):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
-        set_up_oops_reporting('codeimportworker', name, mangle_stdout=True)
+        set_up_oops_reporting(name, 'codeimportworker', mangle_stdout=True)
 
     def add_my_options(self):
         """See `LaunchpadScript`."""

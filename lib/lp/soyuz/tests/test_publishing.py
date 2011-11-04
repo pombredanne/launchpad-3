@@ -20,7 +20,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -701,9 +700,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
 
         # And an oops should be filed for the error.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertTrue("PoolFileOverwriteError" in str(error_report))
+        self.assertEqual("PoolFileOverwriteError", self.oopses[0]['type'])
 
         self.layer.commit()
         self.assertEqual(
@@ -1456,19 +1453,6 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
             series, bins[0].pocket, bins[0].archive)
         self.checkOtherPublications(bins[0], bins)
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
-
-
-class TestSPPHModel(TestCaseWithFactory):
-    """Test parts of the SourcePackagePublishingHistory model."""
-
-    layer = LaunchpadZopelessLayer
-
-    def testAncestry(self):
-        """Ancestry can be traversed."""
-        ancestor = self.factory.makeSourcePackagePublishingHistory()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            ancestor=ancestor)
-        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
 
 
 class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):

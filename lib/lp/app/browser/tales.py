@@ -1107,6 +1107,8 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.BUILDING: {'src': "/@@/processing"},
             BuildStatus.UPLOADING: {'src': "/@@/processing"},
             BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
+            BuildStatus.CANCELLING: {'src': "/@@/processing"},
+            BuildStatus.CANCELLED: {'src': "/@@/build-failed"},
             }
 
         alt = '[%s]' % self._context.status.name
@@ -1244,18 +1246,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         The link text uses both the display name and Launchpad id to clearly
         indicate which user profile is linked.
         """
-        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
-            text = self.unique_displayname(None)
-            # XXX sinzui 2011-05-31: Remove this next line when the feature
-            # flag is removed.
-            view_name = None
-        elif view_name == 'id-only':
-            # XXX sinzui 2011-05-31: remove this block and /id-only from
-            # launchpad-loginstatus.pt whwn the feature flag is removed.
-            text = self._context.name
-            view_name = None
-        else:
-            text = self._context.displayname
+        text = self.unique_displayname(None)
         return self._makeLink(view_name, 'mainsite', text)
 
 

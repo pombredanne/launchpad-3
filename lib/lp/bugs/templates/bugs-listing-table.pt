@@ -15,9 +15,19 @@
   </tal:no-results>
 
   <tal:results condition="context/batch">
-    <div class="lesser" tal:content="structure context/@@+navigation-links-upper" />
-    <div tal:replace="structure context/@@+table-view-without-navlinks" />
-    <div class="lesser" tal:content="structure context/@@+navigation-links-lower" />
+    <div class="lesser"
+        tal:content="structure context/@@+navigation-links-upper" />
+    <div tal:replace="structure context/@@+table-view-without-navlinks"
+        tal:condition="not: request/features/bugs.dynamic_bug_listings.enabled"
+    />
+    <tal:mustache
+        condition="request/features/bugs.dynamic_bug_listings.enabled">
+        <div id="bugs-orderby"></div>
+        <div id="client-listing" tal:content="structure context/mustache" />
+        <script tal:content="structure context/mustache_listings" />
+    </tal:mustache>
+    <div class="lesser"
+         tal:content="structure context/@@+navigation-links-lower" />
   </tal:results>
 
   <tal:comment

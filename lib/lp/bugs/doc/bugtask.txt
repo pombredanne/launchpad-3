@@ -976,6 +976,11 @@ bugtask is created.
 the latter is not exposed in `IBugTask`, so the `bugtargetdisplayname`
 is used here.
 
+    # We do not allow private bugs to affect multiple projects so we need to
+    # first make the bug public.
+    >>> bug_one.setPrivate(False, mark)
+    True
+
     >>> netapplet = productset.get(11)
     >>> upstream_task = bugtaskset.createTask(
     ...     bug_one, mark, netapplet,

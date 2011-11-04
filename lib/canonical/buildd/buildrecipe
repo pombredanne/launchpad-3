@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+#! /usr/bin/env python -u
+# Copyright 2010, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A script that builds a package from a recipe and a chroot."""
@@ -12,7 +12,10 @@ import os.path
 import pwd
 from resource import RLIMIT_AS, setrlimit
 import socket
-from subprocess import call
+from subprocess import (
+    Popen,
+    call,
+    )
 import sys
 
 
@@ -28,6 +31,20 @@ class NotVirtualized(Exception):
 
     def __init__(self):
         Exception.__init__(self, 'Not running under Xen.')
+
+
+def call_report_rusage(args):
+    """Run a subprocess.
+
+    Report that it was run, and the resources used, and complain if it fails.
+
+    :return: The process wait status.
+    """
+    print 'RUN %r' % args
+    proc = Popen(args)
+    pid, status, rusage = os.wait4(proc.pid, 0)
+    print(rusage)
+    return status
 
 
 class RecipeBuilder:
@@ -92,6 +109,10 @@ class RecipeBuilder:
         hostname = socket.gethostname()
         bzr_email = 'buildd@%s' % hostname
 
+        print 'Bazaar versions:'
+        check_call(['bzr', 'version'])
+        check_call(['bzr', 'plugins'])
+
         print 'Building recipe:'
         print recipe
         sys.stdout.flush()
@@ -99,7 +120,7 @@ class RecipeBuilder:
             'DEBEMAIL': self.author_email,
             'DEBFULLNAME': self.author_name.encode('utf-8'),
             'BZR_EMAIL': bzr_email}
-        retcode = call([
+        retcode = call_report_rusage([
             'bzr', 'dailydeb', '--safe', '--no-build', recipe_path,
             self.tree_path, '--manifest', manifest_path,
             '--append-version', '~%s1' % self.distroseries_name], env=env)
