@@ -1183,9 +1183,8 @@ class TestCheckTeamParticipationScript(TestCase):
             """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
         transaction.commit()
         logger = BufferLogger()
+        self.addDetail("log", logger.content)
         errors = check_teamparticipation_consistency(logger)
-        if logger.getLogBuffer() != "":
-            self.addDetail("log", text_content(logger.getLogBuffer()))
         self.assertEqual(
             [ConsistencyError("spurious", 6969, [6970])],
             errors)
@@ -1193,6 +1192,7 @@ class TestCheckTeamParticipationScript(TestCase):
     def test_load_and_save_team_participation(self):
         """The script can load and save participation info."""
         logger = BufferLogger()
+        self.addDetail("log", logger.content)
         info = fetch_team_participation_info(logger)
         tempdir = self.useFixture(TempDir()).path
         filename_in = os.path.join(tempdir, "info.in")
@@ -1252,8 +1252,9 @@ class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
                 team.addMember(another_person, team.teamowner)
             team = another_team
         transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
         with StormStatementRecorder() as recorder:
-            logger = BufferLogger()
             check_teamparticipation_self(logger)
             check_teamparticipation_circular(logger)
             check_teamparticipation_consistency(logger)
