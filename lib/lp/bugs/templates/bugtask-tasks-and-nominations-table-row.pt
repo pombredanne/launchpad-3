@@ -129,6 +129,13 @@
               Unassigned
             </tal:unassigned>
           </span>
+          <a class="assignee-edit"
+             tal:condition="python: view.many_bugtasks and
+                                    view.user_can_edit_assignee"
+             href="+editstatus"
+             tal:attributes="href data/edit_link">
+            <img class="editicon" src="/@@/edit" />
+          </a>
           <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
             Edit
           </button>
