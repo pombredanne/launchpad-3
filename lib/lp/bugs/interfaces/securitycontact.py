@@ -28,4 +28,4 @@ class IHasSecurityContact(Interface):
             "security-related bug reports.  The security contact will be "
             "subscribed to all bugs marked as a security vulnerability and "
             "will receive email about all activity on all security bugs."),
-        required=False, vocabulary='ValidPersonOrTeam'))
+        required=False, vocabulary='ValidPillarOwner'))

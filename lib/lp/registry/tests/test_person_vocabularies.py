@@ -21,7 +21,7 @@ from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
-    )
+    OPEN_TEAM_POLICY, CLOSED_TEAM_POLICY)
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.testing import (
@@ -51,15 +51,8 @@ class VocabularyTestBase:
         return removeSecurityProxy(vocabulary).search(text, vocab_filter)
 
 
-class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
-                                      TestCaseWithFactory):
-    """Test that the ValidPersonOrTeamVocabulary behaves as expected.
-
-    Most tests are in lib/lp/registry/doc/vocabularies.txt.
-    """
-
-    layer = LaunchpadZopelessLayer
-    vocabulary_name = 'ValidPersonOrTeam'
+class ValidPersonOrTeamVocabularyMixin(VocabularyTestBase):
+    """Common tests for the ValidPersonOrTeam vocabulary derivatives."""
 
     def test_supported_filters(self):
         # The vocab supports the correct filters.
@@ -156,12 +149,23 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
             name="fredteam", email="fredteam@foo.com")
         self._person_filter_tests(person)
 
-    def _team_filter_tests(self, team):
+    def _team_filter_tests(self, teams):
         results = self.searchVocabulary(None, '', 'TEAM')
         for personorteam in results:
             self.assertTrue(personorteam.is_team)
         results = self.searchVocabulary(None, u'fred', 'TEAM')
-        self.assertEqual([team], list(results))
+        self.assertContentEqual(teams, list(results))
+
+
+class TestValidPersonOrTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
+                                      TestCaseWithFactory):
+    """Test that the ValidPersonOrTeamVocabulary behaves as expected.
+
+    Most tests are in lib/lp/registry/doc/vocabularies.txt.
+    """
+
+    layer = LaunchpadZopelessLayer
+    vocabulary_name = 'ValidPersonOrTeam'
 
     def test_team_filter(self):
         # Test that the team filter only returns teams.
@@ -169,8 +173,7 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
             name="fredperson", email="fredperson@foo.com")
         team = self.factory.makeTeam(
             name="fredteam", email="fredteam@foo.com")
-        self._team_filter_tests(team)
-        self._team_filter_tests(team)
+        self._team_filter_tests([team])
 
 
 class TestValidPersonOrTeamPreloading(VocabularyTestBase,
@@ -207,6 +210,31 @@ class TestValidPersonOrTeamPreloading(VocabularyTestBase,
                 self.assertEqual(
                     expected_emails[person.id], person.preferredemail)
         self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+
+class TestValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
+                                            TestCaseWithFactory):
+    """Test that the ValidPersonOrClosedTeamVocabulary behaves as expected."""
+
+    layer = LaunchpadZopelessLayer
+    vocabulary_name = 'ValidPillarOwner'
+
+    def test_team_filter(self):
+        # Test that the team filter only returns closed teams.
+        self.factory.makePerson(
+            name="fredperson", email="fredperson@foo.com")
+        for policy in OPEN_TEAM_POLICY:
+            self.factory.makeTeam(
+                name="fred%s" % policy.name.lower(),
+                email="team_%s@foo.com" % policy.name,
+                subscription_policy=policy)
+        closed_teams = []
+        for policy in CLOSED_TEAM_POLICY:
+            closed_teams.append(self.factory.makeTeam(
+                name="fred%s" % policy.name.lower(),
+                email="team_%s@foo.com" % policy.name,
+                subscription_policy=policy))
+        self._team_filter_tests(closed_teams)
 
 
 class TeamMemberVocabularyTestBase(VocabularyTestBase):

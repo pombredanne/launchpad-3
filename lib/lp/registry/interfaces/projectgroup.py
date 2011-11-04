@@ -131,9 +131,9 @@ class IProjectGroupPublic(
         PublicPersonChoice(
             title=_('Maintainer'),
             required=True,
-            vocabulary='ValidOwner',
+            vocabulary='ValidPillarOwner',
             description=_("Project group owner. Must be either a "
-                          "Launchpad Person or Team.")))
+                          "Launchpad Person or closed Team.")))
 
     registrant = exported(
         PublicPersonChoice(
