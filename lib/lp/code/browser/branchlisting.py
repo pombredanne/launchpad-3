@@ -613,7 +613,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
 
     def hasAnyBranchesVisibleByUser(self):
         """Does the context have any branches that are visible to the user?"""
-        return self.branch_count > 0
+        return not self.is_branch_count_zero
 
     def _getCollection(self):
         """Override this to say what branches will be in the listing."""
@@ -623,6 +623,16 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
     def branch_count(self):
         """The number of total branches the user can see."""
         return self._getCollection().visibleByUser(self.user).count()
+
+    @property
+    def is_branch_count_zero(self):
+        """Is the number of total branches the user can see zero?."""
+        # If the batch is not empty, we don't need to check
+        # the collection count (that might be expensive to compute if the
+        # total number of branches is huge).
+        return (
+            len(self.branches().visible_branches_for_view) == 0 and
+            not self.branch_count)
 
     def _branches(self, lifecycle_status):
         """Return a sequence of branches.
@@ -884,10 +894,6 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         PersonProduct, it is an attribute of the context.
         """
         return self.context
-
-    @cachedproperty
-    def has_branches(self):
-        """Should the template show the summary view with the links."""
 
     @property
     def show_summary(self):
