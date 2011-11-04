@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import bz2
+from collections import defaultdict
 from datetime import (
     datetime,
     timedelta,
@@ -1209,6 +1210,24 @@ class TestCheckTeamParticipationScript(TestCase):
             saved_info = pickle.load(fin)
         finally:
             fin.close()
+
+        # Remove empty sets from defaultdict(set)s in the info. During
+        # processing some get created as side-effects. They're harmless but
+        # get in the way of equality assertions.
+        def trim(thing):
+            if not isinstance(thing, defaultdict):
+                return thing
+            elif not thing.default_factory == set:
+                return thing
+            else:
+                trimmed = defaultdict(set)
+                trimmed.update(
+                    (key, value) for (key, value) in thing.iteritems()
+                    if value)
+                return trimmed
+
+        saved_info = tuple(trim(thing) for thing in saved_info)
+
         self.assertEqual(info, saved_info)
 
 
