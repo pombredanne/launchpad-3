@@ -337,13 +337,10 @@ def find_live_binary_versions_pass_2(sorted_pubs, cache):
     arch_specific_pubs = list(ifilter(is_arch_specific, sorted_pubs))
     arch_indep_pubs = list(ifilterfalse(is_arch_specific, sorted_pubs))
 
-    # XXX JeroenVermeulen 2011-11-01 bug=884649: This is likely to be
-    # costly, and the result could be reused for all builds of the same
-    # source package release to all architectures.
     reprieved_pubs = [
         pub
         for pub in arch_indep_pubs
-            if pub.getOtherPublicationsForSameSource().any()]
+            if cache.hasArchSpecificPublications(pub)]
 
     return get_binary_versions([latest] + arch_specific_pubs + reprieved_pubs)
 
