@@ -19,7 +19,11 @@ from canonical.testing.layers import (
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.soyuz.enums import ArchivePurpose, SourcePackageFormat, PackagePublishingStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    SourcePackageFormat,
+    )
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -187,7 +191,6 @@ class TestGetActiveArchSpecificPublications(TestCaseWithFactory):
             [by_status[status] for status in active_publishing_status],
             spr.getActiveArchSpecificPublications(
                 bpphs[0].archive, bpphs[0].distroseries, bpphs[0].pocket))
-
 
 
 class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
