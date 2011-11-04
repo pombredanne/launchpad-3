@@ -2171,12 +2171,12 @@ class DateTimeFormatterAPI:
                 unit = 'day'
             else:
                 number = delta.seconds / 60
+                if number == 0:
+                    return 'less than a minute'
                 unit = 'minute'
                 if number >= 60:
                     number /= 60
                     unit = 'hour'
-                if number == 0:
-                    return 'less than a minute'
         if number != 1:
             unit += 's'
         return '%d %s' % (number, unit)
