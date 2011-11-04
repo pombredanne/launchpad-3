@@ -36,7 +36,6 @@ from lp.code.browser.branchlisting import (
     SourcePackageBranchesView,
     )
 from lp.code.enums import (
-    BranchMergeProposalStatus,
     BranchVisibilityRule,
     )
 from lp.code.model.branch import Branch
@@ -336,15 +335,12 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
         self.assertThat(page, subscribed_branches_matcher)
 
     def test_branch_list_activereviews_link(self):
+        # The link to the actives reviews is always displayed.
         active_review_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Active reviews link', 'a', text='Active reviews',
                 attrs={'href': 'http://launchpad.dev/~barney'
                                '/+activereviews'}))
-        branch = self.factory.makeAnyBranch(owner=self.person)
-        self.factory.makeBranchMergeProposal(
-            target_branch=branch, registrant=self.person,
-            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         page = self.get_branch_list_page()
         self.assertThat(page, active_review_matcher)
 

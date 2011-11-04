@@ -922,12 +922,6 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
             not self._getCountCollection().registeredBy(
                 self.person).is_empty())
 
-    @cachedproperty
-    def active_reviews_not_empty(self):
-        """Return the number of active reviews for self.person's branches."""
-        active_reviews = PersonActiveReviewsView(self.context, self.request)
-        return not active_reviews.getProposals().is_empty()
-
     def simplified_owned(self):
         return Link(
             canonical_url(self.context, rootsite='code'),
@@ -950,8 +944,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     def simplified_active_reviews(self):
         return Link(
             '+activereviews',
-            'Active reviews',
-            enabled=self.active_reviews_not_empty)
+            'Active reviews')
 
     @cachedproperty
     def registered_branch_count(self):
