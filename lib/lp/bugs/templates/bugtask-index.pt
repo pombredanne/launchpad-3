@@ -34,18 +34,6 @@
             });
          });
       </script>
-      <tal:if
-        condition="request/features/bugs.batched_comment_loading.enabled">
-      <script type="text/javascript">
-          var batched_comment_loading_enabled = true;
-      </script>
-      </tal:if>
-      <tal:else
-        condition="not: request/features/bugs.batched_comment_loading.enabled">
-      <script type="text/javascript">
-          var batched_comment_loading_enabled = false;
-      </script>
-      </tal:else>
       <style type="text/css">
         /* Align the 'add comment' link to the right of the comment box. */
         #add-comment-form textarea { width: 100%; }
@@ -316,15 +304,12 @@
                 view_all_href">add a comment</a>.
             </tal:what-next>
           </div>
-          <tal:if
-            condition="request/features/bugs.batched_comment_loading.enabled">
-              <tal:logged-in condition="view/user">
-                <div id="add-comment-form-container" class="hidden">
-                  <metal:comment-form
-                      metal:use-macro="context/@@bugcomment-macros/comment-form" />
-                </div>
-              </tal:logged-in>
-          </tal:if>
+            <tal:logged-in condition="view/user">
+              <div id="add-comment-form-container" class="hidden">
+                <metal:comment-form
+                    metal:use-macro="context/@@bugcomment-macros/comment-form" />
+              </div>
+            </tal:logged-in>
         </tal:comment-list-truncated>
       </tal:comments>
 
