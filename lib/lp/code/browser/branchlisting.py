@@ -627,8 +627,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
     @property
     def is_branch_count_zero(self):
         """Is the number of total branches the user can see zero?."""
-        # If the batch is not empty, we don't need to check
-        # the collection count (that might be expensive to compute if the
+        # If the batch itself is not empty, we don't need to check
+        # the whole collection count (it might be expensive to compute if the
         # total number of branches is huge).
         return (
             len(self.branches().visible_branches_for_view) == 0 and
