@@ -15,7 +15,11 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.domination import (
+    contains_arch_indep,
     Dominator,
+    find_live_binary_versions_pass_1,
+    find_live_binary_versions_pass_2,
+    find_live_source_versions,
     GeneralizedPublication,
     STAY_OF_EXECUTION,
     )
@@ -30,6 +34,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import HasQueryCount
 
 
@@ -72,13 +77,9 @@ class TestDominator(TestNativePublishingBase):
             is_source=ISourcePackagePublishingHistory.providedBy(dominant))
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
-        # The _dominate* test methods require a dictionary where the
-        # package name is the key. The key's value is a list of
-        # source or binary packages representing dominant, the first element
-        # and dominated, the subsequents.
-        pubs = {'foo': [dominant, dominated]}
-
-        dominator._dominatePublications(pubs, generalization)
+        pubs = [dominant, dominated]
+        live_versions = [generalization.getPackageVersion(dominant)]
+        dominator.dominatePackage(pubs, live_versions, generalization)
         flush_database_updates()
 
         # The dominant version remains correctly published.
@@ -158,16 +159,30 @@ class TestDominator(TestNativePublishingBase):
             [foo_10_source] + foo_10_binaries,
             PackagePublishingStatus.SUPERSEDED)
 
-    def testEmptyDomination(self):
-        """Domination asserts for not empty input list."""
+    def test_dominateBinaries_rejects_empty_publication_list(self):
+        """Domination asserts for non-empty input list."""
+        package = self.factory.makeBinaryPackageName()
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
-        pubs = {'foo': []}
+        dominator._sortPackages = FakeMethod({package.name: []})
         # This isn't a really good exception. It should probably be
         # something more indicative of bad input.
         self.assertRaises(
             AssertionError,
-            dominator._dominatePublications,
-            pubs, GeneralizedPublication(True))
+            dominator.dominateBinaries,
+            self.factory.makeDistroArchSeries().distroseries,
+            self.factory.getAnyPocket())
+
+    def test_dominateSources_rejects_empty_publication_list(self):
+        """Domination asserts for non-empty input list."""
+        package = self.factory.makeSourcePackageName()
+        dominator = Dominator(self.logger, self.ubuntutest.main_archive)
+        dominator._sortPackages = FakeMethod({package.name: []})
+        # This isn't a really good exception. It should probably be
+        # something more indicative of bad input.
+        self.assertRaises(
+            AssertionError,
+            dominator.dominateSources,
+            self.factory.makeDistroSeries(), self.factory.getAnyPocket())
 
     def test_archall_domination(self):
         # Arch-all binaries should not be dominated when a new source
@@ -358,6 +373,16 @@ class TestDominationOfObsoletedSeries(TestDomination):
             SeriesStatus.OBSOLETE)
 
 
+def remove_security_proxies(proxied_objects):
+    """Return list of `proxied_objects`, without their proxies.
+
+    The dominator runs only in scripts, where security proxies don't get
+    in the way.  To test realistically for this environment, strip the
+    proxies wherever necessary and do as you will.
+    """
+    return [removeSecurityProxy(obj) for obj in proxied_objects]
+
+
 def make_spphs_for_versions(factory, versions):
     """Create publication records for each of `versions`.
 
@@ -400,14 +425,15 @@ def make_bpphs_for_versions(factory, versions):
     archive = das.distroseries.main_archive
     pocket = factory.getAnyPocket()
     bprs = [
-        factory.makeBinaryPackageRelease(binarypackagename=bpn)
+        factory.makeBinaryPackageRelease(
+            binarypackagename=bpn, version=version)
         for version in versions]
-    return [
+    return remove_security_proxies([
         factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, binarypackagename=bpn,
             distroarchseries=das, pocket=pocket, archive=archive,
             sourcepackagename=spn, status=PackagePublishingStatus.PUBLISHED)
-        for bpr in bprs]
+        for bpr in bprs])
 
 
 def list_source_versions(spphs):
@@ -591,9 +617,10 @@ class TestDominatorMethods(TestCaseWithFactory):
     def test_dominatePackage_supersedes_older_pub_with_newer_live_pub(self):
         # When marking a package as superseded, dominatePackage
         # designates a newer live version as the superseding version.
+        generalization = GeneralizedPublication(True)
         pubs = make_spphs_for_versions(self.factory, ['1.0', '1.1'])
         self.makeDominator(pubs).dominatePackage(
-            pubs, ['1.1'], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), ['1.1'], generalization)
         self.assertEqual(PackagePublishingStatus.SUPERSEDED, pubs[0].status)
         self.assertEqual(pubs[1].sourcepackagerelease, pubs[0].supersededby)
         self.assertEqual(PackagePublishingStatus.PUBLISHED, pubs[1].status)
@@ -601,10 +628,11 @@ class TestDominatorMethods(TestCaseWithFactory):
     def test_dominatePackage_only_supersedes_with_live_pub(self):
         # When marking a package as superseded, dominatePackage will
         # only pick a live version as the superseding one.
+        generalization = GeneralizedPublication(True)
         pubs = make_spphs_for_versions(
             self.factory, ['1.0', '2.0', '3.0', '4.0'])
         self.makeDominator(pubs).dominatePackage(
-            pubs, ['3.0'], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), ['3.0'], generalization)
         self.assertEqual([
                 pubs[2].sourcepackagerelease,
                 pubs[2].sourcepackagerelease,
@@ -616,23 +644,27 @@ class TestDominatorMethods(TestCaseWithFactory):
     def test_dominatePackage_supersedes_with_oldest_newer_live_pub(self):
         # When marking a package as superseded, dominatePackage picks
         # the oldest of the newer, live versions as the superseding one.
+        generalization = GeneralizedPublication(True)
         pubs = make_spphs_for_versions(self.factory, ['2.7', '2.8', '2.9'])
         self.makeDominator(pubs).dominatePackage(
-            pubs, ['2.8', '2.9'], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), ['2.8', '2.9'],
+            generalization)
         self.assertEqual(pubs[1].sourcepackagerelease, pubs[0].supersededby)
 
     def test_dominatePackage_only_supersedes_with_newer_live_pub(self):
         # When marking a package as superseded, dominatePackage only
         # considers a newer version as the superseding one.
+        generalization = GeneralizedPublication(True)
         pubs = make_spphs_for_versions(self.factory, ['0.1', '0.2'])
         self.makeDominator(pubs).dominatePackage(
-            pubs, ['0.1'], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), ['0.1'], generalization)
         self.assertEqual(None, pubs[1].supersededby)
         self.assertEqual(PackagePublishingStatus.DELETED, pubs[1].status)
 
     def test_dominatePackage_supersedes_replaced_pub_for_live_version(self):
         # Even if a publication record is for a live version, a newer
         # one for the same version supersedes it.
+        generalization = GeneralizedPublication(True)
         spr = self.factory.makeSourcePackageRelease()
         series = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
@@ -649,7 +681,8 @@ class TestDominatorMethods(TestCaseWithFactory):
             ])
 
         self.makeDominator(pubs).dominatePackage(
-            pubs, [spr.version], GeneralizedPublication(True))
+            generalization.sortPublications(pubs), [spr.version],
+            generalization)
         self.assertEqual([
             PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.SUPERSEDED,
@@ -661,12 +694,13 @@ class TestDominatorMethods(TestCaseWithFactory):
 
     def test_dominatePackage_is_efficient(self):
         # dominatePackage avoids issuing too many queries.
+        generalization = GeneralizedPublication(True)
         versions = ["1.%s" % revision for revision in xrange(5)]
         pubs = make_spphs_for_versions(self.factory, versions)
         with StormStatementRecorder() as recorder:
             self.makeDominator(pubs).dominatePackage(
-                pubs, versions[2:-1],
-                GeneralizedPublication(True))
+                generalization.sortPublications(pubs), versions[2:-1],
+                generalization)
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
 
     def test_dominatePackage_advanced_scenario(self):
@@ -677,6 +711,7 @@ class TestDominatorMethods(TestCaseWithFactory):
         # don't just patch up the code or this test.  Create unit tests
         # that specifically cover the difference, then change the code
         # and/or adapt this test to return to harmony.
+        generalization = GeneralizedPublication(True)
         series = self.factory.makeDistroSeries()
         package = self.factory.makeSourcePackageName()
         pocket = PackagePublishingPocket.RELEASE
@@ -723,7 +758,8 @@ class TestDominatorMethods(TestCaseWithFactory):
 
         all_pubs = sum(pubs_by_version.itervalues(), [])
         Dominator(DevNullLogger(), series.main_archive).dominatePackage(
-            all_pubs, live_versions, GeneralizedPublication(True))
+            generalization.sortPublications(all_pubs), live_versions,
+            generalization)
 
         for version in reversed(versions):
             pubs = pubs_by_version[version]
@@ -1089,3 +1125,94 @@ class TestDominatorMethods(TestCaseWithFactory):
             published_spphs,
             dominator.findSourcesForDomination(
                 spphs[0].distroseries, spphs[0].pocket))
+
+
+def make_publications_arch_specific(pubs, arch_specific=True):
+    """Set the `architecturespecific` attribute for given SPPHs.
+
+    :param pubs: An iterable of `BinaryPackagePublishingHistory`.
+    :param arch_specific: Whether the binary package releases published
+        by `pubs` are to be architecture-specific.  If not, they will be
+        treated as being for the "all" architecture.
+    """
+    for pub in pubs:
+        bpr = removeSecurityProxy(pub).binarypackagerelease
+        bpr.architecturespecific = arch_specific
+
+
+class TestLivenessFunctions(TestCaseWithFactory):
+    """Tests for the functions that say which versions are live."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_find_live_source_versions_blesses_latest(self):
+        spphs = make_spphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
+        self.assertEqual(['1.2'], find_live_source_versions(spphs))
+
+    def test_find_live_binary_versions_pass_1_blesses_latest(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
+        make_publications_arch_specific(bpphs)
+        self.assertEqual(['1.2'], find_live_binary_versions_pass_1(bpphs))
+
+    def test_find_live_binary_versions_pass_1_blesses_arch_all(self):
+        versions = list(reversed(['1.%d' % version for version in range(3)]))
+        bpphs = make_bpphs_for_versions(self.factory, versions)
+
+        # All of these publications are architecture-specific, except
+        # the last one.  This would happen if the binary package had
+        # just changed from being architecture-specific to being
+        # architecture-independent.
+        make_publications_arch_specific(bpphs, True)
+        make_publications_arch_specific(bpphs[-1:], False)
+        self.assertEqual(
+            versions[:1] + versions[-1:],
+            find_live_binary_versions_pass_1(bpphs))
+
+    def test_find_live_binary_versions_pass_2_blesses_latest(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
+        make_publications_arch_specific(bpphs, False)
+        self.assertEqual(['1.2'], find_live_binary_versions_pass_2(bpphs))
+
+    def test_find_live_binary_versions_pass_2_blesses_arch_specific(self):
+        versions = list(reversed(['1.%d' % version for version in range(3)]))
+        bpphs = make_bpphs_for_versions(self.factory, versions)
+        make_publications_arch_specific(bpphs)
+        self.assertEqual(versions, find_live_binary_versions_pass_2(bpphs))
+
+    def test_find_live_binary_versions_pass_2_reprieves_arch_all(self):
+        # An arch-all BPPH for a BPR built by an SPR that also still has
+        # active arch-dependent BPPHs gets a reprieve: it can't be
+        # superseded until those arch-dependent BPPHs have been
+        # superseded.
+        bpphs = make_bpphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
+        make_publications_arch_specific(bpphs, False)
+        dependent = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpphs[1].binarypackagerelease)
+        make_publications_arch_specific([dependent], True)
+        self.assertEqual(
+            ['1.2', '1.1'], find_live_binary_versions_pass_2(bpphs))
+
+
+class TestDominationHelpers(TestCaseWithFactory):
+    """Test lightweight helpers for the `Dominator`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_contains_arch_indep_says_True_for_arch_indep(self):
+        bpphs = [self.factory.makeBinaryPackagePublishingHistory()]
+        make_publications_arch_specific(bpphs, False)
+        self.assertTrue(contains_arch_indep(bpphs))
+
+    def test_contains_arch_indep_says_False_for_arch_specific(self):
+        bpphs = [self.factory.makeBinaryPackagePublishingHistory()]
+        make_publications_arch_specific(bpphs, True)
+        self.assertFalse(contains_arch_indep(bpphs))
+
+    def test_contains_arch_indep_says_True_for_combination(self):
+        bpphs = make_bpphs_for_versions(self.factory, ['1.1', '1.0'])
+        make_publications_arch_specific(bpphs[:1], True)
+        make_publications_arch_specific(bpphs[1:], False)
+        self.assertTrue(contains_arch_indep(bpphs))
+
+    def test_contains_arch_indep_says_False_for_empty_list(self):
+        self.assertFalse(contains_arch_indep([]))
