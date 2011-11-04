@@ -500,8 +500,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
         # The package is free to go right in, so just copy it now.
         ancestry = self.target_archive.getPublishedSources(
-            name=source_package.sourcepackagename,
-            distroseries=self.target_distroseries,
+            name=name, distroseries=self.target_distroseries,
             pocket=self.target_pocket, exact_match=True).first()
         override = self.getSourceOverride()
         copy_policy = self.getPolicyImplementation()
