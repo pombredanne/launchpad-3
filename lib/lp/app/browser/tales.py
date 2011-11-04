@@ -2159,7 +2159,7 @@ class DateTimeFormatterAPI:
         return year_delta
 
     def durationsince(self):
-
+        """How long since the datetime, as a string."""
         now = self._now()
         number = self._yearDelta(self._datetime, now)
         unit = 'year'
