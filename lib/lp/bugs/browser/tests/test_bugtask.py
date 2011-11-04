@@ -693,9 +693,9 @@ class TestBugTaskDeleteLinks(TestCaseWithFactory):
     def test_client_cache_contents(self):
         """ Test that the client cache contains the expected data.
 
-            The cache data is used by the Javascript to enable the delete
-            links to work as expected.
-            """
+        The cache data is used by the Javascript to enable the delete
+        links to work as expected.
+        """
         bug = self.factory.makeBug()
         bugtask_owner = self.factory.makePerson()
         bugtask = self.factory.makeBugTask(bug=bug, owner=bugtask_owner)
@@ -766,13 +766,18 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             expected = 'This bug no longer affects %s.' % target_name
             self.assertEqual(expected, notifications[0].message)
 
-    def test_ajax_delete_current_bugtask(self):
-        # Test that deleting the current bugtask returns a JSON dict
-        # containing the URL of the bug's default task to redirect to.
+    def _create_bugtask_to_delete(self):
         bug = self.factory.makeBug()
         bugtask = self.factory.makeBugTask(bug=bug)
         target_name = bugtask.bugtargetdisplayname
         bugtask_url = canonical_url(bugtask, rootsite='bugs')
+        return bug, bugtask, target_name, bugtask_url
+
+    def test_ajax_delete_current_bugtask(self):
+        # Test that deleting the current bugtask returns a JSON dict
+        # containing the URL of the bug's default task to redirect to.
+        bug, bugtask, target_name, bugtask_url = (
+            self._create_bugtask_to_delete())
         with FeatureFixture(DELETE_BUGTASK_ENABLED):
             login_person(bugtask.owner)
             # Set up the request so that we correctly simulate an XHR call
@@ -797,17 +802,16 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             expected = 'This bug no longer affects %s.' % target_name
             self.assertEqual(expected, notifications[0][1])
             self.assertEqual(
-                view.request.response.getHeader('content-type'),
-                'application/json')
+                'application/json',
+                view.request.response.getHeader('content-type'))
             expected_url = canonical_url(bug.default_bugtask, rootsite='bugs')
             self.assertEqual(dict(bugtask_url=expected_url), result_data)
 
     def test_ajax_delete_non_current_bugtask(self):
         # Test that deleting the non-current bugtask returns the new bugtasks
         # table as HTML.
-        bug = self.factory.makeBug()
-        bugtask = self.factory.makeBugTask(bug=bug)
-        target_name = bugtask.bugtargetdisplayname
+        bug, bugtask, target_name, bugtask_url = (
+            self._create_bugtask_to_delete())
         default_bugtask_url = canonical_url(
             bug.default_bugtask, rootsite='bugs')
         with FeatureFixture(DELETE_BUGTASK_ENABLED):

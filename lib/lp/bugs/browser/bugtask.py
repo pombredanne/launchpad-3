@@ -1786,7 +1786,7 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
     def next_url(self):
         """Return the next URL to call when this call completes."""
         if not self.request.is_ajax:
-            return super(BugTaskDeletionView).next_url
+            return super(BugTaskDeletionView, self).next_url
         return None
 
     @action('Delete', name='delete_bugtask')
