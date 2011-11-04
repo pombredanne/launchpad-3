@@ -119,7 +119,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(76)))
+        self.assertThat(recorder, HasQueryCount(LessThan(84)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -135,7 +135,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                82, self.factory.makePerson())
+                86, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()

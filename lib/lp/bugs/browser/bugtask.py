@@ -1535,8 +1535,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         If yes, return True, otherwise return False.
         """
-        return (self.context.userCanEditImportance(self.user)
-                and not self.context.bugwatch)
+        return self.context.userCanEditImportance(self.user)
 
     def validate(self, data):
         if self.show_sourcepackagename_widget and 'sourcepackagename' in data:
@@ -1795,7 +1794,7 @@ class BugTaskDeletionView(ReturnToReferrerMixin, LaunchpadFormView):
         bug = bugtask.bug
         deleted_bugtask_url = canonical_url(self.context, rootsite='bugs')
         message = ("This bug no longer affects %s."
-                    % bugtask.target.bugtargetdisplayname)
+                    % bugtask.bugtargetdisplayname)
         bugtask.delete()
         self.request.response.addNotification(message)
         if self.request.is_ajax:
@@ -3736,14 +3735,13 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             target_link_title=self.target_link_title,
             user_can_delete=self.user_can_delete_bugtask,
             delete_link=delete_link,
-            user_can_edit_importance=self.context.userCanEditImportance(
-                self.user),
+            user_can_edit_importance=self.user_can_edit_importance,
             importance_css_class='importance' + self.context.importance.name,
             importance_title=self.context.importance.title,
             # We always look up all milestones, so there's no harm
             # using len on the list here and avoid the COUNT query.
             target_has_milestones=len(self._visible_milestones) > 0,
-            user_can_edit_status=not self.context.bugwatch,
+            user_can_edit_status=self.user_can_edit_status,
             )
 
         if not self.many_bugtasks:
@@ -3870,14 +3868,29 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)
 
-    @property
+    @cachedproperty
     def user_can_edit_importance(self):
         """Can the user edit the Importance field?
 
         If yes, return True, otherwise return False.
         """
-        return (self.context.userCanEditImportance(self.user)
-                and not self.context.bugwatch)
+        bugtask = self.context
+        return (self.user_can_edit_status
+                and bugtask.userCanEditImportance(self.user))
+
+    @cachedproperty
+    def user_can_edit_status(self):
+        """Can the user edit the Status field?
+
+        If yes, return True, otherwise return False.
+        """
+        bugtask = self.context
+        edit_allowed = bugtask.target_uses_malone or bugtask.bugwatch
+        if bugtask.bugwatch:
+            bugtracker = bugtask.bugwatch.bugtracker
+            edit_allowed = (
+                bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS)
+        return edit_allowed
 
     @property
     def user_can_edit_assignee(self):
@@ -3947,7 +3960,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             form_row_id=self.data['form_row_id'],
             bugtask_path='/'.join([''] + self.data['link'].split('/')[3:]),
             prefix=get_prefix(cx),
-            targetname=cx.target.bugtargetdisplayname,
+            targetname=cx.bugtargetdisplayname,
             bug_title=cx.bug.title,
             assignee_value=cx.assignee and cx.assignee.name,
             assignee_is_team=cx.assignee and cx.assignee.is_team,
@@ -3970,7 +3983,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
                 if cx.milestone else None),
             user_can_edit_assignee=self.user_can_edit_assignee,
             user_can_edit_milestone=self.user_can_edit_milestone,
-            user_can_edit_status=not cx.bugwatch,
+            user_can_edit_status=self.user_can_edit_status,
             user_can_edit_importance=self.user_can_edit_importance,
             )
 

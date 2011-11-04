@@ -58,20 +58,25 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:data/is_conjoined_slave">
-    <td tal:condition="data/user_can_edit_status"
-        style="width: 20%; vertical-align: middle">
+    <td style="width: 20%; vertical-align: middle">
       <div class="status-content"
            style="width: 100%; float: left"
            tal:define="status context/status">
-        <a href="+editstatus"
-           tal:attributes="class string:value status${status/name};
-                           href data/edit_link"
-           style="float: left"
-           tal:content="status/title" />
-        <a href="+editstatus" style="margin-left: 3px"
-           tal:attributes="href data/edit_link">
-          <img class="editicon" src="/@@/edit" />
-        </a>
+        <span tal:condition="not: data/user_can_edit_status"
+              style="float: left"
+              tal:attributes="class string:value status${status/name};"
+              tal:content="status/title"/>
+        <tal:edit-status tal:condition="data/user_can_edit_status">
+          <a href="+editstatus"
+             tal:attributes="class string:value status${status/name};
+                             href data/edit_link"
+             style="float: left"
+             tal:content="status/title" />
+          <a href="+editstatus" style="margin-left: 3px"
+             tal:attributes="href data/edit_link">
+            <img class="editicon" src="/@@/edit" />
+          </a>
+        </tal:edit-status>
       </div>
     </td>
 
