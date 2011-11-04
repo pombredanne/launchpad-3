@@ -43,6 +43,7 @@ from zope.component import (
     getUtility,
     queryMultiAdapter,
     )
+from zope.publisher.browser import TestRequest
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import (
     directlyProvides,
@@ -265,7 +266,8 @@ class LaunchpadView(UserAttributeCache):
         # We don't have an adapter FakeRequest -> IJSONRequestCache
         # and some tests create views without providing any request
         # object at all.
-        if request is not None and not isinstance(request, FakeRequest):
+        if (request is not None and not isinstance(request, FakeRequest) and
+            not isinstance(request, TestRequest)):
             cache = IJSONRequestCache(self.request).objects
             # Several view objects may be created for one page request:
             # One view for the main context and template, and other views
