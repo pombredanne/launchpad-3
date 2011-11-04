@@ -1279,9 +1279,9 @@ class TestArchSpecificPublicationsCache(TestCaseWithFactory):
             set(cache.getKey(bpph) for bpph in bpphs * 2))
 
     def test_hasArchSpecificPublications_is_consistent_and_correct(self):
-        # hasArchSpecificPublications consistently returns the same
-        # result for the same key; different publications can produce
-        # different results.
+        # hasArchSpecificPublications consistently, repeatably returns
+        # the same result for the same key.  Naturally, different keys
+        # can still produce different results.
         spr = self.makeSPR()
         dependent = self.makeBPPH(spr, arch_specific=True)
         bpph1 = self.makeBPPH(

@@ -268,9 +268,10 @@ class ArchSpecificPublicationsCache:
     source package release are still active.  Thus such arch-indep
     publications are reprieved from domination.
 
-    This class looks up whether there are any.  That only needs to be looked
-    up in the database once per (source package release, archive,
-    distroseries, pocket).  Hence this cache.
+    This class looks up whether publications for a release need that
+    reprieve.  That only needs to be looked up in the database once per
+    (source package release, archive, distroseries, pocket).  Hence this
+    cache.
     """
     def __init__(self):
         self.cache = {}
