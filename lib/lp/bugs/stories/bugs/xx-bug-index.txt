@@ -147,11 +147,11 @@ initialization code if there's more than 10 bug tasks.
     >>> bug_url = canonical_url(bug)
     >>> logout()
 
-On the bug page, for every bug task there's one coresponding init script.
-    
+On the bug page, for every bug task there's one expander.
+
     >>> browser.open(bug_url)
     >>> print len(find_tags_by_class(
-    ...     browser.contents, 'bugtasks-table-row-init-script'))
+    ...     browser.contents, 'bugtask-expander'))
     1
 
 We add four more tasks.
@@ -161,14 +161,14 @@ We add four more tasks.
     ...     _ = bug.addTask(bug.owner, factory.makeProduct())
     >>> logout()
 
-And the init script appears five times.
+And the expander appears five times.
 
     >>> browser.open(bug_url)
     >>> print len(find_tags_by_class(
-    ...     browser.contents, 'bugtasks-table-row-init-script'))
+    ...     browser.contents, 'bugtask-expander'))
     5
 
-But on pages with more than ten bug tasks, we don't include the init scripts
+But on pages with more than ten bug tasks, we don't include the expander
 at all.
 
     >>> login('foo.bar@canonical.com')
@@ -178,6 +178,6 @@ at all.
 
     >>> browser.open(bug_url)
     >>> print len(find_tags_by_class(
-    ...     browser.contents, 'bugtasks-table-row-init-script'))
+    ...     browser.contents, 'bugtask-expander'))
     0
 
