@@ -20,13 +20,11 @@
                 Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
             Y.on('domready', function() {
-                var bug = { self_link: LP.cache.context.bug_link,
-                            web_link: LP.cache.context.web_link };
+                Y.lp.bugs.bugtask_index.setup_bugtask_table();
                 LP.cache.comment_context = LP.cache.bug;
                 Y.lp.comments.hide.setup_hide_controls();
                 var sl = new Y.lp.bugs.subscribers.createBugSubscribersLoader({
                     container_box: '#other-bug-subscribers',
-                    bug: bug,
                     subscribers_details_view:
                         '/+bug-portlet-subscribers-details',
                     subscribe_someone_else_link: '.menu-link-addsubscriber'
@@ -138,8 +136,7 @@
         <tal:heat replace="structure view/bug_heat_html" />
       </div>
 
-      <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
-
+      <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-portal" />
       <div id="maincontentsub">
         <div><!-- id="nonportlets"> -->
         <div class="top-portlet">
