@@ -37,6 +37,7 @@ __all__ = [
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
     'validate_person',
+    'validate_person_or_closed_team',
     'validate_public_person',
     ]
 
@@ -126,6 +127,7 @@ from lp.code.interfaces.hasbranches import (
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.errors import (
+    OpenTeamLinkageError,
     PrivatePersonLinkageError,
     TeamSubscriptionPolicyError,
     )
@@ -151,6 +153,7 @@ from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.fields import (
     BlacklistableContentNameField,
     IconImageUpload,
+    is_public_person_or_closed_team,
     is_public_person,
     LogoImageUpload,
     MugshotImageUpload,
@@ -170,7 +173,8 @@ PRIVATE_TEAM_PREFIX = 'private-'
 
 
 @block_implicit_flushes
-def validate_person_common(obj, attr, value, validate_func):
+def validate_person_common(obj, attr, value, validate_func,
+                           error_class=PrivatePersonLinkageError):
     """Validate the person using the supplied function."""
     if value is None:
         return None
@@ -181,7 +185,7 @@ def validate_person_common(obj, attr, value, validate_func):
     from lp.registry.model.person import Person
     person = Person.get(value)
     if not validate_func(person):
-        raise PrivatePersonLinkageError(
+        raise error_class(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
                obj, getattr(obj, 'name', None)))
@@ -204,6 +208,15 @@ def validate_public_person(obj, attr, value):
         return is_public_person(person)
 
     return validate_person_common(obj, attr, value, validate)
+
+
+def validate_person_or_closed_team(obj, attr, value):
+
+    def validate(person):
+        return is_public_person_or_closed_team(person)
+
+    return validate_person_common(
+        obj, attr, value, validate, error_class=OpenTeamLinkageError)
 
 
 class PersonalStanding(DBEnumeratedType):

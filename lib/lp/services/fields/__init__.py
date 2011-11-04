@@ -55,6 +55,7 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
+    'is_public_person_or_closed_team',
     'is_public_person',
     ]
 
@@ -828,6 +829,20 @@ def is_public_person(person):
     if not IPerson.providedBy(person):
         return False
     return person.visibility == PersonVisibility.PUBLIC
+
+
+def is_public_person_or_closed_team(person):
+    """Return True if person is a Person or not an open or delegated team."""
+    from lp.registry.interfaces.person import (
+        IPerson,
+        PersonVisibility,
+        CLOSED_TEAM_POLICY,
+    )
+    if not IPerson.providedBy(person):
+        return False
+    if not person.is_team:
+        return person.visibility == PersonVisibility.PUBLIC
+    return person.subscriptionpolicy in CLOSED_TEAM_POLICY
 
 
 class PrivateTeamNotAllowed(ConstraintNotSatisfied):

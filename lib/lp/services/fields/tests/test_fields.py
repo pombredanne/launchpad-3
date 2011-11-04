@@ -17,12 +17,16 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
+    )
 from lp.services.fields import (
     BaseImageUpload,
     BlacklistableContentNameField,
     FormattableDate,
     StrippableText,
-    )
+    is_public_person_or_closed_team)
 from lp.testing import (
     login_person,
     TestCase,
@@ -182,3 +186,30 @@ class TestBaseImageUpload(TestCase):
         image.filename = 'foo.jpg'
         self.assertRaises(
             LaunchpadValidationError, field.validate, image)
+
+
+class Test_is_person_or_closed_team(TestCaseWithFactory):
+    """ Tests for is_person_or_closed_team()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_non_person(self):
+        self.assertFalse(is_public_person_or_closed_team(0))
+
+    def test_person(self):
+        person = self.factory.makePerson()
+        self.assertTrue(is_public_person_or_closed_team(person))
+
+    def test_open_team(self):
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertFalse(
+                is_public_person_or_closed_team(open_team),
+                "%s is not open" % policy)
+
+    def test_closed_team(self):
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertTrue(
+                is_public_person_or_closed_team(closed_team),
+                "%s is not closed" % policy)

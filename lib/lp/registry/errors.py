@@ -16,6 +16,7 @@ __all__ = [
     'NameAlreadyTaken',
     'NoSuchDistroSeries',
     'NoSuchSourcePackageName',
+    'OpenTeamLinkageError',
     'PPACreationError',
     'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
@@ -37,6 +38,9 @@ from lp.app.errors import NameLookupFailed
 class PrivatePersonLinkageError(ValueError):
     """An attempt was made to link a private person/team to something."""
 
+@error_status(httplib.FORBIDDEN)
+class OpenTeamLinkageError(ValueError):
+    """An attempt was made to link an open team to something."""
 
 @error_status(httplib.CONFLICT)
 class NameAlreadyTaken(Exception):
