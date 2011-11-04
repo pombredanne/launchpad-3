@@ -1493,16 +1493,17 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         bugtask = {
             'age': 'age1',
             'assignee': 'assignee1',
-            'id': '3.14159',
-            'title': 'title1',
-            'status': 'status1',
-            'importance': 'importance1',
-            'importance_class': 'importance_class1',
             'bugtarget': 'bugtarget1',
             'bugtarget_css': 'bugtarget_css1',
             'bug_heat_html': 'bug_heat_html1',
             'bug_url': 'bug_url1',
-            'milestone_name': 'milestone_name1'
+            'id': '3.14159',
+            'importance': 'importance1',
+            'importance_class': 'importance_class1',
+            'milestone_name': 'milestone_name1',
+            'status': 'status1',
+            'tags': 'tags1',
+            'title': 'title1',
         }
         bugtask.update(navigator.field_visibility)
         cache.objects['mustache_model'] = {
@@ -1584,6 +1585,14 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['bugtasks'][0]['show_age'] = True
         self.assertIn('age1', navigator.mustache)
 
+    def test_hiding_tags(self):
+        """Showing tags shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_tags', navigator.field_visibility)
+        self.assertNotIn('tags1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_tags'] = True
+        self.assertIn('tags1', navigator.mustache)
+
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
 
@@ -1634,9 +1643,16 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             item.bugtask.transitionToAssignee(assignee)
             self.assertEqual('Example Person', item.model['assignee'])
 
-    def test_model_bug_age(self):
+    def test_model_age(self):
         """Model contains bug age."""
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
             item.bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
             self.assertEqual('3 days old', item.model['age'])
+
+    def test_model_tags(self):
+        """Model contains bug tags."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.tags = ['tag1', 'tag2']
+            self.assertEqual('tag1 tag2', item.model['tags'])

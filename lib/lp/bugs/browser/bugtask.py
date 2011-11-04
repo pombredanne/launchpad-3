@@ -2169,6 +2169,7 @@ class BugTaskListingItem:
             'milestone_name': milestone_name,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
+            'tags': ' '.join(self.bug.tags),
             'title': self.bug.title,
             }
 
@@ -2189,9 +2190,10 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_bug_heat': True,
             'show_id': True,
             'show_importance': True,
-            'show_status': True,
-            'show_title': True,
             'show_milestone_name': False,
+            'show_status': True,
+            'show_tags': False,
+            'show_title': True,
         }
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
