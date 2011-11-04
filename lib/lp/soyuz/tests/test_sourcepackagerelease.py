@@ -9,6 +9,7 @@ from textwrap import dedent
 
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -18,7 +19,8 @@ from canonical.testing.layers import (
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.soyuz.enums import SourcePackageFormat
+from lp.soyuz.enums import ArchivePurpose, SourcePackageFormat, PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -103,6 +105,89 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         observed = spph.sourcepackagerelease.aggregate_changelog(
             since_version="1.0")
         self.assertEqual(expected_changelog, observed)
+
+
+class TestGetActiveArchSpecificPublications(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def makeSPR(self):
+        """Create a `SourcePackageRelease`."""
+        # Return an un-proxied SPR.  This test is for script code; it
+        # won't get proxied objects in real life.
+        return removeSecurityProxy(self.factory.makeSourcePackageRelease())
+
+    def makeBPPHs(self, spr, number=1):
+        """Create `BinaryPackagePublishingHistory` object(s).
+
+        Each of the publications will be active and architecture-specific.
+        Each will be for the same archive, distroseries, and pocket.
+
+        Since the tests need to create a pocket mismatch, it is guaranteed
+        that the BPPHs are for the UPDATES pocket.
+        """
+        bpbs = [
+            self.factory.makeBinaryPackageBuild(source_package_release=spr)
+            for counter in range(number)]
+        bprs = [
+            self.factory.makeBinaryPackageRelease(
+                build=bpb, architecturespecific=True)
+            for bpb in bpbs]
+
+        das = self.factory.makeDistroArchSeries()
+        distroseries = das.distroseries
+        archive = distroseries.main_archive
+        pocket = PackagePublishingPocket.UPDATES
+        return [
+            removeSecurityProxy(
+                self.factory.makeBinaryPackagePublishingHistory(
+                    archive=archive, distroarchseries=das, pocket=pocket,
+                    binarypackagerelease=bpr,
+                    status=PackagePublishingStatus.PUBLISHED))
+            for bpr in bprs]
+
+    def test_getActiveArchSpecificPublications_finds_only_matches(self):
+        spr = self.makeSPR()
+        bpphs = self.makeBPPHs(spr, 5)
+
+        # This BPPH will match our search.
+        match = bpphs[0]
+
+        distroseries = match.distroseries
+        distro = distroseries.distribution
+
+        # These BPPHs will not match our search, each because they fail
+        # one search parameter.
+        bpphs[1].archive = self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+        bpphs[2].distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=self.factory.makeDistroSeries(distribution=distro))
+        bpphs[3].pocket = PackagePublishingPocket.SECURITY
+        bpphs[4].binarypackagerelease.architecturespecific = False
+
+        self.assertContentEqual(
+            [match], spr.getActiveArchSpecificPublications(
+                match.archive, match.distroseries, match.pocket))
+
+    def test_getActiveArchSpecificPublications_detects_absence(self):
+        spr = self.makeSPR()
+        distroseries = spr.upload_distroseries
+        result_set = spr.getActiveArchSpecificPublications(
+            distroseries.main_archive, distroseries,
+            self.factory.getAnyPocket())
+        self.assertFalse(result_set.any())
+
+    def test_getActiveArchSpecificPublications_filters_status(self):
+        spr = self.makeSPR()
+        bpphs = self.makeBPPHs(spr, len(PackagePublishingStatus.items))
+        for bpph, status in zip(bpphs, PackagePublishingStatus.items):
+            bpph.status = status
+        by_status = dict((bpph.status, bpph) for bpph in bpphs)
+        self.assertContentEqual(
+            [by_status[status] for status in active_publishing_status],
+            spr.getActiveArchSpecificPublications(
+                bpphs[0].archive, bpphs[0].distroseries, bpphs[0].pocket))
+
 
 
 class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
