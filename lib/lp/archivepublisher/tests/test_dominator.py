@@ -1172,13 +1172,17 @@ class TestLivenessFunctions(TestCaseWithFactory):
     def test_find_live_binary_versions_pass_2_blesses_latest(self):
         bpphs = make_bpphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
         make_publications_arch_specific(bpphs, False)
-        self.assertEqual(['1.2'], find_live_binary_versions_pass_2(bpphs))
+        cache = ArchSpecificPublicationsCache()
+        self.assertEqual(
+            ['1.2'], find_live_binary_versions_pass_2(bpphs, cache))
 
     def test_find_live_binary_versions_pass_2_blesses_arch_specific(self):
         versions = list(reversed(['1.%d' % version for version in range(3)]))
         bpphs = make_bpphs_for_versions(self.factory, versions)
         make_publications_arch_specific(bpphs)
-        self.assertEqual(versions, find_live_binary_versions_pass_2(bpphs))
+        cache = ArchSpecificPublicationsCache()
+        self.assertEqual(
+            versions, find_live_binary_versions_pass_2(bpphs, cache))
 
     def test_find_live_binary_versions_pass_2_reprieves_arch_all(self):
         # An arch-all BPPH for a BPR built by an SPR that also still has
@@ -1190,8 +1194,9 @@ class TestLivenessFunctions(TestCaseWithFactory):
         dependent = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpphs[1].binarypackagerelease)
         make_publications_arch_specific([dependent], True)
+        cache = ArchSpecificPublicationsCache()
         self.assertEqual(
-            ['1.2', '1.1'], find_live_binary_versions_pass_2(bpphs))
+            ['1.2', '1.1'], find_live_binary_versions_pass_2(bpphs, cache))
 
 
 class TestDominationHelpers(TestCaseWithFactory):

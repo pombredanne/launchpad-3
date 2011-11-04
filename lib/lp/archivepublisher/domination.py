@@ -301,7 +301,7 @@ class ArchSpecificPublicationsCache:
         return not query.is_empty()
 
 
-def find_live_binary_versions_pass_2(sorted_pubs):
+def find_live_binary_versions_pass_2(sorted_pubs, cache):
     """Find versions out of Published publications that should stay live.
 
     This particular notion of liveness applies to second-pass binary
@@ -326,13 +326,16 @@ def find_live_binary_versions_pass_2(sorted_pubs):
 
     :param sorted_pubs: An iterable of `BinaryPackagePublishingHistory`,
         sorted by descending package version.
+    :param cache: An `ArchSpecificPublicationsCache` to reduce the number of
+        times we need to look up whether an spr/archive/distroseries/pocket
+        has active arch-specific publications.
     :return: A list of live versions.
     """
     sorted_pubs = list(sorted_pubs)
     latest = sorted_pubs.pop(0)
     is_arch_specific = attrgetter('architecture_specific')
-    arch_specific_pubs = ifilter(is_arch_specific, sorted_pubs)
-    arch_indep_pubs = ifilterfalse(is_arch_specific, sorted_pubs)
+    arch_specific_pubs = list(ifilter(is_arch_specific, sorted_pubs))
+    arch_indep_pubs = list(ifilterfalse(is_arch_specific, sorted_pubs))
 
     # XXX JeroenVermeulen 2011-11-01 bug=884649: This is likely to be
     # costly, and the result could be reused for all builds of the same
