@@ -54,6 +54,10 @@ __all__ = ['Dominator']
 
 from collections import defaultdict
 from datetime import timedelta
+from itertools import (
+    ifilter,
+    ifilterfalse,
+    )
 from operator import (
     attrgetter,
     itemgetter,
@@ -201,15 +205,15 @@ class GeneralizedPublication:
         """Sort publications from most to least current versions."""
         # Listify; we want to iterate this twice, which won't do for a
         # non-persistent sequence.
-        sorted_publications = list(publications)
+        publications = list(publications)
         # Batch-load associated package releases; we'll be needing them
         # to compare versions.
-        self.load_releases(sorted_publications)
+        self.load_releases(publications)
         # Now sort.  This is that second iteration.  An in-place sort
         # won't hurt the original, because we're working on a copy of
         # the original iterable.
-        sorted_publications.sort(cmp=self.compare, reverse=True)
-        return sorted_publications
+        publications.sort(cmp=self.compare, reverse=True)
+        return publications
 
 
 def find_live_source_versions(publications):
@@ -228,7 +232,12 @@ def find_live_source_versions(publications):
 
 
 def get_binary_versions(binary_publications):
-    """List versions for sequence of `BinaryPackagePublishingHistory`."""
+    """List versions for sequence of `BinaryPackagePublishingHistory`.
+
+    :param binary_publications: An iterable of
+        `BinaryPackagePublishingHistory`.
+    :return: A list of the publications' respective versions.
+    """
     return [pub.binarypackagerelease.version for pub in binary_publications]
 
 
@@ -280,10 +289,8 @@ def find_live_binary_versions_pass_2(publications):
     publications = list(publications)
     latest = publications.pop(0)
     is_arch_specific = attrgetter('architecture_specific')
-    arch_specific_pubs = filter(is_arch_specific, publications)
-    arch_indep_pubs = filter(
-        lambda pub: not is_arch_specific(pub),
-        publications)
+    arch_specific_pubs = list(ifilter(is_arch_specific, publications))
+    arch_indep_pubs = list(ifilterfalse(is_arch_specific, publications))
 
     # XXX JeroenVermeulen 2011-11-01 bug=884649: This is likely to be
     # costly, and the result could be reused for all builds of the same
@@ -641,8 +648,12 @@ class Dominator:
         """Find binary publications that need dominating.
 
         This is only for traditional domination, where the latest published
-        publication is always kept published.  It will ignore publications
-        that have no other publications competing for the same binary package.
+        publication is always kept published.  See `find_live_source_versions`
+        for this logic.
+
+        To optimize for that logic, `findSourcesForDomination` will ignore
+        publications that have no other publications competing for the same
+        binary package.  There'd be nothing to do for those cases.
         """
         # Avoid circular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -690,7 +701,7 @@ class Dominator:
         self.logger.debug("Dominating sources...")
         for name, pubs in sorted_packages.iteritems():
             self.logger.debug("Dominating %s" % name)
-            assert len(pubs) > 0, "Dominating zero binaries!"
+            assert len(pubs) > 0, "Dominating zero sources!"
             live_versions = find_live_source_versions(pubs)
             self.dominatePackage(pubs, live_versions, generalization)
 

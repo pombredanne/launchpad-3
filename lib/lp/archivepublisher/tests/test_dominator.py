@@ -1146,15 +1146,23 @@ class TestLivenessFunctions(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def test_find_live_source_versions_blesses_latest(self):
+        # find_live_source_versions, assuming that you passed it
+        # publications sorted from most current to least current
+        # version, simply returns the most current version.
         spphs = make_spphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
         self.assertEqual(['1.2'], find_live_source_versions(spphs))
 
     def test_find_live_binary_versions_pass_1_blesses_latest(self):
+        # find_live_binary_versions_pass_1 always includes the latest
+        # version among the input publications in its result.
         bpphs = make_bpphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
         make_publications_arch_specific(bpphs)
         self.assertEqual(['1.2'], find_live_binary_versions_pass_1(bpphs))
 
     def test_find_live_binary_versions_pass_1_blesses_arch_all(self):
+        # find_live_binary_versions_pass_1 includes any
+        # architecture-independent publications among the input in its
+        # result.
         versions = list(reversed(['1.%d' % version for version in range(3)]))
         bpphs = make_bpphs_for_versions(self.factory, versions)
 
@@ -1169,11 +1177,16 @@ class TestLivenessFunctions(TestCaseWithFactory):
             find_live_binary_versions_pass_1(bpphs))
 
     def test_find_live_binary_versions_pass_2_blesses_latest(self):
+        # find_live_binary_versions_pass_2 always includes the latest
+        # version among the input publications in its result.
         bpphs = make_bpphs_for_versions(self.factory, ['1.2', '1.1', '1.0'])
         make_publications_arch_specific(bpphs, False)
         self.assertEqual(['1.2'], find_live_binary_versions_pass_2(bpphs))
 
     def test_find_live_binary_versions_pass_2_blesses_arch_specific(self):
+        # find_live_binary_versions_pass_2 includes any
+        # architecture-specific publications among the input in its
+        # result.
         versions = list(reversed(['1.%d' % version for version in range(3)]))
         bpphs = make_bpphs_for_versions(self.factory, versions)
         make_publications_arch_specific(bpphs)
