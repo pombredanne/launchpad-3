@@ -18,6 +18,11 @@ from StringIO import StringIO
 import sys
 import traceback
 
+from testtools.content import (
+    Content,
+    UTF8_TEXT,
+    )
+
 from lp.services.log import loglevels
 
 
@@ -214,3 +219,13 @@ class BufferLogger(FakeLogger):
         messages = self.getLogBuffer()
         self.clearLogBuffer()
         return messages
+
+    @property
+    def content(self):
+        """Return a `testtools.content.Content` for this object's buffer.
+
+        Use with `testtools.TestCase.addDetail`, `fixtures.Fixture.addDetail`,
+        and anything else that understands details.
+        """
+        get_bytes = lambda: [self.getLogBuffer().encode("utf-8")]
+        return Content(UTF8_TEXT, get_bytes)
