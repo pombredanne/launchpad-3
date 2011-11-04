@@ -2146,6 +2146,12 @@ class BugTaskListingItem:
         """Provide flattened data about bugtask for simple templaters."""
         age = DateTimeFormatterAPI(self.bug.datecreated).durationsince()
         age += ' old'
+        date_last_updated = self.bug.date_last_message
+        if (date_last_updated is None or
+            self.bug.date_last_updated > date_last_updated):
+            date_last_updated = self.bug.date_last_updated
+        last_updated_formatter = DateTimeFormatterAPI(date_last_updated)
+        last_updated = last_updated_formatter.displaydate()
         badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
         target_image = getAdapter(self.target, IPathAdapter, 'image')
         if self.bugtask.milestone is not None:
@@ -2166,6 +2172,7 @@ class BugTaskListingItem:
             'id': self.bug.id,
             'importance': self.importance.title,
             'importance_class': 'importance' + self.importance.name,
+            'last_updated': last_updated,
             'milestone_name': milestone_name,
             'reporter': self.bug.owner.displayname,
             'status': self.status.title,
@@ -2191,6 +2198,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_bug_heat': True,
             'show_id': True,
             'show_importance': True,
+            'show_last_updated': False,
             'show_milestone_name': False,
             'show_reporter': False,
             'show_status': True,

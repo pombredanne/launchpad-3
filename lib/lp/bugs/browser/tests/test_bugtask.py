@@ -1500,6 +1500,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'id': '3.14159',
             'importance': 'importance1',
             'importance_class': 'importance_class1',
+            'last_updated': 'updated1',
             'milestone_name': 'milestone_name1',
             'status': 'status1',
             'reporter': 'reporter1',
@@ -1602,6 +1603,14 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['bugtasks'][0]['show_reporter'] = True
         self.assertIn('Reporter: reporter1', navigator.mustache)
 
+    def test_hiding_last_updated(self):
+        """Showing last_updated shows the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('show_last_updated', navigator.field_visibility)
+        self.assertNotIn('last updated updated1', navigator.mustache)
+        mustache_model['bugtasks'][0]['show_last_updated'] = True
+        self.assertIn('last updated updated1', navigator.mustache)
+
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):
 
@@ -1671,3 +1680,23 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
             self.assertEqual(owner.displayname, item.model['reporter'])
+
+    def test_model_last_updated_date_last_updated(self):
+        """last_updated uses date_last_updated if newer."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.date_last_updated = datetime(2001, 1, 1, tzinfo=UTC)
+            removeSecurityProxy(item.bug).date_last_message = datetime(
+                2000, 1, 1, tzinfo=UTC)
+            self.assertEqual(
+                'last update on 2001-01-01', item.model['last_updated'])
+
+    def test_model_last_updated_date_last_message(self):
+        """last_updated uses date_last_message if newer."""
+        owner, item = make_bug_task_listing_item(self.factory)
+        with person_logged_in(owner):
+            item.bug.date_last_updated = datetime(2000, 1, 1, tzinfo=UTC)
+            removeSecurityProxy(item.bug).date_last_message = datetime(
+                2001, 1, 1, tzinfo=UTC)
+            self.assertEqual(
+                'last update on 2001-01-01', item.model['last_updated'])
