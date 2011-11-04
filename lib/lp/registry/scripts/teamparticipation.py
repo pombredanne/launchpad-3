@@ -12,9 +12,12 @@ from collections import (
     defaultdict,
     namedtuple,
     )
+from functools import partial
 from itertools import (
     chain,
+    count,
     imap,
+    izip,
     )
 
 import transaction
@@ -81,33 +84,46 @@ ConsistencyError = namedtuple(
     "ConsistencyError", ("type", "team", "people"))
 
 
+def execute_long_query(store, log, interval, query):
+    """Execute the given query, reporting as results are fetched.
+
+    The query is logged, then every `interval` rows a message is logged with
+    the total number of rows fetched thus far.
+    """
+    log.debug(query)
+    for rows, result in izip(count(1), store.execute(query)):
+        if rows % interval == 0:
+            log.debug("%d rows", rows)
+        yield result
+
+
 def check_teamparticipation_consistency(log):
     """Check for missing or spurious participations.
 
     For example, participations for people who are not members, or missing
     participations for people who are members.
     """
-    store = get_store()
+    slurp = partial(execute_long_query, get_store(), log, 10000)
 
     # Slurp everything in.
     people = dict(
-        store.execute(
+        slurp(
             "SELECT id, name FROM Person"
             " WHERE teamowner IS NULL"
             "   AND merged IS NULL"))
     teams = dict(
-        store.execute(
+        slurp(
             "SELECT id, name FROM Person"
             " WHERE teamowner IS NOT NULL"
             "   AND merged IS NULL"))
     team_memberships = defaultdict(set)
-    results = store.execute(
+    results = slurp(
         "SELECT team, person FROM TeamMembership"
         " WHERE status in %s" % quote(ACTIVE_STATES))
     for (team, person) in results:
         team_memberships[team].add(person)
     team_participations = defaultdict(set)
-    results = store.execute(
+    results = slurp(
         "SELECT team, person FROM TeamParticipation")
     for (team, person) in results:
         team_participations[team].add(person)
@@ -115,7 +131,6 @@ def check_teamparticipation_consistency(log):
     # Don't hold any locks.
     transaction.commit()
 
-    # Check team memberships.
     def get_participants(team):
         """Recurse through membership records to get participants."""
         member_people = team_memberships[team].intersection(people)
@@ -124,25 +139,36 @@ def check_teamparticipation_consistency(log):
         return member_people.union(
             chain.from_iterable(imap(get_participants, member_teams)))
 
-    errors = []
-    for team in teams:
-        participants_observed = team_participations[team]
-        participants_expected = get_participants(team)
-        participants_spurious = participants_expected - participants_observed
-        participants_missing = participants_observed - participants_expected
-        if len(participants_spurious) > 0:
-            error = ConsistencyError("spurious", team, participants_spurious)
-            errors.append(error)
-        if len(participants_missing) > 0:
-            error = ConsistencyError("missing", team, participants_missing)
-            errors.append(error)
+    def check_participants(expected, observed):
+        spurious = observed - expected
+        missing = expected - observed
+        if len(spurious) > 0:
+            yield ConsistencyError("spurious", team, sorted(spurious))
+        if len(missing) > 0:
+            yield ConsistencyError("missing", team, sorted(missing))
 
-    # TODO:
-    # - Check that the only participant of a *person* is the person.
-    # - Check that merged people and teams do not appear in TeamParticipation.
+    errors = []
+
+    for person in people:
+        participants_expected = set((person,))
+        participants_observed = team_participations[person]
+        errors.extend(
+            check_participants(participants_expected, participants_observed))
+
+    for team in teams:
+        participants_expected = get_participants(team)
+        participants_observed = team_participations[team]
+        errors.extend(
+            check_participants(participants_expected, participants_observed))
 
     def get_repr(id):
-        return "%s (%d)" % (people[id] if id in people else teams[id], id)
+        if id in people:
+            name = people[id]
+        elif id in teams:
+            name = teams[id]
+        else:
+            name = "<unknown>"
+        return "%s (%d)" % (name, id)
 
     for error in errors:
         people_repr = ", ".join(imap(get_repr, error.people))

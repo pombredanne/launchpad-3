@@ -52,7 +52,11 @@ from lp.registry.model.teammembership import (
     TeamMembership,
     TeamParticipation,
     )
-from lp.registry.scripts.teamparticipation import check_teamparticipation
+from lp.registry.scripts.teamparticipation import (
+    check_teamparticipation,
+    check_teamparticipation_consistency,
+    ConsistencyError,
+    )
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     login,
@@ -1105,7 +1109,6 @@ class TestCheckTeamParticipationScript(TestCase):
                         LIMIT 1),
                     %s);
             """ % sqlvalues(TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
 
         out, err = self._runScript()
@@ -1145,11 +1148,37 @@ class TestCheckTeamParticipationScript(TestCase):
                 TeamParticipation (person, team)
                 VALUES (9997, 9998);
             """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
         out, err = self._runScript(expected_returncode=1)
         self.assertEqual(0, len(out))
         self.failUnless(re.search('Circular references found', err))
+
+    def test_report_spurious_participants_of_people(self):
+        """The script reports spurious participants of people.
+
+        Teams can have multiple participants, but only the person should be a
+        paricipant of him/herself.
+        """
+        # Create two new people and make both participate in the first.
+        cursor().execute("""
+            INSERT INTO
+                Person (id, name, displayname, creation_rationale)
+                VALUES (6969, 'bobby', 'Dazzler', 1);
+            INSERT INTO
+                Person (id, name, displayname, creation_rationale)
+                VALUES (6970, 'nobby', 'Jazzler', 1);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (6970, 6969);
+            """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
+        transaction.commit()
+        logger = BufferLogger()
+        errors = check_teamparticipation_consistency(logger)
+        if logger.getLogBuffer() != "":
+            self.addDetail("log", text_content(logger.getLogBuffer()))
+        self.assertEqual(
+            [ConsistencyError("spurious", 6969, [6970])],
+            errors)
 
 
 class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
