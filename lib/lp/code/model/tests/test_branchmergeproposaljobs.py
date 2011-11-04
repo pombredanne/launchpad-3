@@ -18,6 +18,11 @@ from storm.locals import Select
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
+from testtools.matchers import (
+    Equals,
+    )
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
@@ -55,6 +60,7 @@ from lp.code.model.tests.test_diff import (
     DiffTestCase,
     )
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.osutils import override_environ
@@ -231,7 +237,8 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.assertEqual(
             ["preview_diff"], bmp_object_events[0].edited_fields)
 
-    def test_run_branches_not_ready(self):
+    def test_run_branches_empty(self):
+        """If the branches are empty, we tell the user."""
         # If the job has been waiting for a significant period of time (15
         # minutes for now), we run the job anyway.  The checkReady method
         # then raises and this is caught as a user error by the job system,
@@ -252,6 +259,25 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
             'generating the diff for a merge proposal.  '
             'The source branch has no revisions.',
             email.get_payload(decode=True))
+
+    def test_run_branches_pending_writes(self):
+        """If the branches are being written, we retry but don't complain."""
+        eric = self.factory.makePerson(name='eric', email='eric@example.com')
+        bmp = self.factory.makeBranchMergeProposal(registrant=eric)
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        self.factory.makeRevisionsForBranch(bmp.target_branch, count=1)
+        # Kludge a branch being a bit out of date in a way that will make
+        # pending_writes true, without anything else failing.
+        removeSecurityProxy(bmp.source_branch).last_mirrored_id = \
+            self.factory.getUniqueString()
+        job = UpdatePreviewDiffJob.create(bmp)
+        # pop_notifications()
+        JobRunner([job]).runAll()
+        emails = pop_notifications()
+        self.assertThat(emails, Equals([]))
+        self.assertThat(job.status, Equals(JobStatus.WAITING))
+        self.assertThat(job.attempt_count, Equals(1))
+        self.assertThat(job.max_retries, Equals(20))
 
     def test_10_minute_lease(self):
         self.useBzrBranches(direct_database=True)

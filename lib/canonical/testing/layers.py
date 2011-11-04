@@ -1993,7 +1993,7 @@ class YUITestLayer(FunctionalLayer):
     """The layer for all YUITests cases."""
 
 
-class YUIAppServerLayer(MemcachedLayer, RabbitMQLayer):
+class YUIAppServerLayer(MemcachedLayer):
     """The layer for all YUIAppServer test cases."""
 
     @classmethod

@@ -1719,6 +1719,31 @@ span.help {
 .importanceUNDECIDED, .importanceUNDECIDED a {
     color: #999;
     }
+#client-listing .importanceCRITICAL, #client-listing .importanceCRITICAL a {
+    background: red;
+    color: white;
+    }
+#client-listing .importanceHIGH, #client-listing .importanceHIGH a {
+    background:#f60;
+    color: white;
+    }
+#client-listing .importanceMEDIUM, #client-listing .importanceMEDIUM a {
+    background: green;
+    color: white;
+    }
+#client-listing .importanceLOW, #client-listing .importanceLOW a {
+    background: black;
+    color: white;
+    }
+#client-listing .importanceWISHLIST, #client-listing .importanceWISHLIST a {
+    background: blue;
+    color: white;
+    }
+#client-listing .importanceUNDECIDED, #client-listing .importanceUNDECIDED a {
+    background: #999;
+    color: white;
+    }
+
 .status :link, .importance :link {
     text-decoration: none;
     }
@@ -1882,6 +1907,7 @@ a.unofficial-tag {
 
 .discreet, .lesser, .duplicate-details {
     font-size: 10px;
+    clear: left;
     }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
