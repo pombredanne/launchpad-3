@@ -18,10 +18,7 @@ Ideally there should be database constraints to prevent this sort of
 situation, but that's not a simple thing and this should do for now.
 """
 
-import bz2
-
 import _pythonpath
-import cPickle as pickle
 
 from lp.registry.scripts.teamparticipation import (
     check_teamparticipation_circular,
@@ -30,24 +27,10 @@ from lp.registry.scripts.teamparticipation import (
     fetch_team_participation_info,
     )
 from lp.services.scripts.base import LaunchpadScript
-
-
-def save(obj, filename):
-    """Save a bz2 compressed pickle of `obj` to `filename`."""
-    fout = bz2.BZ2File(filename, "w")
-    try:
-        pickle.dump(obj, fout, pickle.HIGHEST_PROTOCOL)
-    finally:
-        fout.close()
-
-
-def load(filename):
-    """Load and return a bz2 compressed pickle from `filename`."""
-    fin = bz2.BZ2File(filename, "r")
-    try:
-        return pickle.load(fin)
-    finally:
-        fin.close()
+from lp.services.utils import (
+    load_bz2_pickle,
+    save_bz2_pickle,
+    )
 
 
 class CheckTeamParticipationScript(LaunchpadScript):
@@ -70,7 +53,8 @@ class CheckTeamParticipationScript(LaunchpadScript):
     def main(self):
         """Perform various checks on the `TeamParticipation` table."""
         if self.options.load_participation_info:
-            participation_info = load(self.options.load_participation_info)
+            participation_info = load_bz2_pickle(
+                self.options.load_participation_info)
         else:
             participation_info = fetch_team_participation_info(self.logger)
 
@@ -79,7 +63,8 @@ class CheckTeamParticipationScript(LaunchpadScript):
         check_teamparticipation_consistency(self.logger, participation_info)
 
         if self.options.save_participation_info:
-            save(participation_info, self.options.save_participation_info)
+            save_bz2_pickle(
+                participation_info, self.options.save_participation_info)
 
 
 if __name__ == '__main__':

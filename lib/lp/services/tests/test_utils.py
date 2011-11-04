@@ -12,6 +12,7 @@ import itertools
 import os
 import sys
 
+from fixtures import TempDir
 from pytz import UTC
 from testtools.matchers import (
     Equals,
@@ -23,13 +24,15 @@ from testtools.matchers import (
 from lp.services.utils import (
     AutoDecorate,
     base,
-    compress_hash,
     CachingIterator,
+    compress_hash,
     decorate_with,
     docstring_dedent,
     file_exists,
     iter_split,
+    load_bz2_pickle,
     run_capturing_output,
+    save_bz2_pickle,
     traceback_info,
     utc_now,
     )
@@ -329,3 +332,14 @@ class TestUTCNow(TestCase):
         new_now = datetime.utcnow().replace(tzinfo=UTC)
         self.assertThat(now, GreaterThanOrEqual(old_now))
         self.assertThat(now, LessThanOrEqual(new_now))
+
+
+class TestBZ2Pickle(TestCase):
+    """Tests for `save_bz2_pickle` and `load_bz2_pickle`."""
+
+    def test_save_and_load(self):
+        data = {1: 2, "room": 101}
+        tempdir = self.useFixture(TempDir()).path
+        tempfile = os.path.join(tempdir, "dump")
+        save_bz2_pickle(data, tempfile)
+        self.assertEqual(data, load_bz2_pickle(tempfile))
