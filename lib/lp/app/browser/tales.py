@@ -2154,7 +2154,8 @@ class DateTimeFormatterAPI:
         :param new: The new date
         """
         year_delta = new.year - old.year
-        if new.replace(year=old.year) < old:
+        year_timedelta = datetime(new.year, 1, 1) - datetime(old.year, 1, 1)
+        if new - old < year_timedelta:
             year_delta -= 1
         return year_delta
 

@@ -341,6 +341,9 @@ class TestDateTimeFormatterAPI(TestCase):
             self.assertEqual(expected, delta)
         assert_delta(1, (2000, 1, 1), (2001, 1, 1))
         assert_delta(0, (2000, 1, 2), (2001, 1, 1))
+        # Check leap year handling (2004 is an actual leap year)
+        assert_delta(0, (2003, 10, 10), (2004, 2, 29))
+        assert_delta(0, (2004, 2, 29), (2005, 2, 28))
 
     def getDurationsince(self, delta):
         """Return the durationsince for a given delta."""
