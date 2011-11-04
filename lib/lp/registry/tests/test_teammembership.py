@@ -1191,6 +1191,7 @@ class TestCheckTeamParticipationScript(TestCase):
             errors)
 
     def test_load_and_save_team_participation(self):
+        """The script can load and save participation info."""
         logger = BufferLogger()
         info = fetch_team_participation_info(logger)
         tempdir = self.useFixture(TempDir()).path
