@@ -155,11 +155,15 @@ def check_teamparticipation_consistency(log, info):
     """
     people, teams, team_memberships, team_participations = info
 
+    # set.intersection() with a dict is slow.
+    people_set = frozenset(people)
+    teams_set = frozenset(teams)
+
     def get_participants(team):
         """Recurse through membership records to get participants."""
-        member_people = team_memberships[team].intersection(people)
+        member_people = team_memberships[team].intersection(people_set)
         member_people.add(team)  # Teams always participate in themselves.
-        member_teams = team_memberships[team].intersection(teams)
+        member_teams = team_memberships[team].intersection(teams_set)
         return member_people.union(
             chain.from_iterable(imap(get_participants, member_teams)))
 
@@ -174,7 +178,7 @@ def check_teamparticipation_consistency(log, info):
     errors = []
 
     log.debug("Checking consistency of %d people", len(people))
-    for person in report_progress(log, 10000, people, "people"):
+    for person in report_progress(log, 50000, people, "people"):
         participants_expected = set((person,))
         participants_observed = team_participations[person]
         errors.extend(
