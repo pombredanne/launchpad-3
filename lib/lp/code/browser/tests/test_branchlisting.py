@@ -35,9 +35,7 @@ from lp.code.browser.branchlisting import (
     PersonProductSubscribedBranchesView,
     SourcePackageBranchesView,
     )
-from lp.code.enums import (
-    BranchVisibilityRule,
-    )
+from lp.code.enums import BranchVisibilityRule
 from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
@@ -335,7 +333,7 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
         self.assertThat(page, subscribed_branches_matcher)
 
     def test_branch_list_activereviews_link(self):
-        # The link to the actives reviews is always displayed.
+        # The link to the active reviews is always displayed.
         active_review_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Active reviews link', 'a', text='Active reviews',
