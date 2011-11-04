@@ -50,14 +50,12 @@ class CheckTeamParticipationScript(LaunchpadScript):
 
     def main(self):
         """Perform various checks on the `TeamParticipation` table."""
-        check_teamparticipation_self(self.logger)
-        check_teamparticipation_circular(self.logger)
-
         if self.options.load_info:
             participation_info = load_bz2_pickle(self.options.load_info)
         else:
+            check_teamparticipation_self(self.logger)
+            check_teamparticipation_circular(self.logger)
             participation_info = fetch_team_participation_info(self.logger)
-
         if self.options.save_info:
             save_bz2_pickle(participation_info, self.options.save_info)
         else:
