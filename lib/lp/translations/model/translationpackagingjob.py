@@ -92,7 +92,7 @@ class TranslationMergeJob(TranslationPackagingJob):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
         if not self.distroseries.distribution.full_functionality:
-            logger.warn(
+            logger.info(
                 'Skipping merge for unsupported distroseries "%s".' %
                 self.distroseries.displayname)
             return
