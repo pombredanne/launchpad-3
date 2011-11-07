@@ -92,11 +92,11 @@ class ErrorReportEvent(ObjectEvent):
 class ErrorReport:
     implements(IErrorReport)
 
-    def __init__(self, id, type, value, time, tb_text, username,
+    def __init__(self, _id, _type, value, time, tb_text, username,
                  url, duration, req_vars, timeline, informational=None,
                  branch_nick=None, revno=None, topic=None, reporter=None):
-        self.id = id
-        self.type = type
+        self.id = _id
+        self.type = _type
         self.value = value
         self.time = time
         self.topic = topic
@@ -199,7 +199,7 @@ def attach_http_request(report, context):
     else:
         # Request has an UnauthenticatedPrincipal.
         login = 'unauthenticated'
-        if report['type'] in (
+        if _get_type(report) in (
             _ignored_exceptions_for_unauthenticated_users):
             report['ignore'] = True
 
@@ -254,6 +254,10 @@ def filter_sessions_timeline(report, context):
         detail = _filter_session_statement(category, detail)
         statements.append((start, end, category, detail) + event[4:])
     report['timeline'] = statements
+
+
+def _get_type(report):
+    return report.get('type', 'No exception type')
 
 
 class ErrorReportingUtility:
@@ -334,7 +338,7 @@ class ErrorReportingUtility:
                 operator.methodcaller('get', 'ignore'))
         #  - have a type listed in self._ignored_exceptions.
         self._oops_config.filters.append(
-                lambda report: report['type'] in self._ignored_exceptions)
+                lambda report: _get_type(report) in self._ignored_exceptions)
         #  - have a missing or offset REFERER header with a type listed in
         #    self._ignored_exceptions_for_offsite_referer
         self._oops_config.filters.append(self._filter_bad_urls_by_referer)
@@ -369,7 +373,7 @@ class ErrorReportingUtility:
 
     def _filter_bad_urls_by_referer(self, report):
         """Filter if the report was generated because of a bad offsite url."""
-        if report['type'] in self._ignored_exceptions_for_offsite_referer:
+        if _get_type(report) in self._ignored_exceptions_for_offsite_referer:
             was_http = report.get('url', '').lower().startswith('http')
             if was_http:
                 req_vars = dict(report.get('req_vars', ()))

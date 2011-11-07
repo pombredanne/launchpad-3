@@ -142,9 +142,10 @@ class CodeImportWorkerMonitor:
 
     def _logOopsFromFailure(self, failure):
         config = errorlog.globalErrorUtility._oops_config
-        context = {'twisted_failure': failure,
+        context = {
+            'twisted_failure': failure,
             'request': errorlog.ScriptRequest(
-                [('code_import_job_id', self._job_id)], self._branch_url)
+                [('code_import_job_id', self._job_id)], self._branch_url),
             }
         report = config.create(context)
 
@@ -152,10 +153,11 @@ class CodeImportWorkerMonitor:
             if ids:
                 self._logger.info(
                     "Logged OOPS id %s: %s: %s",
-                    report['id'], report['type'], report['value'])
+                    report['id'], report.get('type', 'No exception type'),
+                    report.get('value', 'No execption value'))
 
         d = config.publish(report)
-        d.addCallback(log_oops_if_published, report)
+        d.addCallback(log_oops_if_published)
         return d
 
     def _trap_nosuchcodeimportjob(self, failure):
