@@ -49,6 +49,46 @@ class TestPrivateBugLinks(BrowserTestCase):
         self.assertTrue('href' not in dupe_warning)
 
 
+class TestAlsoAffectsLinks(BrowserTestCase):
+    """ Tests the rendering of the Also Affects links on the bug index view.
+
+    The links are rendered with a css class 'private-disallow' if they are
+    not valid for private bugs.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def test_also_affects_links_product_bug(self):
+        # We expect that both Also Affects links (for project and distro) are
+        # disallowed.
+        bug = self.factory.makeBug()
+        url = canonical_url(bug, rootsite="bugs")
+        browser = self.getUserBrowser(url)
+        also_affects = find_tag_by_id(
+            browser.contents, 'also-affects-product')
+        self.assertIn(
+            'private-disallow', also_affects['class'].split(' '))
+        also_affects = find_tag_by_id(
+            browser.contents, 'also-affects-package')
+        self.assertIn(
+            'private-disallow', also_affects['class'].split(' '))
+
+    def test_also_affects_links_distro_bug(self):
+        # We expect that only the Also Affects Project link is disallowed.
+        distro = self.factory.makeDistribution()
+        bug = self.factory.makeBug(distribution=distro)
+        url = canonical_url(bug, rootsite="bugs")
+        browser = self.getUserBrowser(url)
+        also_affects = find_tag_by_id(
+            browser.contents, 'also-affects-product')
+        self.assertIn(
+            'private-disallow', also_affects['class'].split(' '))
+        also_affects = find_tag_by_id(
+            browser.contents, 'also-affects-package')
+        self.assertNotIn(
+            'private-disallow', also_affects['class'].split(' '))
+
+
 class TestEmailObfuscated(BrowserTestCase):
     """Test for obfuscated emails on bug pages."""
 
@@ -65,7 +105,7 @@ class TestEmailObfuscated(BrowserTestCase):
         email_address = "mark@example.com"
         browser = self.getBrowserForBugWithEmail(
             email_address, no_login=False)
-        self.assertEqual(6, browser.contents.count(email_address))
+        self.assertEqual(7, browser.contents.count(email_address))
 
     def test_anonymous_sees_not_email_address(self):
         """The anonymous user cannot see the email address on the page."""
