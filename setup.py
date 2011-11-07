@@ -37,6 +37,7 @@ setup(
         'FeedParser',
         'feedvalidator',
         'funkload',
+        'html5browser',
         'pygpgme',
         'launchpadlib',
         'lazr.batchnavigator',

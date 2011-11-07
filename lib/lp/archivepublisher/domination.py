@@ -54,6 +54,10 @@ __all__ = ['Dominator']
 
 from collections import defaultdict
 from datetime import timedelta
+from itertools import (
+    ifilter,
+    ifilterfalse,
+    )
 from operator import (
     attrgetter,
     itemgetter,
@@ -201,57 +205,110 @@ class GeneralizedPublication:
         """Sort publications from most to least current versions."""
         # Listify; we want to iterate this twice, which won't do for a
         # non-persistent sequence.
-        sorted_publications = list(publications)
+        publications = list(publications)
         # Batch-load associated package releases; we'll be needing them
         # to compare versions.
-        self.load_releases(sorted_publications)
+        self.load_releases(publications)
         # Now sort.  This is that second iteration.  An in-place sort
         # won't hurt the original, because we're working on a copy of
         # the original iterable.
-        sorted_publications.sort(cmp=self.compare, reverse=True)
-        return sorted_publications
+        publications.sort(cmp=self.compare, reverse=True)
+        return publications
 
 
-def find_live_source_versions(publications):
-    """Find versions out of Published `publications` that should stay live.
+def find_live_source_versions(sorted_pubs):
+    """Find versions out of Published publications that should stay live.
 
     This particular notion of liveness applies to source domination: the
     latest version stays live, and that's it.
 
-    :param publications: An iterable of `SourcePackagePublishingHistory`
+    :param sorted_pubs: An iterable of `SourcePackagePublishingHistory`
         sorted by descending package version.
     :return: A list of live versions.
     """
     # Given the required sort order, the latest version is at the head
     # of the list.
-    return [publications[0].sourcepackagerelease.version]
+    return [sorted_pubs[0].sourcepackagerelease.version]
 
 
 def get_binary_versions(binary_publications):
-    """List versions for sequence of `BinaryPackagePublishingHistory`."""
+    """List versions for sequence of `BinaryPackagePublishingHistory`.
+
+    :param binary_publications: An iterable of
+        `BinaryPackagePublishingHistory`.
+    :return: A list of the publications' respective versions.
+    """
     return [pub.binarypackagerelease.version for pub in binary_publications]
 
 
-def find_live_binary_versions_pass_1(publications):
+def find_live_binary_versions_pass_1(sorted_pubs):
     """Find versions out of Published `publications` that should stay live.
 
     This particular notion of liveness applies to first-pass binary
     domination: the latest version stays live, and so do publications of
     binary packages for the "all" architecture.
 
-    :param publications: An iterable of `BinaryPackagePublishingHistory`,
+    :param sorted_pubs: An iterable of `BinaryPackagePublishingHistory`,
         sorted by descending package version.
     :return: A list of live versions.
     """
-    publications = list(publications)
-    latest = publications.pop(0)
+    sorted_pubs = list(sorted_pubs)
+    latest = sorted_pubs.pop(0)
     return get_binary_versions(
         [latest] + [
-            pub for pub in publications if not pub.architecture_specific])
+            pub for pub in sorted_pubs if not pub.architecture_specific])
 
 
-def find_live_binary_versions_pass_2(publications):
-    """Find versions out of Published `publications` that should stay live.
+class ArchSpecificPublicationsCache:
+    """Cache to track which releases have arch-specific publications.
+
+    This is used for second-pass binary domination:
+    architecture-independent binary publications cannot be superseded as long
+    as any architecture-dependent binary publications built from the same
+    source package release are still active.  Thus such arch-indep
+    publications are reprieved from domination.
+
+    This class looks up whether publications for a release need that
+    reprieve.  That only needs to be looked up in the database once per
+    (source package release, archive, distroseries, pocket).  Hence this
+    cache.
+    """
+    def __init__(self):
+        self.cache = {}
+
+    @staticmethod
+    def getKey(bpph):
+        """Extract just the relevant bits of information from a bpph."""
+        return (
+            bpph.binarypackagerelease.build.source_package_release,
+            bpph.archive,
+            bpph.distroseries,
+            bpph.pocket,
+            )
+
+    def hasArchSpecificPublications(self, bpph):
+        """Does bpph have active, arch-specific publications?
+
+        If so, the dominator will want to reprieve `bpph`.
+        """
+        assert not bpph.architecture_specific, (
+            "Wrongly dominating arch-specific binary pub in pass 2.")
+
+        key = self.getKey(bpph)
+        if key not in self.cache:
+            self.cache[key] = self._lookUp(*key)
+        return self.cache[key]
+
+    @staticmethod
+    def _lookUp(spr, archive, distroseries, pocket):
+        """Look up an answer in the database."""
+        query = spr.getActiveArchSpecificPublications(
+            archive, distroseries, pocket)
+        return not query.is_empty()
+
+
+def find_live_binary_versions_pass_2(sorted_pubs, cache):
+    """Find versions out of Published publications that should stay live.
 
     This particular notion of liveness applies to second-pass binary
     domination: the latest version stays live, and architecture-specific
@@ -273,25 +330,23 @@ def find_live_binary_versions_pass_2(publications):
     domination code confuses matters by using the term "active" to mean only
     Published publications).
 
-    :param publications: An iterable of `BinaryPackagePublishingHistory`,
+    :param sorted_pubs: An iterable of `BinaryPackagePublishingHistory`,
         sorted by descending package version.
+    :param cache: An `ArchSpecificPublicationsCache` to reduce the number of
+        times we need to look up whether an spr/archive/distroseries/pocket
+        has active arch-specific publications.
     :return: A list of live versions.
     """
-    publications = list(publications)
-    latest = publications.pop(0)
+    sorted_pubs = list(sorted_pubs)
+    latest = sorted_pubs.pop(0)
     is_arch_specific = attrgetter('architecture_specific')
-    arch_specific_pubs = filter(is_arch_specific, publications)
-    arch_indep_pubs = filter(
-        lambda pub: not is_arch_specific(pub),
-        publications)
+    arch_specific_pubs = list(ifilter(is_arch_specific, sorted_pubs))
+    arch_indep_pubs = list(ifilterfalse(is_arch_specific, sorted_pubs))
 
-    # XXX JeroenVermeulen 2011-11-01 bug=884649: This is likely to be
-    # costly, and the result could be reused for all builds of the same
-    # source package release to all architectures.
     reprieved_pubs = [
         pub
         for pub in arch_indep_pubs
-            if pub.getOtherPublicationsForSameSource().any()]
+            if cache.hasArchSpecificPublications(pub)]
 
     return get_binary_versions([latest] + arch_specific_pubs + reprieved_pubs)
 
@@ -317,7 +372,7 @@ class Dominator:
         self.logger = logger
         self.archive = archive
 
-    def dominatePackage(self, publications, live_versions, generalization):
+    def dominatePackage(self, sorted_pubs, live_versions, generalization):
         """Dominate publications for a single package.
 
         The latest publication for any version in `live_versions` stays
@@ -332,7 +387,7 @@ class Dominator:
         previous latest version of a package has disappeared from the Sources
         list we import.
 
-        :param publications: Iterable of publications for the same package,
+        :param sorted_pubs: A list of publications for the same package,
             in the same archive, series, and pocket, all with status
             `PackagePublishingStatus.PUBLISHED`.  They must be sorted from
             most current to least current, as would be the result of
@@ -350,7 +405,7 @@ class Dominator:
 
         self.logger.debug(
             "Package has %d live publication(s).  Live versions: %s",
-            len(publications), live_versions)
+            len(sorted_pubs), live_versions)
 
         # Verify that the publications are really sorted properly.
         check_order = OrderingCheck(cmp=generalization.compare, reverse=True)
@@ -358,7 +413,7 @@ class Dominator:
         current_dominant = None
         dominant_version = None
 
-        for pub in publications:
+        for pub in sorted_pubs:
             check_order.check(pub)
 
             version = generalization.getPackageVersion(pub)
@@ -612,6 +667,7 @@ class Dominator:
         # (In maintaining this code, bear in mind that some or all of a
         # source package's binary packages may switch between
         # arch-specific and arch-indep between releases.)
+        reprieve_cache = ArchSpecificPublicationsCache()
         for distroarchseries in distroseries.architectures:
             self.logger.info("Finding binaries...(2nd pass)")
             bins = self.findBinariesForDomination(distroarchseries, pocket)
@@ -621,7 +677,8 @@ class Dominator:
                 pubs = sorted_packages[name]
                 self.logger.debug("Dominating %s" % name)
                 assert len(pubs) > 0, "Dominating zero binaries in 2nd pass!"
-                live_versions = find_live_binary_versions_pass_2(pubs)
+                live_versions = find_live_binary_versions_pass_2(
+                    pubs, reprieve_cache)
                 self.dominatePackage(pubs, live_versions, generalization)
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
@@ -641,8 +698,12 @@ class Dominator:
         """Find binary publications that need dominating.
 
         This is only for traditional domination, where the latest published
-        publication is always kept published.  It will ignore publications
-        that have no other publications competing for the same binary package.
+        publication is always kept published.  See `find_live_source_versions`
+        for this logic.
+
+        To optimize for that logic, `findSourcesForDomination` will ignore
+        publications that have no other publications competing for the same
+        binary package.  There'd be nothing to do for those cases.
         """
         # Avoid circular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -690,7 +751,7 @@ class Dominator:
         self.logger.debug("Dominating sources...")
         for name, pubs in sorted_packages.iteritems():
             self.logger.debug("Dominating %s" % name)
-            assert len(pubs) > 0, "Dominating zero binaries!"
+            assert len(pubs) > 0, "Dominating zero sources!"
             live_versions = find_live_source_versions(pubs)
             self.dominatePackage(pubs, live_versions, generalization)
 
