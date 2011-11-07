@@ -39,8 +39,3 @@ class LibrarianUtils(unittest.TestCase):
             'foo.diff.gz', 'will_be_overridden')
         self.assertEqual(encoding, 'gzip')
         self.assertEqual(mimetype, 'text/plain')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

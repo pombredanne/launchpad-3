@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -9,23 +9,25 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Select
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
+from testtools.matchers import (
+    Equals,
+    )
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
-from lp.code.adapters.branch import BranchMergeProposalDelta
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
@@ -58,16 +60,20 @@ from lp.code.model.tests.test_diff import (
     DiffTestCase,
     )
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.osutils import override_environ
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    EventRecorder,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
 class TestBranchMergeProposalJob(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
         """BranchMergeProposalJob implements expected interfaces."""
@@ -98,7 +104,8 @@ class TestBranchMergeProposalJobDerived(TestCaseWithFactory):
             AttributeError, BranchMergeProposalJobDerived.get, job.id)
         self.assertRaises(SQLObjectNotFound, UpdatePreviewDiffJob.get, job.id)
         self.assertRaises(
-            SQLObjectNotFound, MergeProposalNeedsReviewEmailJob.get, job.id + 1)
+            SQLObjectNotFound, MergeProposalNeedsReviewEmailJob.get,
+            job.id + 1)
         self.assertEqual(job, MergeProposalNeedsReviewEmailJob.get(job.id))
 
 
@@ -107,7 +114,7 @@ class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
-        """MergeProposalNeedsReviewEmailJob provides the expected interfaces."""
+        """MergeProposalNeedsReviewEmailJob provides expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = MergeProposalNeedsReviewEmailJob.create(bmp)
         verifyObject(IMergeProposalNeedsReviewEmailJob, job)
@@ -183,7 +190,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
 
     def test_providesInterface(self):
-        """MergeProposalNeedsReviewEmailJob provides the expected interfaces."""
+        """MergeProposalNeedsReviewEmailJob provides expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = UpdatePreviewDiffJob.create(bmp)
         verifyObject(IUpdatePreviewDiffJob, job)
@@ -208,7 +215,30 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
 
-    def test_run_branches_not_ready(self):
+    def test_run_object_events(self):
+        # While the job runs a single IObjectModifiedEvent is issued when the
+        # preview diff has been calculated.
+        self.useBzrBranches(direct_database=True)
+        bmp = create_example_merge(self)[0]
+        job = UpdatePreviewDiffJob.create(bmp)
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        bmp.source_branch.next_mirror_time = None
+        transaction.commit()
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
+        with EventRecorder() as event_recorder:
+            JobRunner([job]).runAll()
+        bmp_object_events = [
+            event for event in event_recorder.events
+            if (IObjectModifiedEvent.providedBy(event) and
+                event.object == bmp)]
+        self.assertEqual(
+            1, len(bmp_object_events),
+            "Expected one event, got: %r" % bmp_object_events)
+        self.assertEqual(
+            ["preview_diff"], bmp_object_events[0].edited_fields)
+
+    def test_run_branches_empty(self):
+        """If the branches are empty, we tell the user."""
         # If the job has been waiting for a significant period of time (15
         # minutes for now), we run the job anyway.  The checkReady method
         # then raises and this is caught as a user error by the job system,
@@ -229,6 +259,25 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
             'generating the diff for a merge proposal.  '
             'The source branch has no revisions.',
             email.get_payload(decode=True))
+
+    def test_run_branches_pending_writes(self):
+        """If the branches are being written, we retry but don't complain."""
+        eric = self.factory.makePerson(name='eric', email='eric@example.com')
+        bmp = self.factory.makeBranchMergeProposal(registrant=eric)
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        self.factory.makeRevisionsForBranch(bmp.target_branch, count=1)
+        # Kludge a branch being a bit out of date in a way that will make
+        # pending_writes true, without anything else failing.
+        removeSecurityProxy(bmp.source_branch).last_mirrored_id = \
+            self.factory.getUniqueString()
+        job = UpdatePreviewDiffJob.create(bmp)
+        # pop_notifications()
+        JobRunner([job]).runAll()
+        emails = pop_notifications()
+        self.assertThat(emails, Equals([]))
+        self.assertThat(job.status, Equals(JobStatus.WAITING))
+        self.assertThat(job.attempt_count, Equals(1))
+        self.assertThat(job.max_retries, Equals(20))
 
     def test_10_minute_lease(self):
         self.useBzrBranches(direct_database=True)
@@ -453,7 +502,8 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         bmp = self.makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         self.completePendingJobs()
-        old_merge_proposal = BranchMergeProposalDelta.snapshot(bmp)
+        old_merge_proposal = (
+            BranchMergeProposalNoPreviewDiffDelta.snapshot(bmp))
         bmp.commit_message = 'new commit message'
         event = ObjectModifiedEvent(
             bmp, old_merge_proposal, [], bmp.registrant)
@@ -533,7 +583,3 @@ class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
         self.assertEqual(
             'emailing subscribers about merge proposal changes',
             job.getOperationDescription())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -72,12 +72,13 @@ def parse_changelog(changelines):
                 #print "state0 Exception skip"
                 continue
             firstline = line.strip()
-            stanza = [line, '\n']
+            stanza = [line, '\n', '\n']
             state = 1
             continue
 
         if state == 1:
             stanza.append(line)
+            stanza.append('\n')
 
             if line.startswith(" --") and "@" in line:
                 #print "state1 accept"

@@ -245,7 +245,6 @@
                     date_created
                     date_review_requested
                     date_reviewed
-                    review_diff
                     next_preview_diff_job
                     preview_diff
                     getIncrementalDiffs
@@ -267,7 +266,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id review_diff prerequisite_branch"
+                        root_message_id prerequisite_branch"
         attributes="
                     deleteProposal
                     setStatus
@@ -656,10 +655,6 @@
   <class class="lp.code.model.branchjob.BranchJob">
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
   </class>
-  <class class="lp.code.model.branchjob.BranchDiffJob">
-    <allow interface="lp.code.interfaces.branchjob.IBranchDiffJob"/>
-    <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
-  </class>
   <class class="lp.code.model.branchjob.RevisionMailJob">
     <allow interface="lp.code.interfaces.branchjob.IRevisionMailJob"/>
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
@@ -676,11 +671,6 @@
     <allow interface="lp.code.interfaces.branchjob.IReclaimBranchSpaceJob"/>
     <allow interface="lp.code.interfaces.branchjob.IBranchJob"/>
   </class>
-  <securedutility
-      component="lp.code.model.branchjob.BranchDiffJob"
-      provides="lp.code.interfaces.branchjob.IBranchDiffJobSource">
-    <allow interface="lp.code.interfaces.branchjob.IBranchDiffJobSource"/>
-  </securedutility>
   <securedutility
       component="lp.code.model.branchjob.RevisionMailJob"
       provides="lp.code.interfaces.branchjob.IRevisionMailJobSource">
@@ -889,20 +879,11 @@
     <allow interface="lp.code.interfaces.diff.IDiff" />
     <allow interface="lp.code.interfaces.diff.IIncrementalDiff" />
   </class>
-  <class class="lp.code.model.diff.StaticDiff">
-    <allow interface="lp.code.interfaces.diff.IStaticDiff" />
-  </class>
   <class class="lp.code.model.diff.PreviewDiff">
     <require
         permission="launchpad.View"
         interface="lp.code.interfaces.diff.IPreviewDiff"/>
   </class>
-  <securedutility
-      component="lp.code.model.diff.StaticDiff"
-      provides="lp.code.interfaces.diff.IStaticDiffSource" >
-    <allow
-      interface="lp.code.interfaces.diff.IStaticDiffSource" />
-  </securedutility>
 
   <!-- SourcePackageRecipe -->
 

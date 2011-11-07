@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 set -e
@@ -29,12 +29,16 @@ cleanup () {
 trap cleanup EXIT
 
 suite=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py development`
+archs=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py -s "$suite" archs`
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT
 
 # Clean up temporary files
-rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MYTHBUNTU-* LUBUNTU-*
+rm -f \
+    germinate.output ALL ALL.sources \
+    UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* MYTHBUNTU-* LUBUNTU-* \
+    UBUNTUSTUDIO-*
 rm -f all_* all.sources_*
 rm -rf dists
 
@@ -44,7 +48,7 @@ for component in main universe restricted multiverse; do
   base="dists/$suite/$component"
   mkdir -p "$base/source"
   zcat "$ARCHIVEROOT/$base/source/Sources.gz" > "$base/source/Sources"
-  for arch in i386 amd64 powerpc armel; do
+  for arch in $archs; do
     mkdir -p "$base/binary-$arch" "$base/debian-installer/binary-$arch"
     zcat "$ARCHIVEROOT/$base/binary-$arch/Packages.gz" \
       > "$base/binary-$arch/Packages"
@@ -56,23 +60,34 @@ done
 > "$MISCROOT/more-extra.override.$suite.main.new"
 
 germinate_components=main,universe,restricted,multiverse
-for distro in ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu; do
+for distro in \
+    ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu \
+    ubuntustudio
+do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
-  for arch in i386 amd64 powerpc armel; do
+  for arch in $archs; do
     # Run germinate
     echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
-    germinate --no-rdepends -m "file://$(pwd)/" -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
+    germinate \
+        --no-rdepends \
+        -m "file://$(pwd)/" \
+        -s "$germinate_suite" \
+        -d "$suite" \
+        -c "$germinate_components" \
+        -a $arch >> germinate.output 2>&1
 
     # The structure file is generally useful; keep per distro/suite/arch
     # copies for convenience
     cp structure structure_"$distro"_"$suite"_"$arch"
 
-    # Keep per distro/suite/arch copies of 'all' and 'all.sources' for anastacia
+    # Keep per distro/suite/arch copies of 'all' and 'all.sources' for
+    # anastacia.
     cp all all_"$distro"_"$suite"_"$arch"
     cp all.sources all.sources_"$distro"_"$suite"_"$arch"
 
-    # Keep per distro/suite/arch copies of 'minimal' and 'standard' for jessica
+    # Keep per distro/suite/arch copies of 'minimal' and 'standard' for
+    # jessica.
     cp minimal minimal_"$distro"_"$suite"_"$arch"
     cp standard standard_"$distro"_"$suite"_"$arch"
 
@@ -111,26 +126,36 @@ for distro in ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu; 
 	fi
       fi
       if grep -iq '^Task-Seeds:' "$seed.seedtext"; then
-	scanseeds="$( (grep '^Task-Seeds:' "$seed.seedtext" | cut -d: -f2 | xargs -n1; echo "$seed") | sort -u )"
+          scanseeds="$( (grep '^Task-Seeds:' "$seed.seedtext" | cut -d: -f2 | xargs -n1; echo "$seed") | sort -u )"
       else
 	scanseeds="$seed"
       fi
       for scanseed in $scanseeds; do
-	egrep -v -- "^(-|Package| )" "$scanseed"_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Task  $task," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+          egrep -v -- \
+              "^(-|Package| )" "$scanseed"_"$distro"_"$suite"_"$arch" |
+          awk '{print $1}' |
+          sed -e "s,$,/$arch  Task  $task," |
+          sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
       done
     done
 
     # Generate apt-ftparchive 'extra' overrides for Build-Essential: fields
     if [ -e build-essential ] && [ "$distro" = ubuntu ]; then
-      # Keep a copy, just for convenience
-      cp build-essential build-essential_"$distro"_"$suite"_"$arch"
-      egrep -v -- "^(-|Package| )" build-essential_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Build-Essential  yes," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+        # Keep a copy, just for convenience
+        cp build-essential build-essential_"$distro"_"$suite"_"$arch"
+        egrep -v -- \
+            "^(-|Package| )" build-essential_"$distro"_"$suite"_"$arch" |
+        awk '{print $1}' |
+        sed -e "s,$,/$arch  Build-Essential  yes," |
+        sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
     fi
   done
 done
 echo " done."
 
-mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.override.$suite.main"
+mv -f \
+    "$MISCROOT/more-extra.override.$suite.main.new" \
+    "$MISCROOT/more-extra.override.$suite.main"
 
 # Now generate the Supported extra overrides for all supported distros.
 SUITES=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py supported`
@@ -138,15 +163,16 @@ for supported_suite in $SUITES; do
     echo -n "Running maintenance-check for $supported_suite... "
     # The support timeframe information is stored here
     SUPPORTED="$MISCROOT/more-extra.override.$supported_suite.main.supported"
-    # This is the target override file that contains germinate plus support info
+    # This is the target override file that contains germinate plus
+    # support info.
     TARGET="$MISCROOT/more-extra.override.$supported_suite.main"
-    # Debug/Log information 
+    # Debug/Log information
     LOG="_maintenance-check.$supported_suite.stderr"
     if $MAINTAINCE_CHECK $supported_suite > $SUPPORTED 2> $LOG; then
         # The target file may be missing on the server and the script should
         # not fail if that is the case.
         touch $TARGET
-        # Remove old "Supported" info from extra-overrides as it may be 
+        # Remove old "Supported" info from extra-overrides as it may be
         # stale now and we replace it with fresh content below.
         sed /"^.* Supported"/d $TARGET > ${TARGET}.new
         cat $SUPPORTED >> ${TARGET}.new

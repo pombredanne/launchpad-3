@@ -18,10 +18,11 @@ __all__ = [
     'file_exists',
     'iter_list_chunks',
     'iter_split',
+    'load_bz2_pickle',
     'obfuscate_email',
     're_email_address',
-    'RegisteredSubclass',
     'run_capturing_output',
+    'save_bz2_pickle',
     'synchronize',
     'text_delta',
     'traceback_info',
@@ -29,16 +30,18 @@ __all__ = [
     'value_string',
     ]
 
+import bz2
 from datetime import datetime
 from itertools import tee
 import os
 import re
-from StringIO import StringIO
 import string
+from StringIO import StringIO
 import sys
 from textwrap import dedent
 from types import FunctionType
 
+import cPickle as pickle
 from fixtures import (
     Fixture,
     MonkeyPatch,
@@ -294,23 +297,6 @@ def traceback_info(info):
     sys._getframe(1).f_locals["__traceback_info__"] = info
 
 
-class RegisteredSubclass(type):
-    """Metaclass for when subclasses should be registered."""
-
-    def __init__(cls, name, bases, dict_):
-        # _register_subclass must be a static method to permit upcalls.
-        #
-        # We cannot use super(Class, cls) to do the upcalls, because Class
-        # isn't fully defined yet.  (Remember, we're calling this from a
-        # metaclass.)
-        #
-        # Without using super, a classmethod that overrides another
-        # classmethod has no reasonable way to call the overridden version AND
-        # provide its class as first parameter (i.e. "cls").  Therefore, we
-        # must use a static method.
-        cls._register_subclass(cls)
-
-
 def utc_now():
     """Return a timezone-aware timestamp for the current time."""
     return datetime.now(tz=pytz.UTC)
@@ -351,3 +337,21 @@ def obfuscate_email(text_to_obfuscate):
     text = text.replace(
         "<<email address hidden>>", "<email address hidden>")
     return text
+
+
+def save_bz2_pickle(obj, filename):
+    """Save a bz2 compressed pickle of `obj` to `filename`."""
+    fout = bz2.BZ2File(filename, "w")
+    try:
+        pickle.dump(obj, fout, pickle.HIGHEST_PROTOCOL)
+    finally:
+        fout.close()
+
+
+def load_bz2_pickle(filename):
+    """Load and return a bz2 compressed pickle from `filename`."""
+    fin = bz2.BZ2File(filename, "r")
+    try:
+        return pickle.load(fin)
+    finally:
+        fin.close()

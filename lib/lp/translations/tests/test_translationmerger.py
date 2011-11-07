@@ -6,7 +6,6 @@ __metaclass__ = type
 from datetime import timedelta
 import gc
 from logging import ERROR
-from unittest import TestLoader
 
 import transaction
 from zope.component import getUtility
@@ -512,7 +511,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         tms = trunk_message.potmsgset.getAllTranslationMessages()
         self.assertEqual(list(tms), [trunk_message])
 
-    def test_clashingPOFileTranslatorEntries(self):
+    # XXX: GavinPanella 2011-10-28 bug=883274: Spurious failure in buildbot.
+    def disabled_test_clashingPOFileTranslatorEntries(self):
         # POFileTranslator is maintained by a trigger on
         # TranslationMessage.  Fiddling with TranslationTemplateItems
         # directly bypasses it, so the script must make sure that
@@ -872,7 +872,3 @@ class TestFindMergablePackagings(TestCaseWithFactory):
         self.factory.makePOTemplate(sourcepackage=packaging.sourcepackage)
         self.assertContentEqual(
             [], TranslationMerger.findMergeablePackagings())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

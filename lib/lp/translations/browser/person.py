@@ -19,6 +19,7 @@ from itertools import islice
 import urllib
 
 import pytz
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.interface import (
@@ -134,12 +135,24 @@ class ActivityDescriptor:
             "while listing activity for %s." % (
                 person.name, pofiletranslator.person.name))
 
-        self.date = pofiletranslator.date_last_touched
+        self._person = person
+        self._pofiletranslator = pofiletranslator
 
-        pofile = pofiletranslator.pofile
+    @cachedproperty
+    def date(self):
+        return self._pofiletranslator.date_last_touched
 
-        self.title = pofile.potemplate.translationtarget.title
-        self.url = compose_pofile_filter_url(pofile, person)
+    @cachedproperty
+    def _pofile(self):
+        return self._pofiletranslator.pofile
+
+    @cachedproperty
+    def title(self):
+        return self._pofile.potemplate.translationtarget.title
+
+    @cachedproperty
+    def url(self):
+        return compose_pofile_filter_url(self._pofile, self._person)
 
 
 def person_is_reviewer(person):
@@ -193,7 +206,10 @@ class PersonTranslationView(LaunchpadView):
     def __init__(self, *args, **kwargs):
         super(PersonTranslationView, self).__init__(*args, **kwargs)
         now = datetime.now(pytz.timezone('UTC'))
-        self.history_horizon = now - timedelta(90, 0, 0)
+        # Down-to-the-second detail isn't important so the hope is that this
+        # will result in faster queries (cache effects).
+        today = now.replace(minute=0, second=0, microsecond=0)
+        self.history_horizon = today - timedelta(90, 0, 0)
 
     @property
     def page_title(self):
@@ -282,21 +298,16 @@ class PersonTranslationView(LaunchpadView):
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
 
-    def _getTargetsForReview(self, max_fetch=None):
+    @cachedproperty
+    def _review_targets(self):
         """Query and aggregate the top targets for review.
 
-        :param max_fetch: Maximum number of `POFile`s to fetch while
-            looking for these.
-        :return: a list of at most `max_fetch` translation targets.
-            Multiple `POFile`s may be aggregated together into a single
-            target.
+        :return: a list of translation targets.  Multiple `POFile`s may be
+            aggregated together into a single target.
         """
         person = ITranslationsPerson(self.context)
         pofiles = person.getReviewableTranslationFiles(
             no_older_than=self.history_horizon)
-
-        if max_fetch is not None:
-            pofiles = pofiles[:max_fetch]
 
         return ReviewLinksAggregator().aggregate(pofiles)
 
@@ -344,7 +355,7 @@ class PersonTranslationView(LaunchpadView):
     @cachedproperty
     def all_projects_and_packages_to_review(self):
         """Top projects and packages for this person to review."""
-        return self._getTargetsForReview()
+        return self._review_targets
 
     def _addToTargetsList(self, existing_targets, new_targets, max_items,
                           max_overall):
@@ -390,10 +401,8 @@ class PersonTranslationView(LaunchpadView):
         list_length = 10
 
         # Start out with the translations that the person has recently
-        # worked on.  Aggregation may reduce the number we get, so ask
-        # the database for a few extra.
-        fetch = 5 * max_known_targets
-        recent = self._getTargetsForReview(fetch)
+        # worked on.
+        recent = self._review_targets
         overall = self._addToTargetsList(
             [], recent, max_known_targets, list_length)
 
@@ -440,6 +449,21 @@ class PersonTranslationView(LaunchpadView):
             overall, suggestions, list_length, list_length)
 
         return overall
+
+
+    to_complete_template = ViewPageTemplateFile(
+        '../templates/person-translations-to-complete-table.pt')
+
+    def translations_to_complete_table(self):
+        return self.to_complete_template(dict(view=self))
+
+
+    to_review_template = ViewPageTemplateFile(
+        '../templates/person-translations-to-review-table.pt')
+
+    def translations_to_review_table(self):
+        return self.to_review_template(dict(view=self))
+
 
 
 class PersonTranslationReviewView(PersonTranslationView):

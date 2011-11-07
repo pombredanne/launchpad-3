@@ -26,6 +26,8 @@ value_domain_info = sorted([
      'The flag value is set to the given floating point number.'),
     ('int',
      "An integer."),
+    ('space delimited',
+     'Space-delimited strings.')
     ])
 
 # Data for generating web-visible feature flag documentation.
@@ -38,9 +40,21 @@ value_domain_info = sorted([
 # NOTE: "default behaviour" does not specify a default value.  It
 # merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('baselayout.careers_link.disabled',
+     'boolean',
+     'Hide the link to the Canonical Careers site.',
+     ''),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
+     ''),
+    ('bugs.dynamic_bug_listings.enabled',
+     'boolean',
+     ('Enables the dynamic configuration of bug listings.'),
+     ''),
+    ('code.ajax_revision_diffs.enabled',
+     'boolean',
+     ("Offer expandable inline diffs for branch revisions."),
      ''),
     ('code.branchmergequeue',
      'boolean',
@@ -49,6 +63,10 @@ flag_info = sorted([
     ('code.incremental_diffs.enabled',
      'boolean',
      'Shows incremental diffs on merge proposals.',
+     ''),
+    ('code.simplified_branches_menu.enabled',
+     'boolean',
+     ('Display a simplified version of the branch menu (omit the counts).'),
      ''),
     ('hard_timeout',
      'float',
@@ -82,6 +100,10 @@ flag_info = sorted([
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
      ''),
+    ('soyuz.derived_series_upgrade.enabled',
+     'boolean',
+     'Enables mass-upgrade of packages on derivative distributions pages.',
+     ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',
      "Compute package differences for derived distributions.",
@@ -94,17 +116,55 @@ flag_info = sorted([
      'boolean',
      'Shows the server-side page render time in the login widget.',
      ''),
-    ('bugs.private_notification.enabled',
+    ('disclosure.dsp_picker.enabled',
      'boolean',
-     'Changes the appearance of notifications on private bugs.',
+     'Enables the use of the new DistributionSourcePackage vocabulary for '
+     'the source and binary package name pickers.',
      ''),
-    ('disclosure.picker_enhancements.enabled',
+    ('disclosure.private_bug_visibility_rules.enabled',
      'boolean',
-     ('Enables the display of extra details in the person picker.'),
+     ('Enables the application of additional privacy filter terms in bug '
+      'queries to allow defined project roles to see private bugs.'),
      ''),
-    ('disclosure.person_affiliation_rank.enabled',
+    ('disclosure.enhanced_private_bug_subscriptions.enabled',
      'boolean',
-     ('Enables ranking by pillar affiliation in the person picker.'),
+     ('Enables the auto subscribing and unsubscribing of users as a bug '
+      'transitions between public, private and security related states.'),
+     ''),
+    ('disclosure.delete_bugtask.enabled',
+     'boolean',
+     'Enables bugtasks to be deleted by authorised users.',
+     ''),
+    ('disclosure.allow_multipillar_private_bugs.enabled',
+     'boolean',
+     'Allows private bugs to have more than one bug task.',
+     ''),
+    ('bugs.autoconfirm.enabled_distribution_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for distributions (and their '
+      'series and packages).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all distributions.'),
+     'None are enabled'),
+    ('bugs.autoconfirm.enabled_product_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for products (and their '
+      'series).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all products.'),
+     'None are enabled'),
+    ('longpoll.merge_proposals.enabled',
+     'boolean',
+     ('Enables the longpoll mechanism for merge proposals so that diffs, '
+      'for example, are updated in-page when they are ready.'),
+     ''),
+    ('ajax.batch_navigator.enabled',
+     'boolean',
+     ('If true, batch navigators which have been wired to do so use ajax '
+     'calls to load the next batch of data.'),
+     ''),
+    ('disclosure.log_private_team_leaks.enabled',
+     'boolean',
+     ('Enables soft OOPSes for code that is mixing visibility rules, such '
+      'as disclosing private teams, so the data can be analyzed.'),
      ''),
     ])
 

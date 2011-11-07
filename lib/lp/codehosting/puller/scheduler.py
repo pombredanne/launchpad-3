@@ -39,7 +39,6 @@ from canonical.launchpad.webapp import errorlog
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.codehosting.puller.worker import get_canonical_url_for_branch_name
-from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout,
     )
@@ -286,8 +285,7 @@ class PullerMaster:
     protocol_class = PullerMonitorProtocol
 
     def __init__(self, branch_id, source_url, unique_name, branch_type_name,
-                 default_stacked_on_url, logger, client,
-                 available_oops_prefixes):
+                 default_stacked_on_url, logger, client):
         """Construct a PullerMaster object.
 
         :param branch_id: The database ID of the branch to be mirrored.
@@ -302,10 +300,6 @@ class PullerMaster:
         :param logger: A Python logging object.
         :param client: An asynchronous client for the branch status XML-RPC
             service.
-        :param available_oops_prefixes: A set of OOPS prefixes to pass out to
-            worker processes. The purpose is to ensure that there are no
-            collisions in OOPS prefixes between currently-running worker
-            processes.
         """
         self.branch_id = branch_id
         self.source_url = source_url.strip()
@@ -315,25 +309,6 @@ class PullerMaster:
         self.default_stacked_on_url = default_stacked_on_url
         self.logger = logger
         self.codehosting_endpoint = client
-        self._available_oops_prefixes = available_oops_prefixes
-
-    @cachedproperty
-    def oops_prefix(self):
-        """Allocate and return an OOPS prefix for the worker process."""
-        try:
-            return self._available_oops_prefixes.pop()
-        except KeyError:
-            self.unexpectedError(failure.Failure())
-            raise
-
-    def releaseOopsPrefix(self, pass_through=None):
-        """Release the OOPS prefix allocated to this worker.
-
-        :param pass_through: An unused parameter that is returned unmodified.
-            Useful for adding this method as a Twisted callback / errback.
-        """
-        self._available_oops_prefixes.add(self.oops_prefix)
-        return pass_through
 
     def mirror(self):
         """Spawn a worker process to mirror a branch."""
@@ -343,7 +318,7 @@ class PullerMaster:
         command = [
             interpreter, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), str(self.unique_name),
-            self.branch_type_name, self.oops_prefix,
+            self.branch_type_name,
             self.default_stacked_on_url]
         self.logger.debug("executing %s", command)
         env = os.environ.copy()
@@ -362,7 +337,6 @@ class PullerMaster:
         """
         deferred = self.mirror()
         deferred.addErrback(self.unexpectedError)
-        deferred.addBoth(self.releaseOopsPrefix)
         return deferred
 
     def startMirroring(self):
@@ -394,7 +368,7 @@ class PullerMaster:
     def log(self, message):
         self.logger.info('From worker: %s', message)
 
-    def unexpectedError(self, failure, now=None):
+    def unexpectedError(self, failure):
         request = errorlog.ScriptRequest([
             ('branch_id', self.branch_id),
             ('source', self.source_url),
@@ -410,8 +384,7 @@ class PullerMaster:
         if tb is None:
             tb = failure.getTraceback()
         errorlog.globalErrorUtility.raising(
-            (failure.type, failure.value, tb), request,
-            now)
+            (failure.type, failure.value, tb), request)
         self.logger.info('Recorded %s', request.oopsid)
 
 
@@ -430,17 +403,6 @@ class JobScheduler:
         self.name = 'branch-puller'
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
 
-    @cachedproperty
-    def available_oops_prefixes(self):
-        """Generate and return a set of OOPS prefixes for worker processes.
-
-        This set will contain at most config.supermirror.maximum_workers
-        elements. It's expected that the contents of the set will be modified
-        by `PullerMaster` objects.
-        """
-        return set(
-            [str(i) for i in range(config.supermirror.maximum_workers)])
-
     def _turnJobTupleIntoTask(self, job_tuple):
         """Turn the return value of `acquireBranchToPull` into a job.
 
@@ -456,7 +418,7 @@ class JobScheduler:
         master = PullerMaster(
             branch_id, pull_url, unique_name, branch_type_name,
             default_stacked_on_url, self.logger,
-            self.codehosting_endpoint, self.available_oops_prefixes)
+            self.codehosting_endpoint)
         return master.run
 
     def _poll(self):
@@ -507,4 +469,3 @@ class LockError(StandardError):
 
     def __str__(self):
         return 'Jobmanager unable to get master lock: %s' % self.lockfilename
-

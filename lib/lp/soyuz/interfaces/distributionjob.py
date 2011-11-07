@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -25,6 +25,7 @@ from zope.interface import (
 from zope.schema import (
     Int,
     Object,
+    Text,
     )
 
 from canonical.launchpad import _
@@ -117,26 +118,41 @@ class IInitializeDistroSeriesJobSource(IJobSource):
 class IInitializeDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
 
+    error_description = Text(
+        title=_("Error description"),
+        description=_(
+            "A short description of the last error this "
+            "job encountered, if any."),
+        readonly=True,
+        required=False)
+
 
 class IDistroSeriesDifferenceJobSource(IJobSource):
     """An `IJob` for creating `DistroSeriesDifference`s."""
 
-    def createForPackagePublication(derivedseries, sourcepackagename, pocket,
-                                    parent_series=None):
-        """Create jobs as appropriate for a given status publication.
+    def createForPackagePublication(derivedseries, sourcepackagename, pocket):
+        """Create jobs as appropriate for a given package publication.
 
         :param derived_series: A `DistroSeries` that is assumed to be
             derived from `parent_series`.
         :param sourcepackagename: A `SourcePackageName` that is being
             published in `derived_series` or `parent_series`.
         :param pocket: The `PackagePublishingPocket` for the publication.
-        :param parent_series: The parent `DistroSeries` whose version of
-            `sourcepackagename` is to be compared with that in
-            `derived_series`.
         :return: An iterable of `DistroSeriesDifferenceJob`.
         """
-        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-        # mandatory as part of multi-parent support.
+
+    def createForSPPHs(spphs):
+        """Create jobs for given `SourcePackagePublishingHistory`s."""
+
+    def massCreateForSeries(derived_series):
+        """Create jobs for all the publications inside the given distroseries
+            with reference to the given parent series.
+
+        :param derived_series: A `DistroSeries` that is assumed to be
+            derived from `parent_series`.
+        :return: An iterable of `DistroSeriesDifferenceJob` ids. We don't
+            return the Job themselves for performance reason.
+        """
 
     def getPendingJobsForDifferences(derived_series, distroseriesdifferences):
         """Find `DistroSeriesDifferenceJob`s for `DistroSeriesDifference`s.

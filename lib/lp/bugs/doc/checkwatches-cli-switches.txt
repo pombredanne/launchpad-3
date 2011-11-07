@@ -1,12 +1,12 @@
-= Updating selected bug trackers =
+Updating selected bug trackers
+==============================
 
 The CheckwatchesMaster class can be instructed to update only a subset of
 bugtrackers. This is acheived by passing a list of bug tracker names to
 the updateBugTrackers() method.
 
     >>> import transaction
-    >>> from canonical.database.sqlbase import (
-    ...     cursor, sqlvalues, ZopelessTransactionManager)
+    >>> from canonical.database.sqlbase import cursor, sqlvalues
     >>> from canonical.database.constants import UTC_NOW
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
@@ -19,8 +19,7 @@ external connections.
     ...     sqlvalues(UTC_NOW))
     >>> transaction.commit()
 
-    >>> transactionmgr = ZopelessTransactionManager._installed
-    >>> updater = CheckwatchesMaster(transactionmgr, logger=FakeLogger())
+    >>> updater = CheckwatchesMaster(transaction, logger=FakeLogger())
 
     >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
     DEBUG...No watches to update on http://bugs.debian.org
@@ -52,7 +51,7 @@ line.
     ...     def __init__(self, name, dbuser=None, test_args=None):
     ...         super(TestCheckWatchesCronScript, self).__init__(
     ...             name, dbuser, test_args)
-    ...         self.txn = ZopelessTransactionManager
+    ...         self.txn = transaction
     ...
     ...     def handle_options(self):
     ...         self.logger = FakeLogger()
@@ -107,7 +106,8 @@ demonstrate this.
     DEBUG Enabled by DEFAULT section
     INFO Resetting 5 bug watches for bug tracker 'savannah'
     INFO Updating 5 watches on bug tracker 'savannah'
-    INFO 'Unsupported Bugtracker' error updating http://savannah.gnu.org/: SAVANE
+    INFO 'Unsupported Bugtracker' error updating http://savannah.gnu.org/:
+    SAVANE
     INFO 0 watches left to check on bug tracker 'savannah'
     INFO Time for this run...
 

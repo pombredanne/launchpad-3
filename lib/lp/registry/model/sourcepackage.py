@@ -13,6 +13,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.utils import smartquote
 from storm.locals import (
     And,
     Desc,
@@ -30,7 +31,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.lazr.utils import smartquote
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (
@@ -38,7 +38,10 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugHeat,
+    ISeriesBugTarget,
+    )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import (
@@ -185,6 +188,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             self.distribution.answer_contacts_with_languages)
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
+    @property
+    def owner(self):
+        return self.distribution.owner
+
 
 class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
@@ -197,7 +204,8 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     """
 
     implements(
-        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords)
+        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords,
+        ISeriesBugTarget)
 
     classProvides(ISourcePackageFactory)
 
@@ -324,6 +332,11 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     def bugtargetname(self):
         """See `IBugTarget`."""
         return "%s (%s)" % (self.name, self.distroseries.fullseriesname)
+
+    @property
+    def bugtarget_parent(self):
+        """See `ISeriesBugTarget`."""
+        return self.distribution_sourcepackage
 
     @property
     def title(self):
@@ -528,6 +541,11 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             "distribution series source package in the not-too-distant "
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not series-specific) source package.")
+
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.distroseries.distribution
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
@@ -741,6 +759,14 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             SeriesSourcePackageBranchSet.new(
                 self.distroseries, pocket, self.sourcepackagename, branch,
                 registrant)
+            # Avoid circular imports.
+            from lp.registry.model.distributionsourcepackage import (
+                DistributionSourcePackage,
+                )
+            DistributionSourcePackage.ensure(sourcepackage=self)
+        else:
+            # Delete the official DSP if there is no publishing history.
+            self.distribution_sourcepackage.delete()
 
     @property
     def linked_branches(self):

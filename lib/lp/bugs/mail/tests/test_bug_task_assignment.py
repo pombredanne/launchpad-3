@@ -3,8 +3,6 @@
 
 """Tests for Bug task assignment-related email tests."""
 
-from unittest import TestLoader
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import transaction
@@ -67,6 +65,23 @@ class TestAssignmentNotification(TestCaseWithFactory):
         self.assertTrue(rationale in msg,
                         '%s not in\n%s\n' % (rationale, msg))
 
+    def test_self_assignee_notification_message(self):
+        """Test notification string when a person is assigned a task by
+           themselves."""
+        stub.test_emails = []
+        self.bug_task.transitionToAssignee(self.user)
+        notify(ObjectModifiedEvent(
+            self.bug_task, self.bug_task_before_modification,
+            edited_fields=['assignee']))
+        transaction.commit()
+        self.assertEqual(1, len(stub.test_emails))
+        rationale = (
+            'You have assigned this bug to yourself for Rebirth')
+        [email] = stub.test_emails
+        # Actual message is part 2 of the e-mail.
+        msg = email[2]
+        self.assertIn(rationale, msg)
+
     def test_assignee_not_a_subscriber(self):
         """Test that a new recipient being assigned a bug task does send
            a NEW message."""
@@ -114,7 +129,3 @@ class TestAssignmentNotification(TestCaseWithFactory):
         receivers = [message['To'] for message in messages]
         self.assertFalse(self.team_member_email in receivers,
             'Team member was emailed about the bug task change')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We like global!
@@ -44,11 +44,13 @@ __all__ = [
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
     'YUITestLayer',
+    'YUIAppServerLayer',
     'ZopelessAppServerLayer',
     'ZopelessDatabaseLayer',
     'ZopelessLayer',
     'disconnect_stores',
     'reconnect_stores',
+    'wsgi_application',
     ]
 
 from cProfile import Profile
@@ -61,6 +63,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 from textwrap import dedent
 import threading
 import time
@@ -92,8 +95,10 @@ from zope.component import (
     )
 from zope.component.interfaces import ComponentLookupError
 import zope.publisher.publish
-from zope.security.management import getSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
+from zope.security.management import (
+    endInteraction,
+    getSecurityPolicy,
+    )
 from zope.server.logger.pythonlogger import PythonLogger
 
 from canonical.config import (
@@ -105,17 +110,11 @@ from canonical.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from canonical.database.revision import (
-    confirm_dbrevision,
-    confirm_dbrevision_on_startup,
-    )
-from canonical.database.sqlbase import (
-    cursor,
-    session_store,
-    ZopelessTransactionManager,
-    )
-from canonical.launchpad.interfaces.mailbox import IMailBox
+from canonical.database.sqlbase import session_store
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.webapp.authorization import (
+    LaunchpadPermissiveSecurityPolicy,
+    )
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IOpenLaunchBag,
@@ -134,24 +133,27 @@ from canonical.lazr.timeout import (
     set_default_timeout_function,
     )
 from canonical.librarian.testing.server import LibrarianServerFixture
-from canonical.lp import initZopeless
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
-from lp.services.mail.mailbox import TestMailBox
+from lp.services.mail.mailbox import (
+    IMailBox,
+    TestMailBox,
+    )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
+from lp.services.rabbit.server import RabbitServer
 from lp.testing import (
     ANONYMOUS,
-    is_logged_in,
     login,
     logout,
     )
-from lp.testing.fixture import RabbitServer
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.pgsql import PgTestSetup
 
 
@@ -213,20 +215,21 @@ def disconnect_stores():
             store.close()
 
 
-def reconnect_stores(database_config_section='launchpad'):
+def reconnect_stores(database_config_section=None):
     """Reconnect Storm stores, resetting the dbconfig to its defaults.
 
     After reconnecting, the database revision will be checked to make
     sure the right data is available.
     """
     disconnect_stores()
-    dbconfig.setConfigSection(database_config_section)
+    if database_config_section:
+        section = getattr(config, database_config_section)
+        dbconfig.override(
+            dbuser=getattr(section, 'dbuser', None),
+            isolation_level=getattr(section, 'isolation_level', None))
 
     main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
-
-    # Confirm the database has the right patchlevel
-    confirm_dbrevision(cursor())
 
     # Confirm that SQLOS is again talking to the database (it connects
     # as soon as SQLBase._connection is accessed
@@ -487,13 +490,6 @@ class BaseLayer:
                 "Component architecture should not be loaded by tests. "
                 "This should only be loaded by the Layer.")
 
-        # Detect a test that installed the Zopeless database adapter
-        # but failed to unregister it. This could be done automatically,
-        # but it is better for the tear down to be explicit.
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerIsolationError(
-                "Zopeless environment was setup and not torn down.")
-
         # Detect a test that forgot to reset the default socket timeout.
         # This safety belt is cheap and protects us from very nasty
         # intermittent test failures: see bug #140068 for an example.
@@ -606,8 +602,13 @@ class MemcachedLayer(BaseLayer):
             ]
         if config.memcached.verbose:
             cmd.append('-vv')
+            stdout = sys.stdout
+            stderr = sys.stderr
+        else:
+            stdout = tempfile.NamedTemporaryFile()
+            stderr = tempfile.NamedTemporaryFile()
         MemcachedLayer._memcached_process = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE)
+            cmd, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr)
         MemcachedLayer._memcached_process.stdin.close()
 
         # Wait for the memcached to become operational.
@@ -756,8 +757,9 @@ class DatabaseLayer(BaseLayer):
         cls.force_dirty_database()
         cls._db_fixture.tearDown()
         cls._db_fixture = None
-        cls._db_template_fixture.tearDown()
-        cls._db_template_fixture = None
+        if os.environ.get('LP_TEST_INSTANCE'):
+            cls._db_template_fixture.tearDown()
+            cls._db_template_fixture = None
 
     @classmethod
     @profiled
@@ -913,9 +915,7 @@ class LibrarianLayer(DatabaseLayer):
     @classmethod
     @profiled
     def _check_and_reset(cls):
-        """Raise an exception if the Librarian has been killed.
-        Reset the storage unless this has been disabled.
-        """
+        """Raise an exception if the Librarian has been killed, else reset."""
         try:
             f = urlopen(config.librarian.download_url)
             f.read()
@@ -926,7 +926,8 @@ class LibrarianLayer(DatabaseLayer):
                     "LibrarianLayer.reveal() where possible, and ensure "
                     "the Librarian is restarted if it absolutely must be "
                     "shutdown: " + str(e))
-        cls.librarian_fixture.clear()
+        else:
+            cls.librarian_fixture.reset()
 
     @classmethod
     @profiled
@@ -1210,9 +1211,10 @@ class ZopelessLayer(BaseLayer):
         # This should not happen here, it should be caught by the
         # testTearDown() method. If it does, something very nasty
         # happened.
-        if getSecurityPolicy() != PermissiveSecurityPolicy:
+        if getSecurityPolicy() != LaunchpadPermissiveSecurityPolicy:
             raise LayerInvariantError(
-                "Previous test removed the PermissiveSecurityPolicy.")
+                "Previous test removed the LaunchpadPermissiveSecurityPolicy."
+                )
 
         # execute_zcml_for_scripts() sets up an interaction for the
         # anonymous user. A previous script may have changed or removed
@@ -1229,10 +1231,10 @@ class ZopelessLayer(BaseLayer):
                 "Component architecture not loaded or totally screwed")
         # Make sure that a test that changed the security policy, reset it
         # back to its default value.
-        if getSecurityPolicy() != PermissiveSecurityPolicy:
+        if getSecurityPolicy() != LaunchpadPermissiveSecurityPolicy:
             raise LayerInvariantError(
-                "This test removed the PermissiveSecurityPolicy and didn't "
-                "restore it.")
+                "This test removed the LaunchpadPermissiveSecurityPolicy and "
+                "didn't restore it.")
         logout()
 
 
@@ -1351,16 +1353,14 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
     @profiled
     def testSetUp(cls):
         # Connect Storm
-        reconnect_stores()
+        reconnect_stores('launchpad')
 
     @classmethod
     @profiled
     def testTearDown(cls):
         getUtility(IOpenLaunchBag).clear()
 
-        # If tests forget to logout, we can do it for them.
-        if is_logged_in():
-            logout()
+        endInteraction()
 
         # Disconnect Storm so it doesn't get in the way of database resets
         disconnect_stores()
@@ -1382,16 +1382,14 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         OpStats.resetStats()
 
         # Connect Storm
-        reconnect_stores()
+        reconnect_stores('launchpad')
 
     @classmethod
     @profiled
     def testTearDown(cls):
         getUtility(IOpenLaunchBag).clear()
 
-        # If tests forget to logout, we can do it for them.
-        if is_logged_in():
-            logout()
+        endInteraction()
 
         # Reset any statistics
         from canonical.launchpad.webapp.opstats import OpStats
@@ -1449,17 +1447,12 @@ class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
     def testSetUp(cls):
         # LaunchpadZopelessLayer takes care of reconnecting the stores
         if not LaunchpadZopelessLayer.isSetUp:
-            reconnect_stores()
+            reconnect_stores('launchpad')
 
     @classmethod
     @profiled
     def testTearDown(cls):
         disconnect_stores()
-
-    @classmethod
-    @profiled
-    def switchDbConfig(cls, database_config_section):
-        reconnect_stores(database_config_section=database_config_section)
 
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
@@ -1487,22 +1480,18 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def testSetUp(cls):
         # LaunchpadZopelessLayer takes care of reconnecting the stores
         if not LaunchpadZopelessLayer.isSetUp:
-            reconnect_stores()
+            reconnect_stores('launchpad')
 
     @classmethod
     @profiled
     def testTearDown(cls):
         disconnect_stores()
 
-    @classmethod
-    @profiled
-    def switchDbConfig(cls, database_config_section):
-        reconnect_stores(database_config_section=database_config_section)
-
 
 class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbuser = 'launchpad'
+    host = 'localhost'
 
 
 class LaunchpadZopelessLayer(LaunchpadScriptLayer):
@@ -1511,7 +1500,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     """
 
     isSetUp = False
-    txn = ZopelessTransactionManager
+    txn = transaction
 
     @classmethod
     @profiled
@@ -1526,10 +1515,11 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerIsolationError(
-                "Last test using Zopeless failed to tearDown correctly")
-        initZopeless()
+        dbconfig.override(isolation_level='read_committed')
+        # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+        # Tests that still need it should eventually set this directly,
+        # so the whole layer is not polluted.
+        set_immediate_mail_delivery(True)
 
         # Connect Storm
         reconnect_stores()
@@ -1537,11 +1527,13 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        ZopelessTransactionManager.uninstall()
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerInvariantError(
-                "Failed to uninstall ZopelessTransactionManager")
+        dbconfig.reset()
         # LaunchpadScriptLayer will disconnect the stores for us.
+
+        # XXX wgrant 2011-09-24 bug=29744: uninstall used to do this.
+        # Tests that still need immediate delivery should eventually do
+        # this directly.
+        set_immediate_mail_delivery(False)
 
     @classmethod
     @profiled
@@ -1556,16 +1548,8 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @classmethod
     @profiled
     def switchDbUser(cls, dbuser):
-        LaunchpadZopelessLayer.alterConnection(dbuser=dbuser)
-
-    @classmethod
-    @profiled
-    def alterConnection(cls, **kw):
-        """Reset the connection, and reopen the connection by calling
-        initZopeless with the given keyword arguments.
-        """
-        ZopelessTransactionManager.uninstall()
-        initZopeless(**kw)
+        # DEPRECATED: use switch_dbuser directly.
+        switch_dbuser(dbuser)
 
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
@@ -1746,14 +1730,14 @@ class LayerProcessController:
     smtp_controller = None
 
     @classmethod
-    def _setConfig(cls):
+    def setConfig(cls):
         """Stash a config for use."""
         cls.appserver_config = CanonicalConfig(
             BaseLayer.appserver_config_name, 'runlaunchpad')
 
     @classmethod
     def setUp(cls):
-        cls._setConfig()
+        cls.setConfig()
         cls.startSMTPServer()
         cls.startAppServer()
 
@@ -1779,12 +1763,12 @@ class LayerProcessController:
 
     @classmethod
     @profiled
-    def startAppServer(cls):
+    def startAppServer(cls, run_name='run'):
         """Start the app server if it hasn't already been started."""
         if cls.appserver is not None:
             raise LayerInvariantError('App server already running')
         cls._cleanUpStaleAppServer()
-        cls._runAppServer()
+        cls._runAppServer(run_name)
         cls._waitUntilAppServerIsReady()
 
     @classmethod
@@ -1876,15 +1860,11 @@ class LayerProcessController:
             pidfile.remove_pidfile('launchpad', cls.appserver_config)
 
     @classmethod
-    def _runAppServer(cls):
+    def _runAppServer(cls, run_name):
         """Start the app server using runlaunchpad.py"""
-        # The app server will not start at all if the database hasn't been
-        # correctly patched. The app server will make exactly this check,
-        # doing it here makes the error more obvious.
-        confirm_dbrevision_on_startup()
         _config = cls.appserver_config
         cmd = [
-            os.path.join(_config.root, 'bin', 'run'),
+            os.path.join(_config.root, 'bin', run_name),
             '-C', 'configs/%s/launchpad.conf' % _config.instance_name]
         environ = dict(os.environ)
         environ['LPCONFIG'] = _config.instance_name
@@ -1893,10 +1873,14 @@ class LayerProcessController:
             env=environ, cwd=_config.root)
 
     @classmethod
+    def appserver_root_url(cls):
+        return cls.appserver_config.vhost.mainsite.rooturl
+
+    @classmethod
     def _waitUntilAppServerIsReady(cls):
         """Wait until the app server accepts connection."""
         assert cls.appserver is not None, "App server isn't started."
-        root_url = cls.appserver_config.vhost.mainsite.rooturl
+        root_url = cls.appserver_root_url()
         until = datetime.datetime.now() + WAIT_INTERVAL
         while until > datetime.datetime.now():
             try:
@@ -2006,4 +1990,24 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
 
 
 class YUITestLayer(FunctionalLayer):
-    """The base class for all YUITests cases."""
+    """The layer for all YUITests cases."""
+
+
+class YUIAppServerLayer(MemcachedLayer):
+    """The layer for all YUIAppServer test cases."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        LayerProcessController.setConfig()
+        LayerProcessController.startAppServer('run-testapp')
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        LayerProcessController.stopAppServer()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        LaunchpadLayer.resetSessionDb()

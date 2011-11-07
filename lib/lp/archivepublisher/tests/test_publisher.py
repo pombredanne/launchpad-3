@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -9,12 +9,14 @@ __metaclass__ = type
 import bz2
 import crypt
 import gzip
+import hashlib
 import os
 import shutil
 import stat
 import tempfile
 from textwrap import dedent
 
+from debian.deb822 import Release
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -23,7 +25,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.testing.keyserver import KeyServerTac
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.interfaces.archivesigningkey import (
@@ -31,8 +33,10 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
     )
 from lp.archivepublisher.publishing import (
     getPublisher,
+    I18nIndex,
     Publisher,
     )
+from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
@@ -40,16 +44,21 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
+from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
+from lp.testing import TestCaseWithFactory
+from lp.testing.keyserver import KeyServerTac
 
 
 RELEASE = PackagePublishingPocket.RELEASE
@@ -81,6 +90,27 @@ class TestPublisher(TestPublisherBase):
                     dirty_pockets]
         self.assertEqual(expected, contents)
 
+    def assertReleaseContentsMatch(self, release, filename, contents):
+        for hash_name, hash_func in (
+            ('md5sum', hashlib.md5),
+            ('sha1', hashlib.sha1),
+            ('sha256', hashlib.sha256)):
+            self.assertTrue(hash_name in release)
+            entries = [entry for entry in release[hash_name]
+                       if entry['name'] == filename]
+            self.assertEqual(1, len(entries))
+            self.assertEqual(hash_func(contents).hexdigest(),
+                             entries[0][hash_name])
+            self.assertEqual(str(len(contents)), entries[0]['size'])
+
+    def parseRelease(self, release_path):
+        with open(release_path) as release_file:
+            return Release(release_file)
+
+    def parseI18nIndex(self, i18n_index_path):
+        with open(i18n_index_path) as i18n_index_file:
+            return I18nIndex(i18n_index_file)
+
     def testInstantiate(self):
         """Publisher should be instantiatable"""
         Publisher(self.logger, self.config, self.disk_pool,
@@ -103,11 +133,12 @@ class TestPublisher(TestPublisherBase):
         pub_source.sync()
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_source.status)
 
         # file got published
         foo_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
-        self.assertEqual(open(foo_path).read().strip(), 'Hello world')
+        with open(foo_path) as foo_file:
+            self.assertEqual('Hello world', foo_file.read().strip())
 
     def testDeletingPPA(self):
         """Test deleting a PPA"""
@@ -132,8 +163,8 @@ class TestPublisher(TestPublisherBase):
             test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
         self.assertFalse(os.path.exists(publisher._config.metaroot))
-        self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
-        self.assertEqual(test_archive.publish, False)
+        self.assertEqual(ArchiveStatus.DELETED, test_archive.status)
+        self.assertEqual(False, test_archive.publish)
 
         # Trying to delete it again won't fail, in the corner case where
         # some admin manually deleted the repo.
@@ -144,7 +175,8 @@ class TestPublisher(TestPublisherBase):
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
-        publisher = getPublisher(test_archive, None, self.logger)
+        logger = BufferLogger()
+        publisher = getPublisher(test_archive, None, logger)
 
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
 
@@ -157,6 +189,8 @@ class TestPublisher(TestPublisherBase):
             publisher._config.distroroot, test_archive.owner.name,
             test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
+        self.assertNotIn('WARNING', logger.getLogBuffer())
+        self.assertNotIn('ERROR', logger.getLogBuffer())
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
@@ -172,25 +206,28 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
 
         # Did the file get published in the right place?
-        self.assertEqual(pub_config.poolroot,
-            "/var/tmp/archive/ubuntutest-partner/pool")
+        self.assertEqual(
+            "/var/tmp/archive/ubuntutest-partner/pool", pub_config.poolroot)
         foo_path = "%s/main/f/foo/foo_666.dsc" % pub_config.poolroot
-        self.assertEqual(open(foo_path).read().strip(), "I am partner")
+        with open(foo_path) as foo_file:
+            self.assertEqual("I am partner", foo_file.read().strip())
 
         # Check that the index is in the right place.
         publisher.C_writeIndexes(False)
-        self.assertEqual(pub_config.distsroot,
-            "/var/tmp/archive/ubuntutest-partner/dists")
+        self.assertEqual(
+            "/var/tmp/archive/ubuntutest-partner/dists", pub_config.distsroot)
         index_path = os.path.join(
             pub_config.distsroot, 'breezy-autotest', 'partner', 'source',
             'Sources.gz')
-        self.assertTrue(open(index_path))
+        with open(index_path) as index_file:
+            self.assertTrue(index_file)
 
         # Check the release file is in the right place.
         publisher.D_writeReleaseFiles(False)
-        release_file = os.path.join(
+        release_path = os.path.join(
             pub_config.distsroot, 'breezy-autotest', 'Release')
-        self.assertTrue(open(release_file))
+        with open(release_path) as release_file:
+            self.assertTrue(release_file)
 
     def testPartnerReleasePocketPublishing(self):
         """Test partner package RELEASE pocket publishing.
@@ -216,7 +253,8 @@ class TestPublisher(TestPublisherBase):
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         # The file was published:
         foo_path = "%s/main/f/foo/foo_666.dsc" % pub_config.poolroot
-        self.assertEqual(open(foo_path).read().strip(), 'I am partner')
+        with open(foo_path) as foo_file:
+            self.assertEqual('I am partner', foo_file.read().strip())
 
         # Nothing to test from these two calls other than that they don't blow
         # up as there is an assertion in the code to make sure it's not
@@ -247,9 +285,9 @@ class TestPublisher(TestPublisherBase):
         pub_source2.sync()
         self.assertDirtyPocketsContents(
             [('hoary-test', 'RELEASE')], publisher.dirty_pockets)
-        self.assertEqual(pub_source2.status,
-            PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(
+            PackagePublishingStatus.PUBLISHED, pub_source2.status)
+        self.assertEqual(PackagePublishingStatus.PENDING, pub_source.status)
 
     def testPublishingSpecificPocket(self):
         """Test the publishing procedure with the suite argument.
@@ -280,8 +318,8 @@ class TestPublisher(TestPublisherBase):
         pub_source2.sync()
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'UPDATES')], publisher.dirty_pockets)
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(pub_source2.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_source.status)
+        self.assertEqual(PackagePublishingStatus.PENDING, pub_source2.status)
 
     def testNonCarefulPublishing(self):
         """Test the non-careful publishing procedure.
@@ -324,7 +362,8 @@ class TestPublisher(TestPublisherBase):
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         # file got published
         foo_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
-        self.assertEqual(open(foo_path).read().strip(), 'Hello world')
+        with open(foo_path) as foo_file:
+            self.assertEqual('Hello world', foo_file.read().strip())
 
     def testPublishingOnlyConsidersOneArchive(self):
         """Publisher procedure should only consider the target archive.
@@ -348,11 +387,11 @@ class TestPublisher(TestPublisherBase):
         self.layer.txn.commit()
 
         self.assertDirtyPocketsContents([], publisher.dirty_pockets)
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(PackagePublishingStatus.PENDING, pub_source.status)
 
         # nothing got published
         foo_path = "%s/main/f/foo/foo_1.dsc" % self.pool_dir
-        self.assertEqual(os.path.exists(foo_path), False)
+        self.assertEqual(False, os.path.exists(foo_path))
 
     def testPublishingWorksForOtherArchives(self):
         """Publisher also works as expected for another archives."""
@@ -380,13 +419,14 @@ class TestPublisher(TestPublisherBase):
         pub_source.sync()
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_source.status)
 
         # nothing got published
         foo_path = "%s/main/f/foo/foo_1.dsc" % test_pool_dir
-        self.assertEqual(
-            open(foo_path).read().strip(),
-            'I am supposed to be a embargoed archive', )
+        with open(foo_path) as foo_file:
+            self.assertEqual(
+                'I am supposed to be a embargoed archive',
+                foo_file.read().strip())
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
@@ -516,11 +556,10 @@ class TestPublisher(TestPublisherBase):
             raise AssertionError(
                 'Unsupported compression: %s' % compressed_file_path)
 
-        index_file = open(index_path, 'r')
-        index_contents = index_file.read().splitlines()
-        index_file.close()
+        with open(index_path, 'r') as index_file:
+            index_contents = index_file.read().splitlines()
 
-        self.assertEqual(index_compressed_contents, index_contents)
+        self.assertEqual(index_contents, index_compressed_contents)
 
         return index_contents
 
@@ -654,7 +693,7 @@ class TestPublisher(TestPublisherBase):
     def checkDirtyPockets(self, publisher, expected):
         """Check dirty_pockets contents of a given publisher."""
         sorted_dirty_pockets = sorted(list(publisher.dirty_pockets))
-        self.assertEqual(sorted_dirty_pockets, expected)
+        self.assertEqual(expected, sorted_dirty_pockets)
 
     def testDirtyingPocketsWithDeletedPackages(self):
         """Test that dirtying pockets with deleted packages works.
@@ -766,14 +805,6 @@ class TestPublisher(TestPublisherBase):
         # are marked as dirty.
         self.checkDirtyPockets(publisher, expected=allowed_suites)
 
-    def _getReleaseFileOrigin(self, contents):
-        origin_header = 'Origin: '
-        [origin_line] = [
-            line for line in contents.splitlines()
-            if line.startswith(origin_header)]
-        origin = origin_line.replace(origin_header, '')
-        return origin
-
     def testReleaseFile(self):
         """Test release file writing.
 
@@ -789,62 +820,33 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
 
-        self.assertTrue(
-            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+        self.assertIn(
+            ('breezy-autotest', PackagePublishingPocket.RELEASE),
             publisher.release_files_needed)
 
         publisher.D_writeReleaseFiles(False)
 
-        release_file = os.path.join(
-            self.config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read()
+        release = self.parseRelease(os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'Release'))
 
         # Primary archive distroseries Release 'Origin' contains
         # the distribution displayname.
-        self.assertEqual(
-            self._getReleaseFileOrigin(release_contents), 'ubuntutest')
-
-        # XXX cprov 20090427: we should write a Release file parsing for
-        # making tests less cryptic.
-        release_contents = release_contents.splitlines()
-        md5_header = 'MD5Sum:'
-        self.assertTrue(md5_header in release_contents)
-        md5_header_index = release_contents.index(md5_header)
-        first_md5_line = release_contents[md5_header_index + 17]
-        self.assertEqual(
-            first_md5_line,
-            (' a5e5742a193740f17705c998206e18b6              '
-             '114 main/source/Release'))
-
-        sha1_header = 'SHA1:'
-        self.assertTrue(sha1_header in release_contents)
-        sha1_header_index = release_contents.index(sha1_header)
-        first_sha1_line = release_contents[sha1_header_index + 17]
-        self.assertEqual(
-            first_sha1_line,
-            (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
-             '114 main/source/Release'))
-
-        sha256_header = 'SHA256:'
-        self.assertTrue(sha256_header in release_contents)
-        sha256_header_index = release_contents.index(sha256_header)
-        first_sha256_line = release_contents[sha256_header_index + 17]
-        self.assertEqual(
-            first_sha256_line,
-            (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
-             '8d106a6338              114 main/source/Release'))
+        self.assertEqual('ubuntutest', release['origin'])
 
         # The Label: field should be set to the archive displayname
-        self.assertEqual(release_contents[1], 'Label: ubuntutest')
+        self.assertEqual('ubuntutest', release['label'])
 
-        # Primary archive architecture Release files 'Origin' contain
-        # the distribution displayname.
-        arch_release_file = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest',
-            'main/source/Release')
-        arch_release_contents = open(arch_release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(arch_release_contents), 'ubuntutest')
+        arch_release_path = os.path.join(
+            self.config.distsroot, 'breezy-autotest',
+            'main', 'source', 'Release')
+        with open(arch_release_path) as arch_release_file:
+            self.assertReleaseContentsMatch(
+                release, 'main/source/Release', arch_release_file.read())
+
+        # Primary archive architecture Release files 'Origin' contain the
+        # distribution displayname.
+        arch_release = self.parseRelease(arch_release_path)
+        self.assertEqual('ubuntutest', arch_release['origin'])
 
     def testReleaseFileForPPA(self):
         """Test release file writing for PPA
@@ -877,86 +879,31 @@ class TestPublisher(TestPublisherBase):
         archive_publisher.C_writeIndexes(False)
         archive_publisher.D_writeReleaseFiles(False)
 
-        release_file = os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(release_contents), 'LP-PPA-cprov')
-
-        # XXX cprov 2009-04-27 bug=440014: Use a generic parser.
-        release_contents = release_contents.splitlines()
-        md5_header = 'MD5Sum:'
-        self.assertTrue(md5_header in release_contents)
-        md5_header_index = release_contents.index(md5_header)
-
-        plain_sources_md5_line = release_contents[md5_header_index + 16]
-        self.assertEqual(
-            plain_sources_md5_line,
-            (' 7d9b0817f5ff4a1d3f53f97bcc9c7658              '
-             '229 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 15]
-        self.assertEqual(
-            release_md5_line,
-            (' eadc1fbb1a878a2ee6dc66d7cd8d46dc              '
-            '130 main/source/Release'))
-        # We can't probe checksums of compressed files because they contain
-        # timestamps, their checksum varies with time.
-        bz2_sources_md5_line = release_contents[md5_header_index + 17]
-        self.assertTrue('main/source/Sources.bz2' in bz2_sources_md5_line)
-        gz_sources_md5_line = release_contents[md5_header_index + 18]
-        self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
-
-        sha1_header = 'SHA1:'
-        self.assertTrue(sha1_header in release_contents)
-        sha1_header_index = release_contents.index(sha1_header)
-
-        plain_sources_sha1_line = release_contents[sha1_header_index + 16]
-        self.assertEqual(
-            plain_sources_sha1_line,
-            (' a2da1a8407fc4e2373266e56ccc7afadf8e08a3a              '
-             '229 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 15]
-        self.assertEqual(
-            release_sha1_line,
-            (' 1a8d788a6d2d30e0cab002ab82e9f2921f7a2a61              '
-             '130 main/source/Release'))
-        # See above.
-        bz2_sources_sha1_line = release_contents[sha1_header_index + 17]
-        self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
-        gz_sources_sha1_line = release_contents[sha1_header_index + 18]
-        self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
-
-        sha256_header = 'SHA256:'
-        self.assertTrue(sha256_header in release_contents)
-        sha256_header_index = release_contents.index(sha256_header)
-
-        plain_sources_sha256_line = release_contents[sha256_header_index + 16]
-        self.assertEqual(
-            plain_sources_sha256_line,
-            (' 979d959ead8ddc29e4347a64058a372d30df58a51a4615b43fb7499'
-             '8a9e07c78              229 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 15]
-        self.assertEqual(
-            release_sha256_line,
-            (' 795a3f17d485cc1983f588c53fb8c163599ed191be9741e61ca411f'
-             '1e2c505aa              130 main/source/Release'))
-        # See above.
-        bz2_sources_sha256_line = release_contents[sha256_header_index + 17]
-        self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
-        gz_sources_sha256_line = release_contents[sha256_header_index + 18]
-        self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
+        release = self.parseRelease(os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'Release'))
+        self.assertEqual('LP-PPA-cprov', release['origin'])
 
         # The Label: field should be set to the archive displayname
-        self.assertEqual(release_contents[1],
-            'Label: PPA for Celso Provid\xc3\xa8lo')
+        self.assertEqual(u'PPA for Celso Provid\xe8lo', release['label'])
+
+        arch_sources_path = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'main', 'source', 'Sources')
+        with open(arch_sources_path) as arch_sources_file:
+            self.assertReleaseContentsMatch(
+                release, 'main/source/Sources', arch_sources_file.read())
+
+        arch_release_path = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'main', 'source', 'Release')
+        with open(arch_release_path) as arch_release_file:
+            self.assertReleaseContentsMatch(
+                release, 'main/source/Release', arch_release_file.read())
 
         # Architecture Release files also have a distinct Origin: for PPAs.
-        arch_release_file = os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest',
-            'main/source/Release')
-        arch_release_contents = open(arch_release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(arch_release_contents), 'LP-PPA-cprov')
+        arch_release = self.parseRelease(arch_release_path)
+        self.assertEqual('LP-PPA-cprov', arch_release['origin'])
 
     def testReleaseFileForNamedPPA(self):
         # Named PPA have a distint Origin: field, so packages from it can
@@ -980,21 +927,16 @@ class TestPublisher(TestPublisherBase):
         archive_publisher.D_writeReleaseFiles(False)
 
         # Check the distinct Origin: field content in the main Release file
-        # and the architecture specific one.
-        release_file = os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(release_contents),
-            'LP-PPA-cprov-testing')
-
-        arch_release_file = os.path.join(
+        # and the component specific one.
+        release = self.parseRelease(os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest',
-            'main/source/Release')
-        arch_release_contents = open(arch_release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(arch_release_contents),
-            'LP-PPA-cprov-testing')
+            'Release'))
+        self.assertEqual('LP-PPA-cprov-testing', release['origin'])
+
+        arch_release = self.parseRelease(os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'main/source/Release'))
+        self.assertEqual('LP-PPA-cprov-testing', arch_release['origin'])
 
     def testReleaseFileForPartner(self):
         """Test Release file writing for Partner archives.
@@ -1014,30 +956,30 @@ class TestPublisher(TestPublisherBase):
 
         # Open the release file that was just published inside the
         # 'breezy-autotest' distroseries.
-        release_file = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read().splitlines()
+        release = self.parseRelease(os.path.join(
+            publisher._config.distsroot, 'breezy-autotest', 'Release'))
 
         # The Release file must contain lines ending in "Packages",
         # "Packages.gz", "Sources" and "Sources.gz".
-        stringified_contents = "\n".join(release_contents)
-        self.assertTrue('Packages.gz\n' in stringified_contents)
-        self.assertTrue('Packages\n' in stringified_contents)
-        self.assertTrue('Sources.gz\n' in stringified_contents)
-        self.assertTrue('Sources\n' in stringified_contents)
+        self.assertTrue('md5sum' in release)
+        self.assertTrue([entry for entry in release['md5sum']
+                         if entry['name'].endswith('Packages.gz')])
+        self.assertTrue([entry for entry in release['md5sum']
+                         if entry['name'].endswith('Packages')])
+        self.assertTrue([entry for entry in release['md5sum']
+                         if entry['name'].endswith('Sources.gz')])
+        self.assertTrue([entry for entry in release['md5sum']
+                         if entry['name'].endswith('Sources')])
 
         # Partner archive architecture Release files 'Origin' contain
         # a string
-        arch_release_file = os.path.join(
+        arch_release = self.parseRelease(os.path.join(
             publisher._config.distsroot, 'breezy-autotest',
-            'partner/source/Release')
-        arch_release_contents = open(arch_release_file).read()
-        self.assertEqual(
-            self._getReleaseFileOrigin(arch_release_contents),
-            'Canonical')
+            'partner/source/Release'))
+        self.assertEqual('Canonical', arch_release['origin'])
 
         # The Label: field should be set to the archive displayname
-        self.assertEqual(release_contents[1], 'Label: Partner archive')
+        self.assertEqual('Partner archive', release['label'])
 
     def testReleaseFileForNotAutomaticBackports(self):
         # Test Release file writing for series with NotAutomatic backports.
@@ -1051,10 +993,11 @@ class TestPublisher(TestPublisherBase):
         publisher.C_writeIndexes(False)
 
         def get_release(pocket):
-            release_file = os.path.join(
+            release_path = os.path.join(
                 publisher._config.distsroot,
                 'breezy-autotest%s' % pocketsuffix[pocket], 'Release')
-            return open(release_file).read().splitlines()
+            with open(release_path) as release_file:
+                return release_file.read().splitlines()
 
         # When backports_not_automatic is unset, no Release files have
         # NotAutomatic: yes.
@@ -1071,6 +1014,34 @@ class TestPublisher(TestPublisherBase):
         self.assertIn("NotAutomatic: yes", get_release(BACKPORTS))
         self.assertIn("ButAutomaticUpgrades: yes", get_release(BACKPORTS))
 
+    def testReleaseFileForI18n(self):
+        """Test Release file writing for translated package descriptions."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        self.getPubSource(filecontent='Hello world')
+
+        # Make sure that apt-ftparchive generates i18n/Translation-en* files.
+        ds = self.ubuntutest.getSeries('breezy-autotest')
+        ds.include_long_descriptions = False
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        i18n_index = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'main', 'i18n', 'Index')
+
+        # The i18n/Index file has been generated.
+        self.assertTrue(os.path.exists(i18n_index))
+
+        # It is listed correctly in Release.
+        release = self.parseRelease(os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'Release'))
+        with open(i18n_index) as i18n_index_file:
+            self.assertReleaseContentsMatch(
+                release, 'main/i18n/Index', i18n_index_file.read())
+
     def testHtaccessForPrivatePPA(self):
         # A htaccess file is created for new private PPA's.
 
@@ -1085,12 +1056,13 @@ class TestPublisher(TestPublisherBase):
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
         with open(htaccess_path, 'r') as htaccess_f:
-            self.assertEquals(htaccess_f.read(), dedent("""
+            self.assertEqual(dedent("""
                 AuthType           Basic
                 AuthName           "Token Required"
                 AuthUserFile       %s/.htpasswd
                 Require            valid-user
-                """) % pubconf.htaccessroot)
+                """) % pubconf.htaccessroot,
+                htaccess_f.read())
 
         htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
 
@@ -1098,15 +1070,81 @@ class TestPublisher(TestPublisherBase):
         with open(htpasswd_path, "r") as htpasswd_f:
             file_contents = htpasswd_f.readlines()
 
-        self.assertEquals(1, len(file_contents))
+        self.assertEqual(1, len(file_contents))
 
         # The first line should be the buildd_secret.
         [user, password] = file_contents[0].strip().split(":", 1)
-        self.assertEqual(user, "buildd")
+        self.assertEqual("buildd", user)
         # We can re-encrypt the buildd_secret and it should match the
         # one in the .htpasswd file.
         encrypted_secret = crypt.crypt(ppa.buildd_secret, password)
         self.assertEqual(encrypted_secret, password)
+
+    def testWriteSuiteI18n(self):
+        """Test i18n/Index writing."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        i18n_root = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'main', 'i18n')
+
+        # Write a zero-length Translation-en file and compressed versions of
+        # it.
+        translation_en_index = RepositoryIndexFile(
+            i18n_root, self.config.temproot, 'Translation-en')
+        translation_en_index.close()
+
+        all_files = set()
+        publisher._writeSuiteI18n(
+            self.ubuntutest['breezy-autotest'],
+            PackagePublishingPocket.RELEASE, 'main', all_files)
+
+        # i18n/Index has the correct contents.
+        translation_en = os.path.join(i18n_root, 'Translation-en.bz2')
+        with open(translation_en) as translation_en_file:
+            translation_en_contents = translation_en_file.read()
+        i18n_index = self.parseI18nIndex(os.path.join(i18n_root, 'Index'))
+        self.assertTrue('sha1' in i18n_index)
+        self.assertEqual(1, len(i18n_index['sha1']))
+        self.assertEqual(hashlib.sha1(translation_en_contents).hexdigest(),
+                         i18n_index['sha1'][0]['sha1'])
+        self.assertEqual(str(len(translation_en_contents)),
+                         i18n_index['sha1'][0]['size'])
+
+        # i18n/Index is scheduled for inclusion in Release.
+        self.assertEqual(1, len(all_files))
+        self.assertEqual(
+            os.path.join('main', 'i18n', 'Index'), all_files.pop())
+
+    def testWriteSuiteI18nMissingDirectory(self):
+        """i18n/Index is not generated when the i18n directory is missing."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        i18n_root = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'main', 'i18n')
+
+        publisher._writeSuiteI18n(
+            self.ubuntutest['breezy-autotest'],
+            PackagePublishingPocket.RELEASE, 'main', set())
+
+        self.assertFalse(os.path.exists(os.path.join(i18n_root, 'Index')))
+
+    def testWriteSuiteI18nEmptyDirectory(self):
+        """i18n/Index is not generated when the i18n directory is empty."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        i18n_root = os.path.join(
+            self.config.distsroot, 'breezy-autotest', 'main', 'i18n')
+
+        os.makedirs(i18n_root)
+
+        publisher._writeSuiteI18n(
+            self.ubuntutest['breezy-autotest'],
+            PackagePublishingPocket.RELEASE, 'main', set())
+
+        self.assertFalse(os.path.exists(os.path.join(i18n_root, 'Index')))
 
 
 class TestArchiveIndices(TestPublisherBase):
@@ -1144,9 +1182,10 @@ class TestArchiveIndices(TestPublisherBase):
         release_template = os.path.join(arch_template, 'Release')
         packages_template = os.path.join(arch_template, 'Packages')
         sources_template = os.path.join(arch_template, 'Sources')
-        release_content = open(os.path.join(
-            publisher._config.distsroot, series.getSuite(pocket),
-            'Release')).read()
+        release_path = os.path.join(
+            publisher._config.distsroot, series.getSuite(pocket), 'Release')
+        with open(release_path) as release_file:
+            release_content = release_file.read()
 
         for comp in ('main', 'restricted', 'universe', 'multiverse'):
             # Check that source indices are present.
@@ -1236,8 +1275,8 @@ class TestArchiveIndices(TestPublisherBase):
         for file in (sourcesgz_file, packagesgz_file):
             mode = stat.S_IMODE(os.stat(file).st_mode)
             self.assertEqual(
-                (mode & (stat.S_IROTH | stat.S_IRGRP)),
                 (stat.S_IROTH | stat.S_IRGRP),
+                (mode & (stat.S_IROTH | stat.S_IRGRP)),
                 "%s is not world/group readable." % file)
 
 
@@ -1338,11 +1377,91 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
         # Release file signature is correct and was done by Celso's PPA
         # signing_key.
-        signature = getUtility(IGPGHandler).getVerifiedSignature(
-            open(self.release_file_path).read(),
-            open(self.release_file_signature_path).read())
+        with open(self.release_file_path) as release_file:
+            with open(self.release_file_signature_path) as release_file_sig:
+                signature = getUtility(IGPGHandler).getVerifiedSignature(
+                    release_file.read(), release_file_sig.read())
         self.assertEqual(
-            signature.fingerprint, cprov.archive.signing_key.fingerprint)
+            cprov.archive.signing_key.fingerprint, signature.fingerprint)
 
         # All done, turn test-keyserver off.
         tac.tearDown()
+
+
+class TestPublisherLite(TestCaseWithFactory):
+    """Lightweight unit tests for the publisher."""
+
+    layer = ZopelessDatabaseLayer
+
+    def makePublishableSeries(self, root_dir):
+        """Create a `DistroSeries` ready for publishing.
+
+        :param root_dir: A temporary directory for use as an archive root.
+        """
+        distro = self.factory.makeDistribution(publish_root_dir=root_dir)
+        return self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.FROZEN)
+
+    def getReleaseFileDir(self, root, distroseries, suite):
+        """Locate the directory where a Release file should be.
+
+        :param root: Archive root directory.
+        :param distroseries: Published distroseries.
+        :param suite: Published suite.
+        """
+        return os.path.join(
+            root, distroseries.distribution.name, 'dists', suite)
+
+    def makePublishablePackage(self, series):
+        """Create a source publication ready for publishing."""
+        return self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, status=PackagePublishingStatus.PENDING)
+
+    def makePublisher(self, series):
+        """Create a publisher for a given distroseries."""
+        return getPublisher(series.main_archive, None, DevNullLogger())
+
+    def makeFakeReleaseData(self):
+        """Create a fake `debian.deb822.Release`.
+
+        The object's dump method will write arbitrary text.  For testing
+        purposes, the fake object will compare equal to a string holding
+        this same text, encoded in the requested encoding.
+        """
+        class FakeReleaseData(unicode):
+            def dump(self, output_file, encoding):
+                output_file.write(self.encode(encoding))
+
+        return FakeReleaseData(self.factory.getUniqueUnicode())
+
+    def test_writeReleaseFile_dumps_release_file(self):
+        # _writeReleaseFile writes a Release file for a suite.
+        root = unicode(self.makeTemporaryDirectory())
+        series = self.makePublishableSeries(root)
+        spph = self.makePublishablePackage(series)
+        suite = series.name + pocketsuffix[spph.pocket]
+        releases_dir = self.getReleaseFileDir(root, series, suite)
+        os.makedirs(releases_dir)
+        release_data = self.makeFakeReleaseData()
+        release_path = os.path.join(releases_dir, "Release")
+
+        self.makePublisher(series)._writeReleaseFile(suite, release_data)
+
+        self.assertTrue(file_exists(release_path))
+        self.assertEqual(
+            release_data.encode('utf-8'), file(release_path).read())
+
+    def test_writeReleaseFile_creates_directory_if_necessary(self):
+        # If the suite is new and its release directory does not exist
+        # yet, _writeReleaseFile will create it.
+        root = unicode(self.makeTemporaryDirectory())
+        series = self.makePublishableSeries(root)
+        spph = self.makePublishablePackage(series)
+        suite = series.name + pocketsuffix[spph.pocket]
+        release_data = self.makeFakeReleaseData()
+        release_path = os.path.join(
+            self.getReleaseFileDir(root, series, suite), "Release")
+
+        self.makePublisher(series)._writeReleaseFile(suite, release_data)
+
+        self.assertTrue(file_exists(release_path))

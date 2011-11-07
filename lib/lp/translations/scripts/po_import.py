@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions used with the Rosetta PO import script."""
@@ -21,10 +21,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import errorlog
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.mail.sendmail import simple_sendmail
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
@@ -136,11 +136,11 @@ class TranslationsImport(LaunchpadCronScript):
         if mail_subject is not None and self._shouldNotify(entry.importer):
             # A `mail_subject` of None indicates that there
             # is no notification worth sending out.
-            from_email = config.rosetta.admin_email
+            from_email = config.rosetta.notification_address
             katie = getUtility(ILaunchpadCelebrities).katie
             if entry.importer == katie:
                 # Email import state to Debian imports email.
-                to_email = config.rosetta.debian_import_email
+                to_email = None
             else:
                 to_email = helpers.get_contact_email_addresses(entry.importer)
 

@@ -8,12 +8,19 @@ from datetime import (
     timedelta,
     )
 import pytz
+import soupmatchers
+from testtools.matchers import (
+    MatchesException,
+    Not,
+    Raises,
+    )
 from zope.component import (
     getMultiAdapter,
     getUtility,
     )
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.interfaces import StormRangeFactoryError
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -54,23 +61,34 @@ class TestBuildViews(TestCaseWithFactory):
         # archive. For instance the 'PPA' action-menu link is not enabled
         # for builds targeted to the PRIMARY archive.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        removeSecurityProxy(archive).require_virtualized = False
         build = self.factory.makeBinaryPackageBuild(archive=archive)
         build_menu = BuildContextMenu(build)
-        self.assertEquals(build_menu.links,
-            ['ppa', 'records', 'retry', 'rescore'])
+        self.assertEquals(
+            build_menu.links,
+            ['ppa', 'records', 'retry', 'rescore', 'cancel'])
         self.assertFalse(build_menu.is_ppa_build)
         self.assertFalse(build_menu.ppa().enabled)
+        # Cancel is not enabled on non-virtual builds.
+        self.assertFalse(build_menu.cancel().enabled)
 
     def test_build_menu_ppa(self):
         # The 'PPA' action-menu item will be enabled if we target the build
         # to a PPA.
-        ppa = self.factory.makeArchive(purpose='PPA')
+        ppa = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, virtualized=True)
         build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        build.queueBuild()
         build_menu = BuildContextMenu(build)
-        self.assertEquals(build_menu.links,
-            ['ppa', 'records', 'retry', 'rescore'])
+        self.assertEquals(
+            build_menu.links,
+            ['ppa', 'records', 'retry', 'rescore', 'cancel'])
         self.assertTrue(build_menu.is_ppa_build)
         self.assertTrue(build_menu.ppa().enabled)
+        # Cancel is enabled on virtual builds if the user is in the
+        # owning archive's team.
+        with person_logged_in(ppa.owner):
+            self.assertTrue(build_menu.cancel().enabled)
 
     def test_cannot_retry_stable_distroseries(self):
         # 'BuildView.user_can_retry_build' property checks not only the
@@ -230,6 +248,61 @@ class TestBuildViews(TestCaseWithFactory):
         self.assertEquals(notification.message, "Build rescored to 0.")
         self.assertEquals(pending_build.buildqueue_record.lastscore, 0)
 
+    def test_build_page_has_cancel_link(self):
+        build = self.factory.makeBinaryPackageBuild()
+        build.queueBuild()
+        person = build.archive.owner
+        with person_logged_in(person):
+            build_view = create_initialized_view(
+                build, "+index", principal=person)
+            page = build_view()
+        url = canonical_url(build) + "/+cancel"
+        matches_cancel_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "CANCEL_LINK", "a", attrs=dict(href=url)))
+        self.assertThat(page, matches_cancel_link)
+
+    def test_cancelling_pending_build(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        pending_build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        pending_build.queueBuild()
+        with person_logged_in(ppa.owner):
+            view = create_initialized_view(
+                pending_build, name="+cancel", form={
+                    'field.actions.cancel': 'Cancel'})
+        notification = view.request.response.notifications[0]
+        self.assertEqual(notification.message, "Build cancelled.")
+        self.assertEqual(BuildStatus.CANCELLED, pending_build.status)
+
+    def test_cancelling_building_build(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        pending_build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        pending_build.queueBuild()
+        removeSecurityProxy(pending_build).status = BuildStatus.BUILDING
+        with person_logged_in(ppa.owner):
+            view = create_initialized_view(
+                pending_build, name="+cancel", form={
+                    'field.actions.cancel': 'Cancel'})
+        notification = view.request.response.notifications[0]
+        self.assertEqual(
+            notification.message, "Build cancellation in progress.")
+        self.assertEqual(BuildStatus.CANCELLING, pending_build.status)
+
+    def test_cancelling_uncancellable_build(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        removeSecurityProxy(archive).require_virtualized = False
+        pending_build = self.factory.makeBinaryPackageBuild(archive=archive)
+        pending_build.queueBuild()
+        removeSecurityProxy(pending_build).status = BuildStatus.BUILDING
+        with person_logged_in(archive.owner):
+            view = create_initialized_view(
+                pending_build, name="+cancel", form={
+                    'field.actions.cancel': 'Cancel'})
+        notification = view.request.response.notifications[0]
+        self.assertEqual(
+            notification.message, "Unable to cancel build.")
+        self.assertEqual(BuildStatus.BUILDING, pending_build.status)
+
     def test_build_records_view(self):
         # The BuildRecordsView can also be used to filter by architecture tag.
         distroseries = self.factory.makeDistroSeries()
@@ -291,3 +364,44 @@ class TestBuildViews(TestCaseWithFactory):
         expected_url = canonical_url(build)
         browser = self.getUserBrowser(url)
         self.assertEquals(expected_url, browser.url)
+
+    def test_DistributionBuildRecordsView__range_factory(self):
+        # DistributionBuildRecordsView works with StormRangeFactory:
+        # StormRangeFactory requires result sets where the sort order
+        # is specified by Storm Column objects or by Desc(storm_column).
+        # DistributionBuildRecordsView gets its resultset from
+        # IDistribution.getBuildRecords(); the sort order of the
+        # result set depends on the parameter build_state.
+        # The order expressions for all possible values of build_state
+        # are usable by StormRangeFactory.
+        distroseries = self.factory.makeDistroSeries()
+        distribution = distroseries.distribution
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        for status in BuildStatus.items:
+            build = self.factory.makeBinaryPackageBuild(
+                distroarchseries=das, archive=distroseries.main_archive,
+                status=status)
+            # BPBs in certain states need a bit tweaking to appear in
+            # the result of getBuildRecords().
+            if status == BuildStatus.FULLYBUILT:
+                with person_logged_in(self.admin):
+                    build.date_started = (
+                        datetime.now(pytz.UTC) - timedelta(hours=1))
+                    build.date_finished = datetime.now(pytz.UTC)
+            elif status in (BuildStatus.NEEDSBUILD, BuildStatus.BUILDING):
+                build.queueBuild()
+        for status in ('built', 'failed', 'depwait', 'chrootwait',
+                       'superseded', 'uploadfail', 'all', 'building',
+                       'pending'):
+            view = create_initialized_view(
+                distribution, name="+builds", form={'build_state': status})
+            view.setupBuildList()
+            range_factory = view.batchnav.batch.range_factory
+
+            def test_range_factory():
+                row = range_factory.resultset.get_plain_result_set()[0]
+                range_factory.getOrderValuesFor(row)
+
+            self.assertThat(
+                test_range_factory,
+                Not(Raises(MatchesException(StormRangeFactoryError))))

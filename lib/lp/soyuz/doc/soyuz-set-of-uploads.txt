@@ -710,11 +710,16 @@ files that are published in the sample data.
     >>> fillLibrarianFile(70)
 
     >>> run_publish_distro(careful=True)
-    DEBUG   Initializing zopeless.
+    DEBUG   Enabled by DEFAULT section
+    INFO    Creating lockfile: ...
     DEBUG   Distribution: ubuntutest
     ...
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb from library
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-1_i386.deb from library
+    DEBUG   Added
+    /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb from
+    library
+    DEBUG   Added
+    /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-1_i386.deb from
+    library
     ...
 
 
@@ -739,10 +744,12 @@ Check that breezy-autotest is skipped, to ensure that changes to what's
 uploaded in the test above don't break the assumptions of this test.
 
     >>> run_publish_distro(careful_publishing=True)
-    DEBUG   Initializing zopeless.
+    DEBUG   Enabled by DEFAULT section
+    INFO    Creating lockfile: ...
     DEBUG   Distribution: ubuntutest
     ...
-    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb is already in pool with the same content.
+    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb
+    is already in pool with the same content.
     ...
     DEBUG   Skipping a-f stanza for breezy-autotest/RELEASE
     ...

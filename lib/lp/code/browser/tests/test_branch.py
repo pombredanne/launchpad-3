@@ -7,12 +7,10 @@ __metaclass__ = type
 
 from datetime import (
     datetime,
-    timedelta,
     )
 from textwrap import dedent
 
 import pytz
-import simplejson
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -38,11 +36,14 @@ from lp.code.browser.branch import (
     BranchAddView,
     BranchMirrorStatusView,
     BranchReviewerEditView,
-    BranchSparkView,
     BranchView,
     )
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
-from lp.code.bzr import ControlFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,
@@ -190,8 +191,8 @@ class TestBranchView(BrowserTestCase):
             "This is a short error message.",
             branch_view.mirror_status_message)
 
-    def testBranchAddRequestsMirror(self):
-        """Registering a mirrored branch requests a mirror."""
+    def testBranchAddRequests(self):
+        """Registering a branch that requests a mirror."""
         arbitrary_person = self.factory.makePerson()
         arbitrary_product = self.factory.makeProduct()
         login_person(arbitrary_person)
@@ -199,9 +200,8 @@ class TestBranchView(BrowserTestCase):
             add_view = BranchAddView(arbitrary_person, self.request)
             add_view.initialize()
             data = {
-                'branch_type': BranchType.MIRRORED,
+                'branch_type': BranchType.HOSTED,
                 'name': 'some-branch',
-                'url': 'http://example.com',
                 'title': 'Branch Title',
                 'summary': '',
                 'lifecycle_status': BranchLifecycleStatus.DEVELOPMENT,
@@ -211,15 +211,6 @@ class TestBranchView(BrowserTestCase):
                 'product': arbitrary_product,
                 }
             add_view.add_action.success(data)
-            # Make sure that next_mirror_time is a datetime, not an sqlbuilder
-            # expression.
-            removeSecurityProxy(add_view.branch).sync()
-            now = datetime.now(pytz.timezone('UTC'))
-            self.assertNotEqual(None, add_view.branch.next_mirror_time)
-            self.assertTrue(
-                add_view.branch.next_mirror_time < now,
-                "next_mirror_time not set to UTC_NOW: %s < %s"
-                % (add_view.branch.next_mirror_time, now))
         finally:
             logout()
 
@@ -364,7 +355,8 @@ class TestBranchView(BrowserTestCase):
             self.assertTrue(
                 bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
 
-    def test_linked_bugs_nonseries_branch_query_scaling(self):
+    # XXX wgrant 2011-10-21 bug=879197: Disabled due to spurious failure.
+    def disabled_test_linked_bugs_nonseries_branch_query_scaling(self):
         # As we add linked bugs, the query count for a branch index page stays
         # constant.
         branch = self.factory.makeAnyBranch()
@@ -401,7 +393,7 @@ class TestBranchView(BrowserTestCase):
 
     def _add_revisions(self, branch, nr_revisions=1):
         revisions = []
-        for seq in range(1, nr_revisions+1):
+        for seq in range(1, nr_revisions + 1):
             revision = self.factory.makeRevision(
                 author="Eric the Viking <eric@vikings-r-us.example.com>",
                 log_body=(
@@ -668,94 +660,6 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)
 
 
-class TestBranchSparkView(TestCaseWithFactory):
-    """Tests for the BranchSparkView class."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_empty_branch(self):
-        # A branch with no commits produces...
-        branch = self.factory.makeAnyBranch()
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-        self.assertEqual(0, json['count'])
-        self.assertEqual('empty branch', json['last_commit'])
-
-    def test_content_type(self):
-        # The response has the correct (JSON) content type...
-        branch = self.factory.makeAnyBranch()
-        request = LaunchpadTestRequest()
-        view = BranchSparkView(branch, request)
-        view.render()
-        self.assertEqual(
-            request.response.getHeader('content-type'),
-            'application/json')
-
-    def test_old_commits(self):
-        # A branch with a commit older than the COMMIT_DAYS will create a list
-        # of commits that all say zero.
-        branch = self.factory.makeAnyBranch()
-        revision = self.factory.makeRevision(
-            revision_date=datetime(
-                year=2008, month=9, day=10, tzinfo=pytz.UTC))
-        branch.createBranchRevision(1, revision)
-        branch.updateScannedDetails(revision, 1)
-
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-
-        self.assertEqual(0, json['count'])
-        self.assertEqual([0] * 90, json['commits'])
-        self.assertEqual('2008-09-10', json['last_commit'])
-
-    def test_last_commit_string(self):
-        # If the last commit was very recent, we get a nicer string.
-        branch = self.factory.makeAnyBranch()
-        # Make the revision date six hours ago.
-        revision_date = datetime.now(tz=pytz.UTC) - timedelta(seconds=6*3600)
-        revision = self.factory.makeRevision(
-            revision_date=revision_date)
-        branch.createBranchRevision(1, revision)
-        branch.updateScannedDetails(revision, 1)
-
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-        self.assertEqual('6 hours ago', json['last_commit'])
-
-    def test_new_commits(self):
-        # If there are no commits for the day, there are zeros, if there are
-        # commits, then the array contains the number of commits for that day.
-        branch = self.factory.makeAnyBranch()
-        # Create a commit 5 days ago.
-        revision_date = datetime.now(tz=pytz.UTC) - timedelta(days=5)
-        revision = self.factory.makeRevision(revision_date=revision_date)
-        branch.createBranchRevision(1, revision)
-        branch.updateScannedDetails(revision, 1)
-
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-
-        self.assertEqual(1, json['count'])
-        commits = ([0] * 84) + [1, 0, 0, 0, 0, 0]
-        self.assertEqual(commits, json['commits'])
-        self.assertEqual(84, json['max_commits'])
-
-    def test_commit_for_just_now(self):
-        # A commit now should show as a commit on the last day.
-        branch = self.factory.makeAnyBranch()
-        revision_date = datetime.now(tz=pytz.UTC)
-        revision = self.factory.makeRevision(revision_date=revision_date)
-        branch.createBranchRevision(1, revision)
-        branch.updateScannedDetails(revision, 1)
-
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-
-        self.assertEqual(1, json['count'])
-        commits = ([0] * 89) + [1]
-        self.assertEqual(commits, json['commits'])
-
-
 class TestBranchProposalsVisible(TestCaseWithFactory):
     """Test that the BranchView filters out proposals the user cannot see."""
 
@@ -779,7 +683,7 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         # If the target is private, the landing targets should not include it.
         bmp = self.factory.makeBranchMergeProposal()
         branch = bmp.source_branch
-        removeSecurityProxy(bmp.target_branch).private = True
+        removeSecurityProxy(bmp.target_branch).explicitly_private = True
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.landing_targets)
@@ -800,7 +704,7 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         # it.
         bmp = self.factory.makeBranchMergeProposal()
         branch = bmp.target_branch
-        removeSecurityProxy(bmp.source_branch).private = True
+        removeSecurityProxy(bmp.source_branch).explicitly_private = True
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.landing_candidates)
@@ -820,7 +724,7 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         # the target is private, then the dependent_branches are not shown.
         branch = self.factory.makeProductBranch()
         bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
-        removeSecurityProxy(bmp.source_branch).private = True
+        removeSecurityProxy(bmp.source_branch).explicitly_private = True
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.dependent_branches)
@@ -895,3 +799,23 @@ class TestBranchEditView(TestCaseWithFactory):
                 'Some Product.'))
         with person_logged_in(person):
             self.assertEquals(person, branch.owner)
+
+
+class TestBranchUpgradeView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_upgrade_branch_action_cannot_upgrade(self):
+        # A nice error is displayed if a branch cannot be upgraded.
+        branch = self.factory.makePersonalBranch(
+        branch_format=BranchFormat.BZR_BRANCH_6,
+        repository_format=RepositoryFormat.BZR_CHK_2A)
+        login_person(branch.owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade(branch.owner)
+        view = create_initialized_view(branch, '+upgrade')
+        view.upgrade_branch_action.success({})
+        self.assertEqual(1, len(view.request.notifications))
+        self.assertEqual(
+            'An upgrade is already in progress for branch %s.' %
+            branch.bzr_identity, view.request.notifications[0].message)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
@@ -6,29 +6,29 @@ import logging
 import os
 import unittest
 
-from testtools.matchers import Equals, Is
+from testtools.matchers import (
+    Equals,
+    Is,
+    )
 import transaction
 from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
 from canonical.launchpad.ftests import import_secret_test_key
-from canonical.launchpad.mail.ftests.helpers import testmails_path
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.mail import (
-    helpers,
-    )
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger
+from lp.services.mail import helpers
 from lp.services.mail.incoming import (
     authenticateEmail,
     extract_addresses,
     handleMail,
-    MailErrorUtility,
     ORIGINAL_TO_HEADER,
     )
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
+from lp.services.mail.tests.helpers import testmails_path
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 from lp.testing.mail_helpers import pop_notifications
@@ -57,14 +57,8 @@ class TestIncoming(TestCaseWithFactory):
             email_address, 'to@example.com', 'subject', invalid_body,
             bulk=False)
         ctrl.send()
-        error_utility = MailErrorUtility()
-        old_oops = error_utility.getLastOopsReport()
         handleMail()
-        current_oops = error_utility.getLastOopsReport()
-        if old_oops is None:
-            self.assertIs(None, current_oops)
-        else:
-            self.assertEqual(old_oops.id, current_oops.id)
+        self.assertEqual([], self.oopses)
         [notification] = pop_notifications()
         body = notification.get_payload()[0].get_payload(decode=True)
         self.assertIn(
@@ -82,14 +76,8 @@ class TestIncoming(TestCaseWithFactory):
         # To and CC headers from the raw_mail. Also, TestMailer is used here
         # because MailController won't send an email with a broken To: header.
         TestMailer().send("from@example.com", "to@example.com", raw_mail)
-        error_utility = MailErrorUtility()
-        old_oops = error_utility.getLastOopsReport()
         handleMail()
-        current_oops = error_utility.getLastOopsReport()
-        if old_oops is None:
-            self.assertIs(None, current_oops)
-        else:
-            self.assertEqual(old_oops.id, current_oops.id)
+        self.assertEqual([], self.oopses)
 
     def test_bad_signature_timestamp(self):
         """If the signature is nontrivial future-dated, it's not trusted."""

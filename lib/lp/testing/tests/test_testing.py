@@ -5,6 +5,9 @@
 
 __metaclass__ = type
 
+import os
+
+from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features import getFeatureFlag
 from lp.testing import (
@@ -42,3 +45,9 @@ class TestYUIUnitTestCase(TestCase):
         test = YUIUnitTestCase()
         test.initialize("foo/bar/baz.html")
         self.assertEqual(test.test_path, test.id())
+
+    def test_id_is_normalized_and_relative_to_root(self):
+        test = YUIUnitTestCase()
+        test_path = os.path.join(config.root, "../bar/baz/../bob.html")
+        test.initialize(test_path)
+        self.assertEqual("../bar/bob.html", test.id())

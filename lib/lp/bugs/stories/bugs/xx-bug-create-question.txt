@@ -177,6 +177,17 @@ browser's back button, after creating a question, he is re-shown the
 form as it was. He resubmit the form, and is notified that a question
 could not be created.
 
+    >>> # Jokosher must enable answers to access questions.
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.product import IProductSet
+
+    >>> login('admin@canonical.com')
+    >>> getUtility(IProductSet)['jokosher'].answers_usage = (
+    ...     ServiceUsage.LAUNCHPAD)
+    >>> transaction.commit()
+    >>> logout()
+
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/jokosher/+bug/12')
     >>> user_browser.title
@@ -259,7 +270,7 @@ again. The bug status is sill Invalid for Jokosher, but he can edit it.
     >>> content = find_main_content(user_browser.contents)
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
     Affects                       Status   Importance  Assigned to  Milestone
-    Jokosher ...                  Invalid  Critical    Unassigned ...
+    ... Jokosher ...              Invalid  Critical    Unassigned ...
     Affecting: Jokosher
     Filed here by: Foo Bar...
 
@@ -267,7 +278,7 @@ He reads his comment that was appended to the bug report's messages.
 
     >>> print extract_text(
     ...     find_tags_by_class(str(content), 'boardComment')[-1])
-    No Privileges Person
+    No Privileges Person (no-priv)
     wrote
     ...
     I misunderstood.

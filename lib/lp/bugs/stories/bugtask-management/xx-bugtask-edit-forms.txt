@@ -26,9 +26,13 @@ http://bugs.launchpad.dev/firefox/+bug/1/+editstatus
 http://bugs.launchpad.dev/firefox/+bug/1/+editstatus
 
 >>> print admin_browser.getLink('Confirmed').url
-http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1/+editstatus
+Traceback (most recent call last):
+...
+LinkNotFoundError
 >>> print admin_browser.getLink('Low', index=1).url
-http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1/+editstatus
+Traceback (most recent call last):
+...
+LinkNotFoundError
 
 >>> print admin_browser.getLink('New', index=1).url
 http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus
@@ -43,6 +47,9 @@ Affecting: Mozilla Firefox
 Filed here by: Sample Person
 When: 2004-01-02
 Assigned: 2005-01-02
+Target
+Distribution
+...
 Project (Find&hellip;)
 Status  Importance  Milestone
 New...  Low...      (no value)...

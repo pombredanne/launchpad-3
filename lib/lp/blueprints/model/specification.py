@@ -96,6 +96,7 @@ from lp.services.propertycache import (
     )
 
 
+
 def recursive_blocked_query(spec):
     return """
         RECURSIVE blocked(id) AS (
@@ -221,8 +222,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
     @cachedproperty
     def subscriptions(self):
         """Sort the subscriptions"""
+        from lp.registry.model.person import person_sort_key
         return sorted(
-            self._subscriptions, key=lambda sub: sub.person.displayname)
+            self._subscriptions, key=lambda sub: person_sort_key(sub.person))
 
     @property
     def target(self):
@@ -561,9 +563,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
             person=person, essential=essential)
         property_cache = get_property_cache(self)
         if 'subscription' in property_cache:
+            from lp.registry.model.person import person_sort_key
             property_cache.subscriptions.append(sub)
             property_cache.subscriptions.sort(
-                key=lambda sub: sub.person.displayname)
+                key=lambda sub: person_sort_key(sub.person))
         notify(ObjectCreatedEvent(sub, user=subscribed_by))
         return sub
 

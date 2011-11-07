@@ -17,9 +17,11 @@ from zope.traversing.interfaces import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.app.browser.tales import (
     format_link,
+    ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -129,12 +131,6 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
     def test_link_display_name_id(self):
         """The link to the user profile page using displayname and id."""
         person = self.factory.makePerson()
-        # Enable the picker_enhancements feature to test the commenter name.
-        from lp.services.features.testing import FeatureFixture
-        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
         formatter = getAdapter(person, IPathAdapter, 'fmt')
         result = formatter.link_display_name_id(None)
         expected = '<a href="%s" class="sprite person">%s (%s)</a>' % (
@@ -302,3 +298,29 @@ class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
             '<span class="discreet"> on </span>\n'
             '<strong>&lt;b&gt;irc.canonical.com&lt;/b&gt;</strong>\n',
             expected_html)
+
+
+class ObjectImageDisplayAPITestCase(TestCaseWithFactory):
+    """Tests for ObjectImageDisplayAPI"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_custom_icon_url_context_is_None(self):
+        # When the context is None, the URL is an empty string.
+        display_api = ObjectImageDisplayAPI(None)
+        self.assertEqual('', display_api.custom_icon_url())
+
+    def test_custom_icon_url_context_has_no_icon(self):
+        # When the context has not set the custom icon, the URL is None.
+        product = self.factory.makeProduct()
+        display_api = ObjectImageDisplayAPI(product)
+        self.assertEqual(None, display_api.custom_icon_url())
+
+    def test_custom_icon_url_context_has_an_icon(self):
+        # When the context has a custom icon, the URL is for the
+        # LibraryFileAlias.
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        product = self.factory.makeProduct(icon=icon)
+        display_api = ObjectImageDisplayAPI(product)
+        self.assertEqual(icon.getURL(), display_api.custom_icon_url())

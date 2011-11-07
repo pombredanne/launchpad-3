@@ -30,10 +30,14 @@ from contrib.glock import (
     LockAlreadyAcquired,
     )
 import pytz
+import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
+from canonical.config import (
+    config,
+    dbconfig,
+    )
+from canonical.database.postgresql import ConnectionString
 from canonical.launchpad import scripts
 from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
@@ -41,12 +45,12 @@ from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,
     setupInteractionByEmail,
     )
-from canonical.lp import initZopeless
 from lp.services.features import (
     get_relevant_feature_controller,
     install_feature_controller,
     make_script_feature_controller,
     )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
@@ -148,7 +152,7 @@ class LaunchpadScript:
     # State for the log_unhandled_exceptions decorator.
     _log_unhandled_exceptions_level = 0
 
-    def __init__(self, name=None, dbuser=None, test_args=None):
+    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
         """Construct new LaunchpadScript.
 
         Name is a short name for this script; it will be used to
@@ -159,6 +163,9 @@ class LaunchpadScript:
 
         Specify test_args when you want to override sys.argv.  This is
         useful in test scripts.
+
+        :param logger: Use this logger, instead of initializing global
+            logging.
         """
         if name is None:
             self._name = self.__class__.__name__.lower()
@@ -166,6 +173,7 @@ class LaunchpadScript:
             self._name = name
 
         self._dbuser = dbuser
+        self.logger = logger
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
@@ -178,11 +186,16 @@ class LaunchpadScript:
             description = self.description
         self.parser = OptionParser(usage=self.usage,
                                    description=description)
-        scripts.logger_options(self.parser, default=self.loglevel)
-        self.parser.add_option(
-            '--profile', dest='profile', metavar='FILE', help=(
-                    "Run the script under the profiler and save the "
-                    "profiling stats in FILE."))
+
+        if logger is None:
+            scripts.logger_options(self.parser, default=self.loglevel)
+            self.parser.add_option(
+                '--profile', dest='profile', metavar='FILE', help=(
+                        "Run the script under the profiler and save the "
+                        "profiling stats in FILE."))
+        else:
+            scripts.dummy_logger_options(self.parser)
+
         self.add_my_options()
         self.options, self.args = self.parser.parse_args(args=test_args)
 
@@ -191,7 +204,8 @@ class LaunchpadScript:
         self.handle_options()
 
     def handle_options(self):
-        self.logger = scripts.logger(self.options, self.name)
+        if self.logger is None:
+            self.logger = scripts.logger(self.options, self.name)
 
     @property
     def name(self):
@@ -304,9 +318,13 @@ class LaunchpadScript:
         """Actually run the script, executing zcml and initZopeless."""
 
         if isolation is None:
-            isolation = ISOLATION_LEVEL_DEFAULT
+            isolation = 'read_committed'
         self._init_zca(use_web_security=use_web_security)
         self._init_db(isolation=isolation)
+
+        # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+        # Should be called directly by scripts that actually need it.
+        set_immediate_mail_delivery(True)
 
         date_started = datetime.datetime.now(UTC)
         profiler = None
@@ -342,7 +360,12 @@ class LaunchpadScript:
 
         Can be overriden for testing purpose.
         """
-        self.txn = initZopeless(dbuser=self.dbuser, isolation=isolation)
+        dbuser = self.dbuser
+        if dbuser is None:
+            connstr = ConnectionString(dbconfig.main_master)
+            dbuser = connstr.user or dbconfig.dbuser
+        dbconfig.override(dbuser=dbuser, isolation_level=isolation)
+        self.txn = transaction
 
     def record_activity(self, date_started, date_completed):
         """Hook to record script activity."""
@@ -353,7 +376,7 @@ class LaunchpadScript:
     @log_unhandled_exception_and_exit
     def lock_and_run(self, blocking=False, skip_delete=False,
                      use_web_security=False,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
+                     isolation='read_committed'):
         """Call lock_or_die(), and then run() the script.
 
         Will die with sys.exit(1) if the locking call fails.
@@ -369,8 +392,9 @@ class LaunchpadScript:
 class LaunchpadCronScript(LaunchpadScript):
     """Logs successful script runs in the database."""
 
-    def __init__(self, name=None, dbuser=None, test_args=None):
-        super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
+    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
+        super(LaunchpadCronScript, self).__init__(
+            name, dbuser, test_args=test_args, logger=logger)
 
         # self.name is used instead of the name argument, since it may have
         # have been overridden by command-line parameters or by
@@ -383,9 +407,6 @@ class LaunchpadCronScript(LaunchpadScript):
         # Configure the IErrorReportingUtility we use with defaults.
         # Scripts can override this if they want.
         globalErrorUtility.configure()
-
-        # Scripts do not have a zlog.
-        globalErrorUtility.copy_to_zlog = False
 
         # WARN and higher log messages should generate OOPS reports.
         # self.name is used instead of the name argument, since it may have

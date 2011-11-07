@@ -1,12 +1,6 @@
 Comment numbering
 =================
 
-    >>> # Enable the picker_enhancements feature to test the commenter name.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
 Bug respondents frequently refer to other comments by number,
 eg. "applied patch in comment #34". This number is stable, and part of
 the permalink URL. To help users find the relevant comments more
@@ -36,7 +30,3 @@ easily, the numbers are displayed in the comment header.
       And so it should be displayed again.
     #6: Dave Miller (justdave)
       This title, however, is the same as the bug title
-
-Clean up the feature flag.
-
-    >>> flags.cleanUp()

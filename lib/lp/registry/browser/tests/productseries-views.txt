@@ -397,7 +397,7 @@ The delete action will not delete a series that is linked to a package.
     ...     IPackagingUtil, PackagingType)
 
     >>> sourcepackagename = factory.makeSourcePackageName('sausage')
-    >>> distro_series = factory.makeDistroRelease()
+    >>> distro_series = factory.makeDistroSeries()
     >>> linked_series = factory.makeProductSeries(product=product)
     >>> packaging = getUtility(IPackagingUtil).createPackaging(
     ...     linked_series, sourcepackagename, distro_series,

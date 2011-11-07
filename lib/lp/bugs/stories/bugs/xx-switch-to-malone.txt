@@ -1,4 +1,5 @@
-= Displaying an Unknown importance after switching to using Launchpad Bugs =
+Displaying an Unknown importance after switching to using Launchpad Bugs
+========================================================================
 
 XXX: This test should be restructured into a more general "Switching to
      Launchpad Bugs" use case. -- Bjorn Tillenius, 2007-04-24
@@ -26,7 +27,7 @@ importance will still have an Unknown value.
     ...     'Bugs in this project are tracked in Launchpad').selected = True
     >>> admin_browser.getControl('Change', index=3).click()
     >>> admin_browser.title
-    'Debian GNU/Linux in Launchpad'
+    'Debian in Launchpad'
 
     >>> user_browser.open(
     ...     'http://launchpad.dev'

@@ -1,6 +1,6 @@
 #!/usr/bin/python -uS
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0403
@@ -12,15 +12,19 @@ documentation of the very simple 'protocol' Apache uses to talk to us, and
 lp.codehosting.rewrite.BranchRewriter for the logic of the rewritemap.
 """
 
-import _pythonpath
-
 import os
 import sys
 
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
+import _pythonpath
+
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from lp.code.model.branch import Branch
 from lp.codehosting.rewrite import BranchRewriter
-from lp.services.log.loglevels import INFO, WARNING
+from lp.services.log.loglevels import (
+    INFO,
+    WARNING,
+    )
 from lp.services.scripts.base import LaunchpadScript
 
 
@@ -60,11 +64,21 @@ class BranchRewriteScript(LaunchpadScript):
                     return
             except KeyboardInterrupt:
                 sys.exit()
-            except:
+            except Exception:
                 self.logger.exception('Exception occurred:')
                 print "NULL"
+                # The exception might have been a DisconnectionError or
+                # similar. Cleanup such as database reconnection will
+                # not happen until the transaction is rolled back.
+                # XXX StuartBishop 2011-08-31 bug=819282: We are
+                # explicitly rolling back the store here as a workaround
+                # instead of using transaction.abort()
+                try:
+                    ISlaveStore(Branch).rollback()
+                except Exception:
+                    self.logger.exception('Exception occurred in rollback:')
 
 
 if __name__ == '__main__':
     BranchRewriteScript("branch-rewrite", dbuser='branch-rewrite').run(
-        isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+        isolation='autocommit')

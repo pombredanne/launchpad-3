@@ -10,9 +10,14 @@ __all__ = [
 
 from optparse import OptionValueError
 import os
+
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.webapp.dbpolicy import (
+    DatabaseBlockedPolicy,
+    SlaveOnlyDatabasePolicy,
+    )
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import pocketsuffix
@@ -22,7 +27,7 @@ from lp.services.command_spawner import (
     ReturnCodeReceiver,
     )
 from lp.services.scripts.base import (
-    LaunchpadScript,
+    LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
@@ -82,7 +87,7 @@ def execute(logger, command, args=None):
     # and friends to provide "live" log output.  Simpler ways of running
     # commands tend to save it all up and then dump it at the end, or
     # have trouble logging it as neat lines.
-    stderr_logger = OutputLineHandler(logger.warn)
+    stderr_logger = OutputLineHandler(logger.info)
     stdout_logger = OutputLineHandler(logger.debug)
     receiver = ReturnCodeReceiver()
     spawner = CommandSpawner()
@@ -107,7 +112,7 @@ def move_file(old_path, new_path):
     os.rename(old_path, new_path)
 
 
-class GenerateContentsFiles(LaunchpadScript):
+class GenerateContentsFiles(LaunchpadCronScript):
 
     distribution = None
 
@@ -151,8 +156,7 @@ class GenerateContentsFiles(LaunchpadScript):
         if options is not None:
             args += options
         args.append(request)
-        query_distro = LpQueryDistro(test_args=args)
-        query_distro.logger = self.logger
+        query_distro = LpQueryDistro(test_args=args, logger=self.logger)
         query_distro.txn = self.txn
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
@@ -218,46 +222,66 @@ class GenerateContentsFiles(LaunchpadScript):
                         self.logger.debug("Creating %s.", path)
                         os.makedirs(path)
 
-    def copyOverrides(self):
-        """Copy overrides into the content archive."""
-        if file_exists(self.config.overrideroot):
+    def copyOverrides(self, override_root):
+        """Copy overrides into the content archive.
+
+        This method won't access the database.
+        """
+        if file_exists(override_root):
             execute(self.logger, "cp", [
                 "-a",
-                self.config.overrideroot,
+                override_root,
                 "%s/" % self.content_archive,
                 ])
         else:
             self.logger.debug("Did not find overrides; not copying.")
 
-    def writeContentsTop(self):
-        """Write Contents.top file."""
+    def writeContentsTop(self, distro_name, distro_title):
+        """Write Contents.top file.
+
+        This method won't access the database.
+        """
         output_filename = os.path.join(
-            self.content_archive, '%s-misc' % self.distribution.name,
-            "Contents.top")
+            self.content_archive, '%s-misc' % distro_name, "Contents.top")
         parameters = {
-            'distrotitle': self.distribution.title,
+            'distrotitle': distro_title,
         }
         output_file = file(output_filename, 'w')
         text = file(get_template("Contents.top")).read() % parameters
         output_file.write(text)
         output_file.close()
 
-    def runAptFTPArchive(self):
-        """Run apt-ftparchive to produce the Contents files."""
+    def runAptFTPArchive(self, distro_name):
+        """Run apt-ftparchive to produce the Contents files.
+
+        This method may take a long time to run.
+        This method won't access the database.
+        """
         execute(self.logger, "apt-ftparchive", [
             "generate",
             os.path.join(
-                self.content_archive, "%s-misc" % self.distribution.name,
+                self.content_archive, "%s-misc" % distro_name,
                 "apt-contents.conf"),
             ])
 
-    def generateContentsFiles(self):
-        """Generate Contents files."""
+    def generateContentsFiles(self, override_root, distro_name, distro_title):
+        """Generate Contents files.
+
+        This method may take a long time to run.
+        This method won't access the database.
+
+        :param override_root: Copy of `self.config.overrideroot` that can be
+            evaluated without accessing the database.
+        :param distro_name: Copy of `self.distribution.name` that can be
+            evaluated without accessing the database.
+        :param distro_title: Copy of `self.distribution.title` that can be
+            evaluated without accessing the database.
+        """
         self.logger.debug(
             "Running apt in private tree to generate new contents.")
-        self.copyOverrides()
-        self.writeContentsTop()
-        self.runAptFTPArchive()
+        self.copyOverrides(override_root)
+        self.writeContentsTop(distro_name, distro_title)
+        self.runAptFTPArchive(distro_name)
 
     def updateContentsFile(self, suite, arch):
         """Update Contents file, if it has changed."""
@@ -292,40 +316,6 @@ class GenerateContentsFiles(LaunchpadScript):
             for arch in archs:
                 self.updateContentsFile(suite, arch)
 
-    def updateLegacyContentArchiveRoot(self):
-        """Replace content archive root with new contents location.
-
-        If there is a legacy content_archive_root, move it to the new
-        location.
-
-        This is a temporary migration tool for the fix to bug 809211.
-        After this has run at least once on each system that needs it, for
-        each distribution archive, this method can go away.
-        """
-        content_archive_root = getattr(
-            config.archivepublisher, 'content_archive_root', None)
-        if content_archive_root is None:
-            # No legacy configuration; nothing to do.
-            return
-        old_content_dir = os.path.join(
-            content_archive_root, self.distribution.name + "-contents")
-        if not file_exists(old_content_dir):
-            # The data has already been moved (or didn't exist at all).
-            return
-        if file_exists(self.content_archive):
-            # The new contents directory has already been created.
-            # Confusing!
-            self.logger.warn(
-                "New contents directory %s has been created, "
-                "but legacy directory %s still exists.  Ignoring the latter.",
-                self.content_archive, old_content_dir)
-            return
-
-        self.logger.info(
-            "Moving legacy contents directory %s into %s.",
-            old_content_dir, self.content_archive)
-        os.rename(old_content_dir, self.content_archive)
-
     def setUp(self):
         """Prepare configuration and filesystem state for the script's work.
 
@@ -337,15 +327,31 @@ class GenerateContentsFiles(LaunchpadScript):
         self.config = getPubConfig(self.distribution.main_archive)
         self.content_archive = os.path.join(
             self.config.distroroot, "contents-generation")
-        self.updateLegacyContentArchiveRoot()
         self.setUpContentArchive()
 
-    def main(self):
-        """See `LaunchpadScript`."""
+    def process(self):
+        """Do the bulk of the work."""
         self.setUp()
         suites = self.getPockets()
         archs = self.getArchs()
         self.writeAptContentsConf(suites, archs)
         self.createComponentDirs(suites, archs)
-        self.generateContentsFiles()
+
+        overrideroot = self.config.overrideroot
+        distro_name = self.distribution.name
+        distro_title = self.distribution.title
+
+        # This takes a while.  Ensure that we do it without keeping a
+        # database transaction open.
+        self.txn.commit()
+        with DatabaseBlockedPolicy():
+            self.generateContentsFiles(
+                overrideroot, distro_name, distro_title)
+
         self.updateContentsFiles(suites, archs)
+
+    def main(self):
+        """See `LaunchpadScript`."""
+        # This code has no need to alter the database.
+        with SlaveOnlyDatabasePolicy():
+            self.process()

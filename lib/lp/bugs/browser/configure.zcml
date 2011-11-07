@@ -80,7 +80,8 @@
             for="*"
             name="+filebug-macros"
             permission="zope.Public"
-            template="../templates/bugtarget-macros-filebug.pt"/>
+            template="../templates/bugtarget-macros-filebug.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:page
             name="+filebug"
             for="lp.bugs.interfaces.bugtarget.IBugTarget"
@@ -139,7 +140,8 @@
         name="+bugtarget-macros-search"
         for="*"
         permission="zope.Public"
-        template="../templates/bugtarget-macros-search.pt"/>
+        template="../templates/bugtarget-macros-search.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         name="+unlinkbug"
         for="lp.bugs.interfaces.buglink.IBugLinkTarget"
@@ -163,12 +165,14 @@
             for="*"
             name="bugcomment-macros"
             permission="zope.Public"
-            template="../templates/bugcomment-macros.pt"/>
+            template="../templates/bugcomment-macros.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:page
             for="*"
             name="bug-attachment-macros"
             permission="zope.Public"
-            template="../templates/bug-attachment-macros.pt"/>
+            template="../templates/bug-attachment-macros.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+index"/>
@@ -255,7 +259,7 @@
         facet="bugs"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
-        for="*"
+        for="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
         name="+portlet-malone-bugmail-filtering-faq"
         template="../templates/malone-portlet-bugmail-filtering-faq.pt"
         permission="zope.Public"/>
@@ -267,10 +271,10 @@
         permission="launchpad.AnyPerson"/>
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
+        name="+team-bugs-macro"
+        template="../templates/person-team-bugs-macro.pt"
         permission="zope.Public"
-        class="lp.registry.browser.person.PersonView"
-        name="+portlet-team-assignedbugs"
-        template="../templates/person-portlet-team-assignedbugs.pt"/>
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
         name="+portlet-otherpackages"
@@ -282,6 +286,13 @@
         for="lp.registry.interfaces.person.IPerson"
         facet="bugs"
         class="lp.registry.browser.person.PersonRelatedBugTaskSearchListingView"
+        permission="zope.Public"
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
+    <browser:page
+        name="+affectingbugs"
+        for="lp.registry.interfaces.person.IPerson"
+        facet="bugs"
+        class="lp.registry.browser.person.PersonAffectingBugTaskSearchListingView"
         permission="zope.Public"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
@@ -498,12 +509,14 @@
             for="*"
             name="+bugtask-macros-tableview"
             permission="zope.Public"
-            template="../templates/bugtask-macros-tableview.pt"/>
+            template="../templates/bugtask-macros-tableview.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:page
             for="*"
             name="bugtask-macros-cve"
             permission="zope.Public"
-            template="../templates/bugtask-macros-cve.pt"/>
+            template="../templates/bugtask-macros-cve.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+index"/>
@@ -558,8 +571,12 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskTableRowView"
             permission="launchpad.View"
+            name="+bugtasks-and-nominations-table-row"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            permission="zope.Public"
             name="+bugtasks-and-nominations-table-row"
-            template="../templates/bugtask-tasks-and-nominations-table-row.pt"/>
+            template="../templates/bugtarget-tasks-and-nominations-table-row.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+bugtask-macros-listing"
@@ -571,6 +588,12 @@
             class="lp.bugs.browser.bug.BugEditView"
             template="../templates/bug-edit.pt"
             permission="launchpad.Edit"/>
+        <browser:page
+            name="+delete"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            class="lp.bugs.browser.bugtask.BugTaskDeletionView"
+            template="../templates/bugtask-delete.pt"
+            permission="launchpad.Delete"/>
         <browser:page
             name="+secrecy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -635,9 +658,12 @@
             class="lp.bugs.browser.bugtask.BugTaskView"
             permission="launchpad.View"
             template="../templates/bugtask-index.pt"/>
-        <browser:defaultView
-            for="lp.bugs.interfaces.bugtask.IUpstreamBugTask"
-            name="+index"/>
+        <browser:page
+            name="+batched-comments"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            class="lp.bugs.browser.bugtask.BugTaskBatchedCommentsAndActivityView"
+            permission="launchpad.View"
+            template="../templates/bugtask-batched-comments.pt"/>
         <browser:page
             name="+choose-affected-product"
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -655,56 +681,22 @@
             class="lp.bugs.browser.bugalsoaffects.BugAlsoAffectsDistroMetaView"
             permission="launchpad.AnyPerson"/>
         <browser:page
-            name="+edit-form"
-            for="lp.bugs.interfaces.bugtask.IUpstreamBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit-form.pt">
-                </browser:page>
-        <browser:page
-            name="+edit-form"
-            for="lp.bugs.interfaces.bugtask.IProductSeriesBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit-form.pt">
-                </browser:page>
-        <browser:page
             name="+editstatus"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskEditView"
             permission="launchpad.Edit"
             template="../templates/bugtask-edit.pt"/>
         <browser:page
-            name="+viewstatus"
+            name="+edit-form"
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskStatusView"
-            permission="launchpad.View"
-            template="../templates/bugtask-view.pt"/>
+            class="lp.bugs.browser.bugtask.BugTaskEditView"
+            permission="launchpad.Edit"
+            template="../templates/bugtask-edit-form.pt" />
         <browser:page
             name="+listing-view"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskListingView"
             permission="launchpad.View">
-                </browser:page>
-        <browser:defaultView
-            for="lp.bugs.interfaces.bugtask.IDistroBugTask"
-            name="+index"/>
-        <browser:page
-            name="+edit-form"
-            for="lp.bugs.interfaces.bugtask.IDistroBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit-form.pt">
-                </browser:page>
-        <browser:defaultView
-            for="lp.bugs.interfaces.bugtask.IDistroSeriesBugTask"
-            name="+index"/>
-        <browser:page
-            name="+edit-form"
-            for="lp.bugs.interfaces.bugtask.IDistroSeriesBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit-form.pt">
                 </browser:page>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -883,6 +875,7 @@
             name="+index"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IRemoteBug"
+            class="canonical.launchpad.webapp.LaunchpadView"
             permission="zope.Public">
             <browser:page
                 name="+index"
@@ -1032,6 +1025,12 @@
             class="lp.bugs.browser.bug.BugWithoutContextView"
             permission="zope.Public"
             attribute="redirectToNewBugPage"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
+            permission="launchpad.View"
+            name="+bugtasks-and-nominations-portal"
+            template="../templates/bugtasks-and-nominations-portal.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"

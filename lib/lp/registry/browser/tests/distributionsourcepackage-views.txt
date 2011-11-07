@@ -43,14 +43,14 @@ series.
     ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     distroseries=ubuntutest.getSeries('breezy-autotest'))
-    >>> earliest_series = factory.makeDistroRelease(
+    >>> earliest_series = factory.makeDistroSeries(
     ...     distribution=ubuntutest, version='1.1', name='earliest')
     >>> eel_main_src_hist = publisher.getPubSource(
     ...     sourcename="eel", archive=ubuntutest.main_archive,
     ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     distroseries=earliest_series)
-    >>> latest_series = factory.makeDistroRelease(
+    >>> latest_series = factory.makeDistroSeries(
     ...     distribution=ubuntutest, version='10.04', name='latest')
     >>> eel_main_src_hist = publisher.getPubSource(
     ...     sourcename="eel", archive=ubuntutest.main_archive,

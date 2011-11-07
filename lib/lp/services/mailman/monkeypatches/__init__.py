@@ -63,6 +63,7 @@ def monkey_patch(mailman_path, config):
             smtp_port=port,
             xmlrpc_url=config.mailman.xmlrpc_url,
             xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
+            xmlrpc_timeout=config.mailman.xmlrpc_timeout,
             xmlrpc_subscription_batch_size
                 =config.mailman.subscription_batch_size,
             site_list_owner=owner_address,

@@ -5,6 +5,12 @@
 # for this.
 GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
 
+if ! test -d "$GNUPGHOME"
+then
+	echo "There is no $GNUPGHOME; not signing Release files."
+	exit 0
+fi
+
 RELEASE_FILES=`find $DISTSROOT -maxdepth 2 -name Release`
 DIST_UPGRADER_TARBALLS=`
 	find $DISTSROOT/*/*/dist-upgrader* -name "*.tar.gz" || true`

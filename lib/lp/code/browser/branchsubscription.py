@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,7 +12,7 @@ __all__ = [
     'BranchSubscriptionPrimaryContext',
     ]
 
-
+from lazr.restful.utils import smartquote
 from zope.interface import implements
 
 from canonical.launchpad.webapp import (
@@ -22,7 +22,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
@@ -271,4 +270,3 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
         return canonical_url(self.branch)
 
     cancel_url = next_url
-

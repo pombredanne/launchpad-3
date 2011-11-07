@@ -5,12 +5,18 @@ __metaclass__ = type
 __all__ = [
     'HasRenewalPolicyMixin',
     'ProposedTeamMembersEditView',
+    'TeamAddMyTeamsView',
     'TeamAddView',
     'TeamBadges',
     'TeamBrandingView',
+    'TeamBreadcrumb',
     'TeamContactAddressView',
+    'TeamEditMenu',
     'TeamEditView',
     'TeamHierarchyView',
+    'TeamIndexMenu',
+    'TeamJoinView',
+    'TeamLeaveView',
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
     'TeamMailingListSubscribersView',
@@ -19,38 +25,71 @@ __all__ = [
     'TeamMapView',
     'TeamMapLtdView',
     'TeamMemberAddView',
+    'TeamMembershipView',
+    'TeamMugshotView',
+    'TeamNavigation',
+    'TeamOverviewMenu',
+    'TeamOverviewNavigationMenu',
     'TeamPrivacyAdapter',
+    'TeamReassignmentView',
     ]
 
 
-from datetime import datetime
+import cgi
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import math
 from urllib import unquote
 
 import pytz
+from lazr.restful.utils import smartquote
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.form import FormFields
 from zope.interface import (
+    classImplements,
     implements,
     Interface,
     )
-from zope.schema import Choice
+from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.security.interfaces import Unauthorized
+from zope.schema import (
+    Bool,
+    Choice,
+    List,
+    Text,
+    )
 from zope.schema.vocabulary import (
+    getVocabularyRegistry,
     SimpleTerm,
     SimpleVocabulary,
     )
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.webapp import (
+    ApplicationMenu,
     canonical_url,
+    enabled_with_permission,
     LaunchpadView,
+    Link,
+    NavigationMenu,
+    stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import (
+    ActiveBatchNavigator,
+    InactiveBatchNavigator,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -59,19 +98,33 @@ from canonical.lazr.interfaces import IObjectPrivacy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
-    LaunchpadEditFormView,
     LaunchpadFormView,
     )
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.owner import HiddenUserWidget
 from lp.app.widgets.popup import PersonPickerWidget
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.registry.browser.person import (
+    CommonMenuLinks,
+    PersonIndexView,
+    PersonNavigation,
+    PersonRenameFormMixin,
+    PPANavigationMenuMixIn,
+    )
+from lp.registry.browser.teamjoin import (
+    TeamJoinMixin,
+    userIsActiveTeamMember,
+    )
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
     IMailingListSet,
@@ -79,19 +132,28 @@ from lp.registry.interfaces.mailinglist import (
     PostedMessageStatus,
     PURGE_STATES,
     )
+from lp.registry.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
+    ITeamReassignment,
     ITeamContactAddressForm,
     ITeamCreation,
     PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
+    TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     )
+from lp.registry.interfaces.poll import IPollSet
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ITeamMembership,
+    ITeamMembershipSet,
     TeamMembershipStatus,
     )
 from lp.services.fields import PublicPersonChoice
@@ -198,8 +260,8 @@ class TeamFormMixin:
             self.form_fields = self.form_fields.omit('visibility')
 
 
-class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
-                   LaunchpadEditFormView):
+class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
+                   HasRenewalPolicyMixin):
     """View for editing team details."""
     schema = ITeam
 
@@ -248,44 +310,6 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         return canonical_url(self.context)
 
     cancel_url = next_url
-
-    def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        When a team has a mailing list, a PPA or is private, renames
-        are prohibited.
-        """
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        has_mailing_list = (
-            mailing_list is not None and
-            mailing_list.status != MailingListStatus.PURGED)
-        is_private = self.context.visibility == PersonVisibility.PRIVATE
-        has_ppa = self.context.archive is not None
-
-        block_renaming = (has_mailing_list or is_private or has_ppa)
-        if block_renaming:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-
-        super(TeamEditView, self).setUpWidgets()
-
-        # Tweak the field form-help including an explanation for the
-        # read-only mode if necessary.
-        if block_renaming:
-            # Group the read-only mode reasons in textual form.
-            # Private teams can't be associated with mailing lists
-            # or PPAs yet, so it's a dominant condition.
-            if is_private:
-                reason = 'is private'
-            else:
-                if not has_mailing_list:
-                    reason = 'has a PPA'
-                elif not has_ppa:
-                    reason = 'has a mailing list'
-                else:
-                    reason = 'has a mailing list and a PPA'
-            self.widgets['name'].hint = _(
-                'This team cannot be renamed because it %s.' % reason)
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -549,7 +573,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         already been approved or declined. This can only happen
         through bypassing the UI.
         """
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        getUtility(IMailingListSet).get(self.context.name)
         if self.getListInState(MailingListStatus.REGISTERED) is None:
             self.addError("This application can't be cancelled.")
 
@@ -563,24 +587,25 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             "Mailing list application cancelled.")
         self.next_url = canonical_url(self.context)
 
-    def request_list_creation_validator(self, action, data):
-        """Validator for the `request_list_creation` action.
+    def create_list_creation_validator(self, action, data):
+        """Validator for the `create_list_creation` action.
 
-        Adds an error if someone tries to request a mailing list for a
+        Adds an error if someone tries to create a mailing list for a
         team that already has one. This can only happen through
         bypassing the UI.
         """
-        if not self.list_can_be_requested:
+        if not self.list_can_be_created:
             self.addError(
-                "You cannot request a new mailing list for this team.")
+                "You cannot create a new mailing list for this team.")
 
-    @action('Apply for Mailing List', name='request_list_creation',
-            validator=request_list_creation_validator)
-    def request_list_creation(self, action, data):
+    @action('Create new Mailing List', name='create_list_creation',
+            validator=create_list_creation_validator)
+    def create_list_creation(self, action, data):
         """Creates a new mailing list."""
         getUtility(IMailingListSet).new(self.context)
         self.request.response.addInfoNotification(
-            "Mailing list requested and queued for approval.")
+            "The mailing list is being created and will be available for "
+            "use in a few minutes.")
         self.next_url = canonical_url(self.context)
 
     def deactivate_list_validator(self, action, data):
@@ -714,8 +739,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         return self.getListInState(MailingListStatus.REGISTERED) is not None
 
     @property
-    def list_can_be_requested(self):
-        """Can a mailing list be requested for this team?
+    def list_can_be_created(self):
+        """Can a mailing list be created for this team?
 
         It can only be requested if there's no mailing list associated with
         this team, or the mailing list has been purged.
@@ -984,7 +1009,7 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
             failed_names = [person.displayname for person in failed_joins]
             failed_list = ", ".join(failed_names)
 
-            mapping = dict( this_team=target_team.displayname,
+            mapping = dict(this_team=target_team.displayname,
                 failed_list=failed_list)
 
             if len(failed_joins) == 1:
@@ -1226,3 +1251,907 @@ class TeamHierarchyView(LaunchpadView):
     @property
     def has_relationships(self):
         return self.has_sub_teams or self.has_super_teams
+
+
+class TeamNavigation(PersonNavigation):
+
+    usedfor = ITeam
+
+    @stepthrough('+poll')
+    def traverse_poll(self, name):
+        return getUtility(IPollSet).getByTeamAndName(self.context, name)
+
+    @stepthrough('+invitation')
+    def traverse_invitation(self, name):
+        # Return the found membership regardless of its status as we know
+        # TeamInvitationView can handle memberships in statuses other than
+        # INVITED.
+        membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.context, getUtility(IPersonSet).getByName(name))
+        if membership is None:
+            return None
+        return TeamInvitationView(membership, self.request)
+
+    @stepthrough('+member')
+    def traverse_member(self, name):
+        person = getUtility(IPersonSet).getByName(name)
+        if person is None:
+            return None
+        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            person, self.context)
+
+
+class TeamBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `ITeam`."""
+
+    @property
+    def text(self):
+        return smartquote('"%s" team') % self.context.displayname
+
+
+class TeamMembershipSelfRenewalView(LaunchpadFormView):
+
+    implements(IBrowserPublisher)
+
+    # This is needed for our breadcrumbs, as there's no <browser:page>
+    # declaration for this view.
+    __name__ = '+self-renewal'
+    schema = ITeamMembership
+    field_names = []
+    template = ViewPageTemplateFile(
+        '../templates/teammembership-self-renewal.pt')
+
+    @property
+    def label(self):
+        return "Renew membership of %s in %s" % (
+            self.context.person.displayname, self.context.team.displayname)
+
+    page_title = label
+
+    def __init__(self, context, request):
+        # Only the member himself or admins of the member (in case it's a
+        # team) can see the page in which they renew memberships that are
+        # about to expire.
+        if not check_permission('launchpad.Edit', context.person):
+            raise Unauthorized(
+                "You may not renew the membership for %s." %
+                context.person.displayname)
+        LaunchpadFormView.__init__(self, context, request)
+
+    def browserDefault(self, request):
+        return self, ()
+
+    @property
+    def reason_for_denied_renewal(self):
+        """Return text describing why the membership can't be renewed."""
+        context = self.context
+        ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+        admin = TeamMembershipStatus.ADMIN
+        approved = TeamMembershipStatus.APPROVED
+        date_limit = datetime.now(pytz.UTC) - timedelta(
+            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+        if context.status not in (admin, approved):
+            text = "it is not active."
+        elif context.team.renewal_policy != ondemand:
+            text = ('<a href="%s">%s</a> is not a team that allows its '
+                    'members to renew their own memberships.'
+                    % (canonical_url(context.team),
+                       context.team.unique_displayname))
+        elif context.dateexpires is None or context.dateexpires > date_limit:
+            if context.person.isTeam():
+                link_text = "Somebody else has already renewed it."
+            else:
+                link_text = (
+                    "You or one of the team administrators has already "
+                    "renewed it.")
+            text = ('it is not set to expire in %d days or less. '
+                    '<a href="%s/+members">%s</a>'
+                    % (DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+                       canonical_url(context.team), link_text))
+        else:
+            raise AssertionError('This membership can be renewed!')
+        return text
+
+    @property
+    def time_before_expiration(self):
+        return self.context.dateexpires - datetime.now(pytz.timezone('UTC'))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.person)
+
+    cancel_url = next_url
+
+    @action(_("Renew"), name="renew")
+    def renew_action(self, action, data):
+        member = self.context.person
+        # This if-statement prevents an exception if the user
+        # double clicks on the submit button.
+        if self.context.canBeRenewedByMember():
+            member.renewTeamMembership(self.context.team)
+        self.request.response.addInfoNotification(
+            _("Membership renewed until ${date}.", mapping=dict(
+                    date=self.context.dateexpires.strftime('%Y-%m-%d'))))
+
+
+class ITeamMembershipInvitationAcknowledgementForm(Interface):
+    """Schema for the form in which team admins acknowledge invitations.
+
+    We could use ITeamMembership for that, but the acknowledger_comment is
+    marked readonly there and that means LaunchpadFormView won't include the
+    value of that in the data given to our action handler.
+    """
+
+    acknowledger_comment = Text(
+        title=_("Comment"), required=False, readonly=False)
+
+
+class TeamInvitationView(LaunchpadFormView):
+    """Where team admins can accept/decline membership invitations."""
+
+    implements(IBrowserPublisher)
+
+    # This is needed for our breadcrumbs, as there's no <browser:page>
+    # declaration for this view.
+    __name__ = '+invitation'
+    schema = ITeamMembershipInvitationAcknowledgementForm
+    field_names = ['acknowledger_comment']
+    custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
+    template = ViewPageTemplateFile(
+        '../templates/teammembership-invitation.pt')
+
+    def __init__(self, context, request):
+        # Only admins of the invited team can see the page in which they
+        # approve/decline invitations.
+        if not check_permission('launchpad.Edit', context.person):
+            raise Unauthorized(
+                "Only team administrators can approve/decline invitations "
+                "sent to this team.")
+        LaunchpadFormView.__init__(self, context, request)
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return "Make %s a member of %s" % (
+            self.context.person.displayname, self.context.team.displayname)
+
+    @property
+    def page_title(self):
+        return smartquote(
+            '"%s" team invitation') % self.context.team.displayname
+
+    def browserDefault(self, request):
+        return self, ()
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.person)
+
+    @action(_("Accept"), name="accept")
+    def accept_action(self, action, data):
+        if self.context.status != TeamMembershipStatus.INVITED:
+            self.request.response.addInfoNotification(
+                _("This invitation has already been processed."))
+            return
+        member = self.context.person
+        try:
+            member.acceptInvitationToBeMemberOf(
+                self.context.team, data['acknowledger_comment'])
+        except CyclicalTeamMembershipError:
+            self.request.response.addInfoNotification(
+                _("This team may not be added to ${that_team} because it is "
+                  "a member of ${this_team}.",
+                  mapping=dict(
+                      that_team=self.context.team.displayname,
+                      this_team=member.displayname)))
+        else:
+            self.request.response.addInfoNotification(
+                _("This team is now a member of ${team}.", mapping=dict(
+                    team=self.context.team.displayname)))
+
+    @action(_("Decline"), name="decline")
+    def decline_action(self, action, data):
+        if self.context.status != TeamMembershipStatus.INVITED:
+            self.request.response.addInfoNotification(
+                _("This invitation has already been processed."))
+            return
+        member = self.context.person
+        member.declineInvitationToBeMemberOf(
+            self.context.team, data['acknowledger_comment'])
+        self.request.response.addInfoNotification(
+            _("Declined the invitation to join ${team}", mapping=dict(
+                  team=self.context.team.displayname)))
+
+    @action(_("Cancel"), name="cancel")
+    def cancel_action(self, action, data):
+        # Simply redirect back.
+        pass
+
+
+class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
+    """Base class of team menus.
+
+    You will need to override the team attribute if your menu subclass
+    has the view as its context object.
+    """
+
+    def profile(self):
+        target = ''
+        text = 'Overview'
+        return Link(target, text)
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        target = '+edit'
+        text = 'Change details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        target = '+branding'
+        text = 'Change branding'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Owner')
+    def reassign(self):
+        target = '+reassign'
+        text = 'Change owner'
+        summary = 'Change the owner of the team'
+        return Link(target, text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Moderate')
+    def delete(self):
+        target = '+delete'
+        text = 'Delete'
+        summary = 'Delete this team'
+        return Link(target, text, summary, icon='trash-icon')
+
+    @enabled_with_permission('launchpad.View')
+    def members(self):
+        target = '+members'
+        text = 'Show all members'
+        return Link(target, text, icon='team')
+
+    @enabled_with_permission('launchpad.Edit')
+    def received_invitations(self):
+        target = '+invitations'
+        text = 'Show received invitations'
+        return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_member(self):
+        target = '+addmember'
+        text = 'Add member'
+        return Link(target, text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def proposed_members(self):
+        target = '+editproposedmembers'
+        text = 'Approve or decline members'
+        return Link(target, text, icon='add')
+
+    def map(self):
+        target = '+map'
+        text = 'View map and time zones'
+        return Link(target, text, icon='meeting')
+
+    def add_my_teams(self):
+        target = '+add-my-teams'
+        text = 'Add one of my teams'
+        enabled = True
+        restricted = TeamSubscriptionPolicy.RESTRICTED
+        if self.person.subscriptionpolicy == restricted:
+            # This is a restricted team; users can't join.
+            enabled = False
+        return Link(target, text, icon='add', enabled=enabled)
+
+    def memberships(self):
+        target = '+participation'
+        text = 'Show team participation'
+        return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.View')
+    def mugshots(self):
+        target = '+mugshots'
+        text = 'Show member photos'
+        return Link(target, text, icon='team')
+
+    def polls(self):
+        target = '+polls'
+        text = 'Show polls'
+        return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_poll(self):
+        target = '+newpoll'
+        text = 'Create a poll'
+        return Link(target, text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editemail(self):
+        target = '+contactaddress'
+        text = 'Set contact address'
+        summary = (
+            'The address Launchpad uses to contact %s' %
+            self.person.displayname)
+        return Link(target, text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Moderate')
+    def configure_mailing_list(self):
+        target = '+mailinglist'
+        mailing_list = self.person.mailing_list
+        if mailing_list is not None:
+            text = 'Configure mailing list'
+            icon = 'edit'
+        else:
+            text = 'Create a mailing list'
+            icon = 'add'
+        summary = (
+            'The mailing list associated with %s' % self.context.displayname)
+        return Link(target, text, summary, icon=icon)
+
+    @enabled_with_active_mailing_list
+    @enabled_with_permission('launchpad.Edit')
+    def moderate_mailing_list(self):
+        target = '+mailinglist-moderate'
+        text = 'Moderate mailing list'
+        summary = (
+            'The mailing list associated with %s' % self.context.displayname)
+        return Link(target, text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editlanguages(self):
+        target = '+editlanguages'
+        text = 'Set preferred languages'
+        return Link(target, text, icon='edit')
+
+    def leave(self):
+        enabled = True
+        if not userIsActiveTeamMember(self.person):
+            enabled = False
+        if self.person.teamowner == self.user:
+            # The owner cannot leave his team.
+            enabled = False
+        target = '+leave'
+        text = 'Leave the Team'
+        icon = 'remove'
+        return Link(target, text, icon=icon, enabled=enabled)
+
+    def join(self):
+        enabled = True
+        person = self.person
+        if userIsActiveTeamMember(person):
+            enabled = False
+        elif (self.person.subscriptionpolicy ==
+              TeamSubscriptionPolicy.RESTRICTED):
+            # This is a restricted team; users can't join.
+            enabled = False
+        target = '+join'
+        text = 'Join the team'
+        icon = 'add'
+        return Link(target, text, icon=icon, enabled=enabled)
+
+
+class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
+
+    usedfor = ITeam
+    facet = 'overview'
+    links = [
+        'edit',
+        'branding',
+        'common_edithomepage',
+        'members',
+        'mugshots',
+        'add_member',
+        'proposed_members',
+        'memberships',
+        'received_invitations',
+        'editemail',
+        'configure_mailing_list',
+        'moderate_mailing_list',
+        'editlanguages',
+        'map',
+        'polls',
+        'add_poll',
+        'join',
+        'leave',
+        'add_my_teams',
+        'reassign',
+        'projects',
+        'activate_ppa',
+        'maintained',
+        'ppa',
+        'related_software_summary',
+        'view_recipes',
+        'subscriptions',
+        'structural_subscriptions',
+        ]
+
+
+class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
+    """A top-level menu for navigation within a Team."""
+
+    usedfor = ITeam
+    facet = 'overview'
+    links = ['profile', 'polls', 'members', 'ppas']
+
+
+class TeamMembershipView(LaunchpadView):
+    """The view behind ITeam/+members."""
+
+    @cachedproperty
+    def label(self):
+        return smartquote('Members of "%s"' % self.context.displayname)
+
+    @cachedproperty
+    def active_memberships(self):
+        """Current members of the team."""
+        return ActiveBatchNavigator(
+            self.context.member_memberships, self.request)
+
+    @cachedproperty
+    def inactive_memberships(self):
+        """Former members of the team."""
+        return InactiveBatchNavigator(
+            self.context.getInactiveMemberships(), self.request)
+
+    @cachedproperty
+    def invited_memberships(self):
+        """Other teams invited to become members of this team."""
+        return list(self.context.getInvitedMemberships())
+
+    @cachedproperty
+    def proposed_memberships(self):
+        """Users who have requested to join this team."""
+        return list(self.context.getProposedMemberships())
+
+    @property
+    def have_pending_members(self):
+        return self.proposed_memberships or self.invited_memberships
+
+
+class TeamIndexView(PersonIndexView, TeamJoinMixin):
+    """The view class for the +index page.
+
+    This class is needed, so an action menu that only applies to
+    teams can be displayed without showing up on the person index page.
+    """
+
+    @property
+    def can_show_subteam_portlet(self):
+        """Only show the subteam portlet if there is info to display.
+
+        Either the team is a member of another team, or there are
+        invitations to join a team, and the owner needs to see the
+        link so that the invitation can be accepted.
+        """
+        try:
+            return (self.context.super_teams.count() > 0
+                    or (self.context.open_membership_invitations
+                        and check_permission('launchpad.Edit', self.context)))
+        except AttributeError, e:
+            raise AssertionError(e)
+
+    @property
+    def visibility_info(self):
+        if self.context.visibility == PersonVisibility.PRIVATE:
+            return 'Private team'
+        else:
+            return 'Public team'
+
+    @property
+    def visibility_portlet_class(self):
+        """The portlet class for team visibility."""
+        if self.context.visibility == PersonVisibility.PUBLIC:
+            return 'portlet'
+        return 'portlet private'
+
+    @property
+    def add_member_step_title(self):
+        """A string for setup_add_member_handler with escaped quotes."""
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.context, 'ValidTeamMember')
+        return vocabulary.step_title.replace("'", "\\'").replace('"', '\\"')
+
+
+class TeamJoinForm(Interface):
+    """Schema for team join."""
+    mailinglist_subscribe = Bool(
+        title=_("Subscribe me to this team's mailing list"),
+        required=True, default=True)
+
+
+class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
+    """A view class for joining a team."""
+    schema = TeamJoinForm
+
+    @property
+    def label(self):
+        return 'Join ' + cgi.escape(self.context.displayname)
+
+    page_title = label
+
+    def setUpWidgets(self):
+        super(TeamJoinView, self).setUpWidgets()
+        if 'mailinglist_subscribe' in self.field_names:
+            widget = self.widgets['mailinglist_subscribe']
+            widget.setRenderedValue(self.user_wants_list_subscriptions)
+
+    @property
+    def field_names(self):
+        """See `LaunchpadFormView`.
+
+        If the user can subscribe to the mailing list then include the
+        mailinglist subscription checkbox otherwise remove it.
+        """
+        if self.user_can_subscribe_to_list:
+            return ['mailinglist_subscribe']
+        else:
+            return []
+
+    @property
+    def join_allowed(self):
+        """Is the logged in user allowed to join this team?
+
+        The answer is yes if this team's subscription policy is not RESTRICTED
+        and this team's visibility is either None or PUBLIC.
+        """
+        # Joining a moderated team will put you on the proposed_members
+        # list. If it is a private team, you are not allowed to view the
+        # proposed_members attribute until you are an active member;
+        # therefore, it would look like the join button is broken. Either
+        # private teams should always have a restricted subscription policy,
+        # or we need a more complicated permission model.
+        if not (self.context.visibility is None
+                or self.context.visibility == PersonVisibility.PUBLIC):
+            return False
+
+        restricted = TeamSubscriptionPolicy.RESTRICTED
+        return self.context.subscriptionpolicy != restricted
+
+    @property
+    def user_can_request_to_join(self):
+        """Can the logged in user request to join this team?
+
+        The user can request if he's allowed to join this team and if he's
+        not yet an active member of this team.
+        """
+        if not self.join_allowed:
+            return False
+        return not (self.user_is_active_member or
+                    self.user_is_proposed_member)
+
+    @property
+    def user_wants_list_subscriptions(self):
+        """Is the user interested in subscribing to mailing lists?"""
+        return (self.user.mailing_list_auto_subscribe_policy !=
+                MailingListAutoSubscribePolicy.NEVER)
+
+    @property
+    def team_is_moderated(self):
+        """Is this team a moderated team?
+
+        Return True if the team's subscription policy is MODERATED.
+        """
+        policy = self.context.subscriptionpolicy
+        return policy == TeamSubscriptionPolicy.MODERATED
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Join"), name="join")
+    def action_save(self, action, data):
+        response = self.request.response
+
+        if self.user_can_request_to_join:
+            # Shut off mailing list auto-subscription - we want direct
+            # control over it.
+            self.user.join(self.context, may_subscribe_to_list=False)
+
+            if self.team_is_moderated:
+                response.addInfoNotification(
+                    _('Your request to join ${team} is awaiting '
+                      'approval.',
+                      mapping={'team': self.context.displayname}))
+            else:
+                response.addInfoNotification(
+                    _('You have successfully joined ${team}.',
+                      mapping={'team': self.context.displayname}))
+            if data.get('mailinglist_subscribe', False):
+                self._subscribeToList(response)
+
+        else:
+            response.addErrorNotification(
+                _('You cannot join ${team}.',
+                  mapping={'team': self.context.displayname}))
+
+    def _subscribeToList(self, response):
+        """Subscribe the user to the team's mailing list."""
+
+        if self.user_can_subscribe_to_list:
+            # 'user_can_subscribe_to_list' should have dealt with
+            # all of the error cases.
+            self.context.mailing_list.subscribe(self.user)
+
+            if self.team_is_moderated:
+                response.addInfoNotification(
+                    _('Your mailing list subscription is '
+                      'awaiting approval.'))
+            else:
+                response.addInfoNotification(
+                    structured(
+                        _("You have been subscribed to this "
+                          "team&#x2019;s mailing list.")))
+        else:
+            # A catch-all case, perhaps from stale or mangled
+            # form data.
+            response.addErrorNotification(
+                _('Mailing list subscription failed.'))
+
+
+class TeamAddMyTeamsView(LaunchpadFormView):
+    """Propose/add to this team any team that you're an administrator of."""
+
+    page_title = 'Propose/add one of your teams to another one'
+    custom_widget('teams', LabeledMultiCheckBoxWidget)
+
+    def initialize(self):
+        context = self.context
+        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            self.label = 'Propose these teams as members'
+        else:
+            self.label = 'Add these teams to %s' % context.displayname
+        self.next_url = canonical_url(context)
+        super(TeamAddMyTeamsView, self).initialize()
+
+    def setUpFields(self):
+        terms = []
+        for team in self.candidate_teams:
+            text = structured(
+                '<a href="%s">%s</a>', canonical_url(team), team.displayname)
+            terms.append(SimpleTerm(team, team.name, text))
+        self.form_fields = FormFields(
+            List(__name__='teams',
+                 title=_(''),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False),
+            render_context=self.render_context)
+
+    def setUpWidgets(self, context=None):
+        super(TeamAddMyTeamsView, self).setUpWidgets(context)
+        self.widgets['teams'].display_label = False
+
+    @cachedproperty
+    def candidate_teams(self):
+        """Return the set of teams that can be added/proposed for the context.
+
+        We return only teams that the user can administer, that aren't already
+        a member in the context or that the context isn't a member of. (Of
+        course, the context is also omitted.)
+        """
+        candidates = []
+        for team in self.user.getAdministratedTeams():
+            if team == self.context:
+                continue
+            elif team.visibility != PersonVisibility.PUBLIC:
+                continue
+            elif team in self.context.activemembers:
+                # The team is already a member of the context object.
+                continue
+            elif self.context.hasParticipationEntryFor(team):
+                # The context object is a member/submember of the team.
+                continue
+            candidates.append(team)
+        return candidates
+
+    @property
+    def cancel_url(self):
+        """The return URL."""
+        return canonical_url(self.context)
+
+    def validate(self, data):
+        if len(data.get('teams', [])) == 0:
+            self.setFieldError('teams',
+                               'Please select the team(s) you want to be '
+                               'member(s) of this team.')
+
+    def hasCandidates(self, action):
+        """Return whether the user has teams to propose."""
+        return len(self.candidate_teams) > 0
+
+    @action(_("Continue"), name="continue", condition=hasCandidates)
+    def continue_action(self, action, data):
+        """Make the selected teams join this team."""
+        context = self.context
+        is_admin = check_permission('launchpad.Admin', context)
+        membership_set = getUtility(ITeamMembershipSet)
+        proposed_team_names = []
+        added_team_names = []
+        accepted_invite_team_names = []
+        membership_set = getUtility(ITeamMembershipSet)
+        for team in data['teams']:
+            membership = membership_set.getByPersonAndTeam(team, context)
+            if (membership is not None
+                and membership.status == TeamMembershipStatus.INVITED):
+                team.acceptInvitationToBeMemberOf(
+                    context,
+                    'Accepted an already pending invitation while trying to '
+                    'propose the team for membership.')
+                accepted_invite_team_names.append(team.displayname)
+            elif is_admin:
+                context.addMember(team, reviewer=self.user)
+                added_team_names.append(team.displayname)
+            else:
+                team.join(context, requester=self.user)
+                membership = membership_set.getByPersonAndTeam(team, context)
+                if membership.status == TeamMembershipStatus.PROPOSED:
+                    proposed_team_names.append(team.displayname)
+                elif membership.status == TeamMembershipStatus.APPROVED:
+                    added_team_names.append(team.displayname)
+                else:
+                    raise AssertionError(
+                        'Unexpected membership status (%s) for %s.'
+                        % (membership.status.name, team.name))
+        full_message = ''
+        for team_names, message in (
+            (proposed_team_names, 'proposed to this team.'),
+            (added_team_names, 'added to this team.'),
+            (accepted_invite_team_names,
+             'added to this team because of an existing invite.'),
+            ):
+            if len(team_names) == 0:
+                continue
+            elif len(team_names) == 1:
+                verb = 'has been'
+                team_string = team_names[0]
+            elif len(team_names) > 1:
+                verb = 'have been'
+                team_string = (
+                    ', '.join(team_names[:-1]) + ' and ' + team_names[-1])
+            full_message += '%s %s %s' % (team_string, verb, message)
+        self.request.response.addInfoNotification(full_message)
+
+
+class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
+    schema = Interface
+
+    @property
+    def label(self):
+        return 'Leave ' + cgi.escape(self.context.displayname)
+
+    page_title = label
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    next_url = cancel_url
+
+    @action(_("Leave"), name="leave")
+    def action_save(self, action, data):
+        if self.user_can_request_to_leave:
+            self.user.leave(self.context)
+
+
+class TeamReassignmentView(ObjectReassignmentView):
+
+    ownerOrMaintainerAttr = 'teamowner'
+    schema = ITeamReassignment
+
+    def __init__(self, context, request):
+        super(TeamReassignmentView, self).__init__(context, request)
+        self.callback = self._addOwnerAsMember
+
+    def validateOwner(self, new_owner):
+        """Display error if the owner is not valid.
+
+        Called by ObjectReassignmentView.validate().
+        """
+        if self.context.inTeam(new_owner):
+            path = self.context.findPathToTeam(new_owner)
+            if len(path) == 1:
+                relationship = 'a direct member'
+                path_string = ''
+            else:
+                relationship = 'an indirect member'
+                full_path = [self.context] + path
+                path_string = '(%s)' % '&rArr;'.join(
+                    team.displayname for team in full_path)
+            error = structured(
+                'Circular team memberships are not allowed. '
+                '%(new)s cannot be the new team owner, since %(context)s '
+                'is %(relationship)s of %(new)s. '
+                '<span style="white-space: nowrap">%(path)s</span>'
+                % dict(new=new_owner.displayname,
+                        context=self.context.displayname,
+                        relationship=relationship,
+                        path=path_string))
+            self.setFieldError(self.ownerOrMaintainerName, error)
+
+    @property
+    def contextName(self):
+        return self.context.displayname
+
+    def _addOwnerAsMember(self, team, oldOwner, newOwner):
+        """Add the new and the old owners as administrators of the team.
+
+        When a user creates a new team, he is added as an administrator of
+        that team. To be consistent with this, we must make the new owner an
+        administrator of the team. This rule is ignored only if the new owner
+        is an inactive member of the team, as that means he's not interested
+        in being a member. The same applies to the old owner.
+        """
+        # Both new and old owners won't be added as administrators of the team
+        # only if they're inactive members. If they're either active or
+        # proposed members they'll be made administrators of the team.
+        if newOwner not in team.inactivemembers:
+            team.addMember(
+                newOwner, reviewer=oldOwner,
+                status=TeamMembershipStatus.ADMIN, force_team_add=True)
+        if oldOwner not in team.inactivemembers:
+            team.addMember(
+                oldOwner, reviewer=oldOwner,
+                status=TeamMembershipStatus.ADMIN, force_team_add=True)
+
+
+class ITeamIndexMenu(Interface):
+    """A marker interface for the +index navigation menu."""
+
+
+class ITeamEditMenu(Interface):
+    """A marker interface for the edit navigation menu."""
+
+
+class TeamNavigationMenuBase(NavigationMenu, TeamMenuMixin):
+
+    @property
+    def person(self):
+        """Override CommonMenuLinks since the view is the context."""
+        return self.context.context
+
+
+class TeamIndexMenu(TeamNavigationMenuBase):
+    """A menu for different aspects of editing a team."""
+
+    usedfor = ITeamIndexMenu
+    facet = 'overview'
+    title = 'Change team'
+    links = ('edit', 'delete', 'join', 'add_my_teams', 'leave')
+
+
+class TeamEditMenu(TeamNavigationMenuBase):
+    """A menu for different aspects of editing a team."""
+
+    usedfor = ITeamEditMenu
+    facet = 'overview'
+    title = 'Change team'
+    links = ('branding', 'common_edithomepage', 'editlanguages', 'reassign',
+             'editemail')
+
+
+class TeamMugshotView(LaunchpadView):
+    """A view for the team mugshot (team photo) page"""
+
+    label = "Member photos"
+    batch_size = config.launchpad.mugshot_batch_size
+
+    def initialize(self):
+        """Cache images to avoid dying from a million cuts."""
+        getUtility(IPersonSet).cacheBrandingForPeople(
+            self.members.currentBatch())
+
+    @cachedproperty
+    def members(self):
+        """Get a batch of all members in the team."""
+        batch_nav = BatchNavigator(
+            self.context.allmembers, self.request, size=self.batch_size)
+        return batch_nav
+
+
+classImplements(TeamIndexView, ITeamIndexMenu)
+classImplements(TeamEditView, ITeamEditMenu)

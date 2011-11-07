@@ -13,44 +13,49 @@
       <h2>Derived from <tal:name replace="view/number_of_parents"/> parents</h2>
     </tal:multiple_parents>
 
-      <tal:diffs define="nb_diffs view/num_differences;
+    <div class="beta">
+      <img src="/@@/beta" alt="[BETA]" />
+    </div>
+
+      <tal:diffs define="nb_diffs view/num_version_differences;
                          nb_diffs_in_parent view/num_differences_in_parent;
                          nb_diffs_in_child view/num_differences_in_child;">
         <ul id="derivation_stats">
-          <li tal:condition="nb_diffs">
-            <a tal:attributes="href string:${context/fmt:url}/+localpackagediffs"
-               class="sprite info"
-               title="Source package differences between this series and his parent(s)">
-              <tal:nb_diffs replace="nb_diffs"/> package<tal:plural
-                content="string:s"
-                condition="python:nb_diffs!=1"/> with differences
+          <li class="sprite info" tal:condition="nb_diffs">
+            <tal:differences_count replace="view/wordVersionDifferences">
+              123 packages
+            </tal:differences_count>
+            <a tal:attributes="href view/link_to_all_version_diffs">
+              with differences</a>
+            <tal:needing_attention
+                condition="view/num_version_differences_needing_attention">
+              (<tal:differences_count
+                  replace="view/num_version_differences_needing_attention">9
+               </tal:differences_count>
+               <a tal:attributes="href view/link_to_version_diffs_needing_attention">
+                 needing attention</a>)
+            </tal:needing_attention>
+          </li>
+         <li class="sprite info" tal:condition="nb_diffs_in_parent">
+            <tal:differences_count replace="view/wordDifferencesInParent">
+              234 packages
+            </tal:differences_count>
+            <a tal:attributes="href view/link_to_differences_in_parent">
+              only in
+              <tal:parent replace="view/alludeToParent">
+                a parent series
+              </tal:parent>
             </a>
           </li>
-         <li tal:condition="nb_diffs_in_parent">
-            <a tal:attributes="href string:${context/fmt:url}/+missingpackages"
-               class="sprite info"
-               title="Source packages only in parent series">
-              <tal:one_parent condition="view/has_unique_parent">
-                <tal:nb_diffs replace="nb_diffs_in_parent"/> package<tal:plural
-                  content="string:s"
-                  condition="python:nb_diffs_in_parent!=1"/> only in <tal:replace
-                    replace="view/unique_parent/displayname">Sid</tal:replace>
-              </tal:one_parent>
-              <tal:multiple_parents condition="not: view/has_unique_parent">
-                <tal:nb_diffs replace="nb_diffs_in_parent"/> package<tal:plural
-                  content="string:s"
-                  condition="python:nb_diffs_in_parent!=1"/> only in a parent series
-               </tal:multiple_parents>
-            </a>
-          </li>
-          <li tal:condition="nb_diffs_in_child">
-            <a tal:attributes="href string:${context/fmt:url}/+uniquepackages"
-               class="sprite info"
-               title="Source packages only in derived series">
-              <tal:nb_diffs replace="nb_diffs_in_child"/> package<tal:plural
-                content="string:s"
-                condition="python:nb_diffs_in_child!=1"/> only in <tal:replace
-                  replace="context/displayname">Natty</tal:replace>
+          <li class="sprite info" tal:condition="nb_diffs_in_child">
+            <tal:differences_count replace="view/wordDifferencesInChild">
+              345 packages
+            </tal:differences_count>
+            <a tal:attributes="href view/link_to_differences_in_child">
+              only in
+              <tal:child replace="context/displayname">
+                Natty
+              </tal:child>
             </a>
           </li>
          </ul>
@@ -69,6 +74,7 @@
       define="job context/getInitializationJob"
       condition="job/status/enumvalue:FAILED|nothing">
     <h2>Series initialization has failed</h2>
+    <p tal:content="job/error_description" />
     <tal:retry
         define="can_retry context/@@+initseries/required:launchpad.Edit ">
       <tal:can_retry condition="can_retry">

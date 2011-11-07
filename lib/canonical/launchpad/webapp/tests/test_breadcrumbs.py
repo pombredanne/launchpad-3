@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.i18nmessageid import Message
 from zope.interface import implements
 
@@ -139,7 +137,3 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
             [distro_url, distroseries_url, package_url, package_bugs_url,
              self.package_bugtask_url],
             self.package_bugtask)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

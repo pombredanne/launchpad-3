@@ -347,10 +347,16 @@
         <tbody>
           <tr>
             <td class="bug-already-reported-expander">
-              <label tal:attributes="for string:bug-already-reported-as-${bug/id};
+              <tal:comment condition="nothing">
+                We use zero-width space (&#8203;) to force the otherwise
+                empty span using sprite image to show up. Also no whitespace
+                between tags is allowed.
+              </tal:comment>
+              <span class="expander">&#8203;</span><label
+                 tal:attributes="for string:bug-already-reported-as-${bug/id};
                                      class bugtask/image:sprite_css"
-                     tal:condition="bugtask"/>
-              <label class="sprite bug" tal:condition="not:bugtask"/>
+                     tal:condition="bugtask">&#8203;</label><label
+                 class="sprite bug" tal:condition="not:bugtask">&#8203;</label>
             </td>
             <td>
               <div>
@@ -383,7 +389,8 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-                  <a class="view-bug-link" target="_blank"
+                  &nbsp;&nbsp;
+                  <a class="sprite new-window view-bug-link" target="_blank"
 		      tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>

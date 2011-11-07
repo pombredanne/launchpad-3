@@ -26,9 +26,7 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.model.packaging import (
-    Packaging,
-    )
+from lp.registry.model.packaging import Packaging
 from lp.testing import (
     EventRecorder,
     login,
@@ -154,7 +152,7 @@ class PackagingUtilMixin:
         TestCaseWithFactory.setUp(self)
         self.packaging_util = getUtility(IPackagingUtil)
         self.sourcepackagename = self.factory.makeSourcePackageName('sparkle')
-        self.distroseries = self.factory.makeDistroRelease(name='dazzle')
+        self.distroseries = self.factory.makeDistroSeries(name='dazzle')
         self.productseries = self.factory.makeProductSeries(name='glitter')
         self.owner = self.productseries.product.owner
 
@@ -206,7 +204,7 @@ class TestPackagingEntryExists(PackagingUtilMixin, TestCaseWithFactory):
             self.packaging_util.packagingEntryExists(
                 sourcepackagename=self.sourcepackagename,
                 distroseries=self.distroseries))
-        other_distroseries = self.factory.makeDistroRelease(name='shimmer')
+        other_distroseries = self.factory.makeDistroSeries(name='shimmer')
         self.assertFalse(
             self.packaging_util.packagingEntryExists(
                 sourcepackagename=self.sourcepackagename,

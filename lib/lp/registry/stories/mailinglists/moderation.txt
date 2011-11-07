@@ -8,7 +8,7 @@ member in good standing (as is the default).
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink(url='+mailinglist').click()
-    >>> admin_browser.getControl('Apply for Mailing List').click()
+    >>> admin_browser.getControl('Create new Mailing List').click()
 
     >>> from lp.registry.tests import mailinglists_helper
     >>> login('foo.bar@canonical.com')

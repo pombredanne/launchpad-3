@@ -9,6 +9,8 @@ __metaclass__ = type
 
 import cgi
 import simplejson
+
+from lazr.restful.utils import safe_hasattr
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
     ItemsWidgetBase,
@@ -17,9 +19,9 @@ from zope.app.form.browser.itemswidgets import (
 from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -32,8 +34,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     # Provide default values for the following properties in case someone
     # creates a vocab picker for a person instead of using the derived
     # PersonPicker.
-    show_assign_me_button = 'false'
-    show_remove_button = 'false'
+    show_assign_me_button = False
+    show_remove_button = False
     assign_me_text = 'Pick me'
     remove_person_text = 'Remove person'
     remove_team_text = 'Remove team'
@@ -105,6 +107,17 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                          class="%(cssClass)s" />""" % d
 
     @property
+    def selected_value(self):
+        """ String representation of field value associated with the picker.
+
+        Default implementation is to return the 'name' attribute.
+        """
+        val = self._getFormValue()
+        if val is not None and safe_hasattr(val, 'name'):
+            return getattr(val, 'name')
+        return None
+
+    @property
     def selected_value_metadata(self):
         return None
 
@@ -116,6 +129,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     def config(self):
         return dict(
             picker_type=self.picker_type,
+            selected_value=self.selected_value,
             selected_value_metadata=self.selected_value_metadata,
             header=self.header_text, step_title=self.step_title_text,
             extra_no_results_message=self.extra_no_results_message,
@@ -123,7 +137,10 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             remove_person_text=self.remove_person_text,
             remove_team_text=self.remove_team_text,
             show_remove_button=self.show_remove_button,
-            show_assign_me_button=self.show_assign_me_button)
+            show_assign_me_button=self.show_assign_me_button,
+            vocabulary_name=self.vocabulary_name,
+            vocabulary_filters=self.vocabulary_filters,
+            input_element=self.input_id)
 
     @property
     def json_config(self):
@@ -138,7 +155,36 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         :return: A string that will be passed to Y.Node.create()
                  so it needs to be contained in a single HTML element.
         """
-        return simplejson.dumps(None)
+        return None
+
+    @property
+    def vocabulary_filters(self):
+        """The name of the field's vocabulary."""
+        choice = IChoice(self.context)
+        if choice.vocabulary is None:
+            # We need the vocabulary to get the supported filters.
+            raise ValueError(
+                "The %r.%s interface attribute doesn't have its "
+                "vocabulary specified."
+                % (choice.context, choice.__name__))
+        # Only IHugeVocabulary's have filters.
+        if not IHugeVocabulary.providedBy(choice.vocabulary):
+            return []
+        supported_filters = choice.vocabulary.supportedFilters()
+        # If we have no filters or just the ALL filter, then no filtering
+        # support is required.
+        filters = []
+        if (len(supported_filters) == 0 or
+           (len(supported_filters) == 1
+            and supported_filters[0].name == 'ALL')):
+            return filters
+        for filter in supported_filters:
+            filters.append({
+                'name': filter.name,
+                'title': filter.title,
+                'description': filter.description,
+                })
+        return filters
 
     @property
     def vocabulary_name(self):
@@ -157,11 +203,11 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     @property
     def header_text(self):
-        return simplejson.dumps(self.header or self.vocabulary.displayname)
+        return self.header or self.vocabulary.displayname
 
     @property
     def step_title_text(self):
-        return simplejson.dumps(self.step_title or self.vocabulary.step_title)
+        return self.step_title or self.vocabulary.step_title
 
     @property
     def input_id(self):
@@ -189,18 +235,9 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 class PersonPickerWidget(VocabularyPickerWidget):
 
     include_create_team_link = False
-    show_assign_me_button = 'true'
-    show_remove_button = 'true'
-
-    @property
-    def picker_type(self):
-        # This is a method for now so we can block the use of the new
-        # person picker js behind our picker_enhancments feature flag.
-        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
-            picker_type = 'person'
-        else:
-            picker_type = 'default'
-        return picker_type
+    show_assign_me_button = True
+    show_remove_button = False
+    picker_type = 'person'
 
     @property
     def selected_value_metadata(self):
@@ -248,7 +285,7 @@ class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
 
     @property
     def extra_no_results_message(self):
-        return simplejson.dumps("<strong>Didn't find the project you were "
+        return ("<strong>Didn't find the project you were "
                 "looking for? "
                 '<a href="%s/+affects-new-product">Register it</a>.</strong>'
                 % canonical_url(self.context.context))

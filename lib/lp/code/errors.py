@@ -1,10 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
 
 __metaclass__ = type
 __all__ = [
+    'AlreadyLatestFormat',
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchCannotBePrivate',
@@ -14,12 +15,15 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
     'BranchExists',
+    'BranchHasPendingWrites',
     'BranchTargetError',
     'BranchTypeError',
     'BuildAlreadyPending',
     'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CannotDeleteBranch',
+    'CannotUpgradeBranch',
+    'CannotUpgradeNonHosted',
     'CannotHaveLinkedBranch',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
@@ -36,6 +40,8 @@ __all__ = [
     'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
+    'UpdatePreviewDiffNotReady',
+    'UpgradePending',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
@@ -56,6 +62,7 @@ class BadBranchMergeProposalSearchContext(Exception):
     """The context is not valid for a branch merge proposal search."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
 
@@ -85,6 +92,15 @@ class BranchExists(BranchCreationException):
             'for %(context)s.' % params)
         self.existing_branch = existing_branch
         BranchCreationException.__init__(self, message)
+
+
+class BranchHasPendingWrites(Exception):
+    """Raised if the branch can't be processed because a write is pending.
+
+    In this case the operation can usually be retried in a while.
+
+    See bug 612171.
+    """
 
 
 class BranchTargetError(Exception):
@@ -167,6 +183,36 @@ class CannotHaveLinkedBranch(InvalidBranchException):
     _msg_template = "%s cannot have linked branches."
 
 
+class CannotUpgradeBranch(Exception):
+    """"Made for subclassing."""
+
+    def __init__(self, branch):
+        super(CannotUpgradeBranch, self).__init__(
+            self._msg_template % branch.bzr_identity)
+        self.branch = branch
+
+
+class AlreadyLatestFormat(CannotUpgradeBranch):
+    """Raised on attempt to upgrade a branch already in the latest format."""
+
+    _msg_template = (
+        'Branch %s is in the latest format, so it cannot be upgraded.')
+
+
+class CannotUpgradeNonHosted(CannotUpgradeBranch):
+
+    """Raised on attempt to upgrade a non-Hosted branch."""
+
+    _msg_template = 'Cannot upgrade non-hosted branch %s'
+
+
+class UpgradePending(CannotUpgradeBranch):
+
+    """Raised on attempt to upgrade a branch already in the latest format."""
+
+    _msg_template = 'An upgrade is already in progress for branch %s.'
+
+
 class ClaimReviewFailed(Exception):
     """The user cannot claim the pending review."""
 
@@ -247,6 +293,10 @@ class PrivateBranchRecipe(Exception):
 
 class ReviewNotPending(Exception):
     """The requested review is not in a pending state."""
+
+
+class UpdatePreviewDiffNotReady(Exception):
+    """Raised if the the preview diff is not ready to run."""
 
 
 class UserHasExistingReview(Exception):

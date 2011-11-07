@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test CodeReviewComment emailing functionality."""
@@ -8,8 +8,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.enums import (
@@ -18,6 +16,8 @@ from lp.code.enums import (
     CodeReviewVote,
     )
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
+from lp.services.mail.sendmail import format_address
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.testing import (
     login,
     login_person,
@@ -195,7 +195,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
         self.assertEqual('Review: Approve', ctrl.body.splitlines()[0])
-        self.assertEqual(ctrl.body.splitlines()[1:-3],
+        self.assertEqual(ctrl.body.splitlines()[2:-3],
                          mailer.message.text_contents.splitlines())
 
     def test_generateEmailWithVoteAndTag(self):
@@ -205,7 +205,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
         self.assertEqual('Review: Approve dbtag', ctrl.body.splitlines()[0])
-        self.assertEqual(ctrl.body.splitlines()[1:-3],
+        self.assertEqual(ctrl.body.splitlines()[2:-3],
                          mailer.message.text_contents.splitlines())
 
     def makeComment(self, email_message):

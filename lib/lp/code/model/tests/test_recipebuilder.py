@@ -9,7 +9,6 @@ __metaclass__ = type
 
 from textwrap import dedent
 import transaction
-import unittest
 
 from testtools import run_test_with
 from testtools.deferredruntest import (
@@ -305,7 +304,3 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         return assert_fails_with(d, CannotBuild)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

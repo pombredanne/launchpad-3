@@ -5,12 +5,16 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 import datetime
-import unittest
 
-from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,
@@ -19,8 +23,17 @@ from canonical.launchpad.testing.pages import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -33,18 +46,47 @@ from lp.registry.model.product import (
     )
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import (
+    celebrity_logged_in,
     login,
     login_person,
+    TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.matchers import (
+    DoesNotSnapshot,
+    Provides,
+    )
 from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes,
+    )
 
 
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_pillar_category(self):
+        # Products are really called Projects
+        product = self.factory.makeProduct()
+        self.assertEqual("Project", product.pillar_category)
+
+    def test_implements_interfaces(self):
+        # Product fully implements its interfaces.
+        product = removeSecurityProxy(self.factory.makeProduct())
+        self.assertThat(product, Provides(IProduct))
+        self.assertThat(product, Provides(IBugSummaryDimension))
+        self.assertThat(product, Provides(IFAQTarget))
+        self.assertThat(product, Provides(IHasBugHeat))
+        self.assertThat(product, Provides(IHasBugSupervisor))
+        self.assertThat(product, Provides(IHasCustomLanguageCodes))
+        self.assertThat(product, Provides(IHasIcon))
+        self.assertThat(product, Provides(IHasLogo))
+        self.assertThat(product, Provides(IHasMugshot))
+        self.assertThat(product, Provides(ILaunchpadUsage))
+        self.assertThat(product, Provides(IServiceUsage))
 
     def test_deactivation_failure(self):
         # Ensure that a product cannot be deactivated if
@@ -97,7 +139,7 @@ class TestProduct(TestCaseWithFactory):
         # milestones should be included.
         product = self.factory.makeProduct(name='foo')
         for i in range(25):
-            milestone_list = self.factory.makeMilestone(
+            self.factory.makeMilestone(
                 product=product,
                 productseries=product.development_focus,
                 name=str(i))
@@ -181,7 +223,7 @@ class TestProduct(TestCaseWithFactory):
             [series.name for series in active_series])
 
 
-class TestProductFiles(unittest.TestCase):
+class TestProductFiles(TestCase):
     """Tests for downloadable product files."""
 
     layer = LaunchpadFunctionalLayer
@@ -201,7 +243,7 @@ class TestProductFiles(unittest.TestCase):
             foo_file, 'text/plain', filename)
         firefox_owner.getControl(name='field.signature').add_file(
             foo_signature, 'text/plain', '%s.asc' % filename)
-        firefox_owner.getControl('Description').value="Foo installer"
+        firefox_owner.getControl('Description').value = "Foo installer"
         firefox_owner.getControl(name="field.contenttype").displayValue = \
            ["Installer file"]
         firefox_owner.getControl("Upload").click()
@@ -235,20 +277,20 @@ class TestProductFiles(unittest.TestCase):
         self.assertEqual(a_element.contents[0].strip(), u'sig')
 
 
-class ProductAttributeCacheTestCase(unittest.TestCase):
+class ProductAttributeCacheTestCase(TestCase):
     """Cached attributes must be cleared at the end of a transaction."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        super(ProductAttributeCacheTestCase, self).setUp()
         self.product = Product.selectOneBy(name='tomcat')
 
     def testLicensesCache(self):
         """License cache should be cleared automatically."""
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO))
-        product_license = ProductLicense(
-            product=self.product, license=License.PYTHON)
+        ProductLicense(product=self.product, license=License.PYTHON)
         # Cache doesn't see new value.
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO))
@@ -258,8 +300,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         # Cache is cleared and it sees database changes that occur
         # before the cache is populated.
         transaction.abort()
-        product_license = ProductLicense(
-            product=self.product, license=License.MIT)
+        ProductLicense(product=self.product, license=License.MIT)
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO, License.MIT))
 
@@ -267,7 +308,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         """commercial_subscription cache should not traverse transactions."""
         self.assertEqual(self.product.commercial_subscription, None)
         now = datetime.datetime.now(pytz.UTC)
-        subscription = CommercialSubscription(
+        CommercialSubscription(
             product=self.product,
             date_starts=now,
             date_expires=now,
@@ -286,7 +327,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
 
         # Cache is cleared again.
         transaction.abort()
-        subscription = CommercialSubscription(
+        CommercialSubscription(
             product=self.product,
             date_starts=now,
             date_expires=now,
@@ -301,29 +342,30 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
-    """A TestCase for product snapshots."""
+    """Test product snapshots.
 
-    layer = DatabaseFunctionalLayer
+    Some attributes of a product should not be included in snapshots,
+    typically because they are either too costly to fetch unless there's
+    a real need, or because they get too big and trigger a shortlist
+    overflow error.
+
+    To stop an attribute from being snapshotted, wrap its declaration in
+    the interface in `doNotSnapshot`.
+    """
+
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(ProductSnapshotTestCase, self).setUp()
         self.product = self.factory.makeProduct(name="shamwow")
 
-    def test_snapshot(self):
-        """Snapshots of products should not include marked attribues.
-
-        Wrap an export with 'doNotSnapshot' to force the snapshot to not
-        include that attribute.
-        """
-        snapshot = Snapshot(self.product, providing=IProduct)
+    def test_excluded_from_snapshot(self):
         omitted = [
             'series',
+            'recipes',
             'releases',
             ]
-        for attribute in omitted:
-            self.assertFalse(
-                hasattr(snapshot, attribute),
-                "Snapshot should not include %s." % attribute)
+        self.assertThat(self.product, DoesNotSnapshot(omitted, IProduct))
 
 
 class BugSupervisorTestCase(TestCaseWithFactory):
@@ -349,6 +391,24 @@ class BugSupervisorTestCase(TestCaseWithFactory):
             "Instead, bug supervisor for firefox is %s" % (
             self.person.name, self.product.name,
             self.product.bug_supervisor.name))
+
+
+class TestProductTranslations(TestCaseWithFactory):
+    """A TestCase for accessing product translations-related attributes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rosetta_expert(self):
+        # Ensure rosetta-experts can set Product attributes
+        # related to translations.
+        product = self.factory.makeProduct()
+        new_series = self.factory.makeProductSeries(product=product)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('rosetta_experts'):
+            product.translations_usage = ServiceUsage.LAUNCHPAD
+            product.translation_focus = new_series
+            product.translationgroup = group
+            product.translationpermission = TranslationPermission.CLOSED
 
 
 class TestWebService(WebServiceTestCase):
@@ -378,7 +438,3 @@ class TestWebService(WebServiceTestCase):
         ws_group = self.wsObject(group)
         ws_product.translationgroup = ws_group
         ws_product.lp_save()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

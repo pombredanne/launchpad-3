@@ -6,22 +6,42 @@
 __metaclass__ = type
 
 import os
+from simplejson import dumps
 from urllib import quote
 
 from BeautifulSoup import BeautifulSoup
+from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+from zope.traversing.browser import absoluteURL
 
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
+
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.sampledata import ADMIN_EMAIL
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestSearchQuestionsView(TestCaseWithFactory):
@@ -46,6 +66,23 @@ class TestSearchQuestionsView(TestCaseWithFactory):
         encoded_string = quote(non_ascii_string.encode('utf-8'))
         # This must not raise UnicodeEncodeError.
         self.assertIn(encoded_string, view.matching_faqs_url)
+
+    def test_query_count(self):
+        # SearchQuestionsView does not query for the target SPN every time.
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution()
+        removeSecurityProxy(distro).official_answers = True
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distro)
+        questions = []
+        for i in range(0, 5):
+            questions.append(self.factory.makeQuestion(
+                target=dsp, owner=owner))
+        # Empty the cache.
+        Store.of(questions[0]).invalidate()
+        browses_under_limit = BrowsesWithQueryLimit(
+            31, owner, view_name="+questions")
+        self.assertThat(dsp, browses_under_limit)
 
 
 class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory):
@@ -218,8 +255,219 @@ class QuestionSetViewTestCase(TestCaseWithFactory):
         self.assertIsNot(
             None, content.find(True, id=target_widget.show_widget_id))
         text = str(content)
-        picker_script = (
-            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
-        self.assertIn(picker_script, text)
+        picker_vocab = "DistributionOrProductOrProjectGroup"
+        self.assertIn(picker_vocab, text)
         focus_script = "setFocusByName('field.search_text')"
         self.assertIn(focus_script, text)
+
+
+class QuestionTargetPortletAnswerContactsWithDetailsTests(
+                                                        TestCaseWithFactory):
+    """Tests for IQuestionTarget:+portlet-answercontacts-details view."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_content_type(self):
+        question = self.factory.makeQuestion()
+
+        # It works even for anonymous users, so no log-in is needed.
+        view = create_view(question.target, '+portlet-answercontacts-details')
+        view.render()
+
+        self.assertEqual(
+            view.request.response.getHeader('content-type'),
+            'application/json')
+
+    def test_data_no_answer_contacts(self):
+        question = self.factory.makeQuestion()
+        view = create_view(question.target, '+portlet-answercontacts-details')
+        self.assertEqual(dumps([]), view.answercontact_data_js)
+
+    def test_data_person_answercontact(self):
+        # answercontact_data_js returns JSON string of a list
+        # containing all contact information needed for
+        # subscribers_list.js loading.
+        question = self.factory.makeQuestion()
+        contact = self.factory.makePerson(
+            name='user', displayname='Contact Name')
+        contact.addLanguage(getUtility(ILanguageSet)['en'])
+        with person_logged_in(contact):
+            question.target.addAnswerContact(contact, contact)
+        view = create_view(question.target, '+portlet-answercontacts-details')
+        api_request = IWebServiceClientRequest(view.request)
+
+        expected_result = {
+            'subscriber': {
+                'name': 'user',
+                'display_name': 'Contact Name',
+                'is_team': False,
+                'can_edit': False,
+                'web_link': canonical_url(contact),
+                'self_link': absoluteURL(contact, api_request)
+                }
+            }
+        self.assertEqual(
+            dumps([expected_result]), view.answercontact_data_js)
+
+    def test_data_team_answer_contact(self):
+        # For a team answer contacts, answercontact_data_js has is_team set
+        # to true.
+        question = self.factory.makeQuestion()
+        teamowner = self.factory.makePerson(
+            name="team-owner", displayname="Team Owner")
+        contact = self.factory.makeTeam(
+            name='team', displayname='Team Name', owner=teamowner)
+        contact.addLanguage(getUtility(ILanguageSet)['en'])
+        with person_logged_in(contact.teamowner):
+            question.target.addAnswerContact(contact, contact)
+        view = create_view(question.target, '+portlet-answercontacts-details')
+        api_request = IWebServiceClientRequest(view.request)
+
+        expected_result = {
+            'subscriber': {
+                'name': 'team',
+                'display_name': 'Team Name',
+                'is_team': True,
+                'can_edit': False,
+                'web_link': canonical_url(contact),
+                'self_link': absoluteURL(contact, api_request)
+                }
+            }
+        self.assertEqual(
+            dumps([expected_result]), view.answercontact_data_js)
+
+    def test_data_team_answercontact_owner_looks(self):
+        # For a team subscription, answercontact_data_js has can_edit
+        # set to true for team owner.
+        question = self.factory.makeQuestion()
+        teamowner = self.factory.makePerson(
+            name="team-owner", displayname="Team Owner")
+        contact = self.factory.makeTeam(
+            name='team', displayname='Team Name', owner=teamowner)
+        contact.addLanguage(getUtility(ILanguageSet)['en'])
+        with person_logged_in(contact.teamowner):
+            question.target.addAnswerContact(contact, contact.teamowner)
+        view = create_view(question.target, '+portlet-answercontacts-details')
+        api_request = IWebServiceClientRequest(view.request)
+
+        expected_result = {
+            'subscriber': {
+                'name': 'team',
+                'display_name': 'Team Name',
+                'is_team': True,
+                'can_edit': True,
+                'web_link': canonical_url(contact),
+                'self_link': absoluteURL(contact, api_request)
+                }
+            }
+        with person_logged_in(contact.teamowner):
+            self.assertEqual(
+                dumps([expected_result]), view.answercontact_data_js)
+
+    def test_data_team_subscription_member_looks(self):
+        # For a team subscription, answercontact_data_js has can_edit
+        # set to true for team member.
+        question = self.factory.makeQuestion()
+        member = self.factory.makePerson()
+        teamowner = self.factory.makePerson(
+            name="team-owner", displayname="Team Owner")
+        contact = self.factory.makeTeam(
+            name='team', displayname='Team Name', owner=teamowner,
+            members=[member])
+        contact.addLanguage(getUtility(ILanguageSet)['en'])
+        with person_logged_in(contact.teamowner):
+            question.target.addAnswerContact(contact, contact.teamowner)
+        view = create_view(question.target, '+portlet-answercontacts-details')
+        api_request = IWebServiceClientRequest(view.request)
+
+        expected_result = {
+            'subscriber': {
+                'name': 'team',
+                'display_name': 'Team Name',
+                'is_team': True,
+                'can_edit': True,
+                'web_link': canonical_url(contact),
+                'self_link': absoluteURL(contact, api_request)
+                }
+            }
+        with person_logged_in(contact.teamowner):
+            self.assertEqual(
+                dumps([expected_result]), view.answercontact_data_js)
+
+    def test_data_target_owner_answercontact_looks(self):
+        # Answercontact_data_js has can_edit set to true for target owner.
+        distro = self.factory.makeDistribution()
+        question = self.factory.makeQuestion(target=distro)
+        contact = self.factory.makePerson(
+            name='user', displayname='Contact Name')
+        contact.addLanguage(getUtility(ILanguageSet)['en'])
+        with person_logged_in(contact):
+            question.target.addAnswerContact(contact, contact)
+        view = create_view(question.target, '+portlet-answercontacts-details')
+        api_request = IWebServiceClientRequest(view.request)
+
+        expected_result = {
+            'subscriber': {
+                'name': 'user',
+                'display_name': 'Contact Name',
+                'is_team': False,
+                'can_edit': True,
+                'web_link': canonical_url(contact),
+                'self_link': absoluteURL(contact, api_request)
+                }
+            }
+        with person_logged_in(distro.owner):
+            self.assertEqual(
+                dumps([expected_result]), view.answercontact_data_js)
+
+    def test_data_subscription_lp_admin(self):
+        # For a subscription, answercontact_data_js has can_edit
+        # set to true for a Launchpad admin.
+        question = self.factory.makeQuestion()
+        member = self.factory.makePerson()
+        contact = self.factory.makePerson(
+            name='user', displayname='Contact Name')
+        contact.addLanguage(getUtility(ILanguageSet)['en'])
+        with person_logged_in(member):
+            question.target.addAnswerContact(contact, contact)
+        view = create_view(question.target, '+portlet-answercontacts-details')
+        api_request = IWebServiceClientRequest(view.request)
+
+        expected_result = {
+            'subscriber': {
+                'name': 'user',
+                'display_name': 'Contact Name',
+                'is_team': False,
+                'can_edit': True,
+                'web_link': canonical_url(contact),
+                'self_link': absoluteURL(contact, api_request)
+                }
+            }
+
+        # Login as admin
+        admin = getUtility(IPersonSet).find(ADMIN_EMAIL).any()
+        with person_logged_in(admin):
+            self.assertEqual(
+                dumps([expected_result]), view.answercontact_data_js)
+
+
+class TestQuestionTargetPortletAnswerContacts(TestCaseWithFactory):
+    """Tests for IQuestionTarget:+portlet-answercontacts."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_jsoncache_contents(self):
+        product = self.factory.makeProduct()
+        question = self.factory.makeQuestion(target=product)
+        login_person(product.owner)
+
+        # It works even for anonymous users, so no log-in is needed.
+        view = create_initialized_view(
+            question.target, '+portlet-answercontacts', rootsite='answers')
+
+        cache = IJSONRequestCache(view.request).objects
+        context_url_data = {
+            'web_link': canonical_url(product, rootsite='mainsite'),
+            'self_link': absoluteURL(product,
+                                     IWebServiceClientRequest(view.request)),
+            }
+        self.assertEqual(cache[product.name + '_answer_portlet_url_data'],
+                         context_url_data)

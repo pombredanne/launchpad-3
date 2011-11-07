@@ -12,6 +12,7 @@ from datetime import (
 import textwrap
 
 from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
+from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from storm.locals import Store
 import transaction
@@ -20,7 +21,6 @@ from zope.event import notify
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
@@ -40,6 +40,7 @@ from lp.code.errors import (
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
+    ISourcePackageRecipeView,
     MINIMAL_RECIPE_TEXT,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -76,6 +77,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.matchers import DoesNotSnapshot
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -92,6 +94,16 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe()
         verifyObject(ISourcePackageRecipe, recipe)
 
+    def test_avoids_problematic_snapshots(self):
+        problematic_properties = [
+            'builds',
+            'completed_builds',
+            'pending_builds',
+            ]
+        self.assertThat(
+            self.factory.makeSourcePackageRecipe(),
+            DoesNotSnapshot(problematic_properties, ISourcePackageRecipeView))
+
     def makeRecipeComponents(self, branches=()):
         """Return a dict of values that can be used to make a recipe.
 
@@ -102,11 +114,11 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         registrant = self.factory.makePerson()
         return dict(
             registrant=registrant,
-            owner = self.factory.makeTeam(owner=registrant),
-            distroseries = [self.factory.makeDistroSeries()],
-            name = self.factory.getUniqueString(u'recipe-name'),
-            description = self.factory.getUniqueString(u'recipe-description'),
-            recipe = self.factory.makeRecipeText(*branches))
+            owner=self.factory.makeTeam(owner=registrant),
+            distroseries=[self.factory.makeDistroSeries()],
+            name=self.factory.getUniqueString(u'recipe-name'),
+            description=self.factory.getUniqueString(u'recipe-description'),
+            recipe=self.factory.makeRecipeText(*branches))
 
     def test_creation(self):
         # The metadata supplied when a SourcePackageRecipe is created is
@@ -304,13 +316,13 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         store = Store.of(build)
         store.flush()
         build_job = store.find(SourcePackageRecipeBuildJob,
-                SourcePackageRecipeBuildJob.build_id==build.id).one()
+                SourcePackageRecipeBuildJob.build_id == build.id).one()
         self.assertProvides(build_job, ISourcePackageRecipeBuildJob)
         self.assertTrue(build_job.virtualized)
         job = build_job.job
         self.assertProvides(job, IJob)
         self.assertEquals(job.status, JobStatus.WAITING)
-        build_queue = store.find(BuildQueue, BuildQueue.job==job.id).one()
+        build_queue = store.find(BuildQueue, BuildQueue.job == job.id).one()
         self.assertProvides(build_queue, IBuildQueue)
         self.assertTrue(build_queue.virtualized)
 
@@ -418,6 +430,39 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
 
+    def test_requestBuildPrivatePPAWithArchivePermission(self):
+        """User is not in PPA owner team but has ArchivePermission.
+
+        The case where the user is not in the PPA owner team but is allowed to
+        upload to the PPA via an explicit ArchivePermission takes a different
+        security path than if he were part of the team.
+        """
+
+        # Create a team private PPA.
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=team_owner)
+        team_p3a = self.factory.makeArchive(
+            owner=team, displayname='Private PPA', name='p3a',
+            private=True)
+
+        # Create a recipe with the team P3A as the build destination.
+        recipe = self.factory.makeSourcePackageRecipe()
+
+        # Add upload component rights for the non-team person.
+        with person_logged_in(team_owner):
+            team_p3a.newComponentUploader(
+                person=recipe.owner, component_name="main")
+        (distroseries,) = list(recipe.distroseries)
+
+        # Try to request a build.  It should work.
+        with person_logged_in(recipe.owner):
+            build = recipe.requestBuild(
+                team_p3a, recipe.owner, distroseries,
+                PackagePublishingPocket.RELEASE)
+            self.assertEqual(build.archive, team_p3a)
+            self.assertEqual(build.distroseries, distroseries)
+            self.assertEqual(build.requester, recipe.owner)
+
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
         description = u'The whoozits and whatzits.'
@@ -464,7 +509,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             self.assertTrue(check_permission('launchpad.View', recipe))
-        removeSecurityProxy(branch).private=True
+        removeSecurityProxy(branch).explicitly_private = True
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', recipe))
         self.assertFalse(check_permission('launchpad.View', recipe))
@@ -606,12 +651,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         """SourcePackageRecipe.getPendingBuildInfo() is as expected."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(4)]
-        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
         recipe = self.factory.makeSourcePackageRecipe()
 
         build_info = []
         for archive in archives:
-            build = recipe.requestBuild(archive, person, distroseries)
+            recipe.requestBuild(archive, person, distroseries)
             build_info.insert(0, {
                 "distroseries": distroseries.displayname,
                 "archive": '%s/%s' %
@@ -1036,7 +1081,7 @@ class TestWebservice(TestCaseWithFactory):
         """SourcePackageRecipe.[pending_|completed_]builds is as expected."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(4)]
-        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -1056,7 +1101,7 @@ class TestWebservice(TestCaseWithFactory):
         """SourcePackageRecipe.getPendingBuildInfo() is as expected."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(4)]
-        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         ws_distroseries = ws_object(launchpad, distroseries)
@@ -1064,7 +1109,7 @@ class TestWebservice(TestCaseWithFactory):
         build_info = []
         for archive in archives:
             ws_archive = ws_object(launchpad, archive)
-            build = recipe.requestBuild(
+            recipe.requestBuild(
                 archive=ws_archive, distroseries=ws_distroseries,
                 pocket=PackagePublishingPocket.RELEASE.title)
             build_info.insert(0, {

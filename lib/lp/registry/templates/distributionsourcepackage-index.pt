@@ -188,8 +188,6 @@
 
       </tal:rows>
     </table>
-    <script
-       tal:content="string:LP.cache['archive_context_url'] = '${archive/fmt:url}';"></script>
     <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
 
   </div>

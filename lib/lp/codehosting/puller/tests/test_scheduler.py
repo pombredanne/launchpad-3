@@ -1,15 +1,13 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0222,W0231
 
 __metaclass__ = type
 
-from datetime import datetime
 import logging
 import os
 import textwrap
-import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import (
@@ -17,7 +15,6 @@ from bzrlib.bzrdir import (
     format_registry,
     )
 from bzrlib.urlutils import join as urljoin
-import pytz
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
@@ -29,7 +26,6 @@ from twisted.internet import (
     reactor,
     )
 from twisted.protocols.basic import NetstringParseError
-from twisted.python import failure
 from zope.component import getUtility
 
 from canonical.config import config
@@ -63,9 +59,11 @@ class FakeCodehostingEndpointProxy:
     def callRemote(self, method_name, *args):
         method = getattr(self, '_remote_%s' % method_name, self._default)
         deferred = method(*args)
+
         def append_to_log(pass_through):
             self.calls.append((method_name,) + tuple(args))
             return pass_through
+
         deferred.addCallback(append_to_log)
         return deferred
 
@@ -141,7 +139,7 @@ class TestPullerWireProtocol(TestCase):
             self.calls.append(('method',) + args)
 
         def do_raise(self):
-            return 1/0
+            return 1 / 0
 
         def unexpectedError(self, failure):
             self.failure = failure
@@ -407,9 +405,11 @@ class TestPullerMonitorProtocol(ProcessTestsMixin, TestCase):
         # attempt to call mirrorFailed().
 
         runtime_error_failure = makeFailure(RuntimeError)
+
         class FailingMirrorFailedStubPullerListener(self.StubPullerListener):
             def mirrorFailed(self, message, oops):
                 return runtime_error_failure
+
         self.protocol.listener = FailingMirrorFailedStubPullerListener()
         self.listener = self.protocol.listener
         self.protocol.errReceived('traceback')
@@ -430,23 +430,21 @@ class TestPullerMaster(TestCase):
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
-            BranchType.HOSTED, None, logging.getLogger(), self.status_client,
-            set(['oops-prefix']))
+            BranchType.HOSTED, None, logging.getLogger(), self.status_client)
 
     def test_unexpectedError(self):
         """The puller master logs an OOPS when it receives an unexpected
         error.
         """
-        now = datetime.now(pytz.timezone('UTC'))
         fail = makeFailure(RuntimeError, 'error message')
-        self.eventHandler.unexpectedError(fail, now)
-        oops = errorlog.globalErrorUtility.getOopsReport(now)
-        self.assertEqual(fail.getTraceback(), oops.tb_text)
-        self.assertEqual('error message', oops.value)
-        self.assertEqual('RuntimeError', oops.type)
+        self.eventHandler.unexpectedError(fail)
+        oops = self.oopses[-1]
+        self.assertEqual(fail.getTraceback(), oops['tb_text'])
+        self.assertEqual('error message', oops['value'])
+        self.assertEqual('RuntimeError', oops['type'])
         self.assertEqual(
             get_canonical_url_for_branch_name(
-                self.eventHandler.unique_name), oops.url)
+                self.eventHandler.unique_name), oops['url'])
 
     def test_startMirroring(self):
         # startMirroring does not send a message to the endpoint.
@@ -503,18 +501,13 @@ class TestPullerMasterSpawning(TestCase):
 
     def setUp(self):
         super(TestPullerMasterSpawning, self).setUp()
-        self.available_oops_prefixes = set(['foo'])
-        self.eventHandler = self.makePullerMaster(
-            'HOSTED', oops_prefixes=self.available_oops_prefixes)
+        self.eventHandler = self.makePullerMaster('HOSTED')
         self.patch(reactor, 'spawnProcess', self.spawnProcess)
         self.commands_spawned = []
 
-    def makePullerMaster(self, branch_type_name, default_stacked_on_url=None,
-                         oops_prefixes=None):
+    def makePullerMaster(self, branch_type_name, default_stacked_on_url=None):
         if default_stacked_on_url is None:
             default_stacked_on_url = self.factory.getUniqueURL()
-        if oops_prefixes is None:
-            oops_prefixes = set([self.factory.getUniqueString()])
         return scheduler.PullerMaster(
             branch_id=self.factory.getUniqueInteger(),
             source_url=self.factory.getUniqueURL(),
@@ -522,16 +515,7 @@ class TestPullerMasterSpawning(TestCase):
             branch_type_name=branch_type_name,
             default_stacked_on_url=default_stacked_on_url,
             logger=logging.getLogger(),
-            client=FakeCodehostingEndpointProxy(),
-            available_oops_prefixes=oops_prefixes)
-
-    @property
-    def oops_prefixes(self):
-        """The OOPS prefixes passed to workers on the command line."""
-        # The OOPS prefix is the second-last argument on the command line. We
-        # harvest these from 'commands_spawned', which is a log of the
-        # commands passed to reactor.spawnProcess.
-        return [arguments[-2] for arguments in self.commands_spawned]
+            client=FakeCodehostingEndpointProxy())
 
     def spawnProcess(self, protocol, executable, arguments, env):
         self.commands_spawned.append(arguments)
@@ -553,51 +537,6 @@ class TestPullerMasterSpawning(TestCase):
         self.assertEqual(
             [''], [arguments[-1] for arguments in self.commands_spawned])
 
-    def test_getsOopsPrefixFromSet(self):
-        # Different workers should have different OOPS prefixes. They get
-        # those prefixes from a limited set of possible prefixes.
-        self.eventHandler.run()
-        self.assertEqual(self.available_oops_prefixes, set())
-        self.assertEqual(self.oops_prefixes, ['foo'])
-
-    def test_restoresOopsPrefixToSetOnSuccess(self):
-        # When a worker finishes running, they restore the OOPS prefix to the
-        # set of available prefixes.
-        deferred = self.eventHandler.run()
-        # Fake a successful run.
-        deferred.callback(None)
-        def check_available_prefixes(ignored):
-            self.assertEqual(self.available_oops_prefixes, set(['foo']))
-        return deferred.addCallback(check_available_prefixes)
-
-    def test_restoresOopsPrefixToSetOnFailure(self):
-        # When a worker finishes running, they restore the OOPS prefix to the
-        # set of available prefixes, even if the worker failed.
-        deferred = self.eventHandler.run()
-        # Fake a failed run.
-        try:
-            raise RuntimeError("Spurious error")
-        except RuntimeError:
-            fail = failure.Failure()
-        deferred.errback(fail)
-        def check_available_prefixes(ignored):
-            self.assertEqual(self.available_oops_prefixes, set(['foo']))
-        return deferred.addErrback(check_available_prefixes)
-
-    def test_logOopsWhenNoAvailablePrefix(self):
-        # If there are no available prefixes then we log an OOPS and re-raise
-        # the error, aborting the rest of the run.
-
-        # Empty the set of available OOPS prefixes
-        self.available_oops_prefixes.clear()
-
-        unexpected_errors = []
-        def unexpectedError(failure, now=None):
-            unexpected_errors.append(failure)
-        self.eventHandler.unexpectedError = unexpectedError
-        self.assertRaises(KeyError, self.eventHandler.run)
-        self.assertEqual(unexpected_errors[0].type, KeyError)
-
 
 # The common parts of all the worker scripts.  See
 # TestPullerMasterIntegration.makePullerMaster for more.
@@ -608,7 +547,7 @@ import sys, time
 parser = OptionParser()
 (options, arguments) = parser.parse_args()
 (source_url, destination_url, branch_id, unique_name,
- branch_type_name, oops_prefix, default_stacked_on_url) = arguments
+ branch_type_name, default_stacked_on_url) = arguments
 from bzrlib import branch
 branch = branch.Branch.open(destination_url)
 protocol = PullerWorkerProtocol(sys.stdout)
@@ -657,8 +596,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         puller_master = cls(
             self.db_branch.id, str(self.db_branch.url),
             self.db_branch.unique_name[1:], self.db_branch.branch_type.name,
-            '', logging.getLogger(), self.client,
-            set([config.error_reports.oops_prefix]))
+            '', logging.getLogger(), self.client)
         puller_master.destination_url = os.path.abspath('dest-branch')
         if script_text is not None:
             script = open('script.py', 'w')
@@ -713,13 +651,15 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         # contents of stderr are logged in an OOPS report.
         oops_logged = []
 
-        def new_oops_raising((type, value, tb), request, now):
+        def new_oops_raising((type, value, tb), request):
             oops_logged.append((type, value, tb))
 
         old_oops_raising = errorlog.globalErrorUtility.raising
         errorlog.globalErrorUtility.raising = new_oops_raising
+
         def restore_oops():
             errorlog.globalErrorUtility.raising = old_oops_raising
+
         self.addCleanup(restore_oops)
 
         expected_output = 'foo\nbar'
@@ -757,7 +697,6 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
                 """Record the lock id on the listener."""
                 self.listener.lock_ids.append(id)
 
-
         class PullerMasterWithLockID(scheduler.PullerMaster):
             """A subclass of PullerMaster that allows recording of lock ids.
             """
@@ -768,7 +707,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         branch.lock_write()
         protocol.mirrorFailed('a', 'b')
         protocol.sendEvent(
-            'lock_id', branch.control_files._lock.peek()['user'])
+            'lock_id', branch.control_files._lock.peek().get('user'))
         sys.stdout.flush()
         branch.unlock()
         """
@@ -888,7 +827,8 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
 
         # We need to create a branch at the destination_url, so that the
         # subprocess can actually create a lock.
-        BzrDir.create_branch_convenience(locking_puller_master.destination_url)
+        BzrDir.create_branch_convenience(
+            locking_puller_master.destination_url)
 
         # Because when the deferred returned by 'func' is done we kill the
         # locking subprocess, we know that when the subprocess is done, the
@@ -914,13 +854,15 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         return locking_process_deferred.addCallbacks(
             locking_process_callback, locking_process_errback)
 
-    def test_mirror_with_destination_self_locked(self):
+    # XXX wgrant 2011-09-14 bug 848994: This is a fragile test.
+    def DISABLE_test_mirror_with_destination_self_locked(self):
         # If the destination branch was locked by another worker, the worker
         # should break the lock and mirror the branch regardless.
         deferred = self._run_with_destination_locked(self.doDefaultMirroring)
         return deferred.addErrback(self._dumpError)
 
-    def test_mirror_with_destination_locked_by_another(self):
+    # XXX gary 2011-09-13 bug 848994: This is a fragile test.
+    def DISABLE_test_mirror_with_destination_locked_by_another(self):
         # When the destination branch is locked with a different lock it, the
         # worker should *not* break the lock and instead fail.
 
@@ -943,6 +885,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
             puller_master = self.makePullerMaster(
                 script_text=lower_timeout_script)
             deferred = puller_master.mirror()
+
             def check_mirror_failed(ignored):
                 self.assertEqual(len(self.client.calls), 1)
                 mirror_failed_call = self.client.calls[0]
@@ -952,6 +895,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
                 self.assertTrue(
                     "Could not acquire lock" in mirror_failed_call[2])
                 return ignored
+
             deferred.addCallback(check_mirror_failed)
             return deferred
 
@@ -959,7 +903,3 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
             mirror_fails_to_unlock, 1)
 
         return deferred.addErrback(self._dumpError)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

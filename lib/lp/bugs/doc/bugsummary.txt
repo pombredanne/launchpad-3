@@ -366,7 +366,7 @@ Just query using the distroseries column instead of the distribution
 column.
 
     >>> distribution_c = factory.makeDistribution(name='di-c')
-    >>> series_c = factory.makeDistroRelease(
+    >>> series_c = factory.makeDistroSeries(
     ...     distribution=distribution_c, name='ds-c')
     >>> bug = factory.makeBugTask(target=series_c)
     >>> print_find(
@@ -413,7 +413,7 @@ Create some bugs.
     - bug_z is public.
 
     >>> distro_p = factory.makeDistribution(name='di-p')
-    >>> series_p = factory.makeDistroRelease(
+    >>> series_p = factory.makeDistroSeries(
     ...     distribution=distro_p, name='ds-p')
     >>> bug_a = factory.makeBug(
     ...     owner=owner, distribution=distro_p, private=True)

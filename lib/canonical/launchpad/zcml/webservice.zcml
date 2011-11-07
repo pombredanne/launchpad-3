@@ -47,7 +47,7 @@
     <view
         for="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"
         type="canonical.launchpad.layers.WebServiceLayer"
-        factory="canonical.launchpad.browser.LaunchpadRootNavigation"
+        factory="lp.app.browser.launchpad.LaunchpadRootNavigation"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 

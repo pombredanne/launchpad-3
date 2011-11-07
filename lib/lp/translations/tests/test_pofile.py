@@ -65,7 +65,6 @@ class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
             name='devel', distribution=self.foo)
         self.foo_stable = self.factory.makeDistroSeries(
             name='stable', distribution=self.foo)
-        self.foo.official_rosetta = True
         self.sourcepackagename = self.factory.makeSourcePackageName()
 
         # Two POTemplates share translations if they have the same name,
@@ -1356,32 +1355,6 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], potmsgsets)
 
-    def test_findPOTMsgSetsContaining_ordering(self):
-        # As per bug 388473 findPOTMsgSetsContaining still used the old
-        # potmsgset.sequence for ordering. Check that this is fixed.
-        # This test will go away when potmsgset.sequence goes away.
-
-        # Give the method something to search for.
-        self.factory.makeCurrentTranslationMessage(
-            pofile=self.devel_pofile,
-            potmsgset=self.potmsgset1,
-            translations=["Shared translation"])
-        self.factory.makeCurrentTranslationMessage(
-            pofile=self.devel_pofile,
-            potmsgset=self.potmsgset2,
-            translations=["Another shared translation"])
-
-        # Mess with potmsgset.sequence.
-        removeSecurityProxy(self.potmsgset1).sequence = 2
-        removeSecurityProxy(self.potmsgset2).sequence = 1
-
-        potmsgsets = list(
-            self.devel_pofile.findPOTMsgSetsContaining("translation"))
-
-        # Order ignores potmsgset.sequence.
-        self.assertEquals(
-            [self.potmsgset1, self.potmsgset2], potmsgsets)
-
 
 class TestPOFileSet(TestCaseWithFactory):
     """Test PO file set methods."""
@@ -1511,16 +1484,16 @@ class TestPOFileSet(TestCaseWithFactory):
         # (potemplates have the same name).
         distro = self.factory.makeDistribution()
         distro.translations_usage = ServiceUsage.LAUNCHPAD
-        series1 = self.factory.makeDistroRelease(distribution=distro,
-                                                 name='one')
+        series1 = self.factory.makeDistroSeries(
+            distribution=distro, name='one')
         sourcepackagename = self.factory.makeSourcePackageName()
         potemplate1 = self.factory.makePOTemplate(
             name='shared', distroseries=series1,
             sourcepackagename=sourcepackagename)
         pofile1 = self.factory.makePOFile('sr', potemplate=potemplate1)
 
-        series2 = self.factory.makeDistroRelease(distribution=distro,
-                                                 name='two')
+        series2 = self.factory.makeDistroSeries(
+            distribution=distro, name='two')
         potemplate2 = self.factory.makePOTemplate(
             name='shared', distroseries=series2,
             sourcepackagename=sourcepackagename)

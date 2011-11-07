@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -917,10 +917,9 @@ class IProductSet(Interface):
         project_reviewed=Bool(title=_("Is the project license reviewed")),
         licenses=Set(title=_('Licenses'),
                        value_type=Choice(vocabulary=License)),
-        license_info_is_empty=Bool(title=_("License info is empty")),
-        has_zero_licenses=Bool(title=_("Has zero licenses")),
         created_after=Date(title=_("Created after date")),
         created_before=Date(title=_("Created before date")),
+        has_subscription=Bool(title=_("Has a commercial subscription")),
         subscription_expires_after=Date(
             title=_("Subscription expires after")),
         subscription_expires_before=Date(
@@ -936,10 +935,9 @@ class IProductSet(Interface):
                   active=None,
                   project_reviewed=None,
                   licenses=None,
-                  license_info_is_empty=None,
-                  has_zero_licenses=None,
                   created_after=None,
                   created_before=None,
+                  has_subscription=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
                   subscription_modified_after=None,
@@ -1035,7 +1033,7 @@ class IProductSet(Interface):
         with a given bugtracker type.
         """
 
-    def getSFLinkedProductsWithNoneRemoteProduct(self):
+    def getSFLinkedProductsWithNoneRemoteProduct():
         """Get IProducts with a sourceforge project and no remote_product."""
 
 
@@ -1064,20 +1062,14 @@ class IProductReviewSearch(Interface):
         title=_('Project Approved'), values=[True, False],
         required=False, default=False)
 
-    license_info_is_empty = Choice(
-        title=_('Description of additional licenses'),
-        description=_('Either this field or any one of the selected licenses'
-                      ' must match.'),
-        vocabulary=emptiness_vocabulary, required=False, default=None)
-
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
         default=set())
 
-    has_zero_licenses = Choice(
-        title=_('Or has no license specified'),
+    has_subscription = Choice(
+        title=_('Has Commercial Subscription'),
         values=[True, False], required=False)
 
     created_after = Date(title=_("Created between"), required=False)

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0103,W0403
@@ -19,23 +19,25 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import (
+from canonical.launchpad.webapp import canonical_url
+from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.htaccess import (
+    htpasswd_credentials_for_archive,
+    write_htaccess,
+    write_htpasswd,
+    )
+from lp.registry.model.teammembership import TeamParticipation
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
-from canonical.launchpad.webapp import canonical_url
-from lp.archivepublisher.config import getPubConfig
-from lp.registry.model.teammembership import TeamParticipation
-from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
-from lp.archivepublisher.htaccess import (
-    write_htaccess,
-    write_htpasswd,
-    htpasswd_credentials_for_archive,
+from lp.soyuz.enums import (
+    ArchiveStatus,
+    ArchiveSubscriberStatus,
     )
-from lp.soyuz.enums import ArchiveStatus
-from lp.soyuz.enums import ArchiveSubscriberStatus
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 

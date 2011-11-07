@@ -25,11 +25,15 @@ else
 JS_BUILD := min
 endif
 
-JS_SOURCE_PATHS = -path './lib/lp/*/javascript/*' ! -path '*/tests/*' \
-    ! -path '*/testing/*' ! -path './lib/lp/services/*'
+define JS_LP_PATHS
+lib -path 'lib/lp/*/javascript/*' \
+! -path '*/tests/*' ! -path '*/testing/*' \
+! -path 'lib/lp/services/*'
+endef
+
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find $(JS_SOURCE_PATHS) -name '*.js' ! -name '.*.js' )
+JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
 JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
@@ -56,8 +60,8 @@ BUILDOUT_BIN = \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild \
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
-    bin/run bin/sprite-util bin/start_librarian bin/stxdocs bin/tags \
-    bin/test bin/tracereport bin/twistd bin/update-download-cache
+    bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
+    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -91,15 +95,13 @@ doc:
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
-check_schema: build
-	${PY} utilities/check-db-revision.py
-
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
 check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
+	bzr status --no-pending
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
@@ -164,7 +166,7 @@ ${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
 
 jsbuild_widget_css: bin/jsbuild
 	${SHHH} bin/jsbuild \
- 	    --srcdir lib/lp/app/javascript \
+	    --srcdir lib/lp/app/javascript \
 	    --builddir $(LP_BUILT_JS_ROOT)
 
 $(JS_LP): jsbuild_widget_css
@@ -173,7 +175,7 @@ $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
 else
-	cat $^ > $@
+	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
 jsbuild: $(PY) $(JS_OUT)
@@ -228,14 +230,11 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
-# bin/compile_templates is responsible for building all chameleon templates,
-# of which there is currently one, but of which many more are coming.
 compile: $(PY) $(BZR_VERSION_INFO)
 	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
-	bin/compile_templates
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -253,20 +252,26 @@ merge-proposal-jobs:
 	# Handle merge proposal email jobs.
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
-run: check_schema inplace stop
-	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
+run: build inplace stop
+	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
+
+run-testapp: LPCONFIG=testrunner-appserver
+run-testapp: build inplace stop
+	LPCONFIG=$(LPCONFIG) INTERACTIVE_TESTS=1 bin/run-testapp \
+	-r memcached -i $(LPCONFIG)
 
 run.gdb:
 	echo 'run' > run.gdb
 
-start-gdb: check_schema inplace stop support_files run.gdb
+start-gdb: build inplace stop support_files run.gdb
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: check_schema inplace stop
-	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
-	    -i $(LPCONFIG)
+run_all: build inplace stop
+	bin/run \
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
+	 -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -277,7 +282,7 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
-run_codehosting: check_schema inplace stop
+run_codehosting: build inplace stop
 	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
@@ -368,8 +373,7 @@ clean: clean_js clean_buildout clean_logs
 	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
-	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
-	    -name '*.pt.py' \) \
+	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r lib/mailman
 	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
@@ -425,7 +429,9 @@ copy-certificates:
 copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
-	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
+		configs/development/local-launchpad-apache > \
+		/etc/apache2/sites-available/local-launchpad
 	cp configs/development/local-vostok-apache \
 		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
@@ -459,11 +465,11 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean \
-	clean debug stop start run ftest_build ftest_inplace \
-	test_build test_inplace pagetests check schema default \
-	launchpad.pot pull_branches scan_branches sync_branches	\
-	reload-apache hosted_branches check_mailman check_config \
-	jsbuild jsbuild_widget_css clean_js clean_buildout buildonce_eggs \
-	build_eggs sprite_css sprite_image css_combine compile \
-	check_schema pydoctor clean_logs
+.PHONY: apidoc build_eggs buildonce_eggs buildout_bin check check	\
+	check_config check_mailman clean clean_buildout clean_js	\
+	clean_logs compile css_combine debug default doc ftest_build	\
+	ftest_inplace hosted_branches jsbuild jsbuild_widget_css	\
+	launchpad.pot pagetests pull_branches pydoctor realclean	\
+	reload-apache run run-testapp runner scan_branches schema	\
+	sprite_css sprite_image start stop sync_branches TAGS tags	\
+	test_build test_inplace zcmldocs

@@ -299,8 +299,7 @@ class SpecificationSetViewTestCase(TestCaseWithFactory):
         self.assertIsNot(
             None, content.find(True, id=target_widget.show_widget_id))
         text = str(content)
-        picker_script = (
-            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
-        self.assertIn(picker_script, text)
+        picker_vocab = 'DistributionOrProductOrProjectGroup'
+        self.assertIn(picker_vocab, text)
         focus_script = "setFocusByName('field.search_text')"
         self.assertIn(focus_script, text)

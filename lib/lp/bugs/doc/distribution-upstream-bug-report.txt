@@ -127,7 +127,7 @@ upstream is reported for it. Let's fix that:
 
 We then add an upstream task to the second pmount bug:
 
-    >>> task = getUtility(IBugTaskSet).createTask(bug, name12, product=pmount)
+    >>> task = getUtility(IBugTaskSet).createTask(bug, name12, pmount)
     >>> Store.of(task).flush()
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              pmount  2 2 1 0 0

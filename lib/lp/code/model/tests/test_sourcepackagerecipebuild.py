@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for source package builds."""
@@ -9,15 +9,14 @@ from datetime import (
     datetime,
     timedelta,
     )
-from pytz import utc
 import re
 
+from pytz import utc
 from storm.locals import Store
 import transaction
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
-from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
@@ -45,8 +44,8 @@ from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -168,7 +167,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
             self.assertTrue(check_permission('launchpad.View', build))
-        removeSecurityProxy(branch).private = True
+        removeSecurityProxy(branch).explicitly_private = True
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
         login(ANONYMOUS)
@@ -337,7 +336,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(
             'DEBUG Recipe eric/funky-recipe is stale\n'
             'DEBUG  - daily build failed for Warty (4.10): ' +
-            'PPA for Eric is disabled.\n',
+            "ArchiveDisabled(u'PPA for Eric is disabled.',)\n",
             logger.getLogBuffer())
 
     def test_makeDailyBuilds_skips_archive_with_no_permission(self):
@@ -355,8 +354,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual([], daily_builds)
         self.assertEqual(
             'DEBUG Recipe eric/funky-recipe is stale\n'
-            'DEBUG  - daily build failed for Warty (4.10): ' +
-            'Signer has no upload rights to this PPA.\n',
+            'DEBUG  - daily build failed for Warty (4.10): '
+            "CannotUploadToPPA('Signer has no upload rights "
+            "to this PPA.',)\n",
             logger.getLogBuffer())
 
     def test_makeDailyBuilds_with_an_older_build(self):
@@ -593,8 +593,10 @@ class TestBuildNotifications(TrialTestCase):
 
     def assertDeferredNotifyCount(self, status, build, expected_count):
         d = build.handleStatus(status, None, {'filemap': {}})
+
         def cb(result):
             self.assertEqual(expected_count, len(pop_notifications()))
+
         d.addCallback(cb)
         return d
 
@@ -605,7 +607,7 @@ class TestBuildNotifications(TrialTestCase):
 
     def test_handleStatus_OK(self):
         """Building the source package does _not_ immediately send mail.
-        
+
         (The archive uploader mail send one later.
         """
         return self.assertDeferredNotifyCount(

@@ -8,12 +8,14 @@ __all__ = [
     'DistroSeriesSourcePackageReleaseView',
     ]
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.webapp import (
     ApplicationMenu,
+    LaunchpadView,
     Navigation,
     stepthrough,
     )
-from canonical.lazr.utils import smartquote
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
@@ -49,7 +51,7 @@ class DistroSeriesSourcePackageReleaseNavigation(Navigation):
         return None
 
 
-class DistroSeriesSourcePackageReleaseView:
+class DistroSeriesSourcePackageReleaseView(LaunchpadView):
 
     def __init__(self, context, request):
         self.context = context

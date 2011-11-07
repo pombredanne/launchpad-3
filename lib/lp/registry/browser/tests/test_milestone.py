@@ -161,7 +161,7 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         master_bugtask = getUtility(IBugTaskSet).createTask(
-            bug, productseries=product.development_focus, owner=product.owner)
+            bug, product.owner, product.development_focus)
         milestone = self.factory.makeMilestone(
             productseries=product.development_focus)
         login_person(product.owner)
@@ -397,6 +397,9 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
             bug = self.factory.makeBug(distribution=self.ubuntu)
             distrosourcepackage = self.factory.makeDistributionSourcePackage(
                 distribution=self.ubuntu)
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=self.ubuntu.currentseries,
+                sourcepackagename=distrosourcepackage.sourcepackagename)
             bug.bugtasks[0].transitionToTarget(distrosourcepackage)
             bug.bugtasks[0].transitionToMilestone(
                 self.milestone, self.owner)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to branch merge proposals."""
@@ -7,11 +7,11 @@ __metaclass__ = type
 
 
 from canonical.config import config
-from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.webapp import canonical_url
 from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.mail.branch import BranchMailer
 from lp.services.mail.basemailer import BaseMailer
+from lp.services.mail.sendmail import get_msgid
 
 
 class BMPMailer(BranchMailer):
@@ -132,7 +132,7 @@ class BMPMailer(BranchMailer):
                 # inline.
                 ctrl.addAttachment(
                     self.preview_diff.text, content_type='text/x-diff',
-                    inline=True, filename='review-diff.txt')
+                    inline=True, filename='review-diff.txt', charset='utf-8')
 
     def _generateTemplateParams(self):
         """For template params that don't change, calculate just once."""
@@ -148,7 +148,7 @@ class BMPMailer(BranchMailer):
             'comment': '',
             'gap': '',
             'reviews': '',
-            'whiteboard': '', # No more whiteboard.
+            'whiteboard': '',  # No more whiteboard.
             'diff_cutoff_warning': '',
             }
         if self.delta_text is not None:

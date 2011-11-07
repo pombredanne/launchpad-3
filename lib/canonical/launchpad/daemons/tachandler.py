@@ -11,7 +11,9 @@ __all__ = [
     ]
 
 
+import errno
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -56,6 +58,13 @@ class TacTestSetup(Fixture):
                 "instance (%d) running in %s." % (pid, self.pidfile),
                 DeprecationWarning, stacklevel=2)
             two_stage_kill(pid)
+            # If the pid file still exists, it may indicate that the process
+            # respawned itself, or that two processes were started (race?) and
+            # one is still running while the other has ended, or the process
+            # was killed but it didn't remove the pid file (bug), or the
+            # machine was hard-rebooted and the pid file was not cleaned up
+            # (bug again). In other words, it's not safe to assume that a
+            # stale pid file is safe to delete without human intervention.
             if get_pid_from_file(self.pidfile):
                 raise TacException(
                     "Could not kill stale process %s." % (self.pidfile,))
@@ -108,6 +117,25 @@ class TacTestSetup(Fixture):
         else:
             return False
 
+    def _isPortListening(self, host, port):
+        """True if a tcp port is accepting connections.
+
+        This can be used by subclasses overriding _hasDaemonStarted, if they
+        want to check the port is up rather than for the contents of the log
+        file.
+        """
+        try:
+            s = socket.socket()
+            s.settimeout(2.0)
+            s.connect((host, port))
+            s.close()
+            return True
+        except socket.error, e:
+            if e.errno == errno.ECONNREFUSED:
+                return False
+            else:
+                raise
+
     def _waitForDaemonStartup(self):
         """ Wait for the daemon to fully start.
 
@@ -143,6 +171,24 @@ class TacTestSetup(Fixture):
         if pid is None:
             return
         os.kill(pid, sig)
+
+    def truncateLog(self):
+        """Truncate the log file.
+
+        Leaves everything up to and including the `LOG_MAGIC` marker in
+        place. If the `LOG_MAGIC` marker is not found the log is truncated to
+        0 bytes.
+        """
+        if os.path.exists(self.logfile):
+            with open(self.logfile, "r+b") as logfile:
+                position = 0
+                for line in logfile:
+                    position += len(line)
+                    if readyservice.LOG_MAGIC in line:
+                        logfile.truncate(position)
+                        break
+                else:
+                    logfile.truncate(0)
 
     def setUpRoot(self):
         """Override this.

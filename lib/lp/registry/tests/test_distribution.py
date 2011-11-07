@@ -7,12 +7,14 @@ __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
 import soupmatchers
+from storm.store import Store
 from testtools import ExpectedException
 from testtools.matchers import (
     MatchesAny,
     Not,
     )
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
@@ -20,10 +22,16 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import NoSuchDistroSeries
-from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
@@ -34,15 +42,24 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import Provides
 from lp.testing.views import create_initialized_view
+from lp.translations.enums import TranslationPermission
 
 
 class TestDistribution(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_pillar_category(self):
+        # The pillar category is correct.
+        distro = self.factory.makeDistribution()
+        self.assertEqual("Distribution", distro.pillar_category)
 
     def test_distribution_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
@@ -180,6 +197,23 @@ class TestDistribution(TestCaseWithFactory):
             sourcepackage.distribution.guessPublishedSourcePackageName(
                 'my-package').name)
 
+    def test_derivatives_email(self):
+        # Make sure the package_derivatives_email column stores data
+        # correctly.
+        email = "thingy@foo.com"
+        distro = self.factory.makeDistribution()
+        with person_logged_in(distro.owner):
+            distro.package_derivatives_email = email
+        Store.of(distro).flush()
+        self.assertEqual(email, distro.package_derivatives_email)
+
+    def test_derivatives_email_permissions(self):
+        # package_derivatives_email requires lp.edit to set/change.
+        distro = self.factory.makeDistribution()
+        self.assertRaises(
+            Unauthorized,
+            setattr, distro, "package_derivatives_email", "foo")
+
 
 class TestDistributionCurrentSourceReleases(
     TestDistroSeriesCurrentSourceReleases):
@@ -201,7 +235,7 @@ class TestDistributionCurrentSourceReleases(
         # When checking for the current release, we only care about the
         # version numbers. We don't care whether the version is
         # published in a earlier or later series.
-        self.current_series = self.factory.makeDistroRelease(
+        self.current_series = self.factory.makeDistroSeries(
             self.distribution, '1.0', status=SeriesStatus.CURRENT)
         self.publisher.getPubSource(
             version='0.9', distroseries=self.current_series)
@@ -290,9 +324,8 @@ class SeriesTests(TestCaseWithFactory):
     def test_derivatives(self):
         distro1 = self.factory.makeDistribution()
         distro2 = self.factory.makeDistribution()
-        previous_series = self.factory.makeDistroRelease(
-            distribution=distro1)
-        series = self.factory.makeDistroRelease(
+        previous_series = self.factory.makeDistroSeries(distribution=distro1)
+        series = self.factory.makeDistroSeries(
             distribution=distro2,
             previous_series=previous_series)
         self.assertContentEqual(
@@ -421,3 +454,77 @@ class DistroRegistrantTestCase(TestCaseWithFactory):
         self.assertNotEqual(distribution.owner, distribution.registrant)
         self.assertEqual(distribution.owner, self.owner)
         self.assertEqual(distribution.registrant, self.registrant)
+
+
+class DistributionSet(TestCaseWithFactory):
+    """Test case for `IDistributionSet`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_implements_interface(self):
+        self.assertThat(
+            getUtility(IDistributionSet), Provides(IDistributionSet))
+
+    def test_getDerivedDistributions_finds_derived_distro(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        derived_distro = dsp.derived_series.distribution
+        distroset = getUtility(IDistributionSet)
+        self.assertIn(derived_distro, distroset.getDerivedDistributions())
+
+    def test_getDerivedDistributions_ignores_nonderived_distros(self):
+        distroset = getUtility(IDistributionSet)
+        nonderived_distro = self.factory.makeDistribution()
+        self.assertNotIn(
+            nonderived_distro, distroset.getDerivedDistributions())
+
+    def test_getDerivedDistributions_ignores_ubuntu_even_if_derived(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.factory.makeDistroSeriesParent(
+            derived_series=ubuntu.currentseries)
+        distroset = getUtility(IDistributionSet)
+        self.assertNotIn(ubuntu, distroset.getDerivedDistributions())
+
+    def test_getDerivedDistribution_finds_each_distro_just_once(self):
+        # Derived distros are not duplicated in the output of
+        # getDerivedDistributions, even if they have multiple parents and
+        # multiple derived series.
+        dsp = self.factory.makeDistroSeriesParent()
+        distro = dsp.derived_series.distribution
+        other_series = self.factory.makeDistroSeries(distribution=distro)
+        self.factory.makeDistroSeriesParent(derived_series=other_series)
+        distroset = getUtility(IDistributionSet)
+        self.assertEqual(1, len(list(distroset.getDerivedDistributions())))
+
+
+class TestDistributionTranslations(TestCaseWithFactory):
+    """A TestCase for accessing distro translations-related attributes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rosetta_expert(self):
+        # Ensure rosetta-experts can set Distribution attributes
+        # related to translations.
+        distro = self.factory.makeDistribution()
+        new_series = self.factory.makeDistroSeries(distribution=distro)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('rosetta_experts'):
+            distro.translations_usage = ServiceUsage.LAUNCHPAD
+            distro.translation_focus = new_series
+            distro.translationgroup = group
+            distro.translationpermission = TranslationPermission.CLOSED
+
+    def test_translation_group_owner(self):
+        # Ensure TranslationGroup owner for a Distribution can modify
+        # all attributes related to distribution translations.
+        distro = self.factory.makeDistribution()
+        new_series = self.factory.makeDistroSeries(distribution=distro)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('admin'):
+            distro.translationgroup = group
+
+        new_group = self.factory.makeTranslationGroup()
+        with person_logged_in(group.owner):
+            distro.translations_usage = ServiceUsage.LAUNCHPAD
+            distro.translation_focus = new_series
+            distro.translationgroup = new_group
+            distro.translationpermission = TranslationPermission.CLOSED

@@ -383,6 +383,23 @@ then display name.
     Gnome Applets
     gnomebaker
 
+The license_info field is also searched for matching search_text:
+
+    >>> bzr.license_info = 'Code in /contrib is under a mit-like license.'
+    >>> for product in product_set.forReview(search_text='mit'):
+    ...     print product.name
+    bzr
+
+The whiteboard field is also searched for matching search_text:
+
+    >>> from lp.testing import celebrity_logged_in
+    >>> with celebrity_logged_in('registry_experts'):
+    ...     bzr.reviewer_whiteboard = (
+    ...         'cc-nc discriminates against commercial uses.')
+    >>> for product in product_set.forReview(search_text='cc-nc'):
+    ...     print product.name
+    bzr
+
 You can search for whether the product is active or not.
 
     >>> for product in product_set.forReview(active=False):
@@ -397,7 +414,6 @@ You can search for whether the product is marked reviewed or not.
     python-gnome2-dev
     unassigned
     alsa-utils
-    rosetta
     obsolete-junk
 
 You can search for products by license. This will match products with
@@ -412,42 +428,6 @@ any one of the licenses listed.
     ...     print product.name
     bzr
 
-You can also search for projects that have zero licenses. This is also
-convenient for searching for projects with at least one license.
-
-    >>> for product in product_set.forReview(
-    ...     has_zero_licenses=True, search_text='firefox|a52dec|bzr|derby'):
-    ...     print product.name
-    firefox
-    a52dec
-    >>> for product in product_set.forReview(
-    ...     has_zero_licenses=False, search_text='firefox|a52dec|bzr|derby'):
-    ...     print product.name
-    bzr
-    derby
-
-You can search for products whose license_info field is empty or not empty.
-This OR the licenses search field must match.
-
-    >>> for product in product_set.forReview(license_info_is_empty=True):
-    ...     print product.name
-    tomcat
-    python-gnome2-dev
-    unassigned
-    arch-mirrors
-    firefox
-    ...
-    >>> for product in product_set.forReview(license_info_is_empty=False):
-    ...     print product.name
-    mega-money-maker
-    obsolete-junk
-    >>> for product in product_set.forReview(license_info_is_empty=False,
-    ...                                      licenses=[License.GNU_GPL_V2]):
-    ...     print product.name
-    bzr
-    mega-money-maker
-    obsolete-junk
-
 It is possible to search for problem project that have been reviewed, but
 not approved
 
@@ -457,7 +437,6 @@ not approved
     python-gnome2-dev
     unassigned
     alsa-utils
-    rosetta
 
 You can search for products based on a date range in which the product
 was created.
@@ -513,6 +492,13 @@ the web form delivers.
     ...     print product.name
     bzr
 
+A reviewer can search for projects without a commercial subscription.
+
+    >>> for product in product_set.forReview(
+    ...     has_subscription=False, licenses=[License.OTHER_PROPRIETARY]):
+    ...     print product.name
+    mega-money-maker
+
 You can search for products based on the date of that
 its commercial subscription was modified, which only
 happens when a voucher is redeemed.
@@ -535,13 +521,6 @@ All the products are returned when no parameters are passed in.
     >>> from lp.registry.model.product import Product
     >>> product_set.forReview().count() == Product.select().count()
     True
-
-The license_info_is_empty parameter only accepts True, False, or None.
-
-    >>> product_set.forReview(license_info_is_empty='foo').count()
-    Traceback (most recent call last):
-    ...
-    AssertionError...
 
 The full text search will not match strings with dots in their name
 but a clause is included to search specifically for the name.

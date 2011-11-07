@@ -55,7 +55,7 @@
           By reviewing the following translations, you can help ensure other translators' work is published to software users. (<a href="/+help/reviewing.html" target="help">More about reviewing</a>)
         </p>
         <metal:translations-to-review
-          tal:replace="structure context/@@+translations-to-review-table" />
+          tal:replace="structure view/translations_to_review_table" />
         <div class="see-all"
              tal:condition="python: view.num_projects_and_packages_to_review > 1">
           <a href="+translations-to-review" id="translations-to-review-link">
@@ -74,7 +74,7 @@
       <div id="translations-to-complete-section" class="portlet">
         <h2>Translations you can help complete</h2>
         <metal:translations-to-complete
-          tal:replace="structure context/@@+translations-to-complete-table" />
+          tal:replace="structure view/translations_to_complete_table" />
       </div>
     </tal:translator>
   </tal:me>

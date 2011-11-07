@@ -1,14 +1,16 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0613,R0911,F0401
-#
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
 __metaclass__ = type
 
 import bisect
 import cgi
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from email.Utils import formatdate
 import math
 import os.path
@@ -17,14 +19,22 @@ import sys
 from textwrap import dedent
 import urllib
 
-##import warnings
-
-from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
 from lazr.uri import URI
-
-from zope.interface import Interface, Attribute, implements
-from zope.component import adapts, getUtility, queryAdapter, getMultiAdapter
+import pytz
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.error.interfaces import IErrorReportingUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    implements,
+    )
+from zope.component import (
+    adapts,
+    getUtility,
+    queryAdapter,
+    getMultiAdapter,
+    )
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.traversing.interfaces import (
@@ -36,23 +46,36 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.schema import TextLine
 
-import pytz
-from z3c.ptcompat import ViewPageTemplateFile
-
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    IPrivacy
+    )
 from canonical.launchpad.layers import LaunchpadLayer
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.interfaces import (
-    IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
-    IPrimaryContext, NoCanonicalUrl)
-from canonical.launchpad.webapp.menu import get_current_view, get_facet
+    IApplicationMenu,
+    IContextMenu,
+    IFacetMenu,
+    ILaunchBag,
+    INavigationMenu,
+    IPrimaryContext,
+    NoCanonicalUrl
+    )
+from canonical.launchpad.webapp.menu import (
+    get_current_view,
+    get_facet,
+    )
 from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request, LaunchpadView, nearest)
+    get_current_browser_request,
+    LaunchpadView,
+    nearest
+    )
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.app.browser.stringformatter import escape, FormattersAPI
@@ -61,6 +84,7 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
+from lp.services.features import getFeatureFlag
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
@@ -792,7 +816,7 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return None
 
-    def _get_custom_icon_url(self):
+    def custom_icon_url(self):
         """Return the URL for this object's icon."""
         context = self._context
         if IHasIcon.providedBy(context) and context.icon is not None:
@@ -1083,6 +1107,8 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.BUILDING: {'src': "/@@/processing"},
             BuildStatus.UPLOADING: {'src': "/@@/processing"},
             BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
+            BuildStatus.CANCELLING: {'src': "/@@/processing"},
+            BuildStatus.CANCELLED: {'src': "/@@/build-failed"},
             }
 
         alt = '[%s]' % self._context.status.name
@@ -1175,7 +1201,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
     def _makeLink(self, view_name, rootsite, text):
         person = self._context
         url = self.url(view_name, rootsite)
-        custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon_url()
+        custom_icon = ObjectImageDisplayAPI(person).custom_icon_url()
         if custom_icon is None:
             css_class = ObjectImageDisplayAPI(person).sprite_css()
             return (u'<a href="%s" class="%s">%s</a>') % (
@@ -1207,7 +1233,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
     def icon(self, view_name):
         """Return the URL for the person's icon."""
         custom_icon = ObjectImageDisplayAPI(
-            self._context)._get_custom_icon_url()
+            self._context).custom_icon_url()
         if custom_icon is None:
             css_class = ObjectImageDisplayAPI(self._context).sprite_css()
             return '<span class="' + css_class + '"></span>'
@@ -1220,20 +1246,12 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         The link text uses both the display name and Launchpad id to clearly
         indicate which user profile is linked.
         """
-        from lp.services.features import getFeatureFlag
-        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
-            text = self.unique_displayname(None)
-            # XXX sinzui 2011-05-31: Remove this next line when the feature
-            # flag is removed.
-            view_name = None
-        elif view_name == 'id-only':
-            # XXX sinzui 2011-05-31: remove this block and /id-only from
-            # launchpad-loginstatus.pt whwn the feature flag is removed.
-            text = self._context.name
-            view_name = None
-        else:
-            text = self._context.displayname
+        text = self.unique_displayname(None)
         return self._makeLink(view_name, 'mainsite', text)
+
+
+class MixedVisibilityError(Exception):
+    """An informational error that visibility is being mixed."""
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
@@ -1249,6 +1267,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         """
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
+            self._report_visibility_leak()
             return None
         return super(TeamFormatterAPI, self).url(view_name, rootsite)
 
@@ -1256,6 +1275,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         """See `ObjectFormatterAPI`."""
         if not check_permission('launchpad.View', self._context):
             # This person has no permission to view the team details.
+            self._report_visibility_leak()
             return None
         return super(TeamFormatterAPI, self).api_url(context)
 
@@ -1268,6 +1288,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
+            self._report_visibility_leak()
             return '<span class="sprite team">%s</span>' % cgi.escape(
                 self.hidden)
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
@@ -1277,6 +1298,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
+            self._report_visibility_leak()
             return self.hidden
         return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
 
@@ -1285,8 +1307,18 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
+            self._report_visibility_leak()
             return self.hidden
         return super(TeamFormatterAPI, self).unique_displayname(view_name)
+
+    def _report_visibility_leak(self):
+        if bool(getFeatureFlag('disclosure.log_private_team_leaks.enabled')):
+            request = get_current_browser_request()
+            try:
+                raise MixedVisibilityError()
+            except MixedVisibilityError:
+                getUtility(IErrorReportingUtility).raising(
+                    sys.exc_info(), request)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -1426,7 +1458,7 @@ class PillarFormatterAPI(CustomizableFormatter):
         html = super(PillarFormatterAPI, self).link(view_name)
         context = self._context
         custom_icon = ObjectImageDisplayAPI(
-            context)._get_custom_icon_url()
+            context).custom_icon_url()
         url = self.url(view_name, rootsite)
         summary = self._make_link_summary()
         if custom_icon is None:
@@ -2483,8 +2515,6 @@ class PageMacroDispatcher:
             return self.pagetype()
         elif name == 'show_actions_menu':
             return self.show_actions_menu()
-        elif name == 'isbetauser':
-            return getattr(self.context, 'isBetaUser', False)
         else:
             raise TraversalError(name)
 

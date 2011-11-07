@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-from unittest import TestLoader
 
 import pytz
 import transaction
@@ -29,6 +28,7 @@ from lp.testing import (
     BrowserTestCase,
     login,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -191,6 +191,11 @@ class TestMerges(BrowserTestCase):
             self.factory.makePerson(), self.factory.makeProduct())
         self.getViewBrowser(personproduct, '+merges',
                 rootsite='code')
+
+    def test_DistributionSourcePackage(self):
+        """The merges view should be enabled for DistributionSourcePackage."""
+        package = self.factory.makeDistributionSourcePackage()
+        self.getViewBrowser(package, '+merges', rootsite='code')
 
 
 class ActiveReviewGroupsTest(TestCaseWithFactory):
@@ -357,5 +362,18 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
             [item.context for item in view.review_groups[view.OTHER]])
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
+    """Test the sorting of the active review groups."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_private_branch_owner(self):
+        # Merge proposals against private branches are visible to
+        # the branch owner.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(private=True, product=product)
+        with person_logged_in(removeSecurityProxy(branch).owner):
+            mp = self.factory.makeBranchMergeProposal(target_branch=branch)
+            view = create_initialized_view(
+                branch, name='+activereviews', rootsite='code')
+            self.assertEqual([mp], list(view.getProposals()))

@@ -11,12 +11,12 @@ __all__ = [
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.interfaces.bugtask import IUpstreamBugTask
 from lp.bugs.subscribers.bug import (
     add_bug_change_notifications,
     send_bug_details_to_new_bug_subscribers,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 
 
 @block_implicit_flushes
@@ -31,7 +31,7 @@ def update_security_contact_subscriptions(event):
     if event.object.bug.private:
         return
 
-    if not IUpstreamBugTask.providedBy(event.object):
+    if not IProduct.providedBy(event.object.target):
         return
 
     bugtask_before_modification = event.object_before_modification

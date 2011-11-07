@@ -18,10 +18,13 @@
     </style>
     <script type="text/javascript">
         LPS.use('base', 'node', 'event',
-                'lp.comments.hide', function(Y) {
+                'lp.comments.hide', 'lp.answers.subscribers',
+            function(Y) {
         Y.on('domready', function() {
             LP.cache.comment_context = LP.cache.context;
             Y.lp.comments.hide.setup_hide_controls();
+
+            new Y.lp.answers.subscribers.createQuestionSubscribersLoader();
         });
       });
     </script>
@@ -31,7 +34,7 @@
     <metal:registering fill-slot="registering">
         Asked by
         <a tal:replace="structure context/owner/fmt:link" />
-        on <span
+        <span
           tal:attributes="title context/datecreated/fmt:datetime"
           tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
 
@@ -50,7 +53,7 @@
         </ul>
       </div>
       <div tal:replace="structure context/@@+global-actions" />
-      <div tal:replace="structure context/@@+portlet-subscribers" />
+      <tal:subscribers replace="structure context/@@+portlet-subscribers"/>
     </metal:portlets>
 
     <div metal:fill-slot="main">

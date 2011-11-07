@@ -165,11 +165,17 @@ class CodeOfConductDownloadView:
 class CodeOfConductSetView(LaunchpadView):
     """Simple view class for CoCSet page."""
 
+    page_title = 'Ubuntu Codes of Conduct'
+
 
 class SignedCodeOfConductAddView(LaunchpadFormView):
     """Add a new SignedCodeOfConduct Entry."""
     schema = ISignedCodeOfConduct
     field_names = ['signedcode']
+
+    @property
+    def page_title(self):
+        return 'Sign %s' % self.context.title
 
     @action('Continue', name='continue')
     def continue_action(self, action, data):
@@ -212,16 +218,14 @@ class SignedCodeOfConductAckView(LaunchpadFormView):
             user=data['owner'], recipient=self.user)
 
 
-class SignedCodeOfConductView:
+class SignedCodeOfConductView(CodeOfConductView):
     """Simple view class for SignedCoC page."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
-
-class SignedCodeOfConductAdminView:
+class SignedCodeOfConductAdminView(LaunchpadView):
     """Admin Console for SignedCodeOfConduct Entries."""
+
+    page_title = 'Administer Codes of Conduct'
 
     def __init__(self, context, request):
         self.context = context

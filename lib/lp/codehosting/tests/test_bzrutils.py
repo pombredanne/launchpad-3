@@ -14,10 +14,8 @@ from bzrlib import (
     )
 from bzrlib.branch import (
     Branch,
-    BranchReferenceFormat,
     )
 from bzrlib.bzrdir import (
-    BzrDir,
     format_registry,
     )
 from bzrlib.remote import RemoteBranch
@@ -33,20 +31,14 @@ from bzrlib.tests.per_branch import (
     branch_scenarios,
     TestCaseWithControlDir,
     )
-from bzrlib.transport import chroot
-from lazr.uri import URI
 
 from lp.codehosting.bzrutils import (
-    _install_checked_open_hook,
     add_exception_logging_hook,
-    checked_open,
     DenyingServer,
     get_branch_stacked_on_url,
     get_vfs_format_classes,
     is_branch_stackable,
     remove_exception_logging_hook,
-    safe_open,
-    UnsafeUrlSeen,
     )
 from lp.codehosting.tests.helpers import TestResultWrapper
 
@@ -198,15 +190,12 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
     """
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestGetVfsFormatClasses, self).setUp()
         self.disable_directory_isolation()
-
-    def tearDown(self):
         # This makes sure the connections held by the branches opened in the
         # test are dropped, so the daemon threads serving those branches can
         # exit.
-        gc.collect()
-        TestCaseWithTransport.tearDown(self)
+        self.addCleanup(gc.collect)
 
     def test_get_vfs_format_classes(self):
         # get_vfs_format_classes for a returns the underlying format classes
@@ -229,88 +218,6 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
 
 
 
-class TestCheckedOpen(TestCaseWithTransport):
-    """Tests for `checked_open`."""
-
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        _install_checked_open_hook()
-
-    def test_simple(self):
-        # Opening a branch with checked_open checks the branches url.
-        url = self.make_branch('branch').base
-        seen_urls = []
-        checked_open(seen_urls.append, url)
-        self.assertEqual([url], seen_urls)
-
-    def test_stacked(self):
-        # Opening a stacked branch with checked_open checks the branches url
-        # and then the stacked-on url.
-        stacked = self.make_branch('stacked')
-        stacked_on = self.make_branch('stacked_on')
-        stacked.set_stacked_on_url(stacked_on.base)
-        seen_urls = []
-        checked_open(seen_urls.append, stacked.base)
-        self.assertEqual([stacked.base, stacked_on.base], seen_urls)
-
-    def test_reference(self):
-        # Opening a branch reference with checked_open checks the branch
-        # references url and then the target of the reference.
-        target = self.make_branch('target')
-        reference_url = self.get_url('reference/')
-        BranchReferenceFormat().initialize(
-            BzrDir.create(reference_url), target_branch=target)
-        seen_urls = []
-        checked_open(seen_urls.append, reference_url)
-        self.assertEqual([reference_url, target.base], seen_urls)
-
-
-class TestSafeOpen(TestCaseWithTransport):
-    """Tests for `safe_open`."""
-
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        _install_checked_open_hook()
-
-    def get_chrooted_scheme(self, relpath):
-        """Create a server that is chrooted to `relpath`.
-
-        :return: ``(scheme, get_url)`` where ``scheme`` is the scheme of the
-            chroot server and ``get_url`` returns URLs on said server.
-        """
-        transport = self.get_transport(relpath)
-        chroot_server = chroot.ChrootServer(transport)
-        chroot_server.start_server()
-        self.addCleanup(chroot_server.stop_server)
-        def get_url(relpath):
-            return chroot_server.get_url() + relpath
-        return URI(chroot_server.get_url()).scheme, get_url
-
-    def test_stacked_within_scheme(self):
-        # A branch that is stacked on a URL of the same scheme is safe to
-        # open.
-        self.get_transport().mkdir('inside')
-        self.make_branch('inside/stacked')
-        self.make_branch('inside/stacked-on')
-        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
-        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
-            get_chrooted_url('stacked-on'))
-        safe_open(scheme, get_chrooted_url('stacked'))
-
-    def test_stacked_outside_scheme(self):
-        # A branch that is stacked on a URL that is not of the same scheme is
-        # not safe to open.
-        self.get_transport().mkdir('inside')
-        self.get_transport().mkdir('outside')
-        self.make_branch('inside/stacked')
-        self.make_branch('outside/stacked-on')
-        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
-        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
-            self.get_url('outside/stacked-on'))
-        self.assertRaises(
-            UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('stacked'))
-
-
 def load_tests(basic_tests, module, loader):
     """Parametrize the tests of get_branch_stacked_on_url by branch format."""
     result = loader.suiteClass()
@@ -325,8 +232,6 @@ def load_tests(basic_tests, module, loader):
     result.addTests(loader.loadTestsFromTestCase(TestDenyingServer))
     result.addTests(loader.loadTestsFromTestCase(TestExceptionLoggingHooks))
     result.addTests(loader.loadTestsFromTestCase(TestGetVfsFormatClasses))
-    result.addTests(loader.loadTestsFromTestCase(TestSafeOpen))
-    result.addTests(loader.loadTestsFromTestCase(TestCheckedOpen))
     return result
 
 

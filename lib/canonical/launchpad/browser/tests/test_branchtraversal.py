@@ -3,15 +3,11 @@
 
 """Tests for branch traversal."""
 
-import unittest
-
-from lazr.restful.testing.webservice import FakeRequest
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonNavigation
 from lp.registry.browser.personproduct import PersonProductNavigation
@@ -19,17 +15,10 @@ from lp.registry.interfaces.personproduct import (
     IPersonProduct,
     IPersonProductFactory,
     )
-from lp.testing import TestCaseWithFactory
-
-
-class LocalFakeRequest(FakeRequest):
-    @property
-    def stepstogo(self):
-        """See IBasicLaunchpadRequest.
-
-        This method is called by traversal machinery.
-        """
-        return StepsToGo(self)
+from lp.testing import (
+    FakeLaunchpadRequest,
+    TestCaseWithFactory,
+    )
 
 
 class TestPersonBranchTraversal(TestCaseWithFactory):
@@ -61,7 +50,7 @@ class TestPersonBranchTraversal(TestCaseWithFactory):
         """
         stack = list(reversed(segments))
         name = stack.pop()
-        request = LocalFakeRequest(['~' + self.person.name], stack)
+        request = FakeLaunchpadRequest(['~' + self.person.name], stack)
         traverser = PersonNavigation(self.person, request)
         return traverser.publishTraverse(request, name)
 
@@ -143,7 +132,7 @@ class TestPersonProductBranchTraversal(TestCaseWithFactory):
         """
         stack = list(reversed(segments))
         name = stack.pop()
-        request = LocalFakeRequest(
+        request = FakeLaunchpadRequest(
             ['~' + self.person.name, self.product.name], stack)
         traverser = PersonProductNavigation(self.person_product, request)
         return traverser.publishTraverse(request, name)
@@ -159,7 +148,3 @@ class TestPersonProductBranchTraversal(TestCaseWithFactory):
         # NotFound is raised if the branch name doesn't exist.
         branch_name = self.factory.getUniqueString()
         self.assertRaises(NotFound, self.traverse, [branch_name])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

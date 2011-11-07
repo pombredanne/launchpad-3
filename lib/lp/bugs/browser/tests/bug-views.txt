@@ -432,9 +432,20 @@ can't know if the user is subscribed or not.
 BugTasks and Nominations Table
 ------------------------------
 
-A table is rendered at the top of the bug page which shows both bugtasks
-and nominations. This table is rendered with the
-+bugtasks-and-nomination-table view.
+Content is rendered at the top of the bug page which shows both bugtasks
+and nominations and various links like "Does this bug affect you" and
+"Also Affects Project" etc. This content is rendered with the
++bugtasks-and-nominations-portal view.
+
+    >>> request = LaunchpadTestRequest()
+
+    >>> bugtasks_and_nominations_view = getMultiAdapter(
+    ...     (bug_one_bugtask.bug, request),
+    ...     name="+bugtasks-and-nominations-portal")
+    >>> bugtasks_and_nominations_view.initialize()
+
+The bugtasks and nominations table itself is rendered with the
++bugtasks-and-nominations-table view.
 
     >>> request = LaunchpadTestRequest()
 
@@ -526,10 +537,7 @@ Let's add another affected package in Ubuntu to the bug.
 
     >>> current_user = getUtility(ILaunchBag).user
 
-    >>> bugtaskset.createTask(
-    ...     owner=current_user, bug=bug_one,
-    ...     distribution=evolution.distribution,
-    ...     sourcepackagename=evolution.sourcepackagename)
+    >>> bugtaskset.createTask(bug_one, current_user, evolution)
     <BugTask ...>
 
 A nomination row will be included for evolution now too.

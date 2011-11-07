@@ -27,7 +27,9 @@ class TestMetaClass(InterfaceClass):
             "test_invalid_chars+":
             Choice(vocabulary='ValidTeamOwner'),
             "test_valid.item":
-            Choice(vocabulary='ValidTeamOwner')}
+            Choice(vocabulary='ValidTeamOwner'),
+            "test_filtered.item":
+            Choice(vocabulary='DistributionOrProduct')}
         super(TestMetaClass, self).__init__(
             name, bases=bases, attrs=attrs, __doc__=__doc__,
             __module__=__module__)
@@ -45,8 +47,8 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
     def setUp(self):
         super(TestVocabularyPickerWidget, self).setUp()
         self.context = self.factory.makeTeam()
-        vocabulary_registry = getVocabularyRegistry()
-        self.vocabulary = vocabulary_registry.get(
+        self.vocabulary_registry = getVocabularyRegistry()
+        self.vocabulary = self.vocabulary_registry.get(
             self.context, 'ValidTeamOwner')
         self.request = LaunchpadTestRequest()
 
@@ -62,21 +64,53 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         widget_config = simplejson.loads(picker_widget.json_config)
         self.assertEqual(
             'ValidTeamOwner', picker_widget.vocabulary_name)
-        self.assertEqual(
-            simplejson.dumps(self.vocabulary.displayname),
-            widget_config['header'])
-        self.assertEqual(
-            simplejson.dumps(self.vocabulary.step_title),
+        self.assertEqual([
+            {'name': 'ALL',
+             'title': 'All',
+             'description': 'Display all search results'},
+            {'name': 'PERSON',
+             'title': 'Person',
+             'description': 'Display search results for people only'},
+            {'name': 'TEAM',
+             'title': 'Team',
+             'description': 'Display search results for teams only'}
+            ], picker_widget.vocabulary_filters)
+        self.assertEqual(self.vocabulary.displayname, widget_config['header'])
+        self.assertEqual(self.vocabulary.step_title,
             widget_config['step_title'])
         self.assertEqual(
             'show-widget-field-test_valid-item', picker_widget.show_widget_id)
         self.assertEqual(
             'field.test_valid.item', picker_widget.input_id)
-        self.assertEqual(
-            simplejson.dumps(None), picker_widget.extra_no_results_message)
+        self.assertIsNone(picker_widget.extra_no_results_message)
         markup = picker_widget()
-        self.assertIn(
-            "Y.lp.app.picker.create('ValidTeamOwner', config);", markup)
+        self.assertIn("Y.lp.app.picker.create", markup)
+        self.assertIn('ValidTeamOwner', markup)
+
+    def test_widget_filtered_vocabulary(self):
+        # Check if a vocabulary supports filters, these are included in the
+        # widget configuration.
+        field = ITest['test_filtered.item']
+        bound_field = field.bind(self.context)
+        vocabulary = self.vocabulary_registry.get(
+            self.context, 'DistributionOrProduct')
+        picker_widget = VocabularyPickerWidget(
+            bound_field, vocabulary, self.request)
+
+        widget_config = simplejson.loads(picker_widget.json_config)
+        self.assertEqual([
+            {'name': 'ALL',
+             'title': 'All',
+             'description': 'Display all search results'},
+            {'name': 'PROJECT',
+             'title': 'Project',
+             'description':
+                 'Display search results associated with projects'},
+            {'name': 'DISTRO',
+             'title': 'Distribution',
+             'description':
+                 'Display search results associated with distributions'}
+        ], widget_config['vocabulary_filters'])
 
     def test_widget_fieldname_with_invalid_html_chars(self):
         # Check the picker widget is correctly set up for a field which has a
@@ -125,18 +159,15 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # A vocabulary widget does not show the extra buttons by default.
         picker_widget = VocabularyPickerWidget(
             bound_field, self.vocabulary, self.request)
-        self.assertEqual('false',
-            picker_widget.config['show_assign_me_button'])
-        self.assertEqual('false',
-            picker_widget.config['show_remove_button'])
+        self.assertFalse(picker_widget.config['show_assign_me_button'])
+        self.assertFalse(picker_widget.config['show_remove_button'])
 
-        # A person picker widget does show them by default.
+        # A person picker widget does the assign button by default.
         person_picker_widget = PersonPickerWidget(
             bound_field, self.vocabulary, self.request)
-        self.assertEqual('true',
-            person_picker_widget.config['show_assign_me_button'])
-        self.assertEqual('true',
-            person_picker_widget.config['show_remove_button'])
+        self.assertTrue(person_picker_widget.config['show_assign_me_button'])
+        # But not the remove button.
+        self.assertFalse(person_picker_widget.config['show_remove_button'])
 
     def test_widget_personvalue_meta(self):
         # The person picker has the correct meta value for a person value.

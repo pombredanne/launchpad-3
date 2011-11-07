@@ -61,12 +61,9 @@
     </browser:pages>
     <browser:pages
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="canonical.launchpad.browser.HasSpecificationsView"
+        class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
         facet="specifications"
         permission="zope.Public">
-        <browser:page
-            name="+mdz-specs.csv"
-            attribute="mdzCsv"/>
         <browser:page
             name="+specs"/>
         <browser:page
@@ -76,7 +73,7 @@
     <browser:page
         name="+assignments"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="canonical.launchpad.browser.SpecificationAssignmentsView"
+        class="lp.blueprints.browser.specificationtarget.SpecificationAssignmentsView"
         facet="specifications"
         permission="zope.Public"
         template="../templates/specificationtarget-assignments.pt"/>
@@ -97,14 +94,14 @@
     <browser:page
         name="+attend"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="canonical.launchpad.browser.SprintAttendanceAttendView"
+        class="lp.blueprints.browser.sprintattendance.SprintAttendanceAttendView"
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/sprint-attend.pt"/>
     <browser:page
         name="+register"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="canonical.launchpad.browser.SprintAttendanceRegisterView"
+        class="lp.blueprints.browser.sprintattendance.SprintAttendanceRegisterView"
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/sprint-register.pt"/>
@@ -135,6 +132,7 @@
         permission="zope.Public"/>
     <browser:pages
         for="lp.blueprints.interfaces.sprint.IHasSprints"
+        class="lp.blueprints.browser.sprint.HasSprintsView"
         facet="overview"
         permission="zope.Public">
         <browser:page
@@ -608,12 +606,6 @@
         facet="specifications"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
-        permission="zope.Public"
-        name="+mdz-specs.csv"
-        attribute="mdzCsv"/>
 
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroup"

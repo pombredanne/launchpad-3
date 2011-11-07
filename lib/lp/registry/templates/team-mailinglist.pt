@@ -34,7 +34,7 @@
 
     <metal:widgets fill-slot="widgets">
       <div id="no_mailing_list"
-         tal:condition="view/list_can_be_requested">
+         tal:condition="view/list_can_be_created">
         <p>
           You can create a mailing list for this team. Team members
           can subscribe and post to the team mailing list.
@@ -63,7 +63,7 @@
         <p>
           &#187; <a href="https://help.launchpad.net/Teams/MailingLists">Help for mailing lists</a>
         </p>
-        <input tal:replace="structure view/request_list_creation/render" />
+        <input tal:replace="structure view/create_list_creation/render" />
       </div>
 
       <div id="mailing_list_purge"

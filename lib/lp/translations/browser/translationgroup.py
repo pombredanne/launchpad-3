@@ -57,7 +57,7 @@ class TranslationGroupSetBreadcrumb(Breadcrumb):
     text = u"Translation groups"
 
 
-class TranslationGroupSetView:
+class TranslationGroupSetView(LaunchpadView):
     """Translation groups overview."""
     page_title = "Translation groups"
     label = page_title

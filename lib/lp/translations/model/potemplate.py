@@ -69,6 +69,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import validate_public_person
@@ -243,6 +244,17 @@ class POTemplate(SQLBase, RosettaStats):
     def clearPOFileCache(self):
         """See `IPOTemplate`."""
         self._cached_pofiles_by_language = None
+
+    def _removeFromSuggestivePOTemplatesCache(self):
+        """One level of indirection to make testing easier."""
+        getUtility(
+            IPOTemplateSet).removeFromSuggestivePOTemplatesCache(self)
+
+    def setActive(self, active):
+        """See `IPOTemplate`."""
+        if not active and active != self.iscurrent:
+            self._removeFromSuggestivePOTemplatesCache()
+        self.iscurrent = active
 
     @property
     def uses_english_msgids(self):
@@ -921,7 +933,10 @@ class POTemplate(SQLBase, RosettaStats):
 
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         subject = 'Translation template import - %s' % self.displayname
-        template_mail = 'poimport-template-confirmation.txt'
+        # Can use template_mail = 'poimport-template-confirmation.txt' to send
+        # mail when everything is imported, but those mails aren't very useful
+        # to or much welcomed by the recipients.  See bug 855150.
+        template_mail = None
         errors, warnings = None, None
         try:
             errors, warnings = translation_importer.importFile(
@@ -999,9 +1014,13 @@ class POTemplate(SQLBase, RosettaStats):
                         logger.warn(
                             "Statistics update failed: %s" % unicode(error))
 
-        template = helpers.get_email_template(template_mail, 'translations')
-        message = template % replacements
-        return (subject, message)
+        if template_mail is not None:
+            template = helpers.get_email_template(
+                template_mail, 'translations')
+            message = template % replacements
+            return (subject, message)
+        else:
+            return None, None
 
     def getTranslationRows(self):
         """See `IPOTemplate`."""
@@ -1189,27 +1208,10 @@ class POTemplateSubset:
         result = self._build_query(POTemplate.name == name, ordered=False)
         return result.one()
 
-    def getPOTemplateByTranslationDomain(self, translation_domain):
+    def getPOTemplatesByTranslationDomain(self, translation_domain):
         """See `IPOTemplateSubset`."""
-        query_result = self._build_query(
+        return self._build_query(
             POTemplate.translation_domain == translation_domain)
-
-        # Fetch up to 2 templates, to check for duplicates.
-        matches = query_result.config(limit=2)
-
-        result = [match for match in matches]
-        if len(result) == 0:
-            return None
-        elif len(result) == 1:
-            return result[0]
-        else:
-            templates = ['"%s"' % template.displayname for template in result]
-            templates.sort()
-            log.warn(
-                "Found %d competing templates with translation domain '%s': "
-                "%s."
-                % (len(templates), translation_domain, '; '.join(templates)))
-            return None
 
     def getPOTemplateByPath(self, path):
         """See `IPOTemplateSubset`."""
@@ -1375,11 +1377,15 @@ class POTemplateSet:
         return IMasterStore(POTemplate).execute(
             "DELETE FROM SuggestivePOTemplate").rowcount
 
+    def removeFromSuggestivePOTemplatesCache(self, potemplate):
+        """See `IPOTemplateSet`."""
+        rowcount = IMasterStore(POTemplate).execute(
+            "DELETE FROM SuggestivePOTemplate "
+            "WHERE potemplate = %s" % sqlvalues(potemplate)).rowcount
+        return rowcount == 1
+
     def populateSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
-        # happened for the usage enums, this sql needs to be updated to
-        # check for the translations_usage, not official_rosetta.
         return IMasterStore(POTemplate).execute("""
             INSERT INTO SuggestivePOTemplate (
                 SELECT POTemplate.id
@@ -1394,11 +1400,14 @@ class POTemplateSet:
                     Product.id = ProductSeries.product
                 WHERE
                     POTemplate.iscurrent AND (
-                        Distribution.official_rosetta OR
-                        Product.official_rosetta)
+                        Distribution.translations_usage IN %(usage)s OR
+                        Product.translations_usage IN %(usage)s)
                 ORDER BY POTemplate.id
             )
-            """).rowcount
+            """ % {
+                'usage': sqlvalues(
+                    ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)}
+        ).rowcount
 
 
 class POTemplateSharingSubset(object):

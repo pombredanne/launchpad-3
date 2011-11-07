@@ -12,14 +12,13 @@ __all__ = [
     'ProcessAccepted',
     ]
 
+from optparse import OptionValueError
 import sys
 
 from debian.deb822 import Deb822Dict
-from optparse import OptionValueError
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
@@ -31,7 +30,6 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
@@ -39,6 +37,9 @@ from lp.services.scripts.base import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
+    re_bug_numbers,
+    re_closes,
+    re_lp_closes,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
@@ -63,6 +64,35 @@ def get_bugs_from_changes_file(changes_file):
             continue
         else:
             bugs.append(bug)
+    return bugs
+
+
+def get_bugs_from_changelog_entry(sourcepackagerelease, since_version):
+    """Parse the changelog_entry in the sourcepackagerelease and return a
+    list of `IBug`s referenced by it.
+    """
+    changelog = sourcepackagerelease.aggregate_changelog(since_version)
+    closes = []
+    # There are 2 main regexes to match.  Each match from those can then
+    # have further multiple matches from the 3rd regex:
+    # closes: NNN, NNN
+    # lp: #NNN, #NNN
+    regexes = (
+        re_closes.finditer(changelog), re_lp_closes.finditer(changelog))
+    for regex in regexes:
+        for match in regex:
+            bug_match = re_bug_numbers.findall(match.group(0))
+            closes += map(int, bug_match)
+
+    bugs = []
+    for bug_id in closes:
+        try:
+            bug = getUtility(IBugSet).get(bug_id)
+        except NotFoundError:
+            continue
+        else:
+            bugs.append(bug)
+
     return bugs
 
 
@@ -121,7 +151,7 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
             source_queue_item.sourcepackagerelease, changesfile_object)
 
 
-def close_bugs_for_sourcepublication(source_publication):
+def close_bugs_for_sourcepublication(source_publication, since_version=None):
     """Close bugs for a given sourcepublication.
 
     Given a `ISourcePackagePublishingHistory` close bugs mentioned in
@@ -133,21 +163,33 @@ def close_bugs_for_sourcepublication(source_publication):
     sourcepackagerelease = source_publication.sourcepackagerelease
     changesfile_object = sourcepackagerelease.upload_changesfile
 
-    # No changesfile available, cannot close bugs.
-    if changesfile_object is None:
-        return
-
     close_bugs_for_sourcepackagerelease(
-        sourcepackagerelease, changesfile_object)
+        sourcepackagerelease, changesfile_object, since_version,
+        upload_distroseries=source_publication.distroseries)
 
 
-def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
+def close_bugs_for_sourcepackagerelease(source_release, changesfile_object,
+                                        since_version=None,
+                                        upload_distroseries=None):
     """Close bugs for a given source.
 
     Given a `ISourcePackageRelease` and a corresponding changesfile object,
     close bugs mentioned in the changesfile in the context of the source.
+
+    If changesfile_object is None and since_version is supplied,
+    close all the bugs in changelog entries made after that version and up
+    to and including the source_release's version.  It does this by parsing
+    the changelog on the sourcepackagerelease.  This could be extended in
+    the future to deal with the changes file as well but there is no
+    requirement to do so right now.
     """
-    bugs_to_close = get_bugs_from_changes_file(changesfile_object)
+    if since_version and source_release.changelog:
+        bugs_to_close = get_bugs_from_changelog_entry(
+            source_release, since_version=since_version)
+    elif changesfile_object:
+        bugs_to_close = get_bugs_from_changes_file(changesfile_object)
+    else:
+        return
 
     # No bugs to be closed by this upload, move on.
     if not bugs_to_close:
@@ -163,10 +205,13 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
         # here, BE CAREFUL with the unproxied bug object and look at
         # what you're doing with it that might violate security.
         bug = removeSecurityProxy(bug)
+        if upload_distroseries is not None:
+            target = upload_distroseries.getSourcePackage(
+                source_release.sourcepackagename)
+        else:
+            target = source_release.sourcepackage
         edited_task = bug.setStatus(
-            target=source_release.sourcepackage,
-            status=BugTaskStatus.FIXRELEASED,
-            user=janitor)
+            target=target, status=BugTaskStatus.FIXRELEASED, user=janitor)
         if edited_task is not None:
             assert source_release.changelog_entry is not None, (
                 "New source uploads should have a changelog.")
@@ -254,6 +299,13 @@ class ProcessAccepted(LaunchpadCronScript):
     them for publishing as appropriate.
     """
 
+    @property
+    def lockfilename(self):
+        """See `LaunchpadScript`."""
+        # Avoid circular imports.
+        from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
+        return GLOBAL_PUBLISHER_LOCK
+
     def add_my_options(self):
         """Command line options for this script."""
         self.parser.add_option(
@@ -266,19 +318,12 @@ class ProcessAccepted(LaunchpadCronScript):
             default=False, help="Process all Ubuntu-derived distributions.")
 
         self.parser.add_option(
-            "--ppa", action="store_true",
-            dest="ppa", metavar="PPA", default=False,
+            "--ppa", action="store_true", dest="ppa", default=False,
             help="Run only over PPA archives.")
 
         self.parser.add_option(
-            "--copy-archives", action="store_true",
-            dest="copy_archives", metavar="COPY_ARCHIVES",
+            "--copy-archives", action="store_true", dest="copy_archives",
             default=False, help="Run only over COPY archives.")
-
-    @property
-    def lockfilename(self):
-        """Override LaunchpadScript's lock file name."""
-        return "/var/lock/launchpad-upload-queue.lock"
 
     def _commit(self):
         """Commit transaction (unless in dry-run mode)."""
@@ -286,19 +331,6 @@ class ProcessAccepted(LaunchpadCronScript):
             self.logger.debug("Skipping commit: dry-run mode.")
         else:
             self.txn.commit()
-
-    def findDerivedDistros(self):
-        """Find Ubuntu-derived distributions."""
-        # Avoid circular imports.
-        from lp.registry.model.distribution import Distribution
-        from lp.registry.model.distroseries import DistroSeries
-
-        ubuntu_id = getUtility(ILaunchpadCelebrities).ubuntu.id
-        return IStore(DistroSeries).find(
-            Distribution,
-            Distribution.id == DistroSeries.distributionID,
-            DistroSeries.id == DistroSeriesParent.derived_series_id,
-            DistroSeries.distributionID != ubuntu_id).config(distinct=True)
 
     def findNamedDistro(self, distro_name):
         """Find the `Distribution` called `distro_name`."""
@@ -312,7 +344,7 @@ class ProcessAccepted(LaunchpadCronScript):
     def findTargetDistros(self):
         """Find the distribution(s) to process, based on arguments."""
         if self.options.derived:
-            return self.findDerivedDistros()
+            return getUtility(IDistributionSet).getDerivedDistributions()
         else:
             return [self.findNamedDistro(self.args[0])]
 

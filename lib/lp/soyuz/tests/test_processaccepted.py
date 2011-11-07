@@ -4,17 +4,15 @@
 """Test process-accepted.py"""
 
 from cStringIO import StringIO
-from zope.component import getUtility
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from debian.deb822 import Changes
 from optparse import OptionValueError
 from testtools.matchers import LessThan
+import transaction
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
@@ -93,13 +91,12 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.assertEqual(published_main.count(), 1)
 
         # And an oops should be filed for the first.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        expected_error = "error-explanation=Failure processing queue_item"
-        self.assertTrue(expected_error in error_text)
+        self.assertEqual(1, len(self.oopses))
+        error_report = self.oopses[0]
+        expected_error = "Failure processing queue_item"
+        self.assertStartsWith(
+                dict(error_report['req_vars'])['error-explanation'],
+                expected_error)
 
     def test_accept_copy_archives(self):
         """Test that publications in a copy archive are accepted properly."""
@@ -170,7 +167,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
         synch = UploadCheckingSynchronizer()
-        script.txn.registerSynch(synch)
+        transaction.manager.registerSynch(synch)
         script.main()
         self.assertThat(len(uploads), LessThan(synch.commit_count))
 
@@ -223,32 +220,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent()
         script = ProcessAccepted(test_args=['--derived'])
         self.assertIn(
-            dsp.derived_series.distribution, script.findDerivedDistros())
-
-    def test_findDerivedDistros_for_derived_ignores_non_derived_distros(self):
-        distro = self.factory.makeDistribution()
-        script = ProcessAccepted(test_args=['--derived'])
-        self.assertNotIn(distro, script.findDerivedDistros())
-
-    def test_findDerivedDistros_ignores_ubuntu_even_if_derived(self):
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.factory.makeDistroSeriesParent(
-            derived_series=ubuntu.currentseries)
-        script = ProcessAccepted(test_args=['--derived'])
-        self.assertNotIn(ubuntu, script.findDerivedDistros())
-
-    def test_findDerivedDistros_finds_each_distro_just_once(self):
-        # Derived distros are not duplicated in the output of
-        # findDerivedDistros, even if they have multiple parents and
-        # multiple derived series.
-        dsp = self.factory.makeDistroSeriesParent()
-        distro = dsp.derived_series.distribution
-        other_series = self.factory.makeDistroSeries(distribution=distro)
-        self.factory.makeDistroSeriesParent(derived_series=other_series)
-        script = ProcessAccepted(test_args=['--derived'])
-        derived_distros = list(script.findDerivedDistros())
-        self.assertEqual(
-            1, derived_distros.count(dsp.derived_series.distribution))
+            dsp.derived_series.distribution, script.findTargetDistros())
 
 
 class TestBugsFromChangesFile(TestCaseWithFactory):

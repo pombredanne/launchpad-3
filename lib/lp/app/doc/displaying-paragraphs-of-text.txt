@@ -225,40 +225,40 @@ links:
     ...     '#123\n'
     ...     'debug #52\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/123">bug 123</a><br />
-    <a href="/bugs/123">bug    123</a><br />
-    <a href="/bugs/123">bug #123</a><br />
-    <a href="/bugs/123">bug number 123</a><br />
+    <p><a href="/bugs/123" class="bug-link">bug 123</a><br />
+    <a href="/bugs/123" class="bug-link">bug    123</a><br />
+    <a href="/bugs/123" class="bug-link">bug #123</a><br />
+    <a href="/bugs/123" class="bug-link">bug number 123</a><br />
     bug number. 123<br />
-    <a href="/bugs/123">bug num 123</a><br />
-    <a href="/bugs/123">bug num. 123</a><br />
-    <a href="/bugs/123">bug no 123</a><br />
-    <a href="/bugs/123">bug report 123</a><br />
-    <a href="/bugs/123">bug no. 123</a><br />
+    <a href="/bugs/123" class="bug-link">bug num 123</a><br />
+    <a href="/bugs/123" class="bug-link">bug num. 123</a><br />
+    <a href="/bugs/123" class="bug-link">bug no 123</a><br />
+    <a href="/bugs/123" class="bug-link">bug report 123</a><br />
+    <a href="/bugs/123" class="bug-link">bug no. 123</a><br />
     bug#123<br />
-    <a href="/bugs/123">bug-123</a><br />
-    <a href="/bugs/123">bug-report-123</a><br />
-    <a href="/bugs/123">bug=123</a><br />
-    <a href="/bugs/123">bug<br /> #123</a><br />
+    <a href="/bugs/123" class="bug-link">bug-123</a><br />
+    <a href="/bugs/123" class="bug-link">bug-report-123</a><br />
+    <a href="/bugs/123" class="bug-link">bug=123</a><br />
+    <a href="/bugs/123" class="bug-link">bug<br /> #123</a><br />
     debug #52</p>
 
     >>> text = (
     ...     'bug 123\n'
     ...     'bug 123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/123">bug 123</a><br />
-    <a href="/bugs/123">bug 123</a></p>
+    <p><a href="/bugs/123" class="bug-link">bug 123</a><br />
+    <a href="/bugs/123" class="bug-link">bug 123</a></p>
 
     >>> text = (
     ...     'bug 1234\n'
     ...     'bug 123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/1234">bug 1234</a><br />
-    <a href="/bugs/123">bug 123</a></p>
+    <p><a href="/bugs/1234" class="bug-link">bug 1234</a><br />
+    <a href="/bugs/123" class="bug-link">bug 123</a></p>
 
     >>> text = 'bug 0123\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/123">bug 0123</a></p>
+    <p><a href="/bugs/123" class="bug-link">bug 0123</a></p>
 
 
 We linkify bugs that are in the Ubuntu convention for referring to bugs in
@@ -266,26 +266,26 @@ Debian changelogs.
 
     >>> text = 'LP: #123.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>LP: <a href="/bugs/123">#123</a>.</p>
+    <p>LP: <a href="/bugs/123" class="bug-link">#123</a>.</p>
 
 Works with multiple bugs:
 
     >>> text = 'LP: #123, #2.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>LP: <a href="/bugs/123">#123</a>, <a href="/bugs/2">#2</a>.</p>
+    <p>LP: <a href="/bugs/123" class="bug-link">#123</a>, <a href="/bugs/2" class="bug-link">#2</a>.</p>
 
 And with lower case 'lp' too:
 
     >>> text = 'lp: #123, #2.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>lp: <a href="/bugs/123">#123</a>, <a href="/bugs/2">#2</a>.</p>
+    <p>lp: <a href="/bugs/123" class="bug-link">#123</a>, <a href="/bugs/2" class="bug-link">#2</a>.</p>
 
 Even line breaks cannot stop the power of bug linking:
 
     >>> text = 'LP:  #123,\n#2.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>LP:  <a href="/bugs/123">#123</a>,<br />
-    <a href="/bugs/2">#2</a>.</p>
+    <p>LP:  <a href="/bugs/123" class="bug-link">#123</a>,<br />
+    <a href="/bugs/2" class="bug-link">#2</a>.</p>
 
 To check a private bug, we need to log in and set a bug to be private.
 
@@ -308,7 +308,7 @@ A private bug is still linked as no check is made on the actual bug.
 
     >>> text = 'bug 6\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/6">bug 6</a></p>
+    <p><a href="/bugs/6" class="bug-link">bug 6</a></p>
 
 
 == FAQ references ==
@@ -374,14 +374,14 @@ treated as a link to a bug.
 
     >>> text = 'lp:1234'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/1234">lp:1234</a></p>
+    <p><a href="/bugs/1234" class="bug-link">lp:1234</a></p>
 
 We are even smart enough to notice the trailing punctuation gunk and separate
 that from the link.
 
     >>> text = 'lp:1234,'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/1234">lp:1234</a>,</p>
+    <p><a href="/bugs/1234" class="bug-link">lp:1234</a>,</p>
 
 
 == OOPS references ==
@@ -408,9 +408,9 @@ When not logged in as a privileged user, no link:
     >>> getUtility(ILaunchBag).developer
     False
 
-    >>> text = 'OOPS 38C23'
+    >>> text = 'OOPS-38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>OOPS 38C23</p>
+    <p>OOPS-38C23</p>
 
 
 After login, a link:
@@ -421,25 +421,21 @@ After login, a link:
     True
 
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS 38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-38C23">OOPS-38C23</a></p>
 
 OOPS references can take a number of forms:
 
-    >>> text = 'oops 38C23'
-    >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">oops 38C23</a></p>
-
     >>> text = 'OOPS-38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS-38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-38C23">OOPS-38C23</a></p>
 
-    >>> text = 'OOPS C3'
+    >>> text = 'OOPS-123abcdef'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=C3">OOPS C3</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-123abcdef">OOPS-123abcdef</a></p>
 
-    >>> text = 'OOPS   38C23'
+    >>> text = 'OOPS-abcdef123'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS   38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-abcdef123">OOPS-abcdef123</a></p>
 
 If the configuration value doesn't end with a slash, we won't add one. This
 lets us configure the URL to use query parameters.
@@ -450,9 +446,9 @@ lets us configure the URL to use query parameters.
     ...     oops_root_url: http://foo/bar
     ...     """
     >>> config.push('oops_root_url', oops_root_url)
-    >>> text = 'OOPS 38C23'
+    >>> text = 'OOPS-38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="http://foo/bar38C23">OOPS 38C23</a></p>
+    <p><a href="http://foo/barOOPS-38C23">OOPS-38C23</a></p>
     >>> config_data = config.pop('oops_root_url')
 
 Check against false positives:
@@ -524,7 +520,7 @@ and the 'bugnum' is used to look up the bug.
     >>> sorted(matchobj.groupdict().items())
     [('bug', 'xxxx'), ('bugnum', '2'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
-    '<a href="/bugs/2">xxxx</a>'
+    '<a href="/bugs/2" class="bug-link">xxxx</a>'
 
 When the bugnum doesn't match any bug, we still get a link, but get a message
 in the link's title.
@@ -534,4 +530,4 @@ in the link's title.
     >>> sorted(matchobj.groupdict().items())
     [('bug', 'xxxx'), ('bugnum', '2000'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
-    '<a href="/bugs/2000">xxxx</a>'
+    '<a href="/bugs/2000" class="bug-link">xxxx</a>'

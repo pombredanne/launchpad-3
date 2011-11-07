@@ -21,7 +21,6 @@ __all__ = [
     'BranchNavigation',
     'BranchEditMenu',
     'BranchInProductView',
-    'BranchSparkView',
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
@@ -46,10 +45,12 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
+from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
-import simplejson
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.component import (
     getUtility,
     queryAdapter,
@@ -98,7 +99,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -133,6 +133,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchCreationForbidden,
     BranchExists,
+    CannotUpgradeBranch,
     CodeImportAlreadyRequested,
     CodeImportAlreadyRunning,
     CodeImportNotInReviewedState,
@@ -640,9 +641,10 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
                (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
 
     @property
-    def svn_url_is_web(self):
-        """True if an imported branch's SVN URL is HTTP or HTTPS."""
-        # You should only be calling this if it's an SVN code import
+    def url_is_web(self):
+        """True if an imported branch's URL is HTTP or HTTPS."""
+        # You should only be calling this if it's an SVN, BZR, GIT or HG code
+        # import
         assert self.context.code_import
         url = self.context.code_import.url
         assert url
@@ -714,7 +716,8 @@ class BranchEditSchema(Interface):
         'lifecycle_status',
         'whiteboard',
         ])
-    private = copy_field(IBranch['private'], readonly=False)
+    explicitly_private = copy_field(
+        IBranch['explicitly_private'], readonly=False)
     reviewer = copy_field(IBranch['reviewer'], required=True)
     owner = copy_field(IBranch['owner'], readonly=False)
 
@@ -757,8 +760,12 @@ class BranchEditFormView(LaunchpadEditFormView):
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
         if 'private' in data:
-            private = data.pop('private')
-            if private != self.context.private:
+            # Read only for display.
+            data.pop('private')
+        if 'explicitly_private' in data:
+            private = data.pop('explicitly_private')
+            if (private != self.context.private
+                and self.context.private == self.context.explicitly_private):
                 # We only want to show notifications if it actually changed.
                 self.context.setPrivate(private, self.user)
                 changed = True
@@ -839,7 +846,7 @@ class BranchMirrorStatusView(LaunchpadFormView):
     def mirror_of_ssh(self):
         """True if this a mirror branch with an sftp or bzr+ssh URL."""
         if not self.context.url:
-            return False # not a mirror branch
+            return False  # not a mirror branch
         uri = URI(self.context.url)
         return uri.scheme in ('sftp', 'bzr+ssh')
 
@@ -995,14 +1002,18 @@ class BranchUpgradeView(LaunchpadFormView):
 
     @action('Upgrade', name='upgrade_branch')
     def upgrade_branch_action(self, action, data):
-        self.context.requestUpgrade()
+        try:
+            self.context.requestUpgrade(self.user)
+        except CannotUpgradeBranch as e:
+            self.request.response.addErrorNotification(e)
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'name', 'private', 'url', 'description', 'lifecycle_status']
+        'owner', 'name', 'explicitly_private', 'url', 'description',
+        'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -1018,6 +1029,24 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         if branch.private:
             # If the branch is private, and can be public, show the field.
             show_private_field = policy.canBranchesBePublic()
+
+            # If this branch is public but is deemed private because it is
+            # stacked on a private branch, disable the field.
+            if not branch.explicitly_private:
+                show_private_field = False
+                private_info = Bool(
+                    __name__="private",
+                    title=_("Branch is confidential"),
+                    description=_(
+                        "This branch is confidential because it is stacked "
+                        "on a private branch."))
+                private_info_field = form.Fields(
+                    private_info, render_context=self.render_context)
+                self.form_fields = self.form_fields.omit('private')
+                self.form_fields = private_info_field + self.form_fields
+                self.form_fields['private'].custom_widget = (
+                    CustomWidgetFactory(
+                        CheckBoxWidget, extra='disabled="disabled"'))
         else:
             # If the branch is public, and can be made private, show the
             # field.  Users with special access rights to branches can set
@@ -1027,7 +1056,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 user_has_special_branch_access(self.user))
 
         if not show_private_field:
-            self.form_fields = self.form_fields.omit('private')
+            self.form_fields = self.form_fields.omit('explicitly_private')
 
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
@@ -1118,15 +1147,12 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     class schema(Interface):
         use_template(
-            IBranch, include=['owner', 'name', 'url', 'lifecycle_status'])
-        branch_type = copy_field(
-            IBranch['branch_type'], vocabulary=UICreatableBranchType)
+            IBranch, include=['owner', 'name', 'lifecycle_status'])
 
     for_input = True
-    field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
+    field_names = ['owner', 'name', 'lifecycle_status']
 
     branch = None
-    custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     initial_focus_widget = 'name'
@@ -1155,27 +1181,17 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """
         return IPerson(self.context, self.user)
 
-    def showOptionalMarker(self, field_name):
-        """Don't show the optional marker for url."""
-        if field_name == 'url':
-            return False
-        else:
-            return LaunchpadFormView.showOptionalMarker(self, field_name)
-
     @action('Register Branch', name='add')
     def add_action(self, action, data):
         """Handle a request to create a new branch for this product."""
         try:
-            ui_branch_type = data['branch_type']
             namespace = self.target.getNamespace(data['owner'])
             self.branch = namespace.createBranch(
-                branch_type=BranchType.items[ui_branch_type.name],
+                branch_type=BranchType.HOSTED,
                 name=data['name'],
                 registrant=self.user,
-                url=data.get('url'),
+                url=None,
                 lifecycle_status=data['lifecycle_status'])
-            if self.branch.branch_type == BranchType.MIRRORED:
-                self.branch.requestMirror()
         except BranchCreationForbidden:
             self.addError(
                 "You are not allowed to create branches in %s." %
@@ -1192,36 +1208,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             self.setFieldError(
                 'owner',
                 'You are not a member of %s' % owner.displayname)
-
-        branch_type = data.get('branch_type')
-        # If branch_type failed to validate, then the rest of the method
-        # doesn't make any sense.
-        if branch_type is None:
-            return
-
-        # If the branch is a MIRRORED branch, then the url
-        # must be supplied, and if HOSTED the url must *not*
-        # be supplied.
-        url = data.get('url')
-        if branch_type == UICreatableBranchType.MIRRORED:
-            if url is None:
-                # If the url is not set due to url validation errors,
-                # there will be an error set for it.
-                error = self.getFieldError('url')
-                if not error:
-                    self.setFieldError(
-                        'url',
-                        'Branch URLs are required for Mirrored branches.')
-        elif branch_type == UICreatableBranchType.HOSTED:
-            if url is not None:
-                self.setFieldError(
-                    'url',
-                    'Branch URLs cannot be set for Hosted branches.')
-        elif branch_type == UICreatableBranchType.REMOTE:
-            # A remote location can, but doesn't have to be set.
-            pass
-        else:
-            raise AssertionError('Unknown branch type')
 
     @property
     def cancel_url(self):
@@ -1463,60 +1449,3 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
-
-
-class BranchSparkView(LaunchpadView):
-    """This view generates the JSON data for the commit sparklines."""
-
-    __for__ = IBranch
-
-    # How many days to look for commits.
-    COMMIT_DAYS = 90
-
-    def _commitCounts(self):
-        """Return a dict of commit counts for rendering."""
-        epoch = (
-            datetime.now(
-                tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS - 1)))
-        # Make a datetime for that date, but midnight.
-        epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
-        commits = dict(self.context.commitsForDays(epoch))
-        # However storm returns tz-unaware datetime objects.
-        day = datetime(year=epoch.year, month=epoch.month, day=epoch.day)
-        days = [day + timedelta(days=count)
-                for count in range(self.COMMIT_DAYS)]
-
-        commit_list = []
-        total_commits = 0
-        most_commits = 0
-        for index, day in enumerate(days):
-            count = commits.get(day, 0)
-            commit_list.append(count)
-            total_commits += count
-            if count >= most_commits:
-                most_commits = count
-                max_index = index
-        return {'count': total_commits,
-                'commits': commit_list,
-                'max_commits': max_index}
-
-    def render(self):
-        """Write out the commit data as a JSON string."""
-        # We want:
-        #  count: total commit count
-        #  last_commit: string to say when the last commit was
-        #  commits: an array of COMMIT_DAYS values for commits for that day
-        #  max_commits: an index into the commits array with the most commits,
-        #     most recent wins any ties.
-        values = {'count': 0, 'max_commits': 0}
-        # Check there have been commits.
-        if self.context.revision_count == 0:
-            values['last_commit'] = 'empty branch'
-        else:
-            tip = self.context.getTipRevision()
-            adapter = queryAdapter(tip.revision_date, IPathAdapter, 'fmt')
-            values['last_commit'] = adapter.approximatedate()
-            values.update(self._commitCounts())
-
-        self.request.response.setHeader('content-type', 'application/json')
-        return simplejson.dumps(values)

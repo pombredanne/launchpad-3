@@ -27,19 +27,6 @@ after publishing, and they can be deleted, permanently.
     >>> print mark.name
     mark
 
-== Beta testers ==
-
-For the moment, this is only available to beta testers.
-
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-    >>> ignored = beta.addMember(mark, mark)
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> logout()
-
 
 == Creation ==
 

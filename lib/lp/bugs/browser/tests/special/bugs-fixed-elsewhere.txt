@@ -1,4 +1,5 @@
-= Bugs Fixed Elsewhere =
+Bugs Fixed Elsewhere
+====================
 
 The +bugtarget-portlet-bugfilters-info view for a distribution or
 product contains a property for a URL to a list of bugs fixed
@@ -45,7 +46,7 @@ Simply opening a bug elsewhere won't increase the count.
 
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> elsewhere = getUtility(IBugTaskSet).createTask(
-    ...     bug, owner=getUtility(ILaunchBag).user, product=evolution)
+    ...     bug, getUtility(ILaunchBag).user, evolution)
     >>> get_view().bugs_fixed_elsewhere_count
     0
 
@@ -79,42 +80,50 @@ resolved elsewhere":
     FIXRELEASED
 
 
-== Private Bugs ==
+Private Bugs
+------------
 
 Only bugs that the user has permission to view are included in the count.
+We are moving away from allowing private bugs to affect multiple projects.
+This is required still for some teams until they update their tools and
+processes. So we need to use a feature flag to perform this part of the test.
 
-    >>> another_bug = filebug(bugtarget, 'Example Bug')
-    >>> another_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> flags = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
+    >>> with FeatureFixture(flags):
+    ...     another_bug = filebug(bugtarget, 'Example Bug')
+    ...     another_bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
 
-    >>> another_elsewhere = getUtility(IBugTaskSet).createTask(
-    ...     another_bug, owner=getUtility(ILaunchBag).user, product=evolution)
-    >>> another_elsewhere.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    ...     another_elsewhere = getUtility(IBugTaskSet).createTask(
+    ...         another_bug, getUtility(ILaunchBag).user, evolution)
+    ...     another_elsewhere.transitionToStatus(
+    ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
-    >>> get_view().bugs_fixed_elsewhere_count
+    ...     get_view().bugs_fixed_elsewhere_count
     2L
 
 This means that No Privileges Person will see that there is only one bug
 fixed elsewhere.
 
-    >>> login('no-priv@canonical.com')
-    >>> get_view().bugs_fixed_elsewhere_count
+    ...     login('no-priv@canonical.com')
+    ...     get_view().bugs_fixed_elsewhere_count
     1L
 
 If the private bug is made public again, he will of course see that
 there are two bugs fixed.
 
-    >>> login('foo.bar@canonical.com')
-    >>> another_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    ...     login('foo.bar@canonical.com')
+    ...     another_bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
 
-    >>> login('no-priv@canonical.com')
-    >>> get_view().bugs_fixed_elsewhere_count
+    ...     login('no-priv@canonical.com')
+    ...     get_view().bugs_fixed_elsewhere_count
     2L
 
 
-== Duplicate Bugs ==
+Duplicate Bugs
+--------------
 
 Bugs that are duplicate of other bugs aren't included in the count.
 
@@ -124,7 +133,8 @@ Bugs that are duplicate of other bugs aren't included in the count.
     1L
 
 
-== Resolved Bugs ==
+Resolved Bugs
+-------------
 
 The count includes only bugs that are open in the current context.
 

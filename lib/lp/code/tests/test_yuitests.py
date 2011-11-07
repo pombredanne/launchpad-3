@@ -20,5 +20,5 @@ class CodeYUIUnitTestCase(YUIUnitTestCase):
 
 
 def test_suite():
-    app_testing_path = 'lp/code/javascript'
+    app_testing_path = 'lp/code'
     return build_yui_unittest_suite(app_testing_path, CodeYUIUnitTestCase)

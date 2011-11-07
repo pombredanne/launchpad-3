@@ -205,13 +205,13 @@ distribution's translation group is a translations administrator.
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
 
     >>> distro = factory.makeDistribution('distro')
-    >>> distroseries = factory.makeDistroRelease(distribution=distro)
+    >>> distroseries = factory.makeDistroSeries(distribution=distro)
     >>> sourcepackagename = SourcePackageName(name='bar')
     >>> package = factory.makeSourcePackage(
     ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
     >>> naked_distro = removeSecurityProxy(distro)
     >>> naked_distro.translations_usage = ServiceUsage.LAUNCHPAD
-    >>> other_series = factory.makeDistroRelease(distribution=distro)
+    >>> other_series = factory.makeDistroSeries(distribution=distro)
     >>> template = factory.makePOTemplate(
     ...     distroseries=package.distroseries,
     ...     sourcepackagename=package.sourcepackagename)

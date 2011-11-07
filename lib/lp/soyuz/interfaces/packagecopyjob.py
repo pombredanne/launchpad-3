@@ -126,7 +126,7 @@ class IPlainPackageCopyJobSource(IJobSource):
     def create(package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=PackageCopyPolicy.INSECURE):
+               copy_policy=PackageCopyPolicy.INSECURE, requester=None):
         """Create a new `IPlainPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
@@ -141,9 +141,10 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param package_version: The version string for the package version
             that is to be copied.
         :param copy_policy: Applicable `PackageCopyPolicy`.
+        :param requester: The user requesting the copy.
         """
 
-    def createMultiple(target_distroseries, copy_tasks,
+    def createMultiple(target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
                        include_binaries=False):
         """Create multiple new `IPlainPackageCopyJob`s at once.
@@ -153,6 +154,7 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param copy_tasks: A list of tuples describing the copies to be
             performed: (package name, package version, source archive,
             target archive, target pocket).
+        :param requester: The user requesting the copy.
         :param copy_policy: Applicable `PackageCopyPolicy`.
         :param include_binaries: As in `do_copy`.
         :return: An iterable of `PackageCopyJob` ids.

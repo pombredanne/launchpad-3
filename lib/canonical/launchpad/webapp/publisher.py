@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -27,6 +27,15 @@ __all__ = [
 
 import httplib
 
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
+from lazr.restful.declarations import error_status
+from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.tales import WebLayerAPI
+from lazr.restful.utils import get_current_browser_request
+import simplejson
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
@@ -51,8 +60,6 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
-from lazr.restful.declarations import error_status
-
 from canonical.launchpad.layers import (
     LaunchpadLayer,
     setFirstLayer,
@@ -70,10 +77,8 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr.utils import get_current_browser_request
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
-
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
@@ -230,20 +235,6 @@ class UserAttributeCache:
             self._user = getUtility(ILaunchBag).user
         return self._user
 
-    _is_beta = None
-
-    @property
-    def isBetaUser(self):
-        """Return True if the user is in the beta testers team."""
-        if self._is_beta is not None:
-            return self._is_beta
-
-        # We cannot import ILaunchpadCelebrities here, so we will use the
-        # hardcoded name of the beta testers team
-        self._is_beta = self.user is not None and self.user.inTeam(
-            'launchpad-beta-testers')
-        return self._is_beta
-
 
 class LaunchpadView(UserAttributeCache):
     """Base class for views in Launchpad.
@@ -258,7 +249,7 @@ class LaunchpadView(UserAttributeCache):
     - render()     <-- used to render the page.  override this if you have
                        many templates not set via zcml, or you want to do
                        rendering from Python.
-    - isBetaUser   <-- whether the logged-in user is a beta tester
+    - publishTraverse() <-- override this to support traversing-through.
     """
 
     def __init__(self, context, request):
@@ -354,6 +345,23 @@ class LaunchpadView(UserAttributeCache):
                     type(info_message))
 
     info_message = property(_getInfoMessage, _setInfoMessage)
+
+    def getCacheJSON(self):
+        if self.user is not None:
+            cache = dict(IJSONRequestCache(self.request).objects)
+        else:
+            cache = dict()
+        if WebLayerAPI(self.context).is_entry:
+            cache['context'] = self.context
+        return simplejson.dumps(
+            cache, cls=ResourceJSONEncoder,
+            media_type=EntryResource.JSON_TYPE)
+
+    def publishTraverse(self, request, name):
+        """See IBrowserPublisher."""
+        # By default, a LaunchpadView cannot be traversed through.
+        # Those that can be must override this method.
+        raise NotFound(self, name, request=request)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

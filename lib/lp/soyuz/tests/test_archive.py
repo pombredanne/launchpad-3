@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -13,6 +13,7 @@ import doctest
 from testtools.matchers import (
     DocTestMatches,
     MatchesRegex,
+    MatchesStructure,
     )
 from testtools.testcase import ExpectedException
 import transaction
@@ -39,6 +40,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -49,14 +51,17 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
+    CannotCopy,
     CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
+    ForbiddenByFeatureFlag,
     IArchiveSet,
     InsufficientUploadRights,
     InvalidPocketForPartnerArchive,
@@ -69,9 +74,13 @@ from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.archivepermission import (
+    ArchivePermission,
+    ArchivePermissionSet,
+    )
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
@@ -474,6 +483,9 @@ class TestArchiveCanUpload(TestCaseWithFactory):
     def test_checkArchivePermission_distro_archive(self):
         # Regular users can not upload to ubuntu
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        # The factory sets the archive owner the same as the distro owner,
+        # change that here to ensure the security adapter checks are right.
+        removeSecurityProxy(archive).owner = self.factory.makePerson()
         main = getUtility(IComponentSet)["main"]
         # A regular user doesn't have access
         somebody = self.factory.makePerson()
@@ -481,7 +493,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             archive.checkArchivePermission(somebody, main))
         # An ubuntu core developer does have access
         coredev = self.factory.makePerson()
-        with person_logged_in(archive.owner):
+        with person_logged_in(archive.distribution.owner):
             archive.newComponentUploader(coredev, main.name)
         self.assertEquals(True, archive.checkArchivePermission(coredev, main))
 
@@ -673,8 +685,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         packageset = self.factory.makePackageset(
             distroseries=distroseries, packages=packages)
         person = self.factory.makePerson()
-        techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
-        with person_logged_in(techboard):
+        with person_logged_in(archive.distribution.owner):
             archive.newPackagesetUploader(person, packageset)
         return person, packageset
 
@@ -970,14 +981,17 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def test_main_archive_can_use_restricted(self):
         # Main archives for distributions can always use restricted
-        # architectures.
+        # architectures if they are not using virtual builders.
         distro = self.factory.makeDistribution()
+        distro.main_archive.require_virtualized = False
         self.assertContentEqual([self.arm],
             distro.main_archive.enabled_restricted_families)
 
-    def test_main_archive_can_not_be_restricted(self):
-        # A main archive can not be restricted to certain architectures.
+    def test_main_archive_can_not_be_restricted_not_virtualized(self):
+        # A main archive can not be restricted to certain architectures
+        # (unless it's set to build on virtualized builders).
         distro = self.factory.makeDistribution()
+        distro.main_archive.require_virtualized = False
         # Restricting to all restricted architectures is fine
         distro.main_archive.enabled_restricted_families = [self.arm]
 
@@ -985,6 +999,16 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
             distro.main_archive.enabled_restricted_families = []
 
         self.assertRaises(CannotRestrictArchitectures, restrict)
+
+    def test_main_virtualized_archive_can_be_restricted(self):
+        # A main archive can be restricted to certain architectures
+        # if it's set to build on virtualized builders.
+        distro = self.factory.makeDistribution()
+        distro.main_archive.require_virtualized = True
+
+        # Restricting to architectures is fine.
+        distro.main_archive.enabled_restricted_families = [self.arm]
+        distro.main_archive.enabled_restricted_families = []
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
@@ -1360,7 +1384,6 @@ class TestArchiveDependencies(TestCaseWithFactory):
             sources_list = get_sources_list_for_building(
                 build, build.distro_arch_series,
                 build.source_package_release.name)
-            sources_list_str = '\n'.join(sources_list)
             matches = MatchesRegex(
                 "deb http://buildd:sekrit@private-ppa.launchpad.dev/"
                 "person-name-.*/dependency/ubuntu distroseries-.* main")
@@ -1519,7 +1542,7 @@ class TestOverlays(TestCaseWithFactory):
         if type(parent_series) == str:
             depseries = self.factory.makeDistroSeries(
                 name=parent_series, distribution=depdistro)
-            deparchseries = self.factory.makeDistroArchSeries(
+            self.factory.makeDistroArchSeries(
                 distroseries=depseries, architecturetag=arch_tag)
         else:
             depseries = parent_series
@@ -1587,8 +1610,8 @@ class TestOverlays(TestCaseWithFactory):
                 ".../depdistro4 series12-security main "
                     "restricted universe multiverse\n"
                 ".../depdistro4 series12-updates "
-                    "main restricted universe multiverse\n"
-                , doctest.ELLIPSIS))
+                    "main restricted universe multiverse\n",
+                doctest.ELLIPSIS))
 
 
 class TestComponents(TestCaseWithFactory):
@@ -1617,7 +1640,7 @@ class TestComponents(TestCaseWithFactory):
             set(archive.getComponentsForUploader(person)))
 
 
-class TestvalidatePPA(TestCaseWithFactory):
+class TestValidatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -1631,6 +1654,30 @@ class TestvalidatePPA(TestCaseWithFactory):
         self.assertEqual(
             'A PPA cannot have the same name as its distribution.',
             Archive.validatePPA(ppa_owner, 'ubuntu'))
+
+    def test_private_ppa_non_commercial_admin(self):
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(
+            '%s is not allowed to make private PPAs' % (ppa_owner.name,),
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
+
+    def test_private_ppa_commercial_admin(self):
+        ppa_owner = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            comm = getUtility(ILaunchpadCelebrities).commercial_admin
+            comm.addMember(ppa_owner, comm.teamowner)
+        self.assertIs(
+            None,
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
+
+    def test_private_ppa_admin(self):
+        ppa_owner = self.factory.makeAdministrator()
+        self.assertIs(
+            None,
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
@@ -1910,7 +1957,7 @@ class TestGetPublishedSources(TestCaseWithFactory):
     def test_getPublishedSources_name(self):
         # The name parameter allows filtering with a list of
         # names.
-        distroseries =  self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
         # Create some SourcePackagePublishingHistory.
         for package_name in ['package1', 'package2', 'package3']:
             self.factory.makeSourcePackagePublishingHistory(
@@ -1932,10 +1979,99 @@ class TestGetPublishedSources(TestCaseWithFactory):
             [filtered_source.sourcepackagerelease.name for filtered_source in
             filtered_sources])
 
+    def test_getPublishedSources_multi_pockets(self):
+        # Passing an iterable of pockets should return publications
+        # with any of them in.
+        distroseries = self.factory.makeDistroSeries()
+        pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.BACKPORTS,
+            ]
+        for pocket in pockets:
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=pocket.name.lower(),
+                distroseries=distroseries,
+                archive=distroseries.main_archive,
+                pocket=pocket)
+        required_pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            ]
+        filtered = distroseries.main_archive.getPublishedSources(
+            pocket=required_pockets)
+
+        self.assertContentEqual(
+            [PackagePublishingPocket.RELEASE,
+             PackagePublishingPocket.UPDATES],
+            [source.pocket for source in filtered])
+
+    def test_filter_by_component_name(self):
+        # getPublishedSources() can be filtered by component name.
+        distroseries = self.factory.makeDistroSeries()
+        for component in getUtility(IComponentSet):
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=distroseries,
+                component=component,
+                )
+        [filtered] = distroseries.main_archive.getPublishedSources(
+            component_name='universe')
+        self.assertEqual('universe', filtered.component.name)
+
+
+class TestSyncSourceFeatureFlag(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_copyPackage_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackage,
+            None, None, None, None, None)
+
+    def test_copyPackages_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackages,
+            None, None, None, None, None)
+
+    def test_copyPackage_to_ppa_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackage,
+            None, None, None, None, None)
+
+    def test_copyPackages_to_ppa_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackages,
+            None, None, None, None, None)
+
 
 class TestSyncSource(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSyncSource, self).setUp()
+        self.useFixture(FeatureFixture({
+            u"soyuz.copypackage.enabled": 'on',
+            u"soyuz.copypackageppa.enabled": 'on',
+            }))
 
     def test_security_team_can_copy_to_primary(self):
         # A member of ubuntu-security can use syncSource on any package
@@ -1965,3 +2101,211 @@ class TestSyncSource(TestCaseWithFactory):
             1,
             ubuntu.main_archive.getPublishedSources(
                 name=source.source_package_name).count())
+
+    def _setup_copy_data(self, target_purpose=None):
+        if target_purpose is None:
+            target_purpose = ArchivePurpose.PPA
+        source_archive = self.factory.makeArchive()
+        target_archive = self.factory.makeArchive(purpose=target_purpose)
+        source = self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive, status=PackagePublishingStatus.PUBLISHED)
+        source_name = source.source_package_name
+        version = source.source_package_version
+        to_pocket = PackagePublishingPocket.RELEASE
+        to_series = self.factory.makeDistroSeries(
+            distribution=target_archive.distribution)
+        return (source, source_archive, source_name, target_archive,
+                to_pocket, to_series, version)
+
+    def test_copyPackage_creates_packagecopyjob(self):
+        # The copyPackage method should create a PCJ with the appropriate
+        # parameters.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackage(
+                source_name, version, source_archive, to_pocket.name,
+                to_series=to_series.name, include_binaries=False,
+                person=target_archive.owner)
+
+        # The source should not be published yet in the target_archive.
+        published = target_archive.getPublishedSources(
+            name=source.source_package_name).any()
+        self.assertIs(None, published)
+
+        # There should be one copy job.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+
+        # Its data should reflect the requested copy.
+        self.assertThat(copy_job, MatchesStructure.byEquality(
+            package_name=source_name,
+            package_version=version,
+            target_archive=target_archive,
+            source_archive=source_archive,
+            target_distroseries=to_series,
+            target_pocket=to_pocket,
+            include_binaries=False,
+            copy_policy=PackageCopyPolicy.INSECURE))
+
+    def test_copyPackage_disallows_non_primary_archive_uploaders(self):
+        # If copying to a primary archive and you're not an uploader for
+        # the package then you can't copy.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        person = self.factory.makePerson()
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackage, source_name, version, source_archive,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
+            person=person)
+
+    def test_copyPackage_allows_primary_archive_uploaders(self):
+        # Copying to a primary archive if you're already an uploader is OK.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        person = self.factory.makePerson()
+        with person_logged_in(target_archive.distribution.owner):
+            target_archive.newComponentUploader(person, "universe")
+        target_archive.copyPackage(
+            source_name, version, source_archive, to_pocket.name,
+            to_series=to_series.name, include_binaries=False,
+            person=person)
+
+        # There should be one copy job.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(target_archive, copy_job.target_archive)
+
+    def test_copyPackage_disallows_non_PPA_owners(self):
+        # Only people with launchpad.Append are allowed to call copyPackage.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        person = self.factory.makePerson()
+        self.assertTrue(target_archive.is_ppa)
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackage, source_name, version, source_archive,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
+            person=person)
+
+    def test_copyPackage_disallows_non_release_target_pocket_for_PPA(self):
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        to_pocket = PackagePublishingPocket.UPDATES
+        self.assertTrue(target_archive.is_ppa)
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackage, source_name, version, source_archive,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
+            person=target_archive.owner)
+
+    def test_copyPackages_with_single_package(self):
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackages(
+                [source_name], source_archive, to_pocket.name,
+                to_series=to_series.name, include_binaries=False,
+                person=target_archive.owner)
+
+        # The source should not be published yet in the target_archive.
+        published = target_archive.getPublishedSources(
+            name=source.source_package_name).any()
+        self.assertIs(None, published)
+
+        # There should be one copy job.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertThat(copy_job, MatchesStructure.byEquality(
+            package_name=source_name,
+            package_version=version,
+            target_archive=target_archive,
+            source_archive=source_archive,
+            target_distroseries=to_series,
+            target_pocket=to_pocket,
+            include_binaries=False,
+            copy_policy=PackageCopyPolicy.MASS_SYNC))
+
+    def test_copyPackages_with_multiple_packages(self):
+        # PENDING and PUBLISHED packages should both be copied.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        sources = [source]
+        sources.append(self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive,
+            status=PackagePublishingStatus.PENDING))
+        sources.append(self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive,
+            status=PackagePublishingStatus.PUBLISHED))
+        names = [source.sourcepackagerelease.sourcepackagename.name
+                 for source in sources]
+
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackages(
+                names, source_archive, to_pocket.name,
+                to_series=to_series.name, include_binaries=False,
+                person=target_archive.owner)
+
+        # Make sure three copy jobs exist.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_jobs = job_source.getActiveJobs(target_archive)
+        self.assertEqual(3, copy_jobs.count())
+
+    def test_copyPackages_disallows_non_primary_archive_uploaders(self):
+        # If copying to a primary archive and you're not an uploader for
+        # the package then you can't copy.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        person = self.factory.makePerson()
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackages, [source_name], source_archive,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
+            person=person)
+
+    def test_copyPackages_allows_primary_archive_uploaders(self):
+        # Copying to a primary archive if you're already an uploader is OK.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        person = self.factory.makePerson()
+        with person_logged_in(target_archive.distribution.owner):
+            target_archive.newComponentUploader(person, "universe")
+        target_archive.copyPackages(
+            [source_name], source_archive, to_pocket.name,
+            to_series=to_series.name, include_binaries=False,
+            person=person)
+
+        # There should be one copy job.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(target_archive, copy_job.target_archive)
+
+    def test_copyPackages_disallows_non_PPA_owners(self):
+        # Only people with launchpad.Append are allowed to call copyPackage.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        person = self.factory.makePerson()
+        self.assertTrue(target_archive.is_ppa)
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackages, [source_name], source_archive,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
+            person=person)
+
+
+class TestRemovingPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_remove_permission_is_none(self):
+        # Several API functions remove permissions if they are not already
+        # removed.  This verifies that the underlying utility function does
+        # not generate an error if the permission is None.
+        ap_set = ArchivePermissionSet()
+        ap_set._remove_permission(None)

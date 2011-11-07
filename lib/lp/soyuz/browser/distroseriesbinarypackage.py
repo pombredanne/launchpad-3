@@ -10,13 +10,15 @@ __all__ = [
     'DistroSeriesBinaryPackageView',
     ]
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.webapp import (
     ApplicationMenu,
+    LaunchpadView,
     Navigation,
     StandardLaunchpadFacets,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.lazr.utils import smartquote
 from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
     )
@@ -49,7 +51,7 @@ class DistroSeriesBinaryPackageBreadcrumb(Breadcrumb):
         return self.context.binarypackagename.name
 
 
-class DistroSeriesBinaryPackageView:
+class DistroSeriesBinaryPackageView(LaunchpadView):
 
     def __init__(self, context, request):
         self.context = context

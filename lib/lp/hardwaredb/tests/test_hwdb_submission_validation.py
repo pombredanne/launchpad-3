@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests of the HWDB submissions parser."""
@@ -7,17 +7,14 @@ from datetime import datetime
 import logging
 import os
 import re
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser
+from lp.testing import TestCase
 
 
 class TestHWDBSubmissionRelaxNGValidation(TestCase):
@@ -27,14 +24,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
     submission_count = 0
 
-    def assertEqual(self, x1, x2, msg):
-        TestCase.assertEqual(self, x1, x2, msg)
-
-    def assertNotEqual(self, x1, x2, msg):
-        TestCase.assertNotEqual(self, x1, x2, msg)
-
     def setUp(self):
         """Setup the test environment."""
+        super(TestHWDBSubmissionRelaxNGValidation, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
@@ -102,13 +94,29 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertEqual(result, None,
                          'Invalid root node not detected')
 
-    def _getLastOopsTime(self):
-        try:
-            last_oops_time = globalErrorUtility.getLastOopsReport().time
-        except AttributeError:
-            # There haven't been any oopses in this test run
-            last_oops_time = None
-        return last_oops_time
+    def testBadDataInCommentNode(self):
+        """Many submissions contain ESC symbols in <comment> nodes.
+
+        The cElementTree parser does not accept this; The processing
+        script deals with this by emptying all <comment> nodes before
+        building the element tree. (Note that we don't process data
+        from this node at all.)
+        """
+        bad_comment_node = "\n<comment>\x1b</comment>"
+        sample_data = self.replaceSampledata(
+            self.sample_data, bad_comment_node, "<comment>", "</comment>")
+        validated, submission_id = self.runValidator(sample_data)
+        self.assertTrue(validated is not None)
+
+    def test_fixFrequentErrors_two_comments(self):
+        # The regular expression used in fixFrequentErrors() does not
+        # delete the content between two <comment> nodes.
+        two_comments = "<comment></comment>something else<comment></comment>"
+        parser = SubmissionParser()
+        self.assertEqual(
+            '<comment/>something else<comment/>',
+            parser.fixFrequentErrors(two_comments),
+            'Bad regular expression in fixFrequentErrors()')
 
     def test_bad_data_does_not_oops(self):
         # If the processing cronscript gets bad data, it should log it, but
@@ -119,18 +127,15 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 '/sys/class/dmi/id/bios_vendor:Dell Inc.'
                 '/sys/class/dmi/id/bios_version:A12'
                 '</dmi>'),
-            where = '<hardware>',
+            where='<hardware>',
             after=True)
         # Add the OopsHandler to the log, because we want to make sure this
-        # doesn't create an Oops report.
-        logging.getLogger('test_hwdb_submission_parser').addHandler(OopsHandler(self.log.name))
+        # doesn't create an Oops report (which a high value log would cause).
+        self.assertEqual([], self.oopses)
+        logging.getLogger('test_hwdb_submission_parser').addHandler(
+            OopsHandler(self.log.name))
         result, submission_id = self.runValidator(sample_data)
-        last_oops_time = self._getLastOopsTime()
-        # We use the class method here, because it's been overrided for the
-        # other tests in this test case.
-        TestCase.assertEqual(self,
-            self._getLastOopsTime(),
-            last_oops_time)
+        self.assertEqual([], self.oopses)
 
     def testInvalidFormatVersion(self):
         """The attribute `format` of the root node must be `1.0`."""
@@ -313,27 +318,15 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         # If a log message does not exist for a given submission,
         # assertErrorMessage raises failureExeception.
-        try:
-            self.assertErrorMessage(
-                'assert_test_1', None, 'log message 3',
-                'assertErrorMessage test 2')
-        except TestCase.failureException:
-            pass
-        else:
-            self.fail('assertErrorMessage did not fail for a non-existing '
-                      'error message.')
+        self.assertRaises(
+            self.failureException, self.assertErrorMessage, 'assert_test_1',
+            None, 'log message 3', 'assertErrorMessage test 2')
 
-        # If the parameter result is not None, assertErrorMessage 
+        # If the parameter result is not None, assertErrorMessage
         # assertErrorMessage raises failureExeception.
-        try:
-            self.assertErrorMessage(
-                'assert_test_1', {}, 'log message 1',
-                'assertErrorMessage test 3')
-        except TestCase.failureException:
-            pass
-        else:
-            self.fail('assertErrorMessage did not fail for a non-None '
-                      'submission result.')
+        self.assertRaises(
+            self.failureException, self.assertErrorMessage, 'assert_test_1',
+            {}, 'log message 1', 'assertErrorMessage test 3')
 
     def testSubtagsOfSystem(self):
         """The root node <system> requires a fixed set of sub-tags."""
@@ -357,7 +350,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
-            where = '</system>')
+            where='</system>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -446,7 +439,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # is set for all three tags. In all three tags, the value may also
         # be 'True'.
         for tag in ('live_cd', 'private', 'contactable'):
-            replace_text = '<%s value="False"/>' % tag
             sample_data = self.sample_data.replace(
                 '<%s value="False"/>' % tag,
                 '<%s value="True"/>' % tag)
@@ -638,7 +630,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # The omission of either of the required attributes is detected by
         # by the Relax NG validation
         for only_attribute in ('name', 'version'):
-            tag =  '<plugin %s="some_value"/>' % only_attribute
+            tag = '<plugin %s="some_value"/>' % only_attribute
             sample_data = self.sample_data.replace(
                 '<plugin name="architecture_info" version="1.1"/>', tag)
             result, submission_id = self.runValidator(sample_data)
@@ -700,8 +692,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         is required, and either <hal> or all three tags <udev>, <dmi>,
         <sysfs-attributes> must be present.
         """
-        # Omitting any of the three tags <udev>, <dmi>, <sysfs-attributes>
-        # makes the data invalid.
+        # Omitting one of the tags <udev>, <dmi> makes the data invalid.
+        # Omitting <sysfs-attributes> is tolerated.
         all_tags = ['udev', 'dmi', 'sysfs-attributes']
         for index, missing_tag in enumerate(all_tags):
             test_tags = all_tags[:]
@@ -715,10 +707,13 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 from_text='<hal',
                 to_text='</hal>')
             result, submission_id = self.runValidator(sample_data)
-            self.assertErrorMessage(
-                submission_id, result,
-                'Expecting an element %s, got nothing' % missing_tag,
-                'missing tag <%s> in <hardware>' % missing_tag)
+            if missing_tag != 'sysfs-attributes':
+                self.assertErrorMessage(
+                    submission_id, result,
+                    'Expecting an element %s, got nothing' % missing_tag,
+                    'missing tag <%s> in <hardware>' % missing_tag)
+            else:
+                self.assertFalse(result is None)
 
     def testHardwareSubTagHalMixedWithUdev(self):
         """Mixing <hal> with <udev>, <dmi>, <sysfs-attributes> is impossible.
@@ -818,7 +813,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         # Any other tag than <device> within <hal> is not allowed.
         sample_data = self.sample_data
-        insert_position = sample_data.find('<device')
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
@@ -1070,25 +1064,25 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # invalid.
         if min_value is not None:
             self._testMinMaxIntegerValue(
-                property_type, relax_ng_type, min_value, min_value-1)
+                property_type, relax_ng_type, min_value, min_value - 1)
 
         # A value larger than the maximum allowed value is detected as
         # invalid.
         if max_value is not None:
             self._testMinMaxIntegerValue(
-                property_type, relax_ng_type, max_value, max_value+1)
+                property_type, relax_ng_type, max_value, max_value + 1)
 
     def testIntegerProperties(self):
         """Validation of integer properties."""
         type_info = (('dbus.Byte', 'unsignedByte', 0, 255),
-                     ('dbus.Int16', 'short',  -2**15, 2**15-1),
-                     ('dbus.Int32', 'int',  -2**31, 2**31-1),
-                     ('dbus.Int64', 'long', -2**63, 2**63-1),
-                     ('dbus.UInt16', 'unsignedShort', 0, 2**16-1),
-                     ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
-                     ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
+                     ('dbus.Int16', 'short', -2 ** 15, 2 ** 15 - 1),
+                     ('dbus.Int32', 'int', -2 ** 31, 2 ** 31 - 1),
+                     ('dbus.Int64', 'long', -2 ** 63, 2 ** 63 - 1),
+                     ('dbus.UInt16', 'unsignedShort', 0, 2 ** 16 - 1),
+                     ('dbus.UInt32', 'unsignedInt', 0, 2 ** 32 - 1),
+                     ('dbus.UInt64', 'unsignedLong', 0, 2 ** 64 - 1),
                      ('long', 'integer', None, None),
-                     ('int', 'long', -2**63, 2**63-1))
+                     ('int', 'long', -2 ** 63, 2 ** 63 - 1))
         for property_type, relax_ng_type, min_value, max_value in type_info:
             self._testIntegerProperty(
                 property_type, relax_ng_type, min_value, max_value)
@@ -1415,12 +1409,12 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         int_types = (
             ('dbus.Byte', 'unsignedByte', 0, 255),
             ('dbus.Int16', 'short', -32768, 32767),
-            ('dbus.Int32', 'int', -2**31, 2**31-1),
-            ('dbus.Int64', 'long', -2**63, 2**63-1),
-            ('dbus.UInt16', 'unsignedShort', 0, 2**16-1),
-            ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
-            ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
-            ('int', 'long', -2**63, 2**63-1),
+            ('dbus.Int32', 'int', -2 ** 31, 2 ** 31 - 1),
+            ('dbus.Int64', 'long', -2 ** 63, 2 ** 63 - 1),
+            ('dbus.UInt16', 'unsignedShort', 0, 2 ** 16 - 1),
+            ('dbus.UInt32', 'unsignedInt', 0, 2 ** 32 - 1),
+            ('dbus.UInt64', 'unsignedLong', 0, 2 ** 64 - 1),
+            ('int', 'long', -2 ** 63, 2 ** 63 - 1),
             ('long', 'integer', None, None))
         for value_type, relax_ng_type, min_allowed, max_allowed in int_types:
             self._testIntegerValueTag(property_type, value_type,
@@ -1462,8 +1456,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         tag = template % 'nonsense'
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text = tag,
-            where = '</device>')
+            insert_text=tag,
+            where='</device>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1474,8 +1468,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         tag = template % ''
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text = tag,
-            where = '</device>')
+            insert_text=tag,
+            where='</device>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(
             result, None, 'empty tag <value type="%s">' % value_type)
@@ -1484,8 +1478,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         tag = template % '<nonsense/>'
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text = tag,
-            where = '</device>')
+            insert_text=tag,
+            where='</device>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1498,8 +1492,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             tag = template % '<value type="int" name="baz">1</value>'
             sample_data = self.insertSampledata(
                 data=self.sample_data,
-                insert_text = tag,
-                where = '</device>')
+                insert_text=tag,
+                where='</device>')
             result, submission_id = self.runValidator(sample_data)
             self.assertNotEqual(
                 result, None,
@@ -1508,8 +1502,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             tag = template % '<value type="int">1</value>'
             sample_data = self.insertSampledata(
                 data=self.sample_data,
-                insert_text = tag,
-                where = '</device>')
+                insert_text=tag,
+                where='</device>')
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
@@ -1521,8 +1515,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             tag = template % '<value type="int">1</value>'
             sample_data = self.insertSampledata(
                 data=self.sample_data,
-                insert_text = tag,
-                where = '</device>')
+                insert_text=tag,
+                where='</device>')
             result, submission_id = self.runValidator(sample_data)
             self.assertNotEqual(
                 result, None,
@@ -1531,8 +1525,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             tag = template % '<value type="int" nam="baz">1</value>'
             sample_data = self.insertSampledata(
                 data=self.sample_data,
-                insert_text = tag,
-                where = '</device>')
+                insert_text=tag,
+                where='</device>')
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
@@ -1582,7 +1576,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
-            where = '</processors>')
+            where='</processors>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1652,7 +1646,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
-            where = '</processor>')
+            where='</processor>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1884,7 +1878,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # rejected.
         sample_data = self.insertSampledata(
             data=self.sample_data,
-            insert_text = '<nonsense/>',
+            insert_text='<nonsense/>',
             where='</software>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
@@ -2107,7 +2101,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element xorg in interleave',
             'detection of invalid attribute of <xorg>')
-        
+
     def testXorgTagSubTags(self):
         """Test the validation of <xorg> sub-tags."""
         # the only allowed sub-tag is <driver>.
@@ -2120,7 +2114,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element xorg in interleave',
             'detection of invalid sub-tag of <xorg>')
-        
+
         # <xorg> may be empty
         sample_data = self.replaceSampledata(
             data=self.sample_data,
@@ -2151,7 +2145,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             '%s="%s"' % attribute for attribute in attributes]
         attributes = ' '.join(attributes)
         return '<driver %s/>' % attributes
-        
 
     def testXorgDriverTagRequiredAttributes(self):
         """Test the validation of attributes of <driver> within <xorg>.
@@ -2207,7 +2200,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 submission_id, result,
                 'omitted optional attribute %s of <driver> in <xorg> '
                     'treated as invalid' % omit)
-        
+
     def testXorgDriverTagInvalidAttributes(self):
         """Test the validation of attributes of <driver> within <xorg>.
 
@@ -2269,9 +2262,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
     def testQuestionsTagAttributesSubTags(self):
         """Test the validation of the <questions> sub-tags."""
-        # The only allowed sub-tag is <question>
+        # The only allowed sub-tag is <question>.
         sample_data = self.insertSampledata(
-            data = self.sample_data,
+            data=self.sample_data,
             insert_text='<nonsense/>',
             where='</questions>')
         result, submission_id = self.runValidator(sample_data)
@@ -2280,9 +2273,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             'Expecting element question, got nonsense',
             'invalid sub-tag of <questions>')
 
-        # <questions> may be empty
+        # The <questions> tag may be empty.
         sample_data = self.replaceSampledata(
-            data = self.sample_data,
+            data=self.sample_data,
             replace_text='<questions/>',
             from_text='<questions>',
             to_text='</questions>')
@@ -2294,7 +2287,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """Test the validation of CDATA in <questions> tag."""
         # CDATA content is not allowed.
         sample_data = self.insertSampledata(
-            data = self.sample_data,
+            data=self.sample_data,
             insert_text='nonsense',
             where='</questions>')
         result, submission_id = self.runValidator(sample_data)
@@ -2325,7 +2318,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             to_text='>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(
-            result, None, 
+            result, None,
             '<question> tag without attribute "plugin" was treated as '
                 'invalid')
 
@@ -2353,7 +2346,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             to_text='>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(
-            result, None, 
+            result, None,
             'Omitting sub-tag <command> of <question> was treated as invalid')
 
         # The sub-tag <answer> is required; <answer_choices>, which follows
@@ -2583,7 +2576,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Expecting element value, got nonsense',
             'detection of invalid sub-tag of <answer_choices>')
-        
 
     def testTargetTagAttributes(self):
         """Test the validation of <target> tag attributes."""
@@ -2653,7 +2645,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertNotEqual(
             result, None,
             'Valid <driver> sub-tag of <target> treated as invalid')
-        
+
     def testTargetTagInvalidSubtag(self):
         """Test the validation of an invalid <target> sub-tag."""
         sample_data = self.replaceSampledata(
@@ -2672,8 +2664,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # This tag has no attributes.
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text=
-                '<target id="42"><driver bar="baz">foo</driver></target>',
+            replace_text=(
+                '<target id="42"><driver bar="baz">foo</driver></target>'),
             from_text='<target',
             to_text='</target>')
         result, submission_id = self.runValidator(sample_data)
@@ -2685,8 +2677,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # Sub-tags are not allowed.
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text=
-                '<target id="42"><driver>foo<nonsense/></driver></target>',
+            replace_text=(
+                '<target id="42"><driver>foo<nonsense/></driver></target>'),
             from_text='<target',
             to_text='</target>')
         result, submission_id = self.runValidator(sample_data)
@@ -2694,26 +2686,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Element driver has extra content: nonsense',
             'detection of invalid sub-tag <nonsense> of <driver> in <target>')
-
-    def testCommentTag(self):
-        """Validation of the <comment> tag."""
-        # This tag has no attributes.
-        sample_data = self.sample_data.replace(
-            '<comment>', '<comment foo="bar">')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result,
-            'Invalid attribute foo for element comment',
-            'detection of invalid attribute of <comment>')
-
-        # Sub-tags are not allowed.
-        sample_data = self.sample_data.replace(
-            '<comment>', '<comment><nonsense/>')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result,
-            'Element comment has extra content: nonsense',
-            'detection of invalid sub-tag <nonsense> of <comment>')
 
     def testMissingContextNode(self):
         """Validation of the <context> node."""
@@ -2819,6 +2791,21 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             'Extra element context in interleave',
             'detection of an invalid sub.node of <info> failed')
 
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    def test_natty_reports_validate(self):
+        # HWDB submissions from Natty can be processed.
+        # the raw data from these reports would be passed directly
+        # to the RelaxNG validator, they would fail, because they
+        # do not have the sub-nodes <dmi> and <udev> inside <hardware>.
+        # The data is stored instead in the nodes
+        # <info command="grep -r . /sys/class/dmi/id/ 2&gt;/dev/null">
+        # and <info command="udevadm info --export-db">
+        #
+        # The method SubmissionParser.fixFrequentErrors() (called by
+        # _getValidatedEtree()) creates the missing nodes, so that
+        # _getValidatedEtree() succeeds.
+        sample_data_path = os.path.join(
+            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+            'tests', 'hardwaretest-natty.xml')
+        sample_data = open(sample_data_path).read()
+        result, submission_id = self.runValidator(sample_data)
+        self.assertTrue(result is None)

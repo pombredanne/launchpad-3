@@ -74,10 +74,10 @@ Mark a bug task as fixed:
 
     >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskStatus,
-    ...     IDistroBugTask,
+    ...     IBugTask,
     ...     )
     >>> bugtask = bug.bugtasks[0]
-    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
@@ -85,13 +85,11 @@ Mark a bug task as fixed:
 
 Mark a bug task as fixed when it is assigned awards the karma to the assignee:
 
-    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
-
     >>> ufo_product = factory.makeProduct(name='ufo')
     >>> assignee = factory.makePerson(name='assignee')
     >>> assigned_bugtask = factory.makeBugTask(bug=bug, target=ufo_product)
     >>> assigned_bugtask.transitionToAssignee(assignee)
-    >>> old_bugtask = Snapshot(assigned_bugtask, providing=IUpstreamBugTask)
+    >>> old_bugtask = Snapshot(assigned_bugtask, providing=IBugTask)
     >>> assigned_bugtask.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(assigned_bugtask, old_bugtask, ['status']))
@@ -103,7 +101,7 @@ Mark a bug task as fixed when it is assigned awards the karma to the assignee:
 
 Reject a bug task:
 
-    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.INVALID, bugtask.target.owner)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
@@ -111,7 +109,7 @@ Reject a bug task:
 
 User accept a bug task:
 
-    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
@@ -120,7 +118,7 @@ User accept a bug task:
 Driver accept a bug task:
 
     >>> login_person(bugtask.target.owner)
-    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
@@ -134,7 +132,7 @@ Change a bug task's importance:
     >>> bugtask.transitionToImportance(
     ...     BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
     >>> for importance in BugTaskImportance.items:
-    ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    ...     old_bugtask = Snapshot(bugtask, providing=IBugTask)
     ...     bugtask.transitionToImportance(
     ...         importance, getUtility(ILaunchBag).user)
     ...     print importance.name
@@ -160,7 +158,7 @@ Create a new bug task on a product:
     >>> from lp.registry.interfaces.product import IProductSet
     >>> evolution = getUtility(IProductSet)['evolution']
     >>> evolution_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, product=evolution, owner=foo_bar)
+    ...     bug, foo_bar, evolution)
     >>> notify(ObjectCreatedEvent(evolution_task))
     Karma added: action=bugtaskcreated, product=evolution
 
@@ -168,7 +166,7 @@ Create a new bug task on a product series:
 
     >>> evolution_trunk = evolution.getSeries('trunk')
     >>> evolution_trunk_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, productseries=evolution_trunk, owner=foo_bar)
+    ...     bug, foo_bar, evolution_trunk)
     >>> notify(ObjectCreatedEvent(evolution_trunk_task))
     Karma added: action=bugtaskcreated, product=evolution
 
@@ -176,7 +174,7 @@ Create a new bug task on a distroseries:
 
     >>> debian_woody = debian.getSeries("woody")
     >>> debian_woody_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, distroseries=debian_woody, owner=foo_bar)
+    ...     bug, foo_bar, debian_woody)
     >>> notify(ObjectCreatedEvent(debian_woody_task))
     Karma added: action=bugtaskcreated, distribution=debian
 
@@ -184,9 +182,8 @@ Accept a distro series task.
 
     >>> debian_woody_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
-    >>> from lp.bugs.interfaces.bugtask import IDistroSeriesBugTask
     >>> old_bugtask = Snapshot(
-    ...     debian_woody_task, providing=IDistroSeriesBugTask)
+    ...     debian_woody_task, providing=IBugTask)
     >>> debian_woody_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
@@ -196,9 +193,8 @@ Accept a productseries task.
 
     >>> evolution_trunk_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
-    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
     >>> old_bugtask = Snapshot(
-    ...     evolution_trunk_task, providing=IProductSeriesBugTask)
+    ...     evolution_trunk_task, providing=IBugTask)
     >>> evolution_trunk_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(

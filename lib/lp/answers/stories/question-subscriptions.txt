@@ -21,17 +21,11 @@ sees a link to his subscribed questions.
 
     >>> user_browser.getControl('Subscribe').click()
 
-A message confirming that he was subscribed is displayed and the user
-name appears in the 'Subscribers' portlet:
+A message confirming that he was subscribed is displayed:
 
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     You have subscribed to this question.
-
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'subscribers'))
-    Subscribers
-    No Privileges Person
 
 
 == Unsubscribing ==
@@ -50,17 +44,11 @@ link and then click on the 'Unsubscribe' button.
 
     >>> user_browser.getControl('Unsubscribe').click()
 
-A confirmation is displayed and the user, which was unsubscribed from
-the question, doesn't appear anymore in the subscribers portlet:
+A confirmation is displayed:
 
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     You have unsubscribed from this question.
-
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'subscribers'))
-    Subscribers
-    No subscribers.
 
 
 == Subscribing While Posting A Message ==
@@ -83,17 +71,3 @@ A notification message is displayed notifying of the subscription:
     ...     print message
     Thanks for your information request.
     You have subscribed to this question.
-
-    >>> portlet = find_tag_by_id(user_browser.contents, 'subscribers')
-    >>> for subscriber_link in portlet.findAll('a'):
-    ...     print subscriber_link.renderContents()
-    <span ...
-    No Privileges Person
-
-When the person is already subscribed to the question, the checkbox
-doesn't appear on the page:
-
-    >>> user_browser.getControl('E-mail me future')
-    Traceback (most recent call last):
-      ...
-    LookupError: ...

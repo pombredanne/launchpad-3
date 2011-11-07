@@ -152,6 +152,14 @@ class ServersToStart(testtools.TestCase):
         if config.google_test_service.launch:
             expected.append(SERVICES['google-webservice'])
 
+        # RabbitMQ may or may not be asked to run.
+        if config.rabbitmq.launch:
+            expected.append(SERVICES['rabbitmq'])
+
+        # TxLongPoll may or may not be asked to run.
+        if config.txlongpoll.launch:
+            expected.append(SERVICES['txlongpoll'])
+
         expected = sorted(expected)
         self.assertEqual(expected, services)
 

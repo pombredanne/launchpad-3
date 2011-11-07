@@ -45,7 +45,8 @@ Search by name and version using an exact match:
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
-    ...     source_name="iceweasel", version="1.0", exact_match=True).jsonBody()
+    ...     source_name="iceweasel", version="1.0",
+    ...     exact_match=True).jsonBody()
     >>> print_publications(pubs)
     iceweasel 1.0 in warty
 
@@ -117,6 +118,7 @@ publication to play with first.
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
     component_name: u'main'
+    creator_link: u'http://api.launchpad.dev/beta/~name16'
     date_created: ...
     date_made_pending: None
     date_published: None
@@ -140,7 +142,7 @@ publication to play with first.
 
     >>> webservice.named_get(
     ...     pubs['entries'][0]['self_link'], 'changesFileUrl').jsonBody()
-    u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
+    u'http://.../~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
 
 
 Unsigned sources
@@ -237,7 +239,6 @@ Privacy
 Create a private PPA for Celso with some binaries.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
@@ -384,10 +385,11 @@ for this package:
     ...     source_urls = webservice.named_get(
     ...         pub_link, 'sourceFileUrls').jsonBody()
     ...     print source_urls
-    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/foobar-1.0.dsc']
-    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz', u'http://launchpad.dev/~cprov/+archive/ppa/+files/iceweasel-1.0.dsc']
+    [u'http://.../~cprov/+archive/ppa/+files/foobar-1.0.dsc']
+    [u'http://.../~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz',
+     u'http://.../~cprov/+archive/ppa/+files/iceweasel-1.0.dsc']
     []
-    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666.dsc']
+    [u'http://.../~cprov/+archive/ppa/+files/testwebservice_666.dsc']
 
 binaryFileUrls() is similar:
 
@@ -397,9 +399,23 @@ binaryFileUrls() is similar:
     ...         pub_link, 'binaryFileUrls').jsonBody()
     ...     print binary_urls
     []
-    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/mozilla-firefox_0.9_i386.deb']
+    [u'http://.../~cprov/+archive/ppa/+files/mozilla-firefox_0.9_i386.deb']
     []
-    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice-bin_666_all.deb']
+    [u'http://.../~cprov/+archive/ppa/+files/testwebservice-bin_666_all.deb']
+
+changelogUrl() returns the URL of debian/changelog, if it's available in
+the librarian.
+
+    >>> from lp.testing import celebrity_logged_in
+    >>> with celebrity_logged_in('admin'):
+    ...     spr = factory.makeSourcePackageRelease(
+    ...         changelog=factory.makeLibraryFileAlias(filename='changelog'))
+    ...     spph = factory.makeSourcePackagePublishingHistory(
+    ...         sourcepackagerelease=spr)
+    ...     spph_url = canonical_url(spph, path_only_if_possible=True)
+    >>> print webservice.named_get(
+    ...     spph_url, 'changelogUrl', api_version='devel').jsonBody()
+    http://launchpad.dev/.../+sourcepub/.../+files/changelog
 
 The debdiff to a particular version can also be retrieved using the
 packageDiffUrl() method.  It takes one parameter, 'to_version' which

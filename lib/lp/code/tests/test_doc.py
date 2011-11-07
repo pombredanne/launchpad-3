@@ -9,9 +9,7 @@ import os
 
 from zope.security.management import setSecurityPolicy
 
-from canonical.launchpad.ftests.test_system_documentation import (
-    branchscannerSetUp,
-    )
+from canonical.config import config
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
@@ -29,12 +27,18 @@ from lp.services.testing import build_test_suite
 here = os.path.dirname(os.path.realpath(__file__))
 
 
+def branchscannerSetUp(test):
+    """Setup the user for the branch scanner tests."""
+    LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+    setUp(test)
+
+
 def zopelessLaunchpadSecuritySetUp(test):
     """Set up a LaunchpadZopelessLayer test to use LaunchpadSecurityPolicy.
 
     To be able to use LaunchpadZopelessLayer.switchDbUser in a test, we need
     to run in the Zopeless environment. The Zopeless environment normally runs
-    using the PermissiveSecurityPolicy. If we want the test to cover
+    using the LaunchpadPermissiveSecurityPolicy. If we want the test to cover
     functionality used in the webapp, it needs to use the
     LaunchpadSecurityPolicy.
     """

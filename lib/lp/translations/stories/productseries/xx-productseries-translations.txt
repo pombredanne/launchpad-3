@@ -314,7 +314,7 @@ release series should be translated.
 
     >>> login('admin@canonical.com')
     >>> distribution = factory.makeDistribution(name='earthian')
-    >>> distroseries = factory.makeDistroRelease(
+    >>> distroseries = factory.makeDistroSeries(
     ...     name='1.4', distribution=distribution)
     >>> logout()
     >>> print distribution.translation_focus
@@ -326,7 +326,7 @@ release series should be translated.
 If focus is set, nice explanatory text is displayed.
 
     >>> login('admin@canonical.com')
-    >>> focus_series = factory.makeDistroRelease(
+    >>> focus_series = factory.makeDistroSeries(
     ...     name='1.6', distribution=distribution)
     >>> distribution.translation_focus = focus_series
     >>> logout()

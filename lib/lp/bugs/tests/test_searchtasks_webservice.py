@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
@@ -23,7 +23,7 @@ class TestOmitTargetedParameter(TestCaseWithFactory):
         self.owner = self.factory.makePerson()
         with person_logged_in(self.owner):
             self.distro = self.factory.makeDistribution(name='mebuntu')
-        self.release = self.factory.makeDistroRelease(
+        self.release = self.factory.makeDistroSeries(
             name='inkanyamba', distribution=self.distro)
         self.bug = self.factory.makeBugTask(target=self.release)
         self.webservice = LaunchpadWebServiceCaller(

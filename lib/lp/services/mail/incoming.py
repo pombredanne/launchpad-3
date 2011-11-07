@@ -31,13 +31,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
     )
-from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from canonical.launchpad.interfaces.mailbox import IMailBox
-from canonical.launchpad.mail.commands import get_error_message
-from canonical.launchpad.mail.helpers import (
-    ensure_sane_signature_timestamp,
-    save_mail_to_librarian,
-    )
 from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
@@ -54,6 +47,13 @@ from canonical.librarian.interfaces import UploadFailed
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag
 from lp.services.mail.handlers import mail_handlers
+from lp.services.mail.helpers import (
+    ensure_sane_signature_timestamp,
+    get_error_message,
+    save_mail_to_librarian,
+    )
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.mailbox import IMailBox
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 
@@ -92,11 +92,6 @@ class InactiveAccount(Exception):
     """The account for the person sending this email is inactive."""
 
 
-def extract_address_domain(address):
-    realname, email_address = email.utils.parseaddr(address)
-    return email_address.split('@')[1]
-
-
 _trusted_dkim_domains = [
     'gmail.com', 'google.com', 'mail.google.com', 'canonical.com']
 
@@ -111,7 +106,10 @@ def _isDkimDomainTrusted(domain):
 
 
 def _authenticateDkim(signed_message):
-    """Attempt DKIM authentication of email; return True if known authentic
+    """Attempt DKIM authentication of email.
+
+    :returns: A string email address for the trusted sender, if there is one,
+    otherwise None.
 
     :param signed_message: ISignedMessage
     """
@@ -121,51 +119,77 @@ def _authenticateDkim(signed_message):
 
     if getFeatureFlag('mail.dkim_authentication.disabled'):
         log.info('dkim authentication feature disabled')
-        return False
+        return None
 
     # uncomment this for easier test debugging
     # log.addHandler(logging.FileHandler('/tmp/dkim.log'))
 
     dkim_log = cStringIO()
-    log.info('Attempting DKIM authentication of message %s from %s'
-        % (signed_message['Message-ID'], signed_message['From']))
+    log.info(
+        'Attempting DKIM authentication of message id=%r from=%r sender=%r'
+        % (signed_message['Message-ID'],
+           signed_message['From'],
+           signed_message['Sender']))
     signing_details = []
+    dkim_result = False
     try:
-        # NB: if this fails with a keyword argument error, you need the
-        # python-dkim 0.3-3.2 that adds it
         dkim_result = dkim.verify(
             signed_message.parsed_string, dkim_log, details=signing_details)
     except dkim.DKIMException, e:
         log.warning('DKIM error: %r' % (e,))
-        dkim_result = False
+    except dns.resolver.NXDOMAIN, e:
+        # This can easily happen just through bad input data, ie claiming to
+        # be signed by a domain with no visible key of that name.  It's not an
+        # operational error.
+        log.info('DNS exception: %r' % (e,))
     except dns.exception.DNSException, e:
         # many of them have lame messages, thus %r
         log.warning('DNS exception: %r' % (e,))
-        dkim_result = False
-    else:
-        log.info('DKIM verification result=%s' % (dkim_result,))
+    except Exception, e:
+        # DKIM leaks some errors when it gets bad input, as in bug 881237.  We
+        # don't generally want them to cause the mail to be dropped entirely
+        # though.  It probably is reasonable to treat them as potential
+        # operational errors, at least until they're handled properly, by
+        # making pydkim itself more defensive.
+        log.warning(
+            'unexpected error in DKIM verification, treating as unsigned: %r'
+            % (e,))
+    log.info('DKIM verification result: trusted=%s' % (dkim_result,))
     log.debug('DKIM debug log: %s' % (dkim_log.getvalue(),))
     if not dkim_result:
-        return False
+        return None
     # in addition to the dkim signature being valid, we have to check that it
     # was actually signed by the user's domain.
     if len(signing_details) != 1:
         log.info(
             'expected exactly one DKIM details record: %r'
             % (signing_details,))
-        return False
+        return None
     signing_domain = signing_details[0]['d']
-    from_domain = extract_address_domain(signed_message['From'])
-    if signing_domain != from_domain:
-        log.info("DKIM signing domain %s doesn't match From address %s; "
-            "disregarding signature"
-            % (signing_domain, from_domain))
-        return False
     if not _isDkimDomainTrusted(signing_domain):
         log.info("valid DKIM signature from untrusted domain %s"
             % (signing_domain,))
-        return False
-    return True
+        return None
+    for origin in ['From', 'Sender']:
+        if signed_message[origin] is None:
+            continue
+        name, addr = parseaddr(signed_message[origin])
+        try:
+            origin_domain = addr.split('@')[1]
+        except IndexError:
+            log.warning(
+                "couldn't extract domain from address %r",
+                signed_message[origin])
+        if signing_domain == origin_domain:
+            log.info(
+                "DKIM signing domain %s matches %s address %r",
+                signing_domain, origin, addr)
+            return addr
+    else:
+        log.info("DKIM signing domain %s doesn't match message origin; "
+            "disregarding signature"
+            % (signing_domain))
+        return None
 
 
 def authenticateEmail(mail,
@@ -184,12 +208,19 @@ def authenticateEmail(mail,
         is used.
     """
 
-    signature = mail.signature
+    log = logging.getLogger('process-mail')
 
-    name, email_addr = parseaddr(mail['From'])
+    dkim_trusted_addr = _authenticateDkim(mail)
+    if dkim_trusted_addr is not None:
+        # The Sender field, if signed by a trusted domain, is the strong
+        # authenticator for this mail.
+        log.debug('trusted DKIM mail from %s' % dkim_trusted_addr)
+        email_addr = dkim_trusted_addr
+    else:
+        email_addr = parseaddr(mail['From'])[1]
+
     authutil = getUtility(IPlacelessAuthUtility)
     principal = authutil.getPrincipalByLogin(email_addr)
-    log = logging.getLogger('process-mail')
 
     # Check that sender is registered in Launchpad and the email is signed.
     if principal is None:
@@ -207,17 +238,27 @@ def authenticateEmail(mail,
         raise InactiveAccount(
             "Mail from a user with an inactive account.")
 
-    dkim_result = _authenticateDkim(mail)
+    if dkim_trusted_addr is not None:
+        log.debug('accepting dkim strongly authenticated mail')
+        setupInteraction(principal, dkim_trusted_addr)
+        return principal
+    else:
+        log.debug("attempt gpg authentication for %r" % person)
+        return _gpgAuthenticateEmail(mail, principal, person,
+            signature_timestamp_checker)
 
-    if dkim_result:
-        if mail.signature is not None:
-            log.info('message has gpg signature, therefore not treating DKIM '
-                'success as conclusive')
-        else:
-            setupInteraction(principal, email_addr)
-            log.debug('message strongly authenticated by dkim')
-            return principal
 
+def _gpgAuthenticateEmail(mail, principal, person,
+                          signature_timestamp_checker):
+    """Check GPG signature.
+
+    :param principal: Claimed sender of the mail; to be checked against
+        the actual signature.
+    :returns: principal, either strongly or weakly authenticated.
+    """
+    log = logging.getLogger('process-mail')
+    signature = mail.signature
+    email_addr = parseaddr(mail['From'])[1]
     if signature is None:
         # Mark the principal so that application code can check that the
         # user was weakly authenticated.
@@ -232,9 +273,12 @@ def authenticateEmail(mail,
     try:
         sig = gpghandler.getVerifiedSignature(
             canonicalise_line_endings(mail.signedContent), signature)
+        log.debug("got signature %r" % sig)
     except GPGVerificationError, e:
         # verifySignature failed to verify the signature.
-        raise InvalidSignature("Signature couldn't be verified: %s" % str(e))
+        message = "Signature couldn't be verified: %s" % e
+        log.debug(message)
+        raise InvalidSignature(message)
 
     if signature_timestamp_checker is None:
         signature_timestamp_checker = ensure_sane_signature_timestamp
@@ -246,7 +290,7 @@ def authenticateEmail(mail,
 
     for gpgkey in person.gpg_keys:
         if gpgkey.fingerprint == sig.fingerprint:
-            log.debug('gpg-signed message')
+            log.debug('gpg-signed message by key %r' % gpgkey.fingerprint)
             break
     else:
         # The key doesn't belong to the user. Mark the principal so that the
@@ -259,18 +303,6 @@ def authenticateEmail(mail,
 
     setupInteraction(principal, email_addr)
     return principal
-
-
-class MailErrorUtility(ErrorReportingUtility):
-    """An error utility that doesn't ignore exceptions."""
-
-    _ignored_exceptions = set()
-
-    def __init__(self):
-        super(MailErrorUtility, self).__init__()
-        # All errors reported for incoming email will have 'EMAIL'
-        # appended to the configured oops_prefix.
-        self.setOopsToken('EMAIL')
 
 
 ORIGINAL_TO_HEADER = 'X-Launchpad-Original-To'
@@ -313,11 +345,15 @@ def report_oops(file_alias_url=None, error_msg=None):
         properties.append(('Error message', error_msg))
     request = ScriptRequest(properties)
     request.principal = get_current_principal()
-    errorUtility = MailErrorUtility()
-    errorUtility.raising(info, request)
-    assert request.oopsid is not None, (
-        'MailErrorUtility failed to generate an OOPS.')
-    return request.oopsid
+    errorUtility = ErrorReportingUtility()
+    # Report all exceptions: the mail handling code doesn't expect any in
+    # normal operation.
+    errorUtility._ignored_exceptions = set()
+    report = errorUtility.raising(info, request)
+    # Note that this assert is arguably bogus: raising is permitted to filter
+    # reports.
+    assert report is not None, ('No OOPS generated.')
+    return report['id']
 
 
 def handleMail(trans=transaction,
@@ -464,7 +500,7 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
             "No handler registered for '%s' " % (', '.join(addresses)))
 
     if principal is None and not handler.allow_unknown_users:
-        log.info('Unknown user: %s ' % mail['From'])
+        log.info('Mail from unknown users not permitted for this handler')
         return
 
     handled = handler.process(mail, email_addr, file_alias)

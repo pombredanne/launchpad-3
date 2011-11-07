@@ -27,13 +27,13 @@
         />
 
     <browser:navigation
-        module="canonical.launchpad.browser"
+        module="canonical.launchpad.browser.feeds"
         classes="FeedsNavigation"
         />
 
     <!-- Macros -->
     <browser:page
-        for="*"
+        for="canonical.lazr.interfaces.feed.IFeedEntry"
         name="feed-entry-atom"
         permission="zope.Public"
         template="../../lazr/feed/templates/feed-entry-atom.pt"

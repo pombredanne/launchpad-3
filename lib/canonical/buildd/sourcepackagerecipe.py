@@ -86,7 +86,7 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         recipe_path = get_chroot_path(self._buildid, 'work/recipe')
         splat_file(recipe_path, self.recipe_text)
         args = [
-            "buildrecipe.py", self._buildid, self.author_name.encode('utf-8'),
+            "buildrecipe", self._buildid, self.author_name.encode('utf-8'),
             self.author_email, self.suite, self.distroseries_name,
             self.component, self.archive_purpose]
         self.runSubProcess(self.build_recipe_path, args)

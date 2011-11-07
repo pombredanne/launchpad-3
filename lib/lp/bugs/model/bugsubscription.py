@@ -62,10 +62,11 @@ class BugSubscription(StormBase):
     @property
     def display_subscribed_by(self):
         """See `IBugSubscription`."""
-        if self.person == self.subscribed_by:
+        if self.person_id == self.subscribed_by_id:
             return u'Self-subscribed'
         else:
-            return u'Subscribed by %s' % self.subscribed_by.displayname
+            return u'Subscribed by %s (%s)' % (
+                self.subscribed_by.displayname, self.subscribed_by.name)
 
     @property
     def display_duplicate_subscribed_by(self):
@@ -73,8 +74,9 @@ class BugSubscription(StormBase):
         if self.person == self.subscribed_by:
             return u'Self-subscribed to bug %s' % (self.bug_id)
         else:
-            return u'Subscribed to bug %s by %s' % (self.bug_id,
-                self.subscribed_by.displayname)
+            return u'Subscribed to bug %s by %s (%s)' % (
+                self.bug_id, self.subscribed_by.displayname,
+                self.subscribed_by.name)
 
     def canBeUnsubscribedByUser(self, user):
         """See `IBugSubscription`."""

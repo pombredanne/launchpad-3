@@ -153,7 +153,11 @@
     <subscriber
         for="lp.registry.interfaces.packaging.IPackaging
              lazr.lifecycle.interfaces.IObjectEvent"
-        handler="lp.registry.model.packagingjob.schedule_job" />
+        handler=".model.translationsharingjob.schedule_packaging_job" />
+    <subscriber
+        for="lp.translations.interfaces.potemplate.IPOTemplate
+             lazr.lifecycle.interfaces.IObjectModifiedEvent"
+        handler=".model.translationsharingjob.schedule_potemplate_job" />
     <facet
         facet="translations">
 
@@ -431,15 +435,15 @@
             <allow
                 interface="lp.translations.interfaces.potemplate.IPOTemplate"/>
             <require
-                permission="launchpad.Edit"
-                set_attributes="
-                    owner priority description translation_domain path
-                    iscurrent"/>
-            <require
                 permission="launchpad.TranslationsAdmin"
                 set_attributes="
-                    name productseries distroseries sourcepackagename
-                    sourcepackageversion binarypackagename languagepack
+                    name owner priority description translation_domain path
+                    iscurrent languagepack sourcepackagename"/>
+            <require
+                permission="launchpad.Admin"
+                set_attributes="
+                    productseries distroseries
+                    sourcepackageversion binarypackagename
                     source_file_format source_file date_last_updated
                     from_sourcepackagename header"/>
         </class>
@@ -643,6 +647,10 @@
         class="lp.translations.model.translationpackagingjob.TranslationSplitJob">
         <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
     </class>
+    <class
+        class="lp.translations.model.translationpackagingjob.TranslationTemplateChangeJob">
+        <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
+    </class>
     <utility
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
@@ -651,7 +659,13 @@
     <!-- TranslationTemplatesBuild -->
     <class
         class="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild">
-        <allow interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"/>
+        <require permission="launchpad.View" interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"/>
+        <!-- This is needed for BuildManager to run. The permission isn't
+             important; launchpad.Edit isn't actually held by anybody.
+             Inspired by the similar change for SourcePackageRecipeBuild. -->
+        <require permission="launchpad.Edit"
+            set_attributes="builder date_finished date_started log status" />
+
     </class>
     <securedutility
         component="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild"

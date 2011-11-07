@@ -66,6 +66,7 @@ from lp.bugs.scripts.bugnotification import (
     get_activity_key,
     notification_batches,
     notification_comment_batches,
+    process_deferred_notifications,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
@@ -600,7 +601,7 @@ class EmailNotificationTestBase(TestCaseWithFactory):
         commit()
         login('test@canonical.com')
         self.layer.switchDbUser(config.malone.bugnotification_dbuser)
-        self.now = datetime.now(pytz.timezone('UTC'))
+        self.now = datetime.now(pytz.UTC)
         self.ten_minutes_ago = self.now - timedelta(minutes=10)
         self.notification_set = getUtility(IBugNotificationSet)
         for notification in self.notification_set.getNotificationsToSend():
@@ -1190,3 +1191,41 @@ class TestNotificationSignatureSeparator(TestCase):
         for name in names:
             template = get_email_template(name, 'bugs')
             self.assertTrue(re.search('^-- $', template, re.MULTILINE))
+
+
+class TestDeferredNotifications(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestDeferredNotifications, self).setUp()
+        self.notification_set = getUtility(IBugNotificationSet)
+        # Ensure there are no outstanding notifications.
+        for notification in self.notification_set.getNotificationsToSend():
+            notification.destroySelf()
+        self.ten_minutes_ago = datetime.now(pytz.UTC) - timedelta(minutes=10)
+
+    def _make_deferred_notification(self):
+        bug = self.factory.makeBug()
+        empty_recipients = BugNotificationRecipients()
+        message = getUtility(IMessageSet).fromText(
+            'subject', 'a comment.', bug.owner,
+            datecreated=self.ten_minutes_ago)
+        self.notification_set.addNotification(
+            bug, False, message, empty_recipients, None, deferred=True)
+
+    def test_deferred_notifications(self):
+        # Create some deferred notifications and show that processing them
+        # puts then in the state where they are ready to send.
+        num = 5
+        for i in xrange(num):
+            self._make_deferred_notification()
+        deferred = self.notification_set.getDeferredNotifications()
+        self.assertEqual(num, deferred.count())
+        process_deferred_notifications(deferred)
+        # Now that are all in the PENDING state.
+        ready_to_send = self.notification_set.getNotificationsToSend()
+        self.assertEqual(num, len(ready_to_send))
+        # And there are no longer any deferred.
+        deferred = self.notification_set.getDeferredNotifications()
+        self.assertEqual(0, deferred.count())

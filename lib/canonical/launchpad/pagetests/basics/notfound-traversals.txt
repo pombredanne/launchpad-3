@@ -316,7 +316,7 @@ Viewing a bug in a distribution that doesn't use Bugs officially, where the
 bugtask is also assigned to a milestone (a corner case, but one that was causing
 OOPS's all the same!):
 
->>> check("/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus")
+>>> check("/debian/sarge/+source/mozilla-firefox/+bug/3")
 
 The bug filing pages.
 
@@ -392,7 +392,6 @@ And this is for a person:
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)
 >>> check("/~name16/+review", auth=True)
->>> check("/~name16/+portlet-team-assignedbugs")
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 

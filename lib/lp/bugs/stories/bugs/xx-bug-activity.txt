@@ -3,12 +3,6 @@ Bug Activity
 
 The bug activity page is where you find the "changelog" of a bug.
 
-    >>> # Enable the picker_enhancements feature to test the commenter name.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/debian/+source/'
     ...     'mozilla-firefox/+bug/3/+activity')
@@ -291,7 +285,8 @@ If a target of a bug task is changed the old and new value will be shown.
     ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
     ...     '1/+editstatus')
     >>> admin_browser.getControl(
-    ...     'Package').value = 'linux-source-2.6.15'
+    ...     name='ubuntu_mozilla-firefox.target.package'
+    ...     ).value = 'linux-source-2.6.15'
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
     Foo Bar (name16)
@@ -302,7 +297,3 @@ If a target of a bug task is changed the old and new value will be shown.
     affects:
     mozilla-firefox (Ubuntu) => linux-source-2.6.15 (Ubuntu)
     --------
-
-Clean up the feature flag.
-
-    >>> flags.cleanUp()

@@ -47,7 +47,6 @@ class ILaunchpadCelebrities(Interface):
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
-    launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
     obsolete_junk = Attribute("The Obsolete Junk project.")
     ppa_key_guard = Attribute("The PPA signing keys owner.")
@@ -117,9 +116,6 @@ class ILaunchpadUsage(Interface):
         required=True)
     official_malone = Bool(
         title=_('Bugs in this project are tracked in Launchpad'),
-        required=True)
-    official_rosetta = Bool(
-        title=_('Translations for this project are done in Launchpad'),
         required=True)
     official_anything = Bool(
         title=_('Uses Launchpad for something'))

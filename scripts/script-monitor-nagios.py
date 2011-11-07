@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Nagios plugin for script monitoring.
@@ -21,15 +21,22 @@ even though there is some code duplication.
 __metaclass__ = type
 __all__ = ['check_script']
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from optparse import OptionParser
+import sys
+from time import strftime
+
 import _pythonpath
 
-from datetime import datetime, timedelta
-from optparse import OptionParser
-from time import strftime
-import sys
-
 from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import db_options, logger_options, logger
+from canonical.launchpad.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 from canonical.launchpad.scripts.scriptmonitor import check_script
 
 
@@ -58,7 +65,8 @@ def main():
         start_date = datetime.now() - timedelta(minutes=minutes_ago)
 
         completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
-        completed_to = strftime("%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
+        completed_to = strftime(
+            "%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
 
         hosts_scripts = []
         for arg in args:
@@ -77,7 +85,7 @@ def main():
 
     try:
         log.debug("Connecting to database")
-        con = connect(options.dbuser)
+        con = connect()
         error_found = False
         msg = []
         for hostname, scriptname in hosts_scripts:
@@ -95,8 +103,8 @@ def main():
             print "All scripts ran as expected"
             return 0
     except Exception, e:
-        # Squeeze the exception type and stringification of the exception value
-        # on to one line.
+        # Squeeze the exception type and stringification of the exception
+        # value on to one line.
         print "Unhandled exception: %s %r" % (e.__class__.__name__, str(e))
         return 3
 

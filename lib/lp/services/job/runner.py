@@ -39,32 +39,37 @@ from ampoule import (
     )
 from lazr.delegates import delegates
 import transaction
-from twisted.internet import (
-    defer,
-    reactor,
+from twisted.internet import reactor
+from twisted.internet.defer import (
+    inlineCallbacks,
+    succeed,
     )
 from twisted.protocols import amp
-from twisted.python import log
+from twisted.python import (
+    failure,
+    log,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
-from canonical.lp import initZopeless
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
     LeaseHeld,
     SuspendJobException,
     )
-from lp.services.mail.sendmail import MailController
+from lp.services.mail.sendmail import (
+    MailController,
+    set_immediate_mail_delivery,
+    )
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.twistedsupport import run_reactor
-from lp.services.twistedsupport.task import (
-    ParallelLimitedTaskConsumer,
-    PollingTaskSource,
-    )
 
 
 class BaseRunnableJobSource:
@@ -147,7 +152,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     def notifyOops(self, oops):
         """Report this oops."""
-        ctrl = self.getOopsMailController(oops.id)
+        ctrl = self.getOopsMailController(oops['id'])
         if ctrl is None:
             return
         ctrl.send()
@@ -178,12 +183,32 @@ class BaseJobRunner(object):
         if self.error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
 
+    def acquireLease(self, job):
+        self.logger.debug(
+            'Trying to acquire lease for job in state %s' % (
+                job.status.title,))
+        try:
+            job.acquireLease()
+        except LeaseHeld:
+            self.logger.info(
+                'Could not acquire lease for %s' % self.job_str(job))
+            self.incomplete_jobs.append(job)
+            return False
+        return True
+
+    @staticmethod
+    def job_str(job):
+        class_name = job.__class__.__name__
+        ijob_id = removeSecurityProxy(job).job.id
+        return '%s (ID %d)' % (class_name, ijob_id)
+
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
         job = IRunnableJob(job)
 
-        self.logger.debug(
-            'Running job in status %s' % (job.status.title,))
+        self.logger.info(
+            'Running %s in status %s' % (
+                self.job_str(job), job.status.title))
         job.start()
         transaction.commit()
         do_retry = False
@@ -201,7 +226,6 @@ class BaseJobRunner(object):
             job.suspend()
             self.incomplete_jobs.append(job)
         except Exception:
-            self.logger.exception("Job execution raised an exception.")
             transaction.abort()
             job.fail()
             # Record the failure.
@@ -234,6 +258,8 @@ class BaseJobRunner(object):
                     self.logger.debug('Running %r', job)
                     self.runJob(job)
                 except job.user_error_types, e:
+                    self.logger.info('Job %r failed with user error %r.' %
+                        (job, e))
                     job.notifyUserError(e)
                 except Exception:
                     info = sys.exc_info()
@@ -293,20 +319,13 @@ class JobRunner(BaseJobRunner):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
             job = IRunnableJob(job)
-            self.logger.debug(
-                'Trying to acquire lease for job in state %s' % (
-                    job.status.title,))
-            try:
-                job.acquireLease()
-            except LeaseHeld:
-                self.logger.debug('Could not acquire lease for job')
-                self.incomplete_jobs.append(job)
+            if not self.acquireLease(job):
                 continue
             # Commit transaction to clear the row lock.
             transaction.commit()
             oops = self.runJobHandleError(job)
             if oops is not None:
-                self._logOopsId(oops.id)
+                self._logOopsId(oops['id'])
 
 
 class RunJobCommand(amp.Command):
@@ -354,7 +373,10 @@ class JobRunnerProcess(child.AMPChild):
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
-        initZopeless(dbuser=cls.dbuser)
+        dbconfig.override(dbuser=cls.dbuser, isolation_level='read_committed')
+        # XXX wgrant 2011-09-24 bug=29744: initZopeless used to do this.
+        # Should be removed from callsites verified to not need it.
+        set_immediate_mail_delivery(True)
 
     @staticmethod
     def __exit__(exc_type, exc_val, exc_tb):
@@ -384,7 +406,7 @@ class JobRunnerProcess(child.AMPChild):
         if oops is None:
             oops_id = ''
         else:
-            oops_id = oops.id
+            oops_id = oops['id']
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
@@ -395,17 +417,16 @@ class TwistedJobRunner(BaseJobRunner):
 
     def __init__(self, job_source, dbuser, logger=None, error_utility=None):
         env = {'PATH': os.environ['PATH']}
-        for name in ('PYTHONPATH', 'LPCONFIG'):
-            if name in os.environ:
-                env[name] = os.environ[name]
-        starter = main.ProcessStarter(
-            packages=('_pythonpath', 'twisted', 'ampoule'), env=env)
+        if 'LPCONFIG' in os.environ:
+            env['LPCONFIG'] = os.environ['LPCONFIG']
+        env['PYTHONPATH'] = os.pathsep.join(sys.path)
+        starter = main.ProcessStarter(env=env)
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        import_name = '%s.%s' % (
+        self.import_name = '%s.%s' % (
             removeSecurityProxy(job_source).__module__, job_source.__name__)
         self.pool = pool.ProcessPool(
-            JobRunnerProcess, ampChildArgs=[import_name, str(dbuser)],
+            JobRunnerProcess, ampChildArgs=[self.import_name, str(dbuser)],
             starter=starter, min=0, timeout_signal=SIGHUP)
 
     def runJobInSubprocess(self, job):
@@ -414,21 +435,26 @@ class TwistedJobRunner(BaseJobRunner):
         :return: a Deferred that fires when the job has completed.
         """
         job = IRunnableJob(job)
-        try:
-            job.acquireLease()
-        except LeaseHeld:
-            self.incomplete_jobs.append(job)
-            return
+        if not self.acquireLease(job):
+            return succeed(None)
         # Commit transaction to clear the row lock.
         transaction.commit()
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
+
+        # Log the job class and database ID for debugging purposes.
+        self.logger.info(
+            'Running %s.' % self.job_str(job))
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id=job_id, _deadline=deadline)
 
         def update(response):
+            if response is None:
+                self.incomplete_jobs.append(job)
+                self.logger.debug('No response for %r', job)
+                return
             if response['success']:
                 self.completed_jobs.append(job)
                 self.logger.debug('Finished %r', job)
@@ -452,7 +478,7 @@ class TwistedJobRunner(BaseJobRunner):
             else:
                 info = (failure.type, failure.value, failure.tb)
                 oops = self._doOops(job, info)
-                self._logOopsId(oops.id)
+                self._logOopsId(oops['id'])
         deferred.addCallbacks(update, job_raised)
         return deferred
 
@@ -461,38 +487,25 @@ class TwistedJobRunner(BaseJobRunner):
             raise TimeoutError
         except TimeoutError:
             oops = self._doOops(job, sys.exc_info())
-            self._logOopsId(oops.id)
+            self._logOopsId(oops['id'])
 
-    def getTaskSource(self):
-        """Return a task source for all jobs in job_source."""
-
-        def producer():
-            while True:
-                # XXX: JonathanLange bug=741204: If we're getting all of the
-                # jobs at the start anyway, we can use a DeferredSemaphore,
-                # instead of the more complex PollingTaskSource, which is
-                # better suited to cases where we don't know how much work
-                # there will be.
-                jobs = list(self.job_source.iterReady())
-                if len(jobs) == 0:
-                    yield None
-                for job in jobs:
-                    yield lambda: self.runJobInSubprocess(job)
-        return PollingTaskSource(5, producer().next)
-
-    def doConsumer(self):
-        """Create a ParallelLimitedTaskConsumer for this job type."""
-        # 1 is hard-coded for now until we're sure we'd get gains by running
-        # more than one at a time.  Note that several tests, including
-        # test_timeout, rely on this being 1.
-        consumer = ParallelLimitedTaskConsumer(1, logger=None)
-        return consumer.consume(self.getTaskSource())
-
+    @inlineCallbacks
     def runAll(self):
-        """Run all ready jobs, and any that become ready while running."""
+        """Run all ready jobs."""
         self.pool.start()
-        d = defer.maybeDeferred(self.doConsumer)
-        d.addCallbacks(self.terminated, self.failed)
+        try:
+            try:
+                job = None
+                for job in self.job_source.iterReady():
+                    yield self.runJobInSubprocess(job)
+                if job is None:
+                    self.logger.info('No jobs to run.')
+                self.terminated()
+            except:
+                self.failed(failure.Failure())
+        except:
+            self.terminated()
+            raise
 
     def terminated(self, ignored=None):
         """Callback to stop the processpool and reactor."""
@@ -571,14 +584,24 @@ class JobCronScript(LaunchpadCronScript):
             rely on the subclass providing `config_name` and
             `source_interface`.
         """
+        self._runner_class = runner_class
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
-        self._runner_class = runner_class
+        self.log_twisted = getattr(self.options, 'log_twisted', False)
         if not commandline_config:
             return
         self.config_name = self.args[0]
         self.source_interface = import_source(
             self.config_section.source_interface)
+
+    def add_my_options(self):
+        if self.runner_class is TwistedJobRunner:
+            self.add_log_twisted_option()
+
+    def add_log_twisted_option(self):
+        self.parser.add_option(
+            '--log-twisted', action='store_true', default=False,
+            help='Enable extra Twisted logging.')
 
     @property
     def dbuser(self):
@@ -603,14 +626,16 @@ class JobCronScript(LaunchpadCronScript):
     def main(self):
         section = self.config_section
         if (getattr(section, 'error_dir', None) is not None
-            and getattr(section, 'oops_prefix', None) is not None
-            and getattr(section, 'copy_to_zlog', None) is not None):
-            # If the three variables are not set, we will let the error
+            and getattr(section, 'oops_prefix', None) is not None):
+            # If the two variables are not set, we will let the error
             # utility default to using the [error_reports] config.
             errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
+        kwargs = {}
+        if self.log_twisted:
+            kwargs['_log_twisted'] = True
         runner = self.runner_class.runFromSource(
-            job_source, self.dbuser, self.logger)
+            job_source, self.dbuser, self.logger, **kwargs)
         for name, count in self.job_counts(runner.completed_jobs):
             self.logger.info('Ran %d %s jobs.', count, name)
         for name, count in self.job_counts(runner.incomplete_jobs):

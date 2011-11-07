@@ -60,6 +60,7 @@ from lp.app.errors import NotFoundError
 # that it needs a bit of redesigning here around the publication stuff.
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
+from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -867,7 +868,7 @@ class PackageUpload(SQLBase):
             signer, self.sourcepackagerelease, self.builds, self.customfiles,
             self.archive, self.distroseries, self.pocket, summary_text,
             changes, changesfile_content, changes_file_object,
-            status_action[self.status], dry_run, logger)
+            status_action[self.status], dry_run=dry_run, logger=logger)
 
     def _isPersonUploader(self, person):
         """Return True if person is an uploader to the package's distro."""
@@ -1120,13 +1121,11 @@ class PackageUploadSource(SQLBase):
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
-        distribution = self.packageupload.distroseries.distribution
         # Check for duplicate filenames currently present in the archive.
         for source_file in self.sourcepackagerelease.files:
             try:
-                published_file = distribution.getFileByName(
-                    source_file.libraryfile.filename, binary=False,
-                    archive=self.packageupload.archive)
+                published_file = self.packageupload.archive.getFileByName(
+                    source_file.libraryfile.filename)
             except NotFoundError:
                 # NEW files are *OK*.
                 continue
@@ -1298,12 +1297,18 @@ class PackageUploadCustom(SQLBase):
                   "in MAIN_ARCHIVE_PURPOSES.")
             return
 
+        # If the distroseries is 11.10 (oneiric) or later, the valid names
+        # check is not required.  (See bug 788685.)
+        distroseries = sourcepackagerelease.upload_distroseries
+        do_names_check = Version(distroseries.version) < Version('11.10')
+
         valid_pockets = (
             PackagePublishingPocket.RELEASE, PackagePublishingPocket.SECURITY,
             PackagePublishingPocket.UPDATES, PackagePublishingPocket.PROPOSED)
-        valid_component_names = ('main', 'restricted')
+        valid_components = ('main', 'restricted')
         if (self.packageupload.pocket not in valid_pockets or
-            sourcepackagerelease.component.name not in valid_component_names):
+            (do_names_check and
+            sourcepackagerelease.component.name not in valid_components)):
             # XXX: CarlosPerelloMarin 2006-02-16 bug=31665:
             # This should be implemented using a more general rule to accept
             # different policies depending on the distribution.
@@ -1434,6 +1439,37 @@ class PackageUploadSet:
             SourcePackageName.name == name)
 
         return conflicts.one()
+
+    def getBuildsForSources(self, distroseries, status=None, pockets=None,
+                            names=None):
+        """See `IPackageUploadSet`."""
+        # Avoiding circular imports.
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+        archives = distroseries.distribution.getArchiveIDList()
+        clauses = [
+            PackageUpload.distroseries == distroseries,
+            PackageUpload.archiveID.is_in(archives),
+            PackageUploadBuild.packageuploadID == PackageUpload.id,
+            ]
+
+        if status is not None:
+            clauses.append(PackageUpload.status.is_in(status))
+        if pockets is not None:
+            clauses.append(PackageUpload.pocket.is_in(pockets))
+        if names is not None:
+            clauses.extend([
+                BinaryPackageBuild.id == PackageUploadBuild.buildID,
+                BinaryPackageBuild.source_package_release ==
+                    SourcePackageRelease.id,
+                SourcePackageRelease.sourcepackagename ==
+                    SourcePackageName.id,
+                SourcePackageName.name.is_in(names),
+                ])
+
+        store = IStore(PackageUpload)
+        return store.find(PackageUpload, *clauses)
 
     def count(self, status=None, distroseries=None, pocket=None):
         """See `IPackageUploadSet`."""

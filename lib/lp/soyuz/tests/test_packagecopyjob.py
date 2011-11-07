@@ -3,33 +3,31 @@
 
 """Tests for sync package jobs."""
 
-from testtools.content import text_content
-from testtools.matchers import (
-    Equals,
-    MatchesStructure,
-    )
-import transaction
-from zope.component import getUtility
-from zope.security.interfaces import (
-    Unauthorized,
-    )
-from zope.security.proxy import removeSecurityProxy
+import operator
 
 from storm.store import Store
+from testtools.content import text_content
+from testtools.matchers import MatchesStructure
+from textwrap import dedent
+import transaction
+from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (\
+from canonical.testing import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     JobStatus,
@@ -42,10 +40,6 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     SourcePackageFormat,
     )
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    )
-from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import (
@@ -60,16 +54,20 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    )
 from lp.soyuz.model.packagecopyjob import PackageCopyJob
+from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    person_logged_in,
     run_script,
     TestCaseWithFactory,
     )
-from lp.testing import person_logged_in
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import Provides
-from lp.testing.fakemethod import FakeMethod
 
 
 def get_dsd_comments(dsd):
@@ -92,16 +90,31 @@ class LocalTestHelper:
         target_archive = dsd.derived_series.main_archive
         target_distroseries = dsd.derived_series
         target_pocket = self.factory.getAnyPocket()
+        requester = self.factory.makePerson()
         return getUtility(IPlainPackageCopyJobSource).create(
             dsd.source_package_name.name, source_archive, target_archive,
-            target_distroseries, target_pocket,
+            target_distroseries, target_pocket, requester=requester,
             package_version=dsd.parent_source_version, **kwargs)
 
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
+        # We are basically mimicking the job runner here.
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
-        job.run()
+        # Set the state to RUNNING.
+        job.start()
+        # Commit the RUNNING state.
+        self.layer.txn.commit()
+        try:
+            job.run()
+        except SuspendJobException:
+            # Re-raise this one as many tests check for its presence.
+            raise
+        except:
+            transaction.abort()
+            job.fail()
+        else:
+            job.complete()
 
 
 class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
@@ -122,13 +135,15 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="1.0-1", include_binaries=False,
-            copy_policy=PackageCopyPolicy.MASS_SYNC)
+            copy_policy=PackageCopyPolicy.MASS_SYNC,
+            requester=requester)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(archive1.id, job.source_archive_id)
         self.assertEquals(archive1, job.source_archive)
@@ -140,6 +155,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual("1.0-1", job.package_version)
         self.assertEquals(False, job.include_binaries)
         self.assertEquals(PackageCopyPolicy.MASS_SYNC, job.copy_policy)
+        self.assertEqual(requester, job.requester)
 
     def test_createMultiple_creates_one_job_per_copy(self):
         mother = self.factory.makeDistroSeriesParent()
@@ -148,6 +164,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             derived_series=derived_series)
         mother_package = self.factory.makeSourcePackageName()
         father_package = self.factory.makeSourcePackageName()
+        requester = self.factory.makePerson()
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_tasks = [
             (
@@ -166,7 +183,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 ),
             ]
         job_ids = list(
-            job_source.createMultiple(mother.derived_series, copy_tasks))
+            job_source.createMultiple(mother.derived_series, copy_tasks,
+                                      requester))
         jobs = list(job_source.getActiveJobs(derived_series.main_archive))
         self.assertContentEqual(job_ids, [job.id for job in jobs])
         self.assertEqual(len(copy_tasks), len(set([job.job for job in jobs])))
@@ -185,17 +203,24 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             for job in jobs]
         self.assertEqual(copy_tasks, requested_copies)
 
+        # The passed requester should be the same on all jobs.
+        actual_requester = set(job.requester for job in jobs)
+        self.assertEqual(1, len(actual_requester))
+        self.assertEqual(requester, jobs[0].requester)
+
     def test_getActiveJobs(self):
         # getActiveJobs() can retrieve all active jobs for an archive.
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="1.0-1", include_binaries=False)
+            package_version="1.0-1", include_binaries=False,
+            requester=requester)
         self.assertContentEqual([job], source.getActiveJobs(archive2))
 
     def test_getActiveJobs_gets_oldest_first(self):
@@ -249,12 +274,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         job_source = getUtility(IPlainPackageCopyJobSource)
         job = job_source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="1.0-1", include_binaries=False)
+            package_version="1.0-1", include_binaries=False,
+            requester=requester)
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
 
@@ -268,12 +295,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         package = self.factory.makeSourcePackageName()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name=package.name, source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.UPDATES,
-            include_binaries=False, package_version='1.0')
+            include_binaries=False, package_version='1.0',
+            requester=requester)
 
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
@@ -315,12 +344,16 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             archive=target_archive)
 
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="libc",
             source_archive=breezy_archive, target_archive=target_archive,
             target_distroseries=target_series,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="2.8-1", include_binaries=False)
+            package_version="2.8-1", include_binaries=False,
+            requester=requester)
         self.assertEqual("libc", job.package_name)
         self.assertEqual("2.8-1", job.package_version)
 
@@ -348,12 +381,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="1.0-1", include_binaries=False)
+            package_version="1.0-1", include_binaries=False,
+            requester=requester)
         oops_vars = job.getOopsVars()
         naked_job = removeSecurityProxy(job)
         self.assertIn(
@@ -374,6 +409,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = publisher.breezy_autotest
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         publisher.getPubSource(
             distroseries=distroseries, sourcename="libc",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
@@ -382,7 +418,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             package_name="libc", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="2.8-1", include_binaries=False)
+            package_version="2.8-1", include_binaries=False,
+            requester=requester)
+        with person_logged_in(archive2.owner):
+            archive2.newComponentUploader(requester, "main")
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -401,12 +440,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="1.0-1", include_binaries=True)
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
         self.assertEqual(
             ("<PlainPackageCopyJob to copy package foo from "
              "{distroseries.distribution.name}/{archive1.name} to "
@@ -519,6 +560,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # target_archive.
 
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "restricted")
         job = source.create(
             package_name="libc",
             package_version="2.8-1",
@@ -526,7 +570,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         self.runJob(job)
 
@@ -534,6 +579,52 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             name='libc', version='2.8-1').one()
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('games', new_publication.section.name)
+
+        # There should also be a PackageDiff generated between the new
+        # publication and the ancestry.
+        [diff] = new_publication.sourcepackagerelease.package_diffs
+        self.assertIsNot(None, diff)
+
+    def test_copying_to_ppa_archive(self):
+        # Packages can be copied into PPA archives.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PPA)
+        source_archive = self.factory.makeArchive()
+
+        # Publish a package in the source archive with some overridable
+        # properties set to known values.
+        publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            component='universe', section='web',
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+
+        # Now, run the copy job.
+        source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
+        job = source.create(
+            package_name="libc",
+            package_version="2.8-1",
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False,
+            requester=requester)
+
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+
+        new_publication = target_archive.getPublishedSources(
+            name='libc', version='2.8-1').one()
+        self.assertEqual('main', new_publication.component.name)
+        self.assertEqual('web', new_publication.section.name)
 
     def test_copying_to_main_archive_manual_overrides(self):
         # Test processing a packagecopyjob that has manual overrides.
@@ -556,6 +647,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Now, run the copy job, which should raise an error because
         # there's no ancestry.
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -563,7 +657,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         self.assertRaises(SuspendJobException, self.runJob, job)
         # Simulate the job runner suspending after getting a
@@ -617,8 +712,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(None, existing_sources.any())
 
         # Now, run the copy job.
-
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -626,7 +721,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set.
@@ -640,6 +736,67 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # The job metadata should contain default overrides from the
         # UnknownOverridePolicy policy.
         self.assertEqual('universe', pcj.metadata['component_override'])
+
+    def createCopyJob(self, sourcename, component, section, version):
+        # Helper method to create a package copy job for a package with
+        # the given sourcename, component, section and version.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+
+        # Publish a package in the source archive with some overridable
+        # properties set to known values.
+        publisher.getPubSource(
+            distroseries=distroseries, sourcename=sourcename,
+            component=component, section=section,
+            version=version, status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+
+        # Now, run the copy job.
+        source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        job = source.create(
+            package_name=sourcename,
+            package_version=version,
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False,
+            requester=requester)
+
+        # Run the job so it gains a PackageUpload.
+        self.assertRaises(SuspendJobException, self.runJob, job)
+        pcj = removeSecurityProxy(job).context
+        return pcj
+
+    def test_copying_to_main_archive_debian_override_contrib(self):
+        # The job uses the overrides to map debian components to
+        # the right components.
+        # 'contrib' gets mapped to 'multiverse'.
+
+        # Create debian component.
+        self.factory.makeComponent('contrib')
+        # Create a copy job for a package in 'contrib'.
+        pcj = self.createCopyJob('package', 'contrib', 'web', '2.8.1')
+
+        self.assertEqual('multiverse', pcj.metadata['component_override'])
+
+    def test_copying_to_main_archive_debian_override_nonfree(self):
+        # The job uses the overrides to map debian components to
+        # the right components.
+        # 'nonfree' gets mapped to 'multiverse'.
+
+        # Create debian component.
+        self.factory.makeComponent('non-free')
+        # Create a copy job for a package in 'non-free'.
+        pcj = self.createCopyJob('package', 'non-free', 'web', '2.8.1')
+
+        self.assertEqual('multiverse', pcj.metadata['component_override'])
 
     def test_copying_to_main_archive_unapproved(self):
         # Uploading to a series that is in a state that precludes auto
@@ -672,6 +829,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Now, run the copy job.
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -679,7 +837,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set in the UNAPPROVED queue.
@@ -703,6 +862,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         distroseries = publisher.breezy_autotest
+        distroseries.changeslist = "changes@example.com"
 
         target_archive = self.factory.makeArchive(
             distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
@@ -715,6 +875,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             archive=source_archive)
 
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson(
+            displayname="Nancy Requester", email="requester@example.com")
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -722,7 +886,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         # Run the job so it gains a PackageUpload.
         self.assertRaises(SuspendJobException, self.runJob, job)
@@ -736,6 +901,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [removeSecurityProxy(job).context.id]).one()
         pu.acceptFromQueue()
+        # Clear existing emails so we can see only the ones the job
+        # generates later.
+        pop_notifications()
         self.runJob(job)
 
         # The job should have set the PU status to DONE:
@@ -744,6 +912,99 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Make sure packages were actually copied.
         existing_sources = target_archive.getPublishedSources(name='copyme')
         self.assertIsNot(None, existing_sources.any())
+
+        # It would be nice to test emails in a separate test but it would
+        # require all of the same setup as above again so we might as well
+        # do it here.
+        emails = pop_notifications(sort_key=operator.itemgetter('To'))
+
+        # We expect an uploader email and an announcement to the changeslist.
+        self.assertEquals(2, len(emails))
+        self.assertIn("requester@example.com", emails[0]['To'])
+        self.assertIn("changes@example.com", emails[1]['To'])
+        self.assertEqual(
+            "Nancy Requester <requester@example.com>",
+            emails[1]['From'])
+
+    def test_copying_closes_bugs(self):
+        # Copying a package into a primary archive should close any bugs
+        # mentioned in its changelog for versions added since the most
+        # recently published version in the target.
+
+        # Firstly, lots of boring set up.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+        bug280 = self.factory.makeBug()
+        bug281 = self.factory.makeBug()
+        bug282 = self.factory.makeBug()
+
+        # Publish a package in the source archive and give it a changelog
+        # entry that closes a bug.
+        source_pub = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename="libc",
+            version="2.8-2", status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+        spr = removeSecurityProxy(source_pub).sourcepackagerelease
+        changelog = dedent("""\
+            libc (2.8-2) unstable; urgency=low
+
+              * closes: %s
+
+             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+
+            libc (2.8-1) unstable; urgency=low
+
+              * closes: %s
+
+             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+
+            libc (2.8-0) unstable; urgency=low
+
+              * closes: %s
+
+             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+            """ % (bug282.id, bug281.id, bug280.id))
+        spr.changelog = self.factory.makeLibraryFileAlias(content=changelog)
+        spr.changelog_entry = "dummy"
+        self.layer.txn.commit()  # Librarian.
+        bugtask280 = self.factory.makeBugTask(
+            target=spr.sourcepackage, bug=bug280)
+        bugtask281 = self.factory.makeBugTask(
+            target=spr.sourcepackage, bug=bug281)
+        bugtask282 = self.factory.makeBugTask(
+            target=spr.sourcepackage, bug=bug282)
+
+        # Now put the same named package in the target archive at the
+        # oldest version in the changelog.
+        publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
+            archive=target_archive)
+
+        # Run the copy job.
+        source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
+        job = source.create(
+            package_name="libc",
+            package_version="2.8-2",
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False,
+            requester=requester)
+        self.runJob(job)
+
+        # All the bugs apart from the one for 2.8-0 should be fixed.
+        self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask282.status)
+        self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask281.status)
+        self.assertEqual(BugTaskStatus.NEW, bugtask280.status)
 
     def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
         # findMatchingDSDs finds matching DSDs for any of the packages
@@ -798,9 +1059,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             IComponentSet)[pcj.metadata["component_override"]]
         metadata_section = getUtility(
             ISectionSet)[pcj.metadata["section_override"]]
-        matcher = MatchesStructure(
-            component=Equals(metadata_component),
-            section=Equals(metadata_section))
+        matcher = MatchesStructure.byEquality(
+            component=metadata_component,
+            section=metadata_section)
         self.assertThat(override, matcher)
 
     def test_addSourceOverride_accepts_None_component_as_no_change(self):
@@ -865,6 +1126,53 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 self.makeJob(dsd, copy_policy=policy))
             self.assertEqual(
                 policy, naked_job.getPolicyImplementation().enum_value)
+
+    def test_rejects_PackageUpload_when_job_fails(self):
+        # If a PCJ with a PU fails when running then we need to ensure the
+        # PU gets rejected.
+        target_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+        source_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename="copyme",
+            version="1.0",
+            archive=source_archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        job = job_source.create(
+            package_name="copyme",
+            package_version="1.0",
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=source_pub.distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False,
+            requester=requester)
+
+        # Run the job so it gains a PackageUpload.
+        self.assertRaises(SuspendJobException, self.runJob, job)
+        # Simulate the job runner suspending after getting a
+        # SuspendJobException
+        job.suspend()
+        self.layer.txn.commit()
+        self.layer.switchDbUser("launchpad_main")
+
+        # Patch the job's attemptCopy() method so it just raises an
+        # exception.
+        def blow_up():
+            raise Exception("I blew up")
+        naked_job = removeSecurityProxy(job)
+        self.patch(naked_job, "attemptCopy", blow_up)
+
+        # Accept the upload to release the job then run it.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [removeSecurityProxy(job).context.id]).one()
+        pu.acceptFromQueue()
+        self.runJob(job)
+
+        # The job should have set the PU status to REJECTED.
+        self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
 class TestPlainPackageCopyJobPermissions(TestCaseWithFactory):

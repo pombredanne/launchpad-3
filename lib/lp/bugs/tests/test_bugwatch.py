@@ -14,6 +14,7 @@ from urlparse import urlunsplit
 
 from lazr.lifecycle.snapshot import Snapshot
 from pytz import utc
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -474,6 +475,20 @@ class TestBugWatch(TestCaseWithFactory):
         bug = bug_watch.bug
         bug.default_bugtask.bugwatch = bug_watch
         self.assertRaises(BugWatchDeletionError, bug_watch.destroySelf)
+
+    def test_deleting_bugwatch_deletes_bugwatchactivity(self):
+        # Deleting a bug watch will also delete all its
+        # BugWatchActivity entries.
+        bug_watch = self.factory.makeBugWatch()
+        for i in range(5):
+            bug_watch.addActivity(message="Activity %s" % i)
+        store = Store.of(bug_watch)
+        watch_activity_query = (
+            "SELECT id FROM BugWatchActivity WHERE bug_watch = %s" %
+            bug_watch.id)
+        self.assertNotEqual(0, store.execute(watch_activity_query).rowcount)
+        bug_watch.destroySelf()
+        self.assertEqual(0, store.execute(watch_activity_query).rowcount)
 
 
 class TestBugWatchSet(TestCaseWithFactory):

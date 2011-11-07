@@ -7,10 +7,9 @@ __metaclass__ = type
 
 from optparse import OptionValueError
 import os
-from testtools.matchers import StartsWith
-from textwrap import dedent
 
-from canonical.config import config
+from testtools.matchers import StartsWith
+
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -26,6 +25,7 @@ from lp.services.log.logger import DevNullLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
 from lp.testing import TestCaseWithFactory
+from lp.testing.faketransaction import FakeTransaction
 
 
 def write_file(filename, content=""):
@@ -128,16 +128,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeLegacyContentArchive(self):
-        """Prepare a legacy "content archive" directory."""
-        content_archive = self.makeTemporaryDirectory()
-        config.push("content-archive", dedent("""\
-            [archivepublisher]
-            content_archive_root: %s
-            """ % content_archive))
-        self.addCleanup(config.pop, "content-archive")
-        return content_archive
-
     def makeDistro(self):
         """Create a distribution for testing.
 
@@ -153,6 +143,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             distribution = self.makeDistro()
         script = GenerateContentsFiles(test_args=['-d', distribution.name])
         script.logger = DevNullLogger()
+        script.txn = FakeTransaction()
         if run_setup:
             script.setUp()
         else:
@@ -206,20 +197,23 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
     def test_looks_up_distro(self):
         # The script looks up and keeps the distribution named on the
         # command line.
-        distro = self.factory.makeDistribution()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         self.assertEqual(distro, script.distribution)
 
     def test_queryDistro(self):
         # queryDistro is a helper that invokes LpQueryDistro.
-        distroseries = self.factory.makeDistroSeries()
-        script = self.makeScript(distroseries.distribution)
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distro)
+        script = self.makeScript(distro)
         script.processOptions()
         self.assertEqual(distroseries.name, script.queryDistro('supported'))
 
     def test_getArchs(self):
         # getArchs returns a list of architectures in the distribution.
-        das = self.factory.makeDistroArchSeries()
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         script = self.makeScript(das.distroseries.distribution)
         self.assertEqual([das.architecturetag], script.getArchs())
 
@@ -241,7 +235,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
         self.assertEqual([package.suite], script.getPockets())
 
-    def test_getPocket_includes_release_pocket(self):
+    def test_getPockets_includes_release_pocket(self):
         # getPockets also includes the release pocket, which is named
         # after the distroseries without a suffix.
         distro = self.makeDistro()
@@ -290,66 +284,13 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         distro = self.makeDistro()
         script = self.makeScript(distro)
         content_archive = script.content_archive
-        script.writeContentsTop()
+        script.writeContentsTop(distro.name, distro.title)
 
         contents_top = file(
             "%s/%s-misc/Contents.top" % (content_archive, distro.name)).read()
 
         self.assertIn("This file maps", contents_top)
         self.assertIn(distro.title, contents_top)
-
-    def test_updateLegacyContentArchiveRoot_moves_legacy_contents(self):
-        # If updateLegacyContentArchiveRoot finds entries in the legacy
-        # content-archive directory, it moves them into their new
-        # location inside distroroot.
-        distro = self.makeDistro()
-        script = self.makeScript(distro, run_setup=False)
-        content_archive = self.makeLegacyContentArchive()
-        script.content_archive = os.path.join(
-            self.makeTemporaryDirectory(), "contents-generation")
-        old_contents_dir = os.path.join(
-            content_archive, "%s-contents" % distro.name)
-
-        marker_contents = self.writeMarkerFile(os.path.join(
-            old_contents_dir, "%s-misc" % distro.name, "Contents.top"))
-
-        script.updateLegacyContentArchiveRoot()
-
-        self.assertFalse(file_exists(old_contents_dir))
-        new_path = os.path.join(
-            script.content_archive, "%s-misc" % distro.name, "Contents.top")
-        self.assertEqual(marker_contents, file(new_path).read())
-
-    def test_updateLegacyContentArchiveRoot_is_harmless_without_config(self):
-        # If no legacy content-archive root directory is configured,
-        # that's fine.  It means that updateLegacyContentArchiveRoot has
-        # nothing to do.
-        script = self.makeScript()
-        script.updateLegacyContentArchiveRoot()
-        self.assertTrue(file_exists(script.content_archive))
-        self.assertThat(
-            script.content_archive, StartsWith(script.config.distroroot))
-
-    def test_updateLegacyContentArchiveRoot_is_harmless_without_legacy(self):
-        # If a legacy content-archive root directory is configured but
-        # it does not actually exist, updateLegacyContentArchiveRoot
-        # does nothing.
-        self.makeLegacyContentArchive()
-        script = self.makeScript()
-        script.updateLegacyContentArchiveRoot()
-        self.assertTrue(file_exists(script.content_archive))
-
-    def test_setUp_moves_legacy_content_archive(self):
-        # setUp calls updateLegacyContentArchiveRoot, which moves any
-        # legacy content-archive contents to their new location.
-        content_archive = self.makeLegacyContentArchive()
-        distro = self.makeDistro()
-        marker_dir = os.path.join(
-            content_archive, "%s-contents" % distro.name,
-            "%s-misc" % distro.name)
-        self.writeMarkerFile(os.path.join(marker_dir, "Contents.top"))
-        self.makeScript(distro, run_setup=True)
-        self.assertFalse(file_exists(marker_dir))
 
     def test_setUp_places_content_archive_in_distroroot(self):
         # The contents files are kept in subdirectories of distroroot.
@@ -375,7 +316,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
         self.assertNotEqual([], script.getPockets())
         fake_overrides(script, distroseries)
-        script.main()
+        script.process()
         self.assertTrue(file_exists(os.path.join(
             script.config.distsroot, suite,
             "Contents-%s.gz" % das.architecturetag)))
@@ -383,6 +324,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
     def test_run_script(self):
         # The script will run stand-alone.
         from canonical.launchpad.scripts.tests import run_script
+        self.layer.force_dirty_database()
         retval, out, err = run_script(
             'cronscripts/generate-contents-files.py', ['-d', 'ubuntu', '-q'])
         self.assertEqual(0, retval)

@@ -1611,7 +1611,17 @@ BEGIN
         personal_standing_reason, mail_resumption_date,
         mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates,
         visibility, verbose_bugnotifications, account)
-        SELECT NEW.*;
+    VALUES (
+        NEW.id, NEW.displayname, NEW.teamowner, NULL,
+        NEW.name, NEW.language, NEW.fti, NEW.defaultmembershipperiod,
+        NEW.defaultrenewalperiod, NEW.subscriptionpolicy,
+        NEW.merged, NEW.datecreated, NULL, NEW.icon,
+        NEW.mugshot, NEW.hide_email_addresses, NEW.creation_rationale,
+        NEW.creation_comment, NEW.registrant, NEW.logo, NEW.renewal_policy,
+        NEW.personal_standing, NEW.personal_standing_reason,
+        NEW.mail_resumption_date, NEW.mailing_list_auto_subscribe_policy,
+        NEW.mailing_list_receive_duplicates, NEW.visibility,
+        NEW.verbose_bugnotifications, NEW.account);
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1689,7 +1699,7 @@ BEGIN
     SET id = NEW.id,
         displayname = NEW.displayname,
         teamowner = NEW.teamowner,
-        teamdescription = NEW.teamdescription,
+        teamdescription = NULL,
         name = NEW.name,
         language = NEW.language,
         fti = NEW.fti,
@@ -1698,7 +1708,7 @@ BEGIN
         subscriptionpolicy = NEW.subscriptionpolicy,
         merged = NEW.merged,
         datecreated = NEW.datecreated,
-        homepage_content = NEW.homepage_content,
+        homepage_content = NULL,
         icon = NEW.icon,
         mugshot = NEW.mugshot,
         hide_email_addresses = NEW.hide_email_addresses,
@@ -1854,11 +1864,11 @@ LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
         AFFECTED_USER = 4
         SUBSCRIBER = 2
 
-
     def get_max_heat_for_bug(bug_id):
         results = plpy.execute("""
             SELECT MAX(
-                GREATEST(Product.max_bug_heat, Distribution.max_bug_heat))
+                GREATEST(Product.max_bug_heat,
+                         DistributionSourcePackage.max_bug_heat))
                     AS max_heat
             FROM BugTask
             LEFT OUTER JOIN ProductSeries ON
@@ -1871,6 +1881,9 @@ LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
             LEFT OUTER JOIN Distribution ON (
                 BugTask.distribution = Distribution.id
                 OR DistroSeries.distribution = Distribution.id)
+            LEFT OUTER JOIN DistributionSourcePackage ON (
+                BugTask.sourcepackagename =
+                    DistributionSourcePackage.sourcepackagename)
             WHERE
                 BugTask.bug = %s""" % bug_id)
 

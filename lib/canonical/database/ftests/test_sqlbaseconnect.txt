@@ -2,11 +2,10 @@ Ensure that canonical.database.sqlbase connects as we expect.
 
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import (
-    ...     connect, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_DEFAULT,
-    ...     ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_SERIALIZABLE)
+    ...     connect, ISOLATION_LEVEL_DEFAULT, ISOLATION_LEVEL_SERIALIZABLE)
 
     >>> def do_connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
-    ...     con = connect(user, dbname, isolation)
+    ...     con = connect(user=user, dbname=dbname, isolation=isolation)
     ...     cur = con.cursor()
     ...     cur.execute('SHOW session_authorization')
     ...     who = cur.fetchone()[0]
@@ -24,7 +23,8 @@ Specifying the user connects as that user.
 Specifying the database name connects to that database.
 
     >>> do_connect(user=config.launchpad.dbuser, dbname='launchpad_empty')
-    Connected as launchpad_main to launchpad_empty in read committed isolation.
+    Connected as launchpad_main to launchpad_empty in read committed
+    isolation.
 
 Specifying the isolation level works too.
 
@@ -32,4 +32,3 @@ Specifying the isolation level works too.
     ...     user=config.launchpad.dbuser,
     ...     isolation=ISOLATION_LEVEL_SERIALIZABLE)
     Connected as launchpad_main to ... in serializable isolation.
-

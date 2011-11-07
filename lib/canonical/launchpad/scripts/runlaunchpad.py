@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0603
@@ -14,6 +14,8 @@ import subprocess
 import sys
 
 import fixtures
+from lazr.config import as_host_port
+from rabbitfixture.server import RabbitServerResources
 from zope.app.server.main import main
 
 from canonical.config import config
@@ -22,9 +24,11 @@ from canonical.lazr.pidfile import (
     make_pidfile,
     pidfile_path,
     )
+from lp.services.googlesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
-from lp.services.googlesearch import googletestservice
+from lp.services.rabbit.server import RabbitServer
+from lp.services.txlongpoll.server import TxLongPollServer
 
 
 def make_abspath(path):
@@ -221,6 +225,43 @@ class ForkingSessionService(Service):
         process.stdin.close()
 
 
+class RabbitService(Service):
+    """A RabbitMQ service."""
+
+    @property
+    def should_launch(self):
+        return config.rabbitmq.launch
+
+    def launch(self):
+        hostname, port = as_host_port(config.rabbitmq.host, None, None)
+        self.server = RabbitServer(
+            RabbitServerResources(hostname=hostname, port=port))
+        self.useFixture(self.server)
+
+
+class TxLongPollService(Service):
+    """A TxLongPoll service."""
+
+    @property
+    def should_launch(self):
+        return config.txlongpoll.launch
+
+    def launch(self):
+        twistd_bin = os.path.join(
+            config.root, 'bin', 'twistd-for-txlongpoll')
+        broker_hostname, broker_port = as_host_port(
+            config.rabbitmq.host, None, None)
+        self.server = TxLongPollServer(
+            twistd_bin=twistd_bin,
+            frontend_port=config.txlongpoll.frontend_port,
+            broker_user=config.rabbitmq.userid,
+            broker_password=config.rabbitmq.password,
+            broker_vhost=config.rabbitmq.virtual_host,
+            broker_host=broker_hostname,
+            broker_port=broker_port)
+        self.useFixture(self.server)
+
+
 def stop_process(process):
     """kill process and BLOCK until process dies.
 
@@ -245,6 +286,8 @@ SERVICES = {
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),
     'memcached': MemcachedService(),
+    'rabbitmq': RabbitService(),
+    'txlongpoll': TxLongPollService(),
     }
 
 
@@ -287,8 +330,8 @@ def process_config_arguments(args):
     """
     if '-i' in args:
         index = args.index('-i')
-        config.setInstance(args[index+1])
-        del args[index:index+2]
+        config.setInstance(args[index + 1])
+        del args[index:index + 2]
 
     if '-C' not in args:
         zope_config_file = config.zope_config_file
@@ -300,7 +343,82 @@ def process_config_arguments(args):
     return args
 
 
-def start_launchpad(argv=list(sys.argv)):
+def start_testapp(argv=list(sys.argv)):
+    from canonical.config.fixture import ConfigUseFixture
+    from canonical.testing.layers import (
+        BaseLayer,
+        DatabaseLayer,
+        LayerProcessController,
+        LibrarianLayer,
+        RabbitMQLayer,
+        )
+    from lp.testing.pgsql import (
+        installFakeConnect,
+        uninstallFakeConnect,
+        )
+    assert config.instance_name.startswith('testrunner-appserver'), (
+        '%r does not start with "testrunner-appserver"' %
+        config.instance_name)
+    interactive_tests = 'INTERACTIVE_TESTS' in os.environ
+    teardowns = []
+
+    def setup():
+        # This code needs to be run after other zcml setup happens in
+        # runlaunchpad, so it is passed in as a callable.  We set up layers
+        # here because we need to control fixtures within this process, and
+        # because we want interactive tests to be as similar as possible to
+        # tests run in the testrunner.
+        # Note that this changes the config instance-name, with the result that
+        # the configuration of utilities may become invalidated.
+        # XXX: Robert Collins - see bug 883980 about this. In short, we should
+        # inherit the other services from the test runner, rather than
+        # duplicating the work of test setup within the slave appserver. That
+        # will permit reuse of the librarian, DB, rabbit etc and
+        # correspondingly easier assertions and inspection of interactions with
+        # other services. That would mean we do not need to setup rabbit or the
+        # librarian here : the test runner would control and take care of that.
+        BaseLayer.setUp()
+        teardowns.append(BaseLayer.tearDown)
+        RabbitMQLayer.setUp()
+        teardowns.append(RabbitMQLayer.tearDown)
+        # We set up the database here even for the test suite because we want
+        # to be able to control the database here in the subprocess.  It is
+        # possible to do that when setting the database up in the parent
+        # process, but it is messier.  This is simple.
+        installFakeConnect()
+        teardowns.append(uninstallFakeConnect)
+        DatabaseLayer.setUp()
+        teardowns.append(DatabaseLayer.tearDown)
+        # The Librarian needs access to the database, so setting it up here
+        # where we are setting up the database makes the most sense.
+        LibrarianLayer.setUp()
+        teardowns.append(LibrarianLayer.tearDown)
+        # Switch to the appserver config.
+        fixture = ConfigUseFixture(BaseLayer.appserver_config_name)
+        fixture.setUp()
+        teardowns.append(fixture.cleanUp)
+        # Interactive tests always need this.  We let functional tests use
+        # a local one too because of simplicity.
+        LayerProcessController.startSMTPServer()
+        teardowns.append(LayerProcessController.stopSMTPServer)
+        if interactive_tests:
+            root_url = config.appserver_root_url()
+            print '*' * 70
+            print 'In a few seconds, go to ' + root_url + '/+yuitest'
+            print '*' * 70
+    try:
+        start_launchpad(argv, setup)
+    finally:
+        teardowns.reverse()
+        for teardown in teardowns:
+            try:
+                teardown()
+            except NotImplementedError:
+                # We are in a separate process anyway.  Bah.
+                pass
+
+
+def start_launchpad(argv=list(sys.argv), setup=None):
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
@@ -308,21 +426,22 @@ def start_launchpad(argv=list(sys.argv)):
     services = get_services_to_run(services)
     # Create the ZCML override file based on the instance.
     config.generate_overrides()
-
     # Many things rely on a directory called 'logs' existing in the current
     # working directory.
     ensure_directory_exists('logs')
+    if setup is not None:
+        # This is the setup from start_testapp, above.
+        setup()
     with nested(*services):
         # Store our process id somewhere
         make_pidfile('launchpad')
-
         if config.launchpad.launch:
             main(argv)
         else:
-            # We just need the foreground process to sit around forever waiting
-            # for the signal to shut everything down.  Normally, Zope itself would
-            # be this master process, but we're not starting that up, so we need
-            # to do something else.
+            # We just need the foreground process to sit around forever
+            # waiting for the signal to shut everything down.  Normally,
+            # Zope itself would be this master process, but we're not
+            # starting that up, so we need to do something else.
             try:
                 signal.pause()
             except KeyboardInterrupt:

@@ -56,12 +56,8 @@ class TranslationsMixin:
             rootsite='answers')
 
 
-class RosettaApplicationView(TranslationsMixin):
+class RosettaApplicationView(LaunchpadView, TranslationsMixin):
     """View for various top-level Translations pages."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
     @property
     def ubuntu_translationseries(self):

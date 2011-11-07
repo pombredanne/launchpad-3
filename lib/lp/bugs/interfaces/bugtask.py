@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -17,25 +17,27 @@ __all__ = [
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
+    'CannotDeleteBugtask',
+    'DB_INCOMPLETE_BUGTASK_STATUSES',
+    'DB_UNRESOLVED_BUGTASK_STATUSES',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
+    'get_bugtask_status',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
+    'IBugTaskDelete',
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
     'ICreateQuestionFromBugTaskForm',
-    'IDistroBugTask',
-    'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
-    'INominationsReviewTableBatchNavigator',
-    'IPersonBugTaskSearch',
-    'IProductSeriesBugTask',
-    'IRemoveQuestionFromBugTaskForm',
-    'IUpstreamBugTask',
-    'IUpstreamProductBugTaskSearch',
     'IllegalRelatedBugTasksParams',
     'IllegalTarget',
+    'INominationsReviewTableBatchNavigator',
+    'IPersonBugTaskSearch',
+    'IRemoveQuestionFromBugTaskForm',
+    'IUpstreamProductBugTaskSearch',
+    'normalize_bugtask_status',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskAssignee',
@@ -58,6 +60,7 @@ from lazr.restful.declarations import (
     call_with,
     error_status,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_read_operation,
     export_write_operation,
     exported,
@@ -200,6 +203,11 @@ class BugTaskStatus(DBEnumeratedType):
         this product or source package.
         """)
 
+    # INCOMPLETE is never actually stored now: INCOMPLETE_WITH_RESPONSE and
+    # INCOMPLETE_WITHOUT_RESPONSE are mapped to INCOMPLETE on read, and on
+    # write INCOMPLETE is mapped to INCOMPLETE_WITHOUT_RESPONSE. This permits
+    # An index on the INCOMPLETE_WITH*_RESPONSE queries that the webapp
+    # generates.
     INCOMPLETE = DBItem(15, """
         Incomplete
 
@@ -273,10 +281,6 @@ class BugTaskStatus(DBEnumeratedType):
         affected software.
         """)
 
-    # DBItem values 35 and 40 are used by
-    # BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE and
-    # BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
-
     UNKNOWN = DBItem(999, """
         Unknown
 
@@ -291,24 +295,46 @@ class BugTaskStatusSearch(DBEnumeratedType):
     """
     use_template(BugTaskStatus, exclude=('UNKNOWN'))
 
-    sort_order = (
-        'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'OPINION', 'INVALID', 'WONTFIX', 'EXPIRED',
-        'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
-
-    INCOMPLETE_WITH_RESPONSE = DBItem(35, """
+    INCOMPLETE_WITH_RESPONSE = DBItem(13, """
         Incomplete (with response)
 
         This bug has new information since it was last marked
         as requiring a response.
         """)
 
-    INCOMPLETE_WITHOUT_RESPONSE = DBItem(40, """
+    INCOMPLETE_WITHOUT_RESPONSE = DBItem(14, """
         Incomplete (without response)
 
         This bug requires more information, but no additional
         details were supplied yet..
         """)
+
+
+def get_bugtask_status(status_id):
+    """Get a member of `BugTaskStatus` or `BugTaskStatusSearch` by value.
+
+    `BugTaskStatus` and `BugTaskStatusSearch` intersect, but neither is a
+    subset of the other, so this searches first in `BugTaskStatus` then in
+    `BugTaskStatusSearch` for a member with the given ID.
+    """
+    try:
+        return BugTaskStatus.items[status_id]
+    except KeyError:
+        return BugTaskStatusSearch.items[status_id]
+
+
+def normalize_bugtask_status(status):
+    """Normalize `status`.
+
+    It might be a member of any of three related enums: `BugTaskStatus`,
+    `BugTaskStatusSearch`, or `BugTaskStatusSearchDisplay`. This tries to
+    normalize by value back to the first of those three enums in which the
+    status appears.
+    """
+    try:
+        return BugTaskStatus.items[status.value]
+    except KeyError:
+        return BugTaskStatusSearch.items[status.value]
 
 
 class BugTagsSearchCombinator(EnumeratedType):
@@ -375,6 +401,17 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
 
+# Actual values stored in the DB:
+DB_INCOMPLETE_BUGTASK_STATUSES = (
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+    )
+
+DB_UNRESOLVED_BUGTASK_STATUSES = (
+    UNRESOLVED_BUGTASK_STATUSES +
+    DB_INCOMPLETE_BUGTASK_STATUSES
+    )
+
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
     BugTaskStatus.OPINION,
@@ -399,6 +436,15 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
 DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
     BugTaskStatusSearchDisplay.items.mapping[item.value]
     for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
+
+
+@error_status(httplib.BAD_REQUEST)
+class CannotDeleteBugtask(Exception):
+    """The bugtask cannot be deleted.
+
+    Raised when a user tries to delete a bugtask but the deletion cannot
+    proceed because of a model constraint or other business rule violation.
+    """
 
 
 @error_status(httplib.UNAUTHORIZED)
@@ -448,7 +494,23 @@ class IllegalRelatedBugTasksParams(Exception):
     in a search for related bug tasks"""
 
 
-class IBugTask(IHasDateCreated, IHasBug):
+class IBugTaskDelete(Interface):
+    """An interface for operations allowed with the Delete permission."""
+    @export_destructor_operation()
+    @call_with(who=REQUEST_USER)
+    @operation_for_version('devel')
+    def delete(who):
+        """Delete this bugtask.
+
+        :param who: the user who is removing the bugtask.
+        :raises: CannotDeleteBugtask if the bugtask cannot be deleted due to a
+            business rule or other model constraint.
+        :raises: Unauthorized if the user does not have permission
+            to delete the bugtask.
+        """
+
+
+class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -485,14 +547,16 @@ class IBugTask(IHasDateCreated, IHasBug):
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
+    # Note that status is a property because the model only exposes INCOMPLETE
+    # but the DB stores INCOMPLETE_WITH_RESPONSE and
+    # INCOMPLETE_WITHOUT_RESPONSE for query efficiency.
     status = exported(
         Choice(title=_('Status'), vocabulary=BugTaskStatus,
                default=BugTaskStatus.NEW, readonly=True))
+    _status = Attribute('The actual status DB column used in queries.')
     importance = exported(
         Choice(title=_('Importance'), vocabulary=BugTaskImportance,
                default=BugTaskImportance.UNDECIDED, readonly=True))
-    statusexplanation = Text(
-        title=_("Status notes (optional)"), required=False)
     assignee = exported(
         PersonChoice(
             title=_('Assigned to'), required=False,
@@ -798,6 +862,12 @@ class IBugTask(IHasDateCreated, IHasBug):
         value is set to None, date_assigned is also set to None.
         """
 
+    def validateTransitionToTarget(target):
+        """Check whether a transition to this target is legal.
+
+        :raises IllegalTarget: if the new target is not allowed.
+        """
+
     @mutator_for(target)
     @operation_parameters(
         target=copy_field(target))
@@ -830,9 +900,6 @@ class IBugTask(IHasDateCreated, IHasBug):
 
     def getDelta(old_task):
         """Compute the delta from old_task to this task.
-
-        old_task and this task are either both IDistroBugTask's or both
-        IUpstreamBugTask's, otherwise a TypeError is raised.
 
         Returns an IBugTaskDelta or None if there were no changes between
         old_task and this task.
@@ -921,8 +988,6 @@ class IBugTaskSearchBase(Interface):
     omit_targeted = Bool(
         title=_('Omit bugs targeted to a series'), required=False,
         default=True)
-    statusexplanation = TextLine(
-        title=_("Status notes"), required=False)
     has_patch = Bool(
         title=_('Show only bugs with patches available.'), required=False,
         default=False)
@@ -1031,7 +1096,7 @@ class IUpstreamProductBugTaskSearch(IBugTaskSearch):
         required=False)
 
 
-class IFrontPageBugTaskSearch(IBugTaskSearchBase):
+class IFrontPageBugTaskSearch(IBugTaskSearch):
     """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,
@@ -1072,44 +1137,8 @@ class IBugTaskDelta(Interface):
         The value is a dict like {'old' : IPerson, 'new' : IPerson}, or None,
         if no change was made to the assignee.
         """)
-    statusexplanation = Attribute("The new value of the status notes.")
     bugwatch = Attribute("The bugwatch which governs this task.")
     milestone = Attribute("The milestone for which this task is scheduled.")
-
-
-class IUpstreamBugTask(IBugTask):
-    """A bug needing fixing in a product."""
-    # XXX Brad Bollenbach 2006-08-03 bugs=55089:
-    # This interface should be renamed.
-    product = Choice(title=_('Project'), required=True, vocabulary='Product')
-
-
-class IDistroBugTask(IBugTask):
-    """A bug needing fixing in a distribution, possibly a specific package."""
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False,
-        description=_("The source package in which the bug occurs. "
-        "Leave blank if you are not sure."),
-        vocabulary='SourcePackageName')
-    distribution = Choice(
-        title=_("Distribution"), required=True, vocabulary='Distribution')
-
-
-class IDistroSeriesBugTask(IBugTask):
-    """A bug needing fixing in a distrorelease, or a specific package."""
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=True,
-        vocabulary='SourcePackageName')
-    distroseries = Choice(
-        title=_("Series"), required=True,
-        vocabulary='DistroSeries')
-
-
-class IProductSeriesBugTask(IBugTask):
-    """A bug needing fixing a productseries."""
-    productseries = Choice(
-        title=_("Series"), required=True,
-        vocabulary='ProductSeries')
 
 
 class BugTaskSearchParams:
@@ -1544,10 +1573,8 @@ class IBugTaskSet(Interface):
         :return: A list of tuples containing (status_id, count).
         """
 
-    def createTask(bug, product=None, productseries=None, distribution=None,
-                   distroseries=None, sourcepackagename=None, status=None,
-                   importance=None, assignee=None, owner=None,
-                   milestone=None):
+    def createTask(bug, owner, target, status=None, importance=None,
+                   assignee=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug supervisors will be automatically
@@ -1555,8 +1582,6 @@ class IBugTaskSet(Interface):
 
         If the bug has any accepted series nominations for a supplied
         distribution, series tasks will be created for them.
-
-        Exactly one of product, distribution or distroseries must be provided.
         """
 
     def findExpirableBugTasks(min_days_old, user, bug=None, target=None,
@@ -1637,7 +1662,7 @@ class IBugTaskSet(Interface):
         The assignee and the assignee's validity are precached.
         """
 
-    def getBugTaskTargetMilestones(self, bugtasks, eager=False):
+    def getBugTaskTargetMilestones(bugtasks):
         """Get all the milestones for the selected bugtasks' targets."""
 
     open_bugtask_search = Attribute("A search returning open bugTasks.")

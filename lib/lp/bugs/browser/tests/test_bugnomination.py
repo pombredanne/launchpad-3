@@ -1,19 +1,24 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bug nomination views."""
 
 __metaclass__ = type
 
+import re
+
+import soupmatchers
+from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
     BrowserNotificationLevel,
     ILaunchBag,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -43,6 +48,14 @@ class TestBugNominationView(TestCaseWithFactory):
         launchbag.add(self.distribution)
         launchbag.add(self.bug_task)
 
+    def _makeBugSupervisorTeam(self, person, owner, target):
+        """Create a bug supervisor team which includes the person argument."""
+        members = [self.factory.makePerson() for i in range(2)]
+        members.append(person)
+        bug_supervisor = self.factory.makeTeam(members=members, owner=owner)
+        with person_logged_in(owner):
+            target.setBugSupervisor(bug_supervisor, owner)
+
     def test_submit_action_bug_supervisor(self):
         # A bug supervisor sees the Nominate action label.
         login_person(self.bug_worker)
@@ -71,6 +84,119 @@ class TestBugNominationView(TestCaseWithFactory):
         self.assertEqual(
             "You do not have permission to nominate this bug.",
             notifications[0].message)
+
+    def test_bug_supervisor_nominate_distribution_does_not_error(self):
+        # A bug supervisor should not receive error notifications
+        # from the BugNominationView for a distro series.
+        person = self.factory.makePerson(
+            name='main-person-test', password='test')
+        distro = self.factory.makeDistribution()
+        owner = distro.owner
+        self._makeBugSupervisorTeam(person, owner, distro)
+        current_series = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        # Ensure we have some older series so test data better reflects
+        # actual usage.
+        for index in range(3):
+            self.factory.makeDistroSeries(distribution=distro)
+        bug = self.factory.makeBug(distribution=distro, series=current_series)
+        series_bugtask = bug.bugtasks[1]
+        login_person(person)
+        view = create_initialized_view(series_bugtask, name='+nominate')
+        self.assertEqual(0, len(view.request.notifications))
+
+    def test_bug_supervisor_nominate_source_package_does_not_error(self):
+        # A bug supervisor should not receive error notifications
+        # from the BugNominationView for a source package distro series.
+        person = self.factory.makePerson(
+            name='main-person-test', password='test')
+        distro = self.factory.makeDistribution()
+        owner = distro.owner
+        self._makeBugSupervisorTeam(person, owner, distro)
+        current_series = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        # Ensure we have some older series so test data better reflects
+        # actual usage.
+        for index in range(3):
+            self.factory.makeDistroSeries(distribution=distro)
+        package = self.factory.makeDistributionSourcePackage(
+            distribution=distro)
+        bug = self.factory.makeBug(
+            distribution=distro, series=current_series,
+            sourcepackagename=package.name)
+        series_bugtask = bug.bugtasks[1]
+        login_person(person)
+        view = create_initialized_view(series_bugtask, name='+nominate')
+        self.assertEqual(0, len(view.request.notifications))
+
+    def test_bug_supervisor_nominate_product_does_not_error(self):
+        # A bug supervisor should not receive error notifications
+        # from the BugNominationView for a product series.
+        person = self.factory.makePerson(
+            name='main-person-test-product', password='test')
+        product = self.factory.makeProduct()
+        owner = product.owner
+        self._makeBugSupervisorTeam(person, owner, product)
+        current_series = self.factory.makeProductSeries(product=product)
+        # Ensure we have some older series so test data better reflects
+        # actual usage.
+        for index in range(3):
+            self.factory.makeProductSeries(product=product)
+        bug = self.factory.makeBug(product=product, series=current_series)
+        series_bugtask = bug.bugtasks[1]
+        login_person(person)
+        view = create_initialized_view(series_bugtask, name='+nominate')
+        self.assertEqual(0, len(view.request.notifications))
+
+
+class TestBugEditLinks(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    edit_link_matcher = soupmatchers.HTMLContains(
+        soupmatchers.Tag(
+            'Edit link', 'a',
+            attrs={'class': 'assignee-edit',
+                   'href': re.compile('\+editstatus$')}))
+
+    def _createBug(self, bug_task_number=1):
+        series = self.factory.makeProductSeries()
+        bug = self.factory.makeBug(series=series)
+        for i in range(bug_task_number):
+            self.factory.makeBugTask(bug=bug)
+        launchbag = getUtility(ILaunchBag)
+        launchbag.add(series.product)
+        launchbag.add(bug)
+        launchbag.add(bug.default_bugtask)
+        return bug
+
+    def test_assignee_edit_link_with_many_bugtasks(self):
+        # When the number of bug tasks is >= 10, a link should be
+        # displayed to edit the assignee.
+        bug = self._createBug(11)
+        with person_logged_in(bug.owner):
+            page = create_initialized_view(
+                bug, name='+bugtasks-and-nominations-table',
+                principal=bug.owner).render()
+        self.assertThat(page, self.edit_link_matcher)
+
+    def test_assignee_edit_link_with_only_a_few_bugtasks(self):
+        # When the number of bug tasks is < 10, editing the assignee is
+        # done with a js picker.
+        bug = self._createBug(3)
+        with person_logged_in(bug.owner):
+            page = create_initialized_view(
+                bug, name='+bugtasks-and-nominations-table',
+                principal=bug.owner).render()
+        self.assertThat(page, Not(self.edit_link_matcher))
+
+    def test_assignee_edit_link_no_user_no_link(self):
+        # No link is displayed when the request is from an anonymous
+        # user.
+        bug = self._createBug(11)
+        page = create_initialized_view(
+            bug, name='+bugtasks-and-nominations-table').render()
+        self.assertThat(page, Not(self.edit_link_matcher))
 
 
 class TestBugNominationEditView(TestCaseWithFactory):

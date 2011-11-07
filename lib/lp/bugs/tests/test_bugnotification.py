@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 from itertools import chain
+from datetime import datetime
+import pytz
 import transaction
 import unittest
 
@@ -29,14 +31,16 @@ from canonical.testing import (
 from lp.answers.tests.test_question_notifications import pop_questionemailjobs
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
-    IUpstreamBugTask,
+    IBugTask,
     )
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationFilter,
     BugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.testing import (
     TestCaseWithFactory,
     person_logged_in,
@@ -134,8 +138,7 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         # Ensure that notifications are sent to subscribers of a
         # question linked to the expired bug.
         bugtask = self.bug.default_bugtask
-        bugtask_before_modification = Snapshot(
-            bugtask, providing=IUpstreamBugTask)
+        bugtask_before_modification = Snapshot(bugtask, providing=IBugTask)
         bugtask.transitionToStatus(BugTaskStatus.EXPIRED, self.product.owner)
         bug_modified = ObjectModifiedEvent(
             bugtask, bugtask_before_modification, ["status"])
@@ -642,3 +645,47 @@ class TestBug778847(TestCaseWithFactory):
             {team.teamowner: [notification.recipients[0]],
              team: [notification.recipients[1]]},
             [notification]))
+
+
+class TestGetDeferredNotifications(TestCaseWithFactory):
+    """Test the getDeferredNotifications method."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetDeferredNotifications, self).setUp()
+        self.bns = BugNotificationSet()
+
+    def test_no_deferred_notifications(self):
+        results = self.bns.getDeferredNotifications()
+        self.assertEqual(0, results.count())
+
+    def _make_deferred_notification(self):
+        bug = self.factory.makeBug()
+        empty_recipients = BugNotificationRecipients()
+        message = getUtility(IMessageSet).fromText(
+            'subject', 'a comment.', bug.owner,
+            datecreated=datetime.now(pytz.UTC))
+        self.bns.addNotification(
+            bug, False, message, empty_recipients, None, deferred=True)
+
+    def test_one_deferred_notification(self):
+        self._make_deferred_notification()
+        results = self.bns.getDeferredNotifications()
+        self.assertEqual(1, results.count())
+
+    def test_many_deferred_notification(self):
+        num = 5
+        for i in xrange(num):
+            self._make_deferred_notification()
+        results = self.bns.getDeferredNotifications()
+        self.assertEqual(num, results.count())
+
+    def test_destroy_notifications(self):
+        self._make_deferred_notification()
+        results = self.bns.getDeferredNotifications()
+        self.assertEqual(1, results.count())
+        notification = results[0]
+        notification.destroySelf()
+        results = self.bns.getDeferredNotifications()
+        self.assertEqual(0, results.count())

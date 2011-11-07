@@ -14,7 +14,6 @@ __all__ = [
     'login_person',
     'login_team',
     'logout',
-    'is_logged_in',
     'person_logged_in',
     'run_with_login',
     'with_anonymous_login',
@@ -25,15 +24,17 @@ __all__ = [
 from contextlib import contextmanager
 
 from zope.component import getUtility
-from zope.security.management import endInteraction
+from zope.security.management import (
+    endInteraction,
+    queryInteraction,
+    thread_local as zope_security_thread_local,
+    )
 
 from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,
-    get_current_principal,
     setupInteractionByEmail,
     setupInteractionForPerson,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -41,20 +42,9 @@ from lp.services.utils import decorate_with
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
-_logged_in = False
-
-
-def is_logged_in():
-    global _logged_in
-    return _logged_in
-
-
 def _test_login_impl(participation):
     # Common implementation of the test login wrappers.
-    # It sets the global _logged_in flag and create a default
-    # participation if None was specified.
-    global _logged_in
-    _logged_in = True
+    # It creates a default participation if None was specified.
 
     if participation is None:
         # we use the main site as the host name.  This is a guess, to make
@@ -142,23 +132,24 @@ def logout():
     canonical.launchpad.ftest.LaunchpadFunctionalTestCase's tearDown method so
     you generally won't need to call this.
     """
-    global _logged_in
-    _logged_in = False
     endInteraction()
 
 
 def _with_login(login_method, identifier):
     """Make a context manager that runs with a particular log in."""
-    current_person = getUtility(ILaunchBag).user
-    current_principal = get_current_principal()
+    interaction = queryInteraction()
     login_method(identifier)
     try:
         yield
     finally:
-        if current_principal is None:
+        if interaction is None:
             logout()
         else:
-            login_person(current_person)
+            # This reaches under the covers of the zope.security.management
+            # module's interface in order to provide true nestable
+            # interactions.  This means that real requests can be maintained
+            # across these calls, such as is desired for yuixhr fixtures.
+            zope_security_thread_local.interaction = interaction
 
 
 @contextmanager

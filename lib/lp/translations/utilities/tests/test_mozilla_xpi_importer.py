@@ -45,7 +45,3 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
             self.importer.uses_source_string_msgids,
             "MozillaXpiImporter format says it's not using alternative msgid"
             " when it really does!")
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

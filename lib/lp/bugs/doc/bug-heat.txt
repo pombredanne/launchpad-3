@@ -65,6 +65,14 @@ heat after update will be 6.
 Events which trigger bug heat updates
 -------------------------------------
 
+We current use a feature flag for some privacy related subscription stuff.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
 There are several events which will cause a bug's heat to be updated.
 First, as stated above, heat will be calculated when the bug is created.
 
@@ -80,52 +88,52 @@ Marking a bug as private also gives it an extra 150 heat points.
 
     >>> changed = bug.setPrivate(True, bug_owner)
     >>> bug.heat
-    156
+    158
 
 Setting the bug as security related adds another 250 heat points.
 
-    >>> changed = bug.setSecurityRelated(True)
+    >>> changed = bug.setSecurityRelated(True, bug_owner)
     >>> bug.heat
-    406
+    408
 
 Marking the bug public removes 150 heat points.
 
     >>> changed = bug.setPrivate(False, bug_owner)
     >>> bug.heat
-    256
+    258
 
 And marking it not security-related removes 250 points.
 
-    >>> changed = bug.setSecurityRelated(False)
+    >>> changed = bug.setSecurityRelated(False, bug_owner)
     >>> bug.heat
-    6
+    8
 
 Adding a subscriber to the bug increases its heat by 2 points.
 
     >>> new_subscriber = factory.makePerson()
     >>> subscription = bug.subscribe(new_subscriber, new_subscriber)
     >>> bug.heat
-    8
+    10
 
 When a user unsubscribes, the bug loses 2 points of heat.
 
     >>> bug.unsubscribe(new_subscriber, new_subscriber)
     >>> bug.heat
-    6
+    8
 
 Should a user mark themselves as affected by the bug, it will gain 4
 points of heat.
 
     >>> bug.markUserAffected(new_subscriber)
     >>> bug.heat
-    10
+    12
 
 If a user who was previously affected marks themself as not affected,
 the bug loses 4 points of heat.
 
     >>> bug.markUserAffected(new_subscriber, False)
     >>> bug.heat
-    6
+    8
 
 If a user who wasn't affected by the bug marks themselve as explicitly
 unaffected, the bug's heat doesn't change.
@@ -133,7 +141,7 @@ unaffected, the bug's heat doesn't change.
     >>> unaffected_person = factory.makePerson()
     >>> bug.markUserAffected(unaffected_person, False)
     >>> bug.heat
-    6
+    8
 
 Marking the bug as a duplicate will set its heat to zero, whilst also
 adding 10 points of heat to the bug it duplicates, 6 points for the
@@ -149,14 +157,14 @@ inherits.
     0
 
     >>> duplicated_bug.heat
-    14
+    16
 
 Unmarking the bug as a duplicate restores its heat and updates the
 duplicated bug's heat.
 
     >>> bug.markAsDuplicate(None)
     >>> bug.heat
-    6
+    8
 
     >>> duplicated_bug.heat
     6
@@ -185,7 +193,11 @@ We'll set the bug's heat to 0 first to demonstrate this.
     ...     old_value=bug.description, new_value='Some text')
     >>> bug.addChange(change)
     >>> bug.heat
-    6
+    8
+
+Clean up the feature flag.
+
+    >>> flags.cleanUp()
 
 
 Getting bugs whose heat is outdated
@@ -271,7 +283,17 @@ There are two bugs with heat more than a day old:
 Calling our BugHeatUpdater will update the heat of those bugs.
 
     >>> update_bug_heat(chunk_size=1)
-    DEBUG Updating heat for 2 bugs
+    DEBUG Updating heat for 1 bugs
+
+IBugSet.getBugsWithOutdatedHeat() will now return 1 item.
+
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    1
+
+Update the rest in one big chunk.
+
+    >>> update_bug_heat(chunk_size=1000)
+    DEBUG Updating heat for 1 bugs
 
 IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all
 the bugs have been updated.
@@ -283,8 +305,8 @@ the bugs have been updated.
 Caculating the maximum heat for a target
 ----------------------------------------
 
-When we update the heat value for a bug, the maximum heat value for the targets
-for all of its tasks is calculated and cached.
+When we update the heat value for a bug, the maximum heat value for the
+targets for all of its tasks is calculated and cached.
 
     >>> product = factory.makeProduct()
     >>> bug = factory.makeBug(product=product)

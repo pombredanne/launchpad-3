@@ -1,11 +1,7 @@
-#! /usr/bin/python
-#
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the sendbranchmail script"""
-
-import unittest
 
 import transaction
 
@@ -20,6 +16,7 @@ from lp.code.model.branchjob import (
     RevisionMailJob,
     RevisionsAddedJob,
     )
+from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 
 
@@ -40,23 +37,23 @@ class TestSendbranchmail(TestCaseWithFactory):
         tree.add('foo')
         # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
         # required to generate the revision-id.
-        tree.commit('Added foo.', rev_id='rev1', committer='me@example.com')
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('Added foo.', rev_id='rev1')
         return branch, tree
 
     def test_sendbranchmail(self):
         """Ensure sendbranchmail runs and sends email."""
         self.useBzrBranches()
         branch, tree = self.createBranch()
-        RevisionMailJob.create(
-            branch, 1, 'from@example.org', 'body', True, 'foo')
+        mail_job = RevisionMailJob.create(
+            branch, 1, 'from@example.org', 'body', 'foo')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
         self.assertEqual(
-            'INFO    Creating lockfile: '
-                '/var/lock/launchpad-sendbranchmail.lock\n'
-            'INFO    Running through Twisted.\n'
-            'INFO    Ran 1 RevisionMailJobs.\n', stderr)
+            'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
+            'INFO    Running RevisionMailJob (ID %d) in status Waiting\n'
+            'INFO    Ran 1 RevisionMailJobs.\n' % mail_job.job.id, stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
 
@@ -64,14 +61,13 @@ class TestSendbranchmail(TestCaseWithFactory):
         """Ensure sendbranchmail runs and sends email."""
         self.useTempBzrHome()
         branch = self.factory.makeBranch()
-        RevisionMailJob.create(
-            branch, 1, 'from@example.org', 'body', True, 'foo')
+        RevisionsAddedJob.create(
+            branch, 'rev1', 'rev2', 'from@example.org')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
         self.assertIn(
-            'INFO    Creating lockfile: '
-                '/var/lock/launchpad-sendbranchmail.lock\n',
+            'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n',
             stderr)
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Ran 0 RevisionMailJobs.\n', stderr)
@@ -83,21 +79,19 @@ class TestSendbranchmail(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.createBranch()
         tree.bzrdir.root_transport.put_bytes('foo', 'baz')
-        tree.commit('Added foo.', rev_id='rev2', committer='me@example.com')
-        RevisionsAddedJob.create(
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('Added foo.', rev_id='rev2')
+        job = RevisionsAddedJob.create(
             branch, 'rev1', 'rev2', 'from@example.org')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
         self.assertEqual(
-            'INFO    Creating lockfile:'
-                ' /var/lock/launchpad-sendbranchmail.lock\n'
-            'INFO    Running through Twisted.\n'
-            'INFO    Ran 1 RevisionMailJobs.\n',
+            'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
+            'INFO    Running RevisionsAddedJob (ID %d) in status Waiting\n'
+            'INFO    Ran 1 RevisionMailJobs.\n' % job.job.id,
             stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

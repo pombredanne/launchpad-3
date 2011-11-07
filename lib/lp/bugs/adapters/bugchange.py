@@ -16,6 +16,7 @@ __all__ = [
     'CVE_UNLINKED',
     'MARKED_AS_DUPLICATE',
     'REMOVED_DUPLICATE_MARKER',
+    'REMOVED_SUBSCRIBER',
     'BranchLinkedToBug',
     'BranchUnlinkedFromBug',
     'BugAttachmentChange',
@@ -26,6 +27,7 @@ __all__ = [
     'BugTaskAdded',
     'BugTaskAssigneeChange',
     'BugTaskBugWatchChange',
+    'BugTaskDeleted',
     'BugTaskImportanceChange',
     'BugTaskMilestoneChange',
     'BugTaskStatusChange',
@@ -72,6 +74,7 @@ CVE_LINKED = 'cve linked'
 CVE_UNLINKED = 'cve unlinked'
 MARKED_AS_DUPLICATE = 'marked as duplicate'
 REMOVED_DUPLICATE_MARKER = 'removed duplicate marker'
+REMOVED_SUBSCRIBER = 'removed subscriber'
 
 
 class NoBugChangeFoundError(Exception):
@@ -179,19 +182,25 @@ class AttributeChange(BugChangeBase):
 class UnsubscribedFromBug(BugChangeBase):
     """A user got unsubscribed from a bug."""
 
-    def __init__(self, when, person, unsubscribed_user):
+    def __init__(self, when, person, unsubscribed_user, **kwargs):
         super(UnsubscribedFromBug, self).__init__(when, person)
         self.unsubscribed_user = unsubscribed_user
+        self.send_notification = kwargs.get('send_notification', False)
+        self.notification_text = kwargs.get('notification_text')
 
     def getBugActivity(self):
         """See `IBugChange`."""
         return dict(
-            whatchanged='removed subscriber %s' % (
+            whatchanged='%s %s' % (
+                REMOVED_SUBSCRIBER,
                 self.unsubscribed_user.displayname))
 
     def getBugNotification(self):
         """See `IBugChange`."""
-        return None
+        if self.send_notification and self.notification_text:
+            return {'text': '** %s' % self.notification_text}
+        else:
+            return None
 
 
 class BugConvertedToQuestion(BugChangeBase):
@@ -249,6 +258,27 @@ class BugTaskAdded(BugChangeBase):
             u"Status", self.bug_task.status.title))
         return {
             'text': '\n'.join(lines),
+            }
+
+
+class BugTaskDeleted(BugChangeBase):
+    """A bugtask was removed from the bug."""
+
+    def __init__(self, when, person, bugtask):
+        super(BugTaskDeleted, self).__init__(when, person)
+        self.targetname = bugtask.bugtargetname
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='bug task deleted',
+            oldvalue=self.targetname)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {
+            'text': (
+                "** No longer affects: %s" % self.targetname),
             }
 
 
@@ -622,7 +652,6 @@ class BugAttachmentChange(AttributeChange):
                 download_url_of_bugattachment(self.new_value))
         else:
             what_changed = ATTACHMENT_REMOVED
-            attachment = self.new_value
             old_value = "%s %s" % (
                 self.old_value.title,
                 download_url_of_bugattachment(self.old_value))

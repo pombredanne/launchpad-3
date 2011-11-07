@@ -7,12 +7,17 @@ __metaclass__ = type
 __all__ = []
 
 import subprocess
-import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
+import psycopg2
+
 from canonical.config import config
-from canonical.database.sqlbase import connect, sqlvalues
+from canonical.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_DEFAULT,
+    sqlvalues
+    )
 from canonical.database.postgresql import (
     fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
     )
@@ -29,6 +34,7 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 # Replication set id constants. Don't change these without DBA help.
 LPMAIN_SET_ID = 1
 HOLDING_SET_ID = 666
+SSO_SET_ID = 3
 LPMIRROR_SET_ID = 4
 
 # Seed tables for the lpmain replication set to be passed to
@@ -146,7 +152,7 @@ class TableReplicationInfo:
         self.table_id, self.replication_set_id, self.master_node_id = row
 
 
-def sync(timeout):
+def sync(timeout, exit_on_fail=True):
     """Generate a sync event and wait for it to complete on all nodes.
 
     This means that all pending events have propagated and are in sync
@@ -155,8 +161,14 @@ def sync(timeout):
 
     :param timeout: Number of seconds to wait for the sync. 0 to block
                     indefinitely.
+
+    :param exit_on_fail: If True, on failure of the sync
+                         SystemExit is raised using the slonik return code.
+
+    :returns: True if the sync completed successfully. False if
+              exit_on_fail is False and the script failed for any reason.
     """
-    return execute_slonik("", sync=timeout)
+    return execute_slonik("", sync=timeout, exit_on_fail=exit_on_fail)
 
 
 def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
@@ -168,7 +180,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
                  block indefinitely.
 
     :param exit_on_fail: If True, on failure of the slonik script
-                         sys.exit is invoked using the slonik return code.
+                         SystemExit is raised using the slonik return code.
 
     :param auto_preamble: If True, the generated preamble will be
                           automatically included.
@@ -205,7 +217,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
     if returncode != 0:
         log.error("slonik script failed")
         if exit_on_fail:
-            sys.exit(1)
+            raise SystemExit(1)
 
     return returncode == 0
 
@@ -217,6 +229,11 @@ class Node:
         self.nickname = nickname
         self.connection_string = connection_string
         self.is_master = is_master
+
+    def connect(self, isolation=ISOLATION_LEVEL_DEFAULT):
+        con = psycopg2.connect(self.connection_string)
+        con.set_isolation_level(isolation)
+        return con
 
 
 def _get_nodes(con, query):
@@ -315,7 +332,7 @@ def preamble(con=None):
     """Return the preable needed at the start of all slonik scripts."""
 
     if con is None:
-        con = connect('slony')
+        con = connect(user='slony')
 
     master_node = get_master_node(con)
     nodes = get_all_cluster_nodes(con)
@@ -332,8 +349,9 @@ def preamble(con=None):
         # Symbolic ids for replication sets.
         define lpmain_set   %d;
         define holding_set  %d;
+        define sso_set      %d;
         define lpmirror_set %d;
-        """ % (LPMAIN_SET_ID, HOLDING_SET_ID, LPMIRROR_SET_ID))]
+        """ % (LPMAIN_SET_ID, HOLDING_SET_ID, SSO_SET_ID, LPMIRROR_SET_ID))]
 
     if master_node is not None:
         preamble.append(dedent("""\
@@ -526,4 +544,3 @@ def validate_replication(cur):
 
     lpmain_tables, lpmain_sequences = calculate_replication_set(
         cur, LPMAIN_SEED)
-

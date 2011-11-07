@@ -5,16 +5,13 @@
 
 __metaclass__ = type
 
-import transaction
-
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import (
@@ -22,19 +19,26 @@ from lp.answers.enums import (
     QuestionRecipientSet,
     )
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionjob import IQuestionEmailJobSource
+from lp.answers.interfaces.questionjob import (
+    IQuestionEmailJob,
+    IQuestionEmailJobSource,
+    IQuestionJob,
+    )
 from lp.answers.model.questionjob import (
-    QuestionJob,
     QuestionEmailJob,
+    QuestionJob,
     )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
-from lp.services.mail.sendmail import format_address_for_person
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
-    run_script,
     person_logged_in,
+    run_script,
     TestCaseWithFactory,
     )
 
@@ -54,6 +58,7 @@ class QuestionJobTestCase(TestCaseWithFactory):
         # Metadata is unserialized from JSON.
         metadata_expected = list(metadata)
         self.assertEqual(metadata_expected, job.metadata)
+        self.assertProvides(job, IQuestionJob)
 
     def test_repr(self):
         question = self.factory.makeQuestion()
@@ -107,6 +112,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         self.assertEqual(
             headers['X-Launchpad-Question'],
             job.metadata['headers']['X-Launchpad-Question'])
+        self.assertProvides(job, IQuestionEmailJob)
 
     def test_iterReady(self):
         # Jobs in the ready state are returned by the iterator.

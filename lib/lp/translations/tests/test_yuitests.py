@@ -20,7 +20,7 @@ class TranslationsYUIUnitTestCase(YUIUnitTestCase):
 
 
 def test_suite():
-    app_testing_path = 'lp/translations/javascript'
+    app_testing_path = 'lp/translations'
     return build_yui_unittest_suite(
             app_testing_path,
             TranslationsYUIUnitTestCase)

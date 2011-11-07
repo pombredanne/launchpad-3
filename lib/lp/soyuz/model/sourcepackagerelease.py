@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -15,6 +15,12 @@ import operator
 import re
 from StringIO import StringIO
 
+import apt_pkg
+from debian.changelog import (
+    Changelog,
+    ChangelogCreateError,
+    ChangelogParseError,
+    )
 import pytz
 import simplejson
 from sqlobject import (
@@ -47,7 +53,6 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.helpers import shortlist
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
@@ -61,17 +66,17 @@ from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    MAIN_ARCHIVE_PURPOSES,
-    )
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
@@ -574,7 +579,7 @@ class SourcePackageRelease(SQLBase):
 
         queue = getUtility(ITranslationImportQueue)
 
-        only_templates=self.sourcepackage.has_sharing_translation_templates
+        only_templates = self.sourcepackage.has_sharing_translation_templates
         queue.addOrUpdateEntriesFromTarball(
             tarball, by_maintainer, importer,
             sourcepackagename=self.sourcepackagename,
@@ -607,3 +612,83 @@ class SourcePackageRelease(SQLBase):
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
+
+    def aggregate_changelog(self, since_version):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.changelog is None:
+            return None
+
+        apt_pkg.InitSystem()
+        chunks = []
+        changelog = self.changelog
+        # The python-debian API for parsing changelogs is pretty awful. The
+        # only useful way of extracting info is to use the iterator on
+        # Changelog and then compare versions.
+        try:
+            for block in Changelog(changelog.read()):
+                version = block._raw_version
+                if (since_version and
+                    apt_pkg.VersionCompare(version, since_version) <= 0):
+                    break
+                # Poking in private attributes is not nice but again the
+                # API is terrible.  We want to ensure that the name/date
+                # line is omitted from these composite changelogs.
+                block._no_trailer = True
+                try:
+                    # python-debian adds an extra blank line to the chunks
+                    # so we'll have to sort this out.
+                    chunks.append(str(block).rstrip())
+                except ChangelogCreateError:
+                    continue
+                if not since_version:
+                    # If a particular version was not requested we just
+                    # return the most recent changelog entry.
+                    break
+        except ChangelogParseError:
+            return None
+
+        output = "\n\n".join(chunks)
+        return output.decode("utf-8", "replace")
+
+    def getActiveArchSpecificPublications(self, archive, distroseries,
+                                          pocket):
+        """Find architecture-specific binary publications for this release.
+
+        For example, say source package release contains binary packages of:
+         * "foo" for i386 (pending in i386)
+         * "foo" for amd64 (published in amd64)
+         * "foo-common" for the "all" architecture (pending or published in
+           various real processor architectures)
+
+        In that case, this search will return foo(i386) and foo(amd64).  The
+        dominator uses this when figuring out whether foo-common can be
+        superseded: we don't track dependency graphs, but we know that the
+        architecture-specific "foo" releases are likely to depend on the
+        architecture-independent foo-common release.
+
+        :param archive: The `Archive` to search.
+        :param distroseries: The `DistroSeries` to search.
+        :param pocket: The `PackagePublishingPocket` to search.
+        :return: A Storm result set of active, architecture-specific
+            `BinaryPackagePublishingHistory` objects for this source package
+            release and the given `archive`, `distroseries`, and `pocket`.
+        """
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.publishing import active_publishing_status
+        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        return Store.of(self).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackageBuild.source_package_release_id == self.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            DistroArchSeries.distroseriesID == distroseries.id,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status),
+            BinaryPackageRelease.architecturespecific == True)

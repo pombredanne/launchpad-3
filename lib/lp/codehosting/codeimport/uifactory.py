@@ -10,34 +10,80 @@ __all__ = ['LoggingUIFactory']
 import sys
 import time
 
+from bzrlib.ui import NoninteractiveUIFactory
 from bzrlib.ui.text import (
     TextProgressView,
-    TextUIFactory,
     )
 
 
-class LoggingUIFactory(TextUIFactory):
+class LoggingUIFactory(NoninteractiveUIFactory):
     """A UI Factory that produces reasonably sparse logging style output.
 
     The goal is to produce a line of output no more often than once a minute
     (by default).
     """
 
-    def __init__(self, time_source=time.time, writer=None, interval=60.0):
+    # XXX: JelmerVernooij 2011-08-02 bug=820127: This seems generic enough to
+    # live in bzrlib.ui
+
+    def __init__(self, time_source=time.time, logger=None, interval=60.0):
         """Construct a `LoggingUIFactory`.
 
         :param time_source: A callable that returns time in seconds since the
             epoch.  Defaults to ``time.time`` and should be replaced with
             something deterministic in tests.
-        :param writer: A callable that takes a string and displays it.  It is
-            not called with newline terminated strings.
+        :param logger: The logger object to write to
         :param interval: Don't produce output more often than once every this
             many seconds.  Defaults to 60 seconds.
         """
-        TextUIFactory.__init__(self)
+        NoninteractiveUIFactory.__init__(self)
         self.interval = interval
+        self.logger = logger
         self._progress_view = LoggingTextProgressView(
-            time_source, writer, interval)
+            time_source, lambda m: logger.info("%s", m), interval)
+
+    def show_user_warning(self, warning_id, **message_args):
+        self.logger.warning(
+            "%s", self.format_user_warning(warning_id, message_args))
+
+    def show_warning(self, msg):
+        if isinstance(msg, unicode):
+            msg = msg.encode("utf-8")
+        self.logger.warning("%s", msg)
+
+    def get_username(self, prompt, **kwargs):
+        return None
+
+    def get_password(self, prompt, **kwargs):
+        return None
+
+    def show_message(self, msg):
+        self.logger.info("%s", msg)
+
+    def note(self, msg):
+        self.logger.info("%s", msg)
+
+    def show_error(self, msg):
+        self.logger.error("%s", msg)
+
+    def _progress_updated(self, task):
+        """A task has been updated and wants to be displayed.
+        """
+        if not self._task_stack:
+            self.logger.warning("%r updated but no tasks are active", task)
+        self._progress_view.show_progress(task)
+
+    def _progress_all_finished(self):
+        self._progress_view.clear()
+
+    def report_transport_activity(self, transport, byte_count, direction):
+        """Called by transports as they do IO.
+
+        This may update a progress bar, spinner, or similar display.
+        By default it does nothing.
+        """
+        self._progress_view.show_transport_activity(transport,
+            direction, byte_count)
 
 
 class LoggingTextProgressView(TextProgressView):
@@ -160,7 +206,3 @@ class LoggingTextProgressView(TextProgressView):
             self._bytes_since_update = 0
             self._last_transport_msg = msg
             self._repaint()
-
-    # bzr 1.17 renamed _show_transport_activity to show_transport_activity.
-    # When we have upgraded to bzr 1.17, this compatibility hack can go away.
-    _show_transport_activity = show_transport_activity

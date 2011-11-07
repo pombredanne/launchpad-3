@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from zope.component import getUtility
 
@@ -220,7 +217,3 @@ class TestRestrictedBranchVocabularyOnBranch(
         """Restrict using a branch on widget."""
         return getUtility(IBranchLookup).getByUniqueName(
             '~spotty/widget/hill')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

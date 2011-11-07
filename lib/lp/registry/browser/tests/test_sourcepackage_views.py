@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SourcePackage view code."""
@@ -58,7 +58,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         self.assertTrue((field, value) in params)
 
     def test_get_register_upstream_url_fields(self):
-        distroseries = self.factory.makeDistroRelease(
+        distroseries = self.factory.makeDistroSeries(
             distribution=self.factory.makeDistribution(name='zoobuntu'),
             name='walrus')
         source_package = self.factory.makeSourcePackage(
@@ -85,7 +85,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
     def test_get_register_upstream_url_displayname(self):
         # The sourcepackagename 'python-super-package' is split on
         # the hyphens, and each word is capitalized.
-        distroseries = self.factory.makeDistroRelease(
+        distroseries = self.factory.makeDistroSeries(
             distribution=self.factory.makeDistribution(name='zoobuntu'),
             name='walrus')
         source_package = self.factory.makeSourcePackage(
@@ -159,7 +159,7 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
         productseries = self.factory.makeProductSeries(name='1.0')
         self.milestone = self.factory.makeMilestone(
             product=productseries.product, productseries=productseries)
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.source_package = self.factory.makeSourcePackage(
             distroseries=distroseries, sourcepackagename='fnord')
         self.factory.makeSourcePackagePublishingHistory(

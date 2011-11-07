@@ -558,22 +558,23 @@ project in question.
 IAddBugTaskForm Interface Definition
 ====================================
 
-IAddBugTaskForm, which is used as the schema for the views tested above, has
-some attributes which are identical to those of IUpstreamBugTask and
-IDistroBugTask. However, we must ensure that IAddBugTask defines its own
-attributes rather than borrowing those of IUpstreamBugTask and IDistroBugTask,
-since doing so has produced OOPSes (bug 129406).
+IAddBugTaskForm, which is used as the schema for the views tested above,
+has some attributes which are identical to those of IBugTask However, we
+must ensure that IAddBugTask defines its own attributes rather than
+borrowing those of IBugTask, since doing so has produced OOPSes (bug
+129406).
 
     >>> from lp.bugs.interfaces.bugtask import (
-    ...     IAddBugTaskForm, IDistroBugTask, IUpstreamBugTask)
-    >>> IAddBugTaskForm['product'] is IUpstreamBugTask['product']
+    ...     IAddBugTaskForm,
+    ...     IBugTask,
+    ...     )
+    >>> IAddBugTaskForm['product'] is IBugTask['product']
     False
 
-    >>> IAddBugTaskForm['distribution'] is IDistroBugTask['distribution']
+    >>> IAddBugTaskForm['distribution'] is IBugTask['distribution']
     False
 
-    >>> (IAddBugTaskForm['sourcepackagename'] is
-    ...     IDistroBugTask['sourcepackagename'])
+    >>> IAddBugTaskForm['sourcepackagename'] is IBugTask['sourcepackagename']
     False
 
 

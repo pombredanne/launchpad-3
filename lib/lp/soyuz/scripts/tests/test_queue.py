@@ -18,7 +18,6 @@ from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -78,9 +77,7 @@ class TestQueueBase:
     def setUp(self):
         # Switch database user and set isolation level to READ COMMIITTED
         # to avoid SERIALIZATION exceptions with the Librarian.
-        LaunchpadZopelessLayer.alterConnection(
-                dbuser=self.dbuser,
-                isolation=ISOLATION_LEVEL_READ_COMMITTED)
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
@@ -365,8 +362,7 @@ class TestQueueTool(TestQueueBase, TestCase):
         ubuntu_bar = ubuntu.getSourcePackage('bar')
         the_bug = getUtility(IBugSet).get(the_bug_id)
         bugtask = getUtility(IBugTaskSet).createTask(
-            bug=the_bug, owner=bugtask_owner, distribution=ubuntu,
-            sourcepackagename=ubuntu_bar.sourcepackagename)
+            the_bug, bugtask_owner, ubuntu_bar)
 
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(self.dbuser)
@@ -407,6 +403,10 @@ class TestQueueTool(TestQueueBase, TestCase):
         self.assertEqual(
             bug_status, 'FIXRELEASED',
             'Bug status is %s, expected FIXRELEASED')
+
+        # Clean up.
+        upload_data = datadir('suite/bar_1.0-2')
+        os.remove(os.path.join(upload_data, 'bar_1.0.orig.tar.gz'))
 
     def testAcceptActionWithMultipleIDs(self):
         """Check if accepting multiple items at once works.
@@ -1116,8 +1116,9 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         # we're testing.
         spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
         archive_admin = self.factory.makePerson()
-        bug = self.factory.makeBug(private=True)
-        bug_task = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
+        bug_task = self.factory.makeBugTask(
+            target=spr.sourcepackage, private=True)
+        bug = bug_task.bug
         changes = StringIO(changes_file_template % bug.id)
 
         with person_logged_in(archive_admin):

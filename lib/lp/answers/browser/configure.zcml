@@ -88,9 +88,16 @@
   <browser:page
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+portlet-answercontacts"
+    class=".questiontarget.QuestionTargetPortletAnswerContacts"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-answercontacts.pt"
     />
+  <browser:page
+      for="lp.answers.interfaces.question.IQuestionTarget"
+      name="+portlet-answercontacts-details"
+      class="
+        lp.answers.browser.questiontarget.QuestionTargetPortletAnswerContactsWithDetails"
+      permission="zope.Public"/>
   <browser:page
     name="+addquestion"
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
@@ -114,7 +121,7 @@
     classes="QuestionCollectionAnswersMenu QuestionTargetAnswersMenu"
     />
   <browser:menus
-    module="canonical.launchpad.browser"
+    module="lp.answers.browser.faq"
     classes="FAQNavigationMenu"
     />
   <browser:menus
@@ -133,6 +140,13 @@
     for="lp.answers.interfaces.question.IQuestion"
     path_expression="string:+question/${id}"
     attribute_to_parent="target"
+    rootsite="answers"
+    />
+
+  <browser:url
+    for="lp.answers.interfaces.questionsubscription.IQuestionSubscription"
+    path_expression="string:subscriptions/${person}"
+    attribute_to_parent="question"
     rootsite="answers"
     />
 
@@ -170,6 +184,13 @@
       template="../templates/question-portlet-details.pt"
       />
   </browser:pages>
+
+  <browser:page
+      for="lp.answers.interfaces.question.IQuestion"
+      name="+portlet-subscribers-details"
+      class="
+        lp.answers.browser.questionsubscription.QuestionPortletSubscribersWithDetails"
+      permission="zope.Public"/>
 
   <browser:page
     name="+index"
@@ -293,7 +314,7 @@
 
   <browser:page
     for="lp.answers.interfaces.questioncollection.IQuestionSet"
-    class="canonical.launchpad.browser.SearchAllQuestionsView"
+    class="lp.answers.browser.question.SearchAllQuestionsView"
     name="+questions"
     permission="zope.Public"
     />

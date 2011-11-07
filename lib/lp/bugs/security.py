@@ -6,22 +6,29 @@
 __metaclass__ = type
 __all__ = []
 
+from zope.component import getUtility
+
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from lp.services.messages.interfaces.message import IMessage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
+    DelegatedAuthorization,
     )
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
-from lp.bugs.interfaces.bugmessage import IBugMessage
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtask import IBugTaskDelete
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.features import getFeatureFlag
 
 
 class EditBugNominationStatus(AuthorizationBase):
@@ -45,6 +52,50 @@ class EditBugTask(AuthorizationBase):
     def checkAuthenticated(self, user):
         # Delegated entirely to the bug.
         return self.obj.bug.userCanView(user)
+
+
+class DeleteBugTask(AuthorizationBase):
+    permission = 'launchpad.Delete'
+    usedfor = IBugTaskDelete
+
+    def checkAuthenticated(self, user):
+        """Check that a user may delete a bugtask.
+
+        A user may delete a bugtask if:
+         - The disclosure.delete_bugtask.enabled feature flag is enabled,
+         and they are:
+         - project maintainer
+         - task creator
+         - bug supervisor
+        """
+        if user is None:
+            return False
+
+        # Admins can always delete bugtasks.
+        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            return True
+
+        delete_allowed = bool(getFeatureFlag(
+            'disclosure.delete_bugtask.enabled'))
+        if not delete_allowed:
+            return False
+
+        bugtask = self.obj
+        owner = None
+        if IHasOwner.providedBy(bugtask.pillar):
+            owner = bugtask.pillar.owner
+        bugsupervisor = None
+        if IHasBugSupervisor.providedBy(bugtask.pillar):
+            bugsupervisor = bugtask.pillar.bug_supervisor
+        return (
+            user.inTeam(owner) or
+            user.inTeam(bugsupervisor) or
+            user.inTeam(bugtask.owner))
+
+
+class AdminDeleteBugTask(DeleteBugTask):
+    """Launchpad admins can also delete bug tasks."""
+    permission = 'launchpad.Admin'
 
 
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
@@ -98,11 +149,10 @@ class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
     def __init__(self, bug_branch):
         # The same permissions as for the BugBranch's bug should apply
         # to the BugBranch itself.
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bug_branch.bug)
+        super(EditBugBranch, self).__init__(bug_branch.bug)
 
 
-class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
+class ViewBugAttachment(DelegatedAuthorization):
     """Security adapter for viewing a bug attachment.
 
     If the user is authorized to view the bug, he's allowed to view the
@@ -112,12 +162,11 @@ class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        PublicToAllOrPrivateToExplicitSubscribersForBug.__init__(
-            self, bugattachment.bug)
+        super(ViewBugAttachment, self).__init__(
+            bugattachment, bugattachment.bug)
 
 
-class EditBugAttachment(
-    EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+class EditBugAttachment(DelegatedAuthorization):
     """Security adapter for editing a bug attachment.
 
     If the user is authorized to view the bug, he's allowed to edit the
@@ -127,8 +176,8 @@ class EditBugAttachment(
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bugattachment.bug)
+        super(EditBugAttachment, self).__init__(
+            bugattachment, bugattachment.bug)
 
 
 class ViewBugSubscription(AnonymousAuthorization):

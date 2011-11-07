@@ -1,4 +1,5 @@
-= ArchiveSubscriber =
+ArchiveSubscriber
+=================
 
 This content class represents a subscription by a person to an IArchive.
 The subscription represents that person's ability to download items from
@@ -29,16 +30,11 @@ First, create a person 'joesmith' and a team 'team_cprov':
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
     >>> johnsmith.join(team_cprov)
     >>> logout()
-
-Reset the test emails (after John joined team cprov):
-
     >>> from lp.testing.mail_helpers import print_emails
-    >>> print_emails()
-    From: Team Cprov <noreply@launchpad.net>
-    ...
 
 
-== Creating new subscriptions ==
+Creating new subscriptions
+--------------------------
 
 New subscriptions are created using IArchive.newSubscription()
 
@@ -235,7 +231,8 @@ Commit the new subscriptions to the database.
     >>> from storm.store import Store
     >>> Store.of(new_sub).commit()
 
-== Retrieving existing subscriptions ==
+Retrieving existing subscriptions
+---------------------------------
 
 The ArchiveSubscriberSet utility allows you to retrieve subscriptions by
 subscriber and archive.  To access subscriptions you need launchpad.View
@@ -329,7 +326,8 @@ be returned as well using the getBySubscriberWithActiveToken():
 
 First create a token for joesmith's subscription for cprov's archive:
 
-    >>> joesmith_token = cprov_private_ppa.newAuthToken(joesmith, u"test_token")
+    >>> joesmith_token = cprov_private_ppa.newAuthToken(
+    ...     joesmith, u"test_token")
 
 Now print out all subscriptions with their tokens for joesmith:
 
@@ -375,7 +373,8 @@ subscription:
     PPA named p3a for Mark Shuttleworth          None
 
 
-== Amending Subscriptions ==
+Amending Subscriptions
+----------------------
 
 Some of the properties of subscriptions can change after they are created.
 To do this, the changer needs to have launchpad.Edit on the subscription,
@@ -414,7 +413,8 @@ The subscriber and registrant properties are not editable.
     ForbiddenAttribute:...
 
 
-== Cancelling subscriptions ==
+Cancelling subscriptions
+------------------------
 
 Subscriptions can only be cancelled after they are created.  The calling user
 also needs launchpad.Edit on the subscription, which means either someone with
@@ -448,7 +448,8 @@ We can do this as an admin too:
     >>> new_sub.cancel(cprov)
 
 
-== Finding all non-active subscribers ==
+Finding all non-active subscribers
+----------------------------------
 
 The method getNonActiveSubscribers() facilitates contacting all the people
 included in this subscription who do not yet have an active token for the
@@ -467,18 +468,18 @@ via the cprov_team:
 So the getNonActiveSubscribers() method for this team subscription will
 currently include Joe:
 
-    >>> for person in subscription.getNonActiveSubscribers():
-    ...     print person.displayname
-    Celso Providelo
-    Joe Smith
-    John Smith
+    >>> for person, email in subscription.getNonActiveSubscribers():
+    ...     print person.displayname, email.email
+    Celso Providelo   celso.providelo@canonical.com
+    Joe Smith         joe@example.com
+    John Smith        john@example.com
 
 But if we create an auth token for joe to the archive (this could be via
 a separate subscription), then he will no longer be listed as a non-active
 subscriber for this subscription:
 
     >>> joesmith_token = mark_private_ppa.newAuthToken(joesmith)
-    >>> for person in subscription.getNonActiveSubscribers():
+    >>> for person, email in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Celso Providelo
     John Smith
@@ -493,7 +494,7 @@ will return a list with the single subscriber as expected:
     ...                                 email="harry@example.com")
     >>> subscription = mark_private_ppa.newSubscription(
     ...     harrysmith, mark, description=u"subscription for joesmith")
-    >>> for person in subscription.getNonActiveSubscribers():
+    >>> for person, email in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Harry Smith
 
@@ -513,7 +514,7 @@ indirect members that are not themselves groups are included:
     ...     team_cprov, mark, force_team_add=True)
     >>> subscription = mark_private_ppa.newSubscription(
     ...     launchpad_devs, mark, description=u"LP team too")
-    >>> for person in subscription.getNonActiveSubscribers():
+    >>> for person, email in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Celso Providelo
     John Smith

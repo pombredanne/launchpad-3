@@ -20,7 +20,6 @@ from debian.changelog import (
     )
 from lazr.enum import DBItem
 from sqlobject import StringCol
-from storm.exceptions import NotOneError
 from storm.expr import (
     And,
     Column,
@@ -55,7 +54,6 @@ from lp.registry.enum import (
     )
 from lp.registry.errors import (
     DistroSeriesDifferenceError,
-    MultipleParentsForDerivedSeriesError,
     NotADerivedSeriesError,
     )
 from lp.registry.interfaces.distroseriesdifference import (
@@ -66,12 +64,16 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
 from lp.registry.model.gpgkey import GPGKey
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
 from lp.services.database.stormbase import StormBase
 from lp.services.messages.model.message import (
@@ -86,13 +88,13 @@ from lp.services.propertycache import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageDiffStatus,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
@@ -262,6 +264,117 @@ def message_chunks(messages):
     return grouped
 
 
+def eager_load_dsds(dsds):
+    """Eager load dependencies of the given `DistroSeriesDifference`s.
+
+    :param dsds: A concrete sequence (i.e. not a generator) of
+        `DistroSeriesDifference` to eager load for.
+    """
+    source_pubs = dict(
+        most_recent_publications(
+            dsds, statuses=active_publishing_status,
+            in_parent=False, match_version=False))
+    parent_source_pubs = dict(
+        most_recent_publications(
+            dsds, statuses=active_publishing_status,
+            in_parent=True, match_version=False))
+    source_pubs_for_release = dict(
+        most_recent_publications(
+            dsds, statuses=active_publishing_status,
+            in_parent=False, match_version=True))
+    parent_source_pubs_for_release = dict(
+        most_recent_publications(
+            dsds, statuses=active_publishing_status,
+            in_parent=True, match_version=True))
+
+    latest_comment_by_dsd_id = dict(
+        (comment.distro_series_difference_id, comment)
+        for comment in most_recent_comments(dsds))
+    latest_comments = latest_comment_by_dsd_id.values()
+
+    # SourcePackageReleases of the parent and source pubs are often
+    # referred to.
+    sprs = bulk.load_related(
+        SourcePackageRelease, chain(
+            source_pubs.itervalues(),
+            parent_source_pubs.itervalues(),
+            source_pubs_for_release.itervalues(),
+            parent_source_pubs_for_release.itervalues()),
+        ("sourcepackagereleaseID",))
+
+    # Get packagesets and parent_packagesets for each DSD.
+    dsd_packagesets = get_packagesets(dsds, in_parent=False)
+    dsd_parent_packagesets = get_packagesets(dsds, in_parent=True)
+
+    # Cache latest messages contents (MessageChunk).
+    messages = bulk.load_related(
+        Message, latest_comments, ['message_id'])
+    chunks = message_chunks(messages)
+    for msg in messages:
+        cache = get_property_cache(msg)
+        cache.text_contents = Message.chunks_text(
+            chunks.get(msg.id, []))
+
+    for dsd in dsds:
+        spn_id = dsd.source_package_name_id
+        cache = get_property_cache(dsd)
+        cache.source_pub = source_pubs.get(spn_id)
+        cache.parent_source_pub = parent_source_pubs.get(spn_id)
+        cache.packagesets = dsd_packagesets.get(dsd.id)
+        cache.parent_packagesets = dsd_parent_packagesets.get(dsd.id)
+        if spn_id in source_pubs_for_release:
+            spph = source_pubs_for_release[spn_id]
+            cache.source_package_release = (
+                DistroSeriesSourcePackageRelease(
+                    dsd.derived_series,
+                    spph.sourcepackagerelease))
+        else:
+            cache.source_package_release = None
+        if spn_id in parent_source_pubs_for_release:
+            spph = parent_source_pubs_for_release[spn_id]
+            cache.parent_source_package_release = (
+                DistroSeriesSourcePackageRelease(
+                    dsd.parent_series, spph.sourcepackagerelease))
+        else:
+            cache.parent_source_package_release = None
+        cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
+
+    # SourcePackageRelease.uploader can end up getting the requester
+    # for a source package recipe build.
+    sprbs = bulk.load_related(
+        SourcePackageRecipeBuild, sprs,
+        ("source_package_recipe_build_id",))
+
+    # SourcePackageRelease.uploader can end up getting the owner of
+    # the DSC signing key.
+    gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
+
+    # Load DistroSeriesDifferenceComment owners, SourcePackageRecipeBuild
+    # requesters, GPGKey owners, and SourcePackageRelease creators.
+    person_ids = set().union(
+        (dsdc.message.ownerID for dsdc in latest_comments),
+        (sprb.requester_id for sprb in sprbs),
+        (gpgkey.ownerID for gpgkey in gpgkeys),
+        (spr.creatorID for spr in sprs))
+    uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+        person_ids, need_validity=True)
+    list(uploaders)
+
+    # Load SourcePackageNames.
+    bulk.load_related(
+        SourcePackageName, dsds, ("source_package_name_id",))
+
+
+def get_comment_with_status_change(status, new_status, comment):
+    # Create a new comment string with the description of the status
+    # change and the given comment string.
+    new_comment = "Ignored: %s => %s" % (
+        status.title, new_status.title)
+    if comment:
+        new_comment = "%s\n\n%s" % (comment, new_comment)
+    return new_comment
+
+
 class DistroSeriesDifference(StormBase):
     """See `DistroSeriesDifference`."""
     implements(IDistroSeriesDifference)
@@ -302,22 +415,13 @@ class DistroSeriesDifference(StormBase):
     base_version = StringCol(dbName='base_version', notNull=False)
 
     @staticmethod
-    def new(derived_series, source_package_name, parent_series=None):
+    def new(derived_series, source_package_name, parent_series):
         """See `IDistroSeriesDifferenceSource`."""
-        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-        # mandatory as part of multi-parent support.
-        if parent_series is None:
-            try:
-                dsps = getUtility(IDistroSeriesParentSet)
-                dsp = dsps.getByDerivedSeries(
-                    derived_series).one()
-            except NotOneError:
-                raise MultipleParentsForDerivedSeriesError()
-            else:
-                if dsp is None:
-                    raise NotADerivedSeriesError()
-                else:
-                    parent_series = dsp.parent_series
+        dsps = getUtility(IDistroSeriesParentSet)
+        dsp = dsps.getByDerivedAndParentSeries(
+            derived_series, parent_series)
+        if dsp is None:
+            raise NotADerivedSeriesError()
 
         store = IMasterStore(DistroSeriesDifference)
         diff = DistroSeriesDifference()
@@ -334,38 +438,44 @@ class DistroSeriesDifference(StormBase):
         return store.add(diff)
 
     @staticmethod
-    def getForDistroSeries(
-        distro_series,
-        difference_type=None,
-        name_filter=None,
-        status=None,
-        child_version_higher=False,
-        parent_series=None,
-        packagesets=None):
+    def getForDistroSeries(distro_series, difference_type=None,
+                           name_filter=None, status=None,
+                           child_version_higher=False, parent_series=None,
+                           packagesets=None, changed_by=None):
         """See `IDistroSeriesDifferenceSource`."""
-        if difference_type is None:
-            difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
-        if status is None:
-            status = (
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                )
-        elif isinstance(status, DBItem):
-            status = (status, )
+        if isinstance(status, DBItem):
+            status = (status,)
+        if IPerson.providedBy(changed_by):
+            changed_by = (changed_by,)
+
+        # Aliases, to improve readability.
+        DSD = DistroSeriesDifference
+        PSS = PackagesetSources
+        SPN = SourcePackageName
+        SPPH = SourcePackagePublishingHistory
+        SPR = SourcePackageRelease
+        TP = TeamParticipation
 
         conditions = [
-            DistroSeriesDifference.derived_series == distro_series,
-            DistroSeriesDifference.difference_type == difference_type,
-            DistroSeriesDifference.status.is_in(status),
-            DistroSeriesDifference.source_package_name ==
-                SourcePackageName.id,
-        ]
+            DSD.derived_series == distro_series,
+            DSD.source_package_name == SPN.id,  # For ordering.
+            ]
+        if difference_type is not None:
+            conditions.append(DSD.difference_type == difference_type)
+        if status is not None:
+            conditions.append(DSD.status.is_in(tuple(status)))
+
+        if child_version_higher:
+            conditions.append(DSD.source_version > DSD.parent_source_version)
 
         if parent_series:
-            conditions.extend([
-               DistroSeriesDifference.parent_series == parent_series.id])
+            conditions.append(DSD.parent_series == parent_series.id)
+
+        # Take a copy of the conditions specified thus far.
+        basic_conditions = list(conditions)
 
         if name_filter:
-            name_matches = [SourcePackageName.name == name_filter]
+            name_matches = [SPN.name == name_filter]
             try:
                 packageset = getUtility(IPackagesetSet).getByName(
                     name_filter, distroseries=distro_series)
@@ -373,129 +483,49 @@ class DistroSeriesDifference(StormBase):
                 packageset = None
             if packageset is not None:
                 name_matches.append(
-                    DistroSeriesDifference.source_package_name_id.is_in(
-                        Select(
-                            PackagesetSources.sourcepackagename_id,
-                            PackagesetSources.packageset == packageset)))
-            conditions.extend([Or(*name_matches)])
-
-        if child_version_higher:
-            conditions.extend([
-                DistroSeriesDifference.source_version >
-                    DistroSeriesDifference.parent_source_version])
+                    DSD.source_package_name_id.is_in(
+                        Select(PSS.sourcepackagename_id,
+                               PSS.packageset == packageset)))
+            conditions.append(Or(*name_matches))
 
         if packagesets is not None:
             set_ids = [packageset.id for packageset in packagesets]
-            conditions.extend([
-                DistroSeriesDifference.source_package_name_id.is_in(
-                    Select(
-                        PackagesetSources.sourcepackagename_id,
-                        PackagesetSources.packageset_id.is_in(set_ids)))])
+            conditions.append(
+                DSD.source_package_name_id.is_in(
+                    Select(PSS.sourcepackagename_id,
+                           PSS.packageset_id.is_in(set_ids))))
 
-        differences = IStore(DistroSeriesDifference).find(
-            DistroSeriesDifference,
-            And(*conditions)).order_by(SourcePackageName.name)
+        store = IStore(DSD)
+        columns = (DSD, SPN.name)
+        differences = store.find(columns, And(*conditions))
 
-        def eager_load(dsds):
-            active_statuses = (
-                PackagePublishingStatus.PUBLISHED,
-                PackagePublishingStatus.PENDING,
-                )
-            source_pubs = dict(
-                most_recent_publications(
-                    dsds, statuses=active_statuses,
-                    in_parent=False, match_version=False))
-            parent_source_pubs = dict(
-                most_recent_publications(
-                    dsds, statuses=active_statuses,
-                    in_parent=True, match_version=False))
-            source_pubs_for_release = dict(
-                most_recent_publications(
-                    dsds, statuses=active_statuses,
-                    in_parent=False, match_version=True))
-            parent_source_pubs_for_release = dict(
-                most_recent_publications(
-                    dsds, statuses=active_statuses,
-                    in_parent=True, match_version=True))
+        if changed_by is not None:
+            # Identify all DSDs referring to SPRs created by changed_by for
+            # this distroseries. The set of DSDs for the given distroseries
+            # can then be discovered as the intersection between this set and
+            # the already established differences.
+            differences_changed_by_conditions = And(
+                basic_conditions,
+                SPPH.archiveID == distro_series.main_archive.id,
+                SPPH.distroseriesID == distro_series.id,
+                SPPH.sourcepackagereleaseID == SPR.id,
+                SPPH.status.is_in(active_publishing_status),
+                SPR.creatorID == TP.personID,
+                SPR.sourcepackagenameID == DSD.source_package_name_id,
+                TP.teamID.is_in(person.id for person in changed_by))
+            differences_changed_by = store.find(
+                columns, differences_changed_by_conditions)
+            differences = differences.intersection(differences_changed_by)
 
-            latest_comment_by_dsd_id = dict(
-                (comment.distro_series_difference_id, comment)
-                for comment in most_recent_comments(dsds))
-            latest_comments = latest_comment_by_dsd_id.values()
+        differences = differences.order_by(SPN.name)
 
-            # SourcePackageReleases of the parent and source pubs are often
-            # referred to.
-            sprs = bulk.load_related(
-                SourcePackageRelease, chain(
-                    source_pubs.itervalues(),
-                    parent_source_pubs.itervalues(),
-                    source_pubs_for_release.itervalues(),
-                    parent_source_pubs_for_release.itervalues()),
-                ("sourcepackagereleaseID",))
+        def pre_iter_hook(rows):
+            # Each row is (dsd, spn.name). Modify the results in place.
+            rows[:] = (dsd for (dsd, spn_name) in rows)
+            # Eager load everything to do with DSDs.
+            return eager_load_dsds(rows)
 
-            # Get packagesets and parent_packagesets for each DSD.
-            dsd_packagesets = get_packagesets(dsds, in_parent=False)
-            dsd_parent_packagesets = get_packagesets(dsds, in_parent=True)
-
-            # Cache latest messages contents (MessageChunk).
-            messages = bulk.load_related(
-                Message, latest_comments, ['message_id'])
-            chunks = message_chunks(messages)
-            for msg in messages:
-                cache = get_property_cache(msg)
-                cache.text_contents = Message.chunks_text(
-                    chunks.get(msg.id, []))
-
-            for dsd in dsds:
-                spn_id = dsd.source_package_name_id
-                cache = get_property_cache(dsd)
-                cache.source_pub = source_pubs.get(spn_id)
-                cache.parent_source_pub = parent_source_pubs.get(spn_id)
-                cache.packagesets = dsd_packagesets.get(dsd.id)
-                cache.parent_packagesets = dsd_parent_packagesets.get(dsd.id)
-                if spn_id in source_pubs_for_release:
-                    spph = source_pubs_for_release[spn_id]
-                    cache.source_package_release = (
-                        DistroSeriesSourcePackageRelease(
-                            dsd.derived_series,
-                            spph.sourcepackagerelease))
-                else:
-                    cache.source_package_release = None
-                if spn_id in parent_source_pubs_for_release:
-                    spph = parent_source_pubs_for_release[spn_id]
-                    cache.parent_source_package_release = (
-                        DistroSeriesSourcePackageRelease(
-                            dsd.parent_series, spph.sourcepackagerelease))
-                else:
-                    cache.parent_source_package_release = None
-                cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
-
-            # SourcePackageRelease.uploader can end up getting the requester
-            # for a source package recipe build.
-            sprbs = bulk.load_related(
-                SourcePackageRecipeBuild, sprs,
-                ("source_package_recipe_build_id",))
-
-            # SourcePackageRelease.uploader can end up getting the owner of
-            # the DSC signing key.
-            gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
-
-            # Load DistroSeriesDifferenceComment owners,
-            # SourcePackageRecipeBuild requesters and GPGKey owners.
-            person_ids = set().union(
-                (dsdc.message.ownerID for dsdc in latest_comments),
-                (sprb.requester_id for sprb in sprbs),
-                (gpgkey.ownerID for gpgkey in gpgkeys))
-            uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                person_ids, need_validity=True)
-            list(uploaders)
-
-            # Load SourcePackageNames.
-            bulk.load_related(
-                SourcePackageName, dsds, ("source_package_name_id",))
-
-        return DecoratedResultSet(
-            differences, pre_iter_hook=eager_load)
+        return DecoratedResultSet(differences, pre_iter_hook=pre_iter_hook)
 
     @staticmethod
     def getByDistroSeriesNameAndParentSeries(distro_series,
@@ -531,6 +561,11 @@ class DistroSeriesDifference(StormBase):
             SourcePackageName.id ==
                 DistroSeriesDifference.source_package_name_id)
         return DecoratedResultSet(differences, itemgetter(0))
+
+    @property
+    def sourcepackagename(self):
+        """See `IDistroSeriesDifference`"""
+        return self.source_package_name.name
 
     @cachedproperty
     def source_pub(self):
@@ -670,14 +705,9 @@ class DistroSeriesDifference(StormBase):
             self.derived_series, self.source_version)
 
     def _package_release(self, distro_series, version):
-        statuses = (
-            PackagePublishingStatus.PUBLISHED,
-            PackagePublishingStatus.PENDING)
         pubs = distro_series.main_archive.getPublishedSources(
-            name=self.source_package_name.name,
-            version=version,
-            status=statuses,
-            distroseries=distro_series,
+            name=self.source_package_name.name, version=version,
+            status=active_publishing_status, distroseries=distro_series,
             exact_match=True)
 
         # Get the most recent publication (pubs are ordered by
@@ -868,17 +898,29 @@ class DistroSeriesDifference(StormBase):
             DSDComment.distro_series_difference == self)
         return comments.order_by(Desc(DSDComment.id))
 
-    def blacklist(self, all=False):
+    def _getCommentWithStatusChange(self, new_status, comment=None):
+        return get_comment_with_status_change(
+            self.status, new_status, comment)
+
+    def blacklist(self, commenter, all=False, comment=None):
         """See `IDistroSeriesDifference`."""
         if all:
-            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+            new_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
         else:
-            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
+            new_status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
+        new_comment = self._getCommentWithStatusChange(new_status, comment)
+        dsd_comment = self.addComment(commenter, new_comment)
+        self.status = new_status
+        return dsd_comment
 
-    def unblacklist(self):
+    def unblacklist(self, commenter, comment=None):
         """See `IDistroSeriesDifference`."""
-        self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        new_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        new_comment = self._getCommentWithStatusChange(new_status, comment)
+        self.status = new_status
+        dsd_comment = self.addComment(commenter, new_comment)
         self.update(manual=True)
+        return dsd_comment
 
     def requestPackageDiffs(self, requestor):
         """See `IDistroSeriesDifference`."""

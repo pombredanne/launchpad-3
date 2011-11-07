@@ -1,7 +1,5 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 """Question models."""
 
@@ -87,6 +85,7 @@ from lp.answers.model.questionmessage import QuestionMessage
 from lp.answers.model.questionreopening import create_questionreopening
 from lp.answers.model.questionsubscription import QuestionSubscription
 from lp.app.enums import ServiceUsage
+from lp.app.errors import UserCannotUnsubscribePerson
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -224,8 +223,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         if self.product:
             return self.product
         elif self.sourcepackagename:
-            return self.distribution.getSourcePackage(
-                self.sourcepackagename.name)
+            return self.distribution.getSourcePackage(self.sourcepackagename)
         else:
             return self.distribution
 
@@ -516,7 +514,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return msg
 
     # subscriptions
-    def subscribe(self, person):
+    def subscribe(self, person, subscribed_by=None):
         """See `IQuestion`."""
         # First see if a relevant subscription exists, and if so, update it.
         for sub in self.subscriptions:
@@ -527,11 +525,18 @@ class Question(SQLBase, BugLinkTargetMixin):
         Store.of(sub).flush()
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IQuestion`."""
+        if person is None:
+            person = unsubscribed_by
         # See if a relevant subscription exists, and if so, delete it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                    raise UserCannotUnsubscribePerson(
+                        '%s does not have permission to unsubscribe %s.' % (
+                            unsubscribed_by.displayname,
+                            person.displayname))
                 store = Store.of(sub)
                 sub.destroySelf()
                 store.flush()
@@ -544,6 +549,18 @@ class Question(SQLBase, BugLinkTargetMixin):
         """
         return sorted(
             self.subscribers, key=operator.attrgetter('displayname'))
+
+    def getDirectSubscribersWithDetails(self):
+        """See `IQuestion`."""
+
+        # Avoid circular imports
+        from lp.registry.model.person import Person
+        results = Store.of(self).find(
+            (Person, QuestionSubscription),
+            QuestionSubscription.person_id == Person.id,
+            QuestionSubscription.question_id == self.id,
+            ).order_by(Person.displayname)
+        return results
 
     def getIndirectSubscribers(self):
         """See `IQuestion`.
@@ -1331,6 +1348,7 @@ class QuestionTargetMixin:
         admins = getUtility(ILaunchpadCelebrities).admin
         if (person == subscribed_by
             or person in subscribed_by.administrated_teams
+            or subscribed_by.inTeam(self.owner)
             or subscribed_by.inTeam(admins)):
             return True
         return False

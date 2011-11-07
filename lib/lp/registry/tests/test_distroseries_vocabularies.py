@@ -11,21 +11,34 @@ from datetime import (
     )
 
 from pytz import utc
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    Not,
+    )
 from zope.component import getUtility
-from zope.schema.interfaces import IVocabularyFactory
+from zope.schema.interfaces import (
+    ITokenizedTerm,
+    IVocabularyFactory,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.vocabularies import DistroSeriesDerivationVocabulary
+from lp.registry.vocabularies import (
+    DistroSeriesDerivationVocabulary,
+    DistroSeriesDifferencesVocabulary,
+    )
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    Contains,
+    HasQueryCount,
+    Provides,
+    )
 
 
 class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
@@ -47,9 +60,8 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
             getUtility(IVocabularyFactory, name="DistroSeriesDerivation"),
             DistroSeriesDerivationVocabulary)
 
-    def test_interfaces(self):
-        # DistroSeriesDerivationVocabulary instances provide
-        # IVocabulary and IVocabularyTokenized.
+    def test_interface(self):
+        # DistroSeriesDerivationVocabulary instances provide IHugeVocabulary.
         distroseries = self.factory.makeDistroSeries()
         vocabulary = DistroSeriesDerivationVocabulary(distroseries)
         self.assertProvides(vocabulary, IHugeVocabulary)
@@ -248,3 +260,122 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         self.assertContentEqual(
             expected_distroseries,
             observed_distroseries)
+
+
+class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
+    """Tests for `DistroSeriesDifferencesVocabulary`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_registration(self):
+        # DistroSeriesDifferencesVocabulary is registered as a named utility
+        # for IVocabularyFactory.
+        self.assertEqual(
+            getUtility(IVocabularyFactory, name="DistroSeriesDifferences"),
+            DistroSeriesDifferencesVocabulary)
+
+    def test_interface(self):
+        # DistroSeriesDifferencesVocabulary instances provide IHugeVocabulary.
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertProvides(vocabulary, IHugeVocabulary)
+
+    def test_non_derived_distroseries(self):
+        # The vocabulary is empty for a non-derived series.
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertContentEqual([], vocabulary)
+
+    def test_derived_distroseries(self):
+        # The vocabulary contains all DSDs for a derived series.
+        distroseries = self.factory.makeDistroSeries()
+        dsds = [
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries),
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries),
+            ]
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertContentEqual(
+            dsds, (term.value for term in vocabulary))
+
+    def test_derived_distroseries_not_other_distroseries(self):
+        # The vocabulary contains all DSDs for a derived series and not for
+        # another series.
+        distroseries1 = self.factory.makeDistroSeries()
+        distroseries2 = self.factory.makeDistroSeries()
+        dsds = [
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries1),
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries1),
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries2),
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries2),
+            ]
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries1)
+        self.assertContentEqual(
+            (dsd for dsd in dsds if dsd.derived_series == distroseries1),
+            (term.value for term in vocabulary))
+
+    def test_contains_difference(self):
+        # The vocabulary can be tested for membership.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            difference.derived_series)
+        self.assertThat(vocabulary, Contains(difference))
+
+    def test_does_not_contain_difference(self):
+        # The vocabulary can be tested for non-membership.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            self.factory.makeDistroSeries())
+        self.assertThat(vocabulary, Not(Contains(difference)))
+
+    def test_does_not_contain_something_else(self):
+        # The vocabulary can be tested for non-membership of something that's
+        # not a DistroSeriesDifference.
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertThat(vocabulary, Not(Contains("foobar")))
+
+    def test_size(self):
+        # The vocabulary can report its size.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            difference.derived_series)
+        self.assertEqual(1, len(vocabulary))
+
+    def test_getTerm(self):
+        # A term can be obtained from a given value.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            difference.derived_series)
+        term = vocabulary.getTerm(difference)
+        self.assertThat(term, Provides(ITokenizedTerm))
+        self.assertEqual(difference, term.value)
+        self.assertEqual(str(difference.id), term.token)
+
+    def test_getTermByToken(self):
+        # A term can be obtained from a given token.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            difference.derived_series)
+        term = vocabulary.getTermByToken(str(difference.id))
+        self.assertEqual(difference, term.value)
+
+    def test_getTermByToken_not_found(self):
+        # LookupError is raised when the token cannot be found.
+        distroseries = self.factory.makeDistroSeries()
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertRaises(
+            LookupError, vocabulary.getTermByToken, str(difference.id))
+
+    def test_getTermByToken_invalid(self):
+        # LookupError is raised when the token is not valid (i.e. a string
+        # containing only digits).
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertRaises(LookupError, vocabulary.getTermByToken, "foobar")
