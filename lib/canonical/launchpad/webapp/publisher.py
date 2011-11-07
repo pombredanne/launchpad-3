@@ -43,7 +43,6 @@ from zope.component import (
     getUtility,
     queryMultiAdapter,
     )
-from zope.publisher.browser import TestRequest
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import (
     directlyProvides,
@@ -263,22 +262,28 @@ class LaunchpadView(UserAttributeCache):
         self.request = request
         self._error_message = None
         self._info_message = None
-        # We don't have an adapter FakeRequest -> IJSONRequestCache
-        # and some tests create views without providing any request
-        # object at all.
-        if (request is not None and not isinstance(request, FakeRequest) and
-            not isinstance(request, TestRequest)):
+        # FakeRequest does not have all properties required by the
+        # IJSONRequestCache adapter.
+        if isinstance(request, FakeRequest):
+            return
+        # Some tests create views without providing any request
+        # object at all; other tests run without the component
+        # infrastructure.
+        try:
             cache = IJSONRequestCache(self.request).objects
-            # Several view objects may be created for one page request:
-            # One view for the main context and template, and other views
-            # for macros included in the main template.
-            if 'beta_features' not in cache:
-                cache['beta_features'] = self.active_beta_features
-            else:
-                beta_info = cache['beta_features']
-                for feature in self.active_beta_features:
-                    if feature not in beta_info:
-                        beta_info.append(feature)
+        except TypeError, error:
+            if error.args[0] == 'Could not adapt':
+                return
+        # Several view objects may be created for one page request:
+        # One view for the main context and template, and other views
+        # for macros included in the main template.
+        if 'beta_features' not in cache:
+            cache['beta_features'] = self.active_beta_features
+        else:
+            beta_info = cache['beta_features']
+            for feature in self.active_beta_features:
+                if feature not in beta_info:
+                    beta_info.append(feature)
 
     def initialize(self):
         """Override this in subclasses.
