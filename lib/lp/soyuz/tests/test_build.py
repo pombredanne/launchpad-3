@@ -154,6 +154,15 @@ class TestBuild(TestCaseWithFactory):
         # If the package has no uploads, its package_upload is None
         self.assertEquals(None, build.package_upload)
 
+    def test_current_component_when_unpublished(self):
+        # Production has some buggy builds without source publications.
+        # current_component returns None in that case.
+        spph = self.publisher.getPubSource()
+        other_das = self.factory.makeDistroArchSeries()
+        build = spph.sourcepackagerelease.createBuild(
+            other_das, PackagePublishingPocket.RELEASE, spph.archive)
+        self.assertIs(None, build.current_component)
+
     def test_retry_for_released_series(self):
         # Builds can not be retried for released distroseries
         distroseries = self.factory.makeDistroSeries()
