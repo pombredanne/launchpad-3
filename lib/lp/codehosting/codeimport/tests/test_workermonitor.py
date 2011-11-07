@@ -633,12 +633,14 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
 
         worker_monitor.finishJob = finishJob
         d = worker_monitor.run()
+
         def check_log_file(ignored):
             worker_monitor._log_file.seek(0)
             log_text = worker_monitor._log_file.read()
             self.assertIn(
                 "Failure: exceptions.RuntimeError: " + failure_msg,
                 log_text)
+
         d.addCallback(check_log_file)
         return d
 
