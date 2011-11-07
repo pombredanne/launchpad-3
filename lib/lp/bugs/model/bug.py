@@ -794,15 +794,10 @@ class Bug(SQLBase):
     def subscribe(self, person, subscribed_by, suppress_notify=True,
                   level=None):
         """See `IBug`."""
-        if person.isTeam() and self.private:
-            bad_types = (
-                TeamSubscriptionPolicy.OPEN,
-                TeamSubscriptionPolicy.DELEGATED
-                )
-            if person.subscriptionpolicy in bad_types:
-                error_msg = ("Open and delegated teams cannot be subscribed "
-                    "to private bugs.")
-                raise SubscriptionPrivacyViolation(error_msg)
+        if person.isTeam() and self.private and person.anyone_can_join():
+            error_msg = ("Open and delegated teams cannot be subscribed "
+                "to private bugs.")
+            raise SubscriptionPrivacyViolation(error_msg)
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
