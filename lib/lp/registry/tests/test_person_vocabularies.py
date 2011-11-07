@@ -21,7 +21,9 @@ from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
-    OPEN_TEAM_POLICY, CLOSED_TEAM_POLICY)
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.testing import (
