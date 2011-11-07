@@ -244,6 +244,7 @@ class StrippedTextLine(TextLine):
 class NoneableTextLine(StrippedTextLine):
     implements(INoneableTextLine)
 
+
 # Title
 # A field to capture a launchpad object title
 
@@ -277,7 +278,6 @@ class StrippableText(Text):
         """See `IField`."""
         value = self.normalize(value)
         return super(StrippableText, self).validate(value)
-
 
 
 # Summary
@@ -771,19 +771,19 @@ class BaseImageUpload(Bytes):
 class IconImageUpload(BaseImageUpload):
 
     dimensions = (14, 14)
-    max_size = 5*1024
+    max_size = 5 * 1024
 
 
 class LogoImageUpload(BaseImageUpload):
 
     dimensions = (64, 64)
-    max_size = 50*1024
+    max_size = 50 * 1024
 
 
 class MugshotImageUpload(BaseImageUpload):
 
     dimensions = (192, 192)
-    max_size = 100*1024
+    max_size = 100 * 1024
 
 
 class LocationField(Field):

@@ -163,7 +163,7 @@ class TestBaseImageUpload(TestCase):
 
     class ExampleImageUpload(BaseImageUpload):
         dimensions = (192, 192)
-        max_size = 100*1024
+        max_size = 100 * 1024
 
     def test_validation_corrupt_image(self):
         # ValueErrors raised by PIL become LaunchpadValidationErrors.
