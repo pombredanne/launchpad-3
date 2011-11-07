@@ -123,7 +123,8 @@ class RecipeBuilder:
         retcode = call_report_rusage([
             'bzr', 'dailydeb', '--safe', '--no-build', recipe_path,
             self.tree_path, '--manifest', manifest_path,
-            '--append-version', '~%s1' % self.distroseries_name], env=env)
+            '--allow-fallback-to-native', '--append-version',
+            '~%s1' % self.distroseries_name], env=env)
         if retcode != 0:
             return retcode
         (source,) = [name for name in os.listdir(self.tree_path)
