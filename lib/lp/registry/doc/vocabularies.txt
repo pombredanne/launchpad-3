@@ -966,7 +966,7 @@ All valid persons and teams are also valid owners.
     []
 
 Almost all teams have the word 'team' as part of their names, so a
-search for 'team' should give us some of them. There's also the ircperson
+search for 'team' will give us some of them. There's also the ircperson
 created earlier with an icr nickname of 'team':
 
     >>> sorted(person.name for person in vocab.search('team'))
@@ -989,7 +989,7 @@ Valid persons and closed teams are valid pillar owners.
     []
 
 Almost all teams have the word 'team' as part of their names, so a
-search for 'team' should give us some of them. Only restricted or moderated
+search for 'team' will give us some of them. Only restricted or moderated
 teams will be returned in the search results. There's also the ircperson
 created earlier with an icr nickname of 'team':
 
