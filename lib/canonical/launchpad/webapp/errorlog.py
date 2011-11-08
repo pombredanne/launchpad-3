@@ -92,11 +92,11 @@ class ErrorReportEvent(ObjectEvent):
 class ErrorReport:
     implements(IErrorReport)
 
-    def __init__(self, _id, _type, value, time, tb_text, username,
+    def __init__(self, id, type, value, time, tb_text, username,
                  url, duration, req_vars, timeline, informational=None,
                  branch_nick=None, revno=None, topic=None, reporter=None):
-        self.id = _id
-        self.type = _type
+        self.id = id
+        self.type = type
         self.value = value
         self.time = time
         self.topic = topic
