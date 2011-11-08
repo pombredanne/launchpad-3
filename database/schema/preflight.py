@@ -188,7 +188,7 @@ class DatabasePreflight:
         this will be short. Even if the transaction is benign like a
         autovacuum task, we should wait until things have settled down.
 
-        We ignore transactions held open by EVIL_USERS. These are bugs
+        We ignore transactions held open by BAD_USERS. These are bugs
         that need to be fixed, but we have determined that rudely aborting
         them is fine for now and there is no need to block a rollout on
         their behalf.
