@@ -404,17 +404,3 @@ class TestBuild(TestCaseWithFactory):
             build.status = BuildStatus.FAILEDTOUPLOAD
             build.storeUploadLog('foo')
         self.assertRaises(AssertionError, build.storeUploadLog, 'bar')   
-
-    def test_assert_with_no_source_history(self):
-        # We can create a BinaryPackageBuild with only an SPR -- this means
-        # that the build has no history (no SourcePackagePublishingHistory),
-        # and we can't queue it.
-        spr = self.factory.makeSourcePackageRelease(
-            distroseries=self.distroseries)
-        build = self.factory.makeBinaryPackageBuild(
-            source_package_release=spr)
-        expected_msg = (
-            "Build %d lacks a corresponding source publication." % (
-                build.id))
-        self.assertRaisesWithContent(
-            AssertionError, expected_msg, build.queueBuild)
