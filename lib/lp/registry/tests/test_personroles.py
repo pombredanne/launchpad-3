@@ -180,7 +180,7 @@ class TestPersonRoles(TestCaseWithFactory):
         self.assertTrue(IPersonRoles(contact).isSecurityContact())
         self.assertFalse(IPersonRoles(person).isSecurityContact())
 
-    def test_projectgroup_isSecurityContact(self):
+    def test_distribution_isSecurityContact(self):
         # Test isSecurityContact for distributions
         person = self.factory.makePerson()
         contact = self.factory.makePerson()
