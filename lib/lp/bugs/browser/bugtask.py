@@ -170,6 +170,7 @@ from lp.app.browser.lazrjs import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
@@ -2202,25 +2203,41 @@ class BugTaskListingItem:
     @property
     def model(self):
         """Provide flattened data about bugtask for simple templaters."""
+        age = DateTimeFormatterAPI(self.bug.datecreated).durationsince()
+        age += ' old'
+        date_last_updated = self.bug.date_last_message
+        if (date_last_updated is None or
+            self.bug.date_last_updated > date_last_updated):
+            date_last_updated = self.bug.date_last_updated
+        last_updated_formatter = DateTimeFormatterAPI(date_last_updated)
+        last_updated = last_updated_formatter.displaydate()
         badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
         target_image = getAdapter(self.target, IPathAdapter, 'image')
         if self.bugtask.milestone is not None:
             milestone_name = self.bugtask.milestone.displayname
         else:
             milestone_name = None
+        assignee = None
+        if self.assignee is not None:
+            assignee = self.assignee.displayname
         return {
-            'importance': self.importance.title,
-            'importance_class': 'importance' + self.importance.name,
-            'status': self.status.title,
-            'status_class': 'status' + self.status.name,
-            'title': self.bug.title,
-            'id': self.bug.id,
+            'age': age,
+            'assignee': assignee,
             'bug_url': canonical_url(self.bugtask),
             'bugtarget': self.bugtargetdisplayname,
             'bugtarget_css': target_image.sprite_css(),
             'bug_heat_html': self.bug_heat_html,
             'badges': badges,
+            'id': self.bug.id,
+            'importance': self.importance.title,
+            'importance_class': 'importance' + self.importance.name,
+            'last_updated': last_updated,
             'milestone_name': milestone_name,
+            'reporter': self.bug.owner.displayname,
+            'status': self.status.title,
+            'status_class': 'status' + self.status.name,
+            'tags': ' '.join(self.bug.tags),
+            'title': self.bug.title,
             }
 
 
@@ -2234,13 +2251,18 @@ class BugListingBatchNavigator(TableBatchNavigator):
         self.request = request
         self.target_context = target_context
         self.field_visibility = {
+            'show_age': False,
+            'show_assignee': False,
             'show_bugtarget': True,
             'show_bug_heat': True,
             'show_id': True,
             'show_importance': True,
-            'show_status': True,
-            'show_title': True,
+            'show_last_updated': False,
             'show_milestone_name': False,
+            'show_reporter': False,
+            'show_status': True,
+            'show_tags': False,
+            'show_title': True,
         }
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
