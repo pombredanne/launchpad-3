@@ -20,6 +20,7 @@ __all__ = [
     'iter_split',
     'load_bz2_pickle',
     'obfuscate_email',
+    'obfuscate_structure',
     're_email_address',
     'run_capturing_output',
     'save_bz2_pickle',
@@ -47,6 +48,7 @@ from fixtures import (
     MonkeyPatch,
     )
 from lazr.enum import BaseItem
+from lazr.restful import ResourceJSONEncoder
 import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
@@ -355,3 +357,26 @@ def load_bz2_pickle(filename):
         return pickle.load(fin)
     finally:
         fin.close()
+
+
+def obfuscate_structure(o):
+    """Obfuscate the strings of a json-serializable structure.
+
+    Note: tuples are converted to lists because json encoders do not
+    distinguish between lists and tuples.
+
+    :param o: Any json-serializable object.
+    :return: a possibly-new structure in which all strings, list and tuple
+        elements, and dict keys and values have undergone obfuscate_email
+        recursively.
+    """
+    if isinstance(o, basestring):
+        return obfuscate_email(o)
+    elif isinstance(o, (list, tuple)):
+        return [obfuscate_structure(value) for value in o]
+    elif isinstance(o, (dict)):
+        return dict(
+            (obfuscate_structure(key), obfuscate_structure(value))
+            for key, value in o.iteritems())
+    else:
+        return o
