@@ -33,7 +33,8 @@ value_domain_info = sorted([
 # Data for generating web-visible feature flag documentation.
 #
 # Entries for each flag are:
-# flag name, value domain, prose documentation, default behaviour.
+# flag name, value domain, prose documentation, default behaviour, title,
+# URL to a page with more information about the feature.
 #
 # Value domain as in value_domain_info above.
 #
@@ -43,128 +44,186 @@ flag_info = sorted([
     ('baselayout.careers_link.disabled',
      'boolean',
      'Hide the link to the Canonical Careers site.',
+     '',
+     '',
      ''),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
+     '',
+     '',
      ''),
     ('bugs.dynamic_bug_listings.enabled',
      'boolean',
      ('Enables the dynamic configuration of bug listings.'),
-     ''),
+     '',
+     'Dynamic bug listings',
+     'https://dev.launchpad.net/LEP/CustomBugListings'),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
+     '',
+     '',
      ''),
     ('code.branchmergequeue',
      'boolean',
      'Enables merge queue pages and lists them on branch pages.',
+     '',
+     '',
      ''),
     ('code.incremental_diffs.enabled',
      'boolean',
      'Shows incremental diffs on merge proposals.',
+     '',
+     '',
      ''),
     ('code.simplified_branches_menu.enabled',
      'boolean',
      ('Display a simplified version of the branch menu (omit the counts).'),
+     '',
+     '',
      ''),
     ('hard_timeout',
      'float',
      'Sets the hard request timeout in milliseconds.',
+     '',
+     '',
      ''),
     ('mail.dkim_authentication.disabled',
      'boolean',
      'Disable DKIM authentication checks on incoming mail.',
+     '',
+     '',
      ''),
     ('malone.disable_targetnamesearch',
      'boolean',
      'If true, disables consultation of target names during bug text search.',
+     '',
+     '',
      ''),
     ('memcache',
      'boolean',
      'Enables use of memcached where it is supported.',
-     'enabled'),
+     'enabled',
+     '',
+     ''),
     ('profiling.enabled',
      'boolean',
      'Overrides config.profiling.profiling_allowed to permit profiling.',
+     '',
+     '',
      ''),
     ('soyuz.derived_series.max_synchronous_syncs',
      'int',
      "How many package syncs may be done directly in a web request.",
-     '100'),
+     '100',
+     '',
+     ''),
     ('soyuz.derived_series_ui.enabled',
      'boolean',
      'Enables derivative distributions pages.',
+     '',
+     '',
      ''),
     ('soyuz.derived_series_sync.enabled',
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
+     '',
+     '',
      ''),
     ('soyuz.derived_series_upgrade.enabled',
      'boolean',
      'Enables mass-upgrade of packages on derivative distributions pages.',
+     '',
+     '',
      ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',
      "Compute package differences for derived distributions.",
+     '',
+     '',
      ''),
     ('translations.sharing_information.enabled',
      'boolean',
      'Enables display of sharing information on translation pages.',
+     '',
+     '',
      ''),
     ('visible_render_time',
      'boolean',
      'Shows the server-side page render time in the login widget.',
+     '',
+     '',
      ''),
     ('disclosure.dsp_picker.enabled',
      'boolean',
      'Enables the use of the new DistributionSourcePackage vocabulary for '
      'the source and binary package name pickers.',
+     '',
+     '',
      ''),
     ('disclosure.private_bug_visibility_rules.enabled',
      'boolean',
      ('Enables the application of additional privacy filter terms in bug '
       'queries to allow defined project roles to see private bugs.'),
+     '',
+     '',
      ''),
     ('disclosure.enhanced_private_bug_subscriptions.enabled',
      'boolean',
      ('Enables the auto subscribing and unsubscribing of users as a bug '
       'transitions between public, private and security related states.'),
+     '',
+     '',
      ''),
     ('disclosure.delete_bugtask.enabled',
      'boolean',
      'Enables bugtasks to be deleted by authorised users.',
+     '',
+     '',
      ''),
     ('disclosure.allow_multipillar_private_bugs.enabled',
      'boolean',
      'Allows private bugs to have more than one bug task.',
+     '',
+     '',
      ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
       'series and packages).  Use the default domain.  Specify a single '
       'asterisk ("*") to enable for all distributions.'),
-     'None are enabled'),
+     'None are enabled',
+     '',
+     ''),
     ('bugs.autoconfirm.enabled_product_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for products (and their '
       'series).  Use the default domain.  Specify a single '
       'asterisk ("*") to enable for all products.'),
-     'None are enabled'),
+     'None are enabled',
+     '',
+     ''),
     ('longpoll.merge_proposals.enabled',
      'boolean',
      ('Enables the longpoll mechanism for merge proposals so that diffs, '
       'for example, are updated in-page when they are ready.'),
+     '',
+     '',
      ''),
     ('ajax.batch_navigator.enabled',
      'boolean',
      ('If true, batch navigators which have been wired to do so use ajax '
      'calls to load the next batch of data.'),
+     '',
+     '',
      ''),
     ('disclosure.log_private_team_leaks.enabled',
      'boolean',
      ('Enables soft OOPSes for code that is mixing visibility rules, such '
       'as disclosing private teams, so the data can be analyzed.'),
+     '',
+     '',
      ''),
     ])
 
@@ -250,6 +309,7 @@ class FeatureController():
         if rule_source is None:
             rule_source = StormFeatureRuleSource()
         self.rule_source = rule_source
+        self._current_scopes = Memoize(self._findCurrentScope)
 
     def getFlag(self, flag):
         """Get the value of a specific flag.
@@ -265,11 +325,26 @@ class FeatureController():
         return self._known_flags.lookup(flag)
 
     def _checkFlag(self, flag):
+        return self._currentValueAndScope(flag)[0]
+
+    def _currentValueAndScope(self, flag):
         self._needRules()
         if flag in self._rules:
             for scope, priority, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
-                    return value
+                    return (value, scope)
+        return (None, None)
+
+    def currentScope(self, flag):
+        """The name of the scope of the matching rule with the highest
+        priority.
+        """
+        return self._current_scopes.lookup(flag)
+
+    def _findCurrentScope(self, flag):
+        """Lookup method for self._current_scopes. See also `currentScope()`.
+        """
+        return self._currentValueAndScope(flag)[1]
 
     def isInScope(self, scope):
         return self._known_scopes.lookup(scope)
@@ -308,6 +383,15 @@ class FeatureController():
     def usedScopes(self):
         """Return {scope: active} for scopes that have been used so far."""
         return dict(self._known_scopes._known)
+
+    def defaultFlagValue(self, flag):
+        """Return the flag's value in the default scope."""
+        self._needRules()
+        if flag in self._rules:
+            for scope, priority, value in self._rules[flag]:
+                if scope == 'default':
+                    return value
+        return None
 
 
 class NullFeatureController(FeatureController):
