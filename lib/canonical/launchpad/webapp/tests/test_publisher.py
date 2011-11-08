@@ -49,7 +49,7 @@ class TestLaunchpadView(TestCaseWithFactory):
 
     def test_getCacheJSON_non_resource_context(self):
         view = LaunchpadView(object(), LaunchpadTestRequest())
-        self.assertEqual('{}', view.getCacheJSON())
+        self.assertEqual('{"beta_features": []}', view.getCacheJSON())
 
     @staticmethod
     def getCanada():
@@ -102,7 +102,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         IJSONRequestCache(request).objects['my_bool'] = True
         json_dict = simplejson.loads(view.getCacheJSON())
         self.assertIsCanada(json_dict['context'])
-        self.assertFalse('my_bool' in json_dict)
+        self.assertIn('my_bool', json_dict)
 
     def test_getCache_anonymous_obfuscated(self):
         request = LaunchpadTestRequest()
