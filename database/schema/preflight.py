@@ -15,6 +15,7 @@ __all__ = [
 
 from datetime import timedelta
 from optparse import OptionParser
+import os.path
 import time
 
 import psycopg2
@@ -30,6 +31,7 @@ from canonical.launchpad.scripts import (
     logger_options,
     )
 import replication.helpers
+import upgrade
 
 
 # Ignore connections by these users.
@@ -94,11 +96,19 @@ class DatabasePreflight:
             self.lpmain_nodes = set(
                 node for node in self.nodes
                 if node.node_id in lpmain_node_ids)
+
+            # Store a reference to the lpmain origin.
+            lpmain_master_node_id = replication.helpers.get_master_node(
+                master_con, 1).node_id
+            self.lpmain_master_node = [
+                node for node in self.lpmain_nodes
+                    if node.node_id == lpmain_master_node_id][0]
         else:
             node = replication.helpers.Node(None, None, None, True)
             node.con = master_con
             self.nodes = set([node])
             self.lpmain_nodes = self.nodes
+            self.lpmain_master_node = node
 
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
@@ -268,6 +278,13 @@ class DatabasePreflight:
         else:
             return True
 
+    def report_patches(self):
+        """Report what patches are due to be applied from this tree."""
+        con = self.lpmain_master_node.con
+        upgrade.log = self.log
+        for patch_num, patch_file in upgrade.get_patchlist(con):
+            self.log.info("%s is pending", os.path.basename(patch_file))
+
     def check_all(self):
         """Run all checks.
 
@@ -277,6 +294,8 @@ class DatabasePreflight:
             # No point continuing - results will be bogus without access
             # to pg_stat_activity
             return False
+
+        self.report_patches()
 
         success = True
         if not self.check_replication_lag():
