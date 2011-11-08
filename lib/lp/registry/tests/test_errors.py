@@ -54,10 +54,10 @@ class TestWebServiceErrors(TestCase):
         error_view = create_webservice_error_view(JoinNotAllowed())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
-    def test_TeamSubscriptionPolicyError_bad_request(self):
+    def test_TeamSubscriptionPolicyError_forbidden(self):
         error_view = create_webservice_error_view(
             TeamSubscriptionPolicyError())
-        self.assertEqual(BAD_REQUEST, error_view.status)
+        self.assertEqual(FORBIDDEN, error_view.status)
 
     def test_TeamMembershipTransitionError_bad_request(self):
         error_view = create_webservice_error_view(

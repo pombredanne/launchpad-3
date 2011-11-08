@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'CLOSED_TEAM_POLICY',
+    'ClosedTeamSubscriptionPolicy',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
@@ -29,6 +30,7 @@ __all__ = [
     'ImmutableVisibilityError',
     'NoSuchPerson',
     'OPEN_TEAM_POLICY',
+    'OpenTeamSubscriptionPolicy',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -39,6 +41,7 @@ __all__ = [
     'validate_person',
     'validate_person_or_closed_team',
     'validate_public_person',
+    'validate_subscription_policy',
     ]
 
 from lazr.enum import (
@@ -70,12 +73,6 @@ from lazr.restful.fields import (
     Reference,
     )
 from lazr.restful.interface import copy_field
-from storm.expr import (
-    And,
-    Join,
-    Select,
-    Union,
-    )
 from zope.component import getUtility
 from zope.formlib.form import NoInputData
 from zope.interface import (
@@ -108,7 +105,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     IPrivacy,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -163,7 +159,6 @@ from lp.services.fields import (
     StrippedTextLine,
     )
 from lp.services.worlddata.interfaces.language import ILanguage
-from lp.soyuz.enums import ArchiveStatus
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -217,6 +212,33 @@ def validate_person_or_closed_team(obj, attr, value):
 
     return validate_person_common(
         obj, attr, value, validate, error_class=OpenTeamLinkageError)
+
+
+def validate_subscription_policy(obj, attr, value):
+    """Validate the team subscription_policy."""
+    if value is None:
+        return None
+
+    # If we are just creating a new team, it can have any subscription policy.
+    if getattr(obj, '_SO_creating', True):
+        return value
+
+    team = obj
+    existing_subscription_policy = getattr(team, 'subscriptionpolicy', None)
+    if value == existing_subscription_policy:
+        return value
+    illegal_closed_transition = (
+        value in OpenTeamSubscriptionPolicy
+        and team.subscriptionPolicyMustBeClosed())
+    illegal_open_transition = (
+        value in ClosedTeamSubscriptionPolicy
+        and team.subscriptionPolicyMustBeOpen())
+    if illegal_closed_transition or illegal_open_transition:
+        raise TeamSubscriptionPolicyError(
+            "Cannot change subscription policy of %s (name=%s) from %s to %s"
+            % (team, getattr(team, 'name', None),
+               existing_subscription_policy, value))
+    return value
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -463,6 +485,18 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         """)
 
 
+class ClosedTeamSubscriptionPolicy(DBEnumeratedType):
+    MODERATED = TeamSubscriptionPolicy.MODERATED
+
+    RESTRICTED = TeamSubscriptionPolicy.RESTRICTED
+
+
+class OpenTeamSubscriptionPolicy(DBEnumeratedType):
+    OPEN = TeamSubscriptionPolicy.OPEN
+
+    DELEGATED = TeamSubscriptionPolicy.DELEGATED
+
+
 OPEN_TEAM_POLICY = (
     TeamSubscriptionPolicy.OPEN, TeamSubscriptionPolicy.DELEGATED)
 
@@ -539,107 +573,6 @@ class PersonNameField(BlacklistableContentNameField):
 
         # Perform the normal validation, including the real blacklist checks.
         super(PersonNameField, self)._validate(input)
-
-
-def team_subscription_policy_can_transition(team, policy):
-    """Can the team can change its subscription policy?
-
-    Returns True when the policy can change. or raises an error. OPEN teams
-    cannot be members of MODERATED or RESTRICTED teams. OPEN teams
-    cannot have PPAs. Changes from between OPEN and the two closed states
-    can be blocked by team membership and team artifacts.
-
-    :param team: The team to change.
-    :param policy: The TeamSubsciptionPolicy to change to.
-    :raises TeamSubsciptionPolicyError: Raised when a membership constrain
-        or a team artifact prevents the policy from being set.
-    """
-    if team is None or policy == team.subscriptionpolicy:
-        # The team is being initialized or the policy is not changing.
-        return True
-    elif policy in OPEN_TEAM_POLICY:
-        # The team can be open if its super teams are open.
-        for team in team.super_teams:
-            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because one "
-                    "or more if its super teams are not open." % policy)
-        # The team can not be open if it has PPAs.
-        for ppa in team.ppas:
-            if ppa.status != ArchiveStatus.DELETED:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because it "
-                    "has one or more active PPAs." % policy)
-        # Circular imports.
-        from lp.bugs.model.bug import Bug
-        from lp.bugs.model.bugsubscription import BugSubscription
-        from lp.bugs.model.bugtask import BugTask
-        # The team cannot be open if it is subscribed to or assigned to
-        # private bugs.
-        private_bugs_involved = IStore(Bug).execute(Union(
-            Select(
-                Bug.id,
-                tables=(
-                    Bug,
-                    Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
-                where=And(
-                    Bug.private == True,
-                    BugSubscription.person_id == team.id)),
-            Select(
-                Bug.id,
-                tables=(
-                    Bug,
-                    Join(BugTask, BugTask.bugID == Bug.id)),
-                where=And(Bug.private == True, BugTask.assignee == team.id)),
-            limit=1))
-        if private_bugs_involved.rowcount:
-            raise TeamSubscriptionPolicyError(
-                "The team subscription policy cannot be %s because it is "
-                "subscribed to or assigned to one or more private "
-                "bugs." % policy)
-    elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
-        # The team can become MODERATED or RESTRICTED if its member teams
-        # are not OPEN.
-        for member in team.activemembers:
-            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because one "
-                    "or more if its member teams are Open." % policy)
-    else:
-        # The policy change is between MODERATED and RESTRICTED.
-        pass
-    return True
-
-
-class TeamSubsciptionPolicyChoice(Choice):
-    """A valid team subscription policy."""
-
-    def _getTeam(self):
-        """Return the context if it is a team or None."""
-        if IPerson.providedBy(self.context):
-            return self.context
-        else:
-            return None
-
-    def constraint(self, value):
-        """See `IField`."""
-        team = self._getTeam()
-        policy = value
-        try:
-            return team_subscription_policy_can_transition(team, policy)
-        except TeamSubscriptionPolicyError:
-            return False
-
-    def _validate(self, value):
-        """Ensure the TeamSubsciptionPolicy is valid for state of the team.
-
-        Returns True if the team can change its subscription policy to the
-        `TeamSubscriptionPolicy`, otherwise raise TeamSubscriptionPolicyError.
-        """
-        team = self._getTeam()
-        policy = value
-        team_subscription_policy_can_transition(team, policy)
-        super(TeamSubsciptionPolicyChoice, self)._validate(value)
 
 
 class IPersonClaim(Interface):
@@ -1947,7 +1880,7 @@ class ITeamPublic(Interface):
         exported_as='team_description')
 
     subscriptionpolicy = exported(
-        TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
+        Choice(title=_('Subscription policy'),
                vocabulary=TeamSubscriptionPolicy,
                default=TeamSubscriptionPolicy.MODERATED, required=True,
                description=_(
@@ -1986,6 +1919,25 @@ class ITeamPublic(Interface):
     defaultrenewedexpirationdate = Attribute(
         "The date, according to team's default values, in "
         "which a just-renewed membership will expire.")
+
+    def subscriptionPolicyMustBeClosed():
+        """ Return true if this team's subscription policy must be closed.
+
+        A closed subscription policy is MODERATED or RESTRICTED.
+        An closed subscription policy is required when:
+        - any of the team's super teams are closed.
+        - the team has any active PPAs
+        - it is subscribed or assigned to any private bugs
+        - it owns or is the security contact for any pillars
+        """
+
+    def subscriptionPolicyMustBeOpen():
+        """ Return true if this team's subscription policy must be open.
+
+        An open subscription policy is OPEN or DELEGATED.
+        An open subscription policy is required when:
+        - any of the team's sub (member) teams are open.
+        """
 
 
 class ITeam(IPerson, ITeamPublic):

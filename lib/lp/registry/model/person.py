@@ -69,6 +69,7 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Union,
     Upper,
     )
 from storm.info import ClassAlias
@@ -229,23 +230,28 @@ from lp.registry.interfaces.mailinglistsubscription import (
     )
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
+    ClosedTeamSubscriptionPolicy,
     ImmutableVisibilityError,
     IPerson,
     IPersonSet,
     IPersonSettings,
     ITeam,
+    OPEN_TEAM_POLICY,
+    OpenTeamSubscriptionPolicy,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     validate_public_person,
+    validate_subscription_policy,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
     ISSHKey,
     ISSHKeySet,
@@ -585,8 +591,10 @@ class Person(
         default=TeamMembershipRenewalPolicy.NONE)
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
-        enum=TeamSubscriptionPolicy,
-        default=TeamSubscriptionPolicy.MODERATED)
+        enum=(ClosedTeamSubscriptionPolicy, OpenTeamSubscriptionPolicy,
+              TeamSubscriptionPolicy),
+        default=TeamSubscriptionPolicy.MODERATED,
+        storm_validator=validate_subscription_policy)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
                                      default=None)
@@ -1638,6 +1646,64 @@ class Person(
             EmailAddress,
             EmailAddress.personID == self.id,
             EmailAddress.status == status)
+
+    def subscriptionPolicyMustBeClosed(self):
+        """See `ITeam`"""
+        assert self.is_team, "This method must only be used for teams."
+
+        # Does this team own or is the security contact for any pillars.
+        roles = IPersonRoles(self)
+        if roles.isPillarOwner() or roles.isSecurityContact():
+            return True
+
+        # Does this team have any PPAs
+        for ppa in self.ppas:
+            if ppa.status != ArchiveStatus.DELETED:
+                return True
+
+        # Does this team have any super teams that are closed.
+        for team in self.super_teams:
+            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
+                return True
+
+        # Does this team subscribe or is assigned to any private bugs.
+        # Circular imports.
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugsubscription import BugSubscription
+        from lp.bugs.model.bugtask import BugTask
+        # The team cannot be open if it is subscribed to or assigned to
+        # private bugs.
+        private_bugs_involved = IStore(Bug).execute(Union(
+            Select(
+                Bug.id,
+                tables=(
+                    Bug,
+                    Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
+                where=And(
+                    Bug.private == True,
+                    BugSubscription.person_id == self.id)),
+            Select(
+                Bug.id,
+                tables=(
+                    Bug,
+                    Join(BugTask, BugTask.bugID == Bug.id)),
+                where=And(Bug.private == True, BugTask.assignee == self.id)),
+            limit=1))
+        if private_bugs_involved.rowcount:
+            return True
+
+        # We made it here, so let's return False.
+        return False
+
+    def subscriptionPolicyMustBeOpen(self):
+        """See `ITeam`"""
+        assert self.is_team, "This method must only be used for teams."
+
+        # The team must be open if any of it's members are open.
+        for member in self.activemembers:
+            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
+                return True
+        return False
 
     @property
     def wiki_names(self):

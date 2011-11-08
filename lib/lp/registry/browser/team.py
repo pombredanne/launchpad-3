@@ -136,12 +136,14 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
+    ClosedTeamSubscriptionPolicy,
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
     ITeamReassignment,
     ITeamContactAddressForm,
     ITeamCreation,
+    OpenTeamSubscriptionPolicy,
     PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
@@ -291,6 +293,16 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
+
+    def setUpWidgets(self):
+        super(TeamEditView, self).setUpWidgets()
+        team = self.context
+        if team.subscriptionPolicyMustBeClosed():
+            self.widgets['subscriptionpolicy'].vocabulary = (
+                ClosedTeamSubscriptionPolicy)
+        if team.subscriptionPolicyMustBeOpen():
+            self.widgets['subscriptionpolicy'].vocabulary = (
+                OpenTeamSubscriptionPolicy)
 
     @action('Save', name='save')
     def action_save(self, action, data):

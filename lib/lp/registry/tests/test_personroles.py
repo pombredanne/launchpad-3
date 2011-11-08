@@ -147,3 +147,43 @@ class TestPersonRoles(TestCaseWithFactory):
         fake_attr = self.factory.getUniqueString()
         roles = IPersonRoles(self.person)
         self.assertRaises(AttributeError, roles.isOneOf, obj, [fake_attr])
+
+    def test_product_isOwner(self):
+        # Test isPillarOwner for products
+        person = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        self.factory.makeProduct(owner=owner)
+        self.assertTrue(IPersonRoles(owner).isPillarOwner())
+        self.assertFalse(IPersonRoles(person).isPillarOwner())
+
+    def test_projectgroup_isOwner(self):
+        # Test isPillarOwner for project groups
+        person = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        self.factory.makeProjectGroup(owner=owner)
+        self.assertTrue(IPersonRoles(owner).isPillarOwner())
+        self.assertFalse(IPersonRoles(person).isPillarOwner())
+
+    def test_distribution_isOwner(self):
+        # Test isPillarOwner for distributions
+        person = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        self.factory.makeDistribution(owner=owner)
+        self.assertTrue(IPersonRoles(owner).isPillarOwner())
+        self.assertFalse(IPersonRoles(person).isPillarOwner())
+
+    def test_product_isSecurityContact(self):
+        # Test isSecurityContact for products
+        person = self.factory.makePerson()
+        contact = self.factory.makePerson()
+        self.factory.makeProduct(security_contact=contact)
+        self.assertTrue(IPersonRoles(contact).isSecurityContact())
+        self.assertFalse(IPersonRoles(person).isSecurityContact())
+
+    def test_projectgroup_isSecurityContact(self):
+        # Test isSecurityContact for distributions
+        person = self.factory.makePerson()
+        contact = self.factory.makePerson()
+        self.factory.makeDistribution(security_contact=contact)
+        self.assertTrue(IPersonRoles(contact).isSecurityContact())
+        self.assertFalse(IPersonRoles(person).isSecurityContact())
