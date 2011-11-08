@@ -1677,13 +1677,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_title'])
 
-    def getBugtaskBrowser(self):
+    def getBugtaskBrowser(self, title=None, no_login=False):
         """Return a browser for a new bugtask."""
         bugtask = self.factory.makeBugTask()
         with person_logged_in(bugtask.target.owner):
             bugtask.target.official_malone = True
+            if title is not None:
+                bugtask.bug.title = title
         browser = self.getViewBrowser(
-            bugtask.target, '+bugs', rootsite='bugs')
+            bugtask.target, '+bugs', rootsite='bugs', no_login=no_login)
         return bugtask, browser
 
     def assertHTML(self, browser, *tags, **kwargs):
@@ -1712,6 +1714,13 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             bug_task, browser = self.getBugtaskBrowser()
         bug_number = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, self.client_listing, bug_number)
+
+    def test_mustache_rendering_obfuscation(self):
+        """If the flag is present, then all mustache features appear."""
+        with self.dynamic_listings():
+            bug_task, browser = self.getBugtaskBrowser(title='a@example.com',
+                no_login=True)
+        self.assertNotIn('a@example.com', browser.contents)
 
     def getNavigator(self):
         request = LaunchpadTestRequest()
