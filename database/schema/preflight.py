@@ -50,7 +50,18 @@ FRAGILE_USERS = frozenset([
     'publish_ftpmaster',
     ])
 
+# If these users have long running transactions, just kill 'em. Entries
+# added here must come with a bug number, a if part of Launchpad holds
+# open a long running transaction it is a bug we need to fix.
+BAD_USERS = frozenset([
+    'karma',  # Bug #863109
+    'rosettaadmin',  # Bug #863122
+    ])
+
 # How lagged the cluster can be before failing the preflight check.
+# If this is set too low, perfectly normal state will abort rollouts. If
+# this is set too high, then we will have unacceptable downtime as
+# replication needs to catch up before the database patches will apply.
 MAX_LAG = timedelta(seconds=60)
 
 
@@ -176,6 +187,11 @@ class DatabasePreflight:
         max_secs defines what is long running. For database rollouts,
         this will be short. Even if the transaction is benign like a
         autovacuum task, we should wait until things have settled down.
+
+        We ignore transactions held open by EVIL_USERS. These are bugs
+        that need to be fixed, but we have determined that rudely aborting
+        them is fine for now and there is no need to block a rollout on
+        their behalf.
         """
         success = True
         for node in self.nodes:
@@ -190,10 +206,15 @@ class DatabasePreflight:
                     AND datname=current_database()
                 """ % max_secs)
             for datname, usename, age, current_query in cur.fetchall():
-                self.log.fatal(
-                    "%s has transaction by %s open %s",
-                    datname, usename, age)
-                success = False
+                if usename in BAD_USERS:
+                    self.log.info(
+                        "%s has transactions by %s open %s (ignoring)",
+                        datname, usename, age)
+                else:
+                    self.log.fatal(
+                        "%s has transaction by %s open %s",
+                        datname, usename, age)
+                    success = False
         if success:
             self.log.info("No long running transactions detected.")
         return success
@@ -312,6 +333,9 @@ class KillConnectionsPreflight(DatabasePreflight):
                         self.log.fatal(
                             "Unable to kill %s [%s] on %s",
                             usename, procpid, datname)
+                    elif usename in BAD_USERS:
+                        self.log.info(
+                            "Killed %s [%s] on %s", usename, procpid, datname)
                     else:
                         self.log.warning(
                             "Killed %s [%s] on %s", usename, procpid, datname)
