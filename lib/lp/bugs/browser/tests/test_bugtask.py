@@ -1716,7 +1716,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertHTML(browser, self.client_listing, bug_number)
 
     def test_mustache_rendering_obfuscation(self):
-        """If the flag is present, then all mustache features appear."""
+        """For anonymous users, email addresses are obfuscated."""
         with self.dynamic_listings():
             bug_task, browser = self.getBugtaskBrowser(title='a@example.com',
                 no_login=True)
