@@ -32,6 +32,7 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSet,
     IPackageBuildSource,
     )
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
@@ -303,7 +304,7 @@ class TestHandleStatusMixin:
         self.build.buildqueue_record.setDateStarted(UTC_NOW)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
-        builder.setSlaveForTesting(self.slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(self.slave))
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()

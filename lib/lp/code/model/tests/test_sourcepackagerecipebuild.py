@@ -588,7 +588,6 @@ class TestBuildNotifications(TestCaseWithFactory):
         queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        queue_record.builder.setSlaveForTesting(slave)
         return build
 
     def assertDeferredNotifyCount(self, status, build, expected_count):
