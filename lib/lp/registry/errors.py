@@ -44,11 +44,6 @@ class OpenTeamLinkageError(ValueError):
     """An attempt was made to link an open team to something."""
 
 
-@error_status(httplib.FORBIDDEN)
-class TeamSubscriptionPolicyError(ValueError):
-    """The team cannot have the specified TeamSubscriptionPolicy."""
-
-
 @error_status(httplib.CONFLICT)
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
