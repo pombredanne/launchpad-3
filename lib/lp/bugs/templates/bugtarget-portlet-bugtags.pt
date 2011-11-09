@@ -56,7 +56,7 @@
       });
     });
   </script>
-  <a href="" id="show-more-tags-link" class="js-action hidden">Show all tags&hellip;</a>
+  <a href="" id="show-more-tags-link" class="js-action hidden">Show more tags&hellip;</a>
   <a href="" id="show-less-tags-link" class="js-action hidden">Show less tags&hellip;</a>
   <ul class="edit-official-tags">
     <li tal:condition="view/show_manage_tags_link">
