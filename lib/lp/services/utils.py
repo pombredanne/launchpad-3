@@ -18,9 +18,11 @@ __all__ = [
     'file_exists',
     'iter_list_chunks',
     'iter_split',
+    'load_bz2_pickle',
     'obfuscate_email',
     're_email_address',
     'run_capturing_output',
+    'save_bz2_pickle',
     'synchronize',
     'text_delta',
     'traceback_info',
@@ -28,16 +30,18 @@ __all__ = [
     'value_string',
     ]
 
+import bz2
 from datetime import datetime
 from itertools import tee
 import os
 import re
-from StringIO import StringIO
 import string
+from StringIO import StringIO
 import sys
 from textwrap import dedent
 from types import FunctionType
 
+import cPickle as pickle
 from fixtures import (
     Fixture,
     MonkeyPatch,
@@ -135,7 +139,7 @@ def iter_list_chunks(a_list, size):
     I'm amazed this isn't in itertools (mwhudson).
     """
     for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]
+        yield a_list[i:i + size]
 
 
 def synchronize(source, target, add, remove):
@@ -245,7 +249,7 @@ def docstring_dedent(s):
     then reassemble.
     """
     # Make sure there is at least one newline so the split works.
-    first, rest = (s+'\n').split('\n', 1)
+    first, rest = (s + '\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
 
 
@@ -333,3 +337,21 @@ def obfuscate_email(text_to_obfuscate):
     text = text.replace(
         "<<email address hidden>>", "<email address hidden>")
     return text
+
+
+def save_bz2_pickle(obj, filename):
+    """Save a bz2 compressed pickle of `obj` to `filename`."""
+    fout = bz2.BZ2File(filename, "w")
+    try:
+        pickle.dump(obj, fout, pickle.HIGHEST_PROTOCOL)
+    finally:
+        fout.close()
+
+
+def load_bz2_pickle(filename):
+    """Load and return a bz2 compressed pickle from `filename`."""
+    fin = bz2.BZ2File(filename, "r")
+    try:
+        return pickle.load(fin)
+    finally:
+        fin.close()

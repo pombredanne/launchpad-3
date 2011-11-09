@@ -1249,6 +1249,31 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertFalse(
             ids._use_cloner(target_archive, target_archive))
 
+    def test_copied_publishings_creator_None_cloner(self):
+        # The new publishings, copied over from the parents, have their
+        # 'creator' field set to None.  This tests that behaviour when
+        # the cloner is used to perform the initialization.
+        parent, unused = self.setupParent(packages={u'p1': u'1.2'})
+        child = self.setUpSeriesWithPreviousSeries(previous_parents=[parent])
+        self.factory.makeSourcePackagePublishingHistory(distroseries=child)
+        self._fullInitialize([parent], child=child)
+
+        published_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+        self.assertEqual(None, published_sources[0].creator)
+
+    def test_copied_publishings_creator_None_copier(self):
+        # The new publishings, copied over from the parents, have their
+        # 'creator' field set to None.  This tests that behaviour when
+        # the copier is used to perform the initialization.
+        parent, unused = self.setupParent(packages={u'p1': u'1.2'})
+        child = self.setUpSeriesWithPreviousSeries(previous_parents=[parent])
+        self._fullInitialize([parent], child=child)
+
+        published_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+        self.assertEqual(None, published_sources[0].creator)
+
     def test__has_same_parents_as_previous_series_explicit(self):
         # IDS._has_same_parents_as_previous_series returns True if the
         # parents for the series to be initialized are the same as
