@@ -589,6 +589,12 @@
             template="../templates/bug-edit.pt"
             permission="launchpad.Edit"/>
         <browser:page
+            name="+delete"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            class="lp.bugs.browser.bugtask.BugTaskDeletionView"
+            template="../templates/bugtask-delete.pt"
+            permission="launchpad.Delete"/>
+        <browser:page
             name="+secrecy"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bug.BugSecrecyEditView"
@@ -1019,6 +1025,12 @@
             class="lp.bugs.browser.bug.BugWithoutContextView"
             permission="zope.Public"
             attribute="redirectToNewBugPage"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
+            permission="launchpad.View"
+            name="+bugtasks-and-nominations-portal"
+            template="../templates/bugtasks-and-nominations-portal.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
