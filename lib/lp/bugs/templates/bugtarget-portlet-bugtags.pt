@@ -26,6 +26,26 @@
           else {
             portlet.set('innerHTML',
                         response.responseText + portlet.get('innerHTML'));
+            var show_more_link = Y.one('#show-more-tags-link');
+            var show_less_link = Y.one('#show-less-tags-link');
+            var tag_list = Y.all('.tag-list li');
+            if (tag_list.size() > 10) {
+                var extra_tags = tag_list.slice(10);
+                extra_tags.addClass('hidden');
+                show_more_link.removeClass('hidden');
+                show_more_link.on('click', function(e) {
+                    e.halt();
+                    extra_tags.removeClass('hidden');
+                    show_more_link.addClass('hidden');
+                    show_less_link.removeClass('hidden');
+                });
+                show_less_link.on('click', function(e) {
+                    e.halt();
+                    extra_tags.addClass('hidden');
+                    show_more_link.removeClass('hidden');
+                    show_less_link.addClass('hidden');
+                });
+            }
           }
         }
 
@@ -36,7 +56,9 @@
       });
     });
   </script>
-  <ul>
+  <a href="" id="show-more-tags-link" class="js-action hidden">Show all tags&hellip;</a>
+  <a href="" id="show-less-tags-link" class="js-action hidden">Show less tags&hellip;</a>
+  <ul class="edit-official-tags">
     <li tal:condition="view/show_manage_tags_link">
       <a class="sprite edit"
          tal:attributes="href context/fmt:url/+manage-official-tags">

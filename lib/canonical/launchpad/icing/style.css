@@ -656,6 +656,23 @@ div#client-listing .field {
     margin-left: 1em;
 }
 
+/* Tags portlet */
+.tag-list {
+    margin-bottom: 0.5em;
+    }
+.tag-list li {
+    padding-bottom: 0;
+    }
+.tag-count {
+    display: inline-block;
+    min-width: 1.5em;
+    text-align: right;
+    padding-right: 0.25em;
+    }
+.edit-official-tags {
+    margin-top: 1em;
+}
+
 /* === Translations === */
 
 .translation code {font-weight: bold;} /* an interpolation code, such as %i */
