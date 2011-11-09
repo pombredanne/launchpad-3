@@ -28,6 +28,7 @@ __all__ = [
 import httplib
 
 from lazr.restful.declarations import error_status
+from zope.schema.interfaces import ConstraintNotSatisfied
 from zope.security.interfaces import Unauthorized
 
 from lp.app.errors import NameLookupFailed
@@ -145,6 +146,30 @@ class TeamMembershipTransitionError(ValueError):
     Generally, this indicates a bad transition (e.g. approved to proposed)
     or an invalid transition (e.g. unicorn).
     """
+
+
+@error_status(httplib.BAD_REQUEST)
+class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
+    """The team cannot have the specified TeamSubscriptionPolicy.
+
+    The error can be raised because a super team or member team prevents
+    this team from setting a specific policy. The error can also be
+    raised if the team has an active PPA.
+    """
+
+    _default_message = "Team Subscription Policy Error"
+
+    def __init__(self, message=None):
+        if message is None:
+            message = self._default_message
+        self.message = message
+
+    def doc(self):
+        """See `Invalid`."""
+        return self.message
+
+    def __str__(self):
+        return self.message
 
 
 @error_status(httplib.BAD_REQUEST)

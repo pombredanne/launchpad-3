@@ -121,6 +121,7 @@ from lp.registry.browser.person import (
     PersonRenameFormMixin,
     PPANavigationMenuMixIn,
     )
+from lp.registry.errors import TeamSubscriptionPolicyError
 from lp.registry.browser.teamjoin import (
     TeamJoinMixin,
     userIsActiveTeamMember,
@@ -297,12 +298,18 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
         team = self.context
-        if team.subscriptionPolicyMustBeClosed():
-            self.widgets['subscriptionpolicy'].vocabulary = (
-                ClosedTeamSubscriptionPolicy)
-        if team.subscriptionPolicyMustBeOpen():
+        # Do we need to only show open subscription policy choices.
+        try:
+            team.checkClosedSubscriptionPolicyAllowed()
+        except TeamSubscriptionPolicyError:
             self.widgets['subscriptionpolicy'].vocabulary = (
                 OpenTeamSubscriptionPolicy)
+        # Do we need to only show closed subscription policy choices.
+        try:
+            team.checkOpenSubscriptionPolicyAllowed()
+        except TeamSubscriptionPolicyError:
+            self.widgets['subscriptionpolicy'].vocabulary = (
+                ClosedTeamSubscriptionPolicy)
 
     @action('Save', name='save')
     def action_save(self, action, data):

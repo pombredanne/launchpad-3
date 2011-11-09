@@ -207,7 +207,7 @@ from lp.registry.errors import (
     JoinNotAllowed,
     NameAlreadyTaken,
     PPACreationError,
-    )
+    TeamSubscriptionPolicyError)
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -1647,24 +1647,36 @@ class Person(
             EmailAddress.personID == self.id,
             EmailAddress.status == status)
 
-    def subscriptionPolicyMustBeClosed(self):
+    def checkOpenSubscriptionPolicyAllowed(self, policy='open'):
         """See `ITeam`"""
         assert self.is_team, "This method must only be used for teams."
 
         # Does this team own or is the security contact for any pillars.
         roles = IPersonRoles(self)
-        if roles.isPillarOwner() or roles.isSecurityContact():
-            return True
+        if roles.isPillarOwner():
+            raise TeamSubscriptionPolicyError(
+                "The team subscription policy cannot be %s because it "
+                "maintains one ore more products, project groups, or "
+                "distributions." % policy)
+        if roles.isSecurityContact():
+            raise TeamSubscriptionPolicyError(
+                "The team subscription policy cannot be %s because it "
+                "is the security contact for one ore more products, "
+                "project groups, or distributions." % policy)
 
         # Does this team have any PPAs
         for ppa in self.ppas:
             if ppa.status != ArchiveStatus.DELETED:
-                return True
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because it "
+                    "has one or more active PPAs." % policy)
 
         # Does this team have any super teams that are closed.
         for team in self.super_teams:
             if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
-                return True
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because one "
+                    "or more if its super teams are not open." % policy)
 
         # Does this team subscribe or is assigned to any private bugs.
         # Circular imports.
@@ -1690,20 +1702,21 @@ class Person(
                 where=And(Bug.private == True, BugTask.assignee == self.id)),
             limit=1))
         if private_bugs_involved.rowcount:
-            return True
+            raise TeamSubscriptionPolicyError(
+                "The team subscription policy cannot be %s because it is "
+                "subscribed to or assigned to one or more private "
+                "bugs." % policy)
 
-        # We made it here, so let's return False.
-        return False
-
-    def subscriptionPolicyMustBeOpen(self):
+    def checkClosedSubscriptionPolicyAllowed(self, policy='closed'):
         """See `ITeam`"""
         assert self.is_team, "This method must only be used for teams."
 
         # The team must be open if any of it's members are open.
         for member in self.activemembers:
             if member.subscriptionpolicy in OPEN_TEAM_POLICY:
-                return True
-        return False
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because one "
+                    "or more if its member teams are Open." % policy)
 
     @property
     def wiki_names(self):

@@ -227,17 +227,10 @@ def validate_subscription_policy(obj, attr, value):
     existing_subscription_policy = getattr(team, 'subscriptionpolicy', None)
     if value == existing_subscription_policy:
         return value
-    illegal_closed_transition = (
-        value in OpenTeamSubscriptionPolicy
-        and team.subscriptionPolicyMustBeClosed())
-    illegal_open_transition = (
-        value in ClosedTeamSubscriptionPolicy
-        and team.subscriptionPolicyMustBeOpen())
-    if illegal_closed_transition or illegal_open_transition:
-        raise TeamSubscriptionPolicyError(
-            "Cannot change subscription policy of %s (name=%s) from %s to %s"
-            % (team, getattr(team, 'name', None),
-               existing_subscription_policy, value))
+    if value in OpenTeamSubscriptionPolicy:
+        team.checkOpenSubscriptionPolicyAllowed(policy=value)
+    if value in ClosedTeamSubscriptionPolicy:
+        team.checkClosedSubscriptionPolicyAllowed(policy=value)
     return value
 
 
@@ -573,6 +566,65 @@ class PersonNameField(BlacklistableContentNameField):
 
         # Perform the normal validation, including the real blacklist checks.
         super(PersonNameField, self)._validate(input)
+
+
+def team_subscription_policy_can_transition(team, policy):
+    """Can the team can change its subscription policy?
+
+    Returns True when the policy can change. or raises an error. OPEN teams
+    cannot be members of MODERATED or RESTRICTED teams. OPEN teams
+    cannot have PPAs. Changes from between OPEN and the two closed states
+    can be blocked by team membership and team artifacts.
+
+    We only perform the check if a subscription policy is transitioning from
+    open->closed or visa versa. So if a team already has a closed subscription
+    policy, it is always allowed to transition to another closed policy.
+
+    :param team: The team to change.
+    :param policy: The TeamSubsciptionPolicy to change to.
+    :raises TeamSubsciptionPolicyError: Raised when a membership constrain
+        or a team artifact prevents the policy from being set.
+    """
+    if team is None or policy == team.subscriptionpolicy:
+        # The team is being initialized or the policy is not changing.
+        return True
+    elif (policy in OPEN_TEAM_POLICY
+          and team.subscriptionpolicy in CLOSED_TEAM_POLICY):
+        team.checkOpenSubscriptionPolicyAllowed(policy)
+    elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
+        team.checkClosedSubscriptionPolicyAllowed(policy)
+    return True
+
+
+class TeamSubsciptionPolicyChoice(Choice):
+    """A valid team subscription policy."""
+
+    def _getTeam(self):
+        """Return the context if it is a team or None."""
+        if IPerson.providedBy(self.context):
+            return self.context
+        else:
+            return None
+
+    def constraint(self, value):
+        """See `IField`."""
+        team = self._getTeam()
+        policy = value
+        try:
+            return team_subscription_policy_can_transition(team, policy)
+        except TeamSubscriptionPolicyError:
+            return False
+
+    def _validate(self, value):
+        """Ensure the TeamSubsciptionPolicy is valid for state of the team.
+
+        Returns True if the team can change its subscription policy to the
+        `TeamSubscriptionPolicy`, otherwise raise TeamSubscriptionPolicyError.
+        """
+        team = self._getTeam()
+        policy = value
+        team_subscription_policy_can_transition(team, policy)
+        super(TeamSubsciptionPolicyChoice, self)._validate(value)
 
 
 class IPersonClaim(Interface):
@@ -1880,7 +1932,7 @@ class ITeamPublic(Interface):
         exported_as='team_description')
 
     subscriptionpolicy = exported(
-        Choice(title=_('Subscription policy'),
+        TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
                vocabulary=TeamSubscriptionPolicy,
                default=TeamSubscriptionPolicy.MODERATED, required=True,
                description=_(
@@ -1920,23 +1972,43 @@ class ITeamPublic(Interface):
         "The date, according to team's default values, in "
         "which a just-renewed membership will expire.")
 
-    def subscriptionPolicyMustBeClosed():
-        """ Return true if this team's subscription policy must be closed.
+    def checkOpenSubscriptionPolicyAllowed(policy='open'):
+        """ Check whether this team's subscription policy can be open.
 
+        An open subscription policy is OPEN or DELEGATED.
         A closed subscription policy is MODERATED or RESTRICTED.
         An closed subscription policy is required when:
         - any of the team's super teams are closed.
         - the team has any active PPAs
         - it is subscribed or assigned to any private bugs
         - it owns or is the security contact for any pillars
+
+        :param policy: The policy that is being checked for validity. This is
+            an optional parameter used in the message of the exception raised
+            when an open policy is not allowed. Sometimes though, the caller
+            just wants to know if any open policy is allowed without having a
+            particular policy to check. In this case, the method is called
+            without a policy parameter being required.
+        :raises TeamSubscriptionPolicyError: When the subscription policy is
+            not allowed to be open.
         """
 
-    def subscriptionPolicyMustBeOpen():
+    def checkClosedSubscriptionPolicyAllowed(policy='closed'):
         """ Return true if this team's subscription policy must be open.
 
         An open subscription policy is OPEN or DELEGATED.
+        A closed subscription policy is MODERATED or RESTRICTED.
         An open subscription policy is required when:
         - any of the team's sub (member) teams are open.
+
+        :param policy: The policy that is being checked for validity. This is
+            an optional parameter used in the message of the exception raised
+            when a closed policy is not allowed. Sometimes though, the caller
+            just wants to know if any closed policy is allowed without having
+            a particular policy to check. In this case, the method is called
+            without a policy parameter being required.
+        :raises TeamSubscriptionPolicyError: When the subscription policy is
+            not allowed to be closed.
         """
 
 
