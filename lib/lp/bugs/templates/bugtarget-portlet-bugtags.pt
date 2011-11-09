@@ -29,8 +29,8 @@
             var show_more_link = Y.one('#show-more-tags-link');
             var show_less_link = Y.one('#show-less-tags-link');
             var tag_list = Y.all('.tag-list li');
-            if (tag_list.size() > 10) {
-                var extra_tags = tag_list.slice(10);
+            if (tag_list.size() > 20) {
+                var extra_tags = tag_list.slice(20);
                 extra_tags.addClass('hidden');
                 show_more_link.removeClass('hidden');
                 show_more_link.on('click', function(e) {
