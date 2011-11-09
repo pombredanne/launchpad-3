@@ -48,7 +48,6 @@ from fixtures import (
     MonkeyPatch,
     )
 from lazr.enum import BaseItem
-from lazr.restful import ResourceJSONEncoder
 import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance

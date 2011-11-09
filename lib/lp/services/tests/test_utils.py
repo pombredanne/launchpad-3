@@ -14,7 +14,6 @@ import sys
 
 from fixtures import TempDir
 from pytz import UTC
-import simplejson
 from testtools.matchers import (
     Equals,
     GreaterThan,
