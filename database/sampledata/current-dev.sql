@@ -747,6 +747,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -6901,6 +6904,13 @@ ALTER TABLE poexportrequest DISABLE TRIGGER ALL;
 ALTER TABLE poexportrequest ENABLE TRIGGER ALL;
 
 
+ALTER TABLE pofilestatsjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE pofilestatsjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE pomsgid DISABLE TRIGGER ALL;
 
 INSERT INTO pomsgid (id, msgid) VALUES (1, 'evolution addressbook');
@@ -9889,6 +9899,11 @@ ALTER TABLE scriptactivity DISABLE TRIGGER ALL;
 
 INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (1, 'launchpad-targetnamecacheupdater', 'whatever', '2007-08-08 17:02:22.963565', '2007-08-08 17:02:23.869575');
 INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (2, 'script-monitor-test', 'localhost', '2007-05-23 00:00:00', '2007-05-23 01:00:00');
+INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (3, 'jobcronscript', 'localhost', '2011-10-27 16:21:41.505942', '2011-10-27 16:21:41.778348');
+INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (4, 'jobcronscript', 'localhost', '2011-10-27 18:54:22.578331', '2011-10-27 18:54:22.675567');
+INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (5, 'jobcronscript', 'localhost', '2011-10-27 20:20:01.098655', '2011-10-27 20:20:11.92174');
+INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (6, 'jobcronscript', 'localhost', '2011-10-27 20:20:24.262647', '2011-10-27 20:20:24.334309');
+INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (7, 'jobcronscript', 'localhost', '2011-10-27 20:20:53.134486', '2011-10-27 20:20:53.20292');
 
 
 ALTER TABLE scriptactivity ENABLE TRIGGER ALL;

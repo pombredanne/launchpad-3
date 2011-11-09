@@ -2399,9 +2399,3 @@ COMMENT ON TABLE OpenIdIdentifier IS
 'OpenId Identifiers that can be used to log into an Account.';
 COMMENT ON COLUMN OpenIdIdentifier.identifier IS
 'OpenId Identifier. This should be a URL, but is currently just a token that can be used to generate the Identity URL for the Canonical SSO OpenId Provider.';
-
--- POFileStatsJob
-COMMENT ON TABLE POFileStatsJob IS
-'Scheduled jobs that are to update POFile statistics.';
-COMMENT ON COLUMN POFileStatsJob.job IS 'A reference to a row in the Job table that has all the common job details.';
-COMMENT ON COLUMN POFileStatsJob.pofile IS 'The POFile that this job is for.';
