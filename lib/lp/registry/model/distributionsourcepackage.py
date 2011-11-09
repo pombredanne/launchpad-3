@@ -636,7 +636,8 @@ class DistributionSourcePackageInDatabase(Storm):
     def get(cls, distribution, sourcepackagename):
         """Get a DSP given distribution and source package name.
 
-        Attempts to cache the `(distro_id, spn_id) --> dsp_id` mapping.
+        Attempts to use a cached `(distro_id, spn_id) --> dsp_id` mapping to
+        avoid hitting the database.
         """
         # Check for a cached mapping from (distro_id, spn_id) to dsp_id.
         dsp_cache_key = distribution.id, sourcepackagename.id
@@ -662,8 +663,8 @@ class DistributionSourcePackageInDatabase(Storm):
     def getDirect(cls, distribution, sourcepackagename):
         """Get a DSP given distribution and source package name.
 
-        Does not attempt to cache the `(distro_id, spn_id) --> dsp_id`
-        mapping.
+        Caches the `(distro_id, spn_id) --> dsp_id` mapping, but does not
+        otherwise use the cache; it always goes to the database.
         """
         dsp = Store.of(distribution).find(
             DistributionSourcePackageInDatabase,
