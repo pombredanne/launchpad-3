@@ -345,7 +345,7 @@ class TestHandleStatusMixin:
         def got_status(ignored):
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
-            self.assertIdentical(None, self.build.buildqueue_record)
+            self.assertIs(None, self.build.buildqueue_record)
 
         d = self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
@@ -390,10 +390,7 @@ class TestHandleStatusMixin:
                 self.assertNotEqual(
                     0, len(pop_notifications()), "No notifications received.")
             else:
-                self.assertContentEqual(
-                    [], pop_notifications(),
-                    "Received unexpected notifications.")
-
+                self.assertContentEqual([], pop_notifications())
         d = self.build.handleStatus(status, None, {})
         return d.addCallback(got_status)
 
