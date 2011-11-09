@@ -3,8 +3,10 @@
 
 """tales.py doctests."""
 
-from lxml import html
+from datetime import datetime, timedelta
 
+from lxml import html
+from pytz import utc
 from zope.component import (
     getAdapter,
     getUtility
@@ -21,12 +23,14 @@ from canonical.testing.layers import (
     )
 from lp.app.browser.tales import (
     format_link,
+    DateTimeFormatterAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.testing import (
     test_tales,
+    TestCase,
     TestCaseWithFactory,
     )
 
@@ -324,3 +328,52 @@ class ObjectImageDisplayAPITestCase(TestCaseWithFactory):
         product = self.factory.makeProduct(icon=icon)
         display_api = ObjectImageDisplayAPI(product)
         self.assertEqual(icon.getURL(), display_api.custom_icon_url())
+
+
+class TestDateTimeFormatterAPI(TestCase):
+
+    def test_yearDelta(self):
+        """Test that year delta gives reasonable values."""
+        def assert_delta(expected, old, new):
+            old = datetime(*old, tzinfo=utc)
+            new = datetime(*new, tzinfo=utc)
+            delta = DateTimeFormatterAPI._yearDelta(old, new)
+            self.assertEqual(expected, delta)
+        assert_delta(1, (2000, 1, 1), (2001, 1, 1))
+        assert_delta(0, (2000, 1, 2), (2001, 1, 1))
+        # Check leap year handling (2004 is an actual leap year)
+        assert_delta(0, (2003, 10, 10), (2004, 2, 29))
+        assert_delta(0, (2004, 2, 29), (2005, 2, 28))
+
+    def getDurationsince(self, delta):
+        """Return the durationsince for a given delta."""
+        creation = datetime(2000, 1, 1, tzinfo=utc)
+        formatter = DateTimeFormatterAPI(creation)
+        formatter._now = lambda: creation + delta
+        return formatter.durationsince()
+
+    def test_durationsince_in_years(self):
+        """Values with different years are measured in years."""
+        self.assertEqual('1 year', self.getDurationsince(timedelta(366)))
+        self.assertEqual('2 years', self.getDurationsince(timedelta(731)))
+
+    def test_durationsince_in_day(self):
+        """Values with different days are measured in days."""
+        self.assertEqual('1 day', self.getDurationsince(timedelta(1)))
+        self.assertEqual('365 days', self.getDurationsince(timedelta(365)))
+
+    def test_durationsince_in_hours(self):
+        """Values with different hours are measured in hours."""
+        self.assertEqual('2 hours', self.getDurationsince(timedelta(0, 7200)))
+        self.assertEqual('1 hour', self.getDurationsince(timedelta(0, 3600)))
+
+    def test_durationsince_in_minutes(self):
+        """Values with different minutes are measured in minutes."""
+        five = self.getDurationsince(timedelta(0, 300))
+        self.assertEqual('5 minutes', five)
+        self.assertEqual('1 minute', self.getDurationsince(timedelta(0, 60)))
+
+    def test_durationsince_in_seconds(self):
+        """Values in seconds are reported as "less than a minute."""
+        self.assertEqual('less than a minute',
+            self.getDurationsince(timedelta(0, 59)))
