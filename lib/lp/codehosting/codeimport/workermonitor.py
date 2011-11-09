@@ -154,7 +154,7 @@ class CodeImportWorkerMonitor:
                 self._logger.info(
                     "Logged OOPS id %s: %s: %s",
                     report['id'], report.get('type', 'No exception type'),
-                    report.get('value', 'No execption value'))
+                    report.get('value', 'No exception value'))
 
         d = config.publish(report)
         d.addCallback(log_oops_if_published)
