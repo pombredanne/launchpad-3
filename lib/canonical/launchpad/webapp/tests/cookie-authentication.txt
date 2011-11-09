@@ -2,12 +2,6 @@ The feeds vhost should not set the cookie. Since it is running
 on http instead of https, it cannot read the secure cookie on https,
 so it cannot tell that it will end up overwriting the existing cookie.
 
-    >>> # Enable the picker_enhancements feature to test the commenter name.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
     >>> from canonical.testing.layers import BaseLayer
     >>> feeds_root_url = BaseLayer.appserver_root_url('feeds')
     >>> browser.open('%s/announcements.atom' % feeds_root_url)
@@ -73,6 +67,3 @@ Even if the browser passes in a cookie, the feeds vhost should not set one.
 
 # XXX stub 20060816 bug=56601: We need to test that for https: URLs, the
 # secure attribute is set on the cookie.
-
-    >>> # Clean up the feature flag.
-    >>> flags.cleanUp()

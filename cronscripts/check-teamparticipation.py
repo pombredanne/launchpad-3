@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0103,W0403
@@ -20,84 +20,48 @@ situation, but that's not a simple thing and this should do for now.
 
 import _pythonpath
 
-import transaction
-
-from canonical.database.sqlbase import cursor
-from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
-
-
-def check_teamparticipation(log):
-    # Check self-participation.
-    query = """
-        SELECT id, name
-        FROM Person WHERE id NOT IN (
-            SELECT person FROM Teamparticipation WHERE person = team
-            ) AND merged IS NULL
-        """
-    cur = cursor()
-    cur.execute(query)
-    non_self_participants = cur.fetchall()
-    if len(non_self_participants) > 0:
-        log.warn("Some people/teams are not members of themselves: %s"
-                 % non_self_participants)
-
-    # Check if there are any circular references between teams.
-    cur.execute("""
-        SELECT tp.team, tp2.team
-        FROM teamparticipation AS tp, teamparticipation AS tp2
-        WHERE tp.team = tp2.person
-            AND tp.person = tp2.team
-            AND tp.id != tp2.id;
-        """)
-    circular_references = cur.fetchall()
-    if len(circular_references) > 0:
-        raise LaunchpadScriptFailure(
-            "Circular references found: %s" % circular_references)
-
-    # Check if there are any missing/spurious TeamParticipation entries.
-    cur.execute("SELECT id FROM Person WHERE teamowner IS NOT NULL")
-    team_ids = cur.fetchall()
-    transaction.abort()
-
-    def get_participants(team):
-        """Recurse through the team's members to get all its participants."""
-        participants = set()
-        for member in team.activemembers:
-            participants.add(member)
-            if member.is_team:
-                participants.update(get_participants(member))
-        return participants
-
-    from lp.registry.model.person import Person
-    batch = team_ids[:50]
-    team_ids = team_ids[50:]
-    while batch:
-        for [id] in batch:
-            team = Person.get(id)
-            expected = get_participants(team)
-            found = set(team.allmembers)
-            difference = expected.difference(found)
-            if len(difference) > 0:
-                people = ", ".join("%s (%s)" % (person.name, person.id)
-                                   for person in difference)
-                log.warn("%s (%s): missing TeamParticipation entries for %s."
-                         % (team.name, team.id, people))
-            reverse_difference = found.difference(expected)
-            if len(reverse_difference) > 0:
-                people = ", ".join("%s (%s)" % (person.name, person.id)
-                                   for person in reverse_difference)
-                log.warn("%s (%s): spurious TeamParticipation entries for %s."
-                         % (team.name, team.id, people))
-            transaction.abort()
-        batch = team_ids[:50]
-        team_ids = team_ids[50:]
+from lp.registry.scripts.teamparticipation import (
+    check_teamparticipation_circular,
+    check_teamparticipation_consistency,
+    check_teamparticipation_self,
+    fetch_team_participation_info,
+    )
+from lp.services.scripts.base import LaunchpadScript
+from lp.services.utils import (
+    load_bz2_pickle,
+    save_bz2_pickle,
+    )
 
 
 class CheckTeamParticipationScript(LaunchpadScript):
     description = "Check for invalid/missing TeamParticipation entries."
 
+    def add_my_options(self):
+        self.parser.add_option(
+            "--load-participation-info",
+            dest="load_info", metavar="FILE", help=(
+                "File from which to load participation information "
+                "instead of going to the database."))
+        self.parser.add_option(
+            "--save-participation-info",
+            dest="save_info", metavar="FILE", help=(
+                "File in which to save participation information, for "
+                "later processing with --load-participation-info."))
+
     def main(self):
-        check_teamparticipation(self.logger)
+        """Perform various checks on the `TeamParticipation` table."""
+        if self.options.load_info:
+            participation_info = load_bz2_pickle(self.options.load_info)
+        else:
+            check_teamparticipation_self(self.logger)
+            check_teamparticipation_circular(self.logger)
+            participation_info = fetch_team_participation_info(self.logger)
+        if self.options.save_info:
+            save_bz2_pickle(participation_info, self.options.save_info)
+        else:
+            check_teamparticipation_consistency(
+                self.logger, participation_info)
+
 
 if __name__ == '__main__':
     CheckTeamParticipationScript("check-teamparticipation").run()

@@ -22,7 +22,6 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -238,16 +237,7 @@ class PersonPickerWidget(VocabularyPickerWidget):
     include_create_team_link = False
     show_assign_me_button = True
     show_remove_button = False
-
-    @property
-    def picker_type(self):
-        # This is a method for now so we can block the use of the new
-        # person picker js behind our picker_enhancments feature flag.
-        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
-            picker_type = 'person'
-        else:
-            picker_type = 'default'
-        return picker_type
+    picker_type = 'person'
 
     @property
     def selected_value_metadata(self):

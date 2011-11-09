@@ -25,13 +25,25 @@
 
 /* === Fonts and colors === */
 
-.unavailable {color: #999; background: none;}
+.unavailable {
+    color: #999;
+    background: none;
+}
 
-.duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
+.duplicate-details p {
+    padding: 0em;
+    margin-top: 0em;
+    margin-bottom: 0.2em;
+}
 
 /* Using colored text as you wish. */
-.green {color: green;}
-.red {color: red;}
+.green {
+    color: green;
+}
+
+.red {
+    color: red;
+}
 
 .helpwanted {
     background-color: #fafca9;
@@ -39,12 +51,14 @@
     padding: 0.5em;
     padding-left: 3em;
 }
+
 .whiteboard {
-  color: #666;
+    color: #666;
 }
+
 /* When shown as in a definition description, indent slightly. */
 dd .whiteboard {
-  padding-left: 1em;
+    padding-left: 1em;
 }
 
 form.primary.search {
@@ -584,6 +598,62 @@ div#current_user_subscription {
 /* This lets us have a link that spans lines. */
 div#current_user_subscription a.sprite {
   display: inline;
+}
+
+/* Rules for CustomBugListings bug search result lists. */
+div#client-listing {
+    float: left;
+    }
+div.buglisting-row {
+    float: left;
+    margin-top: 5px;
+    border-bottom: 1px solid #EEE;
+    min-width: 585px;
+    width: 100%;
+    }
+div.buglisting-col1 {
+    width: 100px;
+    float: left;
+    padding-bottom: 8px;
+    }
+div.buglisting-col2 {
+    width: 70%;
+    float: left;
+    }
+div.buglisting-col3 {
+    width: 10%;
+    float: right;
+    }
+div#client-listing .importance {
+    height: 1.5em;
+    width: 6em;
+    font-size: .8em;
+    padding: 0 5px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    line-height: 1.5em;
+    margin: 5px 50px 5px 0;
+    text-align: center;
+    position: relative;
+    left: 10px;
+    }
+div#client-listing .buglisting-col2 {
+    color: #999;
+    }
+div#client-listing .bug-related-icons {
+    float: right;
+    margin: 3px 0 3px 0;
+    }
+div#client-listing .bug-heat-icons {
+    float: right;
+    margin: 3px 0 3px 0;
+    }
+div#client-listing .status {
+    position: relative;
+    left: 10px;
+    }
+div#client-listing .field {
+    margin-left: 1em;
 }
 
 /* === Translations === */

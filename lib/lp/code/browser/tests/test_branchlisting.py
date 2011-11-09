@@ -11,18 +11,22 @@ from pprint import pformat
 import re
 
 from lazr.uri import URI
+import soupmatchers
 from storm.expr import (
     Asc,
     Desc,
     )
+from testtools.matchers import Not
 from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import (
     extract_text,
+    find_main_content,
     find_tag_by_id,
-    find_main_content)
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.branchlisting import (
     BranchListingSort,
@@ -59,8 +63,8 @@ from lp.testing.sampledata import (
     COMMERCIAL_ADMIN_EMAIL,
     )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 
@@ -255,6 +259,93 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory,
     def test_batch_template(self):
         # The correct template is used for batch requests.
         self._test_batch_template(self.barney)
+
+
+SIMPLIFIED_BRANCHES_MENU_FLAG = {
+    'code.simplified_branches_menu.enabled': 'on'}
+
+
+class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    registered_branches_matcher = soupmatchers.HTMLContains(
+        soupmatchers.Tag(
+            'Registered link', 'a', text='Registered branches',
+            attrs={'href': 'http://launchpad.dev/~barney'
+                           '/+registeredbranches'}))
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        self.person = self.factory.makePerson(name='barney')
+        self.team = self.factory.makeTeam(owner=self.person)
+        self.product = self.factory.makeProduct(name='bambam')
+
+    def get_branch_list_page(self, page_name='+branches', user=None):
+        if user is None:
+            user = self.person
+        with FeatureFixture(SIMPLIFIED_BRANCHES_MENU_FLAG):
+            with person_logged_in(self.user):
+                return create_initialized_view(
+                    user, page_name, rootsite='code',
+                    principal=self.user)()
+
+    def test_branch_list_h1(self):
+        page = self.get_branch_list_page()
+        h1_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Title', 'h1', text='Bazaar branches owned by Barney'))
+        self.assertThat(page, h1_matcher)
+
+    def test_branch_list_empty(self):
+        page = self.get_branch_list_page()
+        empty_message_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Empty message', 'p',
+                text='There are no branches related to Barney '
+                     'in Launchpad today.'))
+        self.assertThat(page, empty_message_matcher)
+        self.assertThat(page, Not(self.registered_branches_matcher))
+
+    def test_branch_list_registered_link(self):
+        self.factory.makeAnyBranch(owner=self.person)
+        page = self.get_branch_list_page()
+        self.assertThat(page, self.registered_branches_matcher)
+
+    def test_branch_list_owned_link(self):
+        # The link to the owned branches is always displayed.
+        owned_branches_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Owned link', 'a', text='Owned branches',
+                attrs={'href': 'http://code.launchpad.dev/~barney'}))
+        page = self.get_branch_list_page('+subscribedbranches')
+        self.assertThat(page, owned_branches_matcher)
+
+    def test_branch_list_subscribed_link(self):
+        # The link to the subscribed branches is always displayed.
+        subscribed_branches_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Subscribed link', 'a', text='Subscribed branches',
+                attrs={'href': 'http://launchpad.dev/~barney'
+                               '/+subscribedbranches'}))
+        page = self.get_branch_list_page()
+        self.assertThat(page, subscribed_branches_matcher)
+
+    def test_branch_list_activereviews_link(self):
+        # The link to the active reviews is always displayed.
+        active_review_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Active reviews link', 'a', text='Active reviews',
+                attrs={'href': 'http://launchpad.dev/~barney'
+                               '/+activereviews'}))
+        page = self.get_branch_list_page()
+        self.assertThat(page, active_review_matcher)
+
+    def test_branch_list_no_registered_link_team(self):
+        self.factory.makeAnyBranch(owner=self.person)
+        page = self.get_branch_list_page(user=self.team)
+        self.assertThat(page, Not(self.registered_branches_matcher))
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):

@@ -79,6 +79,11 @@ from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
+from lp.services.features import (
+    currentScope,
+    defaultFlagValue,
+    getFeatureFlag,
+    )
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
@@ -257,6 +262,28 @@ class LaunchpadView(UserAttributeCache):
         self.request = request
         self._error_message = None
         self._info_message = None
+        # FakeRequest does not have all properties required by the
+        # IJSONRequestCache adapter.
+        if isinstance(request, FakeRequest):
+            return
+        # Some tests create views without providing any request
+        # object at all; other tests run without the component
+        # infrastructure.
+        try:
+            cache = IJSONRequestCache(self.request).objects
+        except TypeError, error:
+            if error.args[0] == 'Could not adapt':
+                return
+        # Several view objects may be created for one page request:
+        # One view for the main context and template, and other views
+        # for macros included in the main template.
+        if 'beta_features' not in cache:
+            cache['beta_features'] = self.active_beta_features
+        else:
+            beta_info = cache['beta_features']
+            for feature in self.active_beta_features:
+                if feature not in beta_info:
+                    beta_info.append(feature)
 
     def initialize(self):
         """Override this in subclasses.
@@ -362,6 +389,31 @@ class LaunchpadView(UserAttributeCache):
         # By default, a LaunchpadView cannot be traversed through.
         # Those that can be must override this method.
         raise NotFound(self, name, request=request)
+
+    # Flags for new features in beta status which affect a view.
+    beta_features = ()
+
+    @property
+    def active_beta_features(self):
+        """Beta feature flags that are active for this context and scope.
+
+        This property consists of all feature flags from beta_features
+        whose current value is not the default value.
+        """
+        # Avoid circular imports.
+        from lp.services.features.flags import flag_info
+
+        def flag_in_beta_status(flag):
+            return (
+                currentScope(flag) not in ('default', None) and
+                defaultFlagValue(flag) != getFeatureFlag(flag))
+
+        active_beta_flags = set(
+            flag for flag in self.beta_features if flag_in_beta_status(flag))
+        beta_info = [
+            info for info in flag_info if info[0] in active_beta_flags
+            ]
+        return beta_info
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
