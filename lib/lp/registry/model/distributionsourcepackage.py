@@ -550,13 +550,8 @@ class DistributionSourcePackage(BugTargetBase,
     @classmethod
     def _new(cls, distribution, sourcepackagename,
              is_upstream_link_allowed=False):
-        dsp = DistributionSourcePackageInDatabase()
-        dsp.distribution = distribution
-        dsp.sourcepackagename = sourcepackagename
-        dsp.is_upstream_link_allowed = is_upstream_link_allowed
-        Store.of(distribution).add(dsp)
-        Store.of(distribution).flush()
-        return dsp
+        return DistributionSourcePackageInDatabase.new(
+            distribution, sourcepackagename, is_upstream_link_allowed)
 
     @classmethod
     def ensure(cls, spph=None, sourcepackage=None):
@@ -677,4 +672,21 @@ class DistributionSourcePackageInDatabase(Storm):
             pass  # No way to eject things from the cache!
         else:
             cls._cache[dsp_cache_key] = dsp.id
+        return dsp
+
+    @classmethod
+    def new(cls, distribution, sourcepackagename,
+            is_upstream_link_allowed=False):
+        """Create a new DSP with the given parameters.
+
+        Caches the `(distro_id, spn_id) --> dsp_id` mapping.
+        """
+        dsp = DistributionSourcePackageInDatabase()
+        dsp.distribution = distribution
+        dsp.sourcepackagename = sourcepackagename
+        dsp.is_upstream_link_allowed = is_upstream_link_allowed
+        Store.of(distribution).add(dsp)
+        Store.of(distribution).flush()
+        dsp_cache_key = distribution.id, sourcepackagename.id
+        cls._cache[dsp_cache_key] = dsp.id
         return dsp
