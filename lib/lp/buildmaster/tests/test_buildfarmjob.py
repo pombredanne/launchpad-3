@@ -35,8 +35,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login,
     StormStatementRecorder,
@@ -265,6 +263,14 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
             [build.build_farm_job for build in builds])
         self.assertContentEqual(
             builds, specific_jobs)
+
+    def test_getSpecificJobs_preserves_order(self):
+        builds = self.createBuilds()
+        specific_jobs = self.build_farm_job_set.getSpecificJobs(
+            [build.build_farm_job for build in builds])
+        self.assertEqual(
+            [(build.id, build.__class__) for build in builds],
+            [(job.id, job.__class__) for job in specific_jobs])
 
     def test_getSpecificJobs_empty(self):
         self.assertContentEqual(

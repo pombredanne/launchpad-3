@@ -12,7 +12,6 @@ __all__ = [
 
 import hashlib
 from itertools import groupby
-from operator import attrgetter
 
 from lazr.delegates import delegates
 import pytz
@@ -402,14 +401,18 @@ class BuildFarmJobSet:
         """See `IBuildFarmJobSet`."""
         # Adapt a list of jobs based on their job type.
         builds = []
-        key = lambda x: attrgetter('name')(attrgetter('job_type')(x))
+        key = lambda x: x.job_type.name
         sorted_jobs = sorted(jobs, key=key)
         for job_type_name, grouped_jobs in groupby(sorted_jobs, key=key):
             # Fetch the jobs in batches grouped by their job type.
             source = getUtility(
                 ISpecificBuildFarmJobSource, job_type_name)
             builds.extend(list(source.getByBuildFarmJobs(list(grouped_jobs))))
-        return builds
+        # Sort the builds to match the jobs' order.
+        sorted_builds = sorted(
+            builds,
+            key=lambda x: jobs.index(x.build_farm_job))
+        return sorted_builds
 
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""
