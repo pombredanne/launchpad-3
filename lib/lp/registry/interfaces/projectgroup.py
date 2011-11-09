@@ -132,8 +132,9 @@ class IProjectGroupPublic(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidPillarOwner',
-            description=_("Project group owner. Must be either a "
-                          "Launchpad Person or closed Team.")))
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the project group information in "
+                          "Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(

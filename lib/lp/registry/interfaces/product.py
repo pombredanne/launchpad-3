@@ -441,8 +441,9 @@ class IProductPublic(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidPillarOwner',
-            description=_("The person or closed team who maintains the "
-                          "project information in Launchpad.")))
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the project information in "
+                          "Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(
