@@ -591,7 +591,8 @@ def team_subscription_policy_can_transition(team, policy):
     elif (policy in OPEN_TEAM_POLICY
           and team.subscriptionpolicy in CLOSED_TEAM_POLICY):
         team.checkOpenSubscriptionPolicyAllowed(policy)
-    elif team.subscriptionpolicy in OPEN_TEAM_POLICY:
+    elif (policy in CLOSED_TEAM_POLICY
+          and team.subscriptionpolicy in OPEN_TEAM_POLICY):
         team.checkClosedSubscriptionPolicyAllowed(policy)
     return True
 
