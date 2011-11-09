@@ -15,7 +15,6 @@ from pytz import utc
 from storm.locals import Store
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
-from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -642,5 +641,5 @@ class TestGetUploadMethodsForSPRecipeBuild(
 
 
 class TestHandleStatusForSPRBuild(
-    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TrialTestCase):
+    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
     """IPackageBuild.handleStatus works with SPRecipe builds."""

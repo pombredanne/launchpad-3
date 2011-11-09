@@ -282,10 +282,7 @@ class TestGetUploadMethodsMixin:
 
 
 class TestHandleStatusMixin:
-    """Tests for `IPackageBuild`s handleStatus method.
-
-    This should be run with a Trial TestCase.
-    """
+    """Tests for `IPackageBuild`s handleStatus method."""
 
     layer = LaunchpadZopelessLayer
 

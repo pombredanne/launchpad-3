@@ -540,6 +540,8 @@ class Builder(SQLBase):
 
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""
+        # XXX JeroenVermeulen 2011-11-09, bug=888010: Don't use this.
+        # It's a trap.  See bug for details.
         self.slave = proxy
 
     def startBuild(self, build_queue_item, logger):

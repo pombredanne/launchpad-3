@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the renovated slave scanner aka BuilddManager."""
@@ -12,17 +12,13 @@ from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-
 import transaction
-
 from twisted.internet import (
     defer,
     reactor,
     task,
     )
-from twisted.internet.task import (
-    deferLater,
-    )
+from twisted.internet.task import deferLater
 from twisted.python.failure import Failure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -33,8 +29,6 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from lp.services.log.logger import BufferLogger
-from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from canonical.testing.layers import (
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
@@ -58,6 +52,8 @@ from lp.buildmaster.tests.mock_slaves import (
     OkSlave,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.database.transaction_policy import DatabaseTransactionPolicy
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
     TestCase,
@@ -68,7 +64,7 @@ from lp.testing.fakemethod import FakeMethod
 from lp.testing.sampledata import BOB_THE_BUILDER_NAME
 
 
-class TestSlaveScannerScan(TestCase):
+class TestSlaveScannerScan(TestCaseWithFactory):
     """Tests `SlaveScanner.scan` method.
 
     This method uses the old framework for scanning and dispatching builds.
@@ -284,8 +280,7 @@ class TestSlaveScannerScan(TestCase):
         return d
 
     def test_scan_with_nothing_to_dispatch(self):
-        factory = LaunchpadObjectFactory()
-        builder = factory.makeBuilder()
+        builder = self.factory.makeBuilder()
         builder.setSlaveForTesting(OkSlave())
         transaction.commit()
         self._enterReadOnly()
