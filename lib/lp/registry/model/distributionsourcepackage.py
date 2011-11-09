@@ -14,7 +14,9 @@ __all__ = [
 
 import itertools
 import operator
+from threading import local
 
+from bzrlib.lru_cache import LRUCache
 from lazr.restful.utils import smartquote
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
@@ -120,17 +122,6 @@ class DistributionSourcePackageProperty:
             obj._new(obj.distribution, obj.sourcepackagename,
                      is_upstream_link_allowed(spph))
         setattr(obj._self_in_database, self.attrname, value)
-
-
-from bzrlib.lru_cache import LRUCache
-from threading import local
-
-
-class ThreadLocalLRUCache(LRUCache, local):
-    """A per-thread LRU cache."""
-
-dsp_cache = ThreadLocalLRUCache(1000, 700)
-
 
 
 class DistributionSourcePackage(BugTargetBase,
@@ -553,35 +544,8 @@ class DistributionSourcePackage(BugTargetBase,
 
     @classmethod
     def _get(cls, distribution, sourcepackagename):
-        dsp_cache_key = distribution.id, sourcepackagename.id
-        dsp_id = dsp_cache.get(dsp_cache_key)
-        if dsp_id is None:
-            dsp = cls._get_from_db(distribution, sourcepackagename)
-            if dsp is not None:
-                dsp_cache[dsp_cache_key] = dsp.id
-        else:
-            store = Store.of(distribution)
-            dsp = store.get(DistributionSourcePackageInDatabase, dsp_id)
-            if dsp is None:
-                dsp = cls._get_from_db(distribution, sourcepackagename)
-                if dsp is not None:
-                    dsp_cache[dsp_cache_key] = dsp.id
-            else:
-                dsp_cache_key_now = dsp.distribution_id, dsp.sourcepackagename_id
-                if dsp_cache_key != dsp_cache_key_now:
-                    dsp = cls._get_from_db(distribution, sourcepackagename)
-                    if dsp is not None:
-                        dsp_cache[dsp_cache_key] = dsp.id
-        return dsp
-
-    @classmethod
-    def _get_from_db(cls, distribution, sourcepackagename):
-        return Store.of(distribution).find(
-            DistributionSourcePackageInDatabase,
-            DistributionSourcePackageInDatabase.sourcepackagename ==
-                sourcepackagename,
-            DistributionSourcePackageInDatabase.distribution ==
-                distribution).one()
+        return DistributionSourcePackageInDatabase.get(
+            distribution, sourcepackagename)
 
     @classmethod
     def _new(cls, distribution, sourcepackagename,
@@ -625,6 +589,10 @@ class DistributionSourcePackage(BugTargetBase,
             cls._new(distribution, sourcepackagename, upstream_link_allowed)
 
 
+class ThreadLocalLRUCache(LRUCache, local):
+    """A per-thread LRU cache."""
+
+
 class DistributionSourcePackageInDatabase(Storm):
     """Temporary class to allow access to the database."""
 
@@ -661,3 +629,51 @@ class DistributionSourcePackageInDatabase(Storm):
         releases = self.distribution.getCurrentSourceReleases(
             [self.sourcepackagename])
         return releases.get(self)
+
+    _cache = ThreadLocalLRUCache(1000, 700)
+
+    @classmethod
+    def get(cls, distribution, sourcepackagename):
+        """Get a DSP given distribution and source package name.
+
+        Attempts to cache the `(distro_id, spn_id) --> dsp_id` mapping.
+        """
+        # Check for a cached mapping from (distro_id, spn_id) to dsp_id.
+        dsp_cache_key = distribution.id, sourcepackagename.id
+        dsp_id = cls._cache.get(dsp_cache_key)
+        # If not, fetch from the database.
+        if dsp_id is None:
+            return cls.getDirect(distribution, sourcepackagename)
+        # Try store.get(), allowing Storm to answer from cache if it can.
+        store = Store.of(distribution)
+        dsp = store.get(DistributionSourcePackageInDatabase, dsp_id)
+        # If it's not found, query the database; the mapping might be stale.
+        if dsp is None:
+            return cls.getDirect(distribution, sourcepackagename)
+        # Check that the mapping in the cache was correct.
+        if distribution.id != dsp.distribution_id:
+            return cls.getDirect(distribution, sourcepackagename)
+        if sourcepackagename.id != dsp.sourcepackagename_id:
+            return cls.getDirect(distribution, sourcepackagename)
+        # Cache hit, phew.
+        return dsp
+
+    @classmethod
+    def getDirect(cls, distribution, sourcepackagename):
+        """Get a DSP given distribution and source package name.
+
+        Does not attempt to cache the `(distro_id, spn_id) --> dsp_id`
+        mapping.
+        """
+        dsp = Store.of(distribution).find(
+            DistributionSourcePackageInDatabase,
+            DistributionSourcePackageInDatabase.sourcepackagename ==
+                sourcepackagename,
+            DistributionSourcePackageInDatabase.distribution ==
+                distribution).one()
+        dsp_cache_key = distribution.id, sourcepackagename.id
+        if dsp is None:
+            pass  # No way to eject things from the cache!
+        else:
+            cls._cache[dsp_cache_key] = dsp.id
+        return dsp
