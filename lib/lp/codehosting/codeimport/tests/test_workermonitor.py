@@ -593,8 +593,8 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
         errorlog.globalErrorUtility.configure(
             config_factory=oops_twisted.Config,
             publisher_adapter=oops_twisted.defer_publisher)
-        worker_monitor = self.WorkerMonitor(defer.fail(RuntimeError()))
         self.addCleanup(errorlog.globalErrorUtility.configure)
+        worker_monitor = self.WorkerMonitor(defer.fail(RuntimeError()))
         return worker_monitor.run().addCallback(
             self.assertFinishJobCalledWithStatus, worker_monitor,
             CodeImportResultStatus.FAILURE)
@@ -622,6 +622,7 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
         errorlog.globalErrorUtility.configure(
             config_factory=oops_twisted.Config,
             publisher_adapter=oops_twisted.defer_publisher)
+        self.addCleanup(errorlog.globalErrorUtility.configure)
         failure_msg = "test_log_oops expected failure"
         worker_monitor = self.WorkerMonitor(
             defer.fail(RuntimeError(failure_msg)))
