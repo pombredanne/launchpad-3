@@ -72,6 +72,8 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
@@ -119,6 +121,7 @@ from lp.testing.matchers import (
     EqualsIgnoringWhitespace,
     HasQueryCount,
     )
+from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -2717,3 +2720,23 @@ class DistroSeriesUniquePackagesPageTestCase(TestCaseWithFactory,
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
             html, packageset_text, 'packagesets', 'Packagesets')
+
+
+class TestDistroSeriesEditView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_edit_full_functionality_sets_datereleased(self):
+        # Full functionality distributions (IE: Ubuntu) have datereleased
+        # set when the +edit view is used.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        form = {
+            'field.actions.change': 'Change',
+            'field.status': 'CURRENT'
+            }
+        with person_logged_in(admin):
+            create_initialized_view(
+                distroseries, name='+edit', principal=admin, form=form)
+        self.assertIsNot(None, distroseries.datereleased)
