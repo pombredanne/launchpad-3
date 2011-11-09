@@ -51,10 +51,8 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
     # provides the IJobSource interface itself).
     classProvides(IPOFileStatsJobSource)
 
-    id = Int(primary=True)
-
     # The Job table contains core job details.
-    job_id = Int('job')
+    job_id = Int('job', primary=True)
     job = Reference(job_id, Job.id)
 
     # This is the POFile which needs its statistics updated.
@@ -102,12 +100,12 @@ def schedule(pofile):
     # not worth the extra effort to avoid.  This way we can use the stock job
     # runner script.
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    jobs = store.find(
+    jobs = list(store.find(
         POFileStatsJob,
         POFileStatsJob.pofile == pofile,
         POFileStatsJob.job == Job.id,
         Job.id.is_in(Job.ready_jobs)
-        ).all()
+        ))
 
     if len(jobs) in (0, 1):
         job = POFileStatsJob(pofile)
