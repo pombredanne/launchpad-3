@@ -122,6 +122,17 @@ class DistributionSourcePackageProperty:
         setattr(obj._self_in_database, self.attrname, value)
 
 
+from bzrlib.lru_cache import LRUCache
+from threading import local
+
+
+class ThreadLocalLRUCache(LRUCache, local):
+    """A per-thread LRU cache."""
+
+dsp_cache = ThreadLocalLRUCache(1000, 700)
+
+
+
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
@@ -542,6 +553,29 @@ class DistributionSourcePackage(BugTargetBase,
 
     @classmethod
     def _get(cls, distribution, sourcepackagename):
+        dsp_cache_key = distribution.id, sourcepackagename.id
+        dsp_id = dsp_cache.get(dsp_cache_key)
+        if dsp_id is None:
+            dsp = cls._get_from_db(distribution, sourcepackagename)
+            if dsp is not None:
+                dsp_cache[dsp_cache_key] = dsp.id
+        else:
+            store = Store.of(distribution)
+            dsp = store.get(DistributionSourcePackageInDatabase, dsp_id)
+            if dsp is None:
+                dsp = cls._get_from_db(distribution, sourcepackagename)
+                if dsp is not None:
+                    dsp_cache[dsp_cache_key] = dsp.id
+            else:
+                dsp_cache_key_now = dsp.distribution_id, dsp.sourcepackagename_id
+                if dsp_cache_key != dsp_cache_key_now:
+                    dsp = cls._get_from_db(distribution, sourcepackagename)
+                    if dsp is not None:
+                        dsp_cache[dsp_cache_key] = dsp.id
+        return dsp
+
+    @classmethod
+    def _get_from_db(cls, distribution, sourcepackagename):
         return Store.of(distribution).find(
             DistributionSourcePackageInDatabase,
             DistributionSourcePackageInDatabase.sourcepackagename ==
