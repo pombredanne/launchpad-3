@@ -194,6 +194,7 @@
                     task_age
                     bug_subscribers
                     is_complete
+                    canBeDeleted
                     canTransitionToStatus
                     isSubscribed
                     getPackageComponent

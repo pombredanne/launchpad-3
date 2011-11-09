@@ -44,7 +44,6 @@ class TestFeatureControlPage(BrowserTestCase):
 
     def getUserBrowserAsAdmin(self):
         """Make a new TestBrowser logged in as an admin user."""
-        url = self.getFeatureInfoUrl()
         admin_team = getUtility(ILaunchpadCelebrities).admin
         return self.getUserBrowserAsTeamMember([admin_team])
 
@@ -64,7 +63,7 @@ class TestFeatureControlPage(BrowserTestCase):
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureInfoUrl())
         for record in flag_info:
-            for item in record:
+            for item in record[:4]:
                 self.assertThat(browser.contents, Contains(item))
 
     def test_value_domain_documentation_displayed(self):
