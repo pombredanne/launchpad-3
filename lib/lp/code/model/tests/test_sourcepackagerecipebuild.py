@@ -13,6 +13,7 @@ import re
 
 from pytz import utc
 from storm.locals import Store
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
@@ -28,6 +29,7 @@ from canonical.testing.layers import (
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
@@ -568,14 +570,11 @@ class TestAsBuildmaster(TestCaseWithFactory):
         self.assertEquals(0, len(notifications))
 
 
-class TestBuildNotifications(TrialTestCase):
+class TestBuildNotifications(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(TestBuildNotifications, self).setUp()
-        from lp.testing.factory import LaunchpadObjectFactory
-        self.factory = LaunchpadObjectFactory()
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     def prepare_build(self, fake_successful_upload=False):
         queue_record = self.factory.makeSourcePackageRecipeBuildJob()
@@ -588,6 +587,7 @@ class TestBuildNotifications(TrialTestCase):
                 result=True)
         queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         queue_record.builder.setSlaveForTesting(slave)
         return build
 
@@ -613,12 +613,9 @@ class TestBuildNotifications(TrialTestCase):
         return self.assertDeferredNotifyCount(
             "OK", self.prepare_build(), 0)
 
-#XXX 2011-05-20 gmb bug=785679
-#    This test has been disabled since it broke intermittently in
-#    buildbot (but does not fail in isolation locally).
-##    def test_handleStatus_OK_successful_upload(self):
-##        return self.assertDeferredNotifyCount(
-##            "OK", self.prepare_build(True), 0)
+    def test_handleStatus_OK_successful_upload(self):
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepare_build(True), 0)
 
 
 class MakeSPRecipeBuildMixin:
