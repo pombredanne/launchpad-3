@@ -36,10 +36,15 @@ importance = (
 # Content model for a person element.  The element content is the
 # person's name.  For successful bug import, an email address must be
 # provided.
-person = (
+person_nobody = (
+  attribute name { string "nobody" })
+person_normal = (
   attribute name { lpname }?,
-  attribute email { text }?,
+  attribute email { text1 },
   text)
+person = (
+  person_nobody |
+  person_normal)
 
 lpbugs = element launchpad-bugs { bug* }
 
