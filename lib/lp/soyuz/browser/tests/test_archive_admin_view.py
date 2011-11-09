@@ -109,6 +109,7 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
         self.factory.makeProcessorFamily(restricted=True)
         form = {
             "field.enabled": "on",
+            'field.private': 'off',
             "field.require_virtualized": "off",
             'field.enabled_restricted_families': [],
             'field.actions.save': 'Save',
@@ -119,16 +120,17 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
         view.initialize()
 
         self.assertEqual(
-           "", view.widget_errors.get('enabled_restricted_families'))
+           None, view.widget_errors.get('enabled_restricted_families'))
 
     def test_cannot_change_enabled_restricted_families(self):
         # If require_virtualized is False, enabled_restricted_families
         # cannot be changed.
+        pf1 = self.factory.makeProcessorFamily(restricted=True)
         method = 'POST'
         form = {
             'field.enabled': 'on',
             'field.require_virtualized': '',
-            'field.enabled_restricted_families': [],
+            'field.enabled_restricted_families': [pf1.name],
             'field.actions.save': 'Save',
             }
 
