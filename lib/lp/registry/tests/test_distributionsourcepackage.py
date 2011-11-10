@@ -275,6 +275,22 @@ class TestDistributionSourcePackageInDatabase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_mapping_cache_cleared_on_abort(self):
+        # DistributionSourcePackageInDatabase._cache is cleared when a
+        # transaction is aborted.
+        DistributionSourcePackageInDatabase._cache["Frank"] = "Sinatra"
+        transaction.abort()
+        self.assertEqual(
+            {}, DistributionSourcePackageInDatabase._cache.items())
+
+    def test_mapping_cache_cleared_on_commit(self):
+        # DistributionSourcePackageInDatabase._cache is cleared when a
+        # transaction is committed.
+        DistributionSourcePackageInDatabase._cache["Frank"] = "Sinatra"
+        transaction.commit()
+        self.assertEqual(
+            {}, DistributionSourcePackageInDatabase._cache.items())
+
     def test_new(self):
         # DistributionSourcePackageInDatabase.new() creates a new DSP, adds it
         # to the store, and updates the mapping cache.
