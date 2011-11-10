@@ -122,12 +122,6 @@ class IPersonRoles(Interface):
         Passed through to the same method in 'IPersonPublic'.
         """
 
-    def isPillarOwner():
-        """Is this person the owner of any pillar?"""
-
-    def isSecurityContact():
-        """Is this person the security contact of any pillar?"""
-
     def isOwner(obj):
         """Is this person the owner of the object?"""
 

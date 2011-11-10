@@ -6,17 +6,12 @@
 __metaclass__ = type
 __all__ = ['PersonRoles']
 
-from storm.expr import (
-    SQL,
-    With,
-    )
 from zope.component import (
     adapts,
     getUtility,
     )
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import (
@@ -49,58 +44,6 @@ class PersonRoles:
     @property
     def id(self):
         return self.person.id
-
-    def isPillarOwner(self):
-        """See IPersonRoles."""
-
-        with_sql = [
-            With("teams", SQL("""
-                 SELECT team FROM TeamParticipation
-                 WHERE TeamParticipation.person = %d
-                """ % self.person.id)),
-            With("owned_entities", SQL("""
-                 SELECT Product.id
-                 FROM Product
-                 WHERE Product.owner IN (SELECT team FROM teams)
-                 UNION ALL
-                 SELECT Project.id
-                 FROM Project
-                 WHERE Project.owner IN (SELECT team FROM teams)
-                 UNION ALL
-                 SELECT Distribution.id
-                 FROM Distribution
-                 WHERE Distribution.owner IN (SELECT team FROM teams)
-                """))
-           ]
-        store = IStore(self.person)
-        rs = store.with_(with_sql).using("owned_entities").find(
-            SQL("count(*) > 0"),
-        )
-        return rs.one()
-
-    def isSecurityContact(self):
-        """See IPersonRoles."""
-        with_sql = [
-            With("teams", SQL("""
-                 SELECT team FROM TeamParticipation
-                 WHERE TeamParticipation.person = %d
-                """ % self.person.id)),
-            With("owned_entities", SQL("""
-                 SELECT Product.id
-                 FROM Product
-                 WHERE Product.security_contact IN (SELECT team FROM teams)
-                 UNION ALL
-                 SELECT Distribution.id
-                 FROM Distribution
-                 WHERE Distribution.security_contact
-                    IN (SELECT team FROM teams)
-                """))
-           ]
-        store = IStore(self.person)
-        rs = store.with_(with_sql).using("owned_entities").find(
-            SQL("count(*) > 0"),
-        )
-        return rs.one()
 
     def isOwner(self, obj):
         """See IPersonRoles."""

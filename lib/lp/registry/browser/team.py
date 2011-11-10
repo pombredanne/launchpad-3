@@ -298,13 +298,13 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
         team = self.context
-        # Do we need to only show open subscription policy choices.
+        # Do we need to only show open subscription policy choices?
         try:
             team.checkClosedSubscriptionPolicyAllowed()
         except TeamSubscriptionPolicyError:
             self.widgets['subscriptionpolicy'].vocabulary = (
                 OpenTeamSubscriptionPolicy)
-        # Do we need to only show closed subscription policy choices.
+        # Do we need to only show closed subscription policy choices?
         try:
             team.checkOpenSubscriptionPolicyAllowed()
         except TeamSubscriptionPolicyError:

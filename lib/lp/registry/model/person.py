@@ -71,6 +71,7 @@ from storm.expr import (
     SQL,
     Union,
     Upper,
+    With,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -207,7 +208,8 @@ from lp.registry.errors import (
     JoinNotAllowed,
     NameAlreadyTaken,
     PPACreationError,
-    TeamSubscriptionPolicyError)
+    TeamSubscriptionPolicyError,
+    )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -251,7 +253,6 @@ from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
     ISSHKey,
     ISSHKeySet,
@@ -1180,6 +1181,58 @@ class Person(
                                  orderBy=['displayname'])
         return results
 
+    def isAnyPillarOwner(self):
+        """See IPerson."""
+
+        with_sql = [
+            With("teams", SQL("""
+                 SELECT team FROM TeamParticipation
+                 WHERE TeamParticipation.person = %d
+                """ % self.id)),
+            With("owned_entities", SQL("""
+                 SELECT Product.id
+                 FROM Product
+                 WHERE Product.owner IN (SELECT team FROM teams)
+                 UNION ALL
+                 SELECT Project.id
+                 FROM Project
+                 WHERE Project.owner IN (SELECT team FROM teams)
+                 UNION ALL
+                 SELECT Distribution.id
+                 FROM Distribution
+                 WHERE Distribution.owner IN (SELECT team FROM teams)
+                """))
+           ]
+        store = IStore(self)
+        rs = store.with_(with_sql).using("owned_entities").find(
+            SQL("count(*) > 0"),
+        )
+        return rs.one()
+
+    def isAnySecurityContact(self):
+        """See IPerson."""
+        with_sql = [
+            With("teams", SQL("""
+                 SELECT team FROM TeamParticipation
+                 WHERE TeamParticipation.person = %d
+                """ % self.id)),
+            With("owned_entities", SQL("""
+                 SELECT Product.id
+                 FROM Product
+                 WHERE Product.security_contact IN (SELECT team FROM teams)
+                 UNION ALL
+                 SELECT Distribution.id
+                 FROM Distribution
+                 WHERE Distribution.security_contact
+                    IN (SELECT team FROM teams)
+                """))
+           ]
+        store = IStore(self)
+        rs = store.with_(with_sql).using("owned_entities").find(
+            SQL("count(*) > 0"),
+        )
+        return rs.one()
+
     def getAllCommercialSubscriptionVouchers(self, voucher_proxy=None):
         """See `IPerson`."""
         if voucher_proxy is None:
@@ -1449,7 +1502,8 @@ class Person(
 
     def getTeamAdminsEmailAddresses(self):
         """See `IPerson`."""
-        assert self.is_team
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
         to_addrs = set()
         for admin in self.adminmembers:
             to_addrs.update(get_contact_email_addresses(admin))
@@ -1459,11 +1513,13 @@ class Person(
                   status=TeamMembershipStatus.APPROVED,
                   may_subscribe_to_list=True):
         """See `IPerson`."""
-        assert self.is_team, "You cannot add members to a person."
-        assert status in [TeamMembershipStatus.APPROVED,
+        if not self.is_team:
+            raise ValueError("You cannot add members to a person.")
+        if status not in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED,
-                          TeamMembershipStatus.ADMIN], (
-            "You can't add a member with this status: %s." % status.name)
+                          TeamMembershipStatus.ADMIN]:
+            raise ValueError("You can't add a member with this status: %s."
+                             % status.name)
 
         event = JoinTeamEvent
         tm = TeamMembership.selectOneBy(person=person, team=self)
@@ -1626,7 +1682,8 @@ class Person(
 
     def getDirectAdministrators(self):
         """See `IPerson`."""
-        assert self.is_team, 'Method should only be called on a team.'
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
         owner = Person.select("id = %s" % sqlvalues(self.teamowner))
         return self.adminmembers.union(
             owner, orderBy=self._sortingColumnsForSetOperations)
@@ -1649,16 +1706,16 @@ class Person(
 
     def checkOpenSubscriptionPolicyAllowed(self, policy='open'):
         """See `ITeam`"""
-        assert self.is_team, "This method must only be used for teams."
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
 
-        # Does this team own or is the security contact for any pillars.
-        roles = IPersonRoles(self)
-        if roles.isPillarOwner():
+        # Does this team own or is the security contact for any pillars?
+        if self.isAnyPillarOwner():
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it "
                 "maintains one ore more products, project groups, or "
                 "distributions." % policy)
-        if roles.isSecurityContact():
+        if self.isAnySecurityContact():
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it "
                 "is the security contact for one ore more products, "
@@ -1671,7 +1728,7 @@ class Person(
                     "The team subscription policy cannot be %s because it "
                     "has one or more active PPAs." % policy)
 
-        # Does this team have any super teams that are closed.
+        # Does this team have any super teams that are closed?
         for team in self.super_teams:
             if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
                 raise TeamSubscriptionPolicyError(
@@ -1709,7 +1766,8 @@ class Person(
 
     def checkClosedSubscriptionPolicyAllowed(self, policy='closed'):
         """See `ITeam`"""
-        assert self.is_team, "This method must only be used for teams."
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
 
         # The team must be open if any of it's members are open.
         for member in self.activemembers:
@@ -2527,7 +2585,8 @@ class Person(
 
     def setContactAddress(self, email):
         """See `IPerson`."""
-        assert self.is_team, "This method must be used only for teams."
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
 
         if email is None:
             self._unsetPreferredEmail()

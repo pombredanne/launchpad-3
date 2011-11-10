@@ -49,6 +49,7 @@ from lazr.enum import (
     DBItem,
     EnumeratedType,
     Item,
+    use_template,
     )
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
@@ -479,15 +480,17 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
 
 
 class ClosedTeamSubscriptionPolicy(DBEnumeratedType):
-    MODERATED = TeamSubscriptionPolicy.MODERATED
-
-    RESTRICTED = TeamSubscriptionPolicy.RESTRICTED
+    use_template(TeamSubscriptionPolicy, include=(
+        'MODERATED',
+        'RESTRICTED',
+        ))
 
 
 class OpenTeamSubscriptionPolicy(DBEnumeratedType):
-    OPEN = TeamSubscriptionPolicy.OPEN
-
-    DELEGATED = TeamSubscriptionPolicy.DELEGATED
+    use_template(TeamSubscriptionPolicy, include=(
+        'OPEN',
+        'DELEGATED',
+        ))
 
 
 OPEN_TEAM_POLICY = (
@@ -1196,6 +1199,12 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
         :param match_name: string optional project name to screen the results.
         """
+
+    def isAnyPillarOwner():
+        """Is this person the owner of any pillar?"""
+
+    def isAnySecurityContact():
+        """Is this person the security contact of any pillar?"""
 
     def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
