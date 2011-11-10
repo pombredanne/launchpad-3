@@ -625,6 +625,9 @@ class DistributionSourcePackageInDatabase(Storm):
             [self.sourcepackagename])
         return releases.get(self)
 
+    # This is a per-thread LRU cache of mappings from (distribution_id,
+    # sourcepackagename_id)) to dsp_id. See get() for how this cache helps to
+    # avoid database hits without causing consistency issues.
     _cache = ThreadLocalLRUCache(1000, 700)
 
     @classmethod
