@@ -275,11 +275,6 @@ class TestDistributionSourcePackageInDatabase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestDistributionSourcePackageInDatabase, self).setUp()
-        # We must reset the mapping cache so that tests start from scratch.
-        DistributionSourcePackageInDatabase._cache.clear()
-
     def test_new(self):
         # DistributionSourcePackageInDatabase.new() creates a new DSP, adds it
         # to the store, and updates the mapping cache.

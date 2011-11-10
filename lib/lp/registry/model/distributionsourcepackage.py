@@ -34,6 +34,7 @@ from storm.locals import (
     Storm,
     Unicode,
     )
+import transaction
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
@@ -585,7 +586,19 @@ class DistributionSourcePackage(BugTargetBase,
 
 
 class ThreadLocalLRUCache(LRUCache, local):
-    """A per-thread LRU cache."""
+    """A per-thread LRU cache that can synchronize with a transaction."""
+
+    implements(transaction.interfaces.ISynchronizer)
+
+    def newTransaction(self, txn):
+        pass
+
+    def beforeCompletion(self, txn):
+        pass
+
+    def afterCompletion(self, txn):
+        # Clear the cache when a transaction is committed or aborted.
+        self.clear()
 
 
 class DistributionSourcePackageInDatabase(Storm):
@@ -629,6 +642,11 @@ class DistributionSourcePackageInDatabase(Storm):
     # sourcepackagename_id)) to dsp_id. See get() for how this cache helps to
     # avoid database hits without causing consistency issues.
     _cache = ThreadLocalLRUCache(1000, 700)
+    # Synchronize the mapping cache with transactions. The mapping is not
+    # especially useful after a tranaction completes because Storm invalidates
+    # its caches, and leaving the mapping cache in place causes difficult to
+    # understand test interactions.
+    transaction.manager.registerSynch(_cache)
 
     @classmethod
     def get(cls, distribution, sourcepackagename):
