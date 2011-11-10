@@ -71,6 +71,7 @@ from lp.soyuz.interfaces.packagecopyjob import (
     IPlainPackageCopyJobSource,
     PackageCopyJobType,
     )
+from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
@@ -498,15 +499,28 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 source_name, source_package.sourcepackagerelease.component)
 
         # The package is free to go right in, so just copy it now.
+        ancestry = self.target_archive.getPublishedSources(
+            name=name, distroseries=self.target_distroseries,
+            pocket=self.target_pocket, exact_match=True).first()
         override = self.getSourceOverride()
         copy_policy = self.getPolicyImplementation()
         send_email = copy_policy.send_email(self.target_archive)
-        do_copy(
+        copied_sources = do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=True,
             person=self.requester, overrides=[override],
             send_email=send_email, announce_from_person=self.requester)
+
+        # Add a PackageDiff for this new upload if it has ancestry.
+        if ancestry is not None:
+            to_sourcepackagerelease = ancestry.sourcepackagerelease
+            copied_source = copied_sources[0]
+            try:
+                diff = to_sourcepackagerelease.requestDiffTo(
+                    self.requester, copied_source.sourcepackagerelease)
+            except PackageDiffAlreadyRequested:
+                pass
 
         if pu is not None:
             # A PackageUpload will only exist if the copy job had to be

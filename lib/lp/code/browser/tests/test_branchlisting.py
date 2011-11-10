@@ -35,10 +35,7 @@ from lp.code.browser.branchlisting import (
     PersonProductSubscribedBranchesView,
     SourcePackageBranchesView,
     )
-from lp.code.enums import (
-    BranchMergeProposalStatus,
-    BranchVisibilityRule,
-    )
+from lp.code.enums import BranchVisibilityRule
 from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
@@ -317,34 +314,31 @@ class TestSimplifiedPersonOwnedBranchesView(TestCaseWithFactory):
         self.assertThat(page, self.registered_branches_matcher)
 
     def test_branch_list_owned_link(self):
+        # The link to the owned branches is always displayed.
         owned_branches_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Owned link', 'a', text='Owned branches',
                 attrs={'href': 'http://code.launchpad.dev/~barney'}))
-        self.factory.makeAnyBranch(owner=self.person)
         page = self.get_branch_list_page('+subscribedbranches')
         self.assertThat(page, owned_branches_matcher)
 
     def test_branch_list_subscribed_link(self):
+        # The link to the subscribed branches is always displayed.
         subscribed_branches_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Subscribed link', 'a', text='Subscribed branches',
                 attrs={'href': 'http://launchpad.dev/~barney'
                                '/+subscribedbranches'}))
-        self.factory.makeAnyBranch(owner=self.person)
         page = self.get_branch_list_page()
         self.assertThat(page, subscribed_branches_matcher)
 
     def test_branch_list_activereviews_link(self):
+        # The link to the active reviews is always displayed.
         active_review_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Active reviews link', 'a', text='Active reviews',
                 attrs={'href': 'http://launchpad.dev/~barney'
                                '/+activereviews'}))
-        branch = self.factory.makeAnyBranch(owner=self.person)
-        self.factory.makeBranchMergeProposal(
-            target_branch=branch, registrant=self.person,
-            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         page = self.get_branch_list_page()
         self.assertThat(page, active_review_matcher)
 

@@ -381,7 +381,7 @@ class TestBlockingOffsitePosts(TestCase):
         maybe_block_offsite_form_post(FakeNonBrowserRequest)
 
     def test_onsite_posts(self):
-        # Other than the explicit execptions, all POSTs have to come from a
+        # Other than the explicit exceptions, all POSTs have to come from a
         # known LP virtual host.
         for hostname in allvhosts.hostnames:
             referer = 'http://' + hostname + '/foo'
@@ -391,7 +391,7 @@ class TestBlockingOffsitePosts(TestCase):
             maybe_block_offsite_form_post(request)
 
     def test_offsite_posts(self):
-        # If a post comes from an unknown host an execption is raised.
+        # If a post comes from an unknown host an exception is raised.
         disallowed_hosts = ['example.com', 'not-subdomain.launchpad.net']
         for hostname in disallowed_hosts:
             referer = 'http://' + hostname + '/foo'
